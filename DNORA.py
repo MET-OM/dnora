@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-#Created on Jun 27 2019
-#author: konstantinos christakos at MET Norway
+#created by: Konstantinos Christakos 
 ##########################################################################
 import matplotlib.pyplot as plt
 import numpy as np
@@ -89,8 +88,8 @@ def generate_SWAN_grid(project_name, file_emodnet, lon_min, lat_min, lon_max, la
     maskN = mask_map[-1,::bounN]
     maskN[maskN > 0]=2 
     # --------- East boundary ----------
-    maskE = mask_map[::bounN,-1][:-1]
-    maskE[maskE > 0 ] = 2
+    #maskE = mask_map[::bounN,-1][:-1]
+    #maskE[maskE > 0 ] = 2
     # --------- West boundary ----------
     maskW = mask_map[::bounN,0][:-1]
     maskW[maskW > 0 ] = 2
@@ -134,12 +133,13 @@ def generate_SWAN_grid(project_name, file_emodnet, lon_min, lat_min, lon_max, la
     NY = np.shape(topografi)[0]-1
     return NX, NY 
 
-def generate_input_swn_file_SWAN(project_name,dgm,swan_directory, start_date , end_date, lon_min, lat_min, lon_max, lat_max, NX, NY):
+def generate_input_swn_file_SWAN(project_name,dgm,swan_directory,calib_wind, calib_wcap, start_date , end_date, lon_min, lat_min, lon_max, lat_max, NX, NY):
     path_forcing = os.getcwd() +'/' # path for directory where forcing and boundaries are saved, here it is used the current directory
     DATE_START = start_date.replace('-','').replace('T','.').replace(':','')+'00'
     DATE_END   = end_date.replace('-','').replace('T','.').replace(':','')+'00'
     delta_X = np.round(np.abs(lon_max - lon_min),5)
     delta_Y = np.round(np.abs(lat_max - lat_min),5)
+    factor_wind = calib_wind*0.001
     input_file = swan_directory +'/input_'+DATE_START.split('.')[0]+'_'+project_name+str(dgm)+'.swn'
     with open(input_file, 'w') as file_out:
         file_out.write('$************************HEADING************************\n')
@@ -163,11 +163,11 @@ def generate_input_swn_file_SWAN(project_name,dgm,swan_directory, start_date , e
         file_out.write('BOU NEST \''+path_forcing+project_name+str(dgm)+'_spec_'+DATE_START.split('.')[0]+'_'+DATE_END.split('.')[0]+'.asc\' OPEN \n')
         file_out.write('$ \n')
         file_out.write('INPGRID WIND '+str(lon_min)+' '+str(lat_min)+' 0. '+str(NX)+' '+str(NY)+' '+str((delta_X/NX).round(4)) +' '+str((delta_Y/NY).round(4)) +' NONSTATIONARY '+ DATE_START +' 1 HR ' + DATE_END +'\n')
-        file_out.write('READINP WIND 0.001  \''+path_forcing+project_name+str(dgm)+'_wind_'+DATE_START.split('.')[0]+'_'+DATE_END.split('.')[0]+'.asc\' 3 0 0 1 FREE \n')
+        file_out.write('READINP WIND '+str(factor_wind)+'  \''+path_forcing+project_name+str(dgm)+'_wind_'+DATE_START.split('.')[0]+'_'+DATE_END.split('.')[0]+'.asc\' 3 0 0 1 FREE \n')
         file_out.write('$ \n')
-        file_out.write('GEN3 WESTH \n')
+        file_out.write('GEN3 WESTH cds2='+str(calib_wcap) +'\n')
         file_out.write('FRICTION JON 0.067 \n')
-        file_out.write('OFF QUAD \n')
+        #file_out.write('OFF QUAD \n')
         file_out.write('PROP BSBT \n')
         file_out.write('NUM ACCUR NONST 1 \n')
         file_out.write('$ \n')
@@ -181,7 +181,7 @@ def generate_input_swn_file_SWAN(project_name,dgm,swan_directory, start_date , e
     return input_file
 
 
-def generate_input_NORA3spec_to_SWAN(project_name, dgm, start_date, end_date, nr_spec_interpolate):    
+def generate_input_NORA3spec_to_SWAN(project_name, dgm, calib_spec, start_date, end_date, nr_spec_interpolate):    
     factor = 1E-4
     points = np.loadtxt(project_name+str(dgm)+'_Boundaries.txt')
     days = pd.date_range(start=start_date.split('T')[0], end=end_date.split('T')[0], freq='D')
@@ -265,7 +265,7 @@ def generate_input_NORA3spec_to_SWAN(project_name, dgm, start_date, end_date, nr
                                 SPEC_ocean_convection = data.SPEC[time_step,0,index_min_dinstance,:,:].mean('x').values
                                 SPEC_naut_convection[:,0:data.direction.shape[0]//2] = SPEC_ocean_convection[:,data.direction.shape[0]//2:] # Step 1a: 180..355 to start of array
                                 SPEC_naut_convection[:,data.direction.shape[0]//2:]  = SPEC_ocean_convection[:,0:data.direction.shape[0]//2] # Step 1b: 0..175 to end of array
-                                np.savetxt(file_out,SPEC_naut_convection/(delth*factor), fmt='%-10.0f') #     
+                                np.savetxt(file_out,calib_spec*SPEC_naut_convection/(delth*factor), fmt='%-10.0f') #     
                     #last day
                     if len(days)>1:
                         print(days[-1].strftime('%Y-%m-%d'))
