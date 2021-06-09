@@ -404,7 +404,7 @@ def JONSWAP(f, Hm0, Tp,parametrize_gamma):
     SPEC_jonswap = A_g * SPEC_pm * gamma**np.exp(-0.5*((w-wp)/sigma*wp)**2)  * 2*np.pi
     return SPEC_jonswap
 
-def generate_input_NORA3_JONSWAPspec_to_SWAN(project_name = project_name,dgm=dgm,calib_spec=0.8,start_date = start_date , end_date = end_date):
+def generate_input_NORA3_JONSWAPspec_to_SWAN(project_name,dgm,start_date, end_date):
     factor = 1E-4
     freq = 0.042*1.1**np.arange(0,25)
     theta = np.arange(5,365,step=10)
