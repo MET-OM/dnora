@@ -7,6 +7,8 @@ import numpy as np
 import xarray as xr
 from scipy.interpolate import griddata
 from subprocess import call, Popen
+import pyproj
+import oceanwaves as oc
 import pandas as pd
 import os
 
@@ -238,7 +240,7 @@ def generate_input_NORA3spec_to_SWAN(project_name, dgm, calib_spec, start_date, 
                             SPEC_ocean_convection = data.SPEC[time_step,0,index_min_dinstance,:,:].mean('x').values
                             SPEC_naut_convection[:,0:data.direction.shape[0]//2] = SPEC_ocean_convection[:,data.direction.shape[0]//2:] # Step 1a: 180..355 to start of array
                             SPEC_naut_convection[:,data.direction.shape[0]//2:]  = SPEC_ocean_convection[:,0:data.direction.shape[0]//2] # Step 1b: 0..175 to end of array
-                            np.savetxt(file_out,SPEC_naut_convection/(delth*factor), fmt='%-10.0f') #         
+                            np.savetxt(file_out,calib_spec*SPEC_naut_convection/(delth*factor), fmt='%-10.0f') #         
                     #days excluding first and last days:
                     for i in range(1,len(days)-1):
                         print(days[i].strftime('%Y-%m-%d'))
@@ -292,7 +294,7 @@ def generate_input_NORA3spec_to_SWAN(project_name, dgm, calib_spec, start_date, 
                                 SPEC_ocean_convection = data.SPEC[time_step,0,index_min_dinstance,:,:].mean('x').values
                                 SPEC_naut_convection[:,0:data.direction.shape[0]//2] = SPEC_ocean_convection[:,data.direction.shape[0]//2:] # Step 1a: 180..355 to start of array
                                 SPEC_naut_convection[:,data.direction.shape[0]//2:]  = SPEC_ocean_convection[:,0:data.direction.shape[0]//2] # Step 1b: 0..175 to end of array
-                                np.savetxt(file_out,SPEC_naut_convection/(delth*factor), fmt='%-10.0f') # 
+                                np.savetxt(file_out,calib_spec*SPEC_naut_convection/(delth*factor), fmt='%-10.0f') # 
 
 
 
@@ -360,3 +362,152 @@ def run_SWAN(input_file,swan_directory):
     p.wait()                                               
     
 
+def JONSWAP(f, Hm0, Tp,parametrize_gamma):
+    '''Generate JONSWAP spectrum
+    Parameters
+    ----------
+    f : float (non-zero)
+    frequency in Hz 
+    Hm0 : float, datarray (dim:time)
+        Significant  wave height in meters
+    Tp : float, datarray (dim:time)
+        Peak wave period in seconds
+    parametrize_gamma : bool
+        JONSWAP peak-enhancement factor (True: according to Torsethaugen et al. (1984)
+                                         False: gamma is 3.3)
+    Returns
+    -------
+    E : numpy.ndarray
+        Array of shape ``f, Hm0.shape`` with wave energy densities
+    '''
+    # Eq. according to https://rules.dnvgl.com/docs/pdf/DNVGL/CG/2018-01/DNVGL-CG-0130.pdf
+    sigma_low=0.07
+    sigma_high=0.09
+    w = 2*np.pi*f
+    if parametrize_gamma is True and Hm0>0:
+        if Tp/np.sqrt(Hm0)>=5:
+            gamma = 1
+        elif Tp/np.sqrt(Hm0)<=3.6:
+            gamma = 5
+        else:
+            gamma = np.exp(5.75-1.15*Tp/np.sqrt(Hm0))
+    else:
+        gamma = 1 
+        #alpha = 5.061* (Hm0[i].values**2/Tp[i].values)*(1-0.287*np.log(gamma[i]))
+    A_g = 1-0.287*np.log(gamma)
+    wp = 2*np.pi/Tp
+    sigma = np.ones(w.shape) * sigma_low
+    sigma[w >= wp] = sigma_high
+    # Pierson-Moskowitz:
+    SPEC_pm = (5/16) * Hm0**2 * wp**4 * w**-5 * np.exp(-5/4 * (w/wp)**-4)
+    # JONSWAP:
+    SPEC_jonswap = A_g * SPEC_pm * gamma**np.exp(-0.5*((w-wp)/sigma*wp)**2)  * 2*np.pi
+    return SPEC_jonswap
+
+def generate_input_NORA3_JONSWAPspec_to_SWAN(project_name = project_name,dgm=dgm,calib_spec=0.8,start_date = start_date , end_date = end_date):
+    factor = 1E-4
+    freq = 0.042*1.1**np.arange(0,25)
+    theta = np.arange(5,365,step=10)
+    points = np.loadtxt(project_name+str(dgm)+'_Boundaries.txt')
+    days = pd.date_range(start=start_date.split('T')[0], end=end_date.split('T')[0], freq='D')
+    for i in range(len(days)):
+        url = 'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_files/'+days[i].strftime('%Y')+'/'+days[i].strftime('%m')+'/'+days[i].strftime('%Y%m%d')+'_MyWam3km_hindcast.nc' 
+        if len(days)>1:
+            data = xr.open_dataset(url).sel(time=slice(start_date, start_date.split('T')[0]+'T23:00'))
+        else:
+            data = xr.open_dataset(url).sel(time=slice(start_date, end_date))
+        with open(project_name+str(dgm)+'_spec_'+days[0].strftime('%Y%m%d')+'_'+days[-1].strftime('%Y%m%d')+'.asc', 'w') as file_out:
+                        file_out.write('SWAN   1\n')
+                        file_out.write('$ Data produced by WAM3\n')
+                        file_out.write('TIME\n')
+                        file_out.write('          1\n')
+                        file_out.write('LONLAT\n')    
+                        file_out.write('          '+format(points.shape[0])+'\n')     
+                        for k in range((points.shape[0])):
+                            file_out.write('   '+format(points[k][1],'.4f')+'  '+format(points[k][0],'.4f')+'\n')
+                        file_out.write('AFREQ\n')
+                        file_out.write('          '+str(freq.shape[0])+'\n')
+                        for l in range((freq.shape[0])):
+                            file_out.write('   '+format(freq[l],'.4f')+'\n')
+                        file_out.write('NDIR\n')
+                        file_out.write('          '+format(theta.shape[0])+'\n')
+                        for m in range((theta.shape[0])):
+                            file_out.write('   '+format(theta[m],'.1f')+'\n') 
+                        file_out.write('QUANT\n')
+                        file_out.write('          1\n')
+                        file_out.write('VaDens\n')
+                        file_out.write('m2/Hz/degr \n')
+                        file_out.write('-32767\n')
+                        #first day
+                        print('Generating 2d spectra at boundaries:')
+                        print(days[0].strftime('%Y-%m-%d'))
+                        for time_step in range(data.time.shape[0]):
+                            file_out.write(str(data.time.time[time_step].values).split('-')[0]+str(data.time.time[time_step].values).split('-')[1]+\
+                                           str(data.time.time[time_step].values).split('-')[2][:2]+'.'+str(data.time.time[time_step].values).split('-')[2][3:5]+'0000\n')
+                            for p in range(points.shape[0]):
+                                file_out.write('FACTOR\n')    
+                                file_out.write(format(factor,'1.0E')+'\n')
+                                # find the nearest grid point
+                                rlon0, rlat0 = pyproj.Transformer.from_crs('epsg:4326', data.projection_ob_tran.proj4, always_xy=True).transform(points[p][1], points[p][0])
+                                data0 = data.sel(rlon=rlon0,rlat=rlat0, method='nearest') #data in grid point of interest
+                                #swell:
+                                SPEC_1D_swell = JONSWAP(freq, data0.hs_swell[time_step].values, data0.tp_swell[time_step].values ,parametrize_gamma=True)
+                                DIR_swell = oc.directional_spreading(theta, data0.thq_swell[time_step].values)
+                                SPEC_2D_swell = np.reshape(SPEC_1D_swell, (-1, 1)) * np.reshape(DIR_swell, (1, -1))
+                                #wind sea:
+                                SPEC_1D_sea = JONSWAP(freq, data0.hs_sea[time_step].values, data0.tp_sea[time_step].values ,parametrize_gamma=True)
+                                DIR_sea = oc.directional_spreading(theta, data0.thq_sea[time_step].values)
+                                SPEC_2D_sea = np.reshape(SPEC_1D_sea, (-1, 1)) * np.reshape(DIR_sea, (1, -1))
+                                # Total
+                                SPEC_2D = SPEC_2D_swell + SPEC_2D_sea
+                                np.savetxt(file_out,SPEC_2D/factor, fmt='%-10.0f') #         
+                        #days excluding first and last days:
+                        for i in range(1,len(days)-1):
+                            print(days[i].strftime('%Y-%m-%d'))
+                            url = 'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_files/'+days[i].strftime('%Y')+'/'+days[i].strftime('%m')+'/'+days[i].strftime('%Y%m%d')+'_MyWam3km_hindcast.nc' 
+                            data = xr.open_dataset(url)
+                            for time_step in range(data.time.shape[0]):
+                                file_out.write(str(data.time.time[time_step].values).split('-')[0]+str(data.time.time[time_step].values).split('-')[1]+\
+                                               str(data.time.time[time_step].values).split('-')[2][:2]+'.'+str(data.time.time[time_step].values).split('-')[2][3:5]+'0000\n')
+                                for p in range(points.shape[0]):
+                                    file_out.write('FACTOR\n')    
+                                    file_out.write(format(factor,'1.0E')+'\n')
+                                    # find the nearest grid point
+                                    rlon0, rlat0 = pyproj.Transformer.from_crs('epsg:4326', data.projection_ob_tran.proj4, always_xy=True).transform(points[p][1], points[p][0])
+                                    data0 = data.sel(rlon=rlon0,rlat=rlat0, method='nearest') #data in grid point of interest
+                                    #swell:
+                                    SPEC_1D_swell = JONSWAP(freq, data0.hs_swell[time_step].values, data0.tp_swell[time_step].values ,parametrize_gamma=True)
+                                    DIR_swell = oc.directional_spreading(theta, data0.thq_swell[time_step].values)
+                                    SPEC_2D_swell = np.reshape(SPEC_1D_swell, (-1, 1)) * np.reshape(DIR_swell, (1, -1))
+                                    #wind sea:
+                                    SPEC_1D_sea = JONSWAP(freq, data0.hs_sea[time_step].values, data0.tp_sea[time_step].values ,parametrize_gamma=True)
+                                    DIR_sea = oc.directional_spreading(theta, data0.thq_sea[time_step].values)
+                                    SPEC_2D_sea = np.reshape(SPEC_1D_sea, (-1, 1)) * np.reshape(DIR_sea, (1, -1))
+                                    # Total
+                                    SPEC_2D = SPEC_2D_swell + SPEC_2D_sea
+                                    np.savetxt(file_out,SPEC_2D/factor, fmt='%-10.0f') #     
+                        #last day
+                        if len(days)>1:
+                            print(days[-1].strftime('%Y-%m-%d'))
+                            url = 'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_files/'+days[i].strftime('%Y')+'/'+days[i].strftime('%m')+'/'+days[i].strftime('%Y%m%d')+'_MyWam3km_hindcast.nc' 
+                            data = xr.open_dataset(url).sel(time=slice(days[-1].strftime('%Y-%m-%d')+ 'T00:00', end_date))
+                            for time_step in range(data.time.shape[0]):
+                                file_out.write(str(data.time.time[time_step].values).split('-')[0]+str(data.time.time[time_step].values).split('-')[1]+\
+                                               str(data.time.time[time_step].values).split('-')[2][:2]+'.'+str(data.time.time[time_step].values).split('-')[2][3:5]+'0000\n')
+                                for p in range(points.shape[0]):
+                                    file_out.write('FACTOR\n')    
+                                    file_out.write(format(factor,'1.0E')+'\n')
+                                    # find the nearest grid point
+                                    rlon0, rlat0 = pyproj.Transformer.from_crs('epsg:4326', data.projection_ob_tran.proj4, always_xy=True).transform(points[p][1], points[p][0])
+                                    data0 = data.sel(rlon=rlon0,rlat=rlat0, method='nearest') #data in grid point of interest
+                                    #swell:
+                                    SPEC_1D_swell = JONSWAP(freq, data0.hs_swell[time_step].values, data0.tp_swell[time_step].values ,parametrize_gamma=True)
+                                    DIR_swell = oc.directional_spreading(theta, data0.thq_swell[time_step].values)
+                                    SPEC_2D_swell = np.reshape(SPEC_1D_swell, (-1, 1)) * np.reshape(DIR_swell, (1, -1))
+                                    #wind sea:
+                                    SPEC_1D_sea = JONSWAP(freq, data0.hs_sea[time_step].values, data0.tp_sea[time_step].values ,parametrize_gamma=True)
+                                    DIR_sea = oc.directional_spreading(theta, data0.thq_sea[time_step].values)
+                                    SPEC_2D_sea = np.reshape(SPEC_1D_sea, (-1, 1)) * np.reshape(DIR_sea, (1, -1))
+                                    # Total
+                                    SPEC_2D = SPEC_2D_swell + SPEC_2D_sea
+                                    np.savetxt(file_out,SPEC_2D/factor, fmt='%-10.0f') #  
