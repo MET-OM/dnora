@@ -33,7 +33,7 @@ def distance_2points(lat1,lon1,lat2,lon2):
     return distance
 
 
-def generate_SWAN_grid(project_name, file_emodnet, lon_min, lat_min, lon_max, lat_max, dgm, dbm):
+def generate_grid(project_name, file_emodnet, lon_min, lat_min, lon_max, lat_max, dgm, dbm, model):
     f_min = 0.04
     lonlim = [lon_min, lon_max] 
     latlim = [lat_min, lat_max]
@@ -122,13 +122,18 @@ def generate_SWAN_grid(project_name, file_emodnet, lon_min, lat_min, lon_max, la
     print('Create files for regular grid')
     #boundaries,bathy.txt,mapsta.txt, lat.txt and lon.txt
     np.savetxt(project_name+str(dgm)+'_Boundaries.txt', BOUND[:,::-1][:,1:3], delimiter='\t',fmt='%1.6f')
-    np.savetxt(project_name+str(dgm)+'_SWAN.bot', topografi, delimiter='\t',fmt='%1.0f')
+    if model == 'SWAN':
+        np.savetxt(project_name+str(dgm)+'.bot', topografi, delimiter='\t',fmt='%1.0f')
+    elif model == 'WW3':
+        np.savetxt(project_name+str(dgm)+'_bathy.txt', -1*topografi.ravel(), delimiter=',',fmt='%1.6f')        
+        np.savetxt(project_name+str(dgm)+'_mapsta.txt', mask_map.ravel(), delimiter=',',fmt='%1.0f')    
     #######################################################################################################
     dt_xy = np.round(123766*DX*np.cos(np.radians(YUR))*f_min)
     dt_global = 2*dt_xy # 2 or 3 times dt_xy
     dt_k = 0.5*dt_global
     dt_s = 15 # 15s is the  minimum allowed by the model 
-    
+    print('dlon,dlat:',DX,DY)
+    print('NX,NY:',np.shape(topografi)[1],np.shape(topografi)[0])
     print('Dt_global:',dt_global,'Dt_xy:',dt_xy,'Dt_k:',dt_k,'Dt_s:',dt_s)
     ######################################################################################
     NX = np.shape(topografi)[1]-1
