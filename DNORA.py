@@ -193,6 +193,7 @@ def generate_input_NORA3spec_to_SWAN(project_name, dgm, calib_spec, start_date, 
     points = np.loadtxt(project_name+str(dgm)+'_Boundaries.txt')
     days = pd.date_range(start=start_date.split('T')[0], end=end_date.split('T')[0], freq='D')
     url = 'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/'+days[0].strftime('%Y') +'/'+days[0].strftime('%m')+'/SPC'+days[0].strftime('%Y%m%d')+'00.nc'
+    #url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+days[0].strftime('%Y') +'/'+days[0].strftime('%m')+'/'+days[0].strftime('%d')+'/MyWave_wam4_SPC_'+days[0].strftime('%Y%m%d')+'T00Z.nc'
     if len(days)>1:
         data = xr.open_dataset(url).sel(time=slice(start_date, start_date.split('T')[0]+'T23:00'))
     else:
