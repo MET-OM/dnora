@@ -193,7 +193,6 @@ def generate_input_NORA3spec_to_SWAN(project_name, dgm, calib_spec, start_date, 
     points = np.loadtxt(project_name+str(dgm)+'_Boundaries.txt')
     days = pd.date_range(start=start_date.split('T')[0], end=end_date.split('T')[0], freq='D')
     url = 'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/'+days[0].strftime('%Y') +'/'+days[0].strftime('%m')+'/SPC'+days[0].strftime('%Y%m%d')+'00.nc'
-    #url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+days[0].strftime('%Y') +'/'+days[0].strftime('%m')+'/'+days[0].strftime('%d')+'/MyWave_wam4_SPC_'+days[0].strftime('%Y%m%d')+'T00Z.nc'
     if len(days)>1:
         data = xr.open_dataset(url).sel(time=slice(start_date, start_date.split('T')[0]+'T23:00'))
     else:
@@ -302,6 +301,118 @@ def generate_input_NORA3spec_to_SWAN(project_name, dgm, calib_spec, start_date, 
                                 SPEC_naut_convection[:,data.direction.shape[0]//2:]  = SPEC_ocean_convection[:,0:data.direction.shape[0]//2] # Step 1b: 0..175 to end of array
                                 np.savetxt(file_out,calib_spec*SPEC_naut_convection/(delth*factor), fmt='%-10.0f') # 
 
+def generate_input_WAM4spec_to_SWAN(project_name, dgm, calib_spec, start_date, end_date, nr_spec_interpolate):    
+    factor = 1E-4
+    points = np.loadtxt(project_name+str(dgm)+'_Boundaries.txt')
+    days = pd.date_range(start=start_date.split('T')[0], end=end_date.split('T')[0], freq='D')
+    url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+days[0].strftime('%Y') +'/'+days[0].strftime('%m')+'/'+days[0].strftime('%d')+'/MyWave_wam4_SPC_'+days[0].strftime('%Y%m%d')+'T00Z.nc'
+    if len(days)>1:
+        data = xr.open_dataset(url).sel(time=slice(start_date, start_date.split('T')[0]+'T23:00'))
+    else:
+        data = xr.open_dataset(url).sel(time=slice(start_date, end_date))
+    delth = 360/data.direction.shape[0]
+    SPEC_naut_convection = np.zeros((data.freq.shape[0],data.direction.shape[0]))
+    with open(project_name+str(dgm)+'_spec_'+days[0].strftime('%Y%m%d')+'_'+days[-1].strftime('%Y%m%d')+'.asc', 'w') as file_out:
+                    file_out.write('SWAN   1\n')
+                    file_out.write('$ Data produced by WAM4\n')
+                    file_out.write('TIME\n')
+                    file_out.write('          1\n')
+                    file_out.write('LONLAT\n')    
+                    file_out.write('          '+format(points.shape[0])+'\n')     
+                    for k in range((points.shape[0])):
+                        file_out.write('   '+format(points[k][1],'.4f')+'  '+format(points[k][0],'.4f')+'\n')
+                    file_out.write('AFREQ\n')
+                    file_out.write('          '+str(data.freq.shape[0])+'\n')
+                    for l in range((data.freq.shape[0])):
+                        file_out.write('   '+format(data.freq[l].values,'.4f')+'\n')
+                    file_out.write('NDIR\n')
+                    file_out.write('          '+format(data.direction.shape[0])+'\n')
+                    for m in range((data.direction.shape[0])):
+                        file_out.write('   '+format(data.direction[m].values,'.1f')+'\n') 
+                    file_out.write('QUANT\n')
+                    file_out.write('          1\n')
+                    file_out.write('VaDens\n')
+                    file_out.write('m2/Hz/degr \n')
+                    file_out.write('-32767\n')
+                    #first day
+                    print('Generating 2d spectra at boundaries:')
+                    print(days[0].strftime('%Y-%m-%d'))
+                    for time_step in range(data.time.shape[0]):
+                        file_out.write(str(data.time.time[time_step].values).split('-')[0]+str(data.time.time[time_step].values).split('-')[1]+\
+                                       str(data.time.time[time_step].values).split('-')[2][:2]+'.'+str(data.time.time[time_step].values).split('-')[2][3:5]+'0000\n')
+                        for p in range(points.shape[0]):
+                            file_out.write('FACTOR\n')    
+                            file_out.write(format(factor,'1.0E')+'\n')
+                            # find the nearest grid point
+                            diff_lat = np.abs(points[p][0]-data.latitude[0,:])
+                            diff_lon = np.abs(points[p][1]-data.longitude[0,:])
+                            add_lonlat = diff_lon + diff_lat
+                            index_min_dinstance = np.where((add_lonlat >= np.sort(add_lonlat)[0]) & (add_lonlat <= np.sort(add_lonlat)[nr_spec_interpolate]))[0]
+                            #print('Time,Point:'+str(time_step)+','+str(p))
+                            #print(points[p][0],points[p][1])
+                            #print(data.latitude[0,index_min_dinstance].values,data.longitude[0,index_min_dinstance].values)
+                            #print(distance[index_min_dinstance],'km')
+                            #print('Diff in km:',distance_2points(points[p][0],points[p][1],data.latitude[0,index_min_dinstance].values,data.longitude[0,index_min_dinstance].values))
+                            #print('--------------------------')
+                            #SPEC_ocean_convection = data.SPEC[time_step,0,index_min_dinstance,:,:].values
+                            SPEC_ocean_convection = data.SPEC[time_step,0,index_min_dinstance,:,:].mean('x').values
+                            SPEC_naut_convection[:,0:data.direction.shape[0]//2] = SPEC_ocean_convection[:,data.direction.shape[0]//2:] # Step 1a: 180..355 to start of array
+                            SPEC_naut_convection[:,data.direction.shape[0]//2:]  = SPEC_ocean_convection[:,0:data.direction.shape[0]//2] # Step 1b: 0..175 to end of array
+                            np.savetxt(file_out,calib_spec*SPEC_naut_convection/(delth*factor), fmt='%-10.0f') #         
+                    #days excluding first and last days:
+                    for i in range(1,len(days)-1):
+                        print(days[i].strftime('%Y-%m-%d'))
+                        url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+days[0].strftime('%Y') +'/'+days[0].strftime('%m')+'/'+days[0].strftime('%d')+'/MyWave_wam4_SPC_'+days[0].strftime('%Y%m%d')+'T00Z.nc'
+                        data = xr.open_dataset(url)
+                        for time_step in range(data.time.shape[0]):
+                            file_out.write(str(data.time.time[time_step].values).split('-')[0]+str(data.time.time[time_step].values).split('-')[1]+\
+                                           str(data.time.time[time_step].values).split('-')[2][:2]+'.'+str(data.time.time[time_step].values).split('-')[2][3:5]+'0000\n')
+                            for p in range(points.shape[0]):
+                                file_out.write('FACTOR\n')    
+                                file_out.write(format(factor,'1.0E')+'\n')
+                                # find the nearest grid point
+                                diff_lat = np.abs(points[p][0]-data.latitude[0,:])
+                                diff_lon = np.abs(points[p][1]-data.longitude[0,:])
+                                add_lonlat = diff_lon + diff_lat
+                                index_min_dinstance = np.where((add_lonlat >= np.sort(add_lonlat)[0]) & (add_lonlat <= np.sort(add_lonlat)[nr_spec_interpolate]))[0]
+                                #print('Time,Point:'+str(time_step)+','+str(p))
+                                #print(points[p][0],points[p][1])
+                                #print(data.latitude[0,index_min_dinstance].values,data.longitude[0,index_min_dinstance].values)
+                                #print(distance[index_min_dinstance],'km')
+                                #print('Diff in km:',distance_2points(points[p][0],points[p][1],data.latitude[0,index_min_dinstance].values,data.longitude[0,index_min_dinstance].values))
+                                #print('--------------------------')
+                                #SPEC_ocean_convection = data.SPEC[time_step,0,index_min_dinstance,:,:].values
+                                SPEC_ocean_convection = data.SPEC[time_step,0,index_min_dinstance,:,:].mean('x').values
+                                SPEC_naut_convection[:,0:data.direction.shape[0]//2] = SPEC_ocean_convection[:,data.direction.shape[0]//2:] # Step 1a: 180..355 to start of array
+                                SPEC_naut_convection[:,data.direction.shape[0]//2:]  = SPEC_ocean_convection[:,0:data.direction.shape[0]//2] # Step 1b: 0..175 to end of array
+                                np.savetxt(file_out,calib_spec*SPEC_naut_convection/(delth*factor), fmt='%-10.0f') #     
+                    #last day
+                    if len(days)>1:
+                        print(days[-1].strftime('%Y-%m-%d'))
+                        url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+days[0].strftime('%Y') +'/'+days[0].strftime('%m')+'/'+days[0].strftime('%d')+'/MyWave_wam4_SPC_'+days[0].strftime('%Y%m%d')+'T00Z.nc'
+                        data = xr.open_dataset(url).sel(time=slice(days[-1].strftime('%Y-%m-%d')+ 'T00:00', end_date))
+                        for time_step in range(data.time.shape[0]):
+                            file_out.write(str(data.time.time[time_step].values).split('-')[0]+str(data.time.time[time_step].values).split('-')[1]+\
+                                           str(data.time.time[time_step].values).split('-')[2][:2]+'.'+str(data.time.time[time_step].values).split('-')[2][3:5]+'0000\n')
+                            for p in range(points.shape[0]):
+                                file_out.write('FACTOR\n')    
+                                file_out.write(format(factor,'1.0E')+'\n')
+                                # find the nearest grid point
+                                diff_lat = np.abs(points[p][0]-data.latitude[0,:])
+                                diff_lon = np.abs(points[p][1]-data.longitude[0,:])
+                                add_lonlat = diff_lon + diff_lat
+                                index_min_dinstance = np.where((add_lonlat >= np.sort(add_lonlat)[0]) & (add_lonlat <= np.sort(add_lonlat)[nr_spec_interpolate]))[0]
+                                #print('Time,Point:'+str(time_step)+','+str(p))
+                                #print(points[p][0],points[p][1])
+                                #print(data.latitude[0,index_min_dinstance].values,data.longitude[0,index_min_dinstance].values)
+                                #print(distance[index_min_dinstance],'km')
+                                #print('Diff in km:',distance_2points(points[p][0],points[p][1],data.latitude[0,index_min_dinstance].values,data.longitude[0,index_min_dinstance].values))
+                                #print('--------------------------')
+                                #SPEC_ocean_convection = data.SPEC[time_step,0,index_min_dinstance,:,:].values
+                                SPEC_ocean_convection = data.SPEC[time_step,0,index_min_dinstance,:,:].mean('x').values
+                                SPEC_naut_convection[:,0:data.direction.shape[0]//2] = SPEC_ocean_convection[:,data.direction.shape[0]//2:] # Step 1a: 180..355 to start of array
+                                SPEC_naut_convection[:,data.direction.shape[0]//2:]  = SPEC_ocean_convection[:,0:data.direction.shape[0]//2] # Step 1b: 0..175 to end of array
+                                np.savetxt(file_out,calib_spec*SPEC_naut_convection/(delth*factor), fmt='%-10.0f') # 
 
 
 def u_v_from_dir(ws,wdir):
