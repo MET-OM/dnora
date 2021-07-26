@@ -3,6 +3,86 @@ import pandas as pd
 import xarray as xr
 from abc import ABC, abstractmethod
 
+class SpectraToGrid(ABC):
+    @abstractmethod
+    def fit_spectra_to_grid(self):
+        pass
+
+    def lat_in(self):
+        return self.bnd_points[:, 0]
+    
+    def lon_in(self):
+        return self.bnd_points[:, 1]
+    
+    def lat_out(self):
+        return self.bnd_in[0]["latitude"][0].values 
+    
+    def lon_out(self):
+        return self.bnd_in[0]["longitude"][0].values 
+
+    
+class NearestSpectraToGrid(SpectraToGrid):
+    def __init__(self, bnd_in, bnd_points):
+        self.bnd_in = bnd_in
+        self.bnd_points = bnd_points
+        pass
+    
+    def fit_spectra_to_grid(self):
+        inds = self.find_nearest_points()
+       
+        # Gather all the data from one point into one Dataset
+        bnd_out = self.slice_and_gather_xr(inds)
+        return bnd_out
+
+    def slice_and_gather_xr(self, inds):
+        bnd_out=[]
+        for n in range(len(inds)): # Loop over output points
+            datasets = []
+            for k in range(len(self.bnd_in)): # Loop over time (days)
+                datasets.append(self.bnd_in[k].sel(x=inds[n]))
+             
+            # This list contains one element for each requested output point
+            # Each element is a one-spatial-point xr-dataset containing all times
+            bnd_out.append(xr.concat(datasets, dim="time"))        
+        
+        return bnd_out    
+
+
+    def find_nearest_points(self):
+        lat = self.lat_in()
+        lon = self.lon_in()
+        
+        lat_vec = self.lat_out()
+        lon_vec = self.lon_out()
+        
+        # Go through all points where we want output and find the nearest available point
+        inds = []
+        for n in range(len(lat)):
+            dx, ind = self.min_distance(n)
+            print(f"Point {n}: lat: {lat[n]}, lon: {lon[n]} <<< ({lat_vec[ind]: .4f}, {lon_vec[ind]: .4f}). Distance: {dx:.1f} km")
+            inds.append(ind) 
+        return inds
+    
+    
+    def min_distance(self, ind):
+        lat = self.lat_in()[ind]
+        lon = self.lon_in()[ind]
+        
+        # Longitudes seems to be a trivial list of list, therefore the extre [0] before taking .values    
+        lat_vec = self.lat_out()
+        lon_vec = self.lon_out()
+        
+
+        dx = []
+        for n in range(len(lat_vec)):
+            dx.append(distance_2points(lat, lon, lat_vec[n], lon_vec[n]))
+        
+        
+        return np.array(dx).min(), np.array(dx).argmin()
+
+
+
+
 class InputModel(ABC):
     start_time: str
     end_time: str
@@ -90,79 +170,39 @@ class OutputModel(ABC):
         freqN=self.bnd_in[0].freq.shape[0]
         return freqN, dirN
     
+    
+
+
+    
 class OutputWW3nc(OutputModel):
-    def __init__(self, bnd_in, bnd_points):
-        self.bnd_in = bnd_in
-        self.bnd_points = bnd_points      
-        
+    def __init__(self, bnd_out):
+        self.bnd_out = bnd_out
+                
     def output_spec(self):
-        freqN, dirN = self.spec_dim()
-        
         # For WW3-netcdf's we need to write one netcdf for each month for each location
         # The input data is given one xr-dataset per day, containing all the points
-        
-        
-        lat = self.lat_in()
-        lon = self.lon_in()
-        
-        lat_vec = self.lat_out()
-        lon_vec = self.lon_out()
-        
-        # Go through all points where we want output and find the nearest available point
-        inds = []
-        for n in range(len(lat)):
-            dx, ind = self.find_nearest_point(n)
-            print(f"Point {n}: lat: {lat[n]}, lon: {lon[n]} <<< ({lat_vec[ind]: .4f}, {lon_vec[ind]: .4f}). Distance: {dx:.1f} km")
-            inds.append(ind)
-                
-        # Gather all the data from one point into one Dataset
-        
-        xrlist_out=[]
-        for n in range(len(lat)):
-            datasets = []
-            for k in range(len(self.bnd_in)):
-                datasets.append(self.bnd_in[k].sel(x=inds[n]))
-             
-            # This list contains one element for each requested output point
-            # Each element is a one-spatial-point xr-dataset containing all times
-            xrlist_out.append(xr.concat(datasets, dim="time"))
+
+            
+        # Change the metadata so that it matches WW3 requirements (does nothing for now)
+        ww3_bnd_out = self.to_ww3_metadata(self.bnd_out)
         
         # Write netcdf-output
-        for n in range(len(lat)):
+        self.write_netcdf(ww3_bnd_out)
+        
+        return
+    
+    def write_netcdf(self, xrlist):
+        for n in range(len(xrlist)):
             fn = 'Test' + str(n) + '.nc'
-            xrlist_out[n].to_netcdf(fn)
-        
-    def find_nearest_point(self, ind):
-        lat = self.lat_in()[ind]
-        lon = self.lon_in()[ind]
-        
-        # Longitudes seems to be a trivial list of list, therefore the extre [0] before taking .values    
-        lat_vec = self.lat_out()
-        lon_vec = self.lon_out()
-        
-        
-        #dlat = abs(lat_vec-lat).min()
-        #dlon = abs(lon_vec-lon).min()
-        
-        dx = []
-        for n in range(len(lat_vec)):
-            dx.append(distance_2points(lat, lon, lat_vec[n], lon_vec[n]))
-        
-        
-        return np.array(dx).min(), np.array(dx).argmin()
-
-    def lat_in(self):
-        return self.bnd_points[:, 0]
+            xrlist[n].to_netcdf(fn)    
+        return
     
-    def lon_in(self):
-        return self.bnd_points[:, 1]
+    def to_ww3_metadata(self, xrlist):
+        return xrlist
     
-    def lat_out(self):
-        return self.bnd_in[0]["latitude"][0].values 
     
-    def lon_out(self):
-        return self.bnd_in[0]["longitude"][0].values 
-    
+   
+   
 class OutputSWANascii(OutputModel):
     def __init__(self, bnd_in, bnd_points):
         self.factor = 1E-4
