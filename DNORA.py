@@ -11,6 +11,9 @@ import pyproj
 import oceanwaves as oc
 import pandas as pd
 import os
+from abc import ABC, abstractmethod
+
+
 
 
 
@@ -222,6 +225,7 @@ def generate_input_NORA3spec_to_SWAN(project_name, dgm, calib_spec, start_date, 
                     file_out.write('m2/Hz/degr \n')
                     file_out.write('-32767\n')
                     #first day
+                      
                     print('Generating 2d spectra at boundaries:')
                     print(days[0].strftime('%Y-%m-%d'))
                     for time_step in range(data.time.shape[0]):
@@ -362,7 +366,7 @@ def generate_input_WAM4spec_to_SWAN(project_name, dgm, calib_spec, start_date, e
                     #days excluding first and last days:
                     for i in range(1,len(days)-1):
                         print(days[i].strftime('%Y-%m-%d'))
-                        url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+days[0].strftime('%Y') +'/'+days[0].strftime('%m')+'/'+days[0].strftime('%d')+'/MyWave_wam4_SPC_'+days[0].strftime('%Y%m%d')+'T00Z.nc'
+                        url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+days[i].strftime('%Y') +'/'+days[i].strftime('%m')+'/'+days[i].strftime('%d')+'/MyWave_wam4_SPC_'+days[i].strftime('%Y%m%d')+'T00Z.nc'
                         data = xr.open_dataset(url)
                         for time_step in range(data.time.shape[0]):
                             file_out.write(str(data.time.time[time_step].values).split('-')[0]+str(data.time.time[time_step].values).split('-')[1]+\
@@ -389,7 +393,7 @@ def generate_input_WAM4spec_to_SWAN(project_name, dgm, calib_spec, start_date, e
                     #last day
                     if len(days)>1:
                         print(days[-1].strftime('%Y-%m-%d'))
-                        url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+days[0].strftime('%Y') +'/'+days[0].strftime('%m')+'/'+days[0].strftime('%d')+'/MyWave_wam4_SPC_'+days[0].strftime('%Y%m%d')+'T00Z.nc'
+                        url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+days[-1].strftime('%Y') +'/'+days[-1].strftime('%m')+'/'+days[-1].strftime('%d')+'/MyWave_wam4_SPC_'+days[-1].strftime('%Y%m%d')+'T00Z.nc'
                         data = xr.open_dataset(url).sel(time=slice(days[-1].strftime('%Y-%m-%d')+ 'T00:00', end_date))
                         for time_step in range(data.time.shape[0]):
                             file_out.write(str(data.time.time[time_step].values).split('-')[0]+str(data.time.time[time_step].values).split('-')[1]+\
@@ -414,7 +418,7 @@ def generate_input_WAM4spec_to_SWAN(project_name, dgm, calib_spec, start_date, e
                                 SPEC_naut_convection[:,data.direction.shape[0]//2:]  = SPEC_ocean_convection[:,0:data.direction.shape[0]//2] # Step 1b: 0..175 to end of array
                                 np.savetxt(file_out,calib_spec*SPEC_naut_convection/(delth*factor), fmt='%-10.0f') # 
 
-def generate_boundary_input(project_name, dgm, start_date, end_date, input_model = 'WAM3', output_model = 'WW3'):
+def generate_boundary_input(project_name, dgm, start_date, end_date, input_model = 'WAM3', output_model = 'SWAN'):
     days = pd.date_range(start=start_date.split('T')[0], end=end_date.split('T')[0], freq='D')
        
     spec_list = []    
@@ -495,11 +499,11 @@ def write_SWAN_boundary(spec_list, points, outfile, days):
                     np.savetxt(file_out,calib_spec*SPEC_naut_convection/(delth*factor), fmt='%-10.0f') #     
                     
 
-def get_url(days, input_model):
+def get_url(day, input_model):
     if input_model == 'WAM4':
-       url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+days.strftime('%Y') +'/'+days.strftime('%m')+'/'+days.strftime('%d')+'/MyWave_wam4_SPC_'+days.strftime('%Y%m%d')+'T00Z.nc'          
+       url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/'+day.strftime('%d')+'/MyWave_wam4_SPC_'+day.strftime('%Y%m%d')+'T00Z.nc'          
     elif input_model == 'WAM3':
-       url = 'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/'+days.strftime('%Y') +'/'+days.strftime('%m')+'/SPC'+days.strftime('%Y%m%d')+'00.nc'
+       url = 'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/SPC'+day.strftime('%Y%m%d')+'00.nc'
     else:
         raise Exception('Known input models are WAM3 (default) and WAM4')
 
