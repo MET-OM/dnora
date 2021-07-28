@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from abc import ABC, abstractmethod
+import netCDF4
 
 class PointPicker(ABC):
     @abstractmethod
@@ -218,35 +219,137 @@ class OutputModel(ABC):
     bnd_points: np.array
     message: str
     @abstractmethod
-    def __call__(self, bnd_in):
+    def __call__(self, bnd_out):
         pass
 
-    def spec_info(self, bnd_in):
-        dirs=bnd_in[0].direction.values
-        freq=bnd_in[0].freq.values
+    def spec_info(self, bnd_out):
+        dirs=bnd_out[0].direction.values
+        freq=bnd_out[0].freq.values
         return freq, dirs
     
 class OutputWW3nc(OutputModel):
-    def __init__(self, bnd_out):
-        self.bnd_out = bnd_out
+    def __init__(self):
+        pass
                 
-    def __call__(self):
-        # Change the metadata so that it matches WW3 requirements (does nothing for now)
-        ww3_bnd_out = self.to_ww3_metadata(self.bnd_out)
+    def __call__(self, bnd_out):
+        # Convert from oceanic to mathematical convention
+        for n in range(len(bnd_out)):
+            for k in range(len(bnd_out[0].time)):
+                bnd_out[n].SPEC[k,0,:,:]=ocean_to_mathematical_convention(bnd_out[n].SPEC[k,0,:,:].values)
         
         # Write netcdf-output
-        self.write_netcdf(ww3_bnd_out)
+        for n in range(len(bnd_out)):
+            self.write_netcdf(bnd_out[n])
         
         return
     
-    def write_netcdf(self, ww3_bnd_out):
-        for n in range(len(ww3_bnd_out)):
-            fn = 'Test' + str(n) + '.nc'
-            ww3_bnd_out[n].to_netcdf(fn)    
+    def write_netcdf(self, bnd_out):
+        
+        lat=bnd_out["latitude"][0].values[0]
+        lon=bnd_out["longitude"][0].values[0] 
+        output_file = f"ww3_spec_E{lon:09.6f}N{lat:09.6f}.nc"
+        #output_file = 'ww3_spec_E'+str(lon)+'N'+str(lat)+'.nc'
+        #output_file = 'Test_ww3.nc'
+        print(output_file)
+        root_grp = netCDF4.Dataset(output_file, 'w', format='NETCDF4')
+        #################### dimensions
+        root_grp.createDimension('time', None)
+        root_grp.createDimension('station', 1)
+        root_grp.createDimension('string16', 16)
+        root_grp.createDimension('frequency', len(bnd_out.freq))
+        root_grp.createDimension('direction', len(bnd_out.direction))
+        #######################################################
+        ####################### variables
+        time = root_grp.createVariable('time', np.float64, ('time',))
+        station = root_grp.createVariable('station', np.int32, ('station',))
+        frequency = root_grp.createVariable('frequency',np.float32 , ('frequency',))
+        direction = root_grp.createVariable('direction', np.float32, ('direction',))
+        efth = root_grp.createVariable('efth', np.float32, ('time','station','frequency','direction',))
+        latitude = root_grp.createVariable('latitude',np.float32 , ('time','station',))
+        longitude = root_grp.createVariable('longitude',np.float32 , ('time','station',))
+        station_name = root_grp.createVariable('station_name', 'S1', ('station','string16',))
+        string16 = root_grp.createVariable('string16',np.int32 , ('string16',))
+               
+        ########################## Attributes
+        time.units = 'seconds since 1970-01-01 00:00:00 UTC'
+        time.calendar = "standard"
+        time.standard_name = "time" 
+        time.axis = "T" 
+        
+        station.long_name = "station id" 
+        station.axis = "X" 
+        
+        frequency.units = "s-1" 
+        frequency.long_name = "frequency of center band" 
+        frequency.standard_name = "sea_surface_wave_frequency" 
+        frequency.globwave_name = "frequency" 
+        frequency.valid_min = 0 
+        frequency.valid_max = 10 
+        frequency.axis = "Y" 
+        
+        direction.units = "degree" 
+        direction.long_name = "sea surface wave to direction" 
+        direction.standard_name = "sea_surface_wave_to_direction" 
+        direction.globwave_name = "direction" 
+        direction.valid_min = 0
+        direction.valid_max = 360
+        direction.axis = "Z" 
+        
+        longitude.units='degree_east'
+        longitude.long_name = "longitude" 
+        longitude.standard_name = "longitude" 
+        longitude.valid_min = -180
+        longitude.valid_max = 180
+        	#longitude:_FillValue = 9.96921e+36f ;
+        longitude.content = "TX" 
+        longitude.associates = "time station" 
+        
+        latitude.units = "degree_north" 
+        latitude.long_name = "latitude" 
+        latitude.standard_name = "latitude" 
+        latitude.valid_min = -90
+        latitude.valid_max = 90
+        	#latitude:_FillValue = 9.96921e+36f ;
+        latitude.content = "TX" 
+        latitude.associates = "time station"
+        
+        station_name.long_name = "station name" 
+        station_name.content = "XW" 
+        station_name.associates = "station string16" 
+        
+        station.long_name = "station id" 
+        station.axis = "X" 
+        
+        string16.long_name = "station_name number of characters" 
+        string16.axis = "W" 
+        
+        efth.long_name = "sea surface wave directional variance spectral density" 
+        efth.standard_name = "sea_surface_wave_directional_variance_spectral_density" 
+        efth.globwave_name = "directional_variance_spectral_density" 
+        efth.units = "m2 s rad-1" 
+        efth.scale_factor = 1 
+        efth.add_offset = 0 
+        efth.valid_min = 0 
+        #efth.valid_max = 1.0e+20 
+        #efth._FillValue = 9.96921e+36 
+        efth.content = "TXYZ" 
+        efth.associates = "time station frequency direction" 
+        #######################################################
+        ############## Pass data
+        time[:] = bnd_out.time.values.astype('datetime64[s]').astype('float64')
+        efth[:] =  bnd_out.SPEC.values
+        frequency[:] = bnd_out.freq.values
+        direction[:] = bnd_out.direction.values 
+        station[:] = 1
+        longitude[:] = bnd_out.longitude.values
+        latitude[:] = bnd_out.latitude.values
+        station_name[:] = 1
+        
+        root_grp.close() 
         return
     
     def to_ww3_metadata(self, bnd_out):
-	ww3_bnd_out = bnd_out
+        ww3_bnd_out = bnd_out
         return ww3_bnd_out
     
     
@@ -313,12 +416,30 @@ class OutputSWANascii(OutputModel):
         return
 
 def ocean_to_naut(oceanspec):
+    """Convert spectrum in nautical convention (0 north, 90 east, direction from) to oceanic convention (0 north, 90 east, direction to)"""
     nautspec=np.zeros(oceanspec.shape)
     dirN=oceanspec.shape[1]
     nautspec[:,0:dirN//2] = oceanspec[:,dirN//2:] # Step 1a: 180..355 to start of array
     nautspec[:,dirN//2:]  = oceanspec[:,0:dirN//2] # Step 1b: 0..175 to end of array
     
     return nautspec
+
+def naut_to_ocean(nautspec): # Just defined separately to not make for confusing code
+    return ocean_to_naut(nautspec)
+
+def ocean_to_mathematical_convention(oceanspec):
+    """Convert spectrum in oceanic convention (0 north, 90 east, direction to) to mathematical convention (90 north, 0 east, direction to)"""
+    # This has not yeat been fully tested!
+    dirN = oceanspec.shape[1] # Spectrum is freq x dirs
+
+    #dir = np.arange(0,360,360/dirN, dtype='int')
+    ind_ocean = np.arange(0,dirN, dtype='int')
+    ind_math = ((90/(360//dirN) - ind_ocean) % (dirN)).astype(int)
+    
+    mathspec=oceanspec[:, list(ind_math)]
+    
+    return mathspec
+
 
 def distance_2points(lat1,lon1,lat2,lon2):
     R = 6371.0
