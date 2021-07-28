@@ -3,31 +3,83 @@ import pandas as pd
 import xarray as xr
 from abc import ABC, abstractmethod
 
-class SpectraToGrid(ABC):
+class PointPicker(ABC):
     @abstractmethod
-    def fit_spectra_to_grid(self):
+    def pick_points(self):
         pass
 
-    def lat_in(self):
-        return self.bnd_points[:,0]
-    
-    def lon_in(self):
-        return self.bnd_points[:,1]
-    
     def lat_out(self):
-        return self.bnd_in[0]["latitude"][0].values 
+        return self.bnd_points[:, 0]
     
     def lon_out(self):
+        return self.bnd_points[:, 1]
+    
+    def lat_in(self):
+        return self.bnd_in[0]["latitude"][0].values 
+    
+    def lon_in(self):
         return self.bnd_in[0]["longitude"][0].values 
 
-    
-class NearestSpectraToGrid(SpectraToGrid):
-    def __init__(self, bnd_in, bnd_points):
-        self.bnd_in = bnd_in
-        self.bnd_points = bnd_points
+class PPTrivialPicker(PointPicker):
+    def __init__(self):
         pass
+
+    def pick_points(self, bnd_in):
+        return bnd_in
+
+class PPLegacyPicker(PointPicker):
+    def __init__(self, bnd_points):
+        self.bnd_points = bnd_points
+        return
     
-    def fit_spectra_to_grid(self):
+    def pick_points(self, bnd_in):
+        self.bnd_in = bnd_in
+        inds = self.find_nearest_points()
+
+        # Gather all the data from one point into one Dataset
+        bnd_out = self.slice_and_gather_xr(inds)
+        return bnd_out
+
+    def slice_and_gather_xr(self, inds):
+        bnd_out=[]
+        for n in range(len(inds)): # Loop over output points
+            datasets = []
+            title = self.bnd_in[0].title # mean('x') looses all attributes so save this
+            for k in range(len(self.bnd_in)): # Loop over time (days)
+                addition = self.bnd_in[k].sel(x=inds[n]).mean('x')
+                addition.attrs["title"] = title
+                datasets.append(addition)
+
+
+            # This list contains one element for each requested output point
+            # Each element is a one-spatial-point xr-dataset containing all times
+            bnd_out.append(xr.concat(datasets, dim="time"))
+
+        return bnd_out
+
+    def find_nearest_points(self):
+        nr_spec_interpolate = 1
+        lat_in = self.lat_in()
+        lon_in = self.lon_in()
+
+        lat_out = self.lat_out()
+        lon_out = self.lon_out()
+        inds = []
+        for n in range(len(lat_out)):
+            diff_lat = np.abs(lat_out[n]-lat_in)
+            diff_lon = np.abs(lon_out[n]-lon_in)
+            add_lonlat = diff_lon + diff_lat
+            inds.append(np.where((add_lonlat >= np.sort(add_lonlat)[0]) & (add_lonlat <= np.sort(add_lonlat)[nr_spec_interpolate]))[0])
+        return inds
+
+
+class PPNearestGridPoint(PointPicker):
+    def __init__(self, bnd_points):
+        self.bnd_points = bnd_points
+        return
+    
+    def pick_points(self, bnd_in):
+        self.bnd_in = bnd_in
         inds = self.find_nearest_points()
        
         # Gather all the data from one point into one Dataset
@@ -49,11 +101,11 @@ class NearestSpectraToGrid(SpectraToGrid):
 
 
     def find_nearest_points(self):
-        lat = self.lat_in()
-        lon = self.lon_in()
+        lat = self.lat_out()
+        lon = self.lon_out()
         
-        lat_vec = self.lat_out()
-        lon_vec = self.lon_out()
+        lat_vec = self.lat_in()
+        lon_vec = self.lon_in()
         
         # Go through all points where we want output and find the nearest available point
         inds = []
@@ -65,12 +117,11 @@ class NearestSpectraToGrid(SpectraToGrid):
     
     
     def min_distance(self, ind):
-        lat = self.lat_in()[ind]
-        lon = self.lon_in()[ind]
+        lat = self.lat_out()[ind]
+        lon = self.lon_out()[ind]
         
-        # Longitudes seems to be a trivial list of list, therefore the extre [0] before taking .values    
-        lat_vec = self.lat_out()
-        lon_vec = self.lon_out()
+        lat_vec = self.lat_in()
+        lon_vec = self.lon_in()
         
 
         dx = []
@@ -84,11 +135,14 @@ class NearestSpectraToGrid(SpectraToGrid):
 
 
 class InputModel(ABC):
-    start_time: str
-    end_time: str
-	
+    def __init__(self, point_picker = None):
+        if point_picker is not None:
+            self.point_picker = point_picker
+        else:
+            self.point_picker = PPTrivialPicker()
+
     @abstractmethod
-    def read_bnd(self):
+    def __call__(self, start_time, end_time):
         pass
 
     def days(self):
@@ -116,17 +170,18 @@ class InputModel(ABC):
 
 
 class InputWAM4(InputModel):
-    def __init__(self, start_time, end_time):
+    
+    def __call__(self, start_time, end_time):
         self.start_time = start_time
         self.end_time = end_time
-    		
-    def read_bnd(self):
         print(f"Getting boundary spectra from WAM4 from {self.start_time} to {self.end_time}")
         bnd_in = []    
         for n in range(len(self.days())):
             url = self.get_url(n)
             t0, t1 = self.get_time_limits(n)
             bnd_in.append(xr.open_dataset(url).sel(time=slice(t0, t1)))
+            
+        bnd_in = self.point_picker.pick_points(bnd_in)
         return bnd_in
 
     def get_url(self, ind):
@@ -137,17 +192,18 @@ class InputWAM4(InputModel):
     
 
 class InputNORA3(InputModel):
-    def __init__(self, start_time, end_time):
+    
+    def __call__(self, start_time, end_time):
         self.start_time = start_time
         self.end_time = end_time
-    		
-    def read_bnd(self):
         print(f"Getting boundary spectra from NORA3 from {self.start_time} to {self.end_time}")
         bnd_in = []    
         for n in range(len(self.days())):
             url = self.get_url(n)
             t0, t1 = self.get_time_limits(n)
             bnd_in.append(xr.open_dataset(url).sel(time=slice(t0, t1)))
+        
+        bnd_in = self.point_picker.pick_points(bnd_in)
         return bnd_in
 
     def get_url(self, ind):
@@ -162,24 +218,19 @@ class OutputModel(ABC):
     bnd_points: np.array
     message: str
     @abstractmethod
-    def output_spec(self):
+    def __call__(self, bnd_in):
         pass
 
-    def spec_dim(self):
-        dirN=self.bnd_in[0].direction.shape[0]
-        freqN=self.bnd_in[0].freq.shape[0]
-        return freqN, dirN
-    
-    
-
-
+    def spec_info(self, bnd_in):
+        dirs=bnd_in[0].direction.values
+        freq=bnd_in[0].freq.values
+        return freq, dirs
     
 class OutputWW3nc(OutputModel):
     def __init__(self, bnd_out):
         self.bnd_out = bnd_out
                 
-    def output_spec(self):
-           
+    def __call__(self):
         # Change the metadata so that it matches WW3 requirements (does nothing for now)
         ww3_bnd_out = self.to_ww3_metadata(self.bnd_out)
         
@@ -202,35 +253,33 @@ class OutputWW3nc(OutputModel):
    
    
 class OutputSWANascii(OutputModel):
-    def __init__(self, bnd_in, bnd_points):
+    def __init__(self):
         self.factor = 1E-4
         self.nr_spec_interpolate = 0
         self.calib_spec = 1
-        self.bnd_in = bnd_in
-        self.bnd_points = bnd_points
 	
-    def output_spec(self):
+    def __call__(self, bnd_in):
         # Initialize the boundary file by writing the header
 
-        freqN, dirN = self.spec_dim()
-        
+        freq, dirs = self.spec_info(bnd_in)
         with open('outfile', 'w') as file_out:
             file_out.write('SWAN   1\n')
-            file_out.write('$ Data produced by '+self.bnd_in[0].title+'\n')
+            file_out.write('$ Data produced by '+bnd_in[0].title+'\n')
             file_out.write('TIME\n')
             file_out.write('          1\n')
             file_out.write('LONLAT\n')    
-            file_out.write('          '+format(self.bnd_points.shape[0])+'\n')     
-            for k in range((self.bnd_points.shape[0])):
-                file_out.write('   '+format(self.bnd_points[k][1],'.4f')+'  '+format(self.bnd_points[k][0],'.4f')+'\n')
+            file_out.write('          '+format(len(bnd_in))+'\n')     
+            for k in range(len(bnd_in)):
+                file_out.write('   '+format(bnd_in[k]["latitude"].values[0][0],'.4f')+'  '+format(bnd_in[k]["longitude"].values[0][0],'.4f')+'\n')
             file_out.write('AFREQ\n')
-            file_out.write('          '+str(self.bnd_in[0].freq.shape[0])+'\n')
-            for l in range(freqN):
-                file_out.write('   '+format(self.bnd_in[0].freq[l].values,'.4f')+'\n')
+            file_out.write('          '+str(len(freq))+'\n')
+            #breakpoint()
+            for l in range(len(freq)):
+                file_out.write('   '+format(freq[l],'.4f')+'\n')
             file_out.write('NDIR\n')
-            file_out.write('          '+format(self.bnd_in[0].direction.shape[0])+'\n')
-            for m in range(dirN):
-                file_out.write('   '+format(self.bnd_in[0].direction[m].values,'.1f')+'\n') 
+            file_out.write('          '+format(len(dirs))+'\n')
+            for m in range(len(dirs)):
+                file_out.write('   '+format(dirs[m],'.1f')+'\n') 
             file_out.write('QUANT\n')
             file_out.write('          1\n')
             file_out.write('VaDens\n')
@@ -238,28 +287,30 @@ class OutputSWANascii(OutputModel):
             file_out.write('-32767\n')
                 #first day
             print('Generating 2d spectra at boundaries:')
-        
-            for i in range(len(self.bnd_in)):
-                first_time = pd.to_datetime(self.bnd_in[i]["time"].values[0])
-                print(first_time.strftime('%Y-%m-%d'))
-                for time_step in range(self.bnd_in[i].time.shape[0]):
-                    time_stamp = str(self.bnd_in[i].time.time[time_step].values).split('-')[0]+str(self.bnd_in[i].time.time[time_step].values).split('-')[1]+\
-                    str(self.bnd_in[i].time.time[time_step].values).split('-')[2][:2]+'.'+str(self.bnd_in[i].time.time[time_step].values).split('-')[2][3:5]+'0000\n'
-                    file_out.write(time_stamp)
-                    for p in range(self.bnd_points.shape[0]):
-                        file_out.write('FACTOR\n')    
-                        file_out.write(format(self.factor,'1.0E')+'\n')
-                        # find the nearest grid point
-                        diff_lat = np.abs(self.bnd_points[p][0]-self.bnd_in[i].latitude[0,:])
-                        diff_lon = np.abs(self.bnd_points[p][1]-self.bnd_in[i].longitude[0,:])
-                        add_lonlat = diff_lon + diff_lat
-                        index_min_dinstance = np.where((add_lonlat >= np.sort(add_lonlat)[0]) & (add_lonlat <= np.sort(add_lonlat)[self.nr_spec_interpolate]))[0]
-                        SPEC_ocean_convection = self.bnd_in[i].SPEC[time_step,0,index_min_dinstance,:,:].mean('x').values
-                        SPEC_naut_convection = ocean_to_naut(SPEC_ocean_convection)
-                        delth = 360/dirN
-                        np.savetxt(file_out,self.calib_spec*SPEC_naut_convection/(delth*self.factor), fmt='%-10.0f') #     
-        return
+    
+            with open('outfile', 'w') as file_out:
+                times = pd.DatetimeIndex(bnd_in[0]["time"].values) # All point have the same time vector so use first Dataset
+                days = pd.date_range(start=times[0], end=times[-1], freq='D')
+                
+                for d in range(len(days)):
+                    print (days[d].strftime('%Y-%m-%d'))
+                    day_inds = np.where(times.day == days[d].day)[0]
+                    
+                    for time_step in day_inds:
+                        time_stamp = str(times[time_step]).split('-')[0]+str(times[time_step]).split('-')[1]+\
+                        str(times[time_step]).split('-')[2][:2]+'.'+str(times[time_step]).split('-')[2][3:5]+'0000\n'
+                        file_out.write(time_stamp)
+                        
+                        for i in range(len(bnd_in)):
+                            file_out.write('FACTOR\n')
+                            file_out.write(format(self.factor,'1.0E')+'\n')
+                            SPEC_ocean_convection = bnd_in[i].SPEC[time_step,0,:,:].values
+                            SPEC_naut_convection = ocean_to_naut(SPEC_ocean_convection)
+                            delth = 360/len(dirs)
+                            np.savetxt(file_out,self.calib_spec*SPEC_naut_convection/(delth*self.factor), fmt='%-10.0f') #
 
+
+        return
 
 def ocean_to_naut(oceanspec):
     nautspec=np.zeros(oceanspec.shape)
