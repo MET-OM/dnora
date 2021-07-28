@@ -47,9 +47,12 @@ class PPLegacyPicker(PointPicker):
             datasets = []
             title = self.bnd_in[0].title # mean('x') looses all attributes so save this
             for k in range(len(self.bnd_in)): # Loop over time (days)
-                addition = self.bnd_in[k].sel(x=inds[n]).mean('x')
-                addition.attrs["title"] = title
-                datasets.append(addition)
+                new_data = self.bnd_in[k].sel(x=inds[n]).mean('x')
+                new_data.attrs["title"] = title
+                # This trivial dimension of one will cause probems since the latitudes are either then defined with only a y-dimension, or in two dimensions (time, y)
+                # In the latter case new_data["latitude"].values[0] is not a number, but a one element array of a one element list
+                # We solve this by squeezing out this unceccesary dimension
+                datasets.append(new_data.squeeze('y')) 
 
 
             # This list contains one element for each requested output point
@@ -92,7 +95,11 @@ class PPNearestGridPoint(PointPicker):
         for n in range(len(inds)): # Loop over output points
             datasets = []
             for k in range(len(self.bnd_in)): # Loop over time (days)
-                datasets.append(self.bnd_in[k].sel(x=inds[n]))
+                new_data=self.bnd_in[k].sel(x=inds[n])
+                # This trivial dimension of one will cause probems since the latitudes are either then defined with only a y-dimension, or in two dimensions (time, y)
+                # In the latter case new_data["latitude"].values[0] is not a number, but a one element array of a one element list
+                # We solve this by squeezing out this unceccesary dimension
+                datasets.append(new_data.squeeze('y')) 
              
             # This list contains one element for each requested output point
             # Each element is a one-spatial-point xr-dataset containing all times
@@ -188,6 +195,7 @@ class InputWAM4(InputModel):
     def get_url(self, ind):
         day = self.days()[ind]
         url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/'+day.strftime('%d')+'/MyWave_wam4_SPC_'+day.strftime('%Y%m%d')+'T00Z.nc'
+        print(url)
         
         return url
     
@@ -210,7 +218,7 @@ class InputNORA3(InputModel):
     def get_url(self, ind):
         day = self.days()[ind]
         url = 'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/SPC'+day.strftime('%Y%m%d')+'00.nc'
-        
+        print(url)
         return url
 
 
@@ -228,25 +236,31 @@ class OutputModel(ABC):
         return freq, dirs
     
 class OutputWW3nc(OutputModel):
-    def __init__(self):
-        pass
+    def __init__(self, calib_spec = 1):
+        self.calib_spec = calib_spec
+        return
                 
-    def __call__(self, bnd_out):
+    def __call__(self, bnd_out, output_points):
         # Convert from oceanic to mathematical convention
-        for n in range(len(bnd_out)):
-            for k in range(len(bnd_out[0].time)):
-                bnd_out[n].SPEC[k,0,:,:]=ocean_to_mathematical_convention(bnd_out[n].SPEC[k,0,:,:].values)
+        for n in range(len(output_points)):
+            for k in range(len(bnd_out[0].time.values)):
+                bnd_out[n].SPEC[k,:,:]=ocean_to_mathematical_convention(bnd_out[n].SPEC[k,:,:].values)
+                # If we want to attenuate or enchance the spectra
+                bnd_out[n].SPEC[k,:,:]=bnd_out[n].SPEC[k,:,:]*self.calib_spec
         
         # Write netcdf-output
         for n in range(len(bnd_out)):
-            self.write_netcdf(bnd_out[n])
+            self.write_netcdf(bnd_out[n], output_points[n,:])
         
         return
     
-    def write_netcdf(self, bnd_out):
+    def write_netcdf(self, bnd_out, output_points):
         
-        lat=bnd_out["latitude"][0].values[0]
-        lon=bnd_out["longitude"][0].values[0] 
+        #lat=bnd_out["latitude"].values.flatten()[0] # .flatten() makes 0-dim to 1-dim if that is the case
+        #lon=bnd_out["longitude"].values.flatten()[0] 
+        
+        lat = output_points[0]
+        lon = output_points[1]
         output_file = f"ww3_spec_E{lon:09.6f}N{lat:09.6f}.nc"
         #output_file = 'ww3_spec_E'+str(lon)+'N'+str(lat)+'.nc'
         #output_file = 'Test_ww3.nc'
@@ -347,21 +361,15 @@ class OutputWW3nc(OutputModel):
         
         root_grp.close() 
         return
-    
-    def to_ww3_metadata(self, bnd_out):
-        ww3_bnd_out = bnd_out
-        return ww3_bnd_out
-    
-    
    
    
 class OutputSWANascii(OutputModel):
-    def __init__(self):
-        self.factor = 1E-4
+    def __init__(self, factor = 1E-4, calib_spec = 1):
+        self.factor = factor
         self.nr_spec_interpolate = 0
-        self.calib_spec = 1
+        self.calib_spec = calib_spec
 	
-    def __call__(self, bnd_in):
+    def __call__(self, bnd_in, output_points):
         # Initialize the boundary file by writing the header
 
         freq, dirs = self.spec_info(bnd_in)
@@ -373,7 +381,7 @@ class OutputSWANascii(OutputModel):
             file_out.write('LONLAT\n')    
             file_out.write('          '+format(len(bnd_in))+'\n')     
             for k in range(len(bnd_in)):
-                file_out.write('   '+format(bnd_in[k]["latitude"].values[0][0],'.4f')+'  '+format(bnd_in[k]["longitude"].values[0][0],'.4f')+'\n')
+                file_out.write('   '+format(output_points[k,0],'.4f')+'  '+format(output_points[k,1],'.4f')+'\n')
             file_out.write('AFREQ\n')
             file_out.write('          '+str(len(freq))+'\n')
             #breakpoint()
@@ -407,7 +415,7 @@ class OutputSWANascii(OutputModel):
                         for i in range(len(bnd_in)):
                             file_out.write('FACTOR\n')
                             file_out.write(format(self.factor,'1.0E')+'\n')
-                            SPEC_ocean_convection = bnd_in[i].SPEC[time_step,0,:,:].values
+                            SPEC_ocean_convection = bnd_in[i].SPEC[time_step,:,:].values
                             SPEC_naut_convection = ocean_to_naut(SPEC_ocean_convection)
                             delth = 360/len(dirs)
                             np.savetxt(file_out,self.calib_spec*SPEC_naut_convection/(delth*self.factor), fmt='%-10.0f') #
