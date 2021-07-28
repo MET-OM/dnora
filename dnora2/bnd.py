@@ -9,10 +9,10 @@ class SpectraToGrid(ABC):
         pass
 
     def lat_in(self):
-        return self.bnd_points[:, 0]
+        return self.bnd_points[:,0]
     
     def lon_in(self):
-        return self.bnd_points[:, 1]
+        return self.bnd_points[:,1]
     
     def lat_out(self):
         return self.bnd_in[0]["latitude"][0].values 
@@ -179,10 +179,7 @@ class OutputWW3nc(OutputModel):
         self.bnd_out = bnd_out
                 
     def output_spec(self):
-        # For WW3-netcdf's we need to write one netcdf for each month for each location
-        # The input data is given one xr-dataset per day, containing all the points
-
-            
+           
         # Change the metadata so that it matches WW3 requirements (does nothing for now)
         ww3_bnd_out = self.to_ww3_metadata(self.bnd_out)
         
@@ -191,14 +188,15 @@ class OutputWW3nc(OutputModel):
         
         return
     
-    def write_netcdf(self, xrlist):
-        for n in range(len(xrlist)):
+    def write_netcdf(self, ww3_bnd_out):
+        for n in range(len(ww3_bnd_out)):
             fn = 'Test' + str(n) + '.nc'
-            xrlist[n].to_netcdf(fn)    
+            ww3_bnd_out[n].to_netcdf(fn)    
         return
     
-    def to_ww3_metadata(self, xrlist):
-        return xrlist
+    def to_ww3_metadata(self, bnd_out):
+	ww3_bnd_out = bnd_out
+        return ww3_bnd_out
     
     
    
