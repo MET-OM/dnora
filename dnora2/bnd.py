@@ -351,12 +351,14 @@ class OutputWW3nc(OutputModel):
         #######################################################
         ############## Pass data
         time[:] = bnd_out.time.values.astype('datetime64[s]').astype('float64')
-        efth[:] =  bnd_out.SPEC.values
+        efth[:] =  ocean_to_mathematical_convention(bnd_out.SPEC.values)
         frequency[:] = bnd_out.freq.values
         direction[:] = bnd_out.direction.values 
         station[:] = 1
-        longitude[:] = bnd_out.longitude.values
-        latitude[:] = bnd_out.latitude.values
+        longitude[:] = np.full((len(bnd_out.time),1), lon,dtype=float)
+        latitude[:] = np.full((len(bnd_out.time),1), lat,dtype=float)
+        #longitude[:] = bnd_out.longitude.values
+        #latitude[:] = bnd_out.latitude.values
         station_name[:] = 1
         
         root_grp.close() 

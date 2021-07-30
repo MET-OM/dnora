@@ -11,7 +11,7 @@ import pyproj
 import oceanwaves as oc
 import pandas as pd
 import os
-
+import netCDF4
 
 
 
@@ -47,7 +47,7 @@ def generate_grid(project_name, file_emodnet, lon_min, lat_min, lon_max, lat_max
     nr_points_y = distance_y*1000/dgm
     #DX:dlon, DY:dlat,
     DX = np.diff(lonlim)[0]/nr_points_x
-    DY = np.diff(latlim)[0]/nr_points_y 
+    DY = np.diff(latlim)[0]/nr_points_y
     #Boundaries
     XUR=max(lonlim); YUR=max(latlim);
     XLL=min(lonlim); YLL=min(latlim); 
@@ -98,8 +98,8 @@ def generate_grid(project_name, file_emodnet, lon_min, lat_min, lon_max, lat_max
     maskW = mask_map[::bounN,0][:-1]
     maskW[maskW > 0 ] = 2
     # --------- South boundary ----------
-    maskS = mask_map[0,::bounN]
-    maskS[maskS > 0 ] = 2
+    #maskS = mask_map[0,::bounN]
+    #maskS[maskS > 0 ] = 2
     # Estimate Active Boundaries (=2 in ww3)
     mask_flat = mask_map.ravel()
     lonlat_flat = np.column_stack((newlon.ravel(),newlat.ravel()))

@@ -27,8 +27,8 @@ bnd_spec4 = read_boundary_spectra4(start_date, end_date)
 
 # Write output
 #write_boundary_spectra = bnd.OutputSWANascii(factor = 1E-4, calib_spec = 1)
-write_boundary_spectra = bnd.OutputWW3nc(calib_spec = 1)
+#write_boundary_spectra = bnd.OutputWW3nc(calib_spec = 1)
 
 #write_boundary_spectra(bnd_spec3, bnd_points)
-write_boundary_spectra(bnd_spec4, bnd_points)
+#write_boundary_spectra(bnd_spec4, bnd_points)
 
