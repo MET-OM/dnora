@@ -6,14 +6,42 @@ Created on Thu Jul 29 14:26:52 2021
 @author: janvb
 """
 import dnora2.grd as grd
+lon_min=5.39; lat_min=62.05; lon_max=6.8; lat_max=62.61
+grid = grd.WW3Grid(lon_min, lon_max, lat_min, lat_max, name = 'Sulafjorden250')
 
-grid = grd.WW3Grid(6.,9.,63.,64.,0.2,0.1,'dummy')
+grid.set_spacing(dm = 250)
+
+grid.set_boundary(bounN = 1, edges = ['N', 'W']) 
+
 topo_fetcher = grd.TopoEMODNET2018()
 grid.import_topo(topo_fetcher)
 
-grid.set_boundary(3) # SEt every third point to boundary point
-
-print(grid)
+grid.plot_topo()
+grid.plot_mask()
 
 grid.write_topo()
-grid.write_topo(matrix = True) # Write in more human readable format
+
+# We can check the grid status with print(grid)
+print(grid)
+grid.write_status() ## This writes the status to a file named after the grid name
+grid.write_status(filename = 'another_file.temp') ## We can override the default name like this
+
+print("################# STARTING NEW GRID #########################")
+
+grid2 = grd.WW3Grid(lon_min, lon_max, lat_min, lat_max, name = 'Sulafjorden250v2')
+
+# This keeps the grid edge definitions fixed and takes dlon/dlat as close as possible
+grid2.set_spacing(dlon=1/240, dlat= 1/480) # dlat = 1/480 is one eight of a nautical mile
+
+grid2.set_boundary(bounN = 1, edges = ['N', 'W']) # SEt every third point to boundary point
+
+print("################# STARTING NEW GRID #########################")
+
+grid3 = grd.WW3Grid(lon_min, lon_max, lat_min, lat_max, name = 'Sulafjorden250v3')
+
+# This uses exactly the given dlon and dlat, and changes the edges of the grid slightly
+grid3.set_spacing(dlon=1/240, dlat= 1/480, floating_edge = True) # dlat = 1/480 is one eight of a nautical mile
+
+# We only have the automatically created trivial grid, but lets write it out anyway
+grid3.write_topo(matrix = True) # Write in more human readable format
+

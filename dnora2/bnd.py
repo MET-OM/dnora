@@ -57,6 +57,7 @@ class PPLegacyPicker(PointPicker):
 
             # This list contains one element for each requested output point
             # Each element is a one-spatial-point xr-dataset containing all times
+            
             bnd_out.append(xr.concat(datasets, dim="time"))
 
         return bnd_out
@@ -91,11 +92,12 @@ class PPNearestGridPoint(PointPicker):
         return bnd_out
 
     def slice_and_gather_xr(self, inds):
-        bnd_out=[]
+        bnd_out = []
+        bnd_mask = [True] * len(inds)
         for n in range(len(inds)): # Loop over output points
             datasets = []
             for k in range(len(self.bnd_in)): # Loop over time (days)
-                new_data=self.bnd_in[k].sel(x=inds[n])
+                new_data=self.bnd_in[k].sel(x=(inds[n]+1)) # X-indexing goes from 
                 # This trivial dimension of one will cause probems since the latitudes are either then defined with only a y-dimension, or in two dimensions (time, y)
                 # In the latter case new_data["latitude"].values[0] is not a number, but a one element array of a one element list
                 # We solve this by squeezing out this unceccesary dimension
@@ -104,8 +106,13 @@ class PPNearestGridPoint(PointPicker):
             # This list contains one element for each requested output point
             # Each element is a one-spatial-point xr-dataset containing all times
             bnd_out.append(xr.concat(datasets, dim="time"))        
+            
+            if np.isnan(bnd_out[n].SPEC.values).any():
+                print(f"Point {n} contains NaN's. Masking as False.")
+                bnd_mask[n] = False
         
-        return bnd_out    
+      
+        return bnd_out, bnd_mask  
 
 
     def find_nearest_points(self):
@@ -189,8 +196,8 @@ class InputWAM4(InputModel):
             t0, t1 = self.get_time_limits(n)
             bnd_in.append(xr.open_dataset(url).sel(time=slice(t0, t1)))
             
-        bnd_in = self.point_picker.pick_points(bnd_in)
-        return bnd_in
+        bnd_in, bnd_mask = self.point_picker.pick_points(bnd_in)
+        return bnd_in, bnd_mask
 
     def get_url(self, ind):
         day = self.days()[ind]
@@ -240,27 +247,38 @@ class OutputWW3nc(OutputModel):
         self.calib_spec = calib_spec
         return
                 
-    def __call__(self, bnd_out, output_points):
+    def __call__(self, bnd_out, bnd_mask):
         # Convert from oceanic to mathematical convention
-        for n in range(len(output_points)):
+        #dirs = bnd_out[0].direction.values
+        for n in range(len(bnd_out)):
+            #dirs = bnd_out[n].direction.values
             for k in range(len(bnd_out[0].time.values)):
-                bnd_out[n].SPEC[k,:,:]=ocean_to_mathematical_convention(bnd_out[n].SPEC[k,:,:].values)
+                #print (n,k)
+                #bnd_out[n].SPEC[k,:,:]=ocean_to_naut(naut_to_math(bnd_out[n].SPEC[k,:,:].values))
+                #bnd_out[n].SPEC[k,:,:]=bnd_out[n].SPEC[k,:,:].values
+                
+                bnd_out[n].SPEC[k,:,:] =naut_to_math_orig(bnd_out[n].SPEC[k,:,:].values)
+                #bnd_out[n].SPEC[k,:,:]=ocean_to_naut(bnd_out[n].SPEC[k,:,:].values)
                 # If we want to attenuate or enchance the spectra
                 bnd_out[n].SPEC[k,:,:]=bnd_out[n].SPEC[k,:,:]*self.calib_spec
-        
+                #bnd_out[n]["direction"] = D
         # Write netcdf-output
         for n in range(len(bnd_out)):
-            self.write_netcdf(bnd_out[n], output_points[n,:])
-        
+            if bnd_mask[n]:
+                print(f"Writing point {n}...")
+                #self.write_netcdf(bnd_out[n], output_points[n,:])
+                self.write_netcdf(bnd_out[n])
+            else:
+                print(f"Skipping point {n}. Masked as False.")
         return
     
-    def write_netcdf(self, bnd_out, output_points):
+    def write_netcdf(self, bnd_out):
         
-        #lat=bnd_out["latitude"].values.flatten()[0] # .flatten() makes 0-dim to 1-dim if that is the case
-        #lon=bnd_out["longitude"].values.flatten()[0] 
+        lat=bnd_out["latitude"].values.flatten()[0] # .flatten() makes 0-dim to 1-dim if that is the case
+        lon=bnd_out["longitude"].values.flatten()[0] 
         
-        lat = output_points[0]
-        lon = output_points[1]
+        #lat = output_points[0]
+        #lon = output_points[1]
         output_file = f"ww3_spec_E{lon:09.6f}N{lat:09.6f}.nc"
         #output_file = 'ww3_spec_E'+str(lon)+'N'+str(lat)+'.nc'
         #output_file = 'Test_ww3.nc'
@@ -351,9 +369,12 @@ class OutputWW3nc(OutputModel):
         #######################################################
         ############## Pass data
         time[:] = bnd_out.time.values.astype('datetime64[s]').astype('float64')
-        efth[:] =  ocean_to_mathematical_convention(bnd_out.SPEC.values)
         frequency[:] = bnd_out.freq.values
         direction[:] = bnd_out.direction.values 
+        #dtheta=np.radians(np.diff(direction).mean())
+        #print("NOT CONVERTING TO OCEANIC CONVENTION!")
+        
+        efth[:] =  bnd_out.SPEC.values
         station[:] = 1
         longitude[:] = np.full((len(bnd_out.time),1), lon,dtype=float)
         latitude[:] = np.full((len(bnd_out.time),1), lat,dtype=float)
@@ -427,29 +448,62 @@ class OutputSWANascii(OutputModel):
 
 def ocean_to_naut(oceanspec):
     """Convert spectrum in nautical convention (0 north, 90 east, direction from) to oceanic convention (0 north, 90 east, direction to)"""
+
     nautspec=np.zeros(oceanspec.shape)
     dirN=oceanspec.shape[1]
     nautspec[:,0:dirN//2] = oceanspec[:,dirN//2:] # Step 1a: 180..355 to start of array
-    nautspec[:,dirN//2:]  = oceanspec[:,0:dirN//2] # Step 1b: 0..175 to end of array
+    nautspec[:,dirN//2:]  = oceanspec[:,0:dirN//2] # Step 1b: 0..175 to end of array        
+
+
     
     return nautspec
 
 def naut_to_ocean(nautspec): # Just defined separately to not make for confusing code
     return ocean_to_naut(nautspec)
 
-def ocean_to_mathematical_convention(oceanspec):
+def naut_to_math(oceanspec):
     """Convert spectrum in oceanic convention (0 north, 90 east, direction to) to mathematical convention (90 north, 0 east, direction to)"""
     # This has not yeat been fully tested!
+
+    mathspec=np.zeros(oceanspec.shape)
     dirN = oceanspec.shape[1] # Spectrum is freq x dirs
 
     #dir = np.arange(0,360,360/dirN, dtype='int')
     ind_ocean = np.arange(0,dirN, dtype='int')
-    ind_math = ((90/(360//dirN) - ind_ocean) % (dirN)).astype(int)
+    ind_math = ((180/(360//dirN) - ind_ocean) % (dirN)).astype(int)
     
     mathspec=oceanspec[:, list(ind_math)]
-    
+
+        
+        
     return mathspec
 
+def naut_to_math_orig(nautspec):
+    
+    #f = interpolate.RectBivariateSpline(freq_obs,dir_obs, SPEC_obs[j,:,:], kx=1, ky=1, s=0)
+    #SPEC_ww3[j,0,:,:] = f(freq_model,dir_model)/Delta_dir_model # Divide by direction to keep ww3-units 
+    ######## Change direction axis from 0..355(obs.) to 90...0...95(WW3-format)
+    # Step 1a and 1b: convert the meteor. convention of observed spectra (0..180..355) to ocean. convetion (180..360..175)
+    
+    dir_points = nautspec.shape[1] # Spectrum is freq x dirs
+    SPEC_ww3 = np.zeros(nautspec.shape)
+    SPEC_ww3_new  = np.zeros(nautspec.shape)
+    #D=np.round(D)
+    SPEC_ww3[:,0:dir_points//2] = nautspec[:,dir_points//2:] # Step 1a: 180..355 to start of array
+    SPEC_ww3[:,dir_points//2:] = nautspec[:,0:dir_points//2] # Step 1b: 0..175 to end of array
+    # Step 2a,b,c: convert to mathematical convention (90...0...95)
+    #ind_95 = np.where(D == 95)[0][0]+1 # index for point 95 degrees(for 72 dir): 19
+    #ind_265 = np.where(D == 275)[0][0]-1 # index for point 265 degrees(for 72 dir): 53
+    #SPEC_ww3_new[:,ind_265:dir_points] = SPEC_ww3[:,0:ind_95] # Step 2a: transfer dir:(0..90) to the end of array 
+    #SPEC_ww3_new[:,0:ind_265] = SPEC_ww3[:,ind_95:dir_points] # Step 2b: tranfer dir:(95..355) to the start of array
+    # After the Step 2a and 2b, we have dir:(95...355,0..90) so we need to change order to (90...0..95) 
+    #SPEC_ww3_new[:,:] = SPEC_ww3_new[:,::-1] # Step 2c:change(reverse dir. axis) order from (95...0...90) to (90...0...95)
+    SPEC_ww3_new[:,0] = SPEC_ww3[:,0]
+    SPEC_ww3_new[:,1:] = SPEC_ww3[:,:0:-1] # Step 2c:change(reverse dir. axis) order from (95...0...90) to (90...0...95)
+
+    #D_new = (90-D) % 360
+    #D_new = D
+    return SPEC_ww3_new
 
 def distance_2points(lat1,lon1,lat2,lon2):
     R = 6371.0
