@@ -146,6 +146,7 @@ class Grid(ABC):
             msg_info('Generating grid bathymetry')
             self.topo = mesher(topo, topo_lon, topo_lat, self.lon, self.lat)
             
+            msg_info('Setting land-sea mask')
             self.mask = self.set_land_sea_mask()
             
             # This creates an empty one if it didn't exist. Keeps an old boundary if it existed. 
@@ -358,7 +359,8 @@ class Grid(ABC):
         
         if min_depth > 0:
             min_depth = -min_depth
-            shallow_points = self.topo > min_depth
+        
+        shallow_points = self.topo > min_depth
         
         if to_land:
             land_value = max([self.topo.max(), 0])
@@ -384,9 +386,9 @@ class WW3Grid(Grid):
     def write_topo(self, matrix = False):
         msg_info('Create files for regular grid')
         bnd_mask = np.logical_and(self.bnd, self.mask==1)
-        mask_out = self.mask
+        mask_out = self.mask.copy()
         if np.logical_and(self.bnd, self.mask==1).any():
-            msg_info(f'Masking out {sum(sum(bnd_mask)):d} boundary points in grid...')   
+            msg_info(f'Setting {sum(sum(bnd_mask)):d} boundary points in grid...')   
             mask_out[bnd_mask] = 2
         
         if matrix:

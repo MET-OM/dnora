@@ -16,13 +16,23 @@ grid.set_boundary(bounN = 1, edges = ['N', 'W'])
 topo_fetcher = grd.TopoEMODNET2018()
 grid.import_topo(topo_fetcher)
 
+
+# Change grid points under 2 m depth to land
+grid.set_min_depth(-2, to_land = True)
+
+# We can check the grid status with print(grid)
+print(grid)
+
+# Impose a minimum depth of 5 m on the rest of the sea points
+grid.set_min_depth(5) # Can be either -5 or 5
+
+print(grid)
+
 grid.plot_topo()
 grid.plot_mask()
 
 grid.write_topo()
 
-# We can check the grid status with print(grid)
-print(grid)
 grid.write_status() ## This writes the status to a file named after the grid name
 grid.write_status(filename = 'another_file.temp') ## We can override the default name like this
 
