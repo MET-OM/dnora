@@ -6,6 +6,18 @@ Created on Thu Jul 29 14:26:52 2021
 @author: janvb
 """
 import dnora2.grd as grd
+
+
+
+
+
+
+gridname = 'Sulafjorden250'
+
+gridr = grd.regenerate_ww3(gridname)
+
+
+
 lon_min=5.39; lat_min=62.05; lon_max=6.8; lat_max=62.61
 grid = grd.WW3Grid(lon_min, lon_max, lat_min, lat_max, name = 'Sulafjorden250')
 
@@ -55,3 +67,14 @@ grid3.set_spacing(dlon=1/240, dlat= 1/480, floating_edge = True) # dlat = 1/480 
 # We only have the automatically created trivial grid, but lets write it out anyway
 grid3.write_topo(matrix = True) # Write in more human readable format
 
+
+
+print("################# STARTING NEW GRID #########################")
+
+grid4 = grd.WW3Grid(lon_min, lon_max, lat_min, lat_max, name = 'Sulafjorden250v4')
+
+# We can also specify the number of grid points
+grid4.set_spacing(nx = 291, ny = 249)
+
+# We only have the automatically created trivial grid, but lets write it out anyway
+#grid3.write_topo(matrix = True) # Write in more human readable format
