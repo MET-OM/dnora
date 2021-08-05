@@ -3,6 +3,7 @@ import pandas as pd
 import xarray as xr
 from abc import ABC, abstractmethod
 import netCDF4
+import dnora2.msg as msg
 
 
 # -----------------------------------------------------------------------------
@@ -40,6 +41,7 @@ def slice_and_gather_xr(inds, bnd_in):
     """Goes from a list of dataset for each day, to a list of datasets at each point (given by inds)"""
     bnd_out = []
     bnd_mask = [True] * len(inds)
+    msg.info("Merging times")
     for n in range(len(inds)): # Loop over output points
         datasets = []
         for k in range(len(bnd_in)): # Loop over time (days)
@@ -51,11 +53,11 @@ def slice_and_gather_xr(inds, bnd_in):
          
         # This list contains one element for each requested output point
         # Each element is a one-spatial-point xr-dataset containing all times
-        print(f"Concating point {n}")
+        print(f"Point {n}/{len(inds)}")
         bnd_out.append(xr.concat(datasets, dim="time"))        
         
         if np.isnan(bnd_out[n].SPEC.values).any():
-            print(f"Point {n} contains NaN's. Masking as False.")
+            msg.info(f"Point {n} contains NaN's. Masking as False.")
             bnd_mask[n] = False
     
   
@@ -137,6 +139,7 @@ class SpectralProcessor(ABC):
 class TrivialSpectralProcessor(SpectralProcessor):
     def __init__(self, calib_spec = 1):
         self.calib_spec = calib_spec
+        return
     
     def __call__(self, bnd_in, bnd_mask):
        
@@ -299,6 +302,31 @@ class PPLegacyPicker(PointPicker):
 # -----------------------------------------------------------------------------
 # INPUT MODEL CLASSES RESPONSIBLE FOR ACTUALLY READING THE SPECTRA
 # -----------------------------------------------------------------------------
+# The output of an InputModel class should be a list of N xarray datasets
+#
+# Each dataset in the list should contain only one point.
+# Each dataset in the list should contain all time steps for said point.
+#
+# Not mandatory to use, but might help:
+#   The function slice_and_gather_xr goes from daily datasets containing
+#   several points to datasets vontaining one point and all times.
+#   A list of N indices must be provided to choose the points.
+#
+# Each dataset must contain the following Coordinates:
+# -----------------------------------------------------------------------------
+# time (N,) datetime64 array
+# freq (k,) float array
+# direction (d,) float array
+# Each dataset must contain the following Data variable:
+# -----------------------------------------------------------------------------
+# SPEC (N,k,d) float array
+# longitude 1-dimensional array (use .flatten() if 0-dimension)
+# latitude 1-dimensional array (use .flatten() if 0-dimension)
+# -----------------------------------------------------------------------------
+# longitude/latitude should be constant.
+# In case length > 1, only first value is ever used.
+# -----------------------------------------------------------------------------
+
 class InputModel(ABC):
     def __init__(self):
         pass
@@ -308,10 +336,12 @@ class InputModel(ABC):
         pass
 
     def days(self):
+        """Determins a Pandas data range of all the days in the time span of the InputModel objext"""
         days = pd.date_range(start=self.start_time.split('T')[0], end=self.end_time.split('T')[0], freq='D')
         return days
 
     def get_time_limits(self, ind):
+        """Determines star and end time for the day. First and last day doesn't start at 00:00 or end at 23:59"""
         if ind == 0:
             t0 = self.start_time
             t1 = self.days()[0].strftime('%Y-%m-%d') + "T23:59:59"
@@ -326,10 +356,6 @@ class InputModel(ABC):
     def __str__(self):
         return (f"{self.start_time} - {self.end_time}")
 
-    def check_output(self, bnd_out):
-        print ("Check that the xr dataset is of the right format here...")
-        return bnd_out
-
 
 class InputWAM4(InputModel):
     
@@ -337,7 +363,7 @@ class InputWAM4(InputModel):
         self.start_time = start_time
         self.end_time = end_time
         
-        print(f"Getting boundary spectra from WAM4 from {self.start_time} to {self.end_time}")
+        msg.header(f"Getting boundary spectra from WAM4 from {self.start_time} to {self.end_time}")
         bnd_in = []    
         for n in range(len(self.days())):
             url = self.get_url(n)
@@ -345,6 +371,11 @@ class InputWAM4(InputModel):
             bnd_in.append(xr.open_dataset(url).sel(time=slice(t0, t1)))
             
         bnd_in, bnd_mask = point_picker(grid, bnd_in)
+         
+        # longitude and latitude are 0-dimensional. Force to one-dimensional trivial array
+        for n in range(len(bnd_in)):
+            bnd_in[n]["latitude"] = bnd_in[n]["latitude"].values.flatten()
+            bnd_in[n]["longitude"] = bnd_in[n]["longitude"].values.flatten()
         
         return bnd_in, bnd_mask
 
@@ -361,7 +392,7 @@ class InputNORA3(InputModel):
     def __call__(self, start_time, end_time, grid, point_picker = PPTrivialPicker()):
         self.start_time = start_time
         self.end_time = end_time
-        print(f"Getting boundary spectra from NORA3 from {self.start_time} to {self.end_time}")
+        msg.header(f"Getting boundary spectra from NORA3 from {self.start_time} to {self.end_time}")
         bnd_in = []    
         for n in range(len(self.days())):
             url = self.get_url(n)
@@ -369,8 +400,7 @@ class InputNORA3(InputModel):
             bnd_in.append(xr.open_dataset(url).sel(time=slice(t0, t1)))
         
         bnd_in, bnd_mask = point_picker(grid, bnd_in)
-        
-        
+           
         return bnd_in, bnd_mask
 
     def get_url(self, ind):
@@ -418,19 +448,22 @@ class OutputWW3nc(OutputModel):
                 
                 #bnd_out[n]["direction"] = D
         # Write netcdf-output
+
+        msg.header('Writing WAVEWATCH-III netcdf-output')
+
         for n in range(len(bnd_out)):
             if bnd_mask[n]:
-                print(f"Writing point {n}...")
+                print(f"Point {n}: ", end="")
                 #self.write_netcdf(bnd_out[n], output_points[n,:])
                 self.write_netcdf(bnd_out[n])
             else:
-                print(f"Skipping point {n}. Masked as False.")
+                msg.info(f"Skipping point {n}. Masked as False.")
         return
     
     def write_netcdf(self, bnd_out):
-        
-        lat=bnd_out["latitude"].values.flatten()[0] # .flatten() makes 0-dim to 1-dim if that is the case
-        lon=bnd_out["longitude"].values.flatten()[0] 
+        """Writes WW3 compatible netcdf spectral output from a list containing xarray datasets."""
+        lat=bnd_out["latitude"].values[0]
+        lon=bnd_out["longitude"].values[0] 
         
         #lat = output_points[0]
         #lon = output_points[1]
@@ -549,7 +582,9 @@ class OutputSWANascii(OutputModel):
     def __call__(self, bnd_in, bnd_mask):
         output_points = self.grid.bnd_points()
         # Initialize the boundary file by writing the header
-
+        
+        msg.header('Writing SWAN ASCII-output')
+        
         freq, dirs = self.spec_info(bnd_in)
         with open('outfile', 'w') as file_out:
             file_out.write('SWAN   1\n')
@@ -575,14 +610,14 @@ class OutputSWANascii(OutputModel):
             file_out.write('m2/Hz/degr \n')
             file_out.write('-32767\n')
                 #first day
-            print('Generating 2d spectra at boundaries:')
+            msg.info('Generating 2d spectra at boundaries:')
     
             with open('outfile', 'w') as file_out:
                 times = pd.DatetimeIndex(bnd_in[0]["time"].values) # All point have the same time vector so use first Dataset
                 days = pd.date_range(start=times[0], end=times[-1], freq='D')
                 
                 for d in range(len(days)):
-                    print (days[d].strftime('%Y-%m-%d'))
+                    msg.plain(days[d].strftime('%Y-%m-%d'))
                     day_inds = np.where(times.day == days[d].day)[0]
                     
                     for time_step in day_inds:

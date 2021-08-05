@@ -12,7 +12,11 @@ def info(msg):
 
 def advice(msg):
     print(f"!!! {msg} !!!")
-    
+
+def header(msg):
+    print_line()
+    plain(msg)
+    print_line()
     
 def templates(code):
     if code == 'no_spacing':
