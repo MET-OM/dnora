@@ -24,11 +24,16 @@ grid.set_boundary(bounN = 25, edges = ['N', 'W'])
 
 #p_picker = bnd.PPNearestGridPoint()
 p_picker = bnd.PPAreaPicker()
-s_processor = bnd.TrivialSpectralProcessor(calib_spec = 1)
+
 #read_boundary_spectra = bnd.InputNORA3()
 read_boundary_spectra = bnd.InputWAM4()
-bnd_spec, bnd_mask = read_boundary_spectra(start_date, end_date, grid, point_picker = p_picker, spectral_processor = s_processor)
+bnd_spec, bnd_mask = read_boundary_spectra(start_date, end_date, grid, point_picker = p_picker)
 
+spectral_processor = bnd.TrivialSpectralProcessor(calib_spec = 1)
+bnd_spec, bnd_mask = spectral_processor(bnd_spec, bnd_mask)
+
+spectral_processor = bnd.NaNCleanerSpectralProcessor()
+bnd_spec, bnd_mask = spectral_processor(bnd_spec, bnd_mask)
 
 # Write output
 #write_boundary_spectra = bnd.OutputSWANascii(grid, factor = 1E-4)

@@ -143,6 +143,21 @@ class TrivialSpectralProcessor(SpectralProcessor):
         for n in range(len(bnd_in)):
             bnd_in[n].SPEC[:,:,:]=bnd_in[n].SPEC[:,:,:]*self.calib_spec
         return bnd_in, bnd_mask
+    
+class NaNCleanerSpectralProcessor(SpectralProcessor):
+    def __init__(self):
+        pass
+    
+    def __call__(self, bnd_in, bnd_mask):
+        bnd_out = []
+        bnd_mask_out =[]
+        
+        for n in range(len(bnd_in)):
+            if bnd_mask[n]:
+                bnd_out.append(bnd_in[n])
+                bnd_mask_out.append(True)
+                
+        return bnd_out, bnd_mask_out
 # -----------------------------------------------------------------------------
 
 
@@ -318,7 +333,7 @@ class InputModel(ABC):
 
 class InputWAM4(InputModel):
     
-    def __call__(self, start_time, end_time, grid, point_picker = PPTrivialPicker(), spectral_processor = TrivialSpectralProcessor()):
+    def __call__(self, start_time, end_time, grid, point_picker = PPTrivialPicker()):
         self.start_time = start_time
         self.end_time = end_time
         
@@ -331,7 +346,6 @@ class InputWAM4(InputModel):
             
         bnd_in, bnd_mask = point_picker(grid, bnd_in)
         
-        bnd_in, bnd_mask = spectral_processor(bnd_in, bnd_mask)
         return bnd_in, bnd_mask
 
     def get_url(self, ind):
@@ -344,7 +358,7 @@ class InputWAM4(InputModel):
 
 class InputNORA3(InputModel):
     
-    def __call__(self, start_time, end_time, grid, point_picker = PPTrivialPicker(), spectral_processor = TrivialSpectralProcessor()):
+    def __call__(self, start_time, end_time, grid, point_picker = PPTrivialPicker()):
         self.start_time = start_time
         self.end_time = end_time
         print(f"Getting boundary spectra from NORA3 from {self.start_time} to {self.end_time}")
@@ -356,7 +370,7 @@ class InputNORA3(InputModel):
         
         bnd_in, bnd_mask = point_picker(grid, bnd_in)
         
-        bnd_in, bnd_mask = spectral_processor(bnd_in, bnd_mask)
+        
         return bnd_in, bnd_mask
 
     def get_url(self, ind):
