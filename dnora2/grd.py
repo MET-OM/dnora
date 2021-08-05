@@ -40,11 +40,11 @@ def regenerate_ww3(gridname):
     mask=np.loadtxt(f'{gridname}_mapsta.txt').reshape((NY,NX)) == 2 # Boundary points given as value 2
     
     # Regenerate grid by force feeding data to the TopoFetcher
-    grid = WW3Grid(lon_min, lon_max, lat_min, lat_max, name = gridname)
+    grid = Grid(lon_min, lon_max, lat_min, lat_max, name = gridname)
     grid.set_spacing(nx = NX, ny = NY) 
     topo_fetcher = TopoForceFeed(topo, grid.lon, grid.lat)
     grid.import_topo(topo_fetcher, TrivialMesher())
-    grid.set_boundary(given_bnd = mask)
+    grid.set_boundary(given_array = mask)
     
     return grid
 # -----------------------------------------------------------------------------
@@ -172,7 +172,7 @@ class TopoForceFeed(TopoFetcher):
 # -----------------------------------------------------------------------------
 # GRID CLASSES RESPONSIBLE ALL THE GRID INFORMATION AND METHODS
 # -----------------------------------------------------------------------------
-class Grid(ABC):
+class Grid:
     def __init__(self, lon_min, lon_max, lat_min, lat_max, name="AnonymousGrid"):
         self.lon_min = lon_min
         self.lat_min = lat_min
@@ -382,7 +382,7 @@ class Grid(ABC):
             
             plt.colorbar()
             plt.title(f"{self.name} topograpy")
-            plt.show()
+            #plt.show()
             
             if save_fig:
                 plt.savefig(filename, dpi=300)
@@ -404,7 +404,7 @@ class Grid(ABC):
             
             plt.colorbar()
             plt.title(f"{self.name} land-sea mask")
-            plt.show()
+            #plt.show()
             
             if save_fig:
                 plt.savefig(filename, dpi=300)
@@ -472,41 +472,50 @@ class Grid(ABC):
             msg.print_line()
             
             return ''      
+# -----------------------------------------------------------------------------
 
-        
-class WW3Grid(Grid):
 
+# -----------------------------------------------------------------------------
+# CLASSES RESPONSIBLE FOR WRITING THE GENERAL GRID DATA IN MODEL SPECIFIC FILES
+# -----------------------------------------------------------------------------        
+class OutputModel(ABC):
+    def __init__(self):
+        pass
     
-    def write_topo(self, matrix = False):
+    @abstractmethod
+    def write_topo(self, grid):
+        pass
+
+class OutputModelWW3(OutputModel):
+    def __init__(self):
+        pass
+    
+    def write_topo(self, grid, matrix = False):
         msg.info('Create files for regular grid')
-        bnd_mask = np.logical_and(self.bnd, self.mask==1)
-        mask_out = self.mask.copy()
-        if np.logical_and(self.bnd, self.mask==1).any():
+        bnd_mask = np.logical_and(grid.bnd, grid.mask==1)
+        mask_out = grid.mask.copy()
+        if np.logical_and(grid.bnd, grid.mask==1).any():
             msg.info(f'Setting {sum(sum(bnd_mask)):d} boundary points in grid...')   
             mask_out[bnd_mask] = 2
         
         if matrix:
-            fn1 = 'mat_'+self.name+'_bathy.txt'
+            fn1 = 'mat_'+grid.name+'_bathy.txt'
             msg.to_file(fn1)
-            np.savetxt(fn1, -1*self.topo, delimiter=',',fmt='%1.6f')
+            np.savetxt(fn1, -1*grid.topo, delimiter=',',fmt='%1.6f')
             
-            fn2 = 'mat_'+self.name+'_mapsta.txt'
+            fn2 = 'mat_'+grid.name+'_mapsta.txt'
             msg.to_file(fn2)
             np.savetxt(fn2, mask_out, delimiter=',',fmt='%1.0f')
         else:
-            fn1 = self.name+'_bathy.txt'
+            fn1 = grid.name+'_bathy.txt'
             msg.to_file(fn1)
-            np.savetxt(fn1, -1*self.topo.ravel(), delimiter=',',fmt='%1.6f')
+            np.savetxt(fn1, -1*grid.topo.ravel(), delimiter=',',fmt='%1.6f')
             
-            fn2 = self.name+'_mapsta.txt'
+            fn2 = grid.name+'_mapsta.txt'
             msg.to_file(fn2)
             np.savetxt(fn2, mask_out.ravel(), delimiter=',',fmt='%1.0f')
             
-        self.write_status()
-    
-    def __str__(self):
-        msg.print_line()
-        msg.plain(f'WW3 Grid: {self.name}')
-        return super().__str__()
+        grid.write_status()
+# -----------------------------------------------------------------------------
 
     

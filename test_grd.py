@@ -8,18 +8,8 @@ Created on Thu Jul 29 14:26:52 2021
 import dnora2.grd as grd
 
 
-
-
-
-
-gridname = 'Sulafjorden250'
-
-gridr = grd.regenerate_ww3(gridname)
-
-
-
 lon_min=5.39; lat_min=62.05; lon_max=6.8; lat_max=62.61
-grid = grd.WW3Grid(lon_min, lon_max, lat_min, lat_max, name = 'Sulafjorden250')
+grid = grd.Grid(lon_min, lon_max, lat_min, lat_max, name = 'Sulafjorden250')
 
 grid.set_spacing(dm = 250)
 
@@ -40,17 +30,25 @@ grid.set_min_depth(5) # Can be either -5 or 5
 
 print(grid)
 
-grid.plot_topo()
+grid.plot_topo(save_fig=True)
 grid.plot_mask()
 
-grid.write_topo()
+ww3_output = grd.OutputModelWW3()
+
+ww3_output.write_topo(grid)
 
 grid.write_status() ## This writes the status to a file named after the grid name
 grid.write_status(filename = 'another_file.temp') ## We can override the default name like this
 
 print("################# STARTING NEW GRID #########################")
+# We can regenerate the grid from above from its output files that wew created by write_output
+gridname = 'Sulafjorden250'
+grid_regen = grd.regenerate_ww3(gridname)
 
-grid2 = grd.WW3Grid(lon_min, lon_max, lat_min, lat_max, name = 'Sulafjorden250v2')
+
+print("################# STARTING NEW GRID #########################")
+
+grid2 = grd.Grid(lon_min, lon_max, lat_min, lat_max, name = 'Sulafjorden250v2')
 
 # This keeps the grid edge definitions fixed and takes dlon/dlat as close as possible
 grid2.set_spacing(dlon=1/240, dlat= 1/480) # dlat = 1/480 is one eight of a nautical mile
@@ -59,22 +57,22 @@ grid2.set_boundary(bounN = 1, edges = ['N', 'W']) # SEt every third point to bou
 
 print("################# STARTING NEW GRID #########################")
 
-grid3 = grd.WW3Grid(lon_min, lon_max, lat_min, lat_max, name = 'Sulafjorden250v3')
+grid3 = grd.Grid(lon_min, lon_max, lat_min, lat_max, name = 'Sulafjorden250v3')
 
 # This uses exactly the given dlon and dlat, and changes the edges of the grid slightly
 grid3.set_spacing(dlon=1/240, dlat= 1/480, floating_edge = True) # dlat = 1/480 is one eight of a nautical mile
 
 # We only have the automatically created trivial grid, but lets write it out anyway
-grid3.write_topo(matrix = True) # Write in more human readable format
+ww3_output.write_topo(grid3, matrix = True) # Write in more human readable format
 
 
 
 print("################# STARTING NEW GRID #########################")
 
-grid4 = grd.WW3Grid(lon_min, lon_max, lat_min, lat_max, name = 'Sulafjorden250v4')
+grid4 = grd.Grid(lon_min, lon_max, lat_min, lat_max, name = 'Sulafjorden250v4')
 
 # We can also specify the number of grid points
 grid4.set_spacing(nx = 291, ny = 249)
 
 # We only have the automatically created trivial grid, but lets write it out anyway
-#grid3.write_topo(matrix = True) # Write in more human readable format
+ww3_output.write_topo(grid4, matrix = True) # Write in more human readable format
