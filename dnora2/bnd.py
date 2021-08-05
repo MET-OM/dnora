@@ -4,39 +4,60 @@ import xarray as xr
 from abc import ABC, abstractmethod
 import netCDF4
 
-class PointPicker(ABC):
+
+
+def lon_lat_from_dataset(bnd_in):
+    lat = bnd_in["latitude"][0].values
+    lon = bnd_in["longitude"][0].values 
+    return lon, lat
+
+
+class SpectralProcessor(ABC):
+    def __init__(self):
+        pass
+    
     @abstractmethod
-    def pick_points(self):
+    def __call__(self, bnd_in, bnd_mask):
         pass
 
-    def lat_out(self):
-        return self.bnd_points[:, 0]
+
+class TrivialSpectralProcessor(SpectralProcessor):
+    def __init__(self, calib_spec = 1):
+        self.calib_spec = calib_spec
     
-    def lon_out(self):
-        return self.bnd_points[:, 1]
-    
-    def lat_in(self):
-        return self.bnd_in[0]["latitude"][0].values 
-    
-    def lon_in(self):
-        return self.bnd_in[0]["longitude"][0].values 
+    def __call__(self, bnd_in, bnd_mask):
+       
+        for n in range(len(bnd_in)):
+            bnd_in[n].SPEC[:,:,:]=bnd_in[n].SPEC[:,:,:]*self.calib_spec
+        return bnd_in, bnd_mask
+
+
+class PointPicker(ABC):
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def __call__(self, grid, bnd_in):
+        return bnd_in
 
 class PPTrivialPicker(PointPicker):
     def __init__(self):
         pass
 
-    def pick_points(self, bnd_in):
+    def __call__(self, grid, bnd_in):
         return bnd_in
 
-class PPLegacyPicker(PointPicker):
-    def __init__(self, bnd_points):
-        self.bnd_points = bnd_points
-        return
-    
-    def pick_points(self, bnd_in):
-        self.bnd_in = bnd_in
-        inds = self.find_nearest_points()
 
+class PPLegacyPicker(PointPicker):
+    def __init__(self):
+        pass
+    
+    def __call__(self, grid, bnd_in):
+        self.bnd_in = bnd_in
+        bnd_points = grid.bnd_points()
+        
+        inds = self.find_nearest_points(bnd_points)
+        
         # Gather all the data from one point into one Dataset
         bnd_out = self.slice_and_gather_xr(inds)
         return bnd_out
@@ -62,13 +83,13 @@ class PPLegacyPicker(PointPicker):
 
         return bnd_out
 
-    def find_nearest_points(self):
+    def find_nearest_points(self, bnd_points):
         nr_spec_interpolate = 1
         lat_in = self.lat_in()
         lon_in = self.lon_in()
 
-        lat_out = self.lat_out()
-        lon_out = self.lon_out()
+        lat_out = bnd_points[0,:]
+        lon_out = bnd_points[1,:]
         inds = []
         for n in range(len(lat_out)):
             diff_lat = np.abs(lat_out[n]-lat_in)
@@ -79,25 +100,25 @@ class PPLegacyPicker(PointPicker):
 
 
 class PPNearestGridPoint(PointPicker):
-    def __init__(self, bnd_points):
-        self.bnd_points = bnd_points
-        return
+    def __init__(self):
+        pass
     
-    def pick_points(self, bnd_in):
-        self.bnd_in = bnd_in
-        inds = self.find_nearest_points()
+    def __call__(self, grid, bnd_in):
+        bnd_points = grid.bnd_points()
+        
+        inds = self.find_nearest_points(bnd_points, bnd_in)
        
         # Gather all the data from one point into one Dataset
-        bnd_out = self.slice_and_gather_xr(inds)
+        bnd_out = self.slice_and_gather_xr(inds, bnd_in)
         return bnd_out
 
-    def slice_and_gather_xr(self, inds):
+    def slice_and_gather_xr(self, inds, bnd_in):
         bnd_out = []
         bnd_mask = [True] * len(inds)
         for n in range(len(inds)): # Loop over output points
             datasets = []
-            for k in range(len(self.bnd_in)): # Loop over time (days)
-                new_data=self.bnd_in[k].sel(x=(inds[n]+1)) # X-indexing goes from 
+            for k in range(len(bnd_in)): # Loop over time (days)
+                new_data=bnd_in[k].sel(x=(inds[n]+1)) # X-indexing goes from 
                 # This trivial dimension of one will cause probems since the latitudes are either then defined with only a y-dimension, or in two dimensions (time, y)
                 # In the latter case new_data["latitude"].values[0] is not a number, but a one element array of a one element list
                 # We solve this by squeezing out this unceccesary dimension
@@ -105,6 +126,7 @@ class PPNearestGridPoint(PointPicker):
              
             # This list contains one element for each requested output point
             # Each element is a one-spatial-point xr-dataset containing all times
+            print(f"Concating point {n}")
             bnd_out.append(xr.concat(datasets, dim="time"))        
             
             if np.isnan(bnd_out[n].SPEC.values).any():
@@ -115,29 +137,22 @@ class PPNearestGridPoint(PointPicker):
         return bnd_out, bnd_mask  
 
 
-    def find_nearest_points(self):
-        lat = self.lat_out()
-        lon = self.lon_out()
+    def find_nearest_points(self, bnd_points, bnd_in):
+        lon = bnd_points[:,0]
+        lat = bnd_points[:,1]
         
-        lat_vec = self.lat_in()
-        lon_vec = self.lon_in()
+        lon_vec, lat_vec = lon_lat_from_dataset(bnd_in[0])
         
         # Go through all points where we want output and find the nearest available point
         inds = []
         for n in range(len(lat)):
-            dx, ind = self.min_distance(n)
+            dx, ind = self.min_distance(lon[n], lat[n], lon_vec, lat_vec)
             print(f"Point {n}: lat: {lat[n]}, lon: {lon[n]} <<< ({lat_vec[ind]: .4f}, {lon_vec[ind]: .4f}). Distance: {dx:.1f} km")
             inds.append(ind) 
         return inds
     
     
-    def min_distance(self, ind):
-        lat = self.lat_out()[ind]
-        lon = self.lon_out()[ind]
-        
-        lat_vec = self.lat_in()
-        lon_vec = self.lon_in()
-        
+    def min_distance(self, lon, lat, lon_vec, lat_vec):
 
         dx = []
         for n in range(len(lat_vec)):
@@ -150,11 +165,12 @@ class PPNearestGridPoint(PointPicker):
 
 
 class InputModel(ABC):
-    def __init__(self, point_picker = None):
-        if point_picker is not None:
-            self.point_picker = point_picker
-        else:
-            self.point_picker = PPTrivialPicker()
+    def __init__(self):
+        #if point_picker is not None:
+        #    self.point_picker = point_picker
+        #else:
+        #    self.point_picker = PPTrivialPicker()
+        pass
 
     @abstractmethod
     def __call__(self, start_time, end_time):
@@ -186,9 +202,10 @@ class InputModel(ABC):
 
 class InputWAM4(InputModel):
     
-    def __call__(self, start_time, end_time):
+    def __call__(self, start_time, end_time, grid, point_picker = PPTrivialPicker(), spectral_processor = TrivialSpectralProcessor()):
         self.start_time = start_time
         self.end_time = end_time
+        
         print(f"Getting boundary spectra from WAM4 from {self.start_time} to {self.end_time}")
         bnd_in = []    
         for n in range(len(self.days())):
@@ -196,7 +213,9 @@ class InputWAM4(InputModel):
             t0, t1 = self.get_time_limits(n)
             bnd_in.append(xr.open_dataset(url).sel(time=slice(t0, t1)))
             
-        bnd_in, bnd_mask = self.point_picker.pick_points(bnd_in)
+        bnd_in, bnd_mask = point_picker(grid, bnd_in)
+        
+        bnd_in, bnd_mask = spectral_processor(bnd_in, bnd_mask)
         return bnd_in, bnd_mask
 
     def get_url(self, ind):
@@ -209,7 +228,7 @@ class InputWAM4(InputModel):
 
 class InputNORA3(InputModel):
     
-    def __call__(self, start_time, end_time):
+    def __call__(self, start_time, end_time, grid, point_picker = PPTrivialPicker(), spectral_processor = TrivialSpectralProcessor()):
         self.start_time = start_time
         self.end_time = end_time
         print(f"Getting boundary spectra from NORA3 from {self.start_time} to {self.end_time}")
@@ -219,8 +238,10 @@ class InputNORA3(InputModel):
             t0, t1 = self.get_time_limits(n)
             bnd_in.append(xr.open_dataset(url).sel(time=slice(t0, t1)))
         
-        bnd_in = self.point_picker.pick_points(bnd_in)
-        return bnd_in
+        bnd_in, bnd_mask = point_picker(grid, bnd_in)
+        
+        bnd_in, bnd_mask = spectral_processor(bnd_in, bnd_mask)
+        return bnd_in, bnd_mask
 
     def get_url(self, ind):
         day = self.days()[ind]
@@ -243,9 +264,8 @@ class OutputModel(ABC):
         return freq, dirs
     
 class OutputWW3nc(OutputModel):
-    def __init__(self, calib_spec = 1):
-        self.calib_spec = calib_spec
-        return
+    def __init__(self):
+        pass
                 
     def __call__(self, bnd_out, bnd_mask):
         # Convert from oceanic to mathematical convention
@@ -260,7 +280,7 @@ class OutputWW3nc(OutputModel):
                 bnd_out[n].SPEC[k,:,:] =naut_to_math_orig(bnd_out[n].SPEC[k,:,:].values)
                 #bnd_out[n].SPEC[k,:,:]=ocean_to_naut(bnd_out[n].SPEC[k,:,:].values)
                 # If we want to attenuate or enchance the spectra
-                bnd_out[n].SPEC[k,:,:]=bnd_out[n].SPEC[k,:,:]*self.calib_spec
+                
                 #bnd_out[n]["direction"] = D
         # Write netcdf-output
         for n in range(len(bnd_out)):
@@ -387,12 +407,12 @@ class OutputWW3nc(OutputModel):
    
    
 class OutputSWANascii(OutputModel):
-    def __init__(self, factor = 1E-4, calib_spec = 1):
+    def __init__(self, grid, factor = 1E-4):
         self.factor = factor
-        self.nr_spec_interpolate = 0
-        self.calib_spec = calib_spec
-	
-    def __call__(self, bnd_in, output_points):
+        self.grid = grid
+                
+    def __call__(self, bnd_in, bnd_mask):
+        output_points = self.grid.bnd_points()
         # Initialize the boundary file by writing the header
 
         freq, dirs = self.spec_info(bnd_in)
@@ -404,7 +424,7 @@ class OutputSWANascii(OutputModel):
             file_out.write('LONLAT\n')    
             file_out.write('          '+format(len(bnd_in))+'\n')     
             for k in range(len(bnd_in)):
-                file_out.write('   '+format(output_points[k,0],'.4f')+'  '+format(output_points[k,1],'.4f')+'\n')
+                file_out.write('   '+format(output_points[k,1],'.4f')+'  '+format(output_points[k,0],'.4f')+'\n')
             file_out.write('AFREQ\n')
             file_out.write('          '+str(len(freq))+'\n')
             #breakpoint()
@@ -441,7 +461,7 @@ class OutputSWANascii(OutputModel):
                             SPEC_ocean_convection = bnd_in[i].SPEC[time_step,:,:].values
                             SPEC_naut_convection = ocean_to_naut(SPEC_ocean_convection)
                             delth = 360/len(dirs)
-                            np.savetxt(file_out,self.calib_spec*SPEC_naut_convection/(delth*self.factor), fmt='%-10.0f') #
+                            np.savetxt(file_out,SPEC_naut_convection/(delth*self.factor), fmt='%-10.0f') #
 
 
         return

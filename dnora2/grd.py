@@ -232,6 +232,7 @@ class Grid:
             #    bounN = self.bounN
                    
             if bounN >0: 
+                self.bnd=np.full(self.mask.shape, False)
                 msg.info(f"Setting boundary points using bounN = {bounN}")
                 # --------- North boundary ----------
                 if 'N' in edges:
