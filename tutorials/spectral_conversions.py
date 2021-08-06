@@ -26,7 +26,7 @@ import dnora2.bnd as bnd
 # It doesn't have to contain 0, and it doesn't have to start at 0 or 90 etc.
 # This is cruicial for piping the elementary functions presented below
 # =============================================================================
-shift = 5 
+shift = 0
 
 
 # =============================================================================
@@ -71,13 +71,14 @@ D_flip = bnd.flip_spec(D,D)
 
 # =============================================================================
 # If we shift the flipped spectra 90 degrees we do the "ocean2math" conversion
+# Note that we need to use -90 since the directional vector is flipped!
 # Again, if the pair (S,D) was in OCEANIC convention, then:
 # The pairs (D_math, S) and (D, S_math) are now in MATHEMATICAL convention
 # The pair (D_math, S_math) is still in OCEANIC convention:
 #   Every spectral component is still mapped to itself!
 # =============================================================================
-S_math = bnd.shift_spec(S_flip, D_flip, 90)
-D_math = bnd.shift_spec(D_flip, D_flip, 90)
+S_math = bnd.shift_spec(S_flip, D_flip, -90)
+D_math = bnd.shift_spec(D_flip, D_flip, -90)
 
 
 # =============================================================================

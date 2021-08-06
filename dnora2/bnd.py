@@ -4,7 +4,8 @@ import xarray as xr
 from abc import ABC, abstractmethod
 import netCDF4
 import dnora2.msg as msg
-
+from scipy import interpolate
+from statistics import mode
 
 # -----------------------------------------------------------------------------
 # MISC STAND ALONE FUNCTIONS
@@ -45,7 +46,7 @@ def slice_and_gather_xr(inds, bnd_in):
     for n in range(len(inds)): # Loop over output points
         datasets = []
         for k in range(len(bnd_in)): # Loop over time (days)
-            new_data=bnd_in[k].sel(x=(inds[n]+1)) # X-indexing goes from 
+            new_data=bnd_in[k].sel(x=(inds[n])) # X-indexing goes from 
             # This trivial dimension of one will cause probems since the latitudes are either then defined with only a y-dimension, or in two dimensions (time, y)
             # In the latter case new_data["latitude"].values[0] is not a number, but a one element array of a one element list
             # We solve this by squeezing out this unceccesary dimension
@@ -96,10 +97,12 @@ def shift_spec(spec, D, shift = 0):
         shifting_dir = False
     spec_shift = np.zeros(spec.shape)
 
+    D = np.round(D)
     ind = np.arange(0,len(D), dtype='int')
-    dD = np.diff(D).mean()
+    dD = mode(abs(np.diff(D)))
     
     if not (shift/dD).is_integer():
+        print('aa')
         raise Exception ('Shift needs to be multiple of frequency resolution! Otherwise interpolation would be needed.')
       
     ind_flip = ((ind + int(shift/dD)).astype(int) + len(D)) % len(D)
@@ -130,7 +133,7 @@ def ocean_to_math(oceanspec, D):
     D_flip = flip_spec(D,D)            
 
     # Shift 0 to be at 90    
-    mathspec = shift_spec(spec_flip, D_flip, 90)
+    mathspec = shift_spec(spec_flip, D_flip, -90)
 
     return mathspec
 
@@ -183,6 +186,22 @@ def naut_to_math_orig(nautspec, D):
     D_new = (90-D) % 360
     #D_new = D
     return SPEC_ww3_new, D_new
+
+
+def interp_spec(f, D, S, fi, Di):
+    Sleft = S
+    Sright = S
+    Dleft = -D[::-1] 
+    Dright = D + 360
+    
+    bigS = np.concatenate((Sleft, S, Sright),axis=1)
+    bigD = np.concatenate((Dleft, D, Dright))
+        
+    Finterpolator = interpolate.RectBivariateSpline(f, bigD, bigS, kx=1, ky=1, s=0)
+    
+    Si = Finterpolator(fi,Di)
+    
+    return Si
 # -----------------------------------------------------------------------------
 
 
@@ -208,6 +227,31 @@ class TrivialSpectralProcessor(SpectralProcessor):
         for n in range(len(bnd_in)):
             bnd_in[n].SPEC[:,:,:]=bnd_in[n].SPEC[:,:,:]*self.calib_spec
         return bnd_in, bnd_mask
+    
+
+class InterpSpectralProcessor(SpectralProcessor):
+    def __init__(self, nbins = 36, start = 0, data_set = None):
+        if data_set is not None:
+            # Read the values from the example dataset provided
+            nbins = len(data_set.direction.values)
+        
+        dD=int(360/nbins)
+        if start > dD:
+            msg.info("First bin {start} is defined as larger than the directional resolution {dD}. This might spell trouble!")
+        
+        self.Di = np.array(range(0,360,dD), dtype='float32') + start
+      
+        return
+    
+    def __call__(self, bnd_in, bnd_mask):
+        for n in range(len(bnd_in)):
+            for k in range(len(bnd_in[n].time)):
+                S = bnd_in[n].SPEC[k,:,:].values
+                f = bnd_in[n].freq.values
+                D = bnd_in[n].direction.values
+                bnd_in[n].SPEC[k,:,:] = interp_spec(f, D, S, f, self.Di)
+            bnd_in[n] = bnd_in[n].assign_coords(direction=self.Di)
+        return bnd_in, bnd_mask        
     
 class NaNCleanerSpectralProcessor(SpectralProcessor):
     def __init__(self):
@@ -357,6 +401,9 @@ class PPLegacyPicker(PointPicker):
             diff_lon = np.abs(lon_out[n]-lon_in)
             add_lonlat = diff_lon + diff_lat
             inds.append(np.where((add_lonlat >= np.sort(add_lonlat)[0]) & (add_lonlat <= np.sort(add_lonlat)[nr_spec_interpolate]))[0])
+            
+        # The index in Xarray datasets starts from 1
+        inds = inds + 1
         return inds
 # -----------------------------------------------------------------------------
 
@@ -499,17 +546,14 @@ class OutputWW3nc(OutputModel):
         #dirs = bnd_out[0].direction.values
         for n in range(len(bnd_out)):
             #dirs = bnd_out[n].direction.values
+            D = bnd_out[n].direction.values
             for k in range(len(bnd_out[0].time.values)):
-                #print (n,k)
-                #bnd_out[n].SPEC[k,:,:]=ocean_to_naut(naut_to_math(bnd_out[n].SPEC[k,:,:].values))
-                #bnd_out[n].SPEC[k,:,:]=bnd_out[n].SPEC[k,:,:].values
+                S = naut_to_ocean(bnd_out[n].SPEC[k,:,:].values, D)
+                bnd_out[n].SPEC[k,:,:] = S
                 
-                bnd_out[n].SPEC[k,:,:] =naut_to_math_orig(bnd_out[n].SPEC[k,:,:].values)
-                #bnd_out[n].SPEC[k,:,:]=ocean_to_naut(bnd_out[n].SPEC[k,:,:].values)
-                # If we want to attenuate or enchance the spectra
-                
-                #bnd_out[n]["direction"] = D
-        # Write netcdf-output
+            D = ocean_to_math(D,D)
+            bnd_out[n] = bnd_out[n].assign_coords(direction=D)
+
 
         msg.header('Writing WAVEWATCH-III netcdf-output')
 
