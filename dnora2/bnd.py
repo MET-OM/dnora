@@ -63,39 +63,100 @@ def slice_and_gather_xr(inds, bnd_in):
   
     return bnd_out, bnd_mask
 
+
+def flip_spec(spec,D):
+    # This check enables us to flip directions with flip_spec(D,D)
     
-def ocean_to_naut(oceanspec):
+    if len(spec.shape) == 1:
+        flipping_dir = True
+        spec = np.array([spec])
+    else:
+        flipping_dir = False
+    spec_flip = np.zeros(spec.shape)
+
+    ind = np.arange(0,len(D), dtype='int')
+    dD = np.diff(D).mean()
+    steps = D/dD # How many delta-D from 0
+    
+    ind_flip = ((ind - 2*steps).astype(int) + len(D)) % len(D)
+    
+    spec_flip=spec[:, list(ind_flip)]
+    
+    if flipping_dir:
+        spec_flip = spec_flip[0]
+    return spec_flip
+
+
+def shift_spec(spec, D, shift = 0):
+    # This check enables us to flip directions with flip_spec(D,D)
+    if len(spec.shape) == 1:
+        shifting_dir = True
+        spec = np.array([spec])
+    else:
+        shifting_dir = False
+    spec_shift = np.zeros(spec.shape)
+
+    ind = np.arange(0,len(D), dtype='int')
+    dD = np.diff(D).mean()
+    
+    if not (shift/dD).is_integer():
+        raise Exception ('Shift needs to be multiple of frequency resolution! Otherwise interpolation would be needed.')
+      
+    ind_flip = ((ind + int(shift/dD)).astype(int) + len(D)) % len(D)
+    
+    spec_shift=spec[:, list(ind_flip)]
+    if shifting_dir:
+        spec_shift = spec_shift[0]
+    return spec_shift
+    
+
+def ocean_to_naut(oceanspec, D):
     """Convert spectrum in nautical convention (0 north, 90 east, direction from) to oceanic convention (0 north, 90 east, direction to)"""
-    nautspec=np.zeros(oceanspec.shape)
-    dirN=oceanspec.shape[1]
-    nautspec[:,0:dirN//2] = oceanspec[:,dirN//2:] # Step 1a: 180..355 to start of array
-    nautspec[:,dirN//2:]  = oceanspec[:,0:dirN//2] # Step 1b: 0..175 to end of array        
+    nautspec = shift_spec(oceanspec,D, 180)
 
     return nautspec
 
 
-def naut_to_ocean(nautspec): # Just defined separately to not make for confusing code
+def naut_to_ocean(nautspec, D): # Just defined separately to not make for confusing code
     """Convert spectrum in oceanic convention (0 north, 90 east, direction to) to nautical convention (0 north, 90 east, direction from)"""    
-    return ocean_to_naut(nautspec)
+    return ocean_to_naut(nautspec, D)
 
 
-def naut_to_math(oceanspec):
+def ocean_to_math(oceanspec, D):
+    """Convert spectrum in oceanic convention (0 north, 90 east, direction to) to mathematical convention (90 north, 0 east, direction to)"""
+    
+    # Flip direction
+    spec_flip = flip_spec(oceanspec, D)
+    D_flip = flip_spec(D,D)            
+
+    # Shift 0 to be at 90    
+    mathspec = shift_spec(spec_flip, D_flip, 90)
+
+    return mathspec
+
+
+def ocean_to_math_old(oceanspec, D):
     """Convert spectrum in oceanic convention (0 north, 90 east, direction to) to mathematical convention (90 north, 0 east, direction to)"""
     # This has not yeat been fully tested!
 
     mathspec=np.zeros(oceanspec.shape)
-    dirN = oceanspec.shape[1] # Spectrum is freq x dirs
-
-    #dir = np.arange(0,360,360/dirN, dtype='int')
-    ind_ocean = np.arange(0,dirN, dtype='int')
-    ind_math = ((180/(360//dirN) - ind_ocean) % (dirN)).astype(int)
     
-    mathspec=oceanspec[:, list(ind_math)]
+    D_math = ((90+360)-D) % 360
+    
+    ind_ocean = np.arange(0,len(D), dtype='int')
+    dD = np.diff(D).mean()
+    step_ocean = D/dD # How many delta-D from 0
+    
+    #           Original ind + 90 deg shift + flipping direction  + don't want negatives + modulo 360/dD
+    ind_math = ((ind_ocean + int(90/dD) - 2*step_ocean).astype(int) + len(D)) % len(D)
         
-    return mathspec
+    mathspec=oceanspec[:, list(ind_math)]
+    #mathspec=oceanspec
+        
+    return mathspec, D_math
 
 
-def naut_to_math_orig(nautspec):
+def naut_to_math_orig(nautspec, D):
     
     #f = interpolate.RectBivariateSpline(freq_obs,dir_obs, SPEC_obs[j,:,:], kx=1, ky=1, s=0)
     #SPEC_ww3[j,0,:,:] = f(freq_model,dir_model)/Delta_dir_model # Divide by direction to keep ww3-units 
@@ -105,22 +166,23 @@ def naut_to_math_orig(nautspec):
     dir_points = nautspec.shape[1] # Spectrum is freq x dirs
     SPEC_ww3 = np.zeros(nautspec.shape)
     SPEC_ww3_new  = np.zeros(nautspec.shape)
-    #D=np.round(D)
-    SPEC_ww3[:,0:dir_points//2] = nautspec[:,dir_points//2:] # Step 1a: 180..355 to start of array
-    SPEC_ww3[:,dir_points//2:] = nautspec[:,0:dir_points//2] # Step 1b: 0..175 to end of array
+    D=np.round(D)
+    SPEC_ww3 = nautspec
+    #SPEC_ww3[:,0:dir_points//2] = nautspec[:,dir_points//2:] # Step 1a: 180..355 to start of array
+    #SPEC_ww3[:,dir_points//2:] = nautspec[:,0:dir_points//2] # Step 1b: 0..175 to end of array
     # Step 2a,b,c: convert to mathematical convention (90...0...95)
-    #ind_95 = np.where(D == 95)[0][0]+1 # index for point 95 degrees(for 72 dir): 19
-    #ind_265 = np.where(D == 275)[0][0]-1 # index for point 265 degrees(for 72 dir): 53
-    #SPEC_ww3_new[:,ind_265:dir_points] = SPEC_ww3[:,0:ind_95] # Step 2a: transfer dir:(0..90) to the end of array 
-    #SPEC_ww3_new[:,0:ind_265] = SPEC_ww3[:,ind_95:dir_points] # Step 2b: tranfer dir:(95..355) to the start of array
+    ind_95 = np.where(D == 90)[0][0]+1 # index for point 95 degrees(for 72 dir): 19
+    ind_265 = np.where(D == 270)[0][0]-1 # index for point 265 degrees(for 72 dir): 53
+    SPEC_ww3_new[:,ind_265:dir_points] = SPEC_ww3[:,0:ind_95] # Step 2a: transfer dir:(0..90) to the end of array 
+    SPEC_ww3_new[:,0:ind_265] = SPEC_ww3[:,ind_95:dir_points] # Step 2b: tranfer dir:(95..355) to the start of array
     # After the Step 2a and 2b, we have dir:(95...355,0..90) so we need to change order to (90...0..95) 
-    #SPEC_ww3_new[:,:] = SPEC_ww3_new[:,::-1] # Step 2c:change(reverse dir. axis) order from (95...0...90) to (90...0...95)
-    SPEC_ww3_new[:,0] = SPEC_ww3[:,0]
-    SPEC_ww3_new[:,1:] = SPEC_ww3[:,:0:-1] # Step 2c:change(reverse dir. axis) order from (95...0...90) to (90...0...95)
+    SPEC_ww3_new[:,:] = SPEC_ww3_new[:,::-1] # Step 2c:change(reverse dir. axis) order from (95...0...90) to (90...0...95)
+    #SPEC_ww3_new[:,0] = SPEC_ww3[:,0]
+    #SPEC_ww3_new[:,1:] = SPEC_ww3[:,:0:-1] # Step 2c:change(reverse dir. axis) order from (95...0...90) to (90...0...95)
 
-    #D_new = (90-D) % 360
+    D_new = (90-D) % 360
     #D_new = D
-    return SPEC_ww3_new
+    return SPEC_ww3_new, D_new
 # -----------------------------------------------------------------------------
 
 
