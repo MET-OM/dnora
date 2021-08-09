@@ -541,11 +541,14 @@ class OutputSWANascii(OutputModel):
                 
     def __call__(self, in_boundary: Boundary):
         boundary = copy(in_boundary)
+        
+        
+        msg.header('Writing SWAN ASCII-output')
         boundary.process_spectra(spec.NautToOcean())
         # Initialize the boundary file by writing the header
         swan_bnd_points = self.grid.bnd_points
         days = boundary.days()
-        msg.header('Writing SWAN ASCII-output')
+        
         
         filename = f"{self.grid.name}_spec{days[0].strftime('%Y%m%d')}_{days[-1].strftime('%Y%m%d')}.asc"
         with open(filename, 'w') as file_out:
