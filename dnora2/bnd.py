@@ -154,10 +154,13 @@ class BoundaryFetcher(ABC):
 
 
 class BoundaryWAM4(BoundaryFetcher):
+    def __init__(self, ignore_nan = False):
+        self.ignore_nan = copy(ignore_nan)
+        return
     
     def get_coordinates(self, start_time):
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
-        #day = pd.date_range(start_time, start_time,freq='D')
+        
         day = day_list(start_time, start_time)
         url = self.get_url(day[0])
 
@@ -166,6 +169,18 @@ class BoundaryWAM4(BoundaryFetcher):
         lon_all = data.longitude.values[0]
         lat_all = data.latitude.values[0]
         
+        
+        if self.ignore_nan:
+            msg.info('ignore_nan = True. The following points are NOT provided to the point_picker')
+            mask = [True]*len(lon_all)
+            for n in range(len(lon_all)):
+                if np.isnan(data.SPEC.values[:,0,n,:,:]).any():
+                    msg.plain(f"{lon_all[n]:10.7f}, {lat_all[n]:10.7f}")
+                    mask[n] = False
+        
+            lon_all = lon_all[mask]
+            lat_all = lat_all[mask]    
+    
         return lon_all, lat_all
     
     def __call__(self, start_time, end_time, inds):
@@ -264,15 +279,17 @@ class Boundary:
         self.start_time = copy(start_time)
         self.end_time = copy(end_time)
         
+        msg.header(f"{type(boundary_fetcher).__name__}: Reading coordinats of spectra...")
         lon_all, lat_all = boundary_fetcher.get_coordinates(self.start_time)
+        
         
         msg.header(f"Choosing spectra with {type(point_picker).__name__}")
         inds = point_picker(self.grid, lon_all, lat_all)
-
-        msg.header(f"Fetching data using {type(boundary_fetcher).__name__}")
-        time, freq, dirs, spec, lon, lat, source = boundary_fetcher(self.start_time, end_time, inds)
-        self.data = self.compile_to_xr(time, freq, dirs, spec, lon, lat, source)
         
+        msg.header(f"{type(boundary_fetcher).__name__}: Loading boundary spectra...")
+        time, freq, dirs, spec, lon, lat, source = boundary_fetcher(self.start_time, end_time, inds)
+
+        self.data = self.compile_to_xr(time, freq, dirs, spec, lon, lat, source)
         self.mask = [True]*len(self.x())
         
         return
@@ -285,8 +302,8 @@ class Boundary:
             
         for n in range (len(spectral_processors)):    
             spectral_processor = spectral_processors[n]
-            msg.header(f"Processing spectra with {type(spectral_processor).__name__}")
             
+            msg.process(f"Processing spectra with {type(spectral_processor).__name__}")
             new_spec, new_mask, new_freq, new_dirs = spectral_processor(self.spec(), self.freq(), self.dirs(), self.time(), self.x(), self.lon(), self.lat(), self.mask)
             
             self.data.spec.values = new_spec

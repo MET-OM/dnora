@@ -14,9 +14,17 @@ def advice(msg):
     print(f"!!! {msg} !!!")
 
 def header(msg):
+    blank()
     print_line()
     plain(msg)
     print_line()
+
+def blank():
+    print('\n')
+    
+    
+def process(msg):
+    print(f">>> {msg} <<<")
     
 def templates(code):
     if code == 'no_spacing':

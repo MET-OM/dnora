@@ -34,7 +34,7 @@ grid.set_boundary(bounN = 1, edges = ['N', 'W'])
 
 
 boundary = bnd.Boundary(grid)
-boundary_fetcher = bnd.BoundaryWAM4()
+boundary_fetcher = bnd.BoundaryWAM4(ignore_nan = True)
 #boundary_fetcher = bnd.BoundaryNORA3()
 #point_picker = bnd.NearestGridPointPicker()
 point_picker = bnd.AreaPicker()
