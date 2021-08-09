@@ -10,8 +10,8 @@ from dnora2 import grd
 from dnora2 import spec
 #import numpy as np
 #import pandas as pd
-#start_date = '2019-01-09T00:00' ; end_date = '2019-01-10T00:00'
-start_date = '2021-01-09T00:00' ; end_date = '2021-01-12T00:00'
+start_date = '2019-01-09T00:00' ; end_date = '2019-01-10T00:00'
+#start_date = '2021-01-09T00:00' ; end_date = '2021-01-12T00:00'
 #start_date = '2020-01-01T00:00' ; end_date = '2020-12-31T23:00'
 #project_name = 'Sulafjorden'; dgm = 250 ; dbm = 10000 
 #bnd_points = np.loadtxt(project_name+str(dgm)+'_Boundaries.txt')
@@ -20,7 +20,7 @@ start_date = '2021-01-09T00:00' ; end_date = '2021-01-12T00:00'
 gridname = 'Sulafjorden250'
 grid = grd.regenerate_ww3(gridname)
 
-grid.set_boundary(bounN = 40, edges = ['N', 'W']) 
+grid.set_boundary(bounN = 1, edges = ['N', 'W']) 
 
 
 
@@ -39,8 +39,11 @@ boundary_fetcher = bnd.BoundaryWAM4()
 #point_picker = bnd.NearestGridPointPicker()
 point_picker = bnd.AreaPicker()
 boundary.import_boundary(start_date, end_date, boundary_fetcher, point_picker)
-boundary.process_spectra([spec.NaNCleaner(), spec.InterpSpectralProcessor(start = 0)])
+boundary.process_spectra([spec.NaNCleaner(), spec.InterpSpectralProcessor(first_dir = 0)])
+
 write_boundary_spectra = bnd.OutputWW3nc()
+#write_boundary_spectra = bnd.OutputSWANascii(grid, factor = 1E-4)
+
 write_boundary_spectra(boundary)
 
 

@@ -7,9 +7,9 @@ from dnora2 import msg
 from dnora2 import spec
 from copy import copy
 
-# -----------------------------------------------------------------------------
+# =============================================================================
 # MISC STAND ALONE FUNCTIONS
-# -----------------------------------------------------------------------------
+# =============================================================================
 def distance_2points(lat1,lon1,lat2,lon2):
     """Calculate distance between two points"""
     R = 6371.0
@@ -31,12 +31,19 @@ def min_distance(lon, lat, lon_vec, lat_vec):
         dx.append(distance_2points(lat, lon, lat_vec[n], lon_vec[n]))
         
     return np.array(dx).min(), np.array(dx).argmin()
-# -----------------------------------------------------------------------------
+
+def day_list(start_time, end_time):
+    """Determins a Pandas data range of all the days in the time span of the InputModel objext"""
+    days = pd.date_range(start=start_time.split('T')[0], end=end_time.split('T')[0], freq='D')
+    return days
+
+# =============================================================================
 
 
-# -----------------------------------------------------------------------------
+
+# =============================================================================
 # POINT PICKER CLASSES FOR DIFFERENT METHODS TO CHOOSE SPECTRA FROM DATABASE
-# -----------------------------------------------------------------------------
+# =============================================================================
 class PointPicker(ABC):
     def __init__(self):
         pass
@@ -80,7 +87,7 @@ class AreaPicker(PointPicker):
         return
 
     def __call__(self, grid, bnd_lon, bnd_lat):
-        
+        msg.info(f"Using expansion_factor = {self.expansion_factor:.2f}")
         # Define area to search in
         expand_lon = (grid.lon_max - grid.lon_min)*self.expansion_factor*0.5
         expand_lat = (grid.lat_max - grid.lat_min)*self.expansion_factor*0.5
@@ -101,36 +108,45 @@ class AreaPicker(PointPicker):
         msg.info(f"Found {len(inds)} points inside {lon0:10.7f}-{lon1:10.7f}, {lat0:10.7f}-{lat1:10.7f}.")
 
         return inds
-# -----------------------------------------------------------------------------
+# =============================================================================
 
-# -----------------------------------------------------------------------------
+
+# =============================================================================
 # BOUNDARY FETCHER CLASSES RESPONSIBLE FOR ACTUALLY READING THE SPECTRA
-# -----------------------------------------------------------------------------
-
+# =============================================================================
 class BoundaryFetcher(ABC):
     def __init__(self):
         pass
 
     @abstractmethod
-    def __call__(self, start_time, end_time):
+    def get_coordinates(self, start_time):
         pass
 
-    def days(self):
-        """Determins a Pandas data range of all the days in the time span of the InputModel objext"""
-        days = pd.date_range(start=self.start_time.split('T')[0], end=self.end_time.split('T')[0], freq='D')
-        return days
+    @abstractmethod
+    def __call__(self, start_time, end_time, inds):
+        pass
 
-    def get_time_limits(self, ind):
+# =============================================================================
+#     def days(self):
+#         """Determins a Pandas data range of all the days in the time span of the InputModel objext"""
+#         days = pd.date_range(start=self.start_time.split('T')[0], end=self.end_time.split('T')[0], freq='D')
+#         return days
+# =============================================================================
+
+    def get_time_limits_day(self, ind):
         """Determines star and end time for the day. First and last day doesn't start at 00:00 or end at 23:59"""
+        
+        days = day_list(start_time = self.start_time, end_time = self.end_time)
+        
         if ind == 0:
             t0 = self.start_time
-            t1 = self.days()[0].strftime('%Y-%m-%d') + "T23:59:59"
-        elif ind == (len(self.days())-1):
-            t0 = self.days()[-1].strftime('%Y-%m-%d') + "T00:00:00"				
+            t1 = days[0].strftime('%Y-%m-%d') + "T23:59:59"
+        elif ind == (len(days)-1):
+            t0 = days[-1].strftime('%Y-%m-%d') + "T00:00:00"				
             t1 = self.end_time
         else:
-            t0 = self.days()[ind].strftime('%Y-%m-%d') + "T00:00:00"	
-            t1 = self.days()[ind].strftime('%Y-%m-%d') + "T23:59:59"
+            t0 = days[ind].strftime('%Y-%m-%d') + "T00:00:00"	
+            t1 = days[ind].strftime('%Y-%m-%d') + "T23:59:59"
         return t0, t1
 
     def __str__(self):
@@ -141,7 +157,8 @@ class BoundaryWAM4(BoundaryFetcher):
     
     def get_coordinates(self, start_time):
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
-        day = pd.date_range(start_time, start_time,freq='D')
+        #day = pd.date_range(start_time, start_time,freq='D')
+        day = day_list(start_time, start_time)
         url = self.get_url(day[0])
 
         data = xr.open_dataset(url).isel(time = [0])
@@ -156,12 +173,14 @@ class BoundaryWAM4(BoundaryFetcher):
         self.start_time = start_time
         self.end_time = end_time
         
+        days = day_list(start_time = self.start_time, end_time = self.end_time)
+        
         msg.info(f"Getting boundary spectra from WAM4 from {self.start_time} to {self.end_time}")
         bnd_list = []    
-        for n in range(len(self.days())):
-            url = self.get_url(self.days()[n])
+        for n in range(len(days)):
+            url = self.get_url(days[n])
             msg.plain(url)
-            t0, t1 = self.get_time_limits(n)
+            t0, t1 = self.get_time_limits_day(n)
             bnd_list.append(xr.open_dataset(url).sel(time = slice(t0, t1), x = (inds+1)))
             
         bnd=xr.concat(bnd_list, dim="time").squeeze('y')
@@ -186,7 +205,8 @@ class BoundaryNORA3(BoundaryFetcher):
     
     def get_coordinates(self, start_time):
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
-        day = pd.date_range(start_time, start_time,freq='D')
+        #day = pd.date_range(start_time, start_time,freq='D')
+        day = day_list(start_time, start_time)
         url = self.get_url(day[0])
 
         data = xr.open_dataset(url).isel(time = [0])
@@ -201,12 +221,14 @@ class BoundaryNORA3(BoundaryFetcher):
         self.start_time = start_time
         self.end_time = end_time
         
+        days = day_list(start_time = self.start_time, end_time = self.end_time)
+        
         msg.info(f"Getting boundary spectra from NORA3 from {self.start_time} to {self.end_time}")
         bnd_list = []    
-        for n in range(len(self.days())):
-            url = self.get_url(self.days()[n])
+        for n in range(len(days)):
+            url = self.get_url(days[n])
             msg.plain(url)
-            t0, t1 = self.get_time_limits(n)
+            t0, t1 = self.get_time_limits_day(n)
             bnd_list.append(xr.open_dataset(url).sel(time = slice(t0, t1), x = (inds+1)))
             
         bnd=xr.concat(bnd_list, dim="time").squeeze('y')
@@ -226,7 +248,7 @@ class BoundaryNORA3(BoundaryFetcher):
     def get_url(self, day):
         url = 'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/SPC'+day.strftime('%Y%m%d')+'00.nc'
         return url
-# -----------------------------------------------------------------------------
+# =============================================================================
 
 # =============================================================================
 #  BOUNDARY OBJECT CONTAINING THE ACTUAL DATA
@@ -239,17 +261,19 @@ class Boundary:
         return
 
     def import_boundary(self, start_time: str, end_time: str, boundary_fetcher: BoundaryFetcher,  point_picker: PointPicker = TrivialPicker()):
+        self.start_time = copy(start_time)
+        self.end_time = copy(end_time)
         
-        lon_all, lat_all = boundary_fetcher.get_coordinates(start_time)
+        lon_all, lat_all = boundary_fetcher.get_coordinates(self.start_time)
         
-        msg.header(f"Choosing spectra with {type(point_picker).__name__} using expansion_factor = {point_picker.expansion_factor:.2f}")
+        msg.header(f"Choosing spectra with {type(point_picker).__name__}")
         inds = point_picker(self.grid, lon_all, lat_all)
 
         msg.header(f"Fetching data using {type(boundary_fetcher).__name__}")
-        time, freq, dirs, spec, lon, lat, source = boundary_fetcher(start_time, end_time, inds)
+        time, freq, dirs, spec, lon, lat, source = boundary_fetcher(self.start_time, end_time, inds)
         self.data = self.compile_to_xr(time, freq, dirs, spec, lon, lat, source)
         
-        self.mask = [True]*len(self.time())
+        self.mask = [True]*len(self.x())
         
         return
     
@@ -335,11 +359,24 @@ class Boundary:
     def x(self):
         return self.data.x.values
     
+    def days(self):
+        """Determins a Pandas data range of all the days in the time span."""
+        days = day_list(start_time = self.start_time, end_time = self.end_time)
+        return days
+    
+    def times_in_day(self, day):
+        """Determines time stamps of one given day."""
+        t0 = day.strftime('%Y-%m-%d') + "T00:00:00"	
+        t1 = day.strftime('%Y-%m-%d') + "T23:59:59"
+        
+        times = self.slice_data(start_time = t0, end_time = t1, x = 0).time.values
+        return times
+# =============================================================================    
     
 
-# -----------------------------------------------------------------------------
+# =============================================================================
 # OUTPUT MODEL CLASSES RESPONSIBLE FOR WRITING SPECTRA IN CORRECT FORMAT
-# -----------------------------------------------------------------------------
+# =============================================================================
 class OutputModel(ABC):
     bnd_in: list
     bnd_points: np.array
@@ -358,7 +395,8 @@ class OutputWW3nc(OutputModel):
         msg.header(f"Writing output with {type(self).__name__}")
         
         # Convert from oceanic to mathematical convention
-        boundary.process_spectra(spec.NautToWW3())
+        boundary.process_spectra(spec.NautToOcean())
+        boundary.process_spectra(spec.OceanToWW3())
         
         msg.info('Writing WAVEWATCH-III netcdf-output')
 
@@ -484,60 +522,56 @@ class OutputSWANascii(OutputModel):
         self.factor = factor
         self.grid = grid
                 
-    def __call__(self, bnd_in, bnd_mask):
-        output_points = self.grid.bnd_points()
+    def __call__(self, in_boundary: Boundary):
+        boundary = copy(in_boundary)
+        boundary.process_spectra(spec.NautToOcean())
         # Initialize the boundary file by writing the header
-        
+        swan_bnd_points = self.grid.bnd_points
+        days = boundary.days()
         msg.header('Writing SWAN ASCII-output')
         
-        freq, dirs = self.spec_info(bnd_in)
-        with open('outfile', 'w') as file_out:
+        filename = f"{self.grid.name}_spec{days[0].strftime('%Y%m%d')}_{days[-1].strftime('%Y%m%d')}.asc"
+        with open(filename, 'w') as file_out:
             file_out.write('SWAN   1\n')
-            file_out.write('$ Data produced by '+bnd_in[0].title+'\n')
+            file_out.write('$ Data produced by '+boundary.data.source+'\n')
             file_out.write('TIME\n')
             file_out.write('          1\n')
             file_out.write('LONLAT\n')    
-            file_out.write('          '+format(len(bnd_in))+'\n')     
-            for k in range(len(bnd_in)):
-                file_out.write('   '+format(output_points[k,1],'.4f')+'  '+format(output_points[k,0],'.4f')+'\n')
+            file_out.write('          '+format(len(boundary.x()))+'\n')     
+            for k in range(len(boundary.x())):
+                file_out.write('   '+format(swan_bnd_points()[k,0],'.4f')+'  '+format(swan_bnd_points()[k,1],'.4f')+'\n')
             file_out.write('AFREQ\n')
-            file_out.write('          '+str(len(freq))+'\n')
-            #breakpoint()
-            for l in range(len(freq)):
-                file_out.write('   '+format(freq[l],'.4f')+'\n')
+            file_out.write('          '+str(len(boundary.freq()))+'\n')
+            for l in range(len(boundary.freq())):
+                file_out.write('   '+format(boundary.freq()[l],'.4f')+'\n')
             file_out.write('NDIR\n')
-            file_out.write('          '+format(len(dirs))+'\n')
-            for m in range(len(dirs)):
-                file_out.write('   '+format(dirs[m],'.1f')+'\n') 
+            file_out.write('          '+format(len(boundary.dirs()))+'\n')
+            for m in range(len(boundary.dirs())):
+                file_out.write('   '+format(boundary.dirs()[m],'.1f')+'\n') 
             file_out.write('QUANT\n')
             file_out.write('          1\n')
             file_out.write('VaDens\n')
             file_out.write('m2/Hz/degr \n')
             file_out.write('-32767\n')
                 #first day
-            msg.info('Generating 2d spectra at boundaries:')
+            msg.info(f'Writing 2d spectra at boundaries to: {filename}')
     
-            with open('outfile', 'w') as file_out:
-                times = pd.DatetimeIndex(bnd_in[0]["time"].values) # All point have the same time vector so use first Dataset
-                days = pd.date_range(start=times[0], end=times[-1], freq='D')
-                
-                for d in range(len(days)):
-                    msg.plain(days[d].strftime('%Y-%m-%d'))
-                    day_inds = np.where(times.day == days[d].day)[0]
-                    
-                    for time_step in day_inds:
-                        time_stamp = str(times[time_step]).split('-')[0]+str(times[time_step]).split('-')[1]+\
-                        str(times[time_step]).split('-')[2][:2]+'.'+str(times[time_step]).split('-')[2][3:5]+'0000\n'
-                        file_out.write(time_stamp)
-                        
-                        for i in range(len(bnd_in)):
-                            file_out.write('FACTOR\n')
-                            file_out.write(format(self.factor,'1.0E')+'\n')
-                            SPEC_ocean_convection = bnd_in[i].SPEC[time_step,:,:].values
-                            SPEC_naut_convection = ocean_to_naut(SPEC_ocean_convection)
-                            delth = 360/len(dirs)
-                            np.savetxt(file_out,SPEC_naut_convection/(delth*self.factor), fmt='%-10.0f') #
+
+            
+            
+            for day in days:
+                msg.plain(day.strftime('%Y-%m-%d'))
+                times = boundary.times_in_day(day)
+                for tim in times:
+                    time_stamp = str(tim).split('-')[0]+str(tim).split('-')[1]+str(tim).split('-')[2][:2]+'.'+str(tim).split('-')[2][3:5]+'0000\n'
+                    file_out.write(time_stamp)
+                    for n in range(len(boundary.x())):
+                        file_out.write('FACTOR\n')
+                        file_out.write(format(self.factor,'1.0E')+'\n')
+                        S = boundary.spec(start_time = tim, end_time = tim, x = n).squeeze()
+                        delth = 360/len(boundary.dirs())
+                        np.savetxt(file_out,S/(delth*self.factor), fmt='%-10.0f') #
 
 
         return
-# -----------------------------------------------------------------------------
+# =============================================================================
