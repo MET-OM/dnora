@@ -3,19 +3,13 @@ import pandas as pd
 import xarray as xr
 from abc import ABC, abstractmethod
 import netCDF4
-import dnora2.msg as msg
-from scipy import interpolate
-from statistics import mode
+from dnora2 import msg
+from dnora2 import spec
+from copy import copy
 
 # -----------------------------------------------------------------------------
 # MISC STAND ALONE FUNCTIONS
 # -----------------------------------------------------------------------------
-def lon_lat_from_dataset(bnd_in):
-    """Get longitude and latitude from xarray dataset"""
-    lat = bnd_in["latitude"][0].values
-    lon = bnd_in["longitude"][0].values 
-    return lon, lat
-
 def distance_2points(lat1,lon1,lat2,lon2):
     """Calculate distance between two points"""
     R = 6371.0
@@ -36,237 +30,7 @@ def min_distance(lon, lat, lon_vec, lat_vec):
     for n in range(len(lat_vec)):
         dx.append(distance_2points(lat, lon, lat_vec[n], lon_vec[n]))
         
-        return np.array(dx).min(), np.array(dx).argmin()
-
-def slice_and_gather_xr(inds, bnd_in):
-    """Goes from a list of dataset for each day, to a list of datasets at each point (given by inds)"""
-    bnd_out = []
-    bnd_mask = [True] * len(inds)
-    msg.info("Merging times")
-    for n in range(len(inds)): # Loop over output points
-        datasets = []
-        for k in range(len(bnd_in)): # Loop over time (days)
-            new_data=bnd_in[k].sel(x=(inds[n])) # X-indexing goes from 
-            # This trivial dimension of one will cause probems since the latitudes are either then defined with only a y-dimension, or in two dimensions (time, y)
-            # In the latter case new_data["latitude"].values[0] is not a number, but a one element array of a one element list
-            # We solve this by squeezing out this unceccesary dimension
-            datasets.append(new_data.squeeze('y')) 
-         
-        # This list contains one element for each requested output point
-        # Each element is a one-spatial-point xr-dataset containing all times
-        print(f"Point {n}/{len(inds)}")
-        bnd_out.append(xr.concat(datasets, dim="time"))        
-        
-        if np.isnan(bnd_out[n].SPEC.values).any():
-            msg.info(f"Point {n} contains NaN's. Masking as False.")
-            bnd_mask[n] = False
-    
-  
-    return bnd_out, bnd_mask
-
-
-def flip_spec(spec,D):
-    # This check enables us to flip directions with flip_spec(D,D)
-    
-    if len(spec.shape) == 1:
-        flipping_dir = True
-        spec = np.array([spec])
-    else:
-        flipping_dir = False
-    spec_flip = np.zeros(spec.shape)
-
-    ind = np.arange(0,len(D), dtype='int')
-    dD = np.diff(D).mean()
-    steps = D/dD # How many delta-D from 0
-    
-    ind_flip = ((ind - 2*steps).astype(int) + len(D)) % len(D)
-    
-    spec_flip=spec[:, list(ind_flip)]
-    
-    if flipping_dir:
-        spec_flip = spec_flip[0]
-    return spec_flip
-
-
-def shift_spec(spec, D, shift = 0):
-    # This check enables us to flip directions with flip_spec(D,D)
-    if len(spec.shape) == 1:
-        shifting_dir = True
-        spec = np.array([spec])
-    else:
-        shifting_dir = False
-    spec_shift = np.zeros(spec.shape)
-
-    D = np.round(D)
-    ind = np.arange(0,len(D), dtype='int')
-    dD = mode(abs(np.diff(D)))
-    
-    if not (shift/dD).is_integer():
-        print('aa')
-        raise Exception ('Shift needs to be multiple of frequency resolution! Otherwise interpolation would be needed.')
-      
-    ind_flip = ((ind + int(shift/dD)).astype(int) + len(D)) % len(D)
-    
-    spec_shift=spec[:, list(ind_flip)]
-    if shifting_dir:
-        spec_shift = spec_shift[0]
-    return spec_shift
-    
-
-def ocean_to_naut(oceanspec, D):
-    """Convert spectrum in nautical convention (0 north, 90 east, direction from) to oceanic convention (0 north, 90 east, direction to)"""
-    nautspec = shift_spec(oceanspec,D, 180)
-
-    return nautspec
-
-
-def naut_to_ocean(nautspec, D): # Just defined separately to not make for confusing code
-    """Convert spectrum in oceanic convention (0 north, 90 east, direction to) to nautical convention (0 north, 90 east, direction from)"""    
-    return ocean_to_naut(nautspec, D)
-
-
-def ocean_to_math(oceanspec, D):
-    """Convert spectrum in oceanic convention (0 north, 90 east, direction to) to mathematical convention (90 north, 0 east, direction to)"""
-    
-    # Flip direction
-    spec_flip = flip_spec(oceanspec, D)
-    D_flip = flip_spec(D,D)            
-
-    # Shift 0 to be at 90    
-    mathspec = shift_spec(spec_flip, D_flip, -90)
-
-    return mathspec
-
-
-def ocean_to_math_old(oceanspec, D):
-    """Convert spectrum in oceanic convention (0 north, 90 east, direction to) to mathematical convention (90 north, 0 east, direction to)"""
-    # This has not yeat been fully tested!
-
-    mathspec=np.zeros(oceanspec.shape)
-    
-    D_math = ((90+360)-D) % 360
-    
-    ind_ocean = np.arange(0,len(D), dtype='int')
-    dD = np.diff(D).mean()
-    step_ocean = D/dD # How many delta-D from 0
-    
-    #           Original ind + 90 deg shift + flipping direction  + don't want negatives + modulo 360/dD
-    ind_math = ((ind_ocean + int(90/dD) - 2*step_ocean).astype(int) + len(D)) % len(D)
-        
-    mathspec=oceanspec[:, list(ind_math)]
-    #mathspec=oceanspec
-        
-    return mathspec, D_math
-
-
-def naut_to_math_orig(nautspec, D):
-    
-    #f = interpolate.RectBivariateSpline(freq_obs,dir_obs, SPEC_obs[j,:,:], kx=1, ky=1, s=0)
-    #SPEC_ww3[j,0,:,:] = f(freq_model,dir_model)/Delta_dir_model # Divide by direction to keep ww3-units 
-    ######## Change direction axis from 0..355(obs.) to 90...0...95(WW3-format)
-    # Step 1a and 1b: convert the meteor. convention of observed spectra (0..180..355) to ocean. convetion (180..360..175)
-    
-    dir_points = nautspec.shape[1] # Spectrum is freq x dirs
-    SPEC_ww3 = np.zeros(nautspec.shape)
-    SPEC_ww3_new  = np.zeros(nautspec.shape)
-    D=np.round(D)
-    SPEC_ww3 = nautspec
-    #SPEC_ww3[:,0:dir_points//2] = nautspec[:,dir_points//2:] # Step 1a: 180..355 to start of array
-    #SPEC_ww3[:,dir_points//2:] = nautspec[:,0:dir_points//2] # Step 1b: 0..175 to end of array
-    # Step 2a,b,c: convert to mathematical convention (90...0...95)
-    ind_95 = np.where(D == 90)[0][0]+1 # index for point 95 degrees(for 72 dir): 19
-    ind_265 = np.where(D == 270)[0][0]-1 # index for point 265 degrees(for 72 dir): 53
-    SPEC_ww3_new[:,ind_265:dir_points] = SPEC_ww3[:,0:ind_95] # Step 2a: transfer dir:(0..90) to the end of array 
-    SPEC_ww3_new[:,0:ind_265] = SPEC_ww3[:,ind_95:dir_points] # Step 2b: tranfer dir:(95..355) to the start of array
-    # After the Step 2a and 2b, we have dir:(95...355,0..90) so we need to change order to (90...0..95) 
-    SPEC_ww3_new[:,:] = SPEC_ww3_new[:,::-1] # Step 2c:change(reverse dir. axis) order from (95...0...90) to (90...0...95)
-    #SPEC_ww3_new[:,0] = SPEC_ww3[:,0]
-    #SPEC_ww3_new[:,1:] = SPEC_ww3[:,:0:-1] # Step 2c:change(reverse dir. axis) order from (95...0...90) to (90...0...95)
-
-    D_new = (90-D) % 360
-    #D_new = D
-    return SPEC_ww3_new, D_new
-
-
-def interp_spec(f, D, S, fi, Di):
-    Sleft = S
-    Sright = S
-    Dleft = -D[::-1] 
-    Dright = D + 360
-    
-    bigS = np.concatenate((Sleft, S, Sright),axis=1)
-    bigD = np.concatenate((Dleft, D, Dright))
-        
-    Finterpolator = interpolate.RectBivariateSpline(f, bigD, bigS, kx=1, ky=1, s=0)
-    
-    Si = Finterpolator(fi,Di)
-    
-    return Si
-# -----------------------------------------------------------------------------
-
-
-# -----------------------------------------------------------------------------
-# SPECTRAL PROCESSOR CLASSES FOR PROCESSING SPECTRA BEFORE OUTPUT
-# -----------------------------------------------------------------------------
-class SpectralProcessor(ABC):
-    def __init__(self):
-        pass
-    
-    @abstractmethod
-    def __call__(self, bnd_in, bnd_mask):
-        pass
-
-
-class TrivialSpectralProcessor(SpectralProcessor):
-    def __init__(self, calib_spec = 1):
-        self.calib_spec = calib_spec
-        return
-    
-    def __call__(self, bnd_in, bnd_mask):
-       
-        for n in range(len(bnd_in)):
-            bnd_in[n].SPEC[:,:,:]=bnd_in[n].SPEC[:,:,:]*self.calib_spec
-        return bnd_in, bnd_mask
-    
-
-class InterpSpectralProcessor(SpectralProcessor):
-    def __init__(self, nbins = 36, start = 0, data_set = None):
-        if data_set is not None:
-            # Read the values from the example dataset provided
-            nbins = len(data_set.direction.values)
-        
-        dD=int(360/nbins)
-        if start > dD:
-            msg.info("First bin {start} is defined as larger than the directional resolution {dD}. This might spell trouble!")
-        
-        self.Di = np.array(range(0,360,dD), dtype='float32') + start
-      
-        return
-    
-    def __call__(self, bnd_in, bnd_mask):
-        for n in range(len(bnd_in)):
-            for k in range(len(bnd_in[n].time)):
-                S = bnd_in[n].SPEC[k,:,:].values
-                f = bnd_in[n].freq.values
-                D = bnd_in[n].direction.values
-                bnd_in[n].SPEC[k,:,:] = interp_spec(f, D, S, f, self.Di)
-            bnd_in[n] = bnd_in[n].assign_coords(direction=self.Di)
-        return bnd_in, bnd_mask        
-    
-class NaNCleanerSpectralProcessor(SpectralProcessor):
-    def __init__(self):
-        pass
-    
-    def __call__(self, bnd_in, bnd_mask):
-        bnd_out = []
-        bnd_mask_out =[]
-        
-        for n in range(len(bnd_in)):
-            if bnd_mask[n]:
-                bnd_out.append(bnd_in[n])
-                bnd_mask_out.append(True)
-                
-        return bnd_out, bnd_mask_out
+    return np.array(dx).min(), np.array(dx).argmin()
 # -----------------------------------------------------------------------------
 
 
@@ -278,63 +42,46 @@ class PointPicker(ABC):
         pass
 
     @abstractmethod
-    def __call__(self, grid, bnd_in):
-        return bnd_in
+    def __call__(self, grid, bnd_lon, bnd_lat):
+        return 
 
 
-class PPTrivialPicker(PointPicker):
+class TrivialPicker(PointPicker):
     def __init__(self):
         pass
 
-    def __call__(self, grid, bnd_in):
-        return bnd_in
+    def __call__(self, grid, bnd_lon, bnd_lat):
+        inds = np.array(range(len(bnd_lon)))
+        return inds
 
 
-class PPNearestGridPoint(PointPicker):
+class NearestGridPointPicker(PointPicker):
     def __init__(self):
         pass
     
-    def __call__(self, grid, bnd_in):
+    def __call__(self, grid, bnd_lon, bnd_lat):
         bnd_points = grid.bnd_points()
-        
-        inds = self.find_nearest_points(bnd_points, bnd_in)
-       
-        # Gather all the data from one point into one Dataset
-        bnd_out, bnd_mask = slice_and_gather_xr(inds, bnd_in)
-        return bnd_out, bnd_mask
-
-
-    def find_nearest_points(self, bnd_points, bnd_in):
         lon = bnd_points[:,0]
         lat = bnd_points[:,1]
-        
-        lon_vec, lat_vec = lon_lat_from_dataset(bnd_in[0])
         
         # Go through all points where we want output and find the nearest available point
         inds = []
         for n in range(len(lat)):
-            dx, ind = min_distance(lon[n], lat[n], lon_vec, lat_vec)
-            print(f"Point {n}: lat: {lat[n]}, lon: {lon[n]} <<< ({lat_vec[ind]: .4f}, {lon_vec[ind]: .4f}). Distance: {dx:.1f} km")
+            dx, ind = min_distance(lon[n], lat[n], bnd_lon, bnd_lat)
+            msg.plain(f"Point {n}: lat: {lat[n]:10.7f}, lon: {lon[n]:10.7f} <<< ({bnd_lat[ind]: .7f}, {bnd_lon[ind]: .7f}). Distance: {dx:.1f} km")
             inds.append(ind) 
+
+        inds = np.array(inds)
         return inds
     
-    
-class PPAreaPicker(PointPicker):
+class AreaPicker(PointPicker):
     def __init__(self, expansion_factor = 1.5):
         self.expansion_factor = expansion_factor
         return
 
-    def __call__(self, grid, bnd_in):
+    def __call__(self, grid, bnd_lon, bnd_lat):
         
-        inds = self.find_inds_inside_area(grid, bnd_in)
-        
-        # Gather all the data from one point into one Dataset
-        bnd_out, bnd_mask = slice_and_gather_xr(inds, bnd_in)
-        
-        return bnd_out, bnd_mask
-
-    def find_inds_inside_area(self, grid, bnd_in):
-         # Define area to search in
+        # Define area to search in
         expand_lon = (grid.lon_max - grid.lon_min)*self.expansion_factor*0.5
         expand_lat = (grid.lat_max - grid.lat_min)*self.expansion_factor*0.5
         
@@ -345,98 +92,22 @@ class PPAreaPicker(PointPicker):
         lat0=grid.lat_min - expand_lat
         lat1=grid.lat_max + expand_lat
 
-        masklon = np.logical_and(bnd_in[0].longitude.values < lon1, bnd_in[0].longitude.values > lon0)
-        masklat = np.logical_and(bnd_in[0].latitude.values > lat0, bnd_in[0].latitude.values < lat1)
+        masklon = np.logical_and(bnd_lon < lon1, bnd_lon > lon0)
+        masklat = np.logical_and(bnd_lat > lat0, bnd_lat < lat1)
         mask=np.logical_and(masklon, masklat)
         
-        inds = bnd_in[0].x.values[mask[0]]
+        inds = np.where(mask)[0]
         
-        return inds
+        msg.info(f"Found {len(inds)} points inside {lon0:10.7f}-{lon1:10.7f}, {lat0:10.7f}-{lat1:10.7f}.")
 
-class PPLegacyPicker(PointPicker):
-    def __init__(self):
-        pass
-    
-    def __call__(self, grid, bnd_in):
-        self.bnd_in = bnd_in
-        bnd_points = grid.bnd_points()
-        
-        inds = self.find_nearest_points(bnd_points)
-        
-        # Gather all the data from one point into one Dataset
-        bnd_out = self.slice_and_gather_xr(inds)
-        return bnd_out
-
-    def slice_and_gather_xr(self, inds):
-        bnd_out=[]
-        for n in range(len(inds)): # Loop over output points
-            datasets = []
-            title = self.bnd_in[0].title # mean('x') looses all attributes so save this
-            for k in range(len(self.bnd_in)): # Loop over time (days)
-                new_data = self.bnd_in[k].sel(x=inds[n]).mean('x')
-                new_data.attrs["title"] = title
-                # This trivial dimension of one will cause probems since the latitudes are either then defined with only a y-dimension, or in two dimensions (time, y)
-                # In the latter case new_data["latitude"].values[0] is not a number, but a one element array of a one element list
-                # We solve this by squeezing out this unceccesary dimension
-                datasets.append(new_data.squeeze('y')) 
-
-
-            # This list contains one element for each requested output point
-            # Each element is a one-spatial-point xr-dataset containing all times
-            
-            bnd_out.append(xr.concat(datasets, dim="time"))
-
-        return bnd_out
-
-    def find_nearest_points(self, bnd_points):
-        nr_spec_interpolate = 1
-        lat_in = self.lat_in()
-        lon_in = self.lon_in()
-
-        lat_out = bnd_points[0,:]
-        lon_out = bnd_points[1,:]
-        inds = []
-        for n in range(len(lat_out)):
-            diff_lat = np.abs(lat_out[n]-lat_in)
-            diff_lon = np.abs(lon_out[n]-lon_in)
-            add_lonlat = diff_lon + diff_lat
-            inds.append(np.where((add_lonlat >= np.sort(add_lonlat)[0]) & (add_lonlat <= np.sort(add_lonlat)[nr_spec_interpolate]))[0])
-            
-        # The index in Xarray datasets starts from 1
-        inds = inds + 1
         return inds
 # -----------------------------------------------------------------------------
 
-
 # -----------------------------------------------------------------------------
-# INPUT MODEL CLASSES RESPONSIBLE FOR ACTUALLY READING THE SPECTRA
-# -----------------------------------------------------------------------------
-# The output of an InputModel class should be a list of N xarray datasets
-#
-# Each dataset in the list should contain only one point.
-# Each dataset in the list should contain all time steps for said point.
-#
-# Not mandatory to use, but might help:
-#   The function slice_and_gather_xr goes from daily datasets containing
-#   several points to datasets vontaining one point and all times.
-#   A list of N indices must be provided to choose the points.
-#
-# Each dataset must contain the following Coordinates:
-# -----------------------------------------------------------------------------
-# time (N,) datetime64 array
-# freq (k,) float array
-# direction (d,) float array
-# Each dataset must contain the following Data variable:
-# -----------------------------------------------------------------------------
-# SPEC (N,k,d) float array
-# longitude 1-dimensional array (use .flatten() if 0-dimension)
-# latitude 1-dimensional array (use .flatten() if 0-dimension)
-# -----------------------------------------------------------------------------
-# longitude/latitude should be constant.
-# In case length > 1, only first value is ever used.
+# BOUNDARY FETCHER CLASSES RESPONSIBLE FOR ACTUALLY READING THE SPECTRA
 # -----------------------------------------------------------------------------
 
-class InputModel(ABC):
+class BoundaryFetcher(ABC):
     def __init__(self):
         pass
 
@@ -466,59 +137,205 @@ class InputModel(ABC):
         return (f"{self.start_time} - {self.end_time}")
 
 
-class InputWAM4(InputModel):
+class BoundaryWAM4(BoundaryFetcher):
     
-    def __call__(self, start_time, end_time, grid, point_picker = PPTrivialPicker()):
+    def get_coordinates(self, start_time):
+        """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
+        day = pd.date_range(start_time, start_time,freq='D')
+        url = self.get_url(day[0])
+
+        data = xr.open_dataset(url).isel(time = [0])
+        
+        lon_all = data.longitude.values[0]
+        lat_all = data.latitude.values[0]
+        
+        return lon_all, lat_all
+    
+    def __call__(self, start_time, end_time, inds):
+        """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time
         
-        msg.header(f"Getting boundary spectra from WAM4 from {self.start_time} to {self.end_time}")
-        bnd_in = []    
+        msg.info(f"Getting boundary spectra from WAM4 from {self.start_time} to {self.end_time}")
+        bnd_list = []    
         for n in range(len(self.days())):
-            url = self.get_url(n)
+            url = self.get_url(self.days()[n])
+            msg.plain(url)
             t0, t1 = self.get_time_limits(n)
-            bnd_in.append(xr.open_dataset(url).sel(time=slice(t0, t1)))
+            bnd_list.append(xr.open_dataset(url).sel(time = slice(t0, t1), x = (inds+1)))
             
-        bnd_in, bnd_mask = point_picker(grid, bnd_in)
-         
-        # longitude and latitude are 0-dimensional. Force to one-dimensional trivial array
-        for n in range(len(bnd_in)):
-            bnd_in[n]["latitude"] = bnd_in[n]["latitude"].values.flatten()
-            bnd_in[n]["longitude"] = bnd_in[n]["longitude"].values.flatten()
+        bnd=xr.concat(bnd_list, dim="time").squeeze('y')
         
-        return bnd_in, bnd_mask
+        time = bnd.time.values
+        freq = bnd.freq.values
+        dirs = bnd.direction.values
+        spec = bnd.SPEC.values
+        lon = bnd.longitude.values
+        lat = bnd.latitude.values
+        
+        source = f"{bnd.title}, {bnd.institution}"
+        
+        return  time, freq, dirs, spec, lon, lat, source
 
-    def get_url(self, ind):
-        day = self.days()[ind]
+    def get_url(self, day):
         url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/'+day.strftime('%d')+'/MyWave_wam4_SPC_'+day.strftime('%Y%m%d')+'T00Z.nc'
-        print(url)
-        
         return url
     
 
-class InputNORA3(InputModel):
+class BoundaryNORA3(BoundaryFetcher):
     
-    def __call__(self, start_time, end_time, grid, point_picker = PPTrivialPicker()):
+    def get_coordinates(self, start_time):
+        """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
+        day = pd.date_range(start_time, start_time,freq='D')
+        url = self.get_url(day[0])
+
+        data = xr.open_dataset(url).isel(time = [0])
+        
+        lon_all = data.longitude.values[0]
+        lat_all = data.latitude.values[0]
+        
+        return lon_all, lat_all
+    
+    def __call__(self, start_time, end_time, inds):
+        """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time
-        msg.header(f"Getting boundary spectra from NORA3 from {self.start_time} to {self.end_time}")
-        bnd_in = []    
-        for n in range(len(self.days())):
-            url = self.get_url(n)
-            t0, t1 = self.get_time_limits(n)
-            bnd_in.append(xr.open_dataset(url).sel(time=slice(t0, t1)))
         
-        bnd_in, bnd_mask = point_picker(grid, bnd_in)
-           
-        return bnd_in, bnd_mask
+        msg.info(f"Getting boundary spectra from NORA3 from {self.start_time} to {self.end_time}")
+        bnd_list = []    
+        for n in range(len(self.days())):
+            url = self.get_url(self.days()[n])
+            msg.plain(url)
+            t0, t1 = self.get_time_limits(n)
+            bnd_list.append(xr.open_dataset(url).sel(time = slice(t0, t1), x = (inds+1)))
+            
+        bnd=xr.concat(bnd_list, dim="time").squeeze('y')
+        
+        time = bnd.time.values
+        freq = bnd.freq.values
+        dirs = bnd.direction.values
+        spec = bnd.SPEC.values
+        lon = bnd.longitude.values[0,:]
+        lat = bnd.latitude.values[0,:]
+        
+        source = f"{bnd.title}, {bnd.institution}"
+        
+        return  time, freq, dirs, spec, lon, lat, source
+    
 
-    def get_url(self, ind):
-        day = self.days()[ind]
+    def get_url(self, day):
         url = 'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/SPC'+day.strftime('%Y%m%d')+'00.nc'
-        print(url)
         return url
 # -----------------------------------------------------------------------------
 
+# =============================================================================
+#  BOUNDARY OBJECT CONTAINING THE ACTUAL DATA
+# =============================================================================
+
+class Boundary:
+    def __init__(self, grid, name = "AnonymousBoundary"):
+        self.grid = copy(grid)
+        self.name = name
+        return
+
+    def import_boundary(self, start_time: str, end_time: str, boundary_fetcher: BoundaryFetcher,  point_picker: PointPicker = TrivialPicker()):
+        
+        lon_all, lat_all = boundary_fetcher.get_coordinates(start_time)
+        
+        msg.header(f"Choosing spectra with {type(point_picker).__name__} using expansion_factor = {point_picker.expansion_factor:.2f}")
+        inds = point_picker(self.grid, lon_all, lat_all)
+
+        msg.header(f"Fetching data using {type(boundary_fetcher).__name__}")
+        time, freq, dirs, spec, lon, lat, source = boundary_fetcher(start_time, end_time, inds)
+        self.data = self.compile_to_xr(time, freq, dirs, spec, lon, lat, source)
+        
+        self.mask = [True]*len(self.time())
+        
+        return
+    
+    
+    def process_spectra(self, spectral_processors = spec.TrivialSpectralProcessor(calib_spec = 1)):
+    
+        if not isinstance(spectral_processors, list):
+            spectral_processors = [spectral_processors]
+            
+        for n in range (len(spectral_processors)):    
+            spectral_processor = spectral_processors[n]
+            msg.header(f"Processing spectra with {type(spectral_processor).__name__}")
+            
+            new_spec, new_mask, new_freq, new_dirs = spectral_processor(self.spec(), self.freq(), self.dirs(), self.time(), self.x(), self.lon(), self.lat(), self.mask)
+            
+            self.data.spec.values = new_spec
+            self.mask = new_mask
+            
+            self.data = self.data.assign_coords(dirs=new_dirs)
+            self.data = self.data.assign_coords(freq=new_freq)
+
+        return
+            
+    def compile_to_xr(self, time, freq, dirs, spec, lon, lat, source):
+        x = np.array(range(spec.shape[1]))
+        data = xr.Dataset(
+            data_vars=dict(
+                spec=(["time", "x", "freq", "dirs"], spec),
+            ),
+            coords=dict(
+                freq=freq,
+                dirs=dirs,
+                x=x,
+                lon=(["x"], lon),
+                lat=(["x"], lat),
+                time=time,
+            ),
+            attrs=dict(source=source,
+                name=self.name
+            ),
+            )
+        return data  
+    
+    def slice_data(self, start_time: str = '', end_time: str = '', x = []):
+        if isinstance(x, int):
+            x = [x]
+        elif not x:
+            x=self.x()
+
+        if not start_time:
+            # This is not a string, but slicing works also with this input
+            start_time = self.time()[0] 
+        
+        if not end_time:
+            # This is not a string, but slicing works also with this input
+            end_time = self.time()[-1]
+            
+        sliced_data = self.data.sel(time=slice(start_time, end_time), x=x)
+            
+        return sliced_data
+    
+    def spec(self, start_time: str = '', end_time: str = '', x = []):
+        spec = self.slice_data(start_time, end_time, x).spec.values
+            
+        return spec
+    
+    
+    def time(self):
+        return self.data.time.values
+
+    def freq(self):
+        return self.data.freq.values
+    
+    def dirs(self):
+        return self.data.dirs.values
+    
+    def lon(self):
+        return self.data.lon.values
+    
+    def lat(self):
+        return self.data.lat.values
+    
+    def x(self):
+        return self.data.x.values
+    
+    
 
 # -----------------------------------------------------------------------------
 # OUTPUT MODEL CLASSES RESPONSIBLE FOR WRITING SPECTRA IN CORRECT FORMAT
@@ -531,59 +348,43 @@ class OutputModel(ABC):
     def __call__(self, bnd_out):
         pass
 
-    def spec_info(self, bnd_out):
-        dirs=bnd_out[0].direction.values
-        freq=bnd_out[0].freq.values
-        return freq, dirs
-  
-    
+ 
 class OutputWW3nc(OutputModel):
     def __init__(self):
         pass
-                
-    def __call__(self, bnd_out, bnd_mask):
+
+    def __call__(self, in_boundary: Boundary):
+        boundary = copy(in_boundary)
+        msg.header(f"Writing output with {type(self).__name__}")
+        
         # Convert from oceanic to mathematical convention
-        #dirs = bnd_out[0].direction.values
-        for n in range(len(bnd_out)):
-            #dirs = bnd_out[n].direction.values
-            D = bnd_out[n].direction.values
-            for k in range(len(bnd_out[0].time.values)):
-                S = naut_to_ocean(bnd_out[n].SPEC[k,:,:].values, D)
-                bnd_out[n].SPEC[k,:,:] = S
-                
-            D = ocean_to_math(D,D)
-            bnd_out[n] = bnd_out[n].assign_coords(direction=D)
+        boundary.process_spectra(spec.NautToWW3())
+        
+        msg.info('Writing WAVEWATCH-III netcdf-output')
 
-
-        msg.header('Writing WAVEWATCH-III netcdf-output')
-
-        for n in range(len(bnd_out)):
-            if bnd_mask[n]:
-                print(f"Point {n}: ", end="")
-                #self.write_netcdf(bnd_out[n], output_points[n,:])
-                self.write_netcdf(bnd_out[n])
+        for n in range(len(boundary.x())):
+            if boundary.mask[n]:
+                self.write_netcdf(boundary, n)
             else:
-                msg.info(f"Skipping point {n}. Masked as False.")
+                msg.info(f"Skipping point {n} ({boundary.lon()[n]:10.7f}, {boundary.lat()[n]:10.7f}). Masked as False.")
         return
     
-    def write_netcdf(self, bnd_out):
+    def write_netcdf(self, boundary, n):
         """Writes WW3 compatible netcdf spectral output from a list containing xarray datasets."""
-        lat=bnd_out["latitude"].values[0]
-        lon=bnd_out["longitude"].values[0] 
-        
-        #lat = output_points[0]
-        #lon = output_points[1]
+        lat=boundary.lat()[n]
+        lon=boundary.lon()[n]
+
         output_file = f"ww3_spec_E{lon:09.6f}N{lat:09.6f}.nc"
         #output_file = 'ww3_spec_E'+str(lon)+'N'+str(lat)+'.nc'
         #output_file = 'Test_ww3.nc'
-        print(output_file)
+        msg.plain(f"Point {n}: {output_file}")
         root_grp = netCDF4.Dataset(output_file, 'w', format='NETCDF4')
         #################### dimensions
         root_grp.createDimension('time', None)
         root_grp.createDimension('station', 1)
         root_grp.createDimension('string16', 16)
-        root_grp.createDimension('frequency', len(bnd_out.freq))
-        root_grp.createDimension('direction', len(bnd_out.direction))
+        root_grp.createDimension('frequency', len(boundary.freq()))
+        root_grp.createDimension('direction', len(boundary.dirs()))
         #######################################################
         ####################### variables
         time = root_grp.createVariable('time', np.float64, ('time',))
@@ -662,16 +463,14 @@ class OutputWW3nc(OutputModel):
         efth.associates = "time station frequency direction" 
         #######################################################
         ############## Pass data
-        time[:] = bnd_out.time.values.astype('datetime64[s]').astype('float64')
-        frequency[:] = bnd_out.freq.values
-        direction[:] = bnd_out.direction.values 
-        #dtheta=np.radians(np.diff(direction).mean())
-        #print("NOT CONVERTING TO OCEANIC CONVENTION!")
+        time[:] = boundary.time().astype('datetime64[s]').astype('float64')
+        frequency[:] =boundary.freq()
+        direction[:] = boundary.dirs()
         
-        efth[:] =  bnd_out.SPEC.values
+        efth[:] =  boundary.spec(x=n)
         station[:] = 1
-        longitude[:] = np.full((len(bnd_out.time),1), lon,dtype=float)
-        latitude[:] = np.full((len(bnd_out.time),1), lat,dtype=float)
+        longitude[:] = np.full((len(boundary.time()),1), boundary.lon()[n],dtype=float)
+        latitude[:] = np.full((len(boundary.time()),1), boundary.lat()[n],dtype=float)
         #longitude[:] = bnd_out.longitude.values
         #latitude[:] = bnd_out.latitude.values
         station_name[:] = 1
