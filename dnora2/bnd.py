@@ -179,7 +179,8 @@ class BoundaryWAM4(BoundaryFetcher):
                     mask[n] = False
         
             lon_all = lon_all[mask]
-            lat_all = lat_all[mask]    
+            lat_all = lat_all[mask]
+            self.pointers = np.where(mask) # These are used to map back the indeces from the PointPicker to indeces in the original data
     
         return lon_all, lat_all
     
@@ -187,6 +188,11 @@ class BoundaryWAM4(BoundaryFetcher):
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time
+        
+        # If we have removed some spectra (NaN's) we need to remap the indeces
+        if hasattr(self, 'pointers'):
+            inds = self.pointers[0][inds]
+        
         
         days = day_list(start_time = self.start_time, end_time = self.end_time)
         
