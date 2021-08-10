@@ -89,8 +89,8 @@ class AreaPicker(PointPicker):
     def __call__(self, grid, bnd_lon, bnd_lat):
         msg.info(f"Using expansion_factor = {self.expansion_factor:.2f}")
         # Define area to search in
-        expand_lon = (grid.lon_max - grid.lon_min)*self.expansion_factor*0.5
-        expand_lat = (grid.lat_max - grid.lat_min)*self.expansion_factor*0.5
+        expand_lon = (grid.lon_max - grid.lon_min)*(self.expansion_factor-1)*0.5
+        expand_lat = (grid.lat_max - grid.lat_min)*(self.expansion_factor-1)*0.5
         
         # Get all the spectra in this area
         lon0=grid.lon_min - expand_lon
@@ -126,13 +126,6 @@ class BoundaryFetcher(ABC):
     def __call__(self, start_time, end_time, inds):
         pass
 
-# =============================================================================
-#     def days(self):
-#         """Determins a Pandas data range of all the days in the time span of the InputModel objext"""
-#         days = pd.date_range(start=self.start_time.split('T')[0], end=self.end_time.split('T')[0], freq='D')
-#         return days
-# =============================================================================
-
     def get_time_limits_day(self, ind):
         """Determines star and end time for the day. First and last day doesn't start at 00:00 or end at 23:59"""
         
@@ -151,6 +144,22 @@ class BoundaryFetcher(ABC):
 
     def __str__(self):
         return (f"{self.start_time} - {self.end_time}")
+
+class BoundaryForceFeed(BoundaryFetcher):
+    def __init__(self, time, freq, dirs, spec, lon, lat):
+        self.time = copy(time)
+        self.freq = copy(freq)
+        self.dirs = copy(dirs)
+        self.spec = copy(spec)
+        self.lon = copy(lon)
+        self.lat = copy(lat)
+        return 
+    
+    def get_coordinates(self, start_time):
+        return copy(self.lon), copy(self.lat)
+    
+    def __call__(self, start_time, end_time, inds):
+        return  copy(self.time), copy(self).freq, copy(self).dirs, np.reshape(self.spec, (len(self.time), len(self.lon), self.spec.shape[0], self.spec.shape[1])), copy(self.lon), copy(self.lat), ''
 
 
 class BoundaryWAM4(BoundaryFetcher):

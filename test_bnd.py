@@ -20,7 +20,7 @@ start_date = '2019-01-09T00:00' ; end_date = '2019-01-10T00:00'
 gridname = 'Sulafjorden250'
 grid = grd.regenerate_ww3(gridname)
 
-grid.set_boundary(bounN = 40, edges = ['N', 'W']) 
+grid.set_boundary(bounN = 1, edges = ['N', 'W']) 
 
 
 
@@ -36,15 +36,16 @@ grid.set_boundary(bounN = 40, edges = ['N', 'W'])
 boundary = bnd.Boundary(grid)
 boundary_fetcher = bnd.BoundaryWAM4(ignore_nan = True)
 #boundary_fetcher = bnd.BoundaryNORA3()
-point_picker = bnd.NearestGridPointPicker()
-#point_picker = bnd.AreaPicker()
+#point_picker = bnd.NearestGridPointPicker()
+point_picker = bnd.AreaPicker(expansion_factor=2.5)
 boundary.import_boundary(start_date, end_date, boundary_fetcher, point_picker)
-boundary.process_spectra([spec.NaNCleaner(), spec.InterpSpectralProcessor(first_dir = 0)])
-
+#boundary.process_spectra([spec.NaNCleaner(), spec.InterpSpectralProcessor(first_dir = 0)])
+boundary.process_spectra([spec.InterpSpectralProcessor(first_dir = 0)])
+grid.plot_mask(boundary = boundary)
 #write_boundary_spectra = bnd.OutputWW3nc()
-write_boundary_spectra = bnd.OutputSWANascii(grid, factor = 1E-4)
+#write_boundary_spectra = bnd.OutputSWANascii(grid, factor = 1E-4)
 
-write_boundary_spectra(boundary)
+#write_boundary_spectra(boundary)
 
 
 # =============================================================================

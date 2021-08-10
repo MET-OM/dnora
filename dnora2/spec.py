@@ -139,19 +139,20 @@ class InterpSpectralProcessor(SpectralProcessor):
         new_spec = copy(spec)
         new_mask = copy(mask)
         new_freq = copy(freq)
-        
-        nbins = len(dirs)
-        dD=int(360/nbins)
-        #if self.start > dD:
-        #    msg.info("First bin {start} is defined as larger than the directional resolution {dD}. This might spell trouble!")
-        
-        new_dirs = np.array(range(0,360,dD), dtype='float32') + self.first_dir
-        
-        msg.info(f"Interpolating spectra to directional grid {new_dirs[0]:.0f}:{dD}:{new_dirs[-1]:.0f}")
-        
-        for n in range(len(x)):
-            for k in range(len(time)):
-                new_spec[k,n,:,:] = interp_spec(freq, dirs, spec[k,n,:,:], new_freq, new_dirs)
+        new_dirs = copy(dirs)
+
+        if dirs[0] > 0:        
+            nbins = len(dirs)
+            dD=int(360/nbins)
+    
+            
+            new_dirs = np.array(range(0,360,dD), dtype='float32') + self.first_dir
+            
+            msg.info(f"Interpolating spectra to directional grid {new_dirs[0]:.0f}:{dD}:{new_dirs[-1]:.0f}")
+            
+            for n in range(len(x)):
+                for k in range(len(time)):
+                    new_spec[k,n,:,:] = interp_spec(freq, dirs, spec[k,n,:,:], new_freq, new_dirs)
         
         return new_spec, new_mask, new_freq, new_dirs    
     

@@ -17,7 +17,8 @@ grid.set_boundary(bounN = 1, edges = ['N', 'W'])
 
 topo_fetcher = grd.TopoEMODNET2018()
 grid.import_topo(topo_fetcher)
-
+grid.filter_topo()
+grid.mesh_grid()
 
 # Change grid points under 2 m depth to land
 grid.set_min_depth(-2, to_land = True)
@@ -35,7 +36,7 @@ grid.plot_mask()
 
 ww3_output = grd.OutputModelWW3()
 
-ww3_output.write_topo(grid)
+ww3_output(grid)
 
 grid.write_status() ## This writes the status to a file named after the grid name
 grid.write_status(filename = 'another_file.temp') ## We can override the default name like this
@@ -63,7 +64,7 @@ grid3 = grd.Grid(lon_min, lon_max, lat_min, lat_max, name = 'Sulafjorden250v3')
 grid3.set_spacing(dlon=1/240, dlat= 1/480, floating_edge = True) # dlat = 1/480 is one eight of a nautical mile
 
 # We only have the automatically created trivial grid, but lets write it out anyway
-ww3_output.write_topo(grid3, matrix = True) # Write in more human readable format
+ww3_output(grid3, matrix = True) # Write in more human readable format
 
 
 
@@ -75,4 +76,4 @@ grid4 = grd.Grid(lon_min, lon_max, lat_min, lat_max, name = 'Sulafjorden250v4')
 grid4.set_spacing(nx = 291, ny = 249)
 
 # We only have the automatically created trivial grid, but lets write it out anyway
-ww3_output.write_topo(grid4, matrix = True) # Write in more human readable format
+ww3_output(grid4, matrix = True) # Write in more human readable format

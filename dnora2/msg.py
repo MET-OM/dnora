@@ -2,7 +2,7 @@ def print_line(length = 75):
     print("-" * length)
 
 def to_file(filename):
-    info(f"Writing to file {filename}")
+    plain(f"Writing to file {filename}")
     
 def plain(msg):
     print(msg)
