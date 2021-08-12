@@ -19,17 +19,18 @@ grid.set_spacing(dm = 250) # Setting grid spacing to approximately 250 metres
 
 # This is still empty, so lets import a topography from EMODNET
 grid.import_topo(grd.TopoEMODNET2018()) # Import topography
-grid.filter_topo(filt = grd.TrivialFilter()) # Filters it: default (for now) is trivial (does nothing)
 grid.mesh_grid() # Default mesher bilinear, but can be changed
 
 # Let's define where we want boundary points in the grid
 grid.set_boundary(bounN = 1, edges = ['N', 'W']) # Every wet point on north and west edges
 
 # Change grid points under 2 m depth to land
-grid.set_min_depth(-2, to_land = True)
+filter_function = grd.SetMinDepth(-2, to_land = 0)
+grid.filter_grid(filter_function)
 
 # Impose a minimum depth of 5 m on the rest of the sea points
-grid.set_min_depth(5) # Can be either -5 or 5
+filter_function = grd.SetMinDepth(-5)
+grid.filter_grid(filter_function)
 # =============================================================================
 
 
@@ -51,18 +52,18 @@ start_date = '2019-01-09T00:00' ; end_date = '2019-01-09T00:00'
 bnd_spec.import_boundary(start_date, end_date, boundary_fetcherWAM4, point_picker)
 
 # Plot the grid and the boundary points
-grid.plot_topo(boundary = bnd_spec)
+grid.plot(boundary = bnd_spec)
 
 # We didn't get any points on the western side. Need to read in a bigger area
 point_picker = bnd.AreaPicker(expansion_factor = 2.5) # default 1.5
 bnd_spec.import_boundary(start_date, end_date, boundary_fetcherWAM4, point_picker)
-grid.plot_topo(boundary = bnd_spec)
+grid.plot(boundary = bnd_spec)
 
 # Much better!
 
 # What about NORA3?
 bnd_spec.import_boundary(start_date, end_date, boundary_fetcherNORA3, point_picker)
-grid.plot_topo(boundary = bnd_spec)
+grid.plot(boundary = bnd_spec)
 # Original area would have probably been ok for NORA3
 # =============================================================================
 

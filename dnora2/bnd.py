@@ -67,7 +67,7 @@ class NearestGridPointPicker(PointPicker):
         pass
     
     def __call__(self, grid, bnd_lon, bnd_lat):
-        bnd_points = grid.bnd_points()
+        bnd_points = grid.boundary_points()
         lon = bnd_points[:,0]
         lat = bnd_points[:,1]
         
@@ -89,15 +89,15 @@ class AreaPicker(PointPicker):
     def __call__(self, grid, bnd_lon, bnd_lat):
         msg.info(f"Using expansion_factor = {self.expansion_factor:.2f}")
         # Define area to search in
-        expand_lon = (grid.lon_max - grid.lon_min)*(self.expansion_factor-1)*0.5
-        expand_lat = (grid.lat_max - grid.lat_min)*(self.expansion_factor-1)*0.5
+        expand_lon = (grid.lon()[-1] - grid.lon()[0])*(self.expansion_factor-1)*0.5
+        expand_lat = (grid.lat()[-1] - grid.lat()[0])*(self.expansion_factor-1)*0.5
         
         # Get all the spectra in this area
-        lon0=grid.lon_min - expand_lon
-        lon1=grid.lon_max + expand_lon
+        lon0=grid.lon()[0] - expand_lon
+        lon1=grid.lon()[-1] + expand_lon
         
-        lat0=grid.lat_min - expand_lat
-        lat1=grid.lat_max + expand_lat
+        lat0=grid.lat()[0] - expand_lat
+        lat1=grid.lat()[-1] + expand_lat
 
         masklon = np.logical_and(bnd_lon < lon1, bnd_lon > lon0)
         masklat = np.logical_and(bnd_lat > lat0, bnd_lat < lat1)
@@ -561,7 +561,7 @@ class OutputSWANascii(OutputModel):
         msg.header('Writing SWAN ASCII-output')
         boundary.process_spectra(spec.NautToOcean())
         # Initialize the boundary file by writing the header
-        swan_bnd_points = self.grid.bnd_points
+        swan_bnd_points = self.grid.boundary_points()
         days = boundary.days()
         
         
@@ -574,7 +574,7 @@ class OutputSWANascii(OutputModel):
             file_out.write('LONLAT\n')    
             file_out.write('          '+format(len(boundary.x()))+'\n')     
             for k in range(len(boundary.x())):
-                file_out.write('   '+format(swan_bnd_points()[k,0],'.4f')+'  '+format(swan_bnd_points()[k,1],'.4f')+'\n')
+                file_out.write('   '+format(swan_bnd_points[k,0],'.4f')+'  '+format(swan_bnd_points[k,1],'.4f')+'\n')
             file_out.write('AFREQ\n')
             file_out.write('          '+str(len(boundary.freq()))+'\n')
             for l in range(len(boundary.freq())):
