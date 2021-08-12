@@ -565,7 +565,7 @@ class OutputSWANascii(OutputModel):
         days = boundary.days()
         
         
-        filename = f"{self.grid.name}_spec{days[0].strftime('%Y%m%d')}_{days[-1].strftime('%Y%m%d')}.asc"
+        filename = f"{self.grid.name()}_spec{days[0].strftime('%Y%m%d')}_{days[-1].strftime('%Y%m%d')}.asc"
         with open(filename, 'w') as file_out:
             file_out.write('SWAN   1\n')
             file_out.write('$ Data produced by '+boundary.data.source+'\n')
