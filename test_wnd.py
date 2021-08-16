@@ -10,7 +10,7 @@ from dnora2 import grd, wnd
 gridname = 'Sulafjorden250'
 grid = grd.regenerate_ww3(gridname)
 
-start_time = '2018-11-01T00:00:00' ; end_time = '2019-01-16T23:00:00'
+start_time = '2018-12-29T00:00' ; end_time = '2019-01-16T00:00'
 #start_time = '2018-11-01T00:00:00' ; end_time = '2018-11-01T23:00:00'
 
 forcing = wnd.Forcing(grid, name = 'MEPS_Sulafjorden')

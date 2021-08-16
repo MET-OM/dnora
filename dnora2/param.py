@@ -12,6 +12,35 @@ from dnora2.bnd import day_list, month_list
 import re
 import matplotlib.pyplot as plt
 
+
+# =============================================================================
+# STATISTICS
+# =============================================================================
+# =============================================================================
+# class WaveStatistic(ABC):
+#     def __init__(self):
+#         pass
+#     
+#     @abstractmethod
+#     def __call__(self):
+#         pass
+#     
+#     
+# class WaveStatMean(WaveStatistic):
+#     def __init__(self):
+#         pass
+#     
+#     def __call__(self, data):
+#         parameter_list = list(data.keys())
+#         mean = {}
+#         for p in parameter_list:
+#             mean[p] = np.nanmean(data[p].values)
+#             
+#         return mean
+# =============================================================================
+        
+
+
 # =============================================================================
 # PARAMETER FETCHER CLASSES RESPONSIBLE FOR ACTUALLY READING THE SPECTRA
 # =============================================================================
@@ -203,6 +232,19 @@ class Parameter:
         
         return
     
+    
+    def statistics(self, list_of_statistics):
+        parameter_list = list(self.data.keys())
+        maindict = {}
+        for stat in list_of_statistics:
+            subdict = {} 
+            for p in parameter_list:
+                subdict[p] = stat(self.data[p].values)
+                 
+            maindict[stat.__name__] = subdict
+        
+        self.table = pd.DataFrame.from_dict(maindict)
+        return
     
     def compile_to_xr(self, time, wavedata, lon, lat, source):
         x = np.array(range(lon.shape[1]))
