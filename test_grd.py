@@ -21,17 +21,17 @@ grid.filter_topo()
 grid.mesh_grid()
 
 # Change grid points under 2 m depth to land
-grid.set_min_depth(-2, to_land = True)
+grid.filter_grid(grd.SetMinDepth(-2, to_land = 0))
 
 # We can check the grid status with print(grid)
 print(grid)
 
 # Impose a minimum depth of 5 m on the rest of the sea points
-grid.set_min_depth(5) # Can be either -5 or 5
+grid.filter_grid(grd.SetMinDepth(-5))
 
 print(grid)
 
-grid.plot_topo(save_fig=True)
+grid.plot(save_fig=True)
 grid.plot_mask()
 
 ww3_output = grd.OutputModelWW3()

@@ -199,7 +199,7 @@ class TopoForceFeed(TopoFetcher):
 # GRID CLASSES RESPONSIBLE ALL THE GRID INFORMATION AND METHODS
 # -----------------------------------------------------------------------------
 class Grid:
-    def __init__(self, lon_min = 5, lon_max = 6, lat_min = 59, lat_max = 60, name="AnonymousGrid"):
+    def __init__(self, lon_min = 0, lon_max = 0, lat_min = 0, lat_max = 0, name="AnonymousGrid"):
         
         data_dict = {'lon_min': lon_min, 'lon_max': lon_max, 'lat_min': lat_min, 'lat_max': lat_max, 'name': name} 
         
@@ -228,7 +228,11 @@ class Grid:
 
     def filter_topo(self, filt = TrivialFilter()):
             msg.header(f'Filtering topography with {type(filt).__name__}')
-            topo = filt(self.raw_topo(), self.raw_lon(), self.raw_lat(), None, None)
+            
+            empty_mask = np.full(self.raw_topo().shape, False)
+            land_sea_mask = self.raw_topo() < 0 # Sea points set to true
+            
+            topo = filt(self.raw_topo(), self.raw_lon(), self.raw_lat(), land_sea_mask, empty_mask)
             
             vars_dict = {'topo': (['lat', 'lon'], topo)}
             self.rawdata = self.rawdata.assign(vars_dict)
@@ -391,12 +395,21 @@ class Grid:
             return copy(self.data.topo.values)
         else:
             return np.array([])
+    
     def lon(self):
-        return copy(self.data.lon.values)
+        if hasattr(self.data, 'lon'):
+            lon = copy(self.data.lon.values)
+        else:
+            lon = np.array([self.data.lon_min, self.data.lon_max])
+        return lon
     
     def lat(self):
-        return copy(self.data.lat.values)
-    
+        if hasattr(self.data, 'lat'):
+            lat = copy(self.data.lat.values)
+        else:
+            lat = np.array([self.data.lat_min, self.data.lat_max])
+        return lat
+
     def name(self):
         return copy(self.data.name)
     
@@ -409,7 +422,7 @@ class Grid:
             if floating_edge:
                 #Use exactly given dlon/dlat and change lon_max/lat_max accordingly
       
-                msg.plain(f"Setting spacing based on dlon = {self.data.dlon} and dlat = {self.data.dlat}")
+                msg.plain(f"Setting spacing based on dlon = {dlon} and dlat = {dlat}")
                 msg.plain("floating_edge = True. Making sure dlon/dlat are keep exactly fixed")
                 
                 old_lat_max=self.lat()[-1]

@@ -37,6 +37,11 @@ def day_list(start_time, end_time):
     days = pd.date_range(start=start_time.split('T')[0], end=end_time.split('T')[0], freq='D')
     return days
 
+def month_list(start_time, end_time):
+    """Determins a Pandas data range of all the months in the time span of the InputModel objext"""
+    months = pd.date_range(start=start_time.split('T')[0], end=end_time.split('T')[0], freq='m')
+    return months
+
 # =============================================================================
 
 
@@ -374,22 +379,22 @@ class Boundary:
     
     
     def time(self):
-        return self.data.time.values
+        return copy(self.data.time.values)
 
     def freq(self):
-        return self.data.freq.values
+        return copy(self.data.freq.values)
     
     def dirs(self):
-        return self.data.dirs.values
+        return copy(self.data.dirs.values)
     
     def lon(self):
-        return self.data.lon.values
+        return copy(self.data.lon.values)
     
     def lat(self):
-        return self.data.lat.values
+        return copy(self.data.lat.values)
     
     def x(self):
-        return self.data.x.values
+        return copy(self.data.x.values)
     
     def days(self):
         """Determins a Pandas data range of all the days in the time span."""
@@ -417,6 +422,37 @@ class OutputModel(ABC):
     def __call__(self, bnd_out):
         pass
 
+
+class DumpToNc(OutputModel):
+    def __init__(self):
+        pass
+    
+    def __call__(self, in_boundary: Boundary):
+        msg.header(f"Writing output with {type(self).__name__}")
+        output_file = f"spec_{in_boundary.name}.nc"
+        msg.to_file(output_file)
+        in_boundary.data.to_netcdf(output_file)
+            
+        return
+
+
+
+class OutputToNc(OutputModel):
+    def __init__(self):
+        pass
+    
+    def __call__(self, in_boundary: Boundary):
+        msg.header(f"Writing output with {type(self).__name__}")
+        for n in in_boundary.x():
+            ds = in_boundary.slice_data(x = n)
+            lon = in_boundary.lon()[n]
+            lat = in_boundary.lat()[n]
+            output_file = f"spec_E{lon:09.6f}N{lat:09.6f}.nc"
+            msg.to_file(output_file)
+            ds.to_netcdf(output_file)
+            
+        return
+        
  
 class OutputWW3nc(OutputModel):
     def __init__(self):
@@ -427,7 +463,7 @@ class OutputWW3nc(OutputModel):
         msg.header(f"Writing output with {type(self).__name__}")
         
         # Convert from oceanic to mathematical convention
-        boundary.process_spectra(spec.NautToOcean())
+        #boundary.process_spectra(spec.NautToOcean())
         boundary.process_spectra(spec.OceanToWW3())
         
         msg.info('Writing WAVEWATCH-III netcdf-output')

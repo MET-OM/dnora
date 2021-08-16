@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Aug  9 15:55:06 2021
-
-@author: janvb
-"""
 import numpy as np
 from scipy import interpolate
 from statistics import mode
@@ -174,9 +167,8 @@ class NaNCleaner(SpectralProcessor):
         return new_spec, new_mask, new_freq, new_dirs
     
 class OceanToWW3(SpectralProcessor):
-    def __init__(self, calib_spec = 1):
-        self.calib_spec = calib_spec
-        return
+    def __init__(self):
+        pass
     
     def __call__(self, spec, freq, dirs, time, x, lon, lat, mask):
         new_spec = copy(spec)
@@ -192,9 +184,8 @@ class OceanToWW3(SpectralProcessor):
         return new_spec, new_mask, new_freq, new_dirs
 
 class NautToOcean(SpectralProcessor):
-    def __init__(self, calib_spec = 1):
-        self.calib_spec = calib_spec
-        return
+    def __init__(self):
+        pass
    
     def __call__(self, spec, freq, dirs, time, x, lon, lat, mask):
         new_spec = copy(spec)
@@ -206,5 +197,12 @@ class NautToOcean(SpectralProcessor):
             for k in range(len(time)):
                 new_spec[k,n,:,:] = naut_to_ocean(spec[k,n,:,:], dirs)
 
+        return new_spec, new_mask, new_freq, new_dirs
+    
+class OceanToNaut(SpectralProcessor):
+    def __init__(self):
+        pass
+    def __call__(self, spec, freq, dirs, time, x, lon, lat, mask):
+        new_spec, new_mask, new_freq, new_dirs = NautToOcean(spec, freq, dirs, time, x, lon, lat, mask)
         return new_spec, new_mask, new_freq, new_dirs
 # =============================================================================
