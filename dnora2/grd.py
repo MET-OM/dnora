@@ -688,6 +688,24 @@ class OutputModelWW3(OutputModel):
             np.savetxt(fn2, mask_out.ravel(), delimiter=',',fmt='%1.0f')
             
         grid.write_status()
+        
+        
+class OutputModelSWAN(OutputModel):
+    def __init__(self):
+        pass
+    
+    def __call__(self, grid):
+        msg.header('Create files for regular grid')
+        mask_out = np.ones(grid.topo().shape)
+        mask_out[grid.land_sea_mask()] = 0
+        if grid.boundary_mask().size > 0:
+            msg.info(f'Setting {sum(sum(np.logical_and(grid.boundary_mask(), grid.land_sea_mask()))):d} boundary points in grid...')   
+            mask_out[np.logical_and(grid.boundary_mask(), grid.land_sea_mask())] = 2
+     
+        fn1 = 'mat_'+grid.name()+'_bathy.txt'
+        msg.to_file(fn1)
+        np.savetxt(fn1, grid.topo(), delimiter='\t',fmt='%1.0f')
+        grid.write_status() 
 # -----------------------------------------------------------------------------
 
     
