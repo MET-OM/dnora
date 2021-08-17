@@ -45,10 +45,11 @@ class ForcingFetcher(ABC):
 
 
 
-class ForcingMEPS_test(ForcingFetcher):
-    def __init__(self, hours_per_file = 24, lead_time = 0):
+class ForcingMEPS(ForcingFetcher):
+    def __init__(self, prefix = 'subset', hours_per_file = 24, lead_time = 0):
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
+        self.prefix = copy(prefix)
         return
     
     def create_time_stamps(self, start_time, end_time, hours_per_file):
@@ -80,14 +81,15 @@ class ForcingMEPS_test(ForcingFetcher):
         for n in range(len(file_stamps)):
             #print(time_stamp)
             #print(days[n].strftime('%Y-%m-%d')) 
-            url = self.get_url(file_stamps[n])
+            url = self.get_url(file_stamps[n], self.prefix)
             
             start_date_fimex = time_stamps[n].strftime('%Y-%m-%dT%H:%M:%S')
             if n == (len(time_stamps)-1):
-                end_date_fimex = (time_stamps[n] + np.timedelta64(0, 'h')).strftime('%Y-%m-%dT%H:%M:%S')
+                end_date_fimex = end_time
+                #end_date_fimex = (time_stamps[n] + np.timedelta64(0, 'h')).strftime('%Y-%m-%dT%H:%M:%S')
             else:
                 end_date_fimex = (time_stamps[n] + np.timedelta64(self.hours_per_file-1, 'h')).strftime('%Y-%m-%dT%H:%M:%S')
-            
+                
             msg.info(url)
             msg.plain(f"Reading wind forcing data: {start_date_fimex}-{end_date_fimex}")
             
@@ -137,8 +139,8 @@ class ForcingMEPS_test(ForcingFetcher):
        
         
        
-    def get_url(self, time_stamp):
-        filename = 'meps_subset_2_5km_'+time_stamp.strftime('%Y')+time_stamp.strftime('%m')+time_stamp.strftime('%d')+'T'+time_stamp.strftime('%H')+'Z.nc'
+    def get_url(self, time_stamp, prefix):
+        filename = 'meps_'+prefix+'_2_5km_'+time_stamp.strftime('%Y')+time_stamp.strftime('%m')+time_stamp.strftime('%d')+'T'+time_stamp.strftime('%H')+'Z.nc'
         url = 'https://thredds.met.no/thredds/dodsC/meps25epsarchive/'+time_stamp.strftime('%Y')+'/'+time_stamp.strftime('%m')+'/'+time_stamp.strftime('%d')+'/' + filename
         #url = 'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_files/'+days[i].strftime('%Y')+'/'+days[i].strftime('%m')+'/'+days[i].strftime('%Y%m%d')+'_MyWam3km_hindcast.nc' 
         #url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/'+day.strftime('%d')+'/MyWave_wam4_SPC_'+day.strftime('%Y%m%d')+'T00Z.nc'
@@ -168,7 +170,7 @@ class DumpToNc(OutputModel):
     
     def __call__(self, forcing_out: Forcing):
         msg.header(f"Writing output with {type(self).__name__}")
-        output_file = f"wind_{forcing_out.name}.nc"
+        output_file = f"wind_{forcing_out.name}_{forcing_out.grid.name()}.nc"
         msg.to_file(output_file)
         forcing_out.data.to_netcdf(output_file)
             

@@ -39,7 +39,7 @@ def day_list(start_time, end_time):
 
 def month_list(start_time, end_time):
     """Determins a Pandas data range of all the months in the time span of the InputModel objext"""
-    months = pd.date_range(start=start_time.split('T')[0], end=end_time.split('T')[0], freq='m')
+    months = pd.date_range(start=start_time[:7], end=end_time[:7], freq='MS')
     return months
 
 # =============================================================================

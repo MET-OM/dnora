@@ -396,6 +396,18 @@ class Grid:
         else:
             return np.array([])
     
+    def nx(self):
+        if hasattr(self.data, 'nx'):
+            return copy(self.data.nx)
+        else:
+            return 0
+
+    def ny(self):
+        if hasattr(self.data, 'ny'):
+            return copy(self.data.ny)
+        else:
+            return 0   
+ 
     def lon(self):
         if hasattr(self.data, 'lon'):
             lon = copy(self.data.lon.values)
