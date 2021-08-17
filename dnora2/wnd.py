@@ -105,26 +105,26 @@ class ForcingMEPS_test(ForcingFetcher):
             lat_min = grid.lat()[0] - expand_lat
             lat_max = grid.lat()[-1] + expand_lat
             
-            #dlon = grid.data.dlon
-            #dlat = grid.data.dlat
+            dlon = grid.data.dlon*5
+            dlat = grid.data.dlat*5
             
             call(['fimex-1.6', '--input.file='+url,
-                  #'--interpolate.method=bilinear',
-                  #'--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0',
-                  #'--interpolate.xAxisValues='+str(lon_min)+','+str(lon_min+dlon)+',...,'+str(lon_max)+'',
-                  #'--interpolate.yAxisValues='+str(lat_min)+','+str(lat_min+dlat)+',...,'+str(lat_max)+'',
-                  #'--interpolate.xAxisUnit=degree', '--interpolate.yAxisUnit=degree',
-                  '--extract.reduceToBoundingBox.south=' + str(lat_min),
-                  '--extract.reduceToBoundingBox.north=' + str(lat_max),
-                  '--extract.reduceToBoundingBox.west=' + str(lon_min),
-                  '--extract.reduceToBoundingBox.east=' + str(lon_max),
+                  '--interpolate.method=bilinear',
+                  '--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0',
+                  '--interpolate.xAxisValues='+str(lon_min)+','+str(lon_min+dlon)+',...,'+str(lon_max)+'',
+                  '--interpolate.yAxisValues='+str(lat_min)+','+str(lat_min+dlat)+',...,'+str(lat_max)+'',
+                  '--interpolate.xAxisUnit=degree', '--interpolate.yAxisUnit=degree',
+                  #'--extract.reduceToBoundingBox.south=' + str(lat_min),
+                  #'--extract.reduceToBoundingBox.north=' + str(lat_max),
+                  #'--extract.reduceToBoundingBox.west=' + str(lon_min),
+                  #'--extract.reduceToBoundingBox.east=' + str(lon_max),
                   '--process.rotateVector.all',
                   '--extract.selectVariables=x_wind_10m','--extract.selectVariables=y_wind_10m',
                   '--extract.selectVariables=latitude','--extract.selectVariables=longitude',
                   '--extract.reduceTime.start='+start_date_fimex,'--extract.reduceTime.end='+end_date_fimex,
-                  '--extract.reduceDimension.name=ensemble_member',
-                  '--extract.reduceDimension.start=1',
-                  '--extract.reduceDimension.end=1',
+                  #'--extract.reduceDimension.name=ensemble_member',
+                  #'--extract.reduceDimension.start=1',
+                  #'--extract.reduceDimension.end=1',
                   '--process.rotateVector.direction=latlon',
                   '--output.file='+nc_fimex])
             
