@@ -41,15 +41,15 @@ class SWANInputFile(ModelInputFile):
             file_out.write('$ \n')
             file_out.write('MODE NONSTATIONARY TWOD \n')
             file_out.write('COORD SPHE CCM \n')
-            file_out.write('CGRID '+str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(delta_X)+' '+str(delta_Y)+' '+str(self.grid.nx())+' '+str(self.grid.ny())+' CIRCLE 36 0.04 1.0 31 \n')
+            file_out.write('CGRID '+str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(delta_X)+' '+str(delta_Y)+' '+str(self.grid.nx()-1)+' '+str(self.grid.ny()-1)+' CIRCLE 36 0.04 1.0 31 \n')
             file_out.write('$ \n')
-            file_out.write('INPGRID BOTTOM '  +str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(self.grid.nx())+' '+str(self.grid.ny())+' '+ str((delta_X/self.grid.nx()).round(4)) +' '+ str((delta_Y/self.grid.ny()).round(4)) +' EXC 32767\n')
+            file_out.write('INPGRID BOTTOM '  +str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(self.grid.nx()-1)+' '+str(self.grid.ny()-1)+' '+ str((delta_X/(self.grid.nx()-1)).round(4)) +' '+ str((delta_Y/(self.grid.ny()-1)).round(4)) +' EXC 32767\n')
             file_out.write('READINP BOTTOM -1 \''+path_forcing+self.grid.name()+'_SWAN.bot\' 3 0 FREE \n')
             file_out.write('$ \n')
             file_out.write('BOU NEST \''+path_forcing+self.grid.name()+'_spec'+DATE_START.split('.')[0]+'_'+DATE_END.split('.')[0]+'.asc\' OPEN \n')
             file_out.write('$ \n')
             if wind==True:
-                file_out.write('INPGRID WIND '+str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(self.grid.nx())+' '+str(self.grid.ny())+' '+str((delta_X/self.grid.nx()).round(4)) +' '+str((delta_Y/self.grid.ny()).round(4)) +' NONSTATIONARY '+ DATE_START +' 1 HR ' + DATE_END +'\n')
+                file_out.write('INPGRID WIND '+str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(self.grid.nx()-1)+' '+str(self.grid.ny()-1)+' '+str((delta_X/(self.grid.nx()-1)).round(4)) +' '+str((delta_Y/(self.grid.ny()-1)).round(4)) +' NONSTATIONARY '+ DATE_START +' 1 HR ' + DATE_END +'\n')
                 file_out.write('READINP WIND '+str(factor_wind)+'  \''+path_forcing+self.grid.name()+'_wind'+DATE_START.split('.')[0]+'_'+DATE_END.split('.')[0]+'.asc\' 3 0 0 1 FREE \n')
                 file_out.write('$ \n')
             else:
