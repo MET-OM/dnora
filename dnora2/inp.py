@@ -50,7 +50,7 @@ class SWANInputFile(ModelInputFile):
             file_out.write('$ \n')
             if wind==True:
                 file_out.write('INPGRID WIND '+str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(self.grid.nx())+' '+str(self.grid.ny())+' '+str((delta_X/self.grid.nx()).round(4)) +' '+str((delta_Y/self.grid.ny()).round(4)) +' NONSTATIONARY '+ DATE_START +' 1 HR ' + DATE_END +'\n')
-                file_out.write('READINP WIND '+str(factor_wind)+'  \''+path_forcing+self.grid.name()+'_wind_'+DATE_START.split('.')[0]+'_'+DATE_END.split('.')[0]+'.asc\' 3 0 0 1 FREE \n')
+                file_out.write('READINP WIND '+str(factor_wind)+'  \''+path_forcing+self.grid.name()+'_wind'+DATE_START.split('.')[0]+'_'+DATE_END.split('.')[0]+'.asc\' 3 0 0 1 FREE \n')
                 file_out.write('$ \n')
             else:
                 file_out.write('OFF QUAD \n')
