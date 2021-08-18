@@ -8,6 +8,32 @@ from subprocess import call
 import xarray as xr
 import os
 
+
+def create_time_stamps(start_time, end_time, stride, hours_per_file = None, last_file = None, lead_time = 0):
+    """Create time stamps to read in blocks of wind forcing from files"""
+    if hours_per_file is None:
+        hours_per_file = stride
+
+    t0 = np.datetime64(start_time)
+    if last_file is not None:
+        t1 = np.datetime64(last_file)    
+    else:
+        t1 = np.datetime64(end_time)    
+    
+    file_times = pd.date_range(start = t0, end = t1, freq=f'{stride}H') - np.timedelta64(lead_time,'h')
+    start_times = file_times
+    end_times = start_times + np.timedelta64(stride-1,'h')
+    
+    # Make sure we don't exceed the user requested end time
+    end_times.values[-1] = min([end_times.values[-1], np.datetime64(end_time)])
+    
+    # This is the hard upper limit for how much data we can get considering the existing last file and hours in one file
+    hard_end_time = min([np.datetime64(end_time), np.datetime64(last_file) + np.timedelta64(hours_per_file,'h')])
+    
+    end_times.values[-1] = max([end_times.values[-1], hard_end_time])
+
+    return start_times, end_times, file_times
+
 # =============================================================================
 # FORCING FETCHER CLASSES RESPONSIBLE FOR ACTUALLY READING THE SPECTRA
 # =============================================================================
@@ -46,27 +72,20 @@ class ForcingFetcher(ABC):
 
 
 
+
+
+
+
 class ForcingMEPS(ForcingFetcher):
-    def __init__(self, prefix = 'subset', hours_per_file = 24, lead_time = 0):
+    def __init__(self, prefix = 'subset', stride = 24, hours_per_file = 24, last_file = None, lead_time = 0):
+        self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
         self.prefix = copy(prefix)
+        self.last_file = copy(last_file)
         return
     
-    def create_time_stamps(self, start_time, end_time, hours_per_file):
-        
-        h0 = int(start_time.split('T')[1][0:2])
-        h0 = int(np.ceil(h0/hours_per_file)*hours_per_file)
-        
-        h1 = int(end_time.split('T')[1][0:2])
-        h1 = int(np.ceil(h1/hours_per_file)*hours_per_file)
-        
-        t0 = np.datetime64(start_time.split('T')[0] + 'T00:00:00')+np.timedelta64(h0,'h')
-        t1 = np.datetime64(end_time.split('T')[0] + 'T00:00:00')+np.timedelta64(h1,'h')
-        
-        time_stamps = pd.date_range(start = t0, end = t1, freq=f'{hours_per_file}H')
-        return time_stamps
-    
+   
     def __call__(self, grid, start_time, end_time, expansion_factor):
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
@@ -74,9 +93,8 @@ class ForcingMEPS(ForcingFetcher):
               
         
         #days = day_list(start_time = self.start_time, end_time = self.end_time)
-        time_stamps = self.create_time_stamps(start_time, end_time, self.hours_per_file)
-        
-        file_stamps = time_stamps - np.timedelta64(self.lead_time,'h')
+        start_times, end_times, file_times = create_time_stamps(start_time, end_time, self.stride, self.hours_per_file, self.last_file, self.lead_time)
+
         wnd_list =[]
         
         temp_folder = 'dnora_wnd_temp'
@@ -85,20 +103,13 @@ class ForcingMEPS(ForcingFetcher):
             print ("Creating folder %s..." % temp_folder)
         
         
-        for n in range(len(file_stamps)):
+        for n in range(len(file_times)):
             #print(time_stamp)
             #print(days[n].strftime('%Y-%m-%d')) 
-            url = self.get_url(file_stamps[n], self.prefix)
+            url = self.get_url(file_times[n], self.prefix)
             
-            start_date_fimex = time_stamps[n].strftime('%Y-%m-%dT%H:%M:%S')
-            if n == (len(time_stamps)-1):
-                end_date_fimex = end_time
-                #end_date_fimex = (time_stamps[n] + np.timedelta64(0, 'h')).strftime('%Y-%m-%dT%H:%M:%S')
-            else:
-                end_date_fimex = (time_stamps[n] + np.timedelta64(self.hours_per_file-1, 'h')).strftime('%Y-%m-%dT%H:%M:%S')
-                
             msg.info(url)
-            msg.plain(f"Reading wind forcing data: {start_date_fimex}-{end_date_fimex}")
+            msg.plain(f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
             
             
             
@@ -133,7 +144,7 @@ class ForcingMEPS(ForcingFetcher):
                   '--process.rotateVector.all',
                   '--extract.selectVariables=x_wind_10m','--extract.selectVariables=y_wind_10m',
                   '--extract.selectVariables=latitude','--extract.selectVariables=longitude',
-                  '--extract.reduceTime.start='+start_date_fimex,'--extract.reduceTime.end='+end_date_fimex,
+                  '--extract.reduceTime.start='+start_times[n].strftime('%Y-%m-%dT%H:%M:%S'),'--extract.reduceTime.end='+end_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
                   #'--extract.reduceDimension.name=ensemble_member',
                   #'--extract.reduceDimension.start=1',
                   #'--extract.reduceDimension.end=1',
@@ -162,9 +173,49 @@ class Forcing:
         self.grid = copy(grid)
         self.name = name
     def import_forcing(self, start_time: str, end_time: str, forcing_fetcher: ForcingFetcher, expansion_factor = 1.2):
+        self.start_time = copy(start_time)
+        self.end_time = copy(end_time)
+        
+        msg.header(f"{type(forcing_fetcher).__name__}: Loading wind forcing...")
         self.data = forcing_fetcher(self.grid, start_time, end_time, expansion_factor)
+        
         return
+
+    def days(self):
+        """Determins a Pandas data range of all the days in the time span."""
+        days = day_list(start_time = self.start_time, end_time = self.end_time)
+        return days
     
+    def time(self):
+        return copy(self.data.time.values)
+    
+    def u(self):
+        return copy(self.data.x_wind_10m.values)
+    def v(self):
+        return copy(self.data.y_wind_10m.values)
+    
+    
+    def slice_data(self, start_time: str = '', end_time: str = ''):
+        if not start_time:
+            # This is not a string, but slicing works also with this input
+            start_time = self.time()[0] 
+        
+        if not end_time:
+            # This is not a string, but slicing works also with this input
+            end_time = self.time()[-1]
+            
+        sliced_data = self.data.sel(time=slice(start_time, end_time))
+            
+        return sliced_data
+    
+    
+    def times_in_day(self, day):
+        """Determines time stamps of one given day."""
+        t0 = day.strftime('%Y-%m-%d') + "T00:00:00"	
+        t1 = day.strftime('%Y-%m-%d') + "T23:59:59"
+        
+        times = self.slice_data(start_time = t0, end_time = t1).time.values
+        return times  
 # =============================================================================
 # OUTPUT MODEL CLASSES RESPONSIBLE FOR WRITING SPECTRA IN CORRECT FORMAT
 # =============================================================================
@@ -183,5 +234,46 @@ class DumpToNc(OutputModel):
         output_file = f"wind_{forcing_out.name}_{forcing_out.grid.name()}.nc"
         msg.to_file(output_file)
         forcing_out.data.to_netcdf(output_file)
+            
+        return
+    
+class OutputSWANascii(OutputModel):
+    def __init__(self):
+        pass
+    
+    def __call__(self, forcing_out: Forcing):
+        msg.header(f'{type(self).__name__}: writing wind forcing from {forcing_out.name}')
+        
+        days = forcing_out.days()
+        output_file = f"wind_{forcing_out.name}_{forcing_out.grid.name()}_wind_{days[0].strftime('%Y%m%d')}_{days[-1].strftime('%Y%m%d')}.asc"
+        msg.info(f'Writing wind forcing to: {output_file}')
+        #print(output_file)
+        with open(output_file, 'w') as file_out:
+            for day in days:
+                msg.plain(day.strftime('%Y-%m-%d'))
+                times = forcing_out.times_in_day(day)
+                for n in range(len(times)):
+                    time_stamp = pd.to_datetime(times[n]).strftime('%Y%m%d.%H%M%S')+'\n'
+                    file_out.write(time_stamp)
+                    np.savetxt(file_out,forcing_out.u()[n,:,:]*1000, fmt='%i') #
+                    file_out.write(time_stamp)
+                    np.savetxt(file_out,forcing_out.v()[n,:,:]*1000, fmt='%i') #
+                    
+
+
+#                     file_out.write(time_stamp)
+#                     file_out.write(str(data.time.time[time_step].values).split('-')[0]+str(data.time.time[time_step].values).split('-')[1]+\
+#                                    str(data.time.time[time_step].values).split('-')[2][:2]+'.'+str(data.time.time[time_step].values).split('-')[2][3:5]+'0000\n')
+#                     np.savetxt(file_out,u[time_step]*1000, fmt='%i') #
+#                     file_out.write(str(data.time.time[time_step].values).split('-')[0]+str(data.time.time[time_step].values).split('-')[1]+\
+#                                    str(data.time.time[time_step].values).split('-')[2][:2]+'.'+str(data.time.time[time_step].values).split('-')[2][3:5]+'0000\n')
+#                     np.savetxt(file_out,v[time_step]*1000, fmt='%i') #
+# =============================================================================
+            
+            
+            
+            
+
+                    
             
         return

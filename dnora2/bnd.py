@@ -586,22 +586,21 @@ class OutputWW3nc(OutputModel):
    
    
 class OutputSWANascii(OutputModel):
-    def __init__(self, grid, factor = 1E-4):
+    def __init__(self, factor = 1E-4):
         self.factor = factor
-        self.grid = grid
                 
     def __call__(self, in_boundary: Boundary):
         boundary = copy(in_boundary)
         
         
-        msg.header('Writing SWAN ASCII-output')
-        boundary.process_spectra(spec.NautToOcean())
+        msg.header(f'{type(self).__name__}: writing boundary spectra from {in_boundary.name}')
+        #boundary.process_spectra(spec.NautToOcean())
         # Initialize the boundary file by writing the header
-        swan_bnd_points = self.grid.boundary_points()
+        swan_bnd_points = in_boundary.grid.boundary_points()
         days = boundary.days()
         
         
-        filename = f"{self.grid.name()}_spec{days[0].strftime('%Y%m%d')}_{days[-1].strftime('%Y%m%d')}.asc"
+        filename = f"{in_boundary.grid.name()}_spec{days[0].strftime('%Y%m%d')}_{days[-1].strftime('%Y%m%d')}.asc"
         with open(filename, 'w') as file_out:
             file_out.write('SWAN   1\n')
             file_out.write('$ Data produced by '+boundary.data.source+'\n')
