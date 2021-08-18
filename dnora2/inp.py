@@ -18,7 +18,7 @@ class SWANInputFile(ModelInputFile):
         self.grid = copy(grid)
         return
 
-    def __call__(self, start_time, end_time, swan_directory = '.', calib_wind = 1, calib_wcap = 0.5000E-04):
+    def __call__(self, start_time, end_time, swan_directory = '.', wind =True, calib_wind = 1, calib_wcap = 0.5000E-04):
         path_forcing = os.getcwd() +'/' # path for directory where forcing and boundaries are saved, here it is used the current directory
         DATE_START = start_time.replace('-','').replace('T','.').replace(':','')+'00'
         DATE_END   = end_time.replace('-','').replace('T','.').replace(':','')+'00'
@@ -48,12 +48,14 @@ class SWANInputFile(ModelInputFile):
             file_out.write('$ \n')
             file_out.write('BOU NEST \''+path_forcing+self.grid.name()+'_spec'+DATE_START.split('.')[0]+'_'+DATE_END.split('.')[0]+'.asc\' OPEN \n')
             file_out.write('$ \n')
-            file_out.write('INPGRID WIND '+str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(self.grid.nx())+' '+str(self.grid.ny())+' '+str((delta_X/self.grid.nx()).round(4)) +' '+str((delta_Y/self.grid.ny()).round(4)) +' NONSTATIONARY '+ DATE_START +' 1 HR ' + DATE_END +'\n')
-            file_out.write('READINP WIND '+str(factor_wind)+'  \''+path_forcing+self.grid.name()+'_wind_'+DATE_START.split('.')[0]+'_'+DATE_END.split('.')[0]+'.asc\' 3 0 0 1 FREE \n')
-            file_out.write('$ \n')
+            if wind==True:
+                file_out.write('INPGRID WIND '+str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(self.grid.nx())+' '+str(self.grid.ny())+' '+str((delta_X/self.grid.nx()).round(4)) +' '+str((delta_Y/self.grid.ny()).round(4)) +' NONSTATIONARY '+ DATE_START +' 1 HR ' + DATE_END +'\n')
+                file_out.write('READINP WIND '+str(factor_wind)+'  \''+path_forcing+self.grid.name()+'_wind_'+DATE_START.split('.')[0]+'_'+DATE_END.split('.')[0]+'.asc\' 3 0 0 1 FREE \n')
+                file_out.write('$ \n')
+            else:
+                file_out.write('OFF QUAD \n')
             file_out.write('GEN3 WESTH cds2='+str(calib_wcap) +'\n')
             file_out.write('FRICTION JON 0.067 \n')
-            #file_out.write('OFF QUAD \n')
             file_out.write('PROP BSBT \n')
             file_out.write('NUM ACCUR NONST 1 \n')
             file_out.write('$ \n')
