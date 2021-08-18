@@ -46,7 +46,7 @@ class SWANInputFile(ModelInputFile):
             file_out.write('INPGRID BOTTOM '  +str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(self.grid.nx())+' '+str(self.grid.ny())+' '+ str((delta_X/self.grid.nx()).round(4)) +' '+ str((delta_Y/self.grid.ny()).round(4)) +' EXC 32767\n')
             file_out.write('READINP BOTTOM -1 \''+path_forcing+self.grid.name()+'_SWAN.bot\' 3 0 FREE \n')
             file_out.write('$ \n')
-            file_out.write('BOU NEST \''+path_forcing+self.grid.name()+'_spec_'+DATE_START.split('.')[0]+'_'+DATE_END.split('.')[0]+'.asc\' OPEN \n')
+            file_out.write('BOU NEST \''+path_forcing+self.grid.name()+'_spec'+DATE_START.split('.')[0]+'_'+DATE_END.split('.')[0]+'.asc\' OPEN \n')
             file_out.write('$ \n')
             file_out.write('INPGRID WIND '+str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(self.grid.nx())+' '+str(self.grid.ny())+' '+str((delta_X/self.grid.nx()).round(4)) +' '+str((delta_Y/self.grid.ny()).round(4)) +' NONSTATIONARY '+ DATE_START +' 1 HR ' + DATE_END +'\n')
             file_out.write('READINP WIND '+str(factor_wind)+'  \''+path_forcing+self.grid.name()+'_wind_'+DATE_START.split('.')[0]+'_'+DATE_END.split('.')[0]+'.asc\' 3 0 0 1 FREE \n')
