@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from subprocess import call
 import xarray as xr
+import os
 
 # =============================================================================
 # FORCING FETCHER CLASSES RESPONSIBLE FOR ACTUALLY READING THE SPECTRA
@@ -78,6 +79,12 @@ class ForcingMEPS(ForcingFetcher):
         file_stamps = time_stamps - np.timedelta64(self.lead_time,'h')
         wnd_list =[]
         
+        temp_folder = 'dnora_wnd_temp'
+        if not os.path.isdir(temp_folder):
+            os.mkdir(temp_folder)
+            print ("Creating folder %s..." % temp_folder)
+        
+        
         for n in range(len(file_stamps)):
             #print(time_stamp)
             #print(days[n].strftime('%Y-%m-%d')) 
@@ -92,6 +99,9 @@ class ForcingMEPS(ForcingFetcher):
                 
             msg.info(url)
             msg.plain(f"Reading wind forcing data: {start_date_fimex}-{end_date_fimex}")
+            
+            
+            
             
             nc_fimex = f'dnora_wnd_temp/wind_{n:04.0f}.nc'
             #nc_fimex = 'dnora_wnd_temp.nc'

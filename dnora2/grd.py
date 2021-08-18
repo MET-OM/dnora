@@ -147,8 +147,8 @@ class TopoFetcher(ABC):
     
 class TopoEMODNET2018(TopoFetcher):
     """Reads data from EMODNET"""
-    def __init__(self, expansion_factor = 1.2, tile = 'C5'):
-        self.source=f'/lustre/storeB/project/fou/om/WW3/bathy/emodnet_115m_x_115m/{tile}_2018.dtm' 
+    def __init__(self, expansion_factor = 1.2, tile = 'C5', folder = '/lustre/storeB/project/fou/om/WW3/bathy/emodnet_115m_x_115m'):
+        self.source=f'{folder}/{tile}_2018.dtm' 
         self.expansion_factor = expansion_factor
         return
     
