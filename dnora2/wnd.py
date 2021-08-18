@@ -245,7 +245,7 @@ class OutputSWANascii(OutputModel):
         msg.header(f'{type(self).__name__}: writing wind forcing from {forcing_out.name}')
         
         days = forcing_out.days()
-        output_file = f"wind_{forcing_out.name}_{forcing_out.grid.name()}_wind_{days[0].strftime('%Y%m%d')}_{days[-1].strftime('%Y%m%d')}.asc"
+        output_file = f"{forcing_out.grid.name()}_wind{days[0].strftime('%Y%m%d')}_{days[-1].strftime('%Y%m%d')}.asc"
         msg.info(f'Writing wind forcing to: {output_file}')
         #print(output_file)
         with open(output_file, 'w') as file_out:
