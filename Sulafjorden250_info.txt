@@ -8,13 +8,13 @@ dlon, dlat = 0.0048620689655172415, 0.0022580645161290416 deg
 Inverse: dlon, dlat = 1/205.67375886524823, 1/442.857142857141 deg
 dx, dy approximately 250.19262459259443, 250.0769434576436 metres
 nx, ny = 291 x 249 grid points
-Mean depth: -118.8 m
+Mean depth: -115.4 m
 Max depth: -696.4 m
-Min depth: -5.0 m
+Min depth: -0.0 m
 ---------------------------------------------------------------------------
 Grid contains:
-28312 sea points
-44147 land points
-414 boundary points
+29136 sea points
+43323 land points
+422 boundary points
 ---------------------------------------------------------------------------
 
