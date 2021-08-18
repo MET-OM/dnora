@@ -17,7 +17,6 @@ grid.set_boundary(bounN = 1, edges = ['N', 'W'])
 
 topo_fetcher = grd.TopoEMODNET2018()
 grid.import_topo(topo_fetcher)
-grid.filter_topo()
 grid.mesh_grid()
 
 # Change grid points under 2 m depth to land

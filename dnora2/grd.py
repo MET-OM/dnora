@@ -322,7 +322,7 @@ class Grid:
                 ## --------- West boundary ----------
                 if 'W' in edges:
                     boundary_mask[::bounN,0] = True
-                msg.plain(f'Set {sum(sum(self.boundary_mask())):d} boundary points (some can be on land)')   
+                msg.plain(f'Set {sum(sum(boundary_mask)):d} boundary points (some can be on land)')   
             elif bounN == 0:
                 if self.boundary_mask().size > 0:
                     msg.info("Removing all boundary points")
