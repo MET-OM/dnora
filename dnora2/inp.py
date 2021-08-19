@@ -14,8 +14,10 @@ class ModelInputFile(ABC):
     
     
 class SWANInputFile(ModelInputFile):
-    def __init__(self, grid):
-        self.grid = copy(grid)
+    def __init__(self, grid, forcing):
+        # We do not make copies here since the output doesn't change the states and the forcing might get wuite large
+        self.grid = grid
+        self.forcing = forcing
         return
 
     def __call__(self, start_time, end_time, swan_directory = '.', wind =True, calib_wind = 1, calib_wcap = 0.5000E-04):
@@ -49,7 +51,7 @@ class SWANInputFile(ModelInputFile):
             file_out.write('BOU NEST \''+path_forcing+self.grid.name()+'_spec'+DATE_START.split('.')[0]+'_'+DATE_END.split('.')[0]+'.asc\' OPEN \n')
             file_out.write('$ \n')
             if wind==True:
-                file_out.write('INPGRID WIND '+str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(self.grid.nx()-1)+' '+str(self.grid.ny()-1)+' '+str((delta_X/(self.grid.nx()-1)).round(4)) +' '+str((delta_Y/(self.grid.ny()-1)).round(4)) +' NONSTATIONARY '+ DATE_START +' 1 HR ' + DATE_END +'\n')
+                file_out.write('INPGRID WIND '+str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(self.grid.nx()-1)+' '+str(self.grid.ny()-1)+' '+str((delta_X/(self.forcing.nx()-1)).round(4)) +' '+str((delta_Y/(self.forcing.ny()-1)).round(4)) +' NONSTATIONARY '+ DATE_START +' 1 HR ' + DATE_END +'\n')
                 file_out.write('READINP WIND '+str(factor_wind)+'  \''+path_forcing+self.grid.name()+'_wind'+DATE_START.split('.')[0]+'_'+DATE_END.split('.')[0]+'.asc\' 3 0 0 1 FREE \n')
                 file_out.write('$ \n')
             else:

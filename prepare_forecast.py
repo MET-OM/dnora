@@ -56,22 +56,24 @@ write_grid = grd.OutputModelSWAN()
 write_grid(grid)
 
 # Boundary
-# boundary.process_spectra([spec.InterpSpectralProcessor(first_dir = 0)]) !!! IS THIS NEEDED FOR SWAN? !!!!
+#boundary.process_spectra([spec.InterpSpectralProcessor(first_dir = 0)]) #!!! IS THIS NEEDED FOR SWAN? !!!!
 write_boundary = bnd.OutputSWANascii()
 write_boundary(boundary)
 
 # Wind forcing
-#write_forcing = wnd.DumpToNc()
-swan_directory = '/home/konstantinosc/Programs/swan4120'
-write_input_file = inp.SWANInputFile(grid)
-input_file_name = write_input_file(
-    start_time, end_time, swan_directory=swan_directory, wind=False)
+write_output = wnd.OutputSWANascii()
+write_output(forcing)
 
 # Write input file for SWAN model run
-write_input_file = inp.SWANInputFile(grid)
-input_file_name = write_input_file(start_time, end_time)
+# =============================================================================
+swan_directory = '/home/konstantinosc/Programs/swan4120'
+#swan_directory = './'
+write_input_file = inp.SWANInputFile(grid, forcing)
+input_file_name = write_input_file(
+    start_time, end_time, swan_directory=swan_directory, wind=True)
+# =============================================================================
 
 # =============================================================================
 # SWAN RUN
 # =============================================================================
-run.run_SWAN(input_file_name, swan_directory=swan_directory)
+#run.run_SWAN(input_file_name, swan_directory=swan_directory)

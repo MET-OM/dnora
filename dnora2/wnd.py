@@ -194,6 +194,11 @@ class Forcing:
     def v(self):
         return copy(self.data.y_wind_10m.values)
     
+    def nx(self):
+        return (self.data.x_wind_10m.shape[0])
+    
+    def ny(self):
+        return (self.data.x_wind_10m.shape[1])
     
     def slice_data(self, start_time: str = '', end_time: str = ''):
         if not start_time:
@@ -216,6 +221,7 @@ class Forcing:
         
         times = self.slice_data(start_time = t0, end_time = t1).time.values
         return times  
+    
 # =============================================================================
 # OUTPUT MODEL CLASSES RESPONSIBLE FOR WRITING SPECTRA IN CORRECT FORMAT
 # =============================================================================
