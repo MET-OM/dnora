@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 import netCDF4
 from dnora2 import msg
 from dnora2 import spec
+from dnora2 import wnd
 from copy import copy
 
 # =============================================================================
@@ -168,8 +169,12 @@ class BoundaryForceFeed(BoundaryFetcher):
 
 
 class BoundaryWAM4(BoundaryFetcher):
-    def __init__(self, ignore_nan = False):
+    def __init__(self, ignore_nan = False, stride = 6, hours_per_file = 73, last_file = None, lead_time = 0):
         self.ignore_nan = copy(ignore_nan)
+        self.stride = copy(stride)
+        self.hours_per_file = copy(hours_per_file)
+        self.lead_time = copy(lead_time)
+        self.last_file = copy(last_file)
         return
     
     def get_coordinates(self, start_time):
@@ -208,15 +213,28 @@ class BoundaryWAM4(BoundaryFetcher):
             inds = self.pointers[0][inds]
         
         
-        days = day_list(start_time = self.start_time, end_time = self.end_time)
+        start_times, end_times, file_times = wnd.create_time_stamps(start_time, end_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
+        
         
         msg.info(f"Getting boundary spectra from WAM4 from {self.start_time} to {self.end_time}")
         bnd_list = []    
-        for n in range(len(days)):
-            url = self.get_url(days[n])
-            msg.plain(url)
-            t0, t1 = self.get_time_limits_day(n)
-            bnd_list.append(xr.open_dataset(url).sel(time = slice(t0, t1), x = (inds+1)))
+        for n in range(len(file_times)):
+            url = self.get_url(file_times[n])
+            msg.info(url)
+            msg.plain(f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
+            #t0, t1 = self.get_time_limits_day(n)
+            bnd_list.append(xr.open_dataset(url).sel(time = slice(start_times[n], end_times[n]), x = (inds+1)))
+# =============================================================================
+#         days = day_list(start_time = self.start_time, end_time = self.end_time)
+#         
+#         msg.info(f"Getting boundary spectra from WAM4 from {self.start_time} to {self.end_time}")
+#         bnd_list = []    
+#         for n in range(len(days)):
+#             url = self.get_url(days[n])
+#             msg.plain(url)
+#             t0, t1 = self.get_time_limits_day(n)
+#             bnd_list.append(xr.open_dataset(url).sel(time = slice(t0, t1), x = (inds+1)))
+# =============================================================================
             
         bnd=xr.concat(bnd_list, dim="time").squeeze('y')
         
@@ -232,7 +250,8 @@ class BoundaryWAM4(BoundaryFetcher):
         return  time, freq, dirs, spec, lon, lat, source
 
     def get_url(self, day):
-        url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/'+day.strftime('%d')+'/MyWave_wam4_SPC_'+day.strftime('%Y%m%d')+'T00Z.nc'
+        url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/'+day.strftime('%d')+'/MyWave_wam4_SPC_'+day.strftime('%Y%m%d')+'T'+day.strftime('%H')+'Z.nc'
+        #url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/'+day.strftime('%d')+'/MyWave_wam4_SPC_'+day.strftime('%Y%m%d')+'T00Z.nc'
         return url
     
 

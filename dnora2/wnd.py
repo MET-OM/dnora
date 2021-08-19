@@ -1,6 +1,5 @@
 from abc import ABC,  abstractmethod
-from dnora2.bnd import day_list
-from dnora2 import msg
+from dnora2 import msg, bnd
 from copy import copy
 import numpy as np
 import pandas as pd
@@ -54,7 +53,7 @@ class ForcingFetcher(ABC):
     def get_time_limits_day(self, ind):
         """Determines star and end time for the day. First and last day doesn't start at 00:00 or end at 23:59"""
         
-        days = day_list(start_time = self.start_time, end_time = self.end_time)
+        days = bnd.day_list(start_time = self.start_time, end_time = self.end_time)
         
         if ind == 0:
             t0 = self.start_time
@@ -92,7 +91,7 @@ class ForcingMEPS(ForcingFetcher):
         self.end_time = end_time
               
         
-        #days = day_list(start_time = self.start_time, end_time = self.end_time)
+        #days = bnd.day_list(start_time = self.start_time, end_time = self.end_time)
         start_times, end_times, file_times = create_time_stamps(start_time, end_time, self.stride, self.hours_per_file, self.last_file, self.lead_time)
 
         wnd_list =[]
@@ -183,7 +182,7 @@ class Forcing:
 
     def days(self):
         """Determins a Pandas data range of all the days in the time span."""
-        days = day_list(start_time = self.start_time, end_time = self.end_time)
+        days = bnd.day_list(start_time = self.start_time, end_time = self.end_time)
         return days
     
     def time(self):
