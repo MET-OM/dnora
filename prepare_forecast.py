@@ -17,7 +17,8 @@ grid.set_spacing(dm=250)
 grid.set_boundary(bounN=1, edges=['N', 'W', 'S'])
 
 # Import topography and mesh it down to the grid definitions
-topo_fetcher = grd.TopoEMODNET2018(tile='D5')
+topo_fetcher = grd.TopoEMODNET2018(tile='D5',
+                                   folder='/home/konstantinosc/PhD/github/DNORA/bathy/')
 grid.import_topo(topo_fetcher)
 grid.mesh_grid()
 
@@ -76,4 +77,4 @@ input_file_name = write_input_file(
 # =============================================================================
 # SWAN RUN
 # =============================================================================
-#run.run_SWAN(input_file_name, swan_directory=swan_directory)
+run.run_SWAN(input_file_name, swan_directory=swan_directory)
