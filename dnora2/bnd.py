@@ -181,7 +181,7 @@ class BoundaryWAM4(BoundaryFetcher):
         for n in range(len(file_times)):
             url = self.get_url(file_times[n])
             msg.info(url)
-            msg.plain(f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
+            msg.plain(f"Reading boundary spectra: {start_times[n]}-{end_times[n]}")
             #t0, t1 = self.get_time_limits_day(n)
             bnd_list.append(xr.open_dataset(url).sel(time = slice(start_times[n], end_times[n]), x = (inds+1)))
 # =============================================================================
