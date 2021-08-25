@@ -557,23 +557,25 @@ class Grid:
         self.mesh_grid(mesher = TrivialMesher())
 
         print(self)
-    def plot(self, save_fig = False, filename = '', boundary = None):
+    def plot(self, save_fig = False, filename = '', boundary = None, grid_manipulator = TrivialFilter()):
         """Creates a plot of the topography"""
+
+        topo = grid_manipulator(self.topo(), self.lon(), self.lat(), self.land_sea_mask(), self.boundary_mask())
 
         if self.topo().size > 0:
             if not filename:
                 filename = f"{self.data.name}_topo.pdf"
-            levels = np.linspace(np.min(self.topo()), 0, 100, endpoint=True)
+            levels = np.linspace(np.min(topo), 0, 100, endpoint=True)
 
             plt.figure()
-            plt.contourf(self.lon(),self.lat(),self.topo(),levels)
+            plt.contourf(self.lon(),self.lat(),topo,levels)
 
             if boundary is not None:
                 plt.plot(boundary.lon(), boundary.lat(),'kx')
 
             plt.colorbar()
             plt.title(f"{self.data.name} topograpy")
-            #plt.show()
+            plt.show()
 
             if save_fig:
                 plt.savefig(filename, dpi=300)
@@ -701,7 +703,7 @@ class OutputModelSWAN(OutputModel):
         if grid.boundary_mask().size > 0:
             msg.info(f'Setting {sum(sum(np.logical_and(grid.boundary_mask(), grid.land_sea_mask()))):d} boundary points in grid...')
             mask_out[np.logical_and(grid.boundary_mask(), grid.land_sea_mask())] = 2
-     
+
         fn1 = grid.name()+'_SWAN.bot'
         msg.to_file(fn1)
         np.savetxt(fn1, grid.topo(), delimiter='\t',fmt='%1.0f')
