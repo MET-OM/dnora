@@ -574,7 +574,7 @@ class Grid:
                 plt.plot(boundary.lon(), boundary.lat(),'kx')
 
             plt.colorbar()
-            plt.title(f"{self.data.name} topograpy")
+            plt.title(f"{self.data.name} topography")
             plt.show()
 
             if save_fig:
