@@ -105,7 +105,8 @@ class ForcingMEPS(ForcingFetcher):
             dlon = grid.data.dlon*5
             dlat = grid.data.dlat*5
 
-            call(['fimex-1.6', '--input.file='+url,
+            
+            fimex_command = ['fimex-1.6', '--input.file='+url,
                   '--interpolate.method=bilinear',
                   '--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0',
                   '--interpolate.xAxisValues='+str(lon_min)+','+str(lon_min+dlon)+',...,'+str(lon_max)+'',
@@ -118,16 +119,21 @@ class ForcingMEPS(ForcingFetcher):
                   '--process.rotateVector.all',
                   '--extract.selectVariables=x_wind_10m','--extract.selectVariables=y_wind_10m',
                   '--extract.selectVariables=latitude','--extract.selectVariables=longitude',
-                  '--extract.reduceTime.start='+start_times[n].strftime('%Y-%m-%dT%H:%M:%S'),'--extract.reduceTime.end='+end_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
-                  #'--extract.reduceDimension.name=ensemble_member',
-                  #'--extract.reduceDimension.start=1',
-                  #'--extract.reduceDimension.end=1',
+                  '--extract.reduceTime.start='+start_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
+                  '--extract.reduceTime.end='+end_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
                   '--process.rotateVector.direction=latlon',
-                  '--output.file='+nc_fimex])
+                  '--output.file='+nc_fimex]
+            
+            if self.prefix == 'subset':
+                fimex_command.insert(-2,'--extract.reduceDimension.name=ensemble_member')
+                fimex_command.insert(-2,'--extract.reduceDimension.start=1')
+                fimex_command.insert(-2,'--extract.reduceDimension.end=1')
 
+            call(fimex_command)
             wnd_list.append(xr.open_dataset(nc_fimex).squeeze())
 
         wind_forcing = xr.concat(wnd_list, dim="time")
+        
 
         #wind_forcing.to_netcdf('test.nc')
         return wind_forcing
