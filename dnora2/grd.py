@@ -609,11 +609,12 @@ class Grid:
         else:
             msg.templates('no_mask')
 
-    def write_status(self, filename = ''):
+    def write_status(self, filename = '', folder = ''):
         """Writes out the status of the grid to a file."""
         if not filename:
             filename = f"{self.data.name}_info.txt"
-
+        
+        filename = folder + filename
         msg.to_file(filename)
 
         stdout = sys.stdout
@@ -661,8 +662,10 @@ class OutputModel(ABC):
         pass
 
 class OutputModelWW3(OutputModel):
-    def __init__(self):
-        pass
+    def __init__(self, folder = ''):
+        if (not folder == '') and (not folder[-1] == '/'):
+            folder = folder + '/'
+        self.folder = copy(folder)
 
     def __call__(self, grid, matrix = False):
         msg.header('Create files for regular grid')
@@ -673,23 +676,23 @@ class OutputModelWW3(OutputModel):
             mask_out[np.logical_and(grid.boundary_mask(), grid.land_sea_mask())] = 2
 
         if matrix:
-            fn1 = 'mat_'+grid.name()+'_bathy.txt'
+            fn1 = self.folder + 'mat_'+grid.name()+'_bathy.txt'
             msg.to_file(fn1)
             np.savetxt(fn1, -1*grid.topo(), delimiter=',',fmt='%1.6f')
 
-            fn2 = 'mat_'+grid.name()+'_mapsta.txt'
+            fn2 = self.folder + 'mat_'+grid.name()+'_mapsta.txt'
             msg.to_file(fn2)
             np.savetxt(fn2, mask_out, delimiter=',',fmt='%1.0f')
         else:
-            fn1 = grid.name()+'_bathy.txt'
+            fn1 = self.folder + grid.name()+'_bathy.txt'
             msg.to_file(fn1)
             np.savetxt(fn1, -1*grid.topo().ravel(), delimiter=',',fmt='%1.6f')
 
-            fn2 = grid.name()+'_mapsta.txt'
+            fn2 = self.folder + grid.name()+'_mapsta.txt'
             msg.to_file(fn2)
             np.savetxt(fn2, mask_out.ravel(), delimiter=',',fmt='%1.0f')
 
-        grid.write_status()
+        grid.write_status(folder = self.folder)
 
 
 class OutputModelSWAN(OutputModel):
