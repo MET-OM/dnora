@@ -343,7 +343,7 @@ class DumpToNc(OutputModel):
 
     def __call__(self, forcing_out: Forcing):
         msg.header(f"Writing output with {type(self).__name__}")
-        output_file = f"wind_{forcing_out.name}_{forcing_out.grid.name()}.nc"
+        output_file = f"wind_{forcing_out.name}_{forcing_out.grid.name()}_{str(forcing_out.time()[0])[0:10]}_{str(forcing_out.time()[-1])[0:10]}.nc"
         msg.to_file(output_file)
         forcing_out.data.to_netcdf(output_file)
 

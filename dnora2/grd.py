@@ -666,8 +666,8 @@ class OutputModelWW3(OutputModel):
 
     def __call__(self, grid, matrix = False):
         msg.header('Create files for regular grid')
-        mask_out = np.ones(grid.topo().shape)
-        mask_out[grid.land_sea_mask()] = 0
+        mask_out = np.zeros(grid.topo().shape)
+        mask_out[grid.land_sea_mask()] = 1
         if grid.boundary_mask().size > 0:
             msg.info(f'Setting {sum(sum(np.logical_and(grid.boundary_mask(), grid.land_sea_mask()))):d} boundary points in grid...')
             mask_out[np.logical_and(grid.boundary_mask(), grid.land_sea_mask())] = 2
