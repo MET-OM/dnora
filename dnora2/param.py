@@ -11,7 +11,7 @@ from copy import copy
 from dnora2.bnd import day_list, month_list
 import re
 import matplotlib.pyplot as plt
-
+from calendar import monthrange
 
 # =============================================================================
 # STATISTICS
@@ -85,7 +85,7 @@ class ParameterFetcher(ABC):
         if ind == (len(months)-1):
             t1 = self.end_time
         else:
-            t1 = months[ind].strftime('%Y-%m-%d') + "T23:59:59"
+            t1 = months[ind].strftime('%Y-%m-') + str(monthrange(months[ind].year,months[ind].month)[1]) + "T23:59:59"
 
         return t0, t1
 
@@ -271,5 +271,7 @@ class Parameter:
         for p in param_list:
             plt.figure()
             plt.plot(self.data.time.values, self.data[p].values)
+            #plt.ylabel(p)
+        plt.show()
 
         pass

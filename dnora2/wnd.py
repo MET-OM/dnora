@@ -104,7 +104,7 @@ class ForcingArome25thredds(ForcingFetcher):
 
             # Temporary hack: set resolution to about 2.5 km
             dlat = 2.5/111
-            dlon = dlat/2
+            dlon = dlat*2
 
             # This doesn't work if we havent set a grid resolution, for example when only having the outer boundaries of an unstructured grid...
             #dlon = grid.data.dlon*5
