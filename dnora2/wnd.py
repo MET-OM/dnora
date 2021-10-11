@@ -102,8 +102,13 @@ class ForcingArome25thredds(ForcingFetcher):
             lat_min = grid.lat()[0] - expand_lat
             lat_max = grid.lat()[-1] + expand_lat
 
-            dlon = grid.data.dlon*5
-            dlat = grid.data.dlat*5
+            # Temporary hack: set resolution to about 2.5 km
+            dlat = 2.5/111
+            dlon = dlat/2
+
+            # This doesn't work if we havent set a grid resolution, for example when only having the outer boundaries of an unstructured grid...
+            #dlon = grid.data.dlon*5
+            #dlat = grid.data.dlat*5
 
 
             fimex_command = ['fimex-1.6', '--input.file='+url,
@@ -134,19 +139,19 @@ class ForcingArome25thredds(ForcingFetcher):
 
         wind_forcing = xr.concat(wnd_list, dim="time")
 
-        # Fimex has already rotated the longitudes and latitudes, so calling them rlon/rlat is now incorrect        
+        # Fimex has already rotated the longitudes and latitudes, so calling them rlon/rlat is now incorrect
         wind_forcing = wind_forcing.rename_dims({'y': 'lat', 'x': 'lon'})
-        wind_forcing = wind_forcing.rename_vars({'y': 'lat', 'x': 'lon'})        
+        wind_forcing = wind_forcing.rename_vars({'y': 'lat', 'x': 'lon'})
 
         # Go to u and v components
         u,v = u_v_from_dir(wind_forcing.wind_speed, wind_forcing.wind_direction) # factor 1000
         u = u.fillna(0)
         v = v.fillna(0)
-   
-        # Remove speed and dir and add components to dataset        
+
+        # Remove speed and dir and add components to dataset
         wind_forcing = wind_forcing.drop_vars(['wind_speed', 'wind_direction'])
         wind_forcing["u"]=(['time', 'lat', 'lon'],  u)
-        wind_forcing["v"]=(['time', 'lat', 'lon'],  v) 
+        wind_forcing["v"]=(['time', 'lat', 'lon'],  v)
         #wind_forcing.to_netcdf('test.nc')
         return wind_forcing
 
@@ -246,19 +251,19 @@ class ForcingMyWave3km(ForcingFetcher):
 
         wind_forcing = xr.concat(wnd_list, dim="time")
 
-        # Fimex has already rotated the longitudes and latitudes, so calling them rlon/rlat is now incorrect        
+        # Fimex has already rotated the longitudes and latitudes, so calling them rlon/rlat is now incorrect
         wind_forcing = wind_forcing.rename_dims({'rlat': 'lat', 'rlon': 'lon'})
-        wind_forcing = wind_forcing.rename_vars({'rlat': 'lat', 'rlon': 'lon'})        
+        wind_forcing = wind_forcing.rename_vars({'rlat': 'lat', 'rlon': 'lon'})
 
         # Go to u and v components
         u,v = u_v_from_dir(wind_forcing.ff, wind_forcing.dd) # factor 1000
         u = u.fillna(0)
         v = v.fillna(0)
-   
-        # Remove speed and dir and add components to dataset        
+
+        # Remove speed and dir and add components to dataset
         wind_forcing = wind_forcing.drop_vars(['ff', 'dd'])
         wind_forcing["u"]=(['time', 'lat', 'lon'],  u)
-        wind_forcing["v"]=(['time', 'lat', 'lon'],  v) 
+        wind_forcing["v"]=(['time', 'lat', 'lon'],  v)
         #wind_forcing.to_netcdf('test.nc')
         return wind_forcing
 
@@ -367,13 +372,13 @@ class ForcingMEPS(ForcingFetcher):
         wind_forcing = xr.concat(wnd_list, dim="time")
 
 
-        # Fimex has already rotated the longitudes and latitudes, so calling them rlon/rlat is now incorrect        
+        # Fimex has already rotated the longitudes and latitudes, so calling them rlon/rlat is now incorrect
         wind_forcing = wind_forcing.rename_dims({'y': 'lat', 'x': 'lon'})
-        wind_forcing = wind_forcing.rename_vars({'y': 'lat', 'x': 'lon'})        
+        wind_forcing = wind_forcing.rename_vars({'y': 'lat', 'x': 'lon'})
 
-   
 
-        wind_forcing = wind_forcing.rename_vars({'x_wind_10m': 'u', 'y_wind_10m': 'v'})  
+
+        wind_forcing = wind_forcing.rename_vars({'x_wind_10m': 'u', 'y_wind_10m': 'v'})
 
         #wind_forcing.to_netcdf('test.nc')
         return wind_forcing

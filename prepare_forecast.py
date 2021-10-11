@@ -26,9 +26,9 @@ grid.mesh_grid()
 
 # =============================================================================
 # # Morning forecast (run 09:00 25.8.)
-# start_time = '2021-08-25T06:00'
-# end_time = '2021-08-27T18:00'
-# last_file = '2021-08-25T00:00'
+start_time = '2021-08-25T00:00'
+end_time = '2021-08-27T18:00'
+last_file = '2021-08-25T00:00'
 #
 # # Evening forecast (run after 19:00 25.8.)
 # start_time = '2021-08-25T18:00'
@@ -43,9 +43,9 @@ grid.mesh_grid()
 #last_file = '2021-08-19T00:00'
 
 # Fake evening forecast
-start_time = '2021-08-19T18:00'
-end_time = '2021-08-22T06:00'
-last_file = '2021-08-19T12:00'
+#start_time = '2021-08-19T18:00'
+#end_time = '2021-08-22T06:00'
+#last_file = '2021-08-19T12:00'
 
 
 

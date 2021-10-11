@@ -14,7 +14,8 @@ import pandas as pd
 
 
 #start_time = '2018-11-01T00:00:00' ; end_time = '2019-12-31T23:59:59'
-start_time = '2018-12-31T00:00:00' ; end_time = '2019-01-16T00:00:00'
+#start_time = '2018-12-31T00:00:00' ; end_time = '2019-01-16T00:00:00'
+start_time = '2020-01-06T00:00:00' ; end_time = '2020-01-09T23:00:00'
 waveD = param.Parameter()
 waveF = param.Parameter()
 
@@ -25,8 +26,8 @@ param_fetcherF = param.ParameterFromThredds('F_Vartdalsfjorden', {'Hm0': 'Hm0', 
 waveD.import_parameter(start_time, end_time, param_fetcherD)
 waveF.import_parameter(start_time, end_time, param_fetcherF)
 
-waveD.data.to_netcdf('D_Breisundet_201901.nc')
-waveF.data.to_netcdf('F_Vartdalsfjorden_201901.nc')
+#waveD.data.to_netcdf('D_Breisundet_201901.nc')
+#waveF.data.to_netcdf('F_Vartdalsfjorden_201901.nc')
 #wave.plot(['hs', 'mdir'])
 #waveD.statistics([param.WaveStatMean(),])
 #waveD.statistics([np.nanmean, np.nanstd])
