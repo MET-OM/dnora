@@ -267,11 +267,14 @@ class Parameter:
         data = xr.Dataset.from_dict(d)
         return data
 
-    def plot(self, param_list):
+    def plot(self, param_list, mask = None):
+        if mask is not None:
+            mask = np.full(len(self.data.time), True)
         for p in param_list:
             plt.figure()
-            plt.plot(self.data.time.values, self.data[p].values)
-            #plt.ylabel(p)
+            plt.plot(self.data.time.values[mask], self.data[p].values[mask])
+            plt.ylabel(p)
+            plt.title(self.name)
         plt.show()
 
         pass

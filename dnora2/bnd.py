@@ -271,7 +271,7 @@ class BoundaryNORA3(BoundaryFetcher):
 class Boundary:
     def __init__(self, grid, name = "AnonymousBoundary"):
         self.grid = copy(grid)
-        self.name = name
+        self.name = copy(name)
         return
 
     def import_boundary(self, start_time: str, end_time: str, boundary_fetcher: BoundaryFetcher,  point_picker: PointPicker = TrivialPicker()):
@@ -458,8 +458,10 @@ class OutputWW3nc(OutputModel):
         """Writes WW3 compatible netcdf spectral output from a list containing xarray datasets."""
         lat=boundary.lat()[n]
         lon=boundary.lon()[n]
-
-        output_file = f"ww3_spec_E{lon:09.6f}N{lat:09.6f}.nc"
+        if boundary.name == "AnonymousBoundary":
+            output_file = f"ww3_spec_E{lon:09.6f}N{lat:09.6f}.nc"
+        else:
+            output_file = f"ww3_{boundary.name}_E{lon:09.6f}N{lat:09.6f}.nc"
         #output_file = 'ww3_spec_E'+str(lon)+'N'+str(lat)+'.nc'
         #output_file = 'Test_ww3.nc'
         msg.plain(f"Point {n}: {output_file}")
