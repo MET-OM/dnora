@@ -1,2 +1,2 @@
-from . import grd
-from .obj import Grid
+from . import grd, bnd
+from .obj import Grid, Boundary

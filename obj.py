@@ -6,10 +6,12 @@ import sys
 import matplotlib.pyplot as plt
 from . import msg
 from . import grd
-#from .grd.mod import TrivialFilter
-#from .grd.msh import TrivialMesher, InterpolationMesher
-#from .grd.read import TopoEmpty
-from .aux import distance_2points
+from . import bnd
+from .aux import distance_2points, day_list
+# Abstract classe
+from .bnd.read import BoundaryFetcher
+from .bnd.pick import PointPicker
+from .bnd.modify import SpectralProcessor
 
 class Grid:
     def __init__(self, lon_min = 0, lon_max = 0, lat_min = 0, lat_max = 0, name="AnonymousGrid"):
@@ -39,7 +41,7 @@ class Grid:
                     ),
                     )
 
-    def filter_topo(self, filt = grd.mod.TrivialFilter()):
+    def filter_topo(self, filt = grd.modify.TrivialFilter()):
             msg.header(f'Filtering topography with {type(filt).__name__}')
 
             empty_mask = np.full(self.raw_topo().shape, False)
@@ -52,7 +54,7 @@ class Grid:
 
             return
 
-    def mesh_grid(self, mesher = grd.msh.InterpolationMesher(method = 'linear')):
+    def mesh_grid(self, mesher = grd.mesh.InterpolationMesher(method = 'linear')):
         if hasattr(self, 'lon') and hasattr(self, 'lon'):
 
             msg.header(f'Meshing grid bathymetry with {type(mesher).__name__}')
@@ -68,7 +70,7 @@ class Grid:
             return
 
 
-    def filter_grid(self, filt = grd.mod.TrivialFilter()):
+    def filter_grid(self, filt = grd.modify.TrivialFilter()):
             msg.header(f'Filtering meshed grid with {type(filt).__name__}')
             topo = filt(self.topo(), self.lon(), self.lat(), self.land_sea_mask(), self.boundary_mask())
 
@@ -367,10 +369,10 @@ class Grid:
         topo_fetcher = grd.read.EmptyTopo(self)
         self.import_topo(topo_fetcher)
         #self.filter_topo(filt = TrivialFilter())
-        self.mesh_grid(mesher = grd.msh.TrivialMesher())
+        self.mesh_grid(mesher = grd.mesh.TrivialMesher())
 
         print(self)
-    def plot(self, save_fig = False, filename = '', boundary = None, grid_manipulator = grd.mod.TrivialFilter()):
+    def plot(self, save_fig = False, filename = '', boundary = None, grid_manipulator = grd.modify.TrivialFilter()):
         """Creates a plot of the topography"""
 
         topo = grid_manipulator(self.topo(), self.lon(), self.lat(), self.land_sea_mask(), self.boundary_mask())
@@ -462,125 +464,125 @@ class Grid:
             return ''
 
 
-# class Boundary:
-#     def __init__(self, grid, name = "AnonymousBoundary"):
-#         self.grid = copy(grid)
-#         self.name = copy(name)
-#         return
-#
-#     def import_boundary(self, start_time: str, end_time: str, boundary_fetcher: BoundaryFetcher,  point_picker: PointPicker = TrivialPicker()):
-#         self.start_time = copy(start_time)
-#         self.end_time = copy(end_time)
-#
-#         msg.header(f"{type(boundary_fetcher).__name__}: Reading coordinats of spectra...")
-#         lon_all, lat_all = boundary_fetcher.get_coordinates(self.start_time)
-#
-#
-#         msg.header(f"Choosing spectra with {type(point_picker).__name__}")
-#         inds = point_picker(self.grid, lon_all, lat_all)
-#
-#         msg.header(f"{type(boundary_fetcher).__name__}: Loading boundary spectra...")
-#         time, freq, dirs, spec, lon, lat, source = boundary_fetcher(self.start_time, end_time, inds)
-#
-#         self.data = self.compile_to_xr(time, freq, dirs, spec, lon, lat, source)
-#         self.mask = [True]*len(self.x())
-#
-#         return
-#
-#
-#     def process_spectra(self, spectral_processors = spec.TrivialSpectralProcessor(calib_spec = 1)):
-#
-#         if not isinstance(spectral_processors, list):
-#             spectral_processors = [spectral_processors]
-#
-#         for n in range (len(spectral_processors)):
-#             spectral_processor = spectral_processors[n]
-#
-#             msg.process(f"Processing spectra with {type(spectral_processor).__name__}")
-#             new_spec, new_mask, new_freq, new_dirs = spectral_processor(self.spec(), self.freq(), self.dirs(), self.time(), self.x(), self.lon(), self.lat(), self.mask)
-#
-#             self.data.spec.values = new_spec
-#             self.mask = new_mask
-#
-#             self.data = self.data.assign_coords(dirs=new_dirs)
-#             self.data = self.data.assign_coords(freq=new_freq)
-#
-#         return
-#
-#     def compile_to_xr(self, time, freq, dirs, spec, lon, lat, source):
-#         x = np.array(range(spec.shape[1]))
-#         data = xr.Dataset(
-#             data_vars=dict(
-#                 spec=(["time", "x", "freq", "dirs"], spec),
-#             ),
-#             coords=dict(
-#                 freq=freq,
-#                 dirs=dirs,
-#                 x=x,
-#                 lon=(["x"], lon),
-#                 lat=(["x"], lat),
-#                 time=time,
-#             ),
-#             attrs=dict(source=source,
-#                 name=self.name
-#             ),
-#             )
-#         return data
-#
-#     def slice_data(self, start_time: str = '', end_time: str = '', x = []):
-#         if isinstance(x, int):
-#             x = [x]
-#         elif not x:
-#             x=self.x()
-#
-#         if not start_time:
-#             # This is not a string, but slicing works also with this input
-#             start_time = self.time()[0]
-#
-#         if not end_time:
-#             # This is not a string, but slicing works also with this input
-#             end_time = self.time()[-1]
-#
-#         sliced_data = self.data.sel(time=slice(start_time, end_time), x=x)
-#
-#         return sliced_data
-#
-#     def spec(self, start_time: str = '', end_time: str = '', x = []):
-#         spec = self.slice_data(start_time, end_time, x).spec.values
-#
-#         return spec
-#
-#
-#     def time(self):
-#         return copy(self.data.time.values)
-#
-#     def freq(self):
-#         return copy(self.data.freq.values)
-#
-#     def dirs(self):
-#         return copy(self.data.dirs.values)
-#
-#     def lon(self):
-#         return copy(self.data.lon.values)
-#
-#     def lat(self):
-#         return copy(self.data.lat.values)
-#
-#     def x(self):
-#         return copy(self.data.x.values)
-#
-#     def days(self):
-#         """Determins a Pandas data range of all the days in the time span."""
-#         days = day_list(start_time = self.start_time, end_time = self.end_time)
-#         return days
-#
-#     def times_in_day(self, day):
-#         """Determines time stamps of one given day."""
-#         t0 = day.strftime('%Y-%m-%d') + "T00:00:00"
-#         t1 = day.strftime('%Y-%m-%d') + "T23:59:59"
-#
-#         times = self.slice_data(start_time = t0, end_time = t1, x = 0).time.values
-#         return times
+class Boundary:
+    def __init__(self, grid, name = "AnonymousBoundary"):
+        self.grid = copy(grid)
+        self.name = copy(name)
+        return
+
+    def import_boundary(self, start_time: str, end_time: str, boundary_fetcher: BoundaryFetcher,  point_picker: PointPicker = bnd.pick.TrivialPicker()):
+        self.start_time = copy(start_time)
+        self.end_time = copy(end_time)
+
+        msg.header(f"{type(boundary_fetcher).__name__}: Reading coordinats of spectra...")
+        lon_all, lat_all = boundary_fetcher.get_coordinates(self.start_time)
+
+
+        msg.header(f"Choosing spectra with {type(point_picker).__name__}")
+        inds = point_picker(self.grid, lon_all, lat_all)
+
+        msg.header(f"{type(boundary_fetcher).__name__}: Loading boundary spectra...")
+        time, freq, dirs, spec, lon, lat, source = boundary_fetcher(self.start_time, end_time, inds)
+
+        self.data = self.compile_to_xr(time, freq, dirs, spec, lon, lat, source)
+        self.mask = [True]*len(self.x())
+
+        return
+
+
+    def process_spectra(self, spectral_processors: SpectralProcessor = bnd.modify.Trivial(calib_spec = 1)):
+
+        if not isinstance(spectral_processors, list):
+            spectral_processors = [spectral_processors]
+
+        for n in range (len(spectral_processors)):
+            spectral_processor = spectral_processors[n]
+
+            msg.process(f"Processing spectra with {type(spectral_processor).__name__}")
+            new_spec, new_mask, new_freq, new_dirs = spectral_processor(self.spec(), self.freq(), self.dirs(), self.time(), self.x(), self.lon(), self.lat(), self.mask)
+
+            self.data.spec.values = new_spec
+            self.mask = new_mask
+
+            self.data = self.data.assign_coords(dirs=new_dirs)
+            self.data = self.data.assign_coords(freq=new_freq)
+
+        return
+
+    def compile_to_xr(self, time, freq, dirs, spec, lon, lat, source):
+        x = np.array(range(spec.shape[1]))
+        data = xr.Dataset(
+            data_vars=dict(
+                spec=(["time", "x", "freq", "dirs"], spec),
+            ),
+            coords=dict(
+                freq=freq,
+                dirs=dirs,
+                x=x,
+                lon=(["x"], lon),
+                lat=(["x"], lat),
+                time=time,
+            ),
+            attrs=dict(source=source,
+                name=self.name
+            ),
+            )
+        return data
+
+    def slice_data(self, start_time: str = '', end_time: str = '', x = []):
+        if isinstance(x, int):
+            x = [x]
+        elif not x:
+            x=self.x()
+
+        if not start_time:
+            # This is not a string, but slicing works also with this input
+            start_time = self.time()[0]
+
+        if not end_time:
+            # This is not a string, but slicing works also with this input
+            end_time = self.time()[-1]
+
+        sliced_data = self.data.sel(time=slice(start_time, end_time), x=x)
+
+        return sliced_data
+
+    def spec(self, start_time: str = '', end_time: str = '', x = []):
+        spec = self.slice_data(start_time, end_time, x).spec.values
+
+        return spec
+
+
+    def time(self):
+        return copy(self.data.time.values)
+
+    def freq(self):
+        return copy(self.data.freq.values)
+
+    def dirs(self):
+        return copy(self.data.dirs.values)
+
+    def lon(self):
+        return copy(self.data.lon.values)
+
+    def lat(self):
+        return copy(self.data.lat.values)
+
+    def x(self):
+        return copy(self.data.x.values)
+
+    def days(self):
+        """Determins a Pandas data range of all the days in the time span."""
+        days = day_list(start_time = self.start_time, end_time = self.end_time)
+        return days
+
+    def times_in_day(self, day):
+        """Determines time stamps of one given day."""
+        t0 = day.strftime('%Y-%m-%d') + "T00:00:00"
+        t1 = day.strftime('%Y-%m-%d') + "T23:59:59"
+
+        times = self.slice_data(start_time = t0, end_time = t1, x = 0).time.values
+        return times
 #
 #
 # class Forcing:
