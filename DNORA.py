@@ -11,6 +11,8 @@ import pyproj
 import oceanwaves as oc
 import pandas as pd
 import os
+import netCDF4
+
 
 
 
@@ -45,7 +47,7 @@ def generate_grid(project_name, file_emodnet, lon_min, lat_min, lon_max, lat_max
     nr_points_y = distance_y*1000/dgm
     #DX:dlon, DY:dlat,
     DX = np.diff(lonlim)[0]/nr_points_x
-    DY = np.diff(latlim)[0]/nr_points_y 
+    DY = np.diff(latlim)[0]/nr_points_y
     #Boundaries
     XUR=max(lonlim); YUR=max(latlim);
     XLL=min(lonlim); YLL=min(latlim); 
@@ -96,8 +98,8 @@ def generate_grid(project_name, file_emodnet, lon_min, lat_min, lon_max, lat_max
     maskW = mask_map[::bounN,0][:-1]
     maskW[maskW > 0 ] = 2
     # --------- South boundary ----------
-    maskS = mask_map[0,::bounN]
-    maskS[maskS > 0 ] = 2
+    #maskS = mask_map[0,::bounN]
+    #maskS[maskS > 0 ] = 2
     # Estimate Active Boundaries (=2 in ww3)
     mask_flat = mask_map.ravel()
     lonlat_flat = np.column_stack((newlon.ravel(),newlat.ravel()))
@@ -222,6 +224,7 @@ def generate_input_NORA3spec_to_SWAN(project_name, dgm, calib_spec, start_date, 
                     file_out.write('m2/Hz/degr \n')
                     file_out.write('-32767\n')
                     #first day
+                      
                     print('Generating 2d spectra at boundaries:')
                     print(days[0].strftime('%Y-%m-%d'))
                     for time_step in range(data.time.shape[0]):
@@ -299,7 +302,7 @@ def generate_input_NORA3spec_to_SWAN(project_name, dgm, calib_spec, start_date, 
                                 SPEC_ocean_convection = data.SPEC[time_step,0,index_min_dinstance,:,:].mean('x').values
                                 SPEC_naut_convection[:,0:data.direction.shape[0]//2] = SPEC_ocean_convection[:,data.direction.shape[0]//2:] # Step 1a: 180..355 to start of array
                                 SPEC_naut_convection[:,data.direction.shape[0]//2:]  = SPEC_ocean_convection[:,0:data.direction.shape[0]//2] # Step 1b: 0..175 to end of array
-                                np.savetxt(file_out,calib_spec*SPEC_naut_convection/(delth*factor), fmt='%-10.0f') # 
+                                np.savetxt(file_out,calib_spec*SPEC_naut_convection/(delth*factor), fmt='%-10.0f') #
 
 def generate_input_WAM4spec_to_SWAN(project_name, dgm, calib_spec, start_date, end_date, nr_spec_interpolate):    
     factor = 1E-4
@@ -362,7 +365,7 @@ def generate_input_WAM4spec_to_SWAN(project_name, dgm, calib_spec, start_date, e
                     #days excluding first and last days:
                     for i in range(1,len(days)-1):
                         print(days[i].strftime('%Y-%m-%d'))
-                        url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+days[0].strftime('%Y') +'/'+days[0].strftime('%m')+'/'+days[0].strftime('%d')+'/MyWave_wam4_SPC_'+days[0].strftime('%Y%m%d')+'T00Z.nc'
+                        url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+days[i].strftime('%Y') +'/'+days[i].strftime('%m')+'/'+days[i].strftime('%d')+'/MyWave_wam4_SPC_'+days[i].strftime('%Y%m%d')+'T00Z.nc'
                         data = xr.open_dataset(url)
                         for time_step in range(data.time.shape[0]):
                             file_out.write(str(data.time.time[time_step].values).split('-')[0]+str(data.time.time[time_step].values).split('-')[1]+\
@@ -389,7 +392,7 @@ def generate_input_WAM4spec_to_SWAN(project_name, dgm, calib_spec, start_date, e
                     #last day
                     if len(days)>1:
                         print(days[-1].strftime('%Y-%m-%d'))
-                        url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+days[0].strftime('%Y') +'/'+days[0].strftime('%m')+'/'+days[0].strftime('%d')+'/MyWave_wam4_SPC_'+days[0].strftime('%Y%m%d')+'T00Z.nc'
+                        url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+days[-1].strftime('%Y') +'/'+days[-1].strftime('%m')+'/'+days[-1].strftime('%d')+'/MyWave_wam4_SPC_'+days[-1].strftime('%Y%m%d')+'T00Z.nc'
                         data = xr.open_dataset(url).sel(time=slice(days[-1].strftime('%Y-%m-%d')+ 'T00:00', end_date))
                         for time_step in range(data.time.shape[0]):
                             file_out.write(str(data.time.time[time_step].values).split('-')[0]+str(data.time.time[time_step].values).split('-')[1]+\
@@ -414,6 +417,104 @@ def generate_input_WAM4spec_to_SWAN(project_name, dgm, calib_spec, start_date, e
                                 SPEC_naut_convection[:,data.direction.shape[0]//2:]  = SPEC_ocean_convection[:,0:data.direction.shape[0]//2] # Step 1b: 0..175 to end of array
                                 np.savetxt(file_out,calib_spec*SPEC_naut_convection/(delth*factor), fmt='%-10.0f') # 
 
+def generate_boundary_input(project_name, dgm, start_date, end_date, input_model = 'WAM3', output_model = 'SWAN'):
+    days = pd.date_range(start=start_date.split('T')[0], end=end_date.split('T')[0], freq='D')
+       
+    spec_list = []    
+    for i in range(0,len(days)):
+        if i == 0:
+            t0 = start_date 
+            t1 = start_date.split('T')[0]+'T23:00'
+        elif i == (len(days)-1):
+            t0 = days[i].strftime('%Y-%m-%d')+ 'T00:00'
+            t1 = end_date
+        else:
+            t0 = days[i].strftime('%Y-%m-%d')+ 'T00:00'
+            t1 = days[i].strftime('%Y-%m-%d')+'T23:00'
+            
+        spec_list.append(xr.open_dataset(get_url(days[i], input_model)).sel(time=slice(t0, t1)))
+    
+    
+    if output_model == 'SWAN':
+        points = np.loadtxt(project_name+str(dgm)+'_Boundaries.txt')
+        outfile = project_name+str(dgm)+'_spec_'+days[0].strftime('%Y%m%d')+'_'+days[-1].strftime('%Y%m%d')+'.asc'
+        # We can probably get away from passing the "days" variable, since the info is contained in the data arrays
+        write_SWAN_boundary(spec_list, points, outfile, days) 
+    
+
+def write_SWAN_boundary(spec_list, points, outfile, days):
+    print("Writing SWAN output...")
+    # These are temporarily defined here
+    factor = 1E-4
+    nr_spec_interpolate = 0
+    calib_spec = 1
+    
+    
+    # Initialize the boundary file by writing the header
+    dirN=spec_list[0].direction.shape[0]
+    freqN=spec_list[0].freq.shape[0]
+    with open(outfile, 'w') as file_out:
+        file_out.write('SWAN   1\n')
+        file_out.write('$ Data produced by WAM3\n')
+        file_out.write('TIME\n')
+        file_out.write('          1\n')
+        file_out.write('LONLAT\n')    
+        file_out.write('          '+format(points.shape[0])+'\n')     
+        for k in range((points.shape[0])):
+            file_out.write('   '+format(points[k][1],'.4f')+'  '+format(points[k][0],'.4f')+'\n')
+        file_out.write('AFREQ\n')
+        file_out.write('          '+str(spec_list[0].freq.shape[0])+'\n')
+        for l in range(freqN):
+            file_out.write('   '+format(spec_list[0].freq[l].values,'.4f')+'\n')
+        file_out.write('NDIR\n')
+        file_out.write('          '+format(spec_list[0].direction.shape[0])+'\n')
+        for m in range(dirN):
+            file_out.write('   '+format(spec_list[0].direction[m].values,'.1f')+'\n') 
+        file_out.write('QUANT\n')
+        file_out.write('          1\n')
+        file_out.write('VaDens\n')
+        file_out.write('m2/Hz/degr \n')
+        file_out.write('-32767\n')
+        #first day
+        print('Generating 2d spectra at boundaries:')
+                    
+        
+        for i in range(0,len(days)):
+            print(days[0].strftime('%Y-%m-%d'))
+            for time_step in range(spec_list[i].time.shape[0]):
+                file_out.write(str(spec_list[i].time.time[time_step].values).split('-')[0]+str(spec_list[i].time.time[time_step].values).split('-')[1]+\
+                               str(spec_list[i].time.time[time_step].values).split('-')[2][:2]+'.'+str(spec_list[i].time.time[time_step].values).split('-')[2][3:5]+'0000\n')
+                for p in range(points.shape[0]):
+                    file_out.write('FACTOR\n')    
+                    file_out.write(format(factor,'1.0E')+'\n')
+                    # find the nearest grid point
+                    diff_lat = np.abs(points[p][0]-spec_list[i].latitude[0,:])
+                    diff_lon = np.abs(points[p][1]-spec_list[i].longitude[0,:])
+                    add_lonlat = diff_lon + diff_lat
+                    index_min_dinstance = np.where((add_lonlat >= np.sort(add_lonlat)[0]) & (add_lonlat <= np.sort(add_lonlat)[nr_spec_interpolate]))[0]
+                    SPEC_ocean_convection = spec_list[i].SPEC[time_step,0,index_min_dinstance,:,:].mean('x').values
+                    SPEC_naut_convection = ocean_to_naut(SPEC_ocean_convection)
+                    delth = 360/dirN
+                    np.savetxt(file_out,calib_spec*SPEC_naut_convection/(delth*factor), fmt='%-10.0f') #     
+                    
+
+def get_url(day, input_model):
+    if input_model == 'WAM4':
+       url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/'+day.strftime('%d')+'/MyWave_wam4_SPC_'+day.strftime('%Y%m%d')+'T00Z.nc'          
+    elif input_model == 'WAM3':
+       url = 'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/SPC'+day.strftime('%Y%m%d')+'00.nc'
+    else:
+        raise Exception('Known input models are WAM3 (default) and WAM4')
+
+    return url
+
+def ocean_to_naut(oceanspec):
+    nautspec=np.zeros(oceanspec.shape)
+    dirN=oceanspec.shape[1]
+    nautspec[:,0:dirN//2] = oceanspec[:,dirN//2:] # Step 1a: 180..355 to start of array
+    nautspec[:,dirN//2:]  = oceanspec[:,0:dirN//2] # Step 1b: 0..175 to end of array
+    
+    return nautspec
 
 def u_v_from_dir(ws,wdir):
 # see http://tornado.sfsu.edu/geosciences/classes/m430/Wind/WindDirection.html
