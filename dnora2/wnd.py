@@ -338,8 +338,9 @@ class ForcingMEPS(ForcingFetcher):
             lat_min = grid.lat()[0] - expand_lat
             lat_max = grid.lat()[-1] + expand_lat
 
-            dlon = grid.data.dlon*5
-            dlat = grid.data.dlat*5
+            # Temporary hack: set resolution to about 2.5 km
+            dlat = 2.5/111
+            dlon = dlat*2
 
             fimex_command = ['fimex', '--input.file='+url,
                              '--interpolate.method=bilinear',
