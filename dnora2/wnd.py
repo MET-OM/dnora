@@ -111,7 +111,7 @@ class ForcingArome25thredds(ForcingFetcher):
             #dlat = grid.data.dlat*5
 
 
-            fimex_command = ['fimex-1.6', '--input.file='+url,
+            fimex_command = ['fimex', '--input.file='+url,
                   '--interpolate.method=bilinear',
                   '--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0',
                   '--interpolate.xAxisValues='+str(lon_min)+','+str(lon_min+dlon)+',...,'+str(lon_max)+'',
