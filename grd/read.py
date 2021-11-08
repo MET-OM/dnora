@@ -1,19 +1,12 @@
-from abc import ABC, abstractmethod
 import xarray as xr
 from copy import copy
-import numpy as np
 
-class TopoFetcher(ABC):
-    @abstractmethod
-    def __init__(self):
-        pass
+from .grd_mod import TopoReader # Abstract class
 
-    @abstractmethod
-    def __call__(self, lon_min, lon_max, lat_min, lat_max):
-        pass
+# Readers used as defaults in the Grid object methods
+from .grd_mod import EmptyTopo
 
-
-class EMODNET2018(TopoFetcher):
+class EMODNET2018(TopoReader):
     """Reads data from EMODNET"""
     def __init__(self, expansion_factor = 1.2, tile = 'C5', folder = '/lustre/storeB/project/fou/om/WW3/bathy/emodnet_115m_x_115m'):
         self.source=f'{folder}/{tile}_2018.dtm'
@@ -32,21 +25,9 @@ class EMODNET2018(TopoFetcher):
         return topo, topo_lon, topo_lat
 
 
-class EmptyTopo(TopoFetcher):
-    """Creates an empty topography. Called when setting initial spacing."""
-    def __init__(self, grid):
-        self.grid = copy(grid)
-        pass
-
-    def __call__(self, lon_min, lon_max, lat_min, lat_max):
-        # Creates a trivial topography with all water points
-        topo = np.ones((self.grid.data.ny,self.grid.data.nx))*-9999
-        topo_lon = copy(self.grid.lon())
-        topo_lat = copy(self.grid.lat())
-        return topo, topo_lon, topo_lat
 
 
-class ForceFeed(TopoFetcher):
+class ForceFeed(TopoReader):
     """Simply passes on the data it was fed upon initialization"""
     def __init__(self, topo, topo_lon, topo_lat):
         self.topo = copy(topo)
@@ -60,3 +41,4 @@ class ForceFeed(TopoFetcher):
         topo_lon = copy(self.topo_lon)
         topo_lat = copy(self.topo_lat)
         return topo, topo_lon, topo_lat
+

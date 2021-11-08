@@ -1,23 +1,14 @@
-from abc import ABC, abstractmethod
-import netCDF4
-#import xarray as xr
 import numpy as np
-#from ..aux import day_list, create_time_stamps
 from copy import copy
 from .. import msg
-# Abstract classe
-from ..obj import Boundary
 
-class OutputModel(ABC):
-    bnd_in: list
-    bnd_points: np.array
-    message: str
-    @abstractmethod
-    def __call__(self, bnd_out):
-        pass
+import netCDF4
+
+from ..bnd_mod import BoundaryWriter # Abstract class
+from ..bnd_mod import Boundary # Boundary object
 
 
-class DumpToNc(OutputModel):
+class DumpToNc(BoundaryWriter):
     def __init__(self):
         pass
 
@@ -30,8 +21,7 @@ class DumpToNc(OutputModel):
         return
 
 
-
-class Nc(OutputModel):
+class NcFiles(BoundaryWriter):
     def __init__(self):
         pass
 
@@ -48,7 +38,7 @@ class Nc(OutputModel):
         return
 
 
-class WW3nc(OutputModel):
+class WW3(BoundaryWriter):
     def __init__(self):
         pass
 
@@ -181,7 +171,7 @@ class WW3nc(OutputModel):
         return
 
 
-class SWANascii(OutputModel):
+class SWAN(BoundaryWriter):
     def __init__(self, factor = 1E-4):
         self.factor = factor
 
@@ -240,4 +230,3 @@ class SWANascii(OutputModel):
 
 
         return
-# =============================================================================

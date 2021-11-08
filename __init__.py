@@ -1,2 +1,3 @@
-from . import grd, bnd
-from .obj import Grid, Boundary
+from .grd.grd_mod import Grid
+from .bnd_mod import Boundary
+from .wnd_mod import Forcing

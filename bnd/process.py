@@ -1,31 +1,16 @@
-from abc import ABC, abstractmethod
-from copy import copy
 import numpy as np
+from copy import copy
+
 from .. import msg
-from ..spec import interp_spec, ocean_to_math, naut_to_ocean
 
-class SpectralProcessor(ABC):
-    def __init__(self):
-        pass
+from ..bnd_mod import SpectralProcessor
 
-    @abstractmethod
-    def __call__(self, bnd_in, bnd_mask):
-        pass
+# SpectralProcessors used as defaults in the Boundary object methods
+from ..bnd_mod import Multiply
 
 
-class Trivial(SpectralProcessor):
-    def __init__(self, calib_spec = 1):
-        self.calib_spec = calib_spec
-        return
 
-    def __call__(self, spec, freq, dirs, time, x, lon, lat, mask):
-        new_spec = copy(spec)*self.calib_spec
-        new_mask = copy(mask)
-        new_freq = copy(freq)
-        new_dirs = copy(dirs)
-        return new_spec, new_mask, new_freq, new_dirs
-
-class Interp(SpectralProcessor):
+class Interpolate(SpectralProcessor):
     def __init__(self, first_dir = 0):
         self.first_dir = copy(first_dir)
 
@@ -52,7 +37,7 @@ class Interp(SpectralProcessor):
 
         return new_spec, new_mask, new_freq, new_dirs
 
-class NaNCleaner(SpectralProcessor):
+class ClearNaN(SpectralProcessor):
     def __init__(self):
         pass
 

@@ -1,22 +1,13 @@
-from abc import ABC, abstractmethod
+import numpy as np
 from .. import msg
-from copy import copy
 
-class GridManipulator(ABC):
-    def __init__(self):
-        pass
+from .grd_mod import GridProcessor #Abstract class
 
-    def __call__(self, data, lon, lat, land_sea_mask, boundary_mask):
-        pass
+# GridModifiers used as defaults in the Grid object methods
+from .grd_mod import TrivialFilter
 
-class TrivialFilter(GridManipulator):
-    def __init__(self):
-        pass
 
-    def __call__(self, data, lon, lat, land_sea_mask, boundary_mask):
-        return copy(data)
-
-class SetMinDepth(GridManipulator):
+class SetMinDepth(GridProcessor):
     def __init__(self, min_depth, to_land = -1):
         self.to_land = to_land
         self.min_depth = min_depth
@@ -36,5 +27,4 @@ class SetMinDepth(GridManipulator):
             new_data[np.logical_and(shallow_points, land_sea_mask)] = self.min_depth # Don't touch land points by usign self.mask
             msg.info(f"Affected {np.count_nonzero(np.logical_and(shallow_points, land_sea_mask))} points")
         return new_data
-
 

@@ -1,16 +1,10 @@
-from abc import ABC, abstractmethod
 import numpy as np
-from .. import msg
+from copy import copy
+from . import msg
 
-class OutputModel(ABC):
-    def __init__(self):
-        pass
+from .grd_mod import TopoWriter # Abstract class
 
-    @abstractmethod
-    def __call__(self, grid):
-        pass
-
-class WW3(OutputModel):
+class WW3(TopoWriter):
     def __init__(self, folder = ''):
         if (not folder == '') and (not folder[-1] == '/'):
             folder = folder + '/'
@@ -44,7 +38,7 @@ class WW3(OutputModel):
         grid.write_status(folder = self.folder)
 
 
-class SWAN(OutputModel):
+class SWAN(TopoWriter):
     def __init__(self):
         pass
 
@@ -60,3 +54,4 @@ class SWAN(OutputModel):
         msg.to_file(fn1)
         np.savetxt(fn1, grid.topo(), delimiter='\t',fmt='%1.0f')
         grid.write_status()
+

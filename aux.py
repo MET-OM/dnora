@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from scipy.interpolate import griddata
 
 def distance_2points(lat1,lon1,lat2,lon2):
     """Calculate distance between two points"""
@@ -70,3 +71,41 @@ def create_time_stamps(start_time, end_time, stride, hours_per_file = None, last
         # Last time might not coincide with last step in last file
         end_times.values[-1] = np.datetime64(end_time)
     return start_times, end_times, file_times
+
+
+
+# -----------------------------------------------------------------------------
+# MISC STAND ALONE FUNCTIONS
+# -----------------------------------------------------------------------------
+def read_ww3_info(filename):
+    """Read grid specification from the GridName_info.txt file"""
+    with open(filename,'r') as f:
+        lines = f.readlines()
+
+    for n in range (len(lines)):
+        line = lines[n].split()
+
+        if len(line):
+            if line[0] == 'lon:':
+                lon_min = float(line[1])
+                lon_max = float(line[3][0:-1])
+                lat_min = float(line[5])
+                lat_max = float(line[7])
+            elif line[0] == 'dlon,':
+                dlon = float(line[3][0:-1])
+                dlat = float(line[4])
+            elif line[0] == 'nx,':
+                nx = int(line[3])
+                ny = int(line[5])
+    return lon_min, lon_max, lat_min, lat_max, dlon, dlat, nx, ny
+
+
+def u_v_from_dir(ws, wdir):
+    # see http://tornado.sfsu.edu/geosciences/classes/m430/Wind/WindDirection.html
+    u = -ws * (np.sin(np.deg2rad(wdir)))
+    v = -ws * (np.cos(np.deg2rad(wdir)))
+    return u, v
+
+    return grid
+# -----------------------------------------------------------------------------
+

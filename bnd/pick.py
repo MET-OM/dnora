@@ -1,28 +1,11 @@
-from abc import ABC, abstractmethod
 import numpy as np
-from ..aux import min_distance
 from .. import msg
+from ..aux import min_distance
+
+from ..bnd_mod import PointPicker # Abstract class
 
 
-class PointPicker(ABC):
-    def __init__(self):
-        pass
-
-    @abstractmethod
-    def __call__(self, grid, bnd_lon, bnd_lat):
-        return
-
-
-class TrivialPicker(PointPicker):
-    def __init__(self):
-        pass
-
-    def __call__(self, grid, bnd_lon, bnd_lat):
-        inds = np.array(range(len(bnd_lon)))
-        return inds
-
-
-class NearestGridPointPicker(PointPicker):
+class NearestGridPoint(PointPicker):
     def __init__(self):
         pass
 
@@ -41,7 +24,7 @@ class NearestGridPointPicker(PointPicker):
         inds = np.array(inds)
         return inds
 
-class AreaPicker(PointPicker):
+class Area(PointPicker):
     def __init__(self, expansion_factor = 1.5):
         self.expansion_factor = expansion_factor
         return
@@ -68,4 +51,4 @@ class AreaPicker(PointPicker):
         msg.info(f"Found {len(inds)} points inside {lon0:10.7f}-{lon1:10.7f}, {lat0:10.7f}-{lat1:10.7f}.")
 
         return inds
-# =============================================================================
+

@@ -1,42 +1,12 @@
-from abc import ABC, abstractmethod
 import xarray as xr
 import numpy as np
 from ..aux import day_list, create_time_stamps
 from copy import copy
 from .. import msg
 
-class BoundaryFetcher(ABC):
-    def __init__(self):
-        pass
+from ..bnd_mod import BoundaryReader # Abstract class
 
-    @abstractmethod
-    def get_coordinates(self, start_time):
-        pass
-
-    @abstractmethod
-    def __call__(self, start_time, end_time, inds):
-        pass
-
-    def get_time_limits_day(self, ind):
-        """Determines star and end time for the day. First and last day doesn't start at 00:00 or end at 23:59"""
-
-        days = day_list(start_time = self.start_time, end_time = self.end_time)
-
-        if ind == 0:
-            t0 = self.start_time
-            t1 = days[0].strftime('%Y-%m-%d') + "T23:59:59"
-        elif ind == (len(days)-1):
-            t0 = days[-1].strftime('%Y-%m-%d') + "T00:00:00"
-            t1 = self.end_time
-        else:
-            t0 = days[ind].strftime('%Y-%m-%d') + "T00:00:00"
-            t1 = days[ind].strftime('%Y-%m-%d') + "T23:59:59"
-        return t0, t1
-
-    def __str__(self):
-        return (f"{self.start_time} - {self.end_time}")
-
-class ForceFeed(BoundaryFetcher):
+class ForceFeed(BoundaryReader):
     def __init__(self, time, freq, dirs, spec, lon, lat):
         self.time = copy(time)
         self.freq = copy(freq)
@@ -53,7 +23,7 @@ class ForceFeed(BoundaryFetcher):
         return  copy(self.time), copy(self).freq, copy(self).dirs, np.reshape(self.spec, (len(self.time), len(self.lon), self.spec.shape[0], self.spec.shape[1])), copy(self.lon), copy(self.lat), ''
 
 
-class WAM4(BoundaryFetcher):
+class WAM4(BoundaryReader):
     def __init__(self, ignore_nan = False, stride = 6, hours_per_file = 73, last_file = None, lead_time = 0):
         self.ignore_nan = copy(ignore_nan)
         self.stride = copy(stride)
@@ -128,7 +98,7 @@ class WAM4(BoundaryFetcher):
         return url
 
 
-class NORA3(BoundaryFetcher):
+class NORA3(BoundaryReader):
 
     def get_coordinates(self, start_time):
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
@@ -175,3 +145,5 @@ class NORA3(BoundaryFetcher):
     def get_url(self, day):
         url = 'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/SPC'+day.strftime('%Y%m%d')+'00.nc'
         return url
+
+
