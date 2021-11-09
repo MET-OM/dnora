@@ -35,14 +35,14 @@ def month_list(start_time, end_time):
     months = pd.date_range(start=start_time[:7], end=end_time[:7], freq='MS')
     return months
 
-def create_time_stamps(start_time, end_time, stride, hours_per_file = None, last_file = None, lead_time = 0):
+def create_time_stamps(start_time: str, end_time: str, stride: int, hours_per_file: int = 0, last_file: str = '', lead_time: int = 0):
     """Create time stamps to read in blocks of wind forcing from files"""
-    if hours_per_file is None:
+    if hours_per_file == 0:
         hours_per_file = stride
 
     # FIND FILE STAMPS
     t0 = np.datetime64(start_time) - np.timedelta64(lead_time,'h')
-    if last_file is not None:
+    if last_file is not '':
         t1 = np.datetime64(last_file)
 
         # E.g. we want to start a forecast at 06:00 but the last (and only) file is 00:00
@@ -66,7 +66,7 @@ def create_time_stamps(start_time, end_time, stride, hours_per_file = None, last
     # First time might not coincide with first step in first file
     start_times.values[0] = np.datetime64(start_time)
 
-    if last_file is not None and hours_per_file is not None:
+    if last_file is not '' and hours_per_file is not 0:
         # In operational systems we might want to read a longer segment from the last file
         end_times.values[-1] = min([np.datetime64(last_file) + np.timedelta64((hours_per_file-1),'h'), np.datetime64(end_time)])
     else:

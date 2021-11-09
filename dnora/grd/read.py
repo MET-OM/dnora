@@ -13,7 +13,7 @@ class EMODNET2018(TopoReader):
         self.expansion_factor = expansion_factor
         return
 
-    def __call__(self, lon_min, lon_max, lat_min, lat_max):
+    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
         # If we limit ourselves to exactly the grid, we will get nans at the edges in the interpolation. Add 10% tolerance around all edges.
         tolerance_lon = (lon_max-lon_min)*(self.expansion_factor - 1)*0.5
         tolerance_lat = (lat_max-lat_min)*(self.expansion_factor - 1)*0.5
@@ -24,7 +24,8 @@ class EMODNET2018(TopoReader):
         topo_lat = ds.LINES.values
         return topo, topo_lon, topo_lat
 
-
+    def __str__(self):
+        return(f"Reading EMODNET topography from {self.source}.")
 
 
 class ForceFeed(TopoReader):
@@ -35,10 +36,12 @@ class ForceFeed(TopoReader):
         self.topo_lat = copy(topo_lat)
         return
 
-    def __call__(self, lon_min, lon_max, lat_min, lat_max):
+    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
         # Just use the values it was forcefed on initialization
         topo = copy(self.topo)
         topo_lon = copy(self.topo_lon)
         topo_lat = copy(self.topo_lat)
         return topo, topo_lon, topo_lat
 
+    def __str__(self):
+        return("Passing on the topography I was initialized with.")

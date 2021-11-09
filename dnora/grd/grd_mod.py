@@ -9,14 +9,19 @@ from .. import msg
 from ..aux import distance_2points, day_list
 
 
-
+"""Abstract class and classes needed by the Grid object to read the topography"""
 class TopoReader(ABC):
     @abstractmethod
     def __init__(self):
         pass
 
     @abstractmethod
-    def __call__(self, lon_min, lon_max, lat_min, lat_max):
+    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
+        pass
+
+    @abstractmethod
+    def __str__(self):
+        """Describes how the spectral values as processed"""
         pass
 
 class EmptyTopo(TopoReader):
@@ -25,19 +30,53 @@ class EmptyTopo(TopoReader):
         self.grid = copy(grid)
         pass
 
-    def __call__(self, lon_min, lon_max, lat_min, lat_max):
+    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
         # Creates a trivial topography with all water points
         topo = np.ones((self.grid.data.ny,self.grid.data.nx))*-9999
         topo_lon = copy(self.grid.lon())
         topo_lat = copy(self.grid.lat())
         return topo, topo_lon, topo_lat
 
+    def __str__(self):
+        return("Creating an empty topography with depth values -9999.")
 
-class GridProcessor(ABC):
+"""Abstract class and classes needed by the Grid object to set boundary points"""
+class BoundarySetter(ABC):
+    @abstractmethod
     def __init__(self):
         pass
 
+    @abstractmethod
+    def __call__(self, mask_size: tuple):
+        return boundary_mask
+
+    @abstractmethod
+    def __str__(self):
+        pass
+
+class ClearBoundary(BoundarySetter):
+    def __init__(self):
+        pass
+
+    def __call__(self, mask_size: tuple):
+        return np.full(mask_size, False)
+
+    def __str__(self):
+        return("Clearing all possible boundary points and setting an empty mask.")
+
+"""Abstract class and classes needed by the Grid object to process to topography"""
+
+class GridProcessor(ABC):
+    @abstractmethod
+    def __init__(self):
+        pass
+
+    @abstractmethod
     def __call__(self, data, lon, lat, land_sea_mask, boundary_mask):
+        pass
+
+    @abstractmethod
+    def __str__(self):
         pass
 
 class TrivialFilter(GridProcessor):
@@ -47,7 +86,10 @@ class TrivialFilter(GridProcessor):
     def __call__(self, data, lon, lat, land_sea_mask, boundary_mask):
         return copy(data)
 
+    def __str__(self):
+        return("Doing nothing to the data, just passing it along.")
 
+"""Abstract class and classes needed by the Grid object to mesh the topography to a grid"""
 class Mesher(ABC):
     @abstractmethod
     def __init__(self):
@@ -57,6 +99,9 @@ class Mesher(ABC):
     def __call__(self, data, lon, lat, lonQ, latQ):
         pass
 
+    @abstractmethod
+    def __str__(self):
+        pass
 
 class Interpolate(Mesher):
     def __init__(self, method = 'linear'):
@@ -75,15 +120,23 @@ class Interpolate(Mesher):
 
         return meshed_data
 
+    def __str__(self):
+        return(f"Meshing using {self.method} interpolation.")
+
+
+
 class TrivialMesher(Mesher):
     def __init__(self):
         pass
 
     def __call__(self, data, lon, lat, lonQ, latQ):
         return copy(data)
+    def __str__(self):
+        return("Passing input data along as final meshed grid.")
 
-
+"""Abstract class for classes that writes the topography to a file"""
 class TopoWriter(ABC):
+    @abstractmethod
     def __init__(self):
         pass
 
@@ -91,11 +144,9 @@ class TopoWriter(ABC):
     def __call__(self, grid):
         pass
 
-
-
-
+"""The Grid object"""
 class Grid:
-    def __init__(self, lon_min = 0, lon_max = 0, lat_min = 0, lat_max = 0, name="AnonymousGrid"):
+    def __init__(self, lon_min: float = 0., lon_max: float = 0., lat_min: float = 0., lat_max: float = 0., name: str = "AnonymousGrid"):
 
         data_dict = {'lon_min': lon_min, 'lon_max': lon_max, 'lat_min': lat_min, 'lat_max': lat_max, 'name': name}
 
@@ -109,6 +160,7 @@ class Grid:
     def import_topo(self, topo_fetcher: TopoReader):
         """Reads to topography"""
         msg.header(f'Importing topography with {type(topo_fetcher).__name__}')
+        print(topo_fetcher)
         topo, lon, lat = topo_fetcher(self.data.lon_min, self.data.lon_max, self.data.lat_min, self.data.lat_max)
 
 
@@ -128,6 +180,7 @@ class Grid:
             empty_mask = np.full(self.raw_topo().shape, False)
             land_sea_mask = self.raw_topo() < 0 # Sea points set to true
 
+            print(filt)
             topo = filt(self.raw_topo(), self.raw_lon(), self.raw_lat(), land_sea_mask, empty_mask)
 
             vars_dict = {'topo': (['lat', 'lon'], topo)}
@@ -135,24 +188,26 @@ class Grid:
 
             return
 
-    def mesh_grid(self, mesher: Mesher = Interpolate(method = 'linear')):
+    def mesh_grid(self, mesher: Mesher = Interpolate(method = 'linear')) -> None:
         if hasattr(self, 'lon') and hasattr(self, 'lon'):
 
             msg.header(f'Meshing grid bathymetry with {type(mesher).__name__}')
+            print(mesher)
             topo = mesher(self.raw_topo(), self.raw_lon(), self.raw_lat(), self.lon(), self.lat())
             vars_dict = {'topo': (['lat', 'lon'], topo)}
             self.data = self.data.assign(vars_dict)
 
             self.update_masks()
-
+            return
 
         else:
             msg.templates('no_spacing')
             return
 
 
-    def filter_grid(self, filt: GridProcessor = TrivialFilter()):
+    def filter_grid(self, filt: GridProcessor = TrivialFilter()) -> None:
             msg.header(f'Filtering meshed grid with {type(filt).__name__}')
+            print(filt)
             topo = filt(self.topo(), self.lon(), self.lat(), self.land_sea_mask(), self.boundary_mask())
 
             vars_dict = {'topo': (['lat', 'lon'], topo)}
@@ -161,15 +216,17 @@ class Grid:
             msg.info('Upodating land-sea mask and boundary mask')
             self.update_masks()
 
-    def update_masks(self):
+            return
+
+    def update_masks(self) -> None:
         self.set_land_sea_mask()
 
         # Create empty (no boundary points) if doesn't exist
         if self.boundary_mask().size == 0:
-            self.set_boundary(bounN = 0)
+            self.set_boundary(boundary_setter = ClearBoundary())
         return
 
-    def drop_topo_and_masks(self):
+    def drop_topo_and_masks(self) -> None:
         if self.topo().size > 0:
             self.data =self.data.drop('topo')
         if self.land_sea_mask().size > 0:
@@ -178,7 +235,7 @@ class Grid:
             self.data =self.data.drop('boundary_mask')
         return
 
-    def set_land_sea_mask(self, given_array = None):
+    def set_land_sea_mask(self, given_array = None) -> None:
         if given_array is None:
             land_sea_mask = np.full(self.topo().shape, False)
             land_sea_mask = self.topo() < 0 # Sea points set to true
@@ -190,48 +247,15 @@ class Grid:
 
         return
 
-    def set_boundary(self, bounN = -1, edges = ['N', 'S', 'E', 'W'], given_array = None):
-        """Define boundary points in grid either by setting every bounN point at edges, or providins a boolean mask (array)."""
+    def set_boundary(self, boundary_setter: BoundarySetter) -> None:
+        """Marks the points that should be treated as boundary points in the grid"""
 
-        if (given_array is None) and bounN < 0:
-            msg.advice('Give either bounN or given_array')
-            return
-
-        msg.header("Setting boundary points")
-        if given_array is not None: # Array where boundary points are True and rest False is given
-            boundary_mask = given_array
-        elif bounN >= 0:
-            bounN = int(bounN)
-
-            if bounN >0:
-                boundary_mask = np.full(self.land_sea_mask().shape, False)
-                msg.info(f"Setting boundary points using bounN = {bounN}")
-                # --------- North boundary ----------
-                if 'N' in edges:
-                    boundary_mask[-1,::bounN] = True
-                ## --------- South boundary ----------
-                if 'S' in edges:
-                    boundary_mask[0,::bounN] = True
-                ## --------- East boundary ----------
-                if 'E' in edges:
-                    boundary_mask[::bounN,-1] = True
-                ## --------- West boundary ----------
-                if 'W' in edges:
-                    boundary_mask[::bounN,0] = True
-                msg.plain(f'Set {sum(sum(boundary_mask)):d} boundary points (some can be on land)')
-            elif bounN == 0:
-                if self.boundary_mask().size > 0:
-                    msg.info("Removing all boundary points")
-                boundary_mask = np.full(self.land_sea_mask().shape, False)
-
-
+        msg.header(f'Setting boundary points with {type(boundary_setter).__name__}')
+        print(boundary_setter)
+        boundary_mask = boundary_setter(self.land_sea_mask().shape)
         vars_dict = {'boundary_mask': (['lat', 'lon'], boundary_mask)}
         self.data = self.data.assign(vars_dict)
-        #print(self)
         return
-
-
-
 
     def point_list(self, mask):
         meshlon, meshlat=np.meshgrid(self.lon(),self.lat())
@@ -543,5 +567,3 @@ class Grid:
                 msg.plain(f'{sum(sum(np.logical_and(self.boundary_mask(), self.land_sea_mask()))):d} boundary points')
             msg.print_line()
             return ''
-
-

@@ -3,15 +3,17 @@ from copy import copy
 from . import msg
 
 from .grd_mod import TopoWriter # Abstract class
+from .grd_mod import Grid # Grid object
 
 class WW3(TopoWriter):
-    def __init__(self, folder = ''):
+    def __init__(self, folder: str = '') -> None:
         if (not folder == '') and (not folder[-1] == '/'):
             folder = folder + '/'
         self.folder = copy(folder)
+        return
 
-    def __call__(self, grid, matrix = False):
-        msg.header('Create files for regular grid')
+    def __call__(self, grid: Grid, matrix = False) -> None:
+        msg.header(f"Writing grid to WW3 format to folder: {self.folder}.")
         mask_out = np.zeros(grid.topo().shape)
         mask_out[grid.land_sea_mask()] = 1
         if grid.boundary_mask().size > 0:
@@ -36,22 +38,26 @@ class WW3(TopoWriter):
             np.savetxt(fn2, mask_out.ravel(), delimiter=',',fmt='%1.0f')
 
         grid.write_status(folder = self.folder)
-
+        return
 
 class SWAN(TopoWriter):
-    def __init__(self):
-        pass
+    def __init__(self, folder: str = '') -> None:
+        if (not folder == '') and (not folder[-1] == '/'):
+            folder = folder + '/'
+        self.folder = copy(folder)
+        return
 
-    def __call__(self, grid):
-        msg.header('Create files for regular grid')
+    def __call__(self, grid: Grid) -> None:
+        msg.header(f"Writing grid to SWAN format to folder: {self.folder}.")
         mask_out = np.ones(grid.topo().shape)
         mask_out[grid.land_sea_mask()] = 0
         if grid.boundary_mask().size > 0:
             msg.info(f'Setting {sum(sum(np.logical_and(grid.boundary_mask(), grid.land_sea_mask()))):d} boundary points in grid...')
             mask_out[np.logical_and(grid.boundary_mask(), grid.land_sea_mask())] = 2
 
-        fn1 = grid.name()+'_SWAN.bot'
+        fn1 = self.folder + grid.name()+'_SWAN.bot'
         msg.to_file(fn1)
         np.savetxt(fn1, grid.topo(), delimiter='\t',fmt='%1.0f')
         grid.write_status()
 
+        return

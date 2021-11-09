@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import xarray as xr
 import numpy as np
 from copy import copy
+from typing import List
 import sys
 import matplotlib.pyplot as plt
 from .. import msg
@@ -10,7 +11,7 @@ from ..aux import distance_2points, day_list
 #from .bnd_abc import BoundaryReader, PointPicker, SpectralProcessor
 #from .bnd import pick_Trivial, process_Multiply
 
-
+from ..grd.grd_mod import Grid # Grid object
 
 
 
@@ -52,14 +53,14 @@ class PointPicker(ABC):
         pass
 
     @abstractmethod
-    def __call__(self, grid, bnd_lon, bnd_lat):
+    def __call__(self, grid: Grid, bnd_lon, bnd_lat):
         return
 
 class TrivialPicker(PointPicker):
     def __init__(self):
         pass
 
-    def __call__(self, grid, bnd_lon, bnd_lat):
+    def __call__(self, grid: Grid, bnd_lon, bnd_lat):
         inds = np.array(range(len(bnd_lon)))
         return inds
 
@@ -102,7 +103,7 @@ class BoundaryWriter(ABC):
 
 
 class Boundary:
-    def __init__(self, grid, name = "AnonymousBoundary"):
+    def __init__(self, grid: Grid, name: str = "AnonymousBoundary"):
         self.grid = copy(grid)
         self.name = copy(name)
         return
@@ -146,7 +147,7 @@ class Boundary:
     #
     #     return
 
-    def process_spectra(self, spectral_processors: SpectralProcessor = Multiply(calib_spec = 1)):
+    def process_spectra(self, spectral_processors: List[SpectralProcessor] = [Multiply(calib_spec = 1)]):
 
         if not isinstance(spectral_processors, list):
             spectral_processors = [spectral_processors]
@@ -188,7 +189,7 @@ class Boundary:
             )
         return data
 
-    def slice_data(self, start_time: str = '', end_time: str = '', x = []):
+    def slice_data(self, start_time: str = '', end_time: str = '', x: List[int] = []):
         if isinstance(x, int):
             x = [x]
         elif not x:
@@ -202,7 +203,7 @@ class Boundary:
             # This is not a string, but slicing works also with this input
             end_time = self.time()[-1]
 
-        sliced_data = self.data.sel(time=slice(start_time, end_time), x=x)
+        sliced_data = self.data.sel(time=slice(start_time, end_time), x = x)
 
         return sliced_data
 

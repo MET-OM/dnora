@@ -30,7 +30,7 @@ class Forcing:
         self.grid = copy(grid)
         self.name = name
 
-    def import_forcing(self, start_time: str, end_time: str, forcing_fetcher: ForcingReader, expansion_factor=1.2):
+    def import_forcing(self, start_time: str, end_time: str, forcing_fetcher: ForcingReader, expansion_factor: float = 1.2):
         self.start_time = copy(start_time)
         self.end_time = copy(end_time)
 

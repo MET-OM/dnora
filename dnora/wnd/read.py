@@ -11,10 +11,10 @@ import os
 from .wnd_mod import ForcingReader # Abstract class
 from .wnd_mod import Forcing # Forcing object
 
-
+from ..grd.grd_mod import Grid # Grid object
 
 class Arome25(ForcingReader):
-    def __init__(self, stride=1, hours_per_file=1, last_file=None, lead_time=4):
+    def __init__(self, stride: int = 1, hours_per_file: int = 1, last_file: str = '', lead_time: int = 4):
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
@@ -120,7 +120,7 @@ class Arome25(ForcingReader):
 
 
 class MyWave3km(ForcingReader):
-    def __init__(self, stride=24, hours_per_file=24, last_file=None, lead_time=0):
+    def __init__(self, stride: int = 24, hours_per_file: int = 24, last_file: str = '', lead_time: int = 0):
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
@@ -213,7 +213,7 @@ class MyWave3km(ForcingReader):
 
 
 class MEPS(ForcingReader):
-    def __init__(self, prefix='subset', stride=24, hours_per_file=24, last_file=None, lead_time=0):
+    def __init__(self, prefix: str = 'subset', stride: int = 24, hours_per_file: int = 24, last_file: str = '', lead_time: int = 0):
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
@@ -308,5 +308,3 @@ class MEPS(ForcingReader):
         filename = 'meps_'+prefix+'_2_5km_'+time_stamp.strftime('%Y')+time_stamp.strftime('%m')+time_stamp.strftime('%d')+'T'+time_stamp.strftime('%H')+'Z.nc'
         url = 'https://thredds.met.no/thredds/dodsC/meps25epsarchive/'+time_stamp.strftime('%Y')+'/'+time_stamp.strftime('%m')+'/'+time_stamp.strftime('%d')+'/' + filename
         return url
-
-
