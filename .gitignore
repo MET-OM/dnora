@@ -1,6 +1,6 @@
 *.nc
 *.asc
-__pycache__
-bnd/__pycache__
-wnd/__pycache__
-grd/__pycache__
+dnora/__pycache__
+dnora/bnd/__pycache__
+dnora/wnd/__pycache__
+dnora/grd/__pycache__
