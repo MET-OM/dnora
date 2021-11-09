@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 from scipy.interpolate import griddata
+from scipy import interpolate
+from statistics import mode
 
 def distance_2points(lat1,lon1,lat2,lon2):
     """Calculate distance between two points"""
@@ -107,5 +109,65 @@ def u_v_from_dir(ws, wdir):
     return u, v
 
     return grid
+
+def interp_spec(f, D, S, fi, Di):
+    Sleft = S
+    Sright = S
+    Dleft = -D[::-1]
+    Dright = D + 360
+
+    bigS = np.concatenate((Sleft, S, Sright),axis=1)
+    bigD = np.concatenate((Dleft, D, Dright))
+
+    Finterpolator = interpolate.RectBivariateSpline(f, bigD, bigS, kx=1, ky=1, s=0)
+    Si = Finterpolator(fi,Di)
+
+    return Si
 # -----------------------------------------------------------------------------
 
+def flip_spec(spec,D):
+    # This check enables us to flip directions with flip_spec(D,D)
+
+    if len(spec.shape) == 1:
+        flipping_dir = True
+        spec = np.array([spec])
+    else:
+        flipping_dir = False
+    spec_flip = np.zeros(spec.shape)
+
+    ind = np.arange(0,len(D), dtype='int')
+    dD = np.diff(D).mean()
+    steps = D/dD # How many delta-D from 0
+
+    ind_flip = ((ind - 2*steps).astype(int) + len(D)) % len(D)
+
+    spec_flip=spec[:, list(ind_flip)]
+
+    if flipping_dir:
+        spec_flip = spec_flip[0]
+    return spec_flip
+
+
+def shift_spec(spec, D, shift = 0):
+    # This check enables us to flip directions with flip_spec(D,D)
+    if len(spec.shape) == 1:
+        shifting_dir = True
+        spec = np.array([spec])
+    else:
+        shifting_dir = False
+    spec_shift = np.zeros(spec.shape)
+
+    D = np.round(D)
+    ind = np.arange(0,len(D), dtype='int')
+    dD = mode(abs(np.diff(D)))
+
+    if not (shift/dD).is_integer():
+        print('aa')
+        raise Exception ('Shift needs to be multiple of frequency resolution! Otherwise interpolation would be needed.')
+
+    ind_flip = ((ind + int(shift/dD)).astype(int) + len(D)) % len(D)
+
+    spec_shift=spec[:, list(ind_flip)]
+    if shifting_dir:
+        spec_shift = spec_shift[0]
+    return spec_shift

@@ -70,20 +70,26 @@ class SpectralProcessor(ABC):
         pass
 
     @abstractmethod
-    def __call__(self, bnd_in, bnd_mask):
+    def __call__(self, spec, freqs, dirs):
         pass
+
+    @abstractmethod
+    def __str__(self):
+        """Describes how the spectral values as processed"""
+        pass
+
 
 class Multiply(SpectralProcessor):
     def __init__(self, calib_spec = 1):
         self.calib_spec = calib_spec
         return
 
-    def __call__(self, spec, freq, dirs, time, x, lon, lat, mask):
+    def __call__(self, spec, dirs, freq):
         new_spec = copy(spec)*self.calib_spec
-        new_mask = copy(mask)
-        new_freq = copy(freq)
-        new_dirs = copy(dirs)
-        return new_spec, new_mask, new_freq, new_dirs
+        return new_spec, dirs, freq
+
+    def __str__(self):
+        return(f"Multiplying spectral values with {self.calib_spec}")
 
 class BoundaryWriter(ABC):
     bnd_in: list
@@ -121,6 +127,25 @@ class Boundary:
         return
 
 
+    # def process_spectra(self, spectral_processors: SpectralProcessor = Multiply(calib_spec = 1)):
+    #
+    #     if not isinstance(spectral_processors, list):
+    #         spectral_processors = [spectral_processors]
+    #
+    #     for n in range (len(spectral_processors)):
+    #         spectral_processor = spectral_processors[n]
+    #
+    #         msg.process(f"Processing spectra with {type(spectral_processor).__name__}")
+    #         new_spec, new_mask, new_freq, new_dirs = spectral_processor(self.spec(), self.freq(), self.dirs(), self.time(), self.x(), self.lon(), self.lat(), self.mask)
+    #
+    #         self.data.spec.values = new_spec
+    #         self.mask = new_mask
+    #
+    #         self.data = self.data.assign_coords(dirs=new_dirs)
+    #         self.data = self.data.assign_coords(freq=new_freq)
+    #
+    #     return
+
     def process_spectra(self, spectral_processors: SpectralProcessor = Multiply(calib_spec = 1)):
 
         if not isinstance(spectral_processors, list):
@@ -130,15 +155,18 @@ class Boundary:
             spectral_processor = spectral_processors[n]
 
             msg.process(f"Processing spectra with {type(spectral_processor).__name__}")
-            new_spec, new_mask, new_freq, new_dirs = spectral_processor(self.spec(), self.freq(), self.dirs(), self.time(), self.x(), self.lon(), self.lat(), self.mask)
+            print(spectral_processor)
+            for x in range(len(self.x())):
+                for t in range(len(self.time())):
+                    new_spec, new_dirs, new_freq = spectral_processor(self.spec()[t,x,:,:], self.dirs(), self.freq())
 
-            self.data.spec.values = new_spec
-            self.mask = new_mask
+                    self.data.spec.values[t,x,:,:] = new_spec
 
             self.data = self.data.assign_coords(dirs=new_dirs)
             self.data = self.data.assign_coords(freq=new_freq)
 
         return
+
 
     def compile_to_xr(self, time, freq, dirs, spec, lon, lat, source):
         x = np.array(range(spec.shape[1]))
