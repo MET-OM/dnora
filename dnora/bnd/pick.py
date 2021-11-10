@@ -1,10 +1,11 @@
 import numpy as np
 from .. import msg
-from ..aux import min_distance
+from ..aux import min_distance, expand_area
 
 from .bnd_mod import TrivialPicker
 from .bnd_mod import PointPicker # Abstract class
 
+from ..grd.grd_mod import Grid # Grid object
 
 class NearestGridPoint(PointPicker):
     def __init__(self):
@@ -26,30 +27,22 @@ class NearestGridPoint(PointPicker):
         return inds
 
 class Area(PointPicker):
-    def __init__(self, expansion_factor = 1.5):
+    def __init__(self, expansion_factor=1.5):
         self.expansion_factor = expansion_factor
         return
 
-    def __call__(self, grid, bnd_lon, bnd_lat):
+    def __call__(self, grid: Grid, bnd_lon, bnd_lat):
         msg.info(f"Using expansion_factor = {self.expansion_factor:.2f}")
+
         # Define area to search in
-        expand_lon = (grid.lon()[-1] - grid.lon()[0])*(self.expansion_factor-1)*0.5
-        expand_lat = (grid.lat()[-1] - grid.lat()[0])*(self.expansion_factor-1)*0.5
+        lon_min, lon_max, lat_min, lat_max = expand_area(grid.lon()[0], grid.lon()[-1], grid.lat()[0], grid.lat()[-1], self.expansion_factor)
 
-        # Get all the spectra in this area
-        lon0=grid.lon()[0] - expand_lon
-        lon1=grid.lon()[-1] + expand_lon
-
-        lat0=grid.lat()[0] - expand_lat
-        lat1=grid.lat()[-1] + expand_lat
-
-        masklon = np.logical_and(bnd_lon < lon1, bnd_lon > lon0)
-        masklat = np.logical_and(bnd_lat > lat0, bnd_lat < lat1)
+        masklon = np.logical_and(bnd_lon > lon_min, bnd_lon < lon_max)
+        masklat = np.logical_and(bnd_lat > lat_min, bnd_lat < lat_max)
         mask=np.logical_and(masklon, masklat)
 
         inds = np.where(mask)[0]
 
-        msg.info(f"Found {len(inds)} points inside {lon0:10.7f}-{lon1:10.7f}, {lat0:10.7f}-{lat1:10.7f}.")
+        msg.info(f"Found {len(inds)} points inside {lon_min:10.7f}-{lon_max:10.7f}, {lat_min:10.7f}-{lat_max:10.7f}.")
 
         return inds
-

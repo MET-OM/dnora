@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 from subprocess import call
 from .. import msg
-from ..aux import create_time_stamps, u_v_from_dir
+from ..aux import create_time_stamps, u_v_from_dir, expand_area
 
 import os
 
@@ -21,7 +21,7 @@ class Arome25(ForcingReader):
         self.last_file = copy(last_file)
         return
 
-    def __call__(self, grid, start_time, end_time, expansion_factor):
+    def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float):
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time
@@ -39,29 +39,17 @@ class Arome25(ForcingReader):
         msg.info(
             f"Getting wind forcing from Arome 2.5 km from {self.start_time} to {self.end_time}")
         for n in range(len(file_times)):
-            #print(time_stamp)
-            #print(days[n].strftime('%Y-%m-%d'))
-            url = self.get_url(
-                file_times[n], start_times[n], first_ind=self.lead_time)
+
+            url = self.get_url(file_times[n], start_times[n], first_ind=self.lead_time)
 
             msg.info(url)
-            msg.plain(
-                f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
+            msg.plain(f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
 
             nc_fimex = f'dnora_wnd_temp/wind_{n:04.0f}.nc'
             #nc_fimex = 'dnora_wnd_temp.nc'
 
             # Define area to search in
-            expand_lon = (grid.lon()[-1] - grid.lon()
-                          [0])*(expansion_factor-1)*0.5
-            expand_lat = (grid.lat()[-1] - grid.lat()
-                          [0])*(expansion_factor-1)*0.5
-
-            lon_min = grid.lon()[0] - expand_lon
-            lon_max = grid.lon()[-1] + expand_lon
-
-            lat_min = grid.lat()[0] - expand_lat
-            lat_max = grid.lat()[-1] + expand_lat
+            lon_min, lon_max, lat_min, lat_max = expand_area(grid.lon()[0], grid.lon()[-1], grid.lat()[0], grid.lat()[-1], expansion_factor)
 
             # Temporary hack: set resolution to about 2.5 km
             dlat = 2.5/111
@@ -98,7 +86,7 @@ class Arome25(ForcingReader):
 
         # Go to u and v components
         u, v = u_v_from_dir(wind_forcing.wind_speed,
-                            wind_forcing.wind_direction)  # factor 1000
+                            wind_forcing.wind_direction)
         u = u.fillna(0)
         v = v.fillna(0)
 
@@ -110,11 +98,9 @@ class Arome25(ForcingReader):
 
     def get_url(self, time_stamp_file, time_stamp, first_ind=4):
         h0 = int(time_stamp_file.hour) % 6
-        folder = time_stamp_file.strftime('%Y')+'/'+time_stamp_file.strftime('%m')+'/'+time_stamp_file.strftime(
-            '%d')+'/'+(time_stamp_file - np.timedelta64(h0, 'h')).strftime('%H')
+        folder = time_stamp_file.strftime('%Y')+'/'+time_stamp_file.strftime('%m')+'/'+time_stamp_file.strftime('%d')+'/'+(time_stamp_file - np.timedelta64(h0, 'h')).strftime('%H')
         ind = int((time_stamp.hour-first_ind) % 6) + first_ind
-        filename = 'fc' + time_stamp_file.strftime('%Y')+time_stamp_file.strftime('%m')+time_stamp_file.strftime(
-            '%d')+(time_stamp_file - np.timedelta64(h0, 'h')).strftime('%H')+'_' + f"{ind:03d}" + '_fp.nc'
+        filename = 'fc' + time_stamp_file.strftime('%Y')+time_stamp_file.strftime('%m')+time_stamp_file.strftime('%d')+(time_stamp_file - np.timedelta64(h0, 'h')).strftime('%H')+'_' + f"{ind:03d}" + '_fp.nc'
         url = 'https://thredds.met.no/thredds/dodsC/nora3/'+folder + '/' + filename
         return url
 
@@ -127,7 +113,7 @@ class MyWave3km(ForcingReader):
         self.last_file = copy(last_file)
         return
 
-    def __call__(self, grid, start_time, end_time, expansion_factor):
+    def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float):
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time
@@ -154,16 +140,7 @@ class MyWave3km(ForcingReader):
             nc_fimex = f'dnora_wnd_temp/wind_{n:04.0f}.nc'
 
             # Define area to search in
-            expand_lon = (grid.lon()[-1] - grid.lon()
-                          [0])*(expansion_factor-1)*0.5
-            expand_lat = (grid.lat()[-1] - grid.lat()
-                          [0])*(expansion_factor-1)*0.5
-
-            lon_min = grid.lon()[0] - expand_lon
-            lon_max = grid.lon()[-1] + expand_lon
-
-            lat_min = grid.lat()[0] - expand_lat
-            lat_max = grid.lat()[-1] + expand_lat
+            lon_min, lon_max, lat_min, lat_max = expand_area(grid.lon()[0], grid.lon()[-1], grid.lat()[0], grid.lat()[-1], expansion_factor)
 
             dlon = grid.data.dlon*5
             dlat = grid.data.dlat*5
@@ -221,7 +198,7 @@ class MEPS(ForcingReader):
         self.last_file = copy(last_file)
         return
 
-    def __call__(self, grid, start_time, end_time, expansion_factor):
+    def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float):
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time
@@ -248,16 +225,7 @@ class MEPS(ForcingReader):
             nc_fimex = f'dnora_wnd_temp/wind_{n:04.0f}.nc'
 
             # Define area to search in
-            expand_lon = (grid.lon()[-1] - grid.lon()
-                          [0])*(expansion_factor-1)*0.5
-            expand_lat = (grid.lat()[-1] - grid.lat()
-                          [0])*(expansion_factor-1)*0.5
-
-            lon_min = grid.lon()[0] - expand_lon
-            lon_max = grid.lon()[-1] + expand_lon
-
-            lat_min = grid.lat()[0] - expand_lat
-            lat_max = grid.lat()[-1] + expand_lat
+            lon_min, lon_max, lat_min, lat_max = expand_area(grid.lon()[0], grid.lon()[-1], grid.lat()[0], grid.lat()[-1], expansion_factor)
 
             # Temporary hack: set resolution to about 2.5 km
             dlat = 2.5/111

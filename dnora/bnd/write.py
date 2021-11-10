@@ -7,6 +7,7 @@ import netCDF4
 from .bnd_mod import BoundaryWriter # Abstract class
 from .bnd_mod import Boundary # Boundary object
 
+from .process import OceanToWW3
 
 class DumpToNc(BoundaryWriter):
     def __init__(self):
@@ -47,8 +48,7 @@ class WW3(BoundaryWriter):
         msg.header(f"Writing output with {type(self).__name__}")
 
         # Convert from oceanic to mathematical convention
-        #boundary.process_spectra(spec.NautToOcean())
-        boundary.process_spectra(spec.OceanToWW3())
+        boundary.process_spectra(OceanToWW3())
 
         msg.info('Writing WAVEWATCH-III netcdf-output')
 
