@@ -1,7 +1,7 @@
 import numpy as np
 from copy import copy
 from .. import msg
-
+from ..aux import check_if_folder
 import netCDF4
 
 from .bnd_mod import BoundaryWriter # Abstract class
@@ -9,30 +9,58 @@ from .bnd_mod import Boundary # Boundary object
 
 from .process import OceanToWW3
 
-class DumpToNc(BoundaryWriter):
-    def __init__(self):
-        pass
 
-    def __call__(self, in_boundary: Boundary):
-        msg.header(f"Writing output with {type(self).__name__}")
-        output_file = f"spec_{in_boundary.name}.nc"
+class DumpToNc(BoundaryWriter):
+    def __init__(self, folder: str='', boundary_in_filename: bool=True, time_in_filename: bool=True, grid_in_filename: bool=True) -> None:
+        if (not folder == '') and (not folder[-1] == '/'):
+            folder = folder + '/'
+        self.folder = folder
+
+        self.boundary_in_filename = boundary_in_filename
+        self.grid_in_filename = grid_in_filename
+        self.time_in_filename = time_in_filename
+
+        return
+
+    def __call__(self, boundary: Boundary) -> None:
+        msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name}')
+
+        existed = check_if_folder(folder=self.folder, create=True)
+        if not existed:
+            msg.plain(f"Creating folder {self.folder}")
+
+        output_file = self.folder + 'spec' + super().create_filename(boundary, self.boundary_in_filename, self.grid_in_filename, self.time_in_filename) + '.nc'
         msg.to_file(output_file)
-        in_boundary.data.to_netcdf(output_file)
+        boundary.data.to_netcdf(output_file)
 
         return
 
 
 class NcFiles(BoundaryWriter):
-    def __init__(self):
-        pass
+    def __init__(self, folder: str='', boundary_in_filename: bool=True, time_in_filename: bool=True, grid_in_filename: bool=False) -> None:
+        if (not folder == '') and (not folder[-1] == '/'):
+            folder = folder + '/'
+        self.folder = folder
 
-    def __call__(self, in_boundary: Boundary):
-        msg.header(f"Writing output with {type(self).__name__}")
-        for n in in_boundary.x():
-            ds = in_boundary.slice_data(x = n)
-            lon = in_boundary.lon()[n]
-            lat = in_boundary.lat()[n]
-            output_file = f"spec_E{lon:09.6f}N{lat:09.6f}.nc"
+        self.boundary_in_filename = boundary_in_filename
+        self.grid_in_filename = grid_in_filename
+        self.time_in_filename = time_in_filename
+
+        return
+
+    def __call__(self, boundary: Boundary):
+        msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name}')
+
+        existed = check_if_folder(folder=self.folder, create=True)
+        if not existed:
+            msg.plain(f"Creating folder {self.folder}")
+
+        for n in boundary.x():
+            ds = boundary.slice_data(x = n)
+            lon = boundary.lon()[n]
+            lat = boundary.lat()[n]
+            output_file = self.folder + 'spec' + f"_E{lon:09.6f}N{lat:09.6f}" + super().create_filename(boundary, self.boundary_in_filename, self.grid_in_filename, self.time_in_filename) + '.nc'
+            #output_file = f"spec_E{lon:09.6f}N{lat:09.6f}.nc"
             msg.to_file(output_file)
             ds.to_netcdf(output_file)
 
@@ -40,12 +68,22 @@ class NcFiles(BoundaryWriter):
 
 
 class WW3(BoundaryWriter):
-    def __init__(self):
-        pass
+    def __init__(self, folder: str='', boundary_in_filename: bool=True, time_in_filename: bool=True, grid_in_filename: bool=False) -> None:
+        if (not folder == '') and (not folder[-1] == '/'):
+            folder = folder + '/'
+        self.folder = folder
 
-    def __call__(self, in_boundary: Boundary):
-        boundary = copy(in_boundary)
-        msg.header(f"Writing output with {type(self).__name__}")
+        self.boundary_in_filename = boundary_in_filename
+        self.grid_in_filename = grid_in_filename
+        self.time_in_filename = time_in_filename
+
+    def __call__(self, boundary: Boundary) -> None:
+        #boundary = copy(boundary_out)
+        msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name}')
+
+        existed = check_if_folder(folder=self.folder, create=True)
+        if not existed:
+            msg.plain(f"Creating folder {self.folder}")
 
         # Convert from oceanic to mathematical convention
         boundary.process_spectra(OceanToWW3())
@@ -54,19 +92,21 @@ class WW3(BoundaryWriter):
 
         for n in range(len(boundary.x())):
             if boundary.mask[n]:
-                self.write_netcdf(boundary, n)
+                lat = boundary.lat()[n]
+                lon = boundary.lon()[n]
+                output_file = self.folder + 'ww3_spec' + f"_E{lon:09.6f}N{lat:09.6f}" + super().create_filename(boundary, self.boundary_in_filename, self.grid_in_filename, self.time_in_filename) + '.nc'
+                self.write_netcdf(boundary, n, output_file)
             else:
                 msg.info(f"Skipping point {n} ({boundary.lon()[n]:10.7f}, {boundary.lat()[n]:10.7f}). Masked as False.")
         return
 
-    def write_netcdf(self, boundary, n):
+    def write_netcdf(self, boundary: Boundary, n: int, output_file: str) -> None:
         """Writes WW3 compatible netcdf spectral output from a list containing xarray datasets."""
-        lat=boundary.lat()[n]
-        lon=boundary.lon()[n]
-        if boundary.name == "AnonymousBoundary":
-            output_file = f"ww3_spec_E{lon:09.6f}N{lat:09.6f}.nc"
-        else:
-            output_file = f"ww3_{boundary.name}_E{lon:09.6f}N{lat:09.6f}.nc"
+
+        #if boundary.name == "AnonymousBoundary":
+        #    output_file = f"ww3_spec_E{lon:09.6f}N{lat:09.6f}.nc"
+        #else:
+        #    output_file = f"ww3_{boundary.name}_E{lon:09.6f}N{lat:09.6f}.nc"
         #output_file = 'ww3_spec_E'+str(lon)+'N'+str(lat)+'.nc'
         #output_file = 'Test_ww3.nc'
         msg.plain(f"Point {n}: {output_file}")
@@ -172,21 +212,33 @@ class WW3(BoundaryWriter):
 
 
 class SWAN(BoundaryWriter):
-    def __init__(self, factor = 1E-4):
+    def __init__(self, factor = 1E-4, folder: str='', boundary_in_filename: bool=True, time_in_filename: bool=True, grid_in_filename: bool=True) -> None:
         self.factor = factor
 
-    def __call__(self, in_boundary: Boundary):
-        boundary = copy(in_boundary)
+        if (not folder == '') and (not folder[-1] == '/'):
+            folder = folder + '/'
+        self.folder = folder
 
+        self.boundary_in_filename = boundary_in_filename
+        self.grid_in_filename = grid_in_filename
+        self.time_in_filename = time_in_filename
 
-        msg.header(f'{type(self).__name__}: writing boundary spectra from {in_boundary.name}')
-        #boundary.process_spectra(spec.NautToOcean())
-        # Initialize the boundary file by writing the header
-        swan_bnd_points = in_boundary.grid.boundary_points()
+        return
+
+    def __call__(self, boundary: Boundary):
+        msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name}')
+
+        existed = check_if_folder(folder=self.folder, create=True)
+        if not existed:
+            msg.plain(f"Creating folder {self.folder}")
+
+        swan_bnd_points = boundary.grid.boundary_points()
         days = boundary.days()
 
 
-        filename = f"{in_boundary.grid.name()}_spec{days[0].strftime('%Y%m%d')}_{days[-1].strftime('%Y%m%d')}.asc"
+        #filename = f"{in_boundary.grid.name()}_spec{days[0].strftime('%Y%m%d')}_{days[-1].strftime('%Y%m%d')}.asc"
+        filename = self.folder + 'spec' + super().create_filename(boundary, self.boundary_in_filename, self.grid_in_filename, self.time_in_filename) + '.asc'
+
         with open(filename, 'w') as file_out:
             file_out.write('SWAN   1\n')
             file_out.write('$ Data produced by '+boundary.data.source+'\n')
@@ -211,9 +263,6 @@ class SWAN(BoundaryWriter):
             file_out.write('-32767\n')
                 #first day
             msg.info(f'Writing 2d spectra at boundaries to: {filename}')
-
-
-
 
             for day in days:
                 msg.plain(day.strftime('%Y-%m-%d'))

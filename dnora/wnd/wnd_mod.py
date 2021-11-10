@@ -98,6 +98,6 @@ class ForcingWriter(ABC):
         if time_in_filename:
             time_fn = f"_{str(forcing_out.time()[0])[0:10]}_{str(forcing_out.time()[-1])[0:10]}"
 
-        filename = 'wind' + forcing_fn + grid_fn + time_fn
+        filename = forcing_fn + grid_fn + time_fn
 
         return filename

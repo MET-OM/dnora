@@ -92,15 +92,6 @@ class Multiply(SpectralProcessor):
     def __str__(self):
         return(f"Multiplying spectral values with {self.calib_spec}")
 
-class BoundaryWriter(ABC):
-    bnd_in: list
-    bnd_points: np.array
-    message: str
-    @abstractmethod
-    def __call__(self, bnd_out):
-        pass
-
-
 
 class Boundary:
     def __init__(self, grid: Grid, name: str = "AnonymousBoundary"):
@@ -127,25 +118,6 @@ class Boundary:
 
         return
 
-
-    # def process_spectra(self, spectral_processors: SpectralProcessor = Multiply(calib_spec = 1)):
-    #
-    #     if not isinstance(spectral_processors, list):
-    #         spectral_processors = [spectral_processors]
-    #
-    #     for n in range (len(spectral_processors)):
-    #         spectral_processor = spectral_processors[n]
-    #
-    #         msg.process(f"Processing spectra with {type(spectral_processor).__name__}")
-    #         new_spec, new_mask, new_freq, new_dirs = spectral_processor(self.spec(), self.freq(), self.dirs(), self.time(), self.x(), self.lon(), self.lat(), self.mask)
-    #
-    #         self.data.spec.values = new_spec
-    #         self.mask = new_mask
-    #
-    #         self.data = self.data.assign_coords(dirs=new_dirs)
-    #         self.data = self.data.assign_coords(freq=new_freq)
-    #
-    #     return
 
     def process_spectra(self, spectral_processors: List[SpectralProcessor] = [Multiply(calib_spec = 1)]):
 
@@ -243,3 +215,30 @@ class Boundary:
 
         times = self.slice_data(start_time = t0, end_time = t1, x = 0).time.values
         return times
+
+
+class BoundaryWriter(ABC):
+
+    @abstractmethod
+    def __call__(self, boundary_out: Boundary) -> None:
+        pass
+
+    def create_filename(self, boundary_out: Boundary, boundary_in_filename: bool=True, grid_in_filename: bool=True, time_in_filename: bool=True) -> str:
+        """Creates a filename based on the boolean swithes set in __init__ and the meta data in the objects"""
+
+        boundary_fn = ''
+        grid_fn = ''
+        time_fn = ''
+
+        if boundary_in_filename:
+            boundary_fn = f"_{boundary_out.name}"
+
+        if grid_in_filename:
+            grid_fn = f"_{boundary_out.grid.name()}"
+
+        if time_in_filename:
+            time_fn = f"_{str(boundary_out.time()[0])[0:10]}_{str(boundary_out.time()[-1])[0:10]}"
+
+        filename = boundary_fn + grid_fn + time_fn
+
+        return filename

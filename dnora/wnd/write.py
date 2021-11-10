@@ -27,7 +27,7 @@ class WW3(ForcingWriter):
         if not existed:
             msg.plain(f"Creating folder {self.folder}")
 
-        output_file = self.folder + super().create_filename(forcing_out, self.forcing_in_filename, self.grid_in_filename, self.time_in_filename) + '.nc'
+        output_file = self.folder + 'wind' + super().create_filename(forcing_out, self.forcing_in_filename, self.grid_in_filename, self.time_in_filename) + '.nc'
         msg.to_file(output_file)
 
         forcing_out.data.to_netcdf(output_file)
@@ -54,7 +54,7 @@ class SWAN(ForcingWriter):
         if not existed:
             msg.plain(f"Creating folder {self.folder}")
 
-        output_file = self.folder + super().create_filename(forcing_out, self.forcing_in_filename, self.grid_in_filename, self.time_in_filename) + '.asc'
+        output_file = self.folder + 'wind' + super().create_filename(forcing_out, self.forcing_in_filename, self.grid_in_filename, self.time_in_filename) + '.asc'
         msg.to_file(output_file)
 
         days = forcing_out.days()
