@@ -8,30 +8,42 @@ import matplotlib.pyplot as plt
 from .. import msg
 from ..aux import distance_2points, day_list
 
-
-"""Abstract class and classes needed by the Grid object to read the topography"""
+## -----------------------------------------------------------------------------
+## READING THE DATA
+## -----------------------------------------------------------------------------
 class TopoReader(ABC):
+    """Abstract class for reading the bathymetry."""
     @abstractmethod
     def __init__(self):
         pass
 
     @abstractmethod
     def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
+        """
+        Reads the bathymetrical information from a source and returns the data.
+
+        This method is called from within the Grid-object
+        """
         pass
 
     @abstractmethod
     def __str__(self):
-        """Describes how the spectral values as processed"""
+        """
+        Describes what topography is read and from where.
+
+        This is called by the Grid-objeect to provide output to the user.
+        """
         pass
+
 
 class EmptyTopo(TopoReader):
     """Creates an empty topography. Called when setting initial spacing."""
     def __init__(self, grid):
-        self.grid = copy(grid)
+        self.grid = grid
         pass
 
     def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
-        # Creates a trivial topography with all water points
+        """Creates a trivial topography with all water points."""
         topo = np.ones((self.grid.data.ny,self.grid.data.nx))*-9999
         topo_lon = copy(self.grid.lon())
         topo_lat = copy(self.grid.lat())
@@ -39,22 +51,37 @@ class EmptyTopo(TopoReader):
 
     def __str__(self):
         return("Creating an empty topography with depth values -9999.")
+## -----------------------------------------------------------------------------
 
-"""Abstract class and classes needed by the Grid object to set boundary points"""
+## -----------------------------------------------------------------------------
+## DEFINING BOUNDARY POINTS
+## -----------------------------------------------------------------------------
 class BoundarySetter(ABC):
+    """Abstract class for defining metods for setting boundary points in the
+    grid."""
     @abstractmethod
     def __init__(self):
         pass
 
     @abstractmethod
     def __call__(self, mask_size: tuple):
+        """
+        This method is called from within the Grid-object
+        """
         return boundary_mask
 
     @abstractmethod
     def __str__(self):
+        """
+        Describes how the boundary points are set.
+
+        This is called by the Grid-objeect to provide output to the user.
+        """
         pass
 
+
 class ClearBoundary(BoundarySetter):
+    """Clears all boundary points by setting a mask with False values."""
     def __init__(self):
         pass
 
@@ -63,23 +90,38 @@ class ClearBoundary(BoundarySetter):
 
     def __str__(self):
         return("Clearing all possible boundary points and setting an empty mask.")
+## -----------------------------------------------------------------------------
 
-"""Abstract class and classes needed by the Grid object to process to topography"""
-
+## -----------------------------------------------------------------------------
+## PROCESSING THE GRID DATA
+## -----------------------------------------------------------------------------
 class GridProcessor(ABC):
+    """Abstract class for modifying bathymetrical data of the Grid-object."""
     @abstractmethod
     def __init__(self):
         pass
 
     @abstractmethod
     def __call__(self, data, lon, lat, land_sea_mask, boundary_mask):
+        """
+        Gets the bathymetrical information and returns a modified version.
+
+        This method is called from within the Grid-object
+        """
         pass
 
     @abstractmethod
     def __str__(self):
+        """
+        Describes how the data is processed.
+
+        This is called by the Grid-objeect to provide output to the user.
+        """
         pass
 
+
 class TrivialFilter(GridProcessor):
+    """Returns the identical data it is passed. Used as default option."""
     def __init__(self):
         pass
 
@@ -88,25 +130,41 @@ class TrivialFilter(GridProcessor):
 
     def __str__(self):
         return("Doing nothing to the data, just passing it along.")
+## -----------------------------------------------------------------------------
 
-"""Abstract class and classes needed by the Grid object to mesh the topography to a grid"""
+## -----------------------------------------------------------------------------
+## MESHING THE DATA DOWN TO THE GRID
+## -----------------------------------------------------------------------------
 class Mesher(ABC):
+    """Abstract class for meshing the bathymetrical data to the grid."""
     @abstractmethod
     def __init__(self):
         pass
 
     @abstractmethod
     def __call__(self, data, lon, lat, lonQ, latQ):
+        """
+        Gets the bathymetrical information and returns a version that is meshed
+        to the area and resolution of the grid.
+
+        This method is called from within the Grid-object
+        """
         pass
 
     @abstractmethod
     def __str__(self):
+        """
+        Describes how the data is meshed.
+
+        This is called by the Grid-objeect to provide output to the user.
+        """
         pass
 
+
 class Interpolate(Mesher):
+    """Interpolates data to grid. A wrapper for scipy.interpolate's griddate."""
     def __init__(self, method = 'linear'):
         self.method = method
-        #msg.info(f"Initializing mesher with method: {self.method}")
 
         return
 
@@ -124,47 +182,44 @@ class Interpolate(Mesher):
         return(f"Meshing using {self.method} interpolation.")
 
 
-
 class TrivialMesher(Mesher):
+    """Passes along data. NB! This might not fit the grid, and is only used
+    for e.g. recreating a Grid-object from an ouput file."""
     def __init__(self):
         pass
 
     def __call__(self, data, lon, lat, lonQ, latQ):
         return copy(data)
+
     def __str__(self):
         return("Passing input data along as final meshed grid.")
+## -----------------------------------------------------------------------------
 
-"""Abstract class for classes that writes the topography to a file"""
-class TopoWriter(ABC):
-    @abstractmethod
-    def __init__(self):
-        pass
-
-    @abstractmethod
-    def __call__(self, grid):
-        pass
-
-"""The Grid object"""
+## -----------------------------------------------------------------------------
+## THE GRID OBJECT
+## -----------------------------------------------------------------------------
 class Grid:
     def __init__(self, lon_min: float = 0., lon_max: float = 0., lat_min: float = 0., lat_max: float = 0., name: str = "AnonymousGrid"):
+        """Initializes a new grid by setting the bounding box and name"""
 
         data_dict = {'lon_min': lon_min, 'lon_max': lon_max, 'lat_min': lat_min, 'lat_max': lat_max, 'name': name}
-
-        # Initializes new dataset
         self.data = xr.Dataset(
                     attrs=(data_dict
                     ),
                     )
         return
 
-    def import_topo(self, topo_fetcher: TopoReader):
-        """Reads to topography"""
+    def import_topo(self, topo_reader: TopoReader) -> None:
+        """
+        Reads the raw bathymetrical data.
+
+        This is called by the user.
+        """
+
         msg.header(f'Importing topography with {type(topo_fetcher).__name__}')
         print(topo_fetcher)
-        topo, lon, lat = topo_fetcher(self.data.lon_min, self.data.lon_max, self.data.lat_min, self.data.lat_max)
+        topo, lon, lat = topo_reader(self.data.lon_min, self.data.lon_max, self.data.lat_min, self.data.lat_max)
 
-
-        # Initialize new dataset
         coords_dict = {'lon': lon, 'lat': lat}
         vars_dict = {'topo': (['lat', 'lon'], topo)}
         self.rawdata = xr.Dataset(
@@ -173,8 +228,14 @@ class Grid:
                     data_vars=(vars_dict
                     ),
                     )
+        return
 
-    def filter_topo(self, filt: GridProcessor = TrivialFilter()):
+    def process_topo(self, filt: GridProcessor = TrivialFilter()) -> None:
+            """
+            Processes the raw bathymetrical data, e.g. with a filter.
+
+            This is called by the user.
+            """
             msg.header(f'Filtering topography with {type(filt).__name__}')
 
             empty_mask = np.full(self.raw_topo().shape, False)
@@ -189,6 +250,12 @@ class Grid:
             return
 
     def mesh_grid(self, mesher: Mesher = Interpolate(method = 'linear')) -> None:
+        """
+        Meshes the raw data down to the grid definitions.
+
+        This is called by the user.
+        """
+
         if hasattr(self, 'lon') and hasattr(self, 'lon'):
 
             msg.header(f'Meshing grid bathymetry with {type(mesher).__name__}')
@@ -204,8 +271,13 @@ class Grid:
             msg.templates('no_spacing')
             return
 
+    def process_grid(self, filt: GridProcessor = TrivialFilter()) -> None:
+            """
+            Processes the gridded bathymetrical data, e.g. with a filter.
 
-    def filter_grid(self, filt: GridProcessor = TrivialFilter()) -> None:
+            This is called by the user.
+            """
+
             msg.header(f'Filtering meshed grid with {type(filt).__name__}')
             print(filt)
             topo = filt(self.topo(), self.lon(), self.lat(), self.land_sea_mask(), self.boundary_mask())
@@ -219,6 +291,13 @@ class Grid:
             return
 
     def update_masks(self) -> None:
+        """
+        Sets land-sea mask and boundary point mask.
+
+        This is called after the data is meshed to the grid or the gridded data
+        is processed in order to make sure that everything is consistent.
+        """
+
         self.set_land_sea_mask()
 
         # Create empty (no boundary points) if doesn't exist
@@ -227,6 +306,8 @@ class Grid:
         return
 
     def drop_topo_and_masks(self) -> None:
+        """Drops the gridded data and masks."""
+
         if self.topo().size > 0:
             self.data =self.data.drop('topo')
         if self.land_sea_mask().size > 0:
@@ -236,6 +317,14 @@ class Grid:
         return
 
     def set_land_sea_mask(self, given_array = None) -> None:
+        """
+        Sets the land-sea mask based on land points in the gridded
+        bathymetrical data.
+
+        A certain land-sea mask can also be forced by providing a boolean
+        matrix.
+        """
+
         if given_array is None:
             land_sea_mask = np.full(self.topo().shape, False)
             land_sea_mask = self.topo() < 0 # Sea points set to true
@@ -248,13 +337,21 @@ class Grid:
         return
 
     def set_boundary(self, boundary_setter: BoundarySetter) -> None:
-        """Marks the points that should be treated as boundary points in the grid"""
+        """
+        Marks the points that should be treated as boundary points in the
+        grid.
+
+        This is called by the user.
+        """
 
         msg.header(f'Setting boundary points with {type(boundary_setter).__name__}')
         print(boundary_setter)
+
         boundary_mask = boundary_setter(self.land_sea_mask().shape)
+
         vars_dict = {'boundary_mask': (['lat', 'lon'], boundary_mask)}
         self.data = self.data.assign(vars_dict)
+
         return
 
     def point_list(self, mask):
@@ -473,7 +570,6 @@ class Grid:
         msg.info("Initializing with an empty topography")
         topo_fetcher = EmptyTopo(self)
         self.import_topo(topo_fetcher)
-        #self.filter_topo(filt = TrivialFilter())
         self.mesh_grid(mesher = TrivialMesher())
 
         print(self)
@@ -569,3 +665,19 @@ class Grid:
                 msg.plain(f'{sum(sum(np.logical_and(self.boundary_mask(), self.land_sea_mask()))):d} boundary points')
             msg.print_line()
             return ''
+## -----------------------------------------------------------------------------
+
+## -----------------------------------------------------------------------------
+## WRITING THE GRID DATA TO FILES
+## -----------------------------------------------------------------------------
+class TopoWriter(ABC):
+    """Abstract class for writing the Grid-object's data to files to be Used
+    by the wave models."""
+    @abstractmethod
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def __call__(self, grid: Grid):
+        pass
+## -----------------------------------------------------------------------------
