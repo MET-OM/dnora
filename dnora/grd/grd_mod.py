@@ -543,6 +543,8 @@ class Grid:
         sys.stdout.close()
         sys.stdout = stdout
 
+    def size(self) -> tuple:
+        return self.land_sea_mask().shape
 
     def __str__(self):
             msg.header(f"Status of grid {self.data.name}")
