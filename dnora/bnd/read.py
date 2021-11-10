@@ -24,7 +24,7 @@ class ForceFeed(BoundaryReader):
 
 
 class WAM4(BoundaryReader):
-    def __init__(self, ignore_nan = False, stride = 6, hours_per_file = 73, last_file = None, lead_time = 0):
+    def __init__(self, ignore_nan: bool=False, stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0):
         self.ignore_nan = copy(ignore_nan)
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
@@ -99,12 +99,17 @@ class WAM4(BoundaryReader):
 
 
 class NORA3(BoundaryReader):
+    def __init__(self, stride: int=24, hours_per_file: int=24, last_file: str='', lead_time: int=0):
+        self.stride = copy(stride)
+        self.hours_per_file = copy(hours_per_file)
+        self.lead_time = copy(lead_time)
+        self.last_file = copy(last_file)
 
     def get_coordinates(self, start_time):
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         #day = pd.date_range(start_time, start_time,freq='D')
-        day = day_list(start_time, start_time)
-        url = self.get_url(day[0])
+        start_times, end_times, file_times = create_time_stamps(start_time, start_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
+        url = self.get_url(start_times[0])
 
         data = xr.open_dataset(url).isel(time = [0])
 
@@ -118,15 +123,17 @@ class NORA3(BoundaryReader):
         self.start_time = start_time
         self.end_time = end_time
 
-        days = day_list(start_time = self.start_time, end_time = self.end_time)
+        start_times, end_times, file_times = create_time_stamps(start_time, end_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
+        #days = day_list(start_time = self.start_time, end_time = self.end_time)
 
         msg.info(f"Getting boundary spectra from NORA3 from {self.start_time} to {self.end_time}")
         bnd_list = []
-        for n in range(len(days)):
-            url = self.get_url(days[n])
-            msg.plain(url)
-            t0, t1 = self.get_time_limits_day(n)
-            bnd_list.append(xr.open_dataset(url).sel(time = slice(t0, t1), x = (inds+1)))
+        for n in range(len(file_times)):
+            url = self.get_url(file_times[n])
+            msg.info(url)
+            msg.plain(f"Reading boundary spectra: {start_times[n]}-{end_times[n]}")
+            #t0, t1 = self.get_time_limits_day(n)
+            bnd_list.append(xr.open_dataset(url).sel(time = slice(start_times[n], end_times[n]), x = (inds+1)))
 
         bnd=xr.concat(bnd_list, dim="time").squeeze('y')
 
@@ -145,5 +152,3 @@ class NORA3(BoundaryReader):
     def get_url(self, day):
         url = 'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/SPC'+day.strftime('%Y%m%d')+'00.nc'
         return url
-
-

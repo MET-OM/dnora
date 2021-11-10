@@ -41,37 +41,40 @@ def create_time_stamps(start_time: str, end_time: str, stride: int, hours_per_fi
         hours_per_file = stride
 
     # FIND FILE STAMPS
-    t0 = np.datetime64(start_time) - np.timedelta64(lead_time,'h')
+    #t0 = np.datetime64(start_time) - np.timedelta64(lead_time,'h')
+    start_stamp = pd.Timestamp(start_time) - pd.DateOffset(hours=lead_time)
     if last_file is not '':
-        t1 = np.datetime64(last_file)
+        end_stamp = pd.Timestamp(start_time)
 
         # E.g. we want to start a forecast at 06:00 but the last (and only) file is 00:00
-        if t0 > t1:
-            t0 = t1
+        if start_stamp > end_stamp:
+            start_stamp = end_stampt1
     else:
-        t1 = np.datetime64(end_time) - np.timedelta64(lead_time,'h')
+        #t1 = np.datetime64(end_time) - np.timedelta64(lead_time,'h')
+        end_stamp = pd.Timestamp(end_time) - pd.DateOffset(hours=lead_time)
 
 
 
     # How many ours to remove if files are e.g. 00, 06, 12 and we request output from 01-08
-    h0 = int(pd.Timestamp(t0).hour) % stride
-    h1 = int(pd.Timestamp(t1).hour) % stride
-    file_times = pd.date_range(start = t0 - np.timedelta64(h0,'h'), end = t1 - np.timedelta64(h1,'h'), freq=f'{stride}H')
+    h0 = int(start_stamp.hour) % stride
+    h1 = int(end_stamp.hour) % stride
+    file_times = pd.date_range(start = start_stamp - pd.DateOffset(hours=h0), end = end_stamp - pd.DateOffset(hours=h1), freq=f'{stride}H')
 
 
     # FIND START AND END TIMES
-    start_times = file_times + np.timedelta64(lead_time,'h')
-    end_times = start_times + np.timedelta64(stride-1, 'h')
+    start_times = file_times + pd.DateOffset(hours=lead_time)
+    end_times = start_times + pd.DateOffset(hours=stride-1)
 
     # First time might not coincide with first step in first file
-    start_times.values[0] = np.datetime64(start_time)
+    #start_times.values[0] = np.datetime64(start_time)
+    start_times.values[0] = pd.Timestamp(start_time)
 
-    if last_file is not '' and hours_per_file is not 0:
+    if last_file is not '':
         # In operational systems we might want to read a longer segment from the last file
-        end_times.values[-1] = min([np.datetime64(last_file) + np.timedelta64((hours_per_file-1),'h'), np.datetime64(end_time)])
+        end_times.values[-1] = min([pd.Timestamp(last_file) + pd.DateOffset(hours=(hours_per_file-1)), pd.Timestamp(end_time)])
     else:
         # Last time might not coincide with last step in last file
-        end_times.values[-1] = np.datetime64(end_time)
+        end_times.values[-1] = pd.Timestamp(end_time)
     return start_times, end_times, file_times
 
 
