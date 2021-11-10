@@ -19,12 +19,6 @@ class ForcingReader(ABC):
         return (f"{self.start_time} - {self.end_time}")
 
 
-class ForcingWriter(ABC):
-    @abstractmethod
-    def __call__(self, forcing_out):
-        pass
-
-
 class Forcing:
     def __init__(self, grid, name='AnonymousForcing'):
         self.grid = copy(grid)
@@ -81,3 +75,29 @@ class Forcing:
 
         times = self.slice_data(start_time=t0, end_time=t1).time.values
         return times
+
+class ForcingWriter(ABC):
+
+    @abstractmethod
+    def __call__(self, forcing_out: Forcing) -> None:
+        pass
+
+    def create_filename(self, forcing_out: Forcing, forcing_in_filename: bool=True, grid_in_filename: bool=True, time_in_filename: bool=True) -> str:
+        """Creates a filename based on the boolean swithes set in __init__ and the meta data in the objects"""
+
+        forcing_fn = ''
+        grid_fn = ''
+        time_fn = ''
+
+        if forcing_in_filename:
+            forcing_fn = f"_{forcing_out.name}"
+
+        if grid_in_filename:
+            grid_fn = f"_{forcing_out.grid.name()}"
+
+        if time_in_filename:
+            time_fn = f"_{str(forcing_out.time()[0])[0:10]}_{str(forcing_out.time()[-1])[0:10]}"
+
+        filename = 'wind' + forcing_fn + grid_fn + time_fn
+
+        return filename

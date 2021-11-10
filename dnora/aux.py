@@ -3,6 +3,7 @@ import pandas as pd
 from scipy.interpolate import griddata
 from scipy import interpolate
 from statistics import mode
+import os
 
 def distance_2points(lat1,lon1,lat2,lon2):
     """Calculate distance between two points"""
@@ -94,6 +95,17 @@ def expand_area(lon_min: float, lon_max:float , lat_min:float , lat_max:float, e
     new_lat_max = lat_max + expand_lat
 
     return new_lon_min, new_lon_max, new_lat_min, new_lat_max
+
+
+
+def check_if_folder(folder: str, create: bool=True) -> bool:
+    existed = os.path.isdir(folder)
+
+    if not existed:
+        os.mkdir(folder)
+
+    return existed
+
 
 # -----------------------------------------------------------------------------
 # MISC STAND ALONE FUNCTIONS
