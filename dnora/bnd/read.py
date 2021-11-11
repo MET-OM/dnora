@@ -23,7 +23,7 @@ class ForceFeed(BoundaryReader):
         return  copy(self.time), copy(self).freq, copy(self).dirs, np.reshape(self.spec, (len(self.time), len(self.lon), self.spec.shape[0], self.spec.shape[1])), copy(self.lon), copy(self.lat), ''
 
 
-class WAM4(BoundaryReader):
+class MetNo_WAM4km(BoundaryReader):
     def __init__(self, ignore_nan: bool=False, stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0):
         self.ignore_nan = copy(ignore_nan)
         self.stride = copy(stride)
@@ -98,7 +98,7 @@ class WAM4(BoundaryReader):
         return url
 
 
-class NORA3(BoundaryReader):
+class MetNo_NORA3(BoundaryReader):
     def __init__(self, stride: int=24, hours_per_file: int=24, last_file: str='', lead_time: int=0):
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)

@@ -13,7 +13,7 @@ from .wnd_mod import Forcing # Forcing object
 
 from ..grd.grd_mod import Grid # Grid object
 
-class Arome25(ForcingReader):
+class MetNo_NORA3(ForcingReader):
     def __init__(self, stride: int = 1, hours_per_file: int = 1, last_file: str = '', lead_time: int = 4):
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
@@ -105,7 +105,7 @@ class Arome25(ForcingReader):
         return url
 
 
-class MyWave3km(ForcingReader):
+class MetNo_MyWave3km(ForcingReader):
     def __init__(self, stride: int = 24, hours_per_file: int = 24, last_file: str = '', lead_time: int = 0):
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
@@ -189,7 +189,7 @@ class MyWave3km(ForcingReader):
         return url
 
 
-class MEPS(ForcingReader):
+class MetNo_MEPS(ForcingReader):
     def __init__(self, prefix: str = 'subset', stride: int = 24, hours_per_file: int = 24, last_file: str = '', lead_time: int = 0):
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
