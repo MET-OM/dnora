@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from .. import msg
 from ..aux import distance_2points, day_list
 
+from ..bnd.bnd_mod import Boundary # Boundary object
 ## -----------------------------------------------------------------------------
 ## READING THE DATA
 ## -----------------------------------------------------------------------------
@@ -19,8 +20,7 @@ class TopoReader(ABC):
 
     @abstractmethod
     def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
-        """
-        Reads the bathymetrical information from a source and returns the data.
+        """Reads the bathymetrical information from a source and returns the data.
 
         This method is called from within the Grid-object
         """
@@ -28,8 +28,7 @@ class TopoReader(ABC):
 
     @abstractmethod
     def __str__(self):
-        """
-        Describes what topography is read and from where.
+        """Describes what topography is read and from where.
 
         This is called by the Grid-objeect to provide output to the user.
         """
@@ -65,15 +64,13 @@ class BoundarySetter(ABC):
 
     @abstractmethod
     def __call__(self, mask_size: tuple):
-        """
-        This method is called from within the Grid-object
+        """This method is called from within the Grid-object
         """
         return boundary_mask
 
     @abstractmethod
     def __str__(self):
-        """
-        Describes how the boundary points are set.
+        """Describes how the boundary points are set.
 
         This is called by the Grid-objeect to provide output to the user.
         """
@@ -103,8 +100,7 @@ class GridProcessor(ABC):
 
     @abstractmethod
     def __call__(self, data, lon, lat, land_sea_mask, boundary_mask):
-        """
-        Gets the bathymetrical information and returns a modified version.
+        """Gets the bathymetrical information and returns a modified version.
 
         This method is called from within the Grid-object
         """
@@ -143,9 +139,8 @@ class Mesher(ABC):
 
     @abstractmethod
     def __call__(self, data, lon, lat, lonQ, latQ):
-        """
-        Gets the bathymetrical information and returns a version that is meshed
-        to the area and resolution of the grid.
+        """Gets the bathymetrical information and returns a version that is
+        meshed to the area and resolution of the grid.
 
         This method is called from within the Grid-object
         """
@@ -153,8 +148,7 @@ class Mesher(ABC):
 
     @abstractmethod
     def __str__(self):
-        """
-        Describes how the data is meshed.
+        """Describes how the data is meshed.
 
         This is called by the Grid-objeect to provide output to the user.
         """
@@ -184,7 +178,8 @@ class Interpolate(Mesher):
 
 class TrivialMesher(Mesher):
     """Passes along data. NB! This might not fit the grid, and is only used
-    for e.g. recreating a Grid-object from an ouput file."""
+    for e.g. recreating a Grid-object from an ouput file.
+    """
     def __init__(self):
         pass
 
@@ -210,14 +205,10 @@ class Grid:
         return
 
     def import_topo(self, topo_reader: TopoReader) -> None:
-        """
-        Reads the raw bathymetrical data.
+        """Reads the raw bathymetrical data."""
 
-        This is called by the user.
-        """
-
-        msg.header(f'Importing topography with {type(topo_fetcher).__name__}')
-        print(topo_fetcher)
+        msg.header(f'Importing topography with {type(topo_reader).__name__}')
+        print(topo_reader)
         topo, lon, lat = topo_reader(self.data.lon_min, self.data.lon_max, self.data.lat_min, self.data.lat_max)
 
         coords_dict = {'lon': lon, 'lat': lat}
@@ -231,11 +222,7 @@ class Grid:
         return
 
     def process_topo(self, filt: GridProcessor = TrivialFilter()) -> None:
-            """
-            Processes the raw bathymetrical data, e.g. with a filter.
-
-            This is called by the user.
-            """
+            """Processes the raw bathymetrical data, e.g. with a filter."""
             msg.header(f'Filtering topography with {type(filt).__name__}')
 
             empty_mask = np.full(self.raw_topo().shape, False)
@@ -250,11 +237,7 @@ class Grid:
             return
 
     def mesh_grid(self, mesher: Mesher = Interpolate(method = 'linear')) -> None:
-        """
-        Meshes the raw data down to the grid definitions.
-
-        This is called by the user.
-        """
+        """Meshes the raw data down to the grid definitions."""
 
         if hasattr(self, 'lon') and hasattr(self, 'lon'):
 
@@ -264,7 +247,7 @@ class Grid:
             vars_dict = {'topo': (['lat', 'lon'], topo)}
             self.data = self.data.assign(vars_dict)
 
-            self.update_masks()
+            self._update_masks()
             return
 
         else:
@@ -272,11 +255,7 @@ class Grid:
             return
 
     def process_grid(self, filt: GridProcessor = TrivialFilter()) -> None:
-            """
-            Processes the gridded bathymetrical data, e.g. with a filter.
-
-            This is called by the user.
-            """
+            """Processes the gridded bathymetrical data, e.g. with a filter."""
 
             msg.header(f'Filtering meshed grid with {type(filt).__name__}')
             print(filt)
@@ -286,191 +265,52 @@ class Grid:
             self.data = self.data.assign(vars_dict)
 
             msg.info('Upodating land-sea mask and boundary mask')
-            self.update_masks()
+            self._update_masks()
 
             return
 
-    def update_masks(self) -> None:
-        """
-        Sets land-sea mask and boundary point mask.
+    def set_spacing(self, dlon: float=0, dlat: float=0, dm: float=0, nx: int=0, ny: int=0, floating_edge: bool=False) -> None:
+        """Defines longitude and latitude vectors based on desired spacing.
 
-        This is called after the data is meshed to the grid or the gridded data
-        is processed in order to make sure that everything is consistent.
-        """
+        Options
+        dlon, dlat [deg]:   Grid spacing is set as close to the given resolution
+                            as possible (edges are fixed).
 
-        self.set_land_sea_mask()
+                            Set floating_edge=True to force exact dlon, dlat
+                            and instead possibly move lon_max, lat_max slightly
+                            to make it work.
 
-        # Create empty (no boundary points) if doesn't exist
-        if self.boundary_mask().size == 0:
-            self.set_boundary(boundary_setter = ClearBoundary())
-        return
+        dm [m]:             Grid spacing is set as close as dm metres as
+                            possible.
 
-    def drop_topo_and_masks(self) -> None:
-        """Drops the gridded data and masks."""
-
-        if self.topo().size > 0:
-            self.data =self.data.drop('topo')
-        if self.land_sea_mask().size > 0:
-            self.data =self.data.drop('land_sea_mask')
-        if self.boundary_mask().size > 0:
-            self.data =self.data.drop('boundary_mask')
-        return
-
-    def set_land_sea_mask(self, given_array = None) -> None:
-        """
-        Sets the land-sea mask based on land points in the gridded
-        bathymetrical data.
-
-        A certain land-sea mask can also be forced by providing a boolean
-        matrix.
+        nx, ny [grid pnts]: Grid resolution is set to have nx points in
+                            longitude and ny points in latitude direction.
         """
 
-        if given_array is None:
-            land_sea_mask = np.full(self.topo().shape, False)
-            land_sea_mask = self.topo() < 0 # Sea points set to true
-        else:
-            land_sea_mask = given_array
-
-        vars_dict = {'land_sea_mask': (['lat', 'lon'], land_sea_mask)}
-        self.data = self.data.assign(vars_dict)
-
-        return
-
-    def set_boundary(self, boundary_setter: BoundarySetter) -> None:
-        """
-        Marks the points that should be treated as boundary points in the
-        grid.
-
-        This is called by the user.
-        """
-
-        msg.header(f'Setting boundary points with {type(boundary_setter).__name__}')
-        print(boundary_setter)
-
-        boundary_mask = boundary_setter(self.land_sea_mask().shape)
-
-        vars_dict = {'boundary_mask': (['lat', 'lon'], boundary_mask)}
-        self.data = self.data.assign(vars_dict)
-
-        return
-
-    def point_list(self, mask):
-        meshlon, meshlat=np.meshgrid(self.lon(),self.lat())
-        lonlat_flat = np.column_stack((meshlon.ravel(),meshlat.ravel()))
-        mask_flat = mask.ravel()
-
-        return lonlat_flat[mask_flat]
-
-    def boundary_points(self):
-        """Returns a lon, lat list of the set boundary points."""
-        if self.boundary_mask().size > 0:
-            mask = np.logical_and(self.boundary_mask(), self.land_sea_mask())
-            BOUND = self.point_list(mask)
-            return BOUND
-        else:
-            return np.array([])
-
-    def land_points(self):
-        """Returns a lon, lat list of land points."""
-        if self.boundary_mask().size > 0:
-            mask = np.logical_not(self.land_sea_mask())
-            LAND = self.point_list(mask)
-            return LAND
-        else:
-            return np.array([])
-
-    def sea_points(self):
-        """Returns a lon, lat list of land points."""
-        if self.boundary_mask().size > 0:
-            mask = self.land_sea_mask()
-            LAND = self.point_list(mask)
-            return LAND
-        else:
-            return np.array([])
-
-    def land_sea_mask(self):
-        if hasattr(self.data, 'land_sea_mask'):
-            return copy(self.data.land_sea_mask.values)
-        else:
-            return np.array([])
-    def boundary_mask(self):
-        if hasattr(self.data, 'boundary_mask'):
-            return copy(self.data.boundary_mask.values)
-        else:
-            return np.array([])
-    def raw_topo(self):
-        return copy(self.rawdata.topo.values)
-
-    def raw_lon(self):
-        return copy(self.rawdata.lon.values)
-
-    def raw_lat(self):
-        return copy(self.rawdata.lat.values)
-
-    def topo(self):
-        if hasattr(self.data, 'topo'):
-            return copy(self.data.topo.values)
-        else:
-            return np.array([])
-
-    def nx(self):
-        if hasattr(self.data, 'nx'):
-            return copy(self.data.nx)
-        else:
-            return 0
-
-    def ny(self):
-        if hasattr(self.data, 'ny'):
-            return copy(self.data.ny)
-        else:
-            return 0
-
-    def lon(self):
-        if hasattr(self.data, 'lon'):
-            lon = copy(self.data.lon.values)
-        else:
-            lon = np.array([self.data.lon_min, self.data.lon_max])
-        return lon
-
-    def lat(self):
-        if hasattr(self.data, 'lat'):
-            lat = copy(self.data.lat.values)
-        else:
-            lat = np.array([self.data.lat_min, self.data.lat_max])
-        return lat
-
-    def name(self):
-        return copy(self.data.name)
-
-    def set_spacing(self, dlon = 0, dlat = 0, dm = 0, nx = 0, ny = 0, floating_edge = False):
-        """Defines longitude and latitude vectors based on desired spacing. Use either dlon and dlat (in deg), dm (in m), or nx and ny (in grid points)."""
         msg.header("Setting grid spacing")
 
-        dont_update = False
-        if dlon and dlat:
-            if floating_edge:
-                #Use exactly given dlon/dlat and change lon_max/lat_max accordingly
+        # Resetting spacing will lose all information about the old grid.
+        # We therefore check that
+        reset_grid = False
 
-                msg.plain(f"Setting spacing based on dlon = {dlon} and dlat = {dlat}")
+        if dlon and dlat:
+            msg.plain(f"Setting spacing based on dlon = {dlon} and dlat = {dlat}")
+
+            if dm:
+                msg.plain(f"dlon and dlat given. Ignoring value dm={dm} metres!")
+
+            if floating_edge: #Use exactly given dlon/dlat and change lon_max/lat_max accordingly
                 msg.plain("floating_edge = True. Making sure dlon/dlat are keep exactly fixed")
 
-                old_lat_max=self.lat()[-1]
-                old_lon_max=self.lon()[-1]
                 lon=np.arange(self.data.lon_min,self.data.lon_max+dlon/2,dlon)
                 lat=np.arange(self.data.lat_min,self.data.lat_max+dlon/2,dlat)
 
-                msg.plain(f"Setting lon_max ({old_lon_max} >> {self.lon()[-1]}), lat_max ({old_lat_max} >> {self.lat()[-1]})")
-                lon_max = lon[-1]
-                lat_max = lat[-1]
-                lon_min = lon[0]
-                lat_min = lat[0]
+                msg.plain(f"Setting lon_max ({self.lon()[-1]} >> {lon[-1]}), lat_max ({self.lat()[-1]} >> {lat[-1]})")
 
-                distance_x = distance_2points((lat_min+lat_max)/2, lon_min, (lat_min+lat_max)/2, lon_max)
-                distance_y = distance_2points(lat_min, lon_min, lat_max, lon_min)
+                distance_x = distance_2points((lat[0]+lat[-1])/2, lon[0], (lat[0]+lat[-1])/2, lon[-1])
+                distance_y = distance_2points(lat[0], lon[0], lat[-1], lon[0])
 
                 # Number of points
-                #nx = int((lon_max-self.data.lon_min)/dlon + 1)
-                #ny = int((lat_max-self.data.lat_min)/dlat + 1)
                 nx = len(lon)
                 ny = len(lat)
 
@@ -479,16 +319,12 @@ class Grid:
                 dy = distance_y*1000/ny
 
 
-                attr_dict = {'lon_max': lon_max, 'lat_max': lat_max}
+                attr_dict = {'lon_max': lon[-1], 'lat_max': lat[-1]}
                 self.data = self.data.assign_attrs(attr_dict)
 
+                reset_grid = True
 
-
-            else:
-                # Keeping edges fixed and rounding dlon/dlat to something suitable
-
-                msg.plain(f"Setting spacing based on dlon = {dlon} and dlat = {dlat}")
-
+            else: # Keeping edges fixed and rounding dlon/dlat to something suitable
                 # Number of points
                 nx = int((self.data.lon_max-self.data.lon_min)/dlon + 1)
                 ny = int((self.data.lat_max-self.data.lat_min)/dlat + 1)
@@ -506,9 +342,8 @@ class Grid:
                 dx = distance_x*1000/nx
                 dy = distance_y*1000/ny
 
+                reset_grid = True
 
-            if dm:
-                msg.plain(f"Ignoring value dm={dm} metres!")
         elif dm:
             msg.plain(f"Setting spacing based on (approximately) dm={dm} metres")
             distance_x = distance_2points((self.data.lat_min+self.data.lat_max)/2, self.data.lon_min, (self.data.lat_min+self.data.lat_max)/2, self.data.lon_max)
@@ -522,14 +357,13 @@ class Grid:
             dx = distance_x*1000/nx
             dy = distance_y*1000/ny
 
-
             # Define longitudes and latitudes
             lon = np.linspace(self.data.lon_min, self.data.lon_max, nx)
             lat = np.linspace(self.data.lat_min, self.data.lat_max, ny)
             dlon = (self.data.lon_max-self.data.lon_min)/(nx-1)
             dlat = (self.data.lat_max-self.data.lat_min)/(ny-1)
 
-
+            reset_grid = True
 
         elif nx and ny:
             msg.plain(f"Setting spacing to have nx = {nx}, ny = {ny} points.")
@@ -547,40 +381,167 @@ class Grid:
             dx = distance_x*1000/nx
             dy = distance_y*1000/ny
 
+            reset_grid = True
 
-        else:
-            dont_update = True
-
-
-        if dont_update:
-            msg.advice("Doing nothing. Run set_spacing with either dlon AND dlat (in degrees), nx AND ny (in grid points), or dm (in metres).")
-        else:
-
+        if reset_grid:
             # Old topography conflicts in size, so drop them first
-            self.drop_topo_and_masks()
+            self._drop_topo_and_masks()
 
+            # Set the new values to the xarray
             attr_dict = {'nx': nx, 'ny': ny, 'dx': dx, 'dy': dy, 'dlon': dlon, 'dlat': dlat}
             self.data = self.data.assign_attrs(attr_dict)
 
             coords_dict = {'lon': lon, 'lat': lat}
             self.data = self.data.assign_coords(coords_dict)
 
+            # Initialize the grid with an empty topography
+            msg.info("Initializing with an empty topography")
+            self.import_topo(topo_reader=EmptyTopo(self))
 
-        # Initialize the grid with an empty topography
-        msg.info("Initializing with an empty topography")
-        topo_fetcher = EmptyTopo(self)
-        self.import_topo(topo_fetcher)
-        self.mesh_grid(mesher = TrivialMesher())
+            self.mesh_grid(mesher=TrivialMesher())
+
+        else:
+            msg.advice("Doing nothing. Run set_spacing with either dlon AND dlat (in degrees), nx AND ny (in grid points), or dm (in metres).")
 
         print(self)
-    def plot(self, save_fig = False, filename = '', boundary = None, grid_processor: GridProcessor = TrivialFilter()):
-        """Creates a plot of the topography"""
 
+        return
+
+    def set_boundary(self, boundary_setter: BoundarySetter) -> None:
+        """Marks the points that should be treated as boundary points in the
+        grid."""
+
+        msg.header(f'Setting boundary points with {type(boundary_setter).__name__}')
+        print(boundary_setter)
+
+        boundary_mask = boundary_setter(self.land_sea_mask().shape)
+
+        vars_dict = {'boundary_mask': (['lat', 'lon'], boundary_mask)}
+        self.data = self.data.assign(vars_dict)
+
+        return
+
+    def land_sea_mask(self):
+        """Returns bool array of the land-sea mask (True=sea point)"""
+        if hasattr(self.data, 'land_sea_mask'):
+            return copy(self.data.land_sea_mask.values)
+        else:
+            return np.array([])
+
+    def boundary_mask(self):
+        """Returns bool array of boundary points (True=boundary point)"""
+        if hasattr(self.data, 'boundary_mask'):
+            return copy(self.data.boundary_mask.values)
+        else:
+            return np.array([])
+
+    def boundary_points(self):
+        """Returns a lon, lat list of the set boundary points."""
+        if self.boundary_mask().size > 0:
+            mask = np.logical_and(self.boundary_mask(), self.land_sea_mask())
+            BOUND = self._point_list(mask)
+            return BOUND
+        else:
+            return np.array([])
+
+    def land_points(self):
+        """Returns a lon, lat list of land points."""
+        if self.boundary_mask().size > 0:
+            mask = np.logical_not(self.land_sea_mask())
+            LAND = self._point_list(mask)
+            return LAND
+        else:
+            return np.array([])
+
+    def sea_points(self):
+        """Returns a lon, lat list of land points."""
+        if self.boundary_mask().size > 0:
+            mask = self.land_sea_mask()
+            LAND = self._point_list(mask)
+            return LAND
+        else:
+            return np.array([])
+
+    def name(self):
+        """Return the name of the grid (set at initialization)."""
+        return copy(self.data.name)
+
+    def size(self) -> tuple:
+        """Returns the size (nx, ny) of the grid."""
+        return self.land_sea_mask().shape
+
+    def topo(self):
+        """Returns an array containing the meshed topography of the grid."""
+        if hasattr(self.data, 'topo'):
+            return copy(self.data.topo.values)
+        else:
+            return np.array([])
+
+    def nx(self) -> int:
+        """Return the number of points in longitude direction."""
+        if hasattr(self.data, 'nx'):
+            return int(copy(self.data.nx))
+        else:
+            return 0
+
+    def ny(self) -> int:
+        """Return the number of points in latitude direction."""
+        if hasattr(self.data, 'ny'):
+            return int(copy(self.data.ny))
+        else:
+            return 0
+
+    def lon(self):
+        """Returns a longitude vector of the grid."""
+        if hasattr(self.data, 'lon'):
+            lon = copy(self.data.lon.values)
+        else:
+            lon = np.array([self.data.lon_min, self.data.lon_max])
+        return lon
+
+    def lat(self):
+        """Returns a latitude vector of the grid."""
+        if hasattr(self.data, 'lat'):
+            lat = copy(self.data.lat.values)
+        else:
+            lat = np.array([self.data.lat_min, self.data.lat_max])
+        return lat
+
+    def raw_topo(self):
+        """Returns an array containing the unmeshed imported topography."""
+        return copy(self.rawdata.topo.values)
+
+    def raw_lon(self):
+        """Returns a longitude vector of the unmeshed imported topography."""
+        return copy(self.rawdata.lon.values)
+
+    def raw_lat(self):
+        """Returns a latitude vector of the unmeshed imported topography."""
+        return copy(self.rawdata.lat.values)
+
+    def plot(self, save_fig: bool=False, filename: str='', boundary: Boundary=None, grid_processor: GridProcessor=TrivialFilter()) -> None:
+        """Creates a plot of the topography.
+
+        Options
+        boundary:       If a boundary object from dnora.bnd is given, then the
+                        boundary spectra locations are printed on the plot.
+
+        save_fig:       If set to true, plot is saved.
+
+        filename:       Used if save_fig=True, e.g. 'My_plot.pdf'.
+                        Default is ''{self.name()}_topo.pdf'
+
+        grid_processor: A GridProcessor might be provided to modify the data
+                        before plotting. These modifications are not applied
+                        to the data, but are only used for plotting.
+        """
+
+        # Allows a modification of the topography before plotting
         topo = grid_processor(self.topo(), self.lon(), self.lat(), self.land_sea_mask(), self.boundary_mask())
 
         if self.topo().size > 0:
             if not filename:
-                filename = f"{self.data.name}_topo.pdf"
+                filename = f"{self.name()}_topo.pdf"
             levels = np.linspace(np.min(topo), 0, 100, endpoint=True)
 
             plt.figure()
@@ -590,7 +551,7 @@ class Grid:
                 plt.plot(boundary.lon(), boundary.lat(),'kx')
 
             plt.colorbar()
-            plt.title(f"{self.data.name} topography")
+            plt.title(f"{self.name()} topography")
             plt.show()
 
             if save_fig:
@@ -599,12 +560,23 @@ class Grid:
         else:
             msg.templates('no_topo')
 
+        return
 
-    def plot_mask(self, save_fig = False, filename = '', boundary = None):
-        """Creates a plot of the land-sea mask"""
+    def plot_mask(self, save_fig: bool=False, filename: str='', boundary: Boundary=None) -> None:
+        """Creates a plot of the land-sea mask.
+
+        Options
+        boundary:       If a boundary object from dnora.bnd is given, then the
+                        boundary spectra locations are printed on the plot.
+
+        save_fig:       If set to true, plot is saved.
+
+        filename:       Used if save_fig=True, e.g. 'My_plot.pdf'.
+                        Default is ''{self.name()}_mask.pdf'
+        """
         if self.boundary_mask().size > 0:
             if not filename:
-                filename = f"{self.data.name}_mask.pdf"
+                filename = f"{self.name())}_mask.pdf"
 
             plt.figure()
             plt.contourf(self.lon(),self.lat(),self.land_sea_mask())
@@ -616,7 +588,7 @@ class Grid:
 
 
             plt.colorbar()
-            plt.title(f"{self.data.name} land-sea mask")
+            plt.title(f"{self.name()} land-sea mask")
             #plt.show()
 
             if save_fig:
@@ -625,7 +597,66 @@ class Grid:
         else:
             msg.templates('no_mask')
 
-    def write_status(self, filename = '', folder = ''):
+        return
+
+    def _update_masks(self) -> None:
+        """Sets land-sea mask and boundary point mask.
+
+        This is called after the data is meshed to the grid or the gridded data
+        is processed in order to make sure that everything is consistent.
+        """
+
+        self._set_land_sea_mask()
+
+        # Create empty (no boundary points) if doesn't exist
+        if self.boundary_mask().size == 0:
+            self.set_boundary(boundary_setter = ClearBoundary())
+        return
+
+    def _drop_topo_and_masks(self) -> None:
+        """Drops the gridded data and masks."""
+
+        if self.topo().size > 0:
+            self.data =self.data.drop('topo')
+        if self.land_sea_mask().size > 0:
+            self.data =self.data.drop('land_sea_mask')
+        if self.boundary_mask().size > 0:
+            self.data =self.data.drop('boundary_mask')
+        return
+
+    def _set_land_sea_mask(self, matrix = None) -> None:
+        """Sets the land-sea mask based on land points in the gridded
+        bathymetrical data.
+
+        A certain land-sea mask can also be forced by providing a boolean
+        matrix by the user (as a bit of hack). Note, that this will be
+        overwritten automatically by the method _update_masks() if any further
+        changes are made to the topography.
+        """
+
+        if matrix is None:
+            land_sea_mask = np.full(self.topo().shape, False)
+            land_sea_mask = self.topo() < 0 # Sea points set to true
+        else:
+            land_sea_mask = matrix
+
+        vars_dict = {'land_sea_mask': (['lat', 'lon'], land_sea_mask)}
+        self.data = self.data.assign(vars_dict)
+
+        return
+
+    def _point_list(self, mask):
+        """Provides a list on longitudes and latitudes with a given mask.
+
+        Used to e.g. generate list of boundary points or land points.
+        """
+        meshlon, meshlat=np.meshgrid(self.lon(),self.lat())
+        lonlat_flat = np.column_stack((meshlon.ravel(),meshlat.ravel()))
+        mask_flat = mask.ravel()
+
+        return lonlat_flat[mask_flat]
+
+    def write_status(self, filename='', folder='') -> None:
         """Writes out the status of the grid to a file."""
         if not filename:
             filename = f"{self.data.name}_info.txt"
@@ -639,10 +670,9 @@ class Grid:
         sys.stdout.close()
         sys.stdout = stdout
 
-    def size(self) -> tuple:
-        return self.land_sea_mask().shape
+        return
 
-    def __str__(self):
+    def __str__(self) -> str:
             msg.header(f"Status of grid {self.data.name}")
             msg.plain(f'lon: {self.data.lon_min} - {self.data.lon_max}, lat: {self.data.lat_min} - {self.data.lat_max}')
             if hasattr(self.data, 'dlon') and hasattr(self.data, 'dlon'):
@@ -672,7 +702,8 @@ class Grid:
 ## -----------------------------------------------------------------------------
 class TopoWriter(ABC):
     """Abstract class for writing the Grid-object's data to files to be Used
-    by the wave models."""
+    by the wave models.
+    """
     @abstractmethod
     def __init__(self):
         pass
