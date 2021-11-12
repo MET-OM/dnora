@@ -7,8 +7,8 @@ DNORA is a software for dynamical downscaling of NORA3 wave hindcast.
 
 DNORA can:
 - create high resolution grid from open access Emodnet 2018 bathymetry within the NORA3 domain
-- create wind forcing and 2d spectra at the boundaries based on NORA3
-- create parameter file(s) for the spectral model (SWAN and soon WW3)
+- create wind forcing and 2d spectra at the boundaries based on NORA3 (hindcast) and WAM4 (forecast)
+- create parameter file(s) for the spectral model (SWAN and WW3)
 - run the spectral model
 
 Example:
