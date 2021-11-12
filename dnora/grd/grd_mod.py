@@ -6,7 +6,7 @@ from scipy.interpolate import griddata
 import sys
 import matplotlib.pyplot as plt
 from .. import msg
-from ..aux import distance_2points, day_list
+from ..aux import distance_2points
 
 from ..bnd.bnd_mod import Boundary # Boundary object
 ## -----------------------------------------------------------------------------
