@@ -9,5 +9,9 @@ DNORA can:
 - create high resolution grid from open access Emodnet 2018 bathymetry within the NORA3 domain
 - create wind forcing and 2d spectra at the boundaries based on NORA3
 - create parameter file(s) for the spectral model (SWAN and soon WW3)
-- use an automatic (based on observations) or manual multiple-component calibration
 - run the spectral model
+
+Example:
+Downscaling of WAM4 using SWAN:
+
+![WAM4-DNORA_Skjerjehamn](https://user-images.githubusercontent.com/67804784/141534730-1df7af1e-f125-4f57-a013-0f504359be46.gif)
