@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 from subprocess import call
 from .. import msg
-from ..aux import create_time_stamps, u_v_from_dir, expand_area
+from ..aux import create_time_stamps, u_v_from_dir, expand_area, lon_in_km
 
 import os
 
@@ -51,9 +51,10 @@ class MetNo_NORA3(ForcingReader):
             # Define area to search in
             lon_min, lon_max, lat_min, lat_max = expand_area(grid.lon()[0], grid.lon()[-1], grid.lat()[0], grid.lat()[-1], expansion_factor)
 
-            # Temporary hack: set resolution to about 2.5 km
-            dlat = 2.5/111
-            dlon = dlat*2
+            # Set resolution to about 3 km
+            dlat = 3/111
+            mean_lon_in_km = (lon_in_km(grid.lat[0])+lon_in_km(grid.lat[-1]))*0.5
+            dlon = 3/mean_lon_in_km
 
             fimex_command = ['fimex', '--input.file='+url,
                              '--interpolate.method=bilinear',
@@ -142,8 +143,9 @@ class MetNo_MyWave3km(ForcingReader):
             # Define area to search in
             lon_min, lon_max, lat_min, lat_max = expand_area(grid.lon()[0], grid.lon()[-1], grid.lat()[0], grid.lat()[-1], expansion_factor)
 
-            dlon = grid.data.dlon*5
-            dlat = grid.data.dlat*5
+            dlat = 3/111
+            mean_lon_in_km = (lon_in_km(grid.lat[0])+lon_in_km(grid.lat[-1]))*0.5
+            dlon = 3/mean_lon_in_km
 
             fimex_command = ['fimex', '--input.file='+url,
                              '--interpolate.method=bilinear',
@@ -227,9 +229,10 @@ class MetNo_MEPS(ForcingReader):
             # Define area to search in
             lon_min, lon_max, lat_min, lat_max = expand_area(grid.lon()[0], grid.lon()[-1], grid.lat()[0], grid.lat()[-1], expansion_factor)
 
-            # Temporary hack: set resolution to about 2.5 km
+            # Set resolution to about 2.5 km
             dlat = 2.5/111
-            dlon = dlat*2
+            mean_lon_in_km = (lon_in_km(grid.lat[0])+lon_in_km(grid.lat[-1]))*0.5
+            dlon = 2.5/mean_lon_in_km
 
             fimex_command = ['fimex', '--input.file='+url,
                              '--interpolate.method=bilinear',

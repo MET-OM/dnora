@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from .. import msg
 from ..aux import distance_2points
 
-from ..bnd.bnd_mod import Boundary # Boundary object
+#from ..bnd.bnd_mod import Boundary # Boundary object
 ## -----------------------------------------------------------------------------
 ## READING THE DATA
 ## -----------------------------------------------------------------------------
@@ -519,7 +519,7 @@ class Grid:
         """Returns a latitude vector of the unmeshed imported topography."""
         return copy(self.rawdata.lat.values)
 
-    def plot(self, save_fig: bool=False, filename: str='', boundary: Boundary=None, grid_processor: GridProcessor=TrivialFilter()) -> None:
+    def plot(self, save_fig: bool=False, filename: str='', boundary=None, grid_processor: GridProcessor=TrivialFilter()) -> None:
         """Creates a plot of the topography.
 
         Options
@@ -562,7 +562,7 @@ class Grid:
 
         return
 
-    def plot_mask(self, save_fig: bool=False, filename: str='', boundary: Boundary=None) -> None:
+    def plot_mask(self, save_fig: bool=False, filename: str='', boundary=None) -> None:
         """Creates a plot of the land-sea mask.
 
         Options
@@ -576,7 +576,7 @@ class Grid:
         """
         if self.boundary_mask().size > 0:
             if not filename:
-                filename = f"{self.name())}_mask.pdf"
+                filename = f"{self.name()}_mask.pdf"
 
             plt.figure()
             plt.contourf(self.lon(),self.lat(),self.land_sea_mask())

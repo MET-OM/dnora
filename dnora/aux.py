@@ -26,6 +26,10 @@ def min_distance(lon, lat, lon_vec , lat_vec):
 
     return np.array(dx).min(), np.array(dx).argmin()
 
+def lon_in_km(lat: float) -> float:
+    return distance_2points(lat, 0, lat, 1)
+
+
 def day_list(start_time, end_time):
     """Determins a Pandas data range of all the days in the time span of the InputModel objext"""
     days = pd.date_range(start=start_time.split('T')[0], end=end_time.split('T')[0], freq='D')
