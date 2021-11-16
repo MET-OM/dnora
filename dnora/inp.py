@@ -20,9 +20,10 @@ class SWANInputFile(ModelInputFile):
         self.forcing = forcing
         return
 
-    def __call__(self, start_time, end_time, swan_directory='.', wind=True, calib_wind=1, calib_wcap=0.5000E-04):
+    def __call__(self, start_time, end_time, swan_directory='.', forcing_folder='.', wind=True, calib_wind=1, calib_wcap=0.5000E-04):
         # path for directory where forcing and boundaries are saved, here it is used the current directory
-        path_forcing = os.getcwd() + '/'
+        path_forcing = forcing_folder
+        #path_forcing = os.getcwd() + '/'
         DATE_START = start_time.replace(
             '-', '').replace('T', '.').replace(':', '')+'00'
         DATE_END = end_time.replace(
@@ -38,9 +39,6 @@ class SWANInputFile(ModelInputFile):
                 '$************************HEADING************************\n')
             file_out.write('$ \n')
             file_out.write(' PROJ \'' + self.grid.name() + '\' \'T24\' \n')
-            file_out.write('$ \n')
-            file_out.write('$ Topography - Emodnet 2018 \n')
-            file_out.write('$ Time of setup: 2021 may \n')
             file_out.write('$ \n')
             file_out.write(
                 '$*******************MODEL INPUT*************************\n')
