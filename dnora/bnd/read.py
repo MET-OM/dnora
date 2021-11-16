@@ -5,6 +5,7 @@ from copy import copy
 from .. import msg
 
 from .bnd_mod import BoundaryReader # Abstract class
+from .process import WW3ToOcean
 
 class ForceFeed(BoundaryReader):
     def __init__(self, time, freq, dirs, spec, lon, lat):
@@ -153,3 +154,80 @@ class MetNo_NORA3(BoundaryReader):
     def get_url(self, day):
         url = 'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/SPC'+day.strftime('%Y%m%d')+'00.nc'
         return url
+
+class File_WW3Nc(BoundaryReader):
+    def __init__(self, folder: str='', prefix: str='ww3', suffix: str='', datestring: str='%Y%m%dT%HZ', stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0):
+        self.stride = copy(stride)
+        self.hours_per_file = copy(hours_per_file)
+        self.lead_time = copy(lead_time)
+        self.last_file = copy(last_file)
+
+        if (not folder == '') and (not folder[-1] == '/'):
+            self.folder = folder + '/'
+        else:
+            self.folder = copy(folder)
+
+        if prefix[-1] == '_' or prefix == '':
+            self.prefix = copy(prefix)
+        else:
+            self.prefix = prefix + '_'
+
+        if suffix[0] == '_' or suffix == '':
+            self.suffix = copy(suffix)
+        else:
+            self.suffix = '_' + suffix
+
+        self.datestring = copy(datestring)
+
+    def get_coordinates(self, start_time):
+        """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
+        #day = pd.date_range(start_time, start_time,freq='D')
+        start_times, end_times, file_times = create_time_stamps(start_time, start_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
+        filename = self.get_filename(start_times[0])
+
+        data = xr.open_dataset(filename).isel(time = [0])
+
+        lon_all = data.longitude.values[0]
+        lat_all = data.latitude.values[0]
+
+        return lon_all, lat_all
+
+    def __call__(self, start_time, end_time, inds):
+        """Reads in all boundary spectra between the given times and at for the given indeces"""
+        self.start_time = start_time
+        self.end_time = end_time
+
+        start_times, end_times, file_times = create_time_stamps(start_time, end_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
+
+        msg.info(f"Getting boundary spectra from NORA3 from {self.start_time} to {self.end_time}")
+        bnd_list = []
+        for n in range(len(file_times)):
+            filename = self.get_filename(file_times[n])
+            msg.info(filename)
+            msg.plain(f"Reading boundary spectra: {start_times[n]}-{end_times[n]}")
+
+            bnd_list.append(xr.open_dataset(filename).sel(time = slice(start_times[n], end_times[n]), station = (inds+1)))
+
+        bnd=xr.concat(bnd_list, dim="time")
+
+
+        for x in range(len(inds)):
+            for t in range(len(bnd.time.values)):
+                new_spec, new_dirs = WW3ToOcean()(bnd.efth.values[t,x,:,:],bnd.direction.values)
+                bnd.efth.values[t,x,:,:] = new_spec
+
+        time = bnd.time.values
+        freq = bnd.frequency.values
+        dirs = new_dirs
+        spec = bnd.efth.values
+        lon = bnd.longitude.values[0,:]
+        lat = bnd.latitude.values[0,:]
+
+        source = f"ww3_ouput_spectra"
+
+        return  time, freq, dirs, spec, lon, lat, source
+
+
+    def get_filename(self, day):
+        filename = self.folder + self.prefix + day.strftime(self.datestring) + self.suffix + '.nc'
+        return filename
