@@ -40,7 +40,8 @@ boundary = bnd.Boundary(grid, name='WAM4km')
 # Fetch the boundary spectra
 time0 = '2021-08-15T00:00'
 time1 = '2021-08-17T00:00'
-#boundary.import_boundary(start_time=time0, end_time=time1, boundary_reader=bnd.read.MetNo_WAM4km(ignore_nan=True), point_picker=bnd.pick.NearestGridPoint())
+bnd_rdr = bnd.read.MetNo_WAM4km(ignore_nan=True, stride=6, last_file='2021-08-16T00:00', hours_per_file=73)
+boundary.import_boundary(start_time=time0, end_time=time1, boundary_reader=bnd_rdr, point_picker=bnd.pick.NearestGridPoint())
 
 # =============================================================================
 # DEFINE WIND FORCING OBJECT
@@ -49,7 +50,8 @@ time1 = '2021-08-17T00:00'
 forcing = wnd.Forcing(grid, name='MEPS')
 
 # # Fetch the wind forcing
-forcing.import_forcing(start_time=time0, end_time=time1, forcing_reader=wnd.read.MetNo_MEPS(prefix='det', stride=3, last_file='2021-08-16T00:00', hours_per_file=67))
+frc_rdr = wnd.read.MetNo_MEPS(stride=3, last_file='2021-08-16T03:00', hours_per_file=67)
+forcing.import_forcing(start_time=time0, end_time=time1, forcing_reader=frc_rdr)
 
 
 # =============================================================================

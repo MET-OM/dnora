@@ -80,6 +80,7 @@ class MetNo_WAM4km(BoundaryReader):
 
             bnd_list.append(xr.open_dataset(url).sel(time = slice(start_times[n], end_times[n]), x = (inds+1)))
 
+        msg.info("Merging dataset together (this might take a while)...")
         bnd=xr.concat(bnd_list, dim="time").squeeze('y')
 
         time = bnd.time.values

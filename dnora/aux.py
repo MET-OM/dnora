@@ -49,11 +49,11 @@ def create_time_stamps(start_time: str, end_time: str, stride: int, hours_per_fi
     #t0 = np.datetime64(start_time) - np.timedelta64(lead_time,'h')
     start_stamp = pd.Timestamp(start_time) - pd.DateOffset(hours=lead_time)
     if last_file is not '':
-        end_stamp = pd.Timestamp(start_time)
+        end_stamp = pd.Timestamp(last_file)
 
         # E.g. we want to start a forecast at 06:00 but the last (and only) file is 00:00
         if start_stamp > end_stamp:
-            start_stamp = end_stampt1
+            start_stamp = end_stamp
     else:
         #t1 = np.datetime64(end_time) - np.timedelta64(lead_time,'h')
         end_stamp = pd.Timestamp(end_time) - pd.DateOffset(hours=lead_time)
