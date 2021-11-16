@@ -37,7 +37,7 @@ class MetNo_NORA3(ForcingReader):
             print("Creating folder %s..." % temp_folder)
 
         msg.info(
-            f"Getting wind forcing from Arome 2.5 km from {self.start_time} to {self.end_time}")
+            f"Getting wind forcing from NORA3 from {self.start_time} to {self.end_time}")
         for n in range(len(file_times)):
 
             url = self.get_url(file_times[n], start_times[n], first_ind=self.lead_time)
@@ -53,7 +53,7 @@ class MetNo_NORA3(ForcingReader):
 
             # Set resolution to about 3 km
             dlat = 3/111
-            mean_lon_in_km = (lon_in_km(grid.lat[0])+lon_in_km(grid.lat[-1]))*0.5
+            mean_lon_in_km = (lon_in_km(grid.lat()[0])+lon_in_km(grid.lat()[-1]))*0.5
             dlon = 3/mean_lon_in_km
 
             fimex_command = ['fimex', '--input.file='+url,
@@ -144,7 +144,7 @@ class MetNo_MyWave3km(ForcingReader):
             lon_min, lon_max, lat_min, lat_max = expand_area(grid.lon()[0], grid.lon()[-1], grid.lat()[0], grid.lat()[-1], expansion_factor)
 
             dlat = 3/111
-            mean_lon_in_km = (lon_in_km(grid.lat[0])+lon_in_km(grid.lat[-1]))*0.5
+            mean_lon_in_km = (lon_in_km(grid.lat()[0])+lon_in_km(grid.lat()[-1]))*0.5
             dlon = 3/mean_lon_in_km
 
             fimex_command = ['fimex', '--input.file='+url,
@@ -231,7 +231,7 @@ class MetNo_MEPS(ForcingReader):
 
             # Set resolution to about 2.5 km
             dlat = 2.5/111
-            mean_lon_in_km = (lon_in_km(grid.lat[0])+lon_in_km(grid.lat[-1]))*0.5
+            mean_lon_in_km = (lon_in_km(grid.lat()[0])+lon_in_km(grid.lat()[-1]))*0.5
             dlon = 2.5/mean_lon_in_km
 
             fimex_command = ['fimex', '--input.file='+url,
