@@ -99,19 +99,19 @@ class Boundary:
         self.name = copy(name)
         return
 
-    def import_boundary(self, start_time: str, end_time: str, boundary_fetcher: BoundaryReader,  point_picker: PointPicker = TrivialPicker()):
+    def import_boundary(self, start_time: str, end_time: str, boundary_reader: BoundaryReader,  point_picker: PointPicker = TrivialPicker()):
         self.start_time = copy(start_time)
         self.end_time = copy(end_time)
 
-        msg.header(f"{type(boundary_fetcher).__name__}: Reading coordinats of spectra...")
-        lon_all, lat_all = boundary_fetcher.get_coordinates(self.start_time)
+        msg.header(f"{type(boundary_reader).__name__}: Reading coordinats of spectra...")
+        lon_all, lat_all = boundary_reader.get_coordinates(self.start_time)
 
 
         msg.header(f"Choosing spectra with {type(point_picker).__name__}")
         inds = point_picker(self.grid, lon_all, lat_all)
 
-        msg.header(f"{type(boundary_fetcher).__name__}: Loading boundary spectra...")
-        time, freq, dirs, spec, lon, lat, source = boundary_fetcher(self.start_time, end_time, inds)
+        msg.header(f"{type(boundary_reader).__name__}: Loading boundary spectra...")
+        time, freq, dirs, spec, lon, lat, source = boundary_reader(self.start_time, end_time, inds)
 
         self.data = self.compile_to_xr(time, freq, dirs, spec, lon, lat, source)
         self.mask = [True]*len(self.x())

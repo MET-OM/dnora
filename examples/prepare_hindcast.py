@@ -16,10 +16,10 @@ lon_min = 4.5
 lat_min = 60.83
 lon_max = 5.5
 lat_max = 61.25
-grid = grd.Grid(lon_min, lon_max, lat_min, lat_max, name='Skjerjehamn')
+grid = grd.Grid(lon_min, lon_max, lat_min, lat_max, name='Skjerjehamn250')
 
 # Set spacing and boundary points
-grid.set_spacing(nx=55, ny=50)
+grid.set_spacing(dm=1000)
 
 bnd_set = grd.boundary.EdgesAsBoundary(edges=['N', 'W', 'S'], step=1)
 #grid.set_boundary(bounN=1, edges=['N', 'W', 'S'])
@@ -35,27 +35,27 @@ grid.mesh_grid()
 # =============================================================================
 
 # Initialize boundary object with the grid
-boundary = bnd.Boundary(grid, name='WAM4km')
+boundary = bnd.Boundary(grid, name='NORA3')
 
 # Fetch the boundary spectra
-time0 = '2021-08-15T00:00'
-time1 = '2021-08-17T00:00'
-#boundary.import_boundary(start_time=time0, end_time=time1, boundary_reader=bnd.read.MetNo_WAM4km(ignore_nan=True), point_picker=bnd.pick.NearestGridPoint())
+time0 = '2019-08-15T00:00'
+time1 = '2019-08-16T00:00'
+boundary.import_boundary(start_time=time0, end_time=time1, boundary_reader=bnd.read.MetNo_NORA3(), point_picker=bnd.pick.NearestGridPoint())
 
 # =============================================================================
 # DEFINE WIND FORCING OBJECT
 # =============================================================================
 
-forcing = wnd.Forcing(grid, name='MEPS')
+forcing = wnd.Forcing(grid, name='NORA3')
 
 # # Fetch the wind forcing
-forcing.import_forcing(start_time=time0, end_time=time1, forcing_reader=wnd.read.MetNo_MEPS(prefix='det', stride=3, last_file='2021-08-16T00:00', hours_per_file=67))
+forcing.import_forcing(start_time=time0, end_time=time1, forcing_reader=wnd.read.MetNo_NORA3())
 
 
 # =============================================================================
 # WRITE OUTPUT FOR SWAN RUN
 # =============================================================================
-output_folder = 'example_forecast'
+output_folder = 'example_hindcast'
 # Grid
 write_grid = grd.write.SWAN(folder=output_folder)
 write_grid(grid)

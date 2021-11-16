@@ -2,7 +2,7 @@ from abc import ABC
 from copy import copy
 import os
 import numpy as np
-from dnora2 import msg
+from . import msg
 
 
 class ModelInputFile(ABC):

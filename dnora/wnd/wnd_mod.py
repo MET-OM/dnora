@@ -24,13 +24,13 @@ class Forcing:
         self.grid = copy(grid)
         self.name = name
 
-    def import_forcing(self, start_time: str, end_time: str, forcing_fetcher: ForcingReader, expansion_factor: float = 1.2):
+    def import_forcing(self, start_time: str, end_time: str, forcing_reader: ForcingReader, expansion_factor: float = 1.2):
         self.start_time = copy(start_time)
         self.end_time = copy(end_time)
 
         msg.header(
-            f"{type(forcing_fetcher).__name__}: Loading wind forcing...")
-        self.data = forcing_fetcher(
+            f"{type(forcing_reader).__name__}: Loading wind forcing...")
+        self.data = forcing_reader(
             self.grid, start_time, end_time, expansion_factor)
 
         return
@@ -50,10 +50,10 @@ class Forcing:
         return copy(self.data.v.values)
 
     def nx(self):
-        return (self.data.x_wind_10m.shape[0])
+        return (self.data.u.shape[0])
 
     def ny(self):
-        return (self.data.x_wind_10m.shape[1])
+        return (self.data.v.shape[1])
 
     def slice_data(self, start_time: str = '', end_time: str = ''):
         if not start_time:
