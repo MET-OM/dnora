@@ -45,7 +45,7 @@ class MetNo_NORA3(ForcingReader):
             msg.info(url)
             msg.plain(f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
 
-            nc_fimex = f'dnora_wnd_temp/wind_{n:04.0f}.nc'
+            nc_fimex = f'dnora_wnd_temp/wind_{n:04.0f}_MetNo_NORA3.nc'
             #nc_fimex = 'dnora_wnd_temp.nc'
 
             # Define area to search in
@@ -138,7 +138,7 @@ class MetNo_MyWave3km(ForcingReader):
             msg.plain(
                 f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
 
-            nc_fimex = f'dnora_wnd_temp/wind_{n:04.0f}.nc'
+            nc_fimex = f'dnora_wnd_temp/wind_{n:04.0f}_MetNo_MyWave3km.nc'
 
             # Define area to search in
             lon_min, lon_max, lat_min, lat_max = expand_area(grid.lon()[0], grid.lon()[-1], grid.lat()[0], grid.lat()[-1], expansion_factor)
@@ -192,7 +192,7 @@ class MetNo_MyWave3km(ForcingReader):
 
 
 class MetNo_MEPS(ForcingReader):
-    def __init__(self, prefix: str = 'subset', stride: int = 24, hours_per_file: int = 24, last_file: str = '', lead_time: int = 0):
+    def __init__(self, prefix: str = 'subset', stride: int = 6, hours_per_file: int = 67, last_file: str = '', lead_time: int = 0):
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
@@ -224,7 +224,7 @@ class MetNo_MEPS(ForcingReader):
             msg.plain(
                 f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
 
-            nc_fimex = f'dnora_wnd_temp/wind_{n:04.0f}.nc'
+            nc_fimex = f'dnora_wnd_temp/wind_{n:04.0f}_MetNo_MEPS.nc'
 
             # Define area to search in
             lon_min, lon_max, lat_min, lat_max = expand_area(grid.lon()[0], grid.lon()[-1], grid.lat()[0], grid.lat()[-1], expansion_factor)
