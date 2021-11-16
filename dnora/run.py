@@ -7,5 +7,4 @@ from subprocess import Popen
 def run_SWAN(input_file,swan_directory):
     print('Running SWAN----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>')
     p = Popen(['./swanrun','-input', input_file], cwd=swan_directory)
-    p.wait()  
-
+    p.wait()
