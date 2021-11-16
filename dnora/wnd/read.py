@@ -6,7 +6,7 @@ from subprocess import call
 from .. import msg
 from ..aux import create_time_stamps, u_v_from_dir, expand_area, lon_in_km
 
-import os
+import os, glob
 
 from .wnd_mod import ForcingReader # Abstract class
 from .wnd_mod import Forcing # Forcing object
@@ -29,15 +29,30 @@ class MetNo_NORA3(ForcingReader):
         start_times, end_times, file_times = create_time_stamps(
             start_time, end_time, self.stride, self.hours_per_file, self.last_file, self.lead_time)
 
-        wnd_list = []
+        msg.info(
+            f"Getting wind forcing from NORA3 from {self.start_time} to {self.end_time}")
+
 
         temp_folder = 'dnora_wnd_temp'
         if not os.path.isdir(temp_folder):
             os.mkdir(temp_folder)
             print("Creating folder %s..." % temp_folder)
 
-        msg.info(
-            f"Getting wind forcing from NORA3 from {self.start_time} to {self.end_time}")
+        msg.plain("Removing old files from temporary folder...")
+        for f in glob.glob("dnora_wnd_temp/*MetNo_NORA3.nc"):
+            os.remove(f)
+
+        # Define area to search in
+        lon_min, lon_max, lat_min, lat_max = expand_area(grid.lon()[0], grid.lon()[-1], grid.lat()[0], grid.lat()[-1], expansion_factor)
+
+        # Set resolution to about 3 km
+        dlat = 3/111
+        mean_lon_in_km = (lon_in_km(grid.lat()[0])+lon_in_km(grid.lat()[-1]))*0.5
+        dlon = 3/mean_lon_in_km
+
+
+
+        wnd_list = []
         for n in range(len(file_times)):
 
             url = self.get_url(file_times[n], start_times[n], first_ind=self.lead_time)
@@ -46,15 +61,6 @@ class MetNo_NORA3(ForcingReader):
             msg.plain(f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
 
             nc_fimex = f'dnora_wnd_temp/wind_{n:04.0f}_MetNo_NORA3.nc'
-            #nc_fimex = 'dnora_wnd_temp.nc'
-
-            # Define area to search in
-            lon_min, lon_max, lat_min, lat_max = expand_area(grid.lon()[0], grid.lon()[-1], grid.lat()[0], grid.lat()[-1], expansion_factor)
-
-            # Set resolution to about 3 km
-            dlat = 3/111
-            mean_lon_in_km = (lon_in_km(grid.lat()[0])+lon_in_km(grid.lat()[-1]))*0.5
-            dlon = 3/mean_lon_in_km
 
             fimex_command = ['fimex', '--input.file='+url,
                              '--interpolate.method=bilinear',
@@ -122,15 +128,28 @@ class MetNo_MyWave3km(ForcingReader):
         start_times, end_times, file_times = create_time_stamps(
             start_time, end_time, self.stride, self.hours_per_file, self.last_file, self.lead_time)
 
-        wnd_list = []
+        msg.info(
+            f"Getting wind forcing from MEPS from {self.start_time} to {self.end_time}")
 
         temp_folder = 'dnora_wnd_temp'
         if not os.path.isdir(temp_folder):
             os.mkdir(temp_folder)
             print("Creating folder %s..." % temp_folder)
 
-        msg.info(
-            f"Getting wind forcing from MEPS from {self.start_time} to {self.end_time}")
+        msg.plain("Removing old files from temporary folder...")
+        for f in glob.glob("dnora_wnd_temp/*MetNo_MyWave3km.nc"):
+            os.remove(f)
+
+
+        # Define area to search in
+        lon_min, lon_max, lat_min, lat_max = expand_area(grid.lon()[0], grid.lon()[-1], grid.lat()[0], grid.lat()[-1], expansion_factor)
+
+        # Setting resolution to roughly 3 km
+        dlat = 3/111
+        mean_lon_in_km = (lon_in_km(grid.lat()[0])+lon_in_km(grid.lat()[-1]))*0.5
+        dlon = 3/mean_lon_in_km
+
+        wnd_list = []
         for n in range(len(file_times)):
             url = self.get_url(file_times[n])
 
@@ -139,13 +158,6 @@ class MetNo_MyWave3km(ForcingReader):
                 f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
 
             nc_fimex = f'dnora_wnd_temp/wind_{n:04.0f}_MetNo_MyWave3km.nc'
-
-            # Define area to search in
-            lon_min, lon_max, lat_min, lat_max = expand_area(grid.lon()[0], grid.lon()[-1], grid.lat()[0], grid.lat()[-1], expansion_factor)
-
-            dlat = 3/111
-            mean_lon_in_km = (lon_in_km(grid.lat()[0])+lon_in_km(grid.lat()[-1]))*0.5
-            dlon = 3/mean_lon_in_km
 
             fimex_command = ['fimex', '--input.file='+url,
                              '--interpolate.method=bilinear',
@@ -192,11 +204,10 @@ class MetNo_MyWave3km(ForcingReader):
 
 
 class MetNo_MEPS(ForcingReader):
-    def __init__(self, prefix: str = 'subset', stride: int = 6, hours_per_file: int = 67, last_file: str = '', lead_time: int = 0):
+    def __init__(self, stride: int = 6, hours_per_file: int = 67, last_file: str = '', lead_time: int = 0):
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
-        self.prefix = copy(prefix)
         self.last_file = copy(last_file)
         return
 
@@ -208,31 +219,42 @@ class MetNo_MEPS(ForcingReader):
         start_times, end_times, file_times = create_time_stamps(
             start_time, end_time, self.stride, self.hours_per_file, self.last_file, self.lead_time)
 
-        wnd_list = []
+        msg.info(
+            f"Getting wind forcing from MEPS from {self.start_time} to {self.end_time}")
 
         temp_folder = 'dnora_wnd_temp'
         if not os.path.isdir(temp_folder):
             os.mkdir(temp_folder)
-            print("Creating folder %s..." % temp_folder)
+            msg.info("Creating folder %s..." % temp_folder)
 
-        msg.info(
-            f"Getting wind forcing from MEPS from {self.start_time} to {self.end_time}")
+        msg.plain("Removing old files from temporary folder...")
+        for f in glob.glob("dnora_wnd_temp/*MetNo_MEPS.nc"):
+            os.remove(f)
+
+        # Check weather to use 'det' or 'subset' files
+        try:
+            url = self.get_url(file_times[1], 'det')
+            xr.open_dataset(url)
+            prefix = 'det'
+        except:
+            prefix = 'subset'
+
+        # Set resolution to about 2.5 km
+        dlat = 2.5/111
+        mean_lon_in_km = (lon_in_km(grid.lat()[0])+lon_in_km(grid.lat()[-1]))*0.5
+        dlon = 2.5/mean_lon_in_km
+
+        # Define area to search in
+        lon_min, lon_max, lat_min, lat_max = expand_area(grid.lon()[0], grid.lon()[-1], grid.lat()[0], grid.lat()[-1], expansion_factor)
+
+        wnd_list = []
         for n in range(len(file_times)):
-            url = self.get_url(file_times[n], self.prefix)
-
-            msg.info(url)
             msg.plain(
                 f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
 
             nc_fimex = f'dnora_wnd_temp/wind_{n:04.0f}_MetNo_MEPS.nc'
-
-            # Define area to search in
-            lon_min, lon_max, lat_min, lat_max = expand_area(grid.lon()[0], grid.lon()[-1], grid.lat()[0], grid.lat()[-1], expansion_factor)
-
-            # Set resolution to about 2.5 km
-            dlat = 2.5/111
-            mean_lon_in_km = (lon_in_km(grid.lat()[0])+lon_in_km(grid.lat()[-1]))*0.5
-            dlon = 2.5/mean_lon_in_km
+            url = self.get_url(file_times[n], prefix)
+            msg.info(url)
 
             fimex_command = ['fimex', '--input.file='+url,
                              '--interpolate.method=bilinear',
@@ -254,13 +276,14 @@ class MetNo_MEPS(ForcingReader):
                              '--process.rotateVector.direction=latlon',
                              '--output.file='+nc_fimex]
 
-            if self.prefix == 'subset':
+            if prefix == 'subset':
                 fimex_command.insert(-2,
                                      '--extract.reduceDimension.name=ensemble_member')
                 fimex_command.insert(-2, '--extract.reduceDimension.start=1')
                 fimex_command.insert(-2, '--extract.reduceDimension.end=1')
 
             call(fimex_command)
+
             wnd_list.append(xr.open_dataset(nc_fimex).squeeze())
 
         wind_forcing = xr.concat(wnd_list, dim="time")

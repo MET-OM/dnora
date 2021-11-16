@@ -73,7 +73,30 @@ class OceanToWW3(SpectralProcessor):
             return new_spec, new_dirs
 
     def __str__(self):
-        return("Flipping both spectra and direction to mathematical notation. Convention is still Oceanic.")
+        return("Flipping both spectra and direction to mathematical notation. Convention is unchenged.")
+
+class WW3ToOcean(SpectralProcessor):
+    def __init__(self):
+        pass
+
+    def __call__(self, spec, dirs, freq = None):
+        # Flip direction of the both spectra and directional vector
+        spec_flip = flip_spec(spec, dirs)
+        D_flip = flip_spec(dirs, dirs)
+
+        # Shift 0 to be at 90
+        new_spec = shift_spec(spec_flip, D_flip, -270)
+        # Also shift direction
+        new_dirs = shift_spec(D_flip, D_flip, -270)
+
+        if freq is not None:
+            return new_spec, new_dirs, freq
+        else:
+            return new_spec, new_dirs
+
+    def __str__(self):
+        return("Flipping both spectra and direction to oceanic notation. Convention is unchanged.")
+
 
 class OceanToMath(SpectralProcessor):
     def __init__(self):
