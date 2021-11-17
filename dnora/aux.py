@@ -3,7 +3,7 @@ import pandas as pd
 from scipy.interpolate import griddata
 from scipy import interpolate
 from statistics import mode
-import os
+import os, re
 
 def distance_2points(lat1,lon1,lat2,lon2):
     """Calculate distance between two points"""
@@ -39,6 +39,26 @@ def month_list(start_time, end_time):
     """Determins a Pandas data range of all the months in the time span of the InputModel objext"""
     months = pd.date_range(start=start_time[:7], end=end_time[:7], freq='MS')
     return months
+
+def create_filename(filestring: str, objects, datestring: str='%Y%m%d%H%M'):
+
+    got_times = False
+    for object in objects:
+        obj_str = type(object).__name__
+        obj_name = object.name()
+        filestring = re.sub(obj_str, obj_name, filestring)
+        if not got_times:
+            if obj_str in ['Boundary', 'Forcing']:
+                start_time = pd.Timestamp(object.time()[0])
+                end_time = pd.Timestamp(object.time()[-1])
+                got_times = True
+
+    filestring = re.sub('T0', start_time.strftime(datestring), filestring)
+    filestring = re.sub('T1', end_time.strftime(datestring), filestring)
+
+
+    return filestring
+
 
 def create_time_stamps(start_time: str, end_time: str, stride: int, hours_per_file: int = 0, last_file: str = '', lead_time: int = 0):
     """Create time stamps to read in blocks of wind forcing from files"""
@@ -103,7 +123,10 @@ def expand_area(lon_min: float, lon_max:float , lat_min:float , lat_max:float, e
 
 
 def check_if_folder(folder: str, create: bool=True) -> bool:
-    existed = os.path.isdir(folder)
+    if folder == '':
+        existed = True
+    else:
+        existed = os.path.isdir(folder)
 
     if not existed:
         os.mkdir(folder)

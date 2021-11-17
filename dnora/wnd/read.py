@@ -232,11 +232,12 @@ class MetNo_MEPS(ForcingReader):
             os.remove(f)
 
         # Check weather to use 'det' or 'subset' files
+        url = self.get_url(file_times[0], 'det')
         try:
-            url = self.get_url(file_times[1], 'det')
             xr.open_dataset(url)
             prefix = 'det'
         except:
+            print('No')
             prefix = 'subset'
 
         # Set resolution to about 2.5 km

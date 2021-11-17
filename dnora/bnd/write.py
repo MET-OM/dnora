@@ -1,7 +1,7 @@
 import numpy as np
 from copy import copy
 from .. import msg
-from ..aux import check_if_folder
+from ..aux import check_if_folder, create_filename
 import netCDF4
 
 from .bnd_mod import BoundaryWriter # Abstract class
@@ -235,17 +235,19 @@ class WW3(BoundaryWriter):
 
 
 class SWAN(BoundaryWriter):
-    def __init__(self, factor = 1E-4, folder: str='', boundary_in_filename: bool=True, time_in_filename: bool=True, grid_in_filename: bool=True) -> None:
+    #def __init__(self, factor = 1E-4, folder: str='', boundary_in_filename: bool=True, time_in_filename: bool=True, grid_in_filename: bool=True) -> None:
+    def __init__(self, factor = 1E-4, folder: str='', filestring: str='specBoundaryGridT0_T1', datestring: str='%Y%m%d%H%M') -> None:
         self.factor = factor
 
         if (not folder == '') and (not folder[-1] == '/'):
             folder = folder + '/'
         self.folder = folder
 
-        self.boundary_in_filename = boundary_in_filename
-        self.grid_in_filename = grid_in_filename
-        self.time_in_filename = time_in_filename
-
+        #self.boundary_in_filename = boundary_in_filename
+        #self.grid_in_filename = grid_in_filename
+        #self.time_in_filename = time_in_filename
+        self.filestring = copy(filestring)
+        self.datestring = copy(datestring)
         return
 
     def __call__(self, boundary: Boundary):
@@ -260,7 +262,8 @@ class SWAN(BoundaryWriter):
 
 
         #filename = f"{in_boundary.grid.name()}_spec{days[0].strftime('%Y%m%d')}_{days[-1].strftime('%Y%m%d')}.asc"
-        filename = self.folder + 'spec' + super().create_filename(boundary, self.boundary_in_filename, self.grid_in_filename, self.time_in_filename) + '.asc'
+        #filename = self.folder + 'spec' + super().create_filename(boundary, self.boundary_in_filename, self.grid_in_filename, self.time_in_filename) + '.asc'
+        filename = self.folder + create_filename(filestring=self.filestring, objects=[boundary, boundary.grid], datestring=self.datestring) + '.asc'
 
         with open(filename, 'w') as file_out:
             file_out.write('SWAN   1\n')
