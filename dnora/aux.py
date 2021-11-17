@@ -40,7 +40,15 @@ def month_list(start_time, end_time):
     months = pd.date_range(start=start_time[:7], end=end_time[:7], freq='MS')
     return months
 
-def create_filename(filestring: str, objects, datestring: str='%Y%m%d%H%M'):
+def create_filename_time(filestring: str, times, datestring: str='%Y%m%d%H%M'):
+    ct = 0
+    for t in times:
+        filestring = re.sub(f"T{ct}", pd.Timestamp(t).strftime(datestring), filestring)
+        ct = ct + 1
+
+    return filestring
+
+def create_filename_obj(filestring: str, objects, datestring: str='%Y%m%d%H%M'):
 
     got_times = False
     for object in objects:
@@ -53,12 +61,11 @@ def create_filename(filestring: str, objects, datestring: str='%Y%m%d%H%M'):
                 end_time = pd.Timestamp(object.time()[-1])
                 got_times = True
 
-    filestring = re.sub('T0', start_time.strftime(datestring), filestring)
-    filestring = re.sub('T1', end_time.strftime(datestring), filestring)
-
+    #filestring = re.sub('T0', start_time.strftime(datestring), filestring)
+    #filestring = re.sub('T1', end_time.strftime(datestring), filestring)
+    filestring = create_filename_time(filestring=filestring, times=[start_time, end_time], datestring=datestring)
 
     return filestring
-
 
 def create_time_stamps(start_time: str, end_time: str, stride: int, hours_per_file: int = 0, last_file: str = '', lead_time: int = 0):
     """Create time stamps to read in blocks of wind forcing from files"""

@@ -1,7 +1,7 @@
 import numpy as np
 from copy import copy
 from .. import msg
-from ..aux import check_if_folder, create_filename
+from ..aux import check_if_folder, create_filename_obj
 import netCDF4
 
 from .bnd_mod import BoundaryWriter # Abstract class
@@ -11,14 +11,13 @@ from .process import OceanToWW3
 
 
 class DumpToNc(BoundaryWriter):
-    def __init__(self, folder: str='', boundary_in_filename: bool=True, time_in_filename: bool=True, grid_in_filename: bool=True) -> None:
+    def __init__(self, folder: str='', filestring: str='spec_Boundary_Grid_T0-T1', datestring: str='%Y%m%dT%H%M') -> None:
         if (not folder == '') and (not folder[-1] == '/'):
             folder = folder + '/'
         self.folder = folder
 
-        self.boundary_in_filename = boundary_in_filename
-        self.grid_in_filename = grid_in_filename
-        self.time_in_filename = time_in_filename
+        self.filestring = copy(filestring)
+        self.datestring = copy(datestring)
 
         return
 
@@ -29,7 +28,7 @@ class DumpToNc(BoundaryWriter):
         if not existed:
             msg.plain(f"Creating folder {self.folder}")
 
-        output_file = self.folder + 'spec' + super().create_filename(boundary, self.boundary_in_filename, self.grid_in_filename, self.time_in_filename) + '.nc'
+        output_file = self.folder + create_filename_obj(filestring=self.filestring, objects=[boundary, boundary.grid], datestring=self.datestring) + '.nc'
         msg.to_file(output_file)
         boundary.data.to_netcdf(output_file)
 
@@ -37,14 +36,13 @@ class DumpToNc(BoundaryWriter):
 
 
 class NcFiles(BoundaryWriter):
-    def __init__(self, folder: str='', boundary_in_filename: bool=True, time_in_filename: bool=True, grid_in_filename: bool=False) -> None:
+    def __init__(self, folder: str='', filestring: str='Boundary_Grid_T0-T1', datestring: str='%Y%m%dT%H%M') -> None:
         if (not folder == '') and (not folder[-1] == '/'):
             folder = folder + '/'
         self.folder = folder
 
-        self.boundary_in_filename = boundary_in_filename
-        self.grid_in_filename = grid_in_filename
-        self.time_in_filename = time_in_filename
+        self.filestring = copy(filestring)
+        self.datestring = copy(datestring)
 
         return
 
@@ -59,8 +57,7 @@ class NcFiles(BoundaryWriter):
             ds = boundary.slice_data(x = n)
             lon = boundary.lon()[n]
             lat = boundary.lat()[n]
-            output_file = self.folder + 'spec' + f"_E{lon:09.6f}N{lat:09.6f}" + super().create_filename(boundary, self.boundary_in_filename, self.grid_in_filename, self.time_in_filename) + '.nc'
-            #output_file = f"spec_E{lon:09.6f}N{lat:09.6f}.nc"
+            output_file = self.folder + 'spec' + f"_E{lon:09.6f}N{lat:09.6f}_" + create_filename_obj(filestring=self.filestring, objects=[boundary, boundary.grid], datestring=self.datestring) + '.nc'
             msg.to_file(output_file)
             ds.to_netcdf(output_file)
 
@@ -68,14 +65,13 @@ class NcFiles(BoundaryWriter):
 
 
 class WW3(BoundaryWriter):
-    def __init__(self, folder: str='', one_file: bool=True, boundary_in_filename: bool=True, time_in_filename: bool=True, grid_in_filename: bool=False) -> None:
+    def __init__(self, folder: str='', one_file: bool=True, filestring: str='Boundary_Grid_T0-T1', datestring: str='%Y%m%dT%H%M') -> None:
         if (not folder == '') and (not folder[-1] == '/'):
             folder = folder + '/'
         self.folder = folder
 
-        self.boundary_in_filename = boundary_in_filename
-        self.grid_in_filename = grid_in_filename
-        self.time_in_filename = time_in_filename
+        self.filestring = copy(filestring)
+        self.datestring = copy(datestring)
 
         self.one_file = one_file
     def __call__(self, boundary: Boundary) -> None:
@@ -96,17 +92,18 @@ class WW3(BoundaryWriter):
             if len(boundary.x()) == 1:
                 lat = boundary.lat()[0]
                 lon = boundary.lon()[0]
-                output_file = self.folder + 'ww3_spec' + f"_E{lon:09.6f}N{lat:09.6f}" + super().create_filename(boundary, self.boundary_in_filename, self.grid_in_filename, self.time_in_filename) + '.nc'
+                output_file = self.folder + 'ww3_spec' + f"_E{lon:09.6f}N{lat:09.6f}_" + create_filename_obj(filestring=self.filestring, objects=[boundary, boundary.grid], datestring=self.datestring) + '.nc'
             else:
-                output_file = self.folder + 'ww3_spec' + super().create_filename(boundary, self.boundary_in_filename, self.grid_in_filename, self.time_in_filename) + '.nc'
-
+                output_file = self.folder + 'ww3_spec_' + create_filename_obj(filestring=self.filestring, objects=[boundary, boundary.grid], datestring=self.datestring) + '.nc'
+            msg.plain(f"All points >> {output_file}")
             self.write_netcdf(boundary, output_file)
         else:
             for n in range(len(boundary.x())):
                 if boundary.mask[n]: # This property is not really used and should always be true
                     lat = boundary.lat()[n]
                     lon = boundary.lon()[n]
-                    output_file = self.folder + 'ww3_spec' + f"_E{lon:09.6f}N{lat:09.6f}" + super().create_filename(boundary, self.boundary_in_filename, self.grid_in_filename, self.time_in_filename) + '.nc'
+                    output_file = self.folder + 'ww3_spec' + f"_E{lon:09.6f}N{lat:09.6f}_" + create_filename_obj(filestring=self.filestring, objects=[boundary, boundary.grid], datestring=self.datestring) + '.nc'
+                    msg.plain(f"Point {n} >> {output_file}")
                     self.write_netcdf(boundary, output_file, n)
                 else:
                     msg.info(f"Skipping point {n} ({boundary.lon()[n]:10.7f}, {boundary.lat()[n]:10.7f}). Masked as False.")
@@ -122,7 +119,6 @@ class WW3(BoundaryWriter):
         #    output_file = f"ww3_{boundary.name}_E{lon:09.6f}N{lat:09.6f}.nc"
         #output_file = 'ww3_spec_E'+str(lon)+'N'+str(lat)+'.nc'
         #output_file = 'Test_ww3.nc'
-        msg.plain(f"Point {n}: {output_file}")
         root_grp = netCDF4.Dataset(output_file, 'w', format='NETCDF4')
         #################### dimensions
         root_grp.createDimension('time', None)
@@ -243,9 +239,6 @@ class SWAN(BoundaryWriter):
             folder = folder + '/'
         self.folder = folder
 
-        #self.boundary_in_filename = boundary_in_filename
-        #self.grid_in_filename = grid_in_filename
-        #self.time_in_filename = time_in_filename
         self.filestring = copy(filestring)
         self.datestring = copy(datestring)
         return
@@ -260,10 +253,7 @@ class SWAN(BoundaryWriter):
         swan_bnd_points = boundary.grid.boundary_points()
         days = boundary.days()
 
-
-        #filename = f"{in_boundary.grid.name()}_spec{days[0].strftime('%Y%m%d')}_{days[-1].strftime('%Y%m%d')}.asc"
-        #filename = self.folder + 'spec' + super().create_filename(boundary, self.boundary_in_filename, self.grid_in_filename, self.time_in_filename) + '.asc'
-        filename = self.folder + create_filename(filestring=self.filestring, objects=[boundary, boundary.grid], datestring=self.datestring) + '.asc'
+        filename = self.folder + create_filename_obj(filestring=self.filestring, objects=[boundary, boundary.grid], datestring=self.datestring) + '.asc'
 
         with open(filename, 'w') as file_out:
             file_out.write('SWAN   1\n')

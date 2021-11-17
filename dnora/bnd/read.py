@@ -1,6 +1,6 @@
 import xarray as xr
 import numpy as np
-from ..aux import day_list, create_time_stamps
+from ..aux import day_list, create_time_stamps, create_filename_time
 from copy import copy
 from .. import msg
 
@@ -156,7 +156,7 @@ class MetNo_NORA3(BoundaryReader):
         return url
 
 class File_WW3Nc(BoundaryReader):
-    def __init__(self, folder: str='', prefix: str='ww3', suffix: str='', datestring: str='%Y%m%dT%HZ', stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0):
+    def __init__(self, folder: str='', filestring: str='ww3_T0', datestring: str='%Y%m%dT%H%M', stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0):
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
@@ -167,16 +167,7 @@ class File_WW3Nc(BoundaryReader):
         else:
             self.folder = copy(folder)
 
-        if prefix[-1] == '_' or prefix == '':
-            self.prefix = copy(prefix)
-        else:
-            self.prefix = prefix + '_'
-
-        if suffix[0] == '_' or suffix == '':
-            self.suffix = copy(suffix)
-        else:
-            self.suffix = '_' + suffix
-
+        self.filestring = copy(filestring)
         self.datestring = copy(datestring)
 
     def get_coordinates(self, start_time):
@@ -229,5 +220,5 @@ class File_WW3Nc(BoundaryReader):
 
 
     def get_filename(self, day):
-        filename = self.folder + self.prefix + day.strftime(self.datestring) + self.suffix + '.nc'
+        filename = self.folder + create_filename_time(self.filestring, [day], self.datestring) + '.nc'
         return filename
