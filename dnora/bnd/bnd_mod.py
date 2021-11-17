@@ -96,7 +96,7 @@ class Multiply(SpectralProcessor):
 class Boundary:
     def __init__(self, grid: Grid, name: str = "AnonymousBoundary"):
         self.grid = copy(grid)
-        self.name = copy(name)
+        self._name = copy(name)
         return
 
     def import_boundary(self, start_time: str, end_time: str, boundary_reader: BoundaryReader,  point_picker: PointPicker = TrivialPicker()):
@@ -157,7 +157,7 @@ class Boundary:
                 time=time,
             ),
             attrs=dict(source=source,
-                name=self.name
+                name=self.name()
             ),
             )
         return data
@@ -209,6 +209,10 @@ class Boundary:
         days = day_list(start_time = self.start_time, end_time = self.end_time)
         return days
 
+    def name(self):
+        """Return the name of the grid (set at initialization)."""
+        return copy(self._name)
+
     def times_in_day(self, day):
         """Determines time stamps of one given day."""
         t0 = day.strftime('%Y-%m-%d') + "T00:00:00"
@@ -232,7 +236,7 @@ class BoundaryWriter(ABC):
         time_fn = ''
 
         if boundary_in_filename:
-            boundary_fn = f"_{boundary_out.name}"
+            boundary_fn = f"_{boundary_out.name()}"
 
         if grid_in_filename:
             grid_fn = f"_{boundary_out.grid.name()}"

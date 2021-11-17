@@ -23,7 +23,7 @@ class DumpToNc(BoundaryWriter):
         return
 
     def __call__(self, boundary: Boundary) -> None:
-        msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name}')
+        msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name()}')
 
         existed = check_if_folder(folder=self.folder, create=True)
         if not existed:
@@ -49,7 +49,7 @@ class NcFiles(BoundaryWriter):
         return
 
     def __call__(self, boundary: Boundary):
-        msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name}')
+        msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name()}')
 
         existed = check_if_folder(folder=self.folder, create=True)
         if not existed:
@@ -80,7 +80,7 @@ class WW3(BoundaryWriter):
         self.one_file = one_file
     def __call__(self, boundary: Boundary) -> None:
         boundary = copy(boundary)
-        msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name}')
+        msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name()}')
 
         existed = check_if_folder(folder=self.folder, create=True)
         if not existed:
@@ -249,7 +249,7 @@ class SWAN(BoundaryWriter):
         return
 
     def __call__(self, boundary: Boundary):
-        msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name}')
+        msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name()}')
 
         existed = check_if_folder(folder=self.folder, create=True)
         if not existed:

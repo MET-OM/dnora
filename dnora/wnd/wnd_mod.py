@@ -22,7 +22,7 @@ class ForcingReader(ABC):
 class Forcing:
     def __init__(self, grid, name='AnonymousForcing'):
         self.grid = copy(grid)
-        self.name = name
+        self._name = copy(name)
 
     def import_forcing(self, start_time: str, end_time: str, forcing_reader: ForcingReader, expansion_factor: float = 1.2):
         self.start_time = copy(start_time)
@@ -40,6 +40,10 @@ class Forcing:
         days = day_list(start_time=self.start_time, end_time=self.end_time)
         return days
 
+    def name(self):
+        """Return the name of the grid (set at initialization)."""
+        return copy(self._name)
+
     def time(self):
         return copy(self.data.time.values)
 
@@ -50,10 +54,45 @@ class Forcing:
         return copy(self.data.v.values)
 
     def nx(self):
-        return (self.data.u.shape[0])
+        return (self.data.u.shape[1])
 
     def ny(self):
-        return (self.data.v.shape[1])
+        return (self.data.u.shape[2])
+
+    def nt(self):
+        return (self.data.u.shape[0])
+
+    def lon(self):
+        """Returns a longitude vector of the grid."""
+        if hasattr(self.data, 'lon'):
+            lon = copy(self.data.lon.values)
+        else:
+            lon = np.array([])
+        return lon
+
+    def lat(self):
+        """Returns a latitude vector of the grid."""
+        if hasattr(self.data, 'lat'):
+            lat = copy(self.data.lat.values)
+        else:
+            lat = np.array([])
+        return lat
+
+    def size(self) -> tuple:
+        """Returns the size (nx, ny) of the grid."""
+        return self.data.u.shape
+
+    def _point_list(self, mask):
+        """Provides a list on longitudes and latitudes with a given mask.
+
+        Used to e.g. generate list of boundary points or land points.
+        """
+        meshlon, meshlat=np.meshgrid(self.lon(),self.lat())
+        lonlat_flat = np.column_stack((meshlon.ravel(),meshlat.ravel()))
+        mask_flat = mask.ravel()
+
+        return lonlat_flat[mask_flat]
+
 
     def slice_data(self, start_time: str = '', end_time: str = ''):
         if not start_time:
@@ -90,7 +129,7 @@ class ForcingWriter(ABC):
         time_fn = ''
 
         if forcing_in_filename:
-            forcing_fn = f"_{forcing_out.name}"
+            forcing_fn = f"_{forcing_out.name()}"
 
         if grid_in_filename:
             grid_fn = f"_{forcing_out.grid.name()}"

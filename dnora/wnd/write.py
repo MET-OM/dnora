@@ -21,7 +21,7 @@ class WW3(ForcingWriter):
         return
 
     def __call__(self, forcing_out: Forcing) -> None:
-        msg.header(f'{type(self).__name__}: writing wind forcing from {forcing_out.name}')
+        msg.header(f'{type(self).__name__}: writing wind forcing from {forcing_out.name()}')
 
         existed = check_if_folder(folder=self.folder, create=True)
         if not existed:
@@ -48,7 +48,7 @@ class SWAN(ForcingWriter):
         return
 
     def __call__(self, forcing_out: Forcing) -> None:
-        msg.header(f'{type(self).__name__}: writing wind forcing from {forcing_out.name}')
+        msg.header(f'{type(self).__name__}: writing wind forcing from {forcing_out.name()}')
 
         existed = check_if_folder(folder=self.folder, create=True)
         if not existed:
