@@ -130,6 +130,7 @@ class Boundary:
             msg.process(f"Processing spectra with {type(spectral_processor).__name__}")
             print(spectral_processor)
             for x in range(len(self.x())):
+                print(f"Processing point {x}")
                 for t in range(len(self.time())):
                     new_spec, new_dirs, new_freq = spectral_processor(self.spec()[t,x,:,:], self.dirs(), self.freq())
 

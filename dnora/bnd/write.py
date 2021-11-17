@@ -68,7 +68,7 @@ class NcFiles(BoundaryWriter):
 
 
 class WW3(BoundaryWriter):
-    def __init__(self, folder: str='', boundary_in_filename: bool=True, time_in_filename: bool=True, grid_in_filename: bool=False) -> None:
+    def __init__(self, folder: str='', one_file: bool=True, boundary_in_filename: bool=True, time_in_filename: bool=True, grid_in_filename: bool=False) -> None:
         if (not folder == '') and (not folder[-1] == '/'):
             folder = folder + '/'
         self.folder = folder
@@ -77,8 +77,9 @@ class WW3(BoundaryWriter):
         self.grid_in_filename = grid_in_filename
         self.time_in_filename = time_in_filename
 
+        self.one_file = one_file
     def __call__(self, boundary: Boundary) -> None:
-        #boundary = copy(boundary_out)
+        boundary = copy(boundary)
         msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name}')
 
         existed = check_if_folder(folder=self.folder, create=True)
@@ -90,17 +91,29 @@ class WW3(BoundaryWriter):
 
         msg.info('Writing WAVEWATCH-III netcdf-output')
 
-        for n in range(len(boundary.x())):
-            if boundary.mask[n]:
-                lat = boundary.lat()[n]
-                lon = boundary.lon()[n]
+
+        if self.one_file:
+            if len(boundary.x()) == 1:
+                lat = boundary.lat()[0]
+                lon = boundary.lon()[0]
                 output_file = self.folder + 'ww3_spec' + f"_E{lon:09.6f}N{lat:09.6f}" + super().create_filename(boundary, self.boundary_in_filename, self.grid_in_filename, self.time_in_filename) + '.nc'
-                self.write_netcdf(boundary, n, output_file)
             else:
-                msg.info(f"Skipping point {n} ({boundary.lon()[n]:10.7f}, {boundary.lat()[n]:10.7f}). Masked as False.")
+                output_file = self.folder + 'ww3_spec' + super().create_filename(boundary, self.boundary_in_filename, self.grid_in_filename, self.time_in_filename) + '.nc'
+
+            self.write_netcdf(boundary, output_file)
+        else:
+            for n in range(len(boundary.x())):
+                if boundary.mask[n]: # This property is not really used and should always be true
+                    lat = boundary.lat()[n]
+                    lon = boundary.lon()[n]
+                    output_file = self.folder + 'ww3_spec' + f"_E{lon:09.6f}N{lat:09.6f}" + super().create_filename(boundary, self.boundary_in_filename, self.grid_in_filename, self.time_in_filename) + '.nc'
+                    self.write_netcdf(boundary, output_file, n)
+                else:
+                    msg.info(f"Skipping point {n} ({boundary.lon()[n]:10.7f}, {boundary.lat()[n]:10.7f}). Masked as False.")
+
         return
 
-    def write_netcdf(self, boundary: Boundary, n: int, output_file: str) -> None:
+    def write_netcdf(self, boundary: Boundary, output_file: str, n: int=None) -> None:
         """Writes WW3 compatible netcdf spectral output from a list containing xarray datasets."""
 
         #if boundary.name == "AnonymousBoundary":
@@ -113,10 +126,14 @@ class WW3(BoundaryWriter):
         root_grp = netCDF4.Dataset(output_file, 'w', format='NETCDF4')
         #################### dimensions
         root_grp.createDimension('time', None)
-        root_grp.createDimension('station', 1)
+        if self.one_file:
+            root_grp.createDimension('station', len(boundary.x()))
+        else:
+            root_grp.createDimension('station', 1)
         root_grp.createDimension('string16', 16)
         root_grp.createDimension('frequency', len(boundary.freq()))
         root_grp.createDimension('direction', len(boundary.dirs()))
+
         #######################################################
         ####################### variables
         time = root_grp.createVariable('time', np.float64, ('time',))
@@ -199,10 +216,16 @@ class WW3(BoundaryWriter):
         frequency[:] =boundary.freq()
         direction[:] = boundary.dirs()
 
-        efth[:] =  boundary.spec(x=n)
-        station[:] = 1
-        longitude[:] = np.full((len(boundary.time()),1), boundary.lon()[n],dtype=float)
-        latitude[:] = np.full((len(boundary.time()),1), boundary.lat()[n],dtype=float)
+        if self.one_file:
+            station[:] = boundary.x()
+            efth[:] =  boundary.spec()
+            longitude[:] = np.full((len(boundary.time()),len(boundary.lon())), boundary.lon(),dtype=float)
+            latitude[:] = np.full((len(boundary.time()),len(boundary.lat())), boundary.lat(),dtype=float)
+        else:
+            station[:] = 1
+            efth[:] =  boundary.spec(x=n)
+            longitude[:] = np.full((len(boundary.time()),1), boundary.lon()[n],dtype=float)
+            latitude[:] = np.full((len(boundary.time()),1), boundary.lat()[n],dtype=float)
         #longitude[:] = bnd_out.longitude.values
         #latitude[:] = bnd_out.latitude.values
         station_name[:] = 1

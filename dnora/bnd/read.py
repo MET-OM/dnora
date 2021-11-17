@@ -25,7 +25,7 @@ class ForceFeed(BoundaryReader):
 
 
 class MetNo_WAM4km(BoundaryReader):
-    def __init__(self, ignore_nan: bool=False, stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0):
+    def __init__(self, ignore_nan: bool=True, stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0):
         self.ignore_nan = copy(ignore_nan)
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
@@ -111,7 +111,7 @@ class MetNo_NORA3(BoundaryReader):
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         #day = pd.date_range(start_time, start_time,freq='D')
         start_times, end_times, file_times = create_time_stamps(start_time, start_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
-        url = self.get_url(start_times[0])
+        url = self.get_url(file_times[0])
 
         data = xr.open_dataset(url).isel(time = [0])
 
@@ -183,7 +183,7 @@ class File_WW3Nc(BoundaryReader):
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         #day = pd.date_range(start_time, start_time,freq='D')
         start_times, end_times, file_times = create_time_stamps(start_time, start_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
-        filename = self.get_filename(start_times[0])
+        filename = self.get_filename(file_times[0])
 
         data = xr.open_dataset(filename).isel(time = [0])
 
