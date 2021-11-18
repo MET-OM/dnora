@@ -1,7 +1,7 @@
 import numpy as np
 from copy import copy
 from .. import msg
-from ..aux import check_if_folder
+from ..aux import check_if_folder, create_filename_obj
 
 from .grd_mod import TopoWriter # Abstract class
 from .grd_mod import Grid # Grid object
@@ -29,19 +29,23 @@ class WW3(TopoWriter):
             msg.plain(f"Creating folder {self.folder}")
 
         if self.matrix:
-            fn1 = self.folder + 'mat_'+grid.name()+'_bathy.txt'
+            #fn1 = self.folder + 'mat_'+grid.name()+'_bathy.txt'
+            fn1 = self.folder + create_filename_obj(filestring='mat_Grid_bathy.txt', objects=[self])
             msg.to_file(fn1)
             np.savetxt(fn1, -1*grid.topo(), delimiter=',',fmt='%1.6f')
 
-            fn2 = self.folder + 'mat_'+grid.name()+'_mapsta.txt'
+            #fn2 = self.folder + 'mat_'+grid.name()+'_mapsta.txt'
+            fn2 = self.folder + create_filename_obj(filestring='mat_Grid_mapsta.txt', objects=[self])
             msg.to_file(fn2)
             np.savetxt(fn2, mask_out, delimiter=',',fmt='%1.0f')
         else:
-            fn1 = self.folder + grid.name()+'_bathy.txt'
+            fn1 = self.folder + create_filename_obj(filestring='Grid_bathy.txt', objects=[self])
+            #fn1 = self.folder + grid.name()+'_bathy.txt'
             msg.to_file(fn1)
             np.savetxt(fn1, -1*grid.topo().ravel(), delimiter=',',fmt='%1.6f')
 
-            fn2 = self.folder + grid.name()+'_mapsta.txt'
+            fn2 = self.folder + create_filename_obj(filestring='Grid_mapsta.txt', objects=[self])
+            #fn2 = self.folder + grid.name()+'_mapsta.txt'
             msg.to_file(fn2)
             np.savetxt(fn2, mask_out.ravel(), delimiter=',',fmt='%1.0f')
 
@@ -69,7 +73,8 @@ class SWAN(TopoWriter):
         if not existed:
             msg.plain(f"Creating folder {self.folder}")
 
-        fn1 = self.folder + grid.name()+'_SWAN.bot'
+        fn1 = self.folder + create_filename_obj(filestring='Grid_SWAN.bot', objects=[self])
+        #fn1 = self.folder + grid.name()+'_SWAN.bot'
         msg.to_file(fn1)
         np.savetxt(fn1, grid.topo(), delimiter='\t',fmt='%1.0f')
         grid.write_status(folder=self.folder)

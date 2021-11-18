@@ -1,15 +1,15 @@
 import numpy as np
 import pandas as pd
 from .. import msg
-
-from ..aux import check_if_folder
+from copy import copy
+from ..aux import check_if_folder, create_filename_obj
 
 from .wnd_mod import ForcingWriter # Abstract class
 from .wnd_mod import Forcing # Forcing object
 
 
 class WW3(ForcingWriter):
-    def __init__(self, folder: str='', forcing_in_filename: bool=True, time_in_filename: bool=True, grid_in_filename: bool=True) -> None:
+    def __init__(self, folder: str='', filestring: str='wind_Boundary_Grid_T0-T1', datestring: str='%Y%m%dT%H%M') -> None:
         if (not folder == '') and (not folder[-1] == '/'):
             folder = folder + '/'
         self.folder = folder
@@ -27,7 +27,8 @@ class WW3(ForcingWriter):
         if not existed:
             msg.plain(f"Creating folder {self.folder}")
 
-        output_file = self.folder + 'wind' + super().create_filename(forcing_out, self.forcing_in_filename, self.grid_in_filename, self.time_in_filename) + '.nc'
+        #output_file = self.folder + 'wind' + super().create_filename(forcing_out, self.forcing_in_filename, self.grid_in_filename, self.time_in_filename) + '.nc'
+        output_file = self.folder + create_filename_obj(filestring=self.filestring, objects=[forcing_out, forcing_out.grid], datestring=self.datestring) + '.nc'
         msg.to_file(output_file)
 
         forcing_out.data.to_netcdf(output_file)
@@ -36,14 +37,13 @@ class WW3(ForcingWriter):
 
 
 class SWAN(ForcingWriter):
-    def __init__(self, folder: str='', forcing_in_filename: bool=True, time_in_filename: bool=True, grid_in_filename: bool=True) -> None:
+    def __init__(self, folder: str='', filestring: str='windBoundaryGridT0_T1', datestring: str='%Y%m%d') -> None:
         if (not folder == '') and (not folder[-1] == '/'):
             folder = folder + '/'
         self.folder = folder
 
-        self.forcing_in_filename = forcing_in_filename
-        self.grid_in_filename = grid_in_filename
-        self.time_in_filename = time_in_filename
+        self.filestring = copy(filestring)
+        self.datestring = copy(datestring)
 
         return
 
@@ -54,7 +54,8 @@ class SWAN(ForcingWriter):
         if not existed:
             msg.plain(f"Creating folder {self.folder}")
 
-        output_file = self.folder + 'wind' + super().create_filename(forcing_out, self.forcing_in_filename, self.grid_in_filename, self.time_in_filename) + '.asc'
+        #output_file = self.folder + 'wind' + super().create_filename(forcing_out, self.forcing_in_filename, self.grid_in_filename, self.time_in_filename) + '.asc'
+        output_file = self.folder + create_filename_obj(filestring=self.filestring, objects=[forcing_out, forcing_out.grid], datestring=self.datestring) + '.asc'
         msg.to_file(output_file)
 
         days = forcing_out.days()
