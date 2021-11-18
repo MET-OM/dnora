@@ -21,14 +21,14 @@ grid = grd.Grid(lon_min, lon_max, lat_min, lat_max, name='Bokn')
 # Set spacing and boundary points
 grid.set_spacing(dm=1000)
 
-bnd_set = grd.boundary.EdgesAsBoundary(edges=['N', 'W', 'S'], step=1)
+bnd_set = grd.boundary.EdgesAsBoundary(edges=['N', 'W', 'S'], step=50)
 #grid.set_boundary(bounN=1, edges=['N', 'W', 'S'])
 grid.set_boundary(boundary_setter=bnd_set)
 
 # Import topography and mesh it down to the grid definitions
 #grid.import_topo(topo_reader=grd.read.EMODNET2018(tile='D5',
 #                                                  folder='/home/konstantinosc/PhD/github/DNORA/bathy/'))
-grid.import_topo(topo_reader=grd.read.EMODNET2018(tile='D5')
+grid.import_topo(topo_reader=grd.read.EMODNET2018(tile='D5'))
 
 grid.mesh_grid()
 
@@ -42,7 +42,7 @@ boundary = bnd.Boundary(grid, name='NORA3')
 
 # Fetch the boundary spectra
 time0 = '2020-01-13T18:00'
-time1 = '2020-01-13T19:00'
+time1 = '2020-01-13T21:00'
 boundary.import_boundary(start_time=time0, end_time=time1, boundary_reader=bnd.read.MetNo_NORA3(
 ), point_picker=bnd.pick.NearestGridPoint())
 
@@ -60,26 +60,28 @@ forcing.import_forcing(start_time=time0, end_time=time1,
 # =============================================================================
 # WRITE OUTPUT FOR SWAN RUN
 # =============================================================================
-output_folder = '/home/konstantinosc/test/'
-swan_directory = '/home/konstantinosc/Programs/swan4120/'
+#output_folder = '/home/konstantinosc/test/'
+#swan_directory = '/home/konstantinosc/Programs/swan4120/'
+output_folder = 'example_hindcast'
+swan_directory = 'swan_dir'
 # Grid
 write_grid = grd.write.SWAN(folder=output_folder)
 write_grid(grid)
 
 # Boundary
 write_boundary = bnd.write.SWAN(
-    folder=output_folder, filestring='Bokn_specT0-T1', datestring='%Y%m%d')
+    folder=output_folder)
 write_boundary(boundary)
 
 # Wind forcing
 write_forcing = wnd.write.SWAN(
-    folder=output_folder, filestring='Bokn_windT0-T1', datestring='%Y%m%d')(boundary)
+    folder=output_folder, filestring='$Grid_wind_$T0-$T1')
 write_forcing(forcing)
 
 # Write input file for SWAN model run
-write_input_file = inp.SWANInputFile(grid=grid, forcing=forcing)
-input_file_name = write_input_file(start_time=time0, end_time=time1,
-                                   swan_directory=swan_directory, forcing_folder=output_folder, wind=True)
+write_input_file = inp.SWANInputFile(grid=grid, forcing=forcing, boundary=boundary, bnd_filestring='Overriding_everything.fail', frc_folder='Whacky_folder')
+input_file_name = write_input_file(end_time='2020-01-13T19:00',
+                                   folder=swan_directory)
 
 
 # =============================================================================
