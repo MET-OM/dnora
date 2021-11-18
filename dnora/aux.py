@@ -40,30 +40,40 @@ def month_list(start_time, end_time):
     months = pd.date_range(start=start_time[:7], end=end_time[:7], freq='MS')
     return months
 
+def add_file_extension(filename: str, extension: str):
+    if not extension[0] == '.':
+        extension = f".{extension}"
+
+    if not filename[-(len(extension)):] == extension:
+        return f"{filename}{extension}"
+    else:
+        return filename
+
+def add_folder_to_filename(filename: str, folder: str):
+    if (not folder == '') and (not folder[-1] == '/'):
+        return f"{folder}/{filename}"
+    else:
+        return f"{folder}{filename}"
+
 def create_filename_time(filestring: str, times, datestring: str='%Y%m%d%H%M'):
     ct = 0
     for t in times:
-        filestring = re.sub(f"T{ct}", pd.Timestamp(t).strftime(datestring), filestring)
+        filestring = re.sub(f"\$T{ct}", pd.Timestamp(t).strftime(datestring), filestring)
         ct = ct + 1
 
     return filestring
 
-def create_filename_obj(filestring: str, objects, datestring: str='%Y%m%d%H%M'):
+def create_filename_lonlat(filestring: str, lon: float, lat: float):
+    filestring = re.sub(f"\$Lon", str(lon), filestring)
+    filestring = re.sub(f"\$Lat", str(lat), filestring)
 
-    got_times = False
+    return filestring
+
+def create_filename_obj(filestring: str, objects):
     for object in objects:
         obj_str = type(object).__name__
         obj_name = object.name()
-        filestring = re.sub(obj_str, obj_name, filestring)
-        if not got_times:
-            if obj_str in ['Boundary', 'Forcing']:
-                start_time = pd.Timestamp(object.time()[0])
-                end_time = pd.Timestamp(object.time()[-1])
-                got_times = True
-
-    #filestring = re.sub('T0', start_time.strftime(datestring), filestring)
-    #filestring = re.sub('T1', end_time.strftime(datestring), filestring)
-    filestring = create_filename_time(filestring=filestring, times=[start_time, end_time], datestring=datestring)
+        filestring = re.sub(f"\${obj_str}", obj_name, filestring)
 
     return filestring
 

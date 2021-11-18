@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import xarray as xr
 import numpy as np
 from copy import copy
+import pandas as pd
 from typing import List
 import sys
 import matplotlib.pyplot as plt
@@ -116,6 +117,8 @@ class Boundary:
         self.data = self.compile_to_xr(time, freq, dirs, spec, lon, lat, source)
         self.mask = [True]*len(self.x())
 
+        self._written_as = ''
+
         return
 
 
@@ -190,7 +193,7 @@ class Boundary:
 
 
     def time(self):
-        return copy(self.data.time.values)
+        return copy(pd.to_datetime(self.data.time.values))
 
     def freq(self):
         return copy(self.data.freq.values)

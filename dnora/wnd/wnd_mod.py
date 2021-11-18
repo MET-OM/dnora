@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import xarray as xr
 import numpy as np
 from copy import copy
+import pandas as pd
 import sys
 import matplotlib.pyplot as plt
 from .. import msg
@@ -23,6 +24,9 @@ class Forcing:
     def __init__(self, grid, name='AnonymousForcing'):
         self.grid = copy(grid)
         self._name = copy(name)
+        self._written_as = ''
+
+        return
 
     def import_forcing(self, start_time: str, end_time: str, forcing_reader: ForcingReader, expansion_factor: float = 1.2):
         self.start_time = copy(start_time)
@@ -45,7 +49,7 @@ class Forcing:
         return copy(self._name)
 
     def time(self):
-        return copy(self.data.time.values)
+        return copy(pd.to_datetime(self.data.time.values))
 
     def u(self):
         return copy(self.data.u.values)

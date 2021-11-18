@@ -1,16 +1,14 @@
 import numpy as np
 from copy import copy
 from .. import msg
-from ..aux import check_if_folder, create_filename_obj
+from ..aux import check_if_folder, create_filename_obj, add_folder_to_filename
 
 from .grd_mod import TopoWriter # Abstract class
 from .grd_mod import Grid # Grid object
 
 class WW3(TopoWriter):
     def __init__(self, folder: str = '', matrix = False) -> None:
-        if (not folder == '') and (not folder[-1] == '/'):
-            folder = folder + '/'
-        self.folder = folder
+        self.folder = copy(folder)
         self.matrix = matrix
         return
 
@@ -29,34 +27,42 @@ class WW3(TopoWriter):
             msg.plain(f"Creating folder {self.folder}")
 
         if self.matrix:
-            #fn1 = self.folder + 'mat_'+grid.name()+'_bathy.txt'
-            fn1 = self.folder + create_filename_obj(filestring='mat_Grid_bathy.txt', objects=[grid])
-            msg.to_file(fn1)
-            np.savetxt(fn1, -1*grid.topo(), delimiter=',',fmt='%1.6f')
+            output_file_bathy = create_filename_obj(filestring='mat_$Grid_bathy.txt', objects=[grid])
+            output_path = add_folder_to_filename(output_file_bathy, self.folder)
 
-            #fn2 = self.folder + 'mat_'+grid.name()+'_mapsta.txt'
-            fn2 = self.folder + create_filename_obj(filestring='mat_Grid_mapsta.txt', objects=[grid])
-            msg.to_file(fn2)
-            np.savetxt(fn2, mask_out, delimiter=',',fmt='%1.0f')
+            msg.to_file(output_path)
+            np.savetxt(output_path, -1*grid.topo(), delimiter=',',fmt='%1.6f')
+
+            output_file_mapsta = create_filename_obj(filestring='mat_$Grid_mapsta.txt', objects=[grid])
+            output_path = add_folder_to_filename(output_file_mapsta, self.folder)
+
+            msg.to_file(output_path)
+            np.savetxt(output_path, mask_out, delimiter=',',fmt='%1.0f')
+
         else:
-            fn1 = self.folder + create_filename_obj(filestring='Grid_bathy.txt', objects=[grid])
-            #fn1 = self.folder + grid.name()+'_bathy.txt'
-            msg.to_file(fn1)
-            np.savetxt(fn1, -1*grid.topo().ravel(), delimiter=',',fmt='%1.6f')
+            output_file_bathy = create_filename_obj(filestring='$Grid_bathy.txt', objects=[grid])
+            output_path = add_folder_to_filename(output_file_bathy, self.folder)
 
-            fn2 = self.folder + create_filename_obj(filestring='Grid_mapsta.txt', objects=[grid])
-            #fn2 = self.folder + grid.name()+'_mapsta.txt'
-            msg.to_file(fn2)
-            np.savetxt(fn2, mask_out.ravel(), delimiter=',',fmt='%1.0f')
+            msg.to_file(output_path)
+            np.savetxt(output_path, -1*grid.topo().ravel(), delimiter=',',fmt='%1.6f')
+
+            output_file_mapsta =  create_filename_obj(filestring='$Grid_mapsta.txt', objects=[grid])
+            output_path = add_folder_to_filename(output_file_mapsta, self.folder)
+
+            msg.to_file(output_path)
+            np.savetxt(output_path, mask_out.ravel(), delimiter=',',fmt='%1.0f')
 
         grid.write_status(folder=self.folder)
+
+        # This is set as info in case an input file needs to be generated
+        grid._written_as = [output_file_bathy, output_file_mapsta]
+        grid._written_to = self.folder
+
         return
 
 class SWAN(TopoWriter):
     def __init__(self, folder: str = '') -> None:
-        if (not folder == '') and (not folder[-1] == '/'):
-            folder = folder + '/'
-        self.folder = folder
+        self.folder = copy(folder)
         return
 
     def __call__(self, grid: Grid) -> None:
@@ -73,10 +79,14 @@ class SWAN(TopoWriter):
         if not existed:
             msg.plain(f"Creating folder {self.folder}")
 
-        fn1 = self.folder + create_filename_obj(filestring='Grid_SWAN.bot', objects=[self])
-        #fn1 = self.folder + grid.name()+'_SWAN.bot'
-        msg.to_file(fn1)
-        np.savetxt(fn1, grid.topo(), delimiter='\t',fmt='%1.0f')
+        output_file = create_filename_obj(filestring='$Grid_SWAN.bot', objects=[grid])
+        output_path = add_folder_to_filename(output_file, self.folder)
+
+        msg.to_file(output_path)
+        np.savetxt(output_path, grid.topo(), delimiter='\t',fmt='%1.0f')
         grid.write_status(folder=self.folder)
 
+        # This is set as info in case an input file needs to be generated
+        grid._written_as = output_file
+        grid._written_to = self.folder
         return

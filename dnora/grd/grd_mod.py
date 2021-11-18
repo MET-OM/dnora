@@ -202,6 +202,8 @@ class Grid:
                     attrs=(data_dict
                     ),
                     )
+
+        self._written_as = ''
         return
 
     def import_topo(self, topo_reader: TopoReader) -> None:
@@ -518,86 +520,6 @@ class Grid:
     def raw_lat(self):
         """Returns a latitude vector of the unmeshed imported topography."""
         return copy(self.rawdata.lat.values)
-
-    def plot(self, save_fig: bool=False, filename: str='', boundary=None, grid_processor: GridProcessor=TrivialFilter()) -> None:
-        """Creates a plot of the topography.
-
-        Options
-        boundary:       If a boundary object from dnora.bnd is given, then the
-                        boundary spectra locations are printed on the plot.
-
-        save_fig:       If set to true, plot is saved.
-
-        filename:       Used if save_fig=True, e.g. 'My_plot.pdf'.
-                        Default is ''{self.name()}_topo.pdf'
-
-        grid_processor: A GridProcessor might be provided to modify the data
-                        before plotting. These modifications are not applied
-                        to the data, but are only used for plotting.
-        """
-
-        # Allows a modification of the topography before plotting
-        topo = grid_processor(self.topo(), self.lon(), self.lat(), self.land_sea_mask(), self.boundary_mask())
-
-        if self.topo().size > 0:
-            if not filename:
-                filename = f"{self.name()}_topo.pdf"
-            levels = np.linspace(np.min(topo), 0, 100, endpoint=True)
-
-            plt.figure()
-            plt.contourf(self.lon(),self.lat(),topo,levels)
-
-            if boundary is not None:
-                plt.plot(boundary.lon(), boundary.lat(),'kx')
-
-            plt.colorbar()
-            plt.title(f"{self.name()} topography")
-            plt.show()
-
-            if save_fig:
-                plt.savefig(filename, dpi=300)
-                msg.to_file(filename)
-        else:
-            msg.templates('no_topo')
-
-        return
-
-    def plot_mask(self, save_fig: bool=False, filename: str='', boundary=None) -> None:
-        """Creates a plot of the land-sea mask.
-
-        Options
-        boundary:       If a boundary object from dnora.bnd is given, then the
-                        boundary spectra locations are printed on the plot.
-
-        save_fig:       If set to true, plot is saved.
-
-        filename:       Used if save_fig=True, e.g. 'My_plot.pdf'.
-                        Default is ''{self.name()}_mask.pdf'
-        """
-        if self.boundary_mask().size > 0:
-            if not filename:
-                filename = f"{self.name()}_mask.pdf"
-
-            plt.figure()
-            plt.contourf(self.lon(),self.lat(),self.land_sea_mask())
-            BOUND = self.boundary_points()
-            plt.plot(BOUND[:,0], BOUND[:,1],'r*')
-
-            if boundary is not None:
-                plt.plot(boundary.lon(), boundary.lat(),'kx')
-
-
-            plt.colorbar()
-            plt.title(f"{self.name()} land-sea mask")
-            #plt.show()
-
-            if save_fig:
-                plt.savefig(filename, dpi=300)
-                msg.to_file(filename)
-        else:
-            msg.templates('no_mask')
-
-        return
 
     def _update_masks(self) -> None:
         """Sets land-sea mask and boundary point mask.
