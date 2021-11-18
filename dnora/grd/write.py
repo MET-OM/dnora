@@ -30,21 +30,21 @@ class WW3(TopoWriter):
 
         if self.matrix:
             #fn1 = self.folder + 'mat_'+grid.name()+'_bathy.txt'
-            fn1 = self.folder + create_filename_obj(filestring='mat_Grid_bathy.txt', objects=[self])
+            fn1 = self.folder + create_filename_obj(filestring='mat_Grid_bathy.txt', objects=[grid])
             msg.to_file(fn1)
             np.savetxt(fn1, -1*grid.topo(), delimiter=',',fmt='%1.6f')
 
             #fn2 = self.folder + 'mat_'+grid.name()+'_mapsta.txt'
-            fn2 = self.folder + create_filename_obj(filestring='mat_Grid_mapsta.txt', objects=[self])
+            fn2 = self.folder + create_filename_obj(filestring='mat_Grid_mapsta.txt', objects=[grid])
             msg.to_file(fn2)
             np.savetxt(fn2, mask_out, delimiter=',',fmt='%1.0f')
         else:
-            fn1 = self.folder + create_filename_obj(filestring='Grid_bathy.txt', objects=[self])
+            fn1 = self.folder + create_filename_obj(filestring='Grid_bathy.txt', objects=[grid])
             #fn1 = self.folder + grid.name()+'_bathy.txt'
             msg.to_file(fn1)
             np.savetxt(fn1, -1*grid.topo().ravel(), delimiter=',',fmt='%1.6f')
 
-            fn2 = self.folder + create_filename_obj(filestring='Grid_mapsta.txt', objects=[self])
+            fn2 = self.folder + create_filename_obj(filestring='Grid_mapsta.txt', objects=[grid])
             #fn2 = self.folder + grid.name()+'_mapsta.txt'
             msg.to_file(fn2)
             np.savetxt(fn2, mask_out.ravel(), delimiter=',',fmt='%1.0f')
