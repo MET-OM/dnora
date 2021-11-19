@@ -3,7 +3,6 @@ from copy import copy
 
 from .. import msg
 
-#from ..spec import ocean_to_math, naut_to_ocean, shift_spec
 from ..aux import interp_spec, shift_spec, flip_spec
 
 from .bnd_mod import SpectralProcessor

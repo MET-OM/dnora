@@ -41,13 +41,19 @@ def month_list(start_time, end_time):
     return months
 
 def add_file_extension(filename: str, extension: str):
-    if not extension[0] == '.':
-        extension = f".{extension}"
+    """Adds a file extension to the file name.
 
-    if not filename[-(len(extension)):] == extension:
-        return f"{filename}{extension}"
-    else:
+    If the file already has an extension, then no extension is added. An
+    extension is defined as a . in the last five characters of the string.
+    """
+
+    if ('.' in filename[-5:]) or (not extension):
         return filename
+    else:
+        if not extension[0] == '.':
+            extension = f".{extension}"
+        return f"{filename}{extension}"
+
 
 def add_prefix(filename: str, prefix: str):
     if (not prefix == '') and (not prefix[-1] == '_'):

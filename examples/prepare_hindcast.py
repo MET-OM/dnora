@@ -65,23 +65,18 @@ forcing.import_forcing(start_time=time0, end_time=time1,
 output_folder = 'example_hindcast'
 swan_directory = 'swan_dir'
 # Grid
-write_grid = grd.write.SWAN(folder=output_folder)
-write_grid(grid)
+grid.export_grid(grid_writer=grd.write.SWAN(folder=output_folder))
 
 # Boundary
-write_boundary = bnd.write.SWAN(
-    folder=output_folder)
-write_boundary(boundary)
+boundary.export_boundary(boundary_writer=bnd.write.SWAN(folder=output_folder))
 
 # Wind forcing
-write_forcing = wnd.write.SWAN(
-    folder=output_folder, filestring='$Grid_wind_$T0-$T1')
-write_forcing(forcing)
+forcing.export_forcing(forcing_writer=wnd.write.SWAN(folder=output_folder, filestring='$Grid_wind_$T0-$T1'))
 
 # Write input file for SWAN model run
 write_input_file = inp.SWANInputFile(grid=grid, forcing=forcing, boundary=boundary, bnd_filestring='Overriding_everything.fail', frc_folder='Whacky_folder')
 input_file_name = write_input_file(end_time='2020-01-13T19:00',
-                                   folder=swan_directory)
+                                    folder=swan_directory)
 
 
 # =============================================================================

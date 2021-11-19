@@ -178,7 +178,13 @@ class Boundary:
 
         return spec
 
-    def filename(self, filestring: str=dflt_bnd['fs']['General'], datestring: str=dflt_bnd['ds']['General'], n: int=None, extension: str=''):
+    def filename(self, filestring: str=dflt_bnd['fs']['General'], datestring: str=dflt_bnd['ds']['General'], n: int=None, extension: str='', defaults: str=''):
+        # E.g. defaults='SWAN' uses all SWAN defaults
+        if defaults:
+            filestring = dflt_bnd['fs'][defaults]
+            datestring = dflt_bnd['ds'][defaults]
+            extension = dflt_bnd['ext'][defaults]
+
         # Substitute placeholders for objects ($Grid etc.)
         filename = create_filename_obj(filestring=filestring, objects=[self, self.grid])
         # Substitute placeholders for times ($T0 etc.)
@@ -202,21 +208,25 @@ class Boundary:
 
         return filename
 
-    def written_as(self, filestring: str=dflt_bnd['fs']['General'], datestring: str=dflt_bnd['ds']['General'], extension: str=''):
-        if hasattr(self, '_written_as'):
-            fiename = self._written_as
-        else:
-            filename =  self.filename(filestring=filestring, datestring=datestring)
+    def written_as(self, filestring: str=dflt_bnd['fs']['General'], datestring: str=dflt_bnd['ds']['General'], extension: str='', defaults: str=''):
+        # E.g. defaults='SWAN' uses all SWAN defaults
+        if defaults:
+            filestring = dflt_bnd['fs'][defaults]
+            datestring = dflt_bnd['ds'][defaults]
+            extension = dflt_bnd['ext'][defaults]
 
-        filename = add_file_extension(filename, extension=extension)
+        if hasattr(self, '_written_as'):
+            filename = self._written_as
+        else:
+            filename =  self.filename(filestring=filestring, datestring=datestring, extension=extenstion)
 
         return filename
 
-    def written_to(self):
+    def written_to(self, folder: str=dflt_bnd['fldr']['General']):
         if hasattr(self, '_written_to'):
             return self._written_to
         else:
-            return ''
+            return folder
 
     def is_written(self):
         return hasattr(self, '_written_as')

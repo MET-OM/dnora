@@ -24,7 +24,7 @@ class DumpToNc(BoundaryWriter):
         msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name()}')
 
 
-        output_file = boundary.filename(filestring=self.filestring, datestring=self.datestring, extension='nc')
+        output_file = boundary.filename(filestring=self.filestring, datestring=self.datestring, extension=dflt_bnd['ext']['General'])
 
         existed = check_if_folder(folder=self.folder, create=True)
         if not existed:
@@ -58,7 +58,7 @@ class NcFiles(BoundaryWriter):
 
         output_files = []
         for n in boundary.x():
-            output_file = boundary.filename(filestring=self.filestring, datestring=self.datestring, n=n, extension='nc')
+            output_file = boundary.filename(filestring=self.filestring, datestring=self.datestring, n=n, extension=dflt_bnd['ext']['General'])
             output_files.append(output_file)
 
             output_path = add_folder_to_filename(output_files[n], folder=self.folder)
@@ -96,10 +96,10 @@ class WW3(BoundaryWriter):
         if self.one_file:
             if len(boundary_in.x()) == 1:
                 # Uses $Lon $Lat
-                output_files = boundary_in.filename(filestring=self.filestring, datestring=self.datestring, n=0, extension='nc')
+                output_files = boundary_in.filename(filestring=self.filestring, datestring=self.datestring, n=0, extension=dflt_bnd['ext']['WW3'])
             else:
                 # Tries to remove $Lon $Lat in filestring
-                output_files = boundary_in.filename(filestring=self.filestring, datestring=self.datestring, extension='nc')
+                output_files = boundary_in.filename(filestring=self.filestring, datestring=self.datestring, extension=dflt_bnd['ext']['WW3'])
 
             output_path = add_folder_to_filename(output_files, folder=self.folder)
             msg.plain(f"All points >> {output_path}")
@@ -109,7 +109,7 @@ class WW3(BoundaryWriter):
             output_files = []
             for n in boundary_in.x():
                 if boundary_in.mask[n]: # This property is not really used and should always be true
-                    output_file = boundary_in.filename(filestring=self.filestring, datestring=self.datestring, n=n, extension='nc')
+                    output_file = boundary_in.filename(filestring=self.filestring, datestring=self.datestring, n=n, extension=dflt_bnd['ext']['WW3'])
                     output_files.append(output_file)
                     output_path = add_folder_to_filename(output_file, folder=self.folder)
                     msg.plain(f"Point {n} >> {output_path}")
@@ -257,7 +257,7 @@ class SWAN(BoundaryWriter):
         if not existed:
             msg.plain(f"Creating folder {self.folder}")
 
-        output_file = boundary.filename(filestring=self.filestring, datestring=self.datestring, extension='asc')
+        output_file = boundary.filename(filestring=self.filestring, datestring=self.datestring, extension=dflt_bnd['ext']['SWAN'])
         output_path = add_folder_to_filename(output_file, folder=self.folder)
 
         swan_bnd_points = boundary.grid.boundary_points()

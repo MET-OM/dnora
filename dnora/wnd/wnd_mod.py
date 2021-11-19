@@ -58,7 +58,13 @@ class Forcing:
         return copy(self._name)
 
 
-    def filename(self, filestring: str=dflt_frc['fs']['General'], datestring: str=dflt_frc['ds']['General'], extension: str=''):
+    def filename(self, filestring: str=dflt_frc['fs']['General'], datestring: str=dflt_frc['ds']['General'], extension: str='', defaults: str=''):
+        # E.g. defaults='SWAN' uses all SWAN defaults
+        if defaults:
+            filestring = dflt_frc['fs'][defaults]
+            datestring = dflt_frc['ds'][defaults]
+            extension = dflt_frc['ext'][defaults]
+
         # Substitute placeholders for objects ($Grid etc.)
         filename = create_filename_obj(filestring=filestring, objects=[self, self.grid])
         # Substitute placeholders for times ($T0 etc.)
@@ -72,21 +78,25 @@ class Forcing:
 
         return filename
 
-    def written_as(self, filestring: str=dflt_frc['fs']['General'], datestring: str=dflt_frc['ds']['General'], extension: str=''):
+    def written_as(self, filestring: str=dflt_frc['fs']['General'], datestring: str=dflt_frc['ds']['General'], extension: str='', defaults: str=''):
+        # E.g. defaults='SWAN' uses all SWAN defaults
+        if defaults:
+            filestring = dflt_frc['fs'][defaults]
+            datestring = dflt_frc['ds'][defaults]
+            extension = dflt_frc['ext'][defaults]
+
         if hasattr(self, '_written_as'):
             filename = self._written_as
         else:
-            filename = self.filename(filestring=filestring, datestring=datestring)
-
-        filename = add_file_extension(filename, extension=extension)
+            filename = self.filename(filestring=filestring, datestring=datestring, extension=extension)
 
         return filename
-        
-    def written_to(self):
+
+    def written_to(self, folder: str=dflt_frc['fldr']['General']):
         if hasattr(self, '_written_to'):
             return self._written_to
         else:
-            return ''
+            return folder
 
     def is_written(self):
         return hasattr(self, '_written_as')

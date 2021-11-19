@@ -9,53 +9,11 @@ from .wnd.wnd_mod import Forcing # Forcing object
 from .grd.grd_mod import Grid # Grid object
 from .bnd.bnd_mod import Boundary # Boundary object
 
-from .defaults import dflt_frc
-from .defaults import dflt_bnd
+from .defaults import dflt_frc, dflt_bnd, dflt_grd
+
 
 from .aux import create_filename_obj, create_filename_time, add_folder_to_filename
 
-def set_filestring(obj, obj_filestring):
-    if obj is not None:
-        if obj_filestring is not None:
-            return copy(obj_filestring) # Explicitly provided value overrides everything else
-        else:
-            if hasattr(obj, '_written_as'):
-                return obj._written_as # Object knows if it has been outputted
-            else:
-                if type(obj).__name__ == 'Forcing':
-                    return dflt_frc['fs']['SWAN'] # Default value
-                elif type(obj).__name__ == 'Boundary':
-                    return dflt_bnd['fs']['SWAN'] # Default value
-                else:
-                    raise ValueError('Provide Forcing or Boundary object')
-    else:
-        return None
-
-def set_folder(obj, obj_folder):
-    if obj is not None:
-        if obj_folder is not None:
-            return copy(obj_folder) # Explicitly provided value overrides everything else
-        else:
-            if hasattr(obj, '_written_to'):
-                return obj._written_to # Object knows if it has been outputted
-            else:
-                return ''
-    else:
-        return ''
-
-def set_datestring(obj, obj_datestring):
-    if obj is not None:
-        if obj_datestring is not None:
-            return obj_datestring
-        else:
-            if type(obj).__name__ == 'Forcing':
-                return dflt_frc['ds']['SWAN'] # Default value
-            elif type(obj).__name__ == 'Boundary':
-                return dflt_bnd['ds']['SWAN'] # Default value
-            else:
-                raise ValueError('Provide Forcing or Boundary object')
-    else:
-        return None
 
 def set_run_times(start_time, end_time, forcing, boundary):
     if start_time is not None:
@@ -100,28 +58,56 @@ class ModelInputFile(ABC):
 
     def __call__(self):
         pass
+
 class SWANInputFile(ModelInputFile):
     def __init__(self, grid: Grid, forcing: Forcing=None, boundary: Boundary=None,
                 grd_folder: str=None,
-                frc_filestring: str=None, frc_datestring: str=None, frc_folder=None,
-                bnd_filestring=None, bnd_datestring=None, bnd_folder=None):
+                frc_filestring: str=None, frc_datestring: str=None,
+                frc_folder: str=None,
+                bnd_filestring: str=None, bnd_datestring: str=None,
+                bnd_folder: str=None):
 
         self.grid = grid
         self.forcing = forcing
         self.boundary = boundary
 
-        # Filestrings
-        self.frc_filestring = set_filestring(forcing, frc_filestring)
-        self.bnd_filestring = set_filestring(boundary, bnd_filestring)
+        if Forcing is not None:
+            if frc_filestring is not None:
+                if frc_datestring is None:
+                    frc_datestring = dflt_frc['ds']['SWAN']
+                # User provided filename overrides all else
+                self.frc_filename = forcing.filename(filestring=frc_filestring, datestring=frc_datestring, extension=dflt_frc['ext']['SWAN'])
+            else:
+                # Use the file the object has been written to, and fall back on SWAN defaults if this information doesn't exist
+                self.frc_filename = forcing.written_as(defaults='SWAN')
 
-        # Folders
-        self.grd_folder = set_folder(grid, grd_folder)
-        self.frc_folder = set_folder(forcing, frc_folder)
-        self.bnd_folder = set_folder(boundary, bnd_folder)
+            if frc_folder is not None:
+                self.frc_folder = frc_folder
+            else:
+                self.frc_folder = forcing.written_to(folder=frc_folder)
 
-        # Datestrings
-        self.frc_datestring = set_datestring(forcing, frc_datestring)
-        self.bnd_datestring = set_datestring(boundary, bnd_datestring)
+        if Boundary is not None:
+            if bnd_filestring is not None:
+                if bnd_datestring is None:
+                    bnd_datestring = dflt_bnd['ds']['SWAN']
+                # User provided filename overrides all else
+                self.bnd_filename = boundary.filename(filestring=bnd_filestring, datestring=bnd_datestring, extension=dflt_bnd['ext']['SWAN'])
+            else:
+                # Use the file the object has been written to, and fall back on SWAN defaults if this information doesn't exist
+                self.bnd_filename = boundary.written_as(defaults='SWAN')
+
+            if bnd_folder is not None:
+                self.bnd_folder = bnd_folder
+            else:
+                self.bnd_folder = boundary.written_to(folder=bnd_folder)
+
+        if grd_folder is not None:
+            self.grd_folder = grd_folder
+        else:
+            self.grd_folder = grid.written_to(folder=grd_folder)
+
+        self.grd_filename = grid.written_as(filestring=dflt_grd['fs']['SWAN'], extension=dflt_grd['ext']['SWAN'])
+
 
         return
 
@@ -170,20 +156,15 @@ class SWANInputFile(ModelInputFile):
 
             file_out.write('INPGRID BOTTOM ' + str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(self.grid.nx()-1)+' '+str(
                 self.grid.ny()-1)+' ' + str((delta_X/(self.grid.nx()-1)).round(4)) + ' ' + str((delta_Y/(self.grid.ny()-1)).round(4)) + ' EXC 32767\n')
-            file_out.write('READINP BOTTOM -1 \''+add_folder_to_filename(self.grid.name(), self.grd_folder) +'_SWAN.bot\' 3 0 FREE \n')
+            file_out.write('READINP BOTTOM -1 \''+add_folder_to_filename(self.grd_filename, self.grd_folder) +'\' 3 0 FREE \n')
             file_out.write('$ \n')
-            bnd_filename = create_filename_obj(filestring=self.bnd_filestring, objects=[self.boundary, self.grid])
-            bnd_filename = create_filename_time(filestring=bnd_filename, times=[self.boundary.time()[0], self.boundary.time()[-1]], datestring=self.bnd_datestring)
-            file_out.write('BOU NEST \''+add_folder_to_filename(bnd_filename, self.bnd_folder)+'\' OPEN \n')
+            file_out.write('BOU NEST \''+add_folder_to_filename(self.bnd_filename, self.bnd_folder)+'\' OPEN \n')
             file_out.write('$ \n')
 
             if self.forcing is not None:
                 file_out.write('INPGRID WIND '+str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(self.forcing.nx()-1)+' '+str(self.forcing.ny()-1)+' '+str(
                     (delta_X/(self.forcing.nx()-1)).round(4)) + ' '+str((delta_Y/(self.forcing.ny()-1)).round(4)) + ' NONSTATIONARY ' + STR_START + ' 1 HR ' + STR_END + '\n')
-                frc_filename = create_filename_obj(filestring=self.frc_filestring, objects=[self.forcing, self.grid])
-                frc_filename = create_filename_time(filestring=frc_filename, times=[self.forcing.time()[0], self.forcing.time()[-1]], datestring=self.frc_datestring)
-
-                file_out.write('READINP WIND '+str(factor_wind)+'  \''+add_folder_to_filename(frc_filename, self.frc_folder)+'\' 3 0 0 1 FREE \n')
+                file_out.write('READINP WIND '+str(factor_wind)+'  \''+add_folder_to_filename(self.frc_filename, self.frc_folder)+'\' 3 0 0 1 FREE \n')
                 file_out.write('$ \n')
             else:
                 file_out.write('OFF QUAD \n')

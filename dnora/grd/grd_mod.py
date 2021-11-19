@@ -483,22 +483,25 @@ class Grid:
         filename = re.sub(f"__", '_', filename)
         filename = re.sub(f"_$", '', filename)
 
-        if extension:
-            filename = add_file_extension(filename, extension=extension)
+        filename = add_file_extension(filename, extension=extension)
 
         return filename
 
-    def written_as(self, filestring: str=dflt_grd['fs']['General']):
+    def written_as(self, filestring: str=dflt_grd['fs']['General'], extension: str=''):
         if hasattr(self, '_written_as'):
-            return self._written_as
+            filename = self._written_as
         else:
-            return self.filename(filestring=filestring)
+            filename = self.filename(filestring=filestring)
 
-    def written_to(self):
+        filename = add_file_extension(filename, extension=extension)
+
+        return filename
+
+    def written_to(self, folder: str=dflt_grd['fldr']['General']):
         if hasattr(self, '_written_to'):
             return self._written_to
         else:
-            return ''
+            return folder
 
     def is_written(self):
         return hasattr(self, '_written_as')
