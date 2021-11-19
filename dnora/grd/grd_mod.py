@@ -4,9 +4,10 @@ import numpy as np
 from copy import copy
 from scipy.interpolate import griddata
 import sys
-import matplotlib.pyplot as plt
+import re
 from .. import msg
-from ..aux import distance_2points
+from ..aux import distance_2points, add_prefix, add_suffix, add_file_extension, create_filename_obj, add_folder_to_filename
+from ..defaults import dflt_grd
 
 #from ..bnd.bnd_mod import Boundary # Boundary object
 ## -----------------------------------------------------------------------------
@@ -203,7 +204,6 @@ class Grid:
                     ),
                     )
 
-        self._written_as = ''
         return
 
     def import_topo(self, topo_reader: TopoReader) -> None:
@@ -257,19 +257,27 @@ class Grid:
             return
 
     def process_grid(self, filt: GridProcessor = TrivialFilter()) -> None:
-            """Processes the gridded bathymetrical data, e.g. with a filter."""
+        """Processes the gridded bathymetrical data, e.g. with a filter."""
 
-            msg.header(f'Filtering meshed grid with {type(filt).__name__}')
-            print(filt)
-            topo = filt(self.topo(), self.lon(), self.lat(), self.land_sea_mask(), self.boundary_mask())
+        msg.header(f'Filtering meshed grid with {type(filt).__name__}')
+        print(filt)
+        topo = filt(self.topo(), self.lon(), self.lat(), self.land_sea_mask(), self.boundary_mask())
 
-            vars_dict = {'topo': (['lat', 'lon'], topo)}
-            self.data = self.data.assign(vars_dict)
+        vars_dict = {'topo': (['lat', 'lon'], topo)}
+        self.data = self.data.assign(vars_dict)
 
-            msg.info('Upodating land-sea mask and boundary mask')
-            self._update_masks()
+        msg.info('Upodating land-sea mask and boundary mask')
+        self._update_masks()
 
-            return
+        return
+
+    def export_grid(self, grid_writer):
+        output_file, output_folder = grid_writer(self)
+
+        # This is set as info in case an input file needs to be generated
+        self._written_as = output_file
+        self._written_to = output_folder
+        return
 
     def set_spacing(self, dlon: float=0, dlat: float=0, dm: float=0, nx: int=0, ny: int=0, floating_edge: bool=False) -> None:
         """Defines longitude and latitude vectors based on desired spacing.
@@ -464,6 +472,38 @@ class Grid:
         else:
             return np.array([])
 
+    def filename(self, filestring: str=dflt_grd['fs']['General'], extension: str='', prefix: str='', suffix: str=''):
+        # Substitute placeholders for $Grid
+        filename = create_filename_obj(filestring=filestring, objects=[self])
+
+        filename = add_prefix(filename=filename, prefix=prefix)
+        filename = add_suffix(filename=filename, suffix=suffix)
+
+        # Possible clean up
+        filename = re.sub(f"__", '_', filename)
+        filename = re.sub(f"_$", '', filename)
+
+        if extension:
+            filename = add_file_extension(filename, extension=extension)
+
+        return filename
+
+    def written_as(self, filestring: str=dflt_grd['fs']['General']):
+        if hasattr(self, '_written_as'):
+            return self._written_as
+        else:
+            return self.filename(filestring=filestring)
+
+    def written_to(self):
+        if hasattr(self, '_written_to'):
+            return self._written_to
+        else:
+            return ''
+
+    def is_written(self):
+        return hasattr(self, '_written_as')
+
+
     def name(self):
         """Return the name of the grid (set at initialization)."""
         return copy(self.data.name)
@@ -583,7 +623,7 @@ class Grid:
         if not filename:
             filename = f"{self.data.name}_info.txt"
 
-        filename = folder + filename
+        filename = add_folder_to_filename(filename, folder)
         msg.to_file(filename)
 
         stdout = sys.stdout
@@ -622,7 +662,7 @@ class Grid:
 ## -----------------------------------------------------------------------------
 ## WRITING THE GRID DATA TO FILES
 ## -----------------------------------------------------------------------------
-class TopoWriter(ABC):
+class GridWriter(ABC):
     """Abstract class for writing the Grid-object's data to files to be Used
     by the wave models.
     """

@@ -49,6 +49,18 @@ def add_file_extension(filename: str, extension: str):
     else:
         return filename
 
+def add_prefix(filename: str, prefix: str):
+    if (not prefix == '') and (not prefix[-1] == '_'):
+        return f"{prefix}_{filename}"
+    else:
+        return f"{prefix}{filename}"
+
+def add_suffix(filename: str, suffix: str):
+    if (not suffix == '') and (not suffix[0] == '_'):
+        return f"{filename}_{suffix}"
+    else:
+        return f"{filename}{suffix}"
+
 def add_folder_to_filename(filename: str, folder: str):
     if (not folder == '') and (not folder[-1] == '/'):
         return f"{folder}/{filename}"

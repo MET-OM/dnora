@@ -198,16 +198,19 @@ class Boundary:
         filename = re.sub(f"__", '_', filename)
         filename = re.sub(f"_$", '', filename)
 
-        if extension:
-            filename = add_file_extension(filename, extension=extension)
+        filename = add_file_extension(filename, extension=extension)
 
         return filename
 
-    def written_as(self, filestring: str=dflt_bnd['fs']['General'], datestring: str=dflt_bnd['ds']['General']):
+    def written_as(self, filestring: str=dflt_bnd['fs']['General'], datestring: str=dflt_bnd['ds']['General'], extension: str=''):
         if hasattr(self, '_written_as'):
-            return self._written_as
+            fiename = self._written_as
         else:
-            return self.filename(filestring=filestring, datestring=datestring)
+            filename =  self.filename(filestring=filestring, datestring=datestring)
+
+        filename = add_file_extension(filename, extension=extension)
+
+        return filename
 
     def written_to(self):
         if hasattr(self, '_written_to'):

@@ -1,3 +1,9 @@
+"""Default filestrings and datestrings for Grid"""
+dflt_grd = { 'fs': { 'SWAN': '$Grid_SWAN',
+                'WW3': '$Grid',
+                'General': 'topo_$Grid'}
+        }
+
 """Default filestrings and datestrings for Forcing """
 dflt_frc = { 'fs': { 'SWAN': 'wind$Forcing$Grid$T0_$T1',
                 'WW3': 'wind_$Forcing_$Grid_$T0-$T1',
