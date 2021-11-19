@@ -7,15 +7,15 @@ from typing import List
 import sys
 import matplotlib.pyplot as plt
 from .. import msg
-from ..aux import distance_2points, day_list
-
+from ..aux import distance_2points, day_list, create_filename_obj, create_filename_time, create_filename_lonlat, add_file_extension
+import re
 #from .bnd_abc import BoundaryReader, PointPicker, SpectralProcessor
 #from .bnd import pick_Trivial, process_Multiply
 
 from ..grd.grd_mod import Grid # Grid object
 
 
-
+from ..defaults import dflt_bnd
 
 
 class BoundaryReader(ABC):
@@ -147,6 +147,13 @@ class Boundary:
 
         return
 
+    def export_boundary(self, boundary_writer):
+        output_file, output_folder = boundary_writer(self)
+
+        # This is set as info in case an input file needs to be generated
+        self._written_as = output_file
+        self._written_to = output_folder
+        return
 
     def compile_to_xr(self, time, freq, dirs, spec, lon, lat, source):
         x = np.array(range(spec.shape[1]))
@@ -168,10 +175,8 @@ class Boundary:
             )
         return data
 
-    def slice_data(self, start_time: str = '', end_time: str = '', x: List[int] = []):
-        if isinstance(x, int):
-            x = [x]
-        elif not x:
+    def slice_data(self, start_time: str='', end_time: str='', x: List[int]=None):
+        if x is None:
             x=self.x()
 
         if not start_time:
@@ -186,11 +191,33 @@ class Boundary:
 
         return sliced_data
 
-    def spec(self, start_time: str = '', end_time: str = '', x = []):
+    def spec(self, start_time: str='', end_time: str='', x: List[int]=None):
         spec = self.slice_data(start_time, end_time, x).spec.values
 
         return spec
 
+    def filename(self, filestring: str=dflt_bnd['fs']['General'], datestring: str=dflt_bnd['ds']['General'], n: int=None, extension: str=''):
+        # Substitute placeholders for objects ($Grid etc.)
+        filename = create_filename_obj(filestring=filestring, objects=[self, self.grid])
+        # Substitute placeholders for times ($T0 etc.)
+        filename = create_filename_time(filestring=filename, times=[self.start_time, self.end_time], datestring=datestring)
+
+        # Substitute $Lon and $Lat if a single output point is specified
+        if n is not None:
+            filename = create_filename_lonlat(filename, lon=self.lon()[n], lat=self.lat()[n])
+        else:
+            # Trying to remove possible mentions to longitude and latitude
+            filename = re.sub(f"E\$Lon", '', filename)
+            filename = re.sub(f"N\$Lat", '', filename)
+            filename = re.sub(f"\$Lon", '', filename)
+            filename = re.sub(f"\$Lat", '', filename)
+            filename = re.sub(f"__", '_', filename)
+            filename = re.sub(f"_$", '', filename)
+
+        if extension:
+            filename = add_file_extension(filename, extension=extension)
+
+        return filename
 
     def time(self):
         return copy(pd.to_datetime(self.data.time.values))
@@ -224,32 +251,32 @@ class Boundary:
         t0 = day.strftime('%Y-%m-%d') + "T00:00:00"
         t1 = day.strftime('%Y-%m-%d') + "T23:59:59"
 
-        times = self.slice_data(start_time = t0, end_time = t1, x = 0).time.values
+        times = self.slice_data(start_time=t0, end_time=t1, x=[0]).time.values
         return times
 
 
 class BoundaryWriter(ABC):
 
     @abstractmethod
-    def __call__(self, boundary_out: Boundary) -> None:
-        pass
-
-    def create_filename(self, boundary_out: Boundary, boundary_in_filename: bool=True, grid_in_filename: bool=True, time_in_filename: bool=True) -> str:
-        """Creates a filename based on the boolean swithes set in __init__ and the meta data in the objects"""
-
-        boundary_fn = ''
-        grid_fn = ''
-        time_fn = ''
-
-        if boundary_in_filename:
-            boundary_fn = f"_{boundary_out.name()}"
-
-        if grid_in_filename:
-            grid_fn = f"_{boundary_out.grid.name()}"
-
-        if time_in_filename:
-            time_fn = f"_{str(boundary_out.time()[0])[0:10]}_{str(boundary_out.time()[-1])[0:10]}"
-
-        filename = boundary_fn + grid_fn + time_fn
-
-        return filename
+    def __call__(self, boundar: Boundary) -> None:
+        return output_file, output_folder
+    #
+    # def create_filename(self, boundary_out: Boundary, boundary_in_filename: bool=True, grid_in_filename: bool=True, time_in_filename: bool=True) -> str:
+    #     """Creates a filename based on the boolean swithes set in __init__ and the meta data in the objects"""
+    #
+    #     boundary_fn = ''
+    #     grid_fn = ''
+    #     time_fn = ''
+    #
+    #     if boundary_in_filename:
+    #         boundary_fn = f"_{boundary_out.name()}"
+    #
+    #     if grid_in_filename:
+    #         grid_fn = f"_{boundary_out.grid.name()}"
+    #
+    #     if time_in_filename:
+    #         time_fn = f"_{str(boundary_out.time()[0])[0:10]}_{str(boundary_out.time()[-1])[0:10]}"
+    #
+    #     filename = boundary_fn + grid_fn + time_fn
+    #
+    #     return filename

@@ -64,8 +64,8 @@ def create_filename_time(filestring: str, times, datestring: str='%Y%m%d%H%M'):
     return filestring
 
 def create_filename_lonlat(filestring: str, lon: float, lat: float):
-    filestring = re.sub(f"\$Lon", str(lon), filestring)
-    filestring = re.sub(f"\$Lat", str(lat), filestring)
+    filestring = re.sub(f"\$Lon", f"{lon:010.7f}", filestring)
+    filestring = re.sub(f"\$Lat", f"{lat:010.7f}", filestring)
 
     return filestring
 

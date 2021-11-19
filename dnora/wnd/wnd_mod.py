@@ -6,7 +6,8 @@ import pandas as pd
 import sys
 import matplotlib.pyplot as plt
 from .. import msg
-from ..aux import distance_2points, day_list
+from ..aux import distance_2points, day_list, create_filename_obj, create_filename_time, create_filename_lonlat
+from ..defaults import dflt_frc
 
 class ForcingReader(ABC):
     def __init__(self):
@@ -48,8 +49,26 @@ class Forcing:
         """Return the name of the grid (set at initialization)."""
         return copy(self._name)
 
+
+    def filename(self, filestring: str=dflt_frc['fs']['General'], datestring: str=dflt_frc['ds']['General'], extension: str=''):
+        # Substitute placeholders for objects ($Grid etc.)
+        filename = create_filename_obj(filestring=filestring, objects=[self, self.grid])
+        # Substitute placeholders for times ($T0 etc.)
+        filename = create_filename_time(filestring=filename, times=[self.start_time, self.end_time], datestring=datestring)
+
+        if extension:
+            filename = add_file_extension(filename, extension=extension)
+
+        return filename
+
     def time(self):
         return copy(pd.to_datetime(self.data.time.values))
+
+    # def start_time(self):
+    #     return self.time()[0]
+    #
+    # def end_time(self):
+    #     return self.time()[-1]
 
     def u(self):
         return copy(self.data.u.values)

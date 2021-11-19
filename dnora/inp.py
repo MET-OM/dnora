@@ -9,8 +9,8 @@ from .wnd.wnd_mod import Forcing # Forcing object
 from .grd.grd_mod import Grid # Grid object
 from .bnd.bnd_mod import Boundary # Boundary object
 
-from .defaults import frc
-from .defaults import bnd
+from .defaults import dflt_frc
+from .defaults import dflt_bnd
 
 from .aux import create_filename_obj, create_filename_time, add_folder_to_filename
 
@@ -23,9 +23,9 @@ def set_filestring(obj, obj_filestring):
                 return obj._written_as # Object knows if it has been outputted
             else:
                 if type(obj).__name__ == 'Forcing':
-                    return frc['fs']['SWAN'] # Default value
+                    return dflt_frc['fs']['SWAN'] # Default value
                 elif type(obj).__name__ == 'Boundary':
-                    return bnd['fs']['SWAN'] # Default value
+                    return dflt_bnd['fs']['SWAN'] # Default value
                 else:
                     raise ValueError('Provide Forcing or Boundary object')
     else:
@@ -49,9 +49,9 @@ def set_datestring(obj, obj_datestring):
             return obj_datestring
         else:
             if type(obj).__name__ == 'Forcing':
-                return frc['ds']['SWAN'] # Default value
+                return dflt_frc['ds']['SWAN'] # Default value
             elif type(obj).__name__ == 'Boundary':
-                return bnd['ds']['SWAN'] # Default value
+                return dflt_bnd['ds']['SWAN'] # Default value
             else:
                 raise ValueError('Provide Forcing or Boundary object')
     else:

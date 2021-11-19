@@ -7,10 +7,10 @@ from ..aux import check_if_folder, create_filename_obj, create_filename_time, ad
 from .wnd_mod import ForcingWriter # Abstract class
 from .wnd_mod import Forcing # Forcing object
 
-from ..defaults import frc
+from ..defaults import dflt_frc
 
 class WW3(ForcingWriter):
-    def __init__(self, folder: str='', filestring: str=frc['fs']['WW3'], datestring: str=frc['ds']['WW3']) -> None:
+    def __init__(self, folder: str='', filestring: str=dflt_frc['fs']['WW3'], datestring: str=dflt_frc['ds']['WW3']) -> None:
         self.folder = copy(folder)
         self.filestring = copy(filestring)
         self.datestring = copy(datestring)
@@ -46,7 +46,7 @@ class WW3(ForcingWriter):
 
 
 class SWAN(ForcingWriter):
-    def __init__(self, folder: str='', filestring: str=frc['fs']['SWAN'], datestring: str=frc['ds']['SWAN']) -> None:
+    def __init__(self, folder: str='', filestring: str=dflt_frc['fs']['SWAN'], datestring: str=dflt_frc['ds']['SWAN']) -> None:
         self.folder = copy(folder)
         self.filestring = copy(filestring)
         self.datestring = copy(datestring)
