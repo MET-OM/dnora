@@ -137,39 +137,48 @@ class TimeStamps(unittest.TestCase):
 
 class WindDir(unittest.TestCase):
 	def test_main_directions(self):
-		u,v = u_v_from_dir(ws=1,wdir=0)
+		ws = 1
+		u,v = u_v_from_dir(ws,wdir=0)
 		self.assertAlmostEqual(u,0)
-		self.assertAlmostEqual(v,-1)
+		self.assertAlmostEqual(v,-ws)
 
-		u,v = u_v_from_dir(ws=1,wdir=90)
-		self.assertAlmostEqual(u,-1)
+		u,v = u_v_from_dir(ws,wdir=90)
+		self.assertAlmostEqual(u,-ws)
 		self.assertAlmostEqual(v,0)
-
-		u,v = u_v_from_dir(ws=2,wdir=180)
+		
+		ws = 2
+		u,v = u_v_from_dir(ws,wdir=180)
 		self.assertAlmostEqual(u,0)
-		self.assertAlmostEqual(v,2)
-
-		u,v = u_v_from_dir(ws=2,wdir=270)
-		self.assertAlmostEqual(u,2)
+		self.assertAlmostEqual(v,ws)
+		
+		u,v = u_v_from_dir(ws,wdir=270)
+		self.assertAlmostEqual(u,ws)
 		self.assertAlmostEqual(v,0)
 
 
 	def test_intercardinal_directions(self):
-		u,v = u_v_from_dir(ws=16,wdir=45)
-		self.assertAlmostEqual(u,-np.cos(45*np.pi/180)*16)
-		self.assertAlmostEqual(v,-np.sin(45*np.pi/180)*16)
+		wss = [16, 4, 9, 25]
+		wds = [45, 135, 225, 315]
+		
+		for n in range(len(wss)):
+			ws = wss[n]
+			wd = wds[n]		
+			u,v = u_v_from_dir(ws,wd)
+			self.assertAlmostEqual(u,-np.sin(wd*np.pi/180)*ws)
+			self.assertAlmostEqual(v,-np.cos(wd*np.pi/180)*ws)
 
-		u,v = u_v_from_dir(ws=4,wdir=135)
-		self.assertAlmostEqual(u,np.cos(135*np.pi/180)*4)
-		self.assertAlmostEqual(v,np.sin(135*np.pi/180)*4)
 
-		u,v = u_v_from_dir(ws=9,wdir=225)
-		self.assertAlmostEqual(u,-np.cos(225*np.pi/180)*9)
-		self.assertAlmostEqual(v,-np.sin(225*np.pi/180)*9)
+	def test_rabdom(self):
+		wss = [17.21051191389413, 28.14738017880853, 4.5045008368608075, 8.214697597599898, 18.236349202702314, 10.332676364125264, 16.18891903347092, 6.821218174835286, 3.6122019719718423, 27.07374666146082, 5.164601452349762, 22.598053105326606, 28.460914144820652, 29.91596032156754, 18.499791087402073]
+		wds = [28.45239639403414, 331.601264970793, 290.6987083729437, 234.89049223957838, 351.3836667740746, 312.44884615774475, 81.00506442163805, 184.71490864230987, 115.3222319980693, 85.4316085482833, 66.41164501632166, 93.19206404543112, 12.30946847939622, 143.29788976308757, 255.9299740907829]
 
-		u,v = u_v_from_dir(ws=25,wdir=315)
-		self.assertAlmostEqual(u,np.cos(315*np.pi/180)*25)
-		self.assertAlmostEqual(v,np.sin(315*np.pi/180)*25)
+		
+		for n in range(len(wss)):
+			ws = wss[n]
+			wd = wds[n]		
+			u,v = u_v_from_dir(ws,wd)
+			self.assertAlmostEqual(u,-np.sin(wd*np.pi/180)*ws)
+			self.assertAlmostEqual(v,-np.cos(wd*np.pi/180)*ws)
 
 
 if __name__ == '__main__':
