@@ -30,22 +30,6 @@ class BoundaryReader(ABC):
     def __call__(self, start_time, end_time, inds):
         pass
 
-    def get_time_limits_day(self, ind):
-        """Determines star and end time for the day. First and last day doesn't start at 00:00 or end at 23:59"""
-
-        days = day_list(start_time = self.start_time, end_time = self.end_time)
-
-        if ind == 0:
-            t0 = self.start_time
-            t1 = days[0].strftime('%Y-%m-%d') + "T23:59:59"
-        elif ind == (len(days)-1):
-            t0 = days[-1].strftime('%Y-%m-%d') + "T00:00:00"
-            t1 = self.end_time
-        else:
-            t0 = days[ind].strftime('%Y-%m-%d') + "T00:00:00"
-            t1 = days[ind].strftime('%Y-%m-%d') + "T23:59:59"
-        return t0, t1
-
     def __str__(self):
         return (f"{self.start_time} - {self.end_time}")
 
@@ -116,8 +100,6 @@ class Boundary:
 
         self.data = self.compile_to_xr(time, freq, dirs, spec, lon, lat, source)
         self.mask = [True]*len(self.x())
-
-        self._written_as = ''
 
         return
 
@@ -211,13 +193,30 @@ class Boundary:
             filename = re.sub(f"N\$Lat", '', filename)
             filename = re.sub(f"\$Lon", '', filename)
             filename = re.sub(f"\$Lat", '', filename)
-            filename = re.sub(f"__", '_', filename)
-            filename = re.sub(f"_$", '', filename)
+
+        # Possible clean up
+        filename = re.sub(f"__", '_', filename)
+        filename = re.sub(f"_$", '', filename)
 
         if extension:
             filename = add_file_extension(filename, extension=extension)
 
         return filename
+
+    def written_as(self, filestring: str=dflt_bnd['fs']['General'], datestring: str=dflt_bnd['ds']['General']):
+        if hasattr(self, '_written_as'):
+            return self._written_as
+        else:
+            return self.filename(filestring=filestring, datestring=datestring)
+
+    def written_to(self):
+        if hasattr(self, '_written_to'):
+            return self._written_to
+        else:
+            return ''
+
+    def is_written(self):
+        return hasattr(self, '_written_as')
 
     def time(self):
         return copy(pd.to_datetime(self.data.time.values))

@@ -24,13 +24,7 @@ class WW3(ForcingWriter):
         if not existed:
             msg.plain(f"Creating folder {self.folder}")
 
-        ### Creating the filename based on the provided filestring and datestring
-        # Substitute placeholders for objects ($Grid etc.)
-        output_file = create_filename_obj(filestring=self.filestring, objects=[forcing, forcing.grid])
-        # Substitute placeholders for times ($T0 etc.)
-        output_file = create_filename_time(filestring=output_file, times=[forcing.time()[0], forcing.time()[-1]], datestring=self.datestring)
-        # Add extension .nc if doesn't exist
-        output_file = add_file_extension(output_file, extension='nc')
+        output_file = forcing.filename(filestring=self.filestring, datestring=self.datestring, extension='nc')
 
         # Add folder
         output_path = add_folder_to_filename(output_file, folder=self.folder)
@@ -38,11 +32,7 @@ class WW3(ForcingWriter):
         msg.to_file(output_path)
         forcing.data.to_netcdf(output_path)
 
-        # This is set as info in case an input file needs to be generated
-        forcing._written_as = output_file
-        forcing._written_to = self.folder
-
-        return
+        return output_file, self.folder
 
 
 class SWAN(ForcingWriter):
@@ -60,17 +50,10 @@ class SWAN(ForcingWriter):
         if not existed:
             msg.plain(f"Creating folder {self.folder}")
 
-        ### Creating the filename based on the provided filestring and datestring
-        # Substitute placeholders for objects ($Grid etc.)
-        output_file = create_filename_obj(filestring=self.filestring, objects=[forcing, forcing.grid])
-        # Substitute placeholders for times ($T0 etc.)
-        output_file = create_filename_time(filestring=output_file, times=[pd.Timestamp(forcing.time()[0]), pd.Timestamp(forcing.time()[-1])], datestring=self.datestring)
-        # Add extension .asc if doesn't exist
-        output_file = add_file_extension(output_file, extension='asc')
+        output_file = forcing.filename(filestring=self.filestring, datestring=self.datestring, extension='asc')
 
         # Add folder
         output_path = add_folder_to_filename(output_file, folder=self.folder)
-
         msg.to_file(output_path)
 
         days = forcing.days()
@@ -88,8 +71,5 @@ class SWAN(ForcingWriter):
                     np.savetxt(file_out, forcing.v()
                                [n, :, :]*1000, fmt='%i')
 
-        # This is set as info in case an input file needs to be generated
-        forcing._written_as = output_file
-        forcing._written_to = self.folder
 
-        return
+        return output_file, self.folder

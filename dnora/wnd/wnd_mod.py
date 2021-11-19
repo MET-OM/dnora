@@ -4,9 +4,10 @@ import numpy as np
 from copy import copy
 import pandas as pd
 import sys
+import re
 import matplotlib.pyplot as plt
 from .. import msg
-from ..aux import distance_2points, day_list, create_filename_obj, create_filename_time, create_filename_lonlat
+from ..aux import distance_2points, day_list, create_filename_obj, create_filename_time, add_file_extension
 from ..defaults import dflt_frc
 
 class ForcingReader(ABC):
@@ -25,8 +26,6 @@ class Forcing:
     def __init__(self, grid, name='AnonymousForcing'):
         self.grid = copy(grid)
         self._name = copy(name)
-        self._written_as = ''
-
         return
 
     def import_forcing(self, start_time: str, end_time: str, forcing_reader: ForcingReader, expansion_factor: float = 1.2):
@@ -39,6 +38,15 @@ class Forcing:
             self.grid, start_time, end_time, expansion_factor)
 
         return
+
+    def export_forcing(self, forcing_writer):
+        output_file, output_folder = forcing_writer(self)
+
+        # This is set as info in case an input file needs to be generated
+        self._written_as = output_file
+        self._written_to = output_folder
+        return
+
 
     def days(self):
         """Determins a Pandas data range of all the days in the time span."""
@@ -56,10 +64,29 @@ class Forcing:
         # Substitute placeholders for times ($T0 etc.)
         filename = create_filename_time(filestring=filename, times=[self.start_time, self.end_time], datestring=datestring)
 
+        # Possible clean up
+        filename = re.sub(f"__", '_', filename)
+        filename = re.sub(f"_$", '', filename)
+
         if extension:
             filename = add_file_extension(filename, extension=extension)
 
         return filename
+
+    def written_as(self, filestring: str=dflt_frc['fs']['General'], datestring: str=dflt_frc['ds']['General']):
+        if hasattr(self, '_written_as'):
+            return self._written_as
+        else:
+            return self.filename(filestring=filestring, datestring=datestring)
+
+    def written_to(self):
+        if hasattr(self, '_written_to'):
+            return self._written_to
+        else:
+            return ''
+
+    def is_written(self):
+        return hasattr(self, '_written_as')
 
     def time(self):
         return copy(pd.to_datetime(self.data.time.values))
