@@ -117,10 +117,10 @@ class Forcing:
         return copy(self.data.v.values)
 
     def nx(self):
-        return (self.data.u.shape[1])
+        return (self.data.u.shape[2])
 
     def ny(self):
-        return (self.data.u.shape[2])
+        return (self.data.u.shape[1])
 
     def nt(self):
         return (self.data.u.shape[0])
