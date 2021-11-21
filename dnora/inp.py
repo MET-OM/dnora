@@ -119,8 +119,8 @@ class SWANInputFile(ModelInputFile):
         # Define start and end times of model run
         DATE_START, DATE_END = set_run_times(start_time, end_time, self.forcing, self.boundary)
 
-        STR_START = DATE_START.strftime('%Y%m%d.%M%H%S')
-        STR_END = DATE_END.strftime('%Y%m%d.%M%H%S')
+        STR_START = DATE_START.strftime('%Y%m%d.%H%M%S')
+        STR_END = DATE_END.strftime('%Y%m%d.%H%M%S')
 
         #DATE_START = start_time.replace(
         #    '-', '').replace('T', '.').replace(':', '')+'00'
