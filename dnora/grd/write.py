@@ -1,12 +1,27 @@
+from __future__ import annotations # For TYPE_CHECKING
 import numpy as np
 from copy import copy
 from .. import msg
 from ..aux import check_if_folder, add_folder_to_filename
-
-from .grd_mod import GridWriter # Abstract class
-from .grd_mod import Grid # Grid object
+from abc import ABC, abstractmethod
 
 from ..defaults import dflt_grd
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .grd_mod import Grid # Boundary object
+
+class GridWriter(ABC):
+    """Abstract class for writing the Grid-object's data to files to be Used
+    by the wave models.
+    """
+    @abstractmethod
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def __call__(self, grid: Grid):
+        pass
 
 class WW3(GridWriter):
     def __init__(self, folder: str = '', matrix = False, filestring: str=dflt_grd['fs']['WW3']) -> None:

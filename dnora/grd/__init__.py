@@ -25,6 +25,7 @@ WAVEWATCH III.
 Copyright 2021, Konstantinos Christakos and Jan-Victor Björkqvist, MET Norway
 """
 
+from .grd_mod import Grid
 from .read import *
 from .boundary import *
 from .process import *

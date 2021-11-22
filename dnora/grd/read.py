@@ -1,12 +1,47 @@
 import xarray as xr
 from copy import copy
-
+from abc import ABC, abstractmethod
 from ..aux import expand_area
+import numpy as np
 
-from .grd_mod import TopoReader # Abstract class
+class TopoReader(ABC):
+    """Abstract class for reading the bathymetry."""
+    @abstractmethod
+    def __init__(self):
+        pass
 
-# Readers used as defaults in the Grid object methods
-from .grd_mod import EmptyTopo
+    @abstractmethod
+    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
+        """Reads the bathymetrical information from a source and returns the data.
+
+        This method is called from within the Grid-object
+        """
+        pass
+
+    @abstractmethod
+    def __str__(self):
+        """Describes what topography is read and from where.
+
+        This is called by the Grid-objeect to provide output to the user.
+        """
+        pass
+
+
+class EmptyTopo(TopoReader):
+    """Creates an empty topography. Called when setting initial spacing."""
+    def __init__(self, grid):
+        self.grid = grid
+        pass
+
+    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
+        """Creates a trivial topography with all water points."""
+        topo = np.ones((self.grid.data.ny,self.grid.data.nx))*-9999
+        topo_lon = copy(self.grid.lon())
+        topo_lat = copy(self.grid.lat())
+        return topo, topo_lon, topo_lat
+
+    def __str__(self):
+        return("Creating an empty topography with depth values -9999.")
 
 class EMODNET2018(TopoReader):
     """Reads data from EMODNET"""

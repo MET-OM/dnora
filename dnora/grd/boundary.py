@@ -1,10 +1,41 @@
 import numpy as np
 from typing import List
 from .. import msg
-from .grd_mod import BoundarySetter # Abstract class
+from abc import ABC, abstractmethod
 
-# BoundarySetter used by the grid object
-from .grd_mod import ClearBoundary
+class BoundarySetter(ABC):
+    """Abstract class for defining metods for setting boundary points in the
+    grid."""
+    @abstractmethod
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def __call__(self, mask_size: tuple):
+        """This method is called from within the Grid-object
+        """
+        return boundary_mask
+
+    @abstractmethod
+    def __str__(self):
+        """Describes how the boundary points are set.
+
+        This is called by the Grid-objeect to provide output to the user.
+        """
+        pass
+
+
+class ClearBoundary(BoundarySetter):
+    """Clears all boundary points by setting a mask with False values."""
+    def __init__(self):
+        pass
+
+    def __call__(self, mask_size: tuple):
+        return np.full(mask_size, False)
+
+    def __str__(self):
+        return("Clearing all possible boundary points and setting an empty mask.")
+
 
 class EdgesAsBoundary(BoundarySetter):
     def __init__(self, edges: List[str]=['N', 'S', 'E', 'W'], step: int=1):

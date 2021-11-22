@@ -1,11 +1,41 @@
 import numpy as np
 from .. import msg
+from abc import ABC, abstractmethod
 
-from .grd_mod import GridProcessor #Abstract class
+class GridProcessor(ABC):
+    """Abstract class for modifying bathymetrical data of the Grid-object."""
+    @abstractmethod
+    def __init__(self):
+        pass
 
-# GridModifiers used as defaults in the Grid object methods
-from .grd_mod import TrivialFilter
+    @abstractmethod
+    def __call__(self, data, lon, lat, land_sea_mask, boundary_mask):
+        """Gets the bathymetrical information and returns a modified version.
 
+        This method is called from within the Grid-object
+        """
+        pass
+
+    @abstractmethod
+    def __str__(self):
+        """
+        Describes how the data is processed.
+
+        This is called by the Grid-objeect to provide output to the user.
+        """
+        pass
+
+
+class TrivialFilter(GridProcessor):
+    """Returns the identical data it is passed. Used as default option."""
+    def __init__(self):
+        pass
+
+    def __call__(self, data, lon, lat, land_sea_mask, boundary_mask):
+        return copy(data)
+
+    def __str__(self):
+        return("Doing nothing to the data, just passing it along.")
 
 class SetMinDepth(GridProcessor):
     def __init__(self, min_depth, to_land = -1):
@@ -27,4 +57,3 @@ class SetMinDepth(GridProcessor):
             new_data[np.logical_and(shallow_points, land_sea_mask)] = self.min_depth # Don't touch land points by usign self.mask
             msg.info(f"Affected {np.count_nonzero(np.logical_and(shallow_points, land_sea_mask))} points")
         return new_data
-

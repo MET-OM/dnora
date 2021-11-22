@@ -1,195 +1,16 @@
-from abc import ABC, abstractmethod
 import xarray as xr
 import numpy as np
 from copy import copy
-from scipy.interpolate import griddata
+
 import sys
 import re
 from .. import msg
 from ..aux import distance_2points, add_prefix, add_suffix, add_file_extension, create_filename_obj, add_folder_to_filename
 from ..defaults import dflt_grd
-
-#from ..bnd.bnd_mod import Boundary # Boundary object
-## -----------------------------------------------------------------------------
-## READING THE DATA
-## -----------------------------------------------------------------------------
-class TopoReader(ABC):
-    """Abstract class for reading the bathymetry."""
-    @abstractmethod
-    def __init__(self):
-        pass
-
-    @abstractmethod
-    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
-        """Reads the bathymetrical information from a source and returns the data.
-
-        This method is called from within the Grid-object
-        """
-        pass
-
-    @abstractmethod
-    def __str__(self):
-        """Describes what topography is read and from where.
-
-        This is called by the Grid-objeect to provide output to the user.
-        """
-        pass
-
-
-class EmptyTopo(TopoReader):
-    """Creates an empty topography. Called when setting initial spacing."""
-    def __init__(self, grid):
-        self.grid = grid
-        pass
-
-    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
-        """Creates a trivial topography with all water points."""
-        topo = np.ones((self.grid.data.ny,self.grid.data.nx))*-9999
-        topo_lon = copy(self.grid.lon())
-        topo_lat = copy(self.grid.lat())
-        return topo, topo_lon, topo_lat
-
-    def __str__(self):
-        return("Creating an empty topography with depth values -9999.")
-## -----------------------------------------------------------------------------
-
-## -----------------------------------------------------------------------------
-## DEFINING BOUNDARY POINTS
-## -----------------------------------------------------------------------------
-class BoundarySetter(ABC):
-    """Abstract class for defining metods for setting boundary points in the
-    grid."""
-    @abstractmethod
-    def __init__(self):
-        pass
-
-    @abstractmethod
-    def __call__(self, mask_size: tuple):
-        """This method is called from within the Grid-object
-        """
-        return boundary_mask
-
-    @abstractmethod
-    def __str__(self):
-        """Describes how the boundary points are set.
-
-        This is called by the Grid-objeect to provide output to the user.
-        """
-        pass
-
-
-class ClearBoundary(BoundarySetter):
-    """Clears all boundary points by setting a mask with False values."""
-    def __init__(self):
-        pass
-
-    def __call__(self, mask_size: tuple):
-        return np.full(mask_size, False)
-
-    def __str__(self):
-        return("Clearing all possible boundary points and setting an empty mask.")
-## -----------------------------------------------------------------------------
-
-## -----------------------------------------------------------------------------
-## PROCESSING THE GRID DATA
-## -----------------------------------------------------------------------------
-class GridProcessor(ABC):
-    """Abstract class for modifying bathymetrical data of the Grid-object."""
-    @abstractmethod
-    def __init__(self):
-        pass
-
-    @abstractmethod
-    def __call__(self, data, lon, lat, land_sea_mask, boundary_mask):
-        """Gets the bathymetrical information and returns a modified version.
-
-        This method is called from within the Grid-object
-        """
-        pass
-
-    @abstractmethod
-    def __str__(self):
-        """
-        Describes how the data is processed.
-
-        This is called by the Grid-objeect to provide output to the user.
-        """
-        pass
-
-
-class TrivialFilter(GridProcessor):
-    """Returns the identical data it is passed. Used as default option."""
-    def __init__(self):
-        pass
-
-    def __call__(self, data, lon, lat, land_sea_mask, boundary_mask):
-        return copy(data)
-
-    def __str__(self):
-        return("Doing nothing to the data, just passing it along.")
-## -----------------------------------------------------------------------------
-
-## -----------------------------------------------------------------------------
-## MESHING THE DATA DOWN TO THE GRID
-## -----------------------------------------------------------------------------
-class Mesher(ABC):
-    """Abstract class for meshing the bathymetrical data to the grid."""
-    @abstractmethod
-    def __init__(self):
-        pass
-
-    @abstractmethod
-    def __call__(self, data, lon, lat, lonQ, latQ):
-        """Gets the bathymetrical information and returns a version that is
-        meshed to the area and resolution of the grid.
-
-        This method is called from within the Grid-object
-        """
-        pass
-
-    @abstractmethod
-    def __str__(self):
-        """Describes how the data is meshed.
-
-        This is called by the Grid-objeect to provide output to the user.
-        """
-        pass
-
-
-class Interpolate(Mesher):
-    """Interpolates data to grid. A wrapper for scipy.interpolate's griddate."""
-    def __init__(self, method = 'linear'):
-        self.method = method
-
-        return
-
-    def __call__(self, data, lon, lat, lonQ, latQ):
-        lon0, lat0 = np.meshgrid(lon, lat)
-        lon1, lat1 = np.meshgrid(lonQ, latQ)
-        data[np.isnan(data)] = 0 # Keeping land points as nan lets the shoreline creep out
-        M = np.column_stack((data.ravel(), lon0.ravel(),lat0.ravel()))
-        meshed_data = griddata(M[:,1:], M[:,0], (lon1, lat1), method=self.method)
-        meshed_data[meshed_data>=0] = 32767
-
-        return meshed_data
-
-    def __str__(self):
-        return(f"Meshing using {self.method} interpolation.")
-
-
-class TrivialMesher(Mesher):
-    """Passes along data. NB! This might not fit the grid, and is only used
-    for e.g. recreating a Grid-object from an ouput file.
-    """
-    def __init__(self):
-        pass
-
-    def __call__(self, data, lon, lat, lonQ, latQ):
-        return copy(data)
-
-    def __str__(self):
-        return("Passing input data along as final meshed grid.")
-## -----------------------------------------------------------------------------
+from .read import TopoReader, EmptyTopo
+from .boundary import BoundarySetter, ClearBoundary
+from .mesh import Mesher, TrivialMesher, Interpolate
+from .process import GridProcessor, TrivialFilter
 
 ## -----------------------------------------------------------------------------
 ## THE GRID OBJECT
@@ -665,15 +486,5 @@ class Grid:
 ## -----------------------------------------------------------------------------
 ## WRITING THE GRID DATA TO FILES
 ## -----------------------------------------------------------------------------
-class GridWriter(ABC):
-    """Abstract class for writing the Grid-object's data to files to be Used
-    by the wave models.
-    """
-    @abstractmethod
-    def __init__(self):
-        pass
 
-    @abstractmethod
-    def __call__(self, grid: Grid):
-        pass
 ## -----------------------------------------------------------------------------
