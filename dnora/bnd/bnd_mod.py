@@ -9,6 +9,10 @@ import matplotlib.pyplot as plt
 from .. import msg
 from ..aux import distance_2points, day_list, create_filename_obj, create_filename_time, create_filename_lonlat, add_file_extension
 import re
+from .process import processor_for_convention_change, Multiply, SpectralProcessor
+from .pick import PointPicker, TrivialPicker
+from .read import BoundaryReader
+from .write import BoundaryWriter
 #from .bnd_abc import BoundaryReader, PointPicker, SpectralProcessor
 #from .bnd import pick_Trivial, process_Multiply
 
@@ -18,70 +22,11 @@ from ..grd.grd_mod import Grid # Grid object
 from ..defaults import dflt_bnd
 
 
-class BoundaryReader(ABC):
-    def __init__(self):
-        pass
-
-    @abstractmethod
-    def get_coordinates(self, start_time):
-        pass
-
-    @abstractmethod
-    def __call__(self, start_time, end_time, inds):
-        pass
-
-    def __str__(self):
-        return (f"{self.start_time} - {self.end_time}")
-
-class PointPicker(ABC):
-    def __init__(self):
-        pass
-
-    @abstractmethod
-    def __call__(self, grid: Grid, bnd_lon, bnd_lat):
-        return
-
-class TrivialPicker(PointPicker):
-    def __init__(self):
-        pass
-
-    def __call__(self, grid: Grid, bnd_lon, bnd_lat):
-        inds = np.array(range(len(bnd_lon)))
-        return inds
-
-
-
-class SpectralProcessor(ABC):
-    def __init__(self):
-        pass
-
-    @abstractmethod
-    def __call__(self, spec, freqs, dirs):
-        pass
-
-    @abstractmethod
-    def __str__(self):
-        """Describes how the spectral values as processed"""
-        pass
-
-
-class Multiply(SpectralProcessor):
-    def __init__(self, calib_spec = 1):
-        self.calib_spec = calib_spec
-        return
-
-    def __call__(self, spec, dirs, freq):
-        new_spec = copy(spec)*self.calib_spec
-        return new_spec, dirs, freq
-
-    def __str__(self):
-        return(f"Multiplying spectral values with {self.calib_spec}")
-
-
 class Boundary:
     def __init__(self, grid: Grid, name: str = "AnonymousBoundary"):
         self.grid = copy(grid)
         self._name = copy(name)
+        self._convention = 'None'
         return
 
     def import_boundary(self, start_time: str, end_time: str, boundary_reader: BoundaryReader,  point_picker: PointPicker = TrivialPicker()):
@@ -91,7 +36,6 @@ class Boundary:
         msg.header(f"{type(boundary_reader).__name__}: Reading coordinats of spectra...")
         lon_all, lat_all = boundary_reader.get_coordinates(self.start_time)
 
-
         msg.header(f"Choosing spectra with {type(point_picker).__name__}")
         inds = point_picker(self.grid, lon_all, lat_all)
 
@@ -100,6 +44,8 @@ class Boundary:
 
         self.data = self.compile_to_xr(time, freq, dirs, spec, lon, lat, source)
         self.mask = [True]*len(self.x())
+
+        self._convention = boundary_reader.get_convention()
 
         return
 
@@ -137,6 +83,11 @@ class Boundary:
         self._written_to = output_folder
         return
 
+    def change_convention(self, wanted_convention: str='') -> None:
+        spectral_processors = processor_for_convention_change(current_convention = self.convention(), wanted_convention = wanted_convention)
+        self.process_spectra(spectral_processors)
+
+        return
     def compile_to_xr(self, time, freq, dirs, spec, lon, lat, source):
         x = np.array(range(spec.shape[1]))
         data = xr.Dataset(
@@ -258,6 +209,10 @@ class Boundary:
         """Return the name of the grid (set at initialization)."""
         return copy(self._name)
 
+    def convention(self):
+        """Returns the convention (WW3/Ocean/Met/Math) of the spectra"""
+        return copy(self._convention)
+
     def times_in_day(self, day):
         """Determines time stamps of one given day."""
         t0 = day.strftime('%Y-%m-%d') + "T00:00:00"
@@ -267,11 +222,7 @@ class Boundary:
         return times
 
 
-class BoundaryWriter(ABC):
 
-    @abstractmethod
-    def __call__(self, boundar: Boundary) -> None:
-        return output_file, output_folder
     #
     # def create_filename(self, boundary_out: Boundary, boundary_in_filename: bool=True, grid_in_filename: bool=True, time_in_filename: bool=True) -> str:
     #     """Creates a filename based on the boolean swithes set in __init__ and the meta data in the objects"""

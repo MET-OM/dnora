@@ -1,16 +1,35 @@
 import numpy as np
 from copy import copy
-
+from abc import ABC, abstractmethod
 from .. import msg
-
+#from .bnd_mod import SpectralProcessor
 from ..aux import interp_spec, shift_spec, flip_spec
 
-from .bnd_mod import SpectralProcessor
+#from . import bnd_mod
+class SpectralProcessor(ABC):
+    def __init__(self):
+        pass
 
-# SpectralProcessors used as defaults in the Boundary object methods
-from .bnd_mod import Multiply
+    @abstractmethod
+    def __call__(self, spec, freqs, dirs):
+        pass
 
+    @abstractmethod
+    def __str__(self):
+        """Describes how the spectral values as processed"""
+        pass
 
+class Multiply(SpectralProcessor):
+    def __init__(self, calib_spec = 1):
+        self.calib_spec = calib_spec
+        return
+
+    def __call__(self, spec, dirs, freq):
+        new_spec = copy(spec)*self.calib_spec
+        return new_spec, dirs, freq
+
+    def __str__(self):
+        return(f"Multiplying spectral values with {self.calib_spec}")
 
 class ReGridDirs(SpectralProcessor):
     def __init__(self, first_dir = 0):
@@ -146,3 +165,37 @@ class OceanToMet(SpectralProcessor):
 
     def __str__(self):
         return("Shifting spectrum 180 degrees. Convention is not Meteorological (direction from).")
+
+
+def processor_for_convention_change(current_convention: str, wanted_convention: str) -> SpectralProcessor:
+        if not wanted_convention:
+            msg.info('Convention ({current_convention}) equals wanted convention({wanted_convention}). Doing nothing.')
+            return None
+        else:
+            if wanted_convention == 'Ocean':
+                if current_convention == 'WW3':
+                    return WW3ToOcean()
+                elif current_convention == 'Met':
+                    return MetToOcean()
+                else:
+                    raise Exception (msg.info("Can't process conversion {current_convention} >> {wanted_convention} yet!"))
+
+            elif wanted_convention == 'Met':
+                if current_convention == 'Ocean':
+                    return OceanToMet()
+                else:
+                    raise Exception (msg.info("Can't process conversion {current_convention} >> {wanted_convention} yet!"))
+
+            elif wanted_convention == 'WW3':
+                if current_convention == 'Ocean':
+                    return OceanToWW3()
+                else:
+                    raise Exception (msg.info("Can't process conversion {current_convention} >> {wanted_convention} yet!"))
+
+            elif wanted_convention == 'Math':
+                if current_convention == 'Ocean':
+                    return OceanToMath()
+                else:
+                    raise Exception (msg.info("Can't process conversion {current_convention} >> {wanted_convention} yet!"))
+            else:
+                raise Exception (msg.info("Wanted convention {wanted_convention} not recognized! (should be Ocean/Met/Math/WW3)"))

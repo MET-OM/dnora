@@ -1,11 +1,25 @@
 import numpy as np
 from .. import msg
 from ..aux import min_distance, expand_area
-
-from .bnd_mod import TrivialPicker
-from .bnd_mod import PointPicker # Abstract class
+from abc import ABC, abstractmethod
 
 from ..grd.grd_mod import Grid # Grid object
+
+class PointPicker(ABC):
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def __call__(self, grid: Grid, bnd_lon, bnd_lat):
+        return
+
+class TrivialPicker(PointPicker):
+    def __init__(self):
+        pass
+
+    def __call__(self, grid: Grid, bnd_lon, bnd_lat):
+        inds = np.array(range(len(bnd_lon)))
+        return inds
 
 class NearestGridPoint(PointPicker):
     def __init__(self):

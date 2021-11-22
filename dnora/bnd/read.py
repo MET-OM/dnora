@@ -3,19 +3,41 @@ import numpy as np
 from ..aux import day_list, create_time_stamps, create_filename_time
 from copy import copy
 from .. import msg
+from abc import ABC, abstractmethod
+#from .bnd_mod import BoundaryReader # Abstract class
 
-from .bnd_mod import BoundaryReader # Abstract class
-from .process import WW3ToOcean
+class BoundaryReader(ABC):
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def get_coordinates(self, start_time):
+        pass
+
+    @abstractmethod
+    def get_convention(self):
+        pass
+
+    @abstractmethod
+    def __call__(self, start_time, end_time, inds):
+        pass
+
+    def __str__(self):
+        return (f"{self.start_time} - {self.end_time}")
 
 class ForceFeed(BoundaryReader):
-    def __init__(self, time, freq, dirs, spec, lon, lat):
+    def __init__(self, time, freq, dirs, spec, lon, lat, convention):
         self.time = copy(time)
         self.freq = copy(freq)
         self.dirs = copy(dirs)
         self.spec = copy(spec)
         self.lon = copy(lon)
         self.lat = copy(lat)
+        self.convention = copy(convention)
         return
+
+    def get_convention(self):
+        return copy(self.convention)
 
     def get_coordinates(self, start_time):
         return copy(self.lon), copy(self.lat)
@@ -32,6 +54,10 @@ class MetNo_WAM4km(BoundaryReader):
         self.lead_time = copy(lead_time)
         self.last_file = copy(last_file)
         return
+
+    def get_convention(self):
+        return 'Ocean'
+
 
     def get_coordinates(self, start_time):
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
@@ -107,6 +133,9 @@ class MetNo_NORA3(BoundaryReader):
         self.lead_time = copy(lead_time)
         self.last_file = copy(last_file)
 
+    def get_convention(self):
+        return 'Ocean'
+
     def get_coordinates(self, start_time):
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         #day = pd.date_range(start_time, start_time,freq='D')
@@ -169,6 +198,9 @@ class File_WW3Nc(BoundaryReader):
         self.filestring = copy(filestring)
         self.datestring = copy(datestring)
 
+    def get_convention(self):
+        return 'WW3'
+
     def get_coordinates(self, start_time):
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         #day = pd.date_range(start_time, start_time,freq='D')
@@ -201,14 +233,14 @@ class File_WW3Nc(BoundaryReader):
         bnd=xr.concat(bnd_list, dim="time")
 
 
-        for x in range(len(inds)):
-            for t in range(len(bnd.time.values)):
-                new_spec, new_dirs = WW3ToOcean()(bnd.efth.values[t,x,:,:],bnd.direction.values)
-                bnd.efth.values[t,x,:,:] = new_spec
+        # for x in range(len(inds)):
+        #     for t in range(len(bnd.time.values)):
+        #         new_spec, new_dirs = WW3ToOcean()(bnd.efth.values[t,x,:,:],bnd.direction.values)
+        #         bnd.efth.values[t,x,:,:] = new_spec
 
         time = bnd.time.values
         freq = bnd.frequency.values
-        dirs = new_dirs
+        dirs = bnd.directions.values
         spec = bnd.efth.values
         lon = bnd.longitude.values[0,:]
         lat = bnd.latitude.values[0,:]

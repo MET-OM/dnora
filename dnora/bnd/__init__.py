@@ -23,6 +23,7 @@ WAVEWATCH III to be used as a boundary forcing.
 Copyright 2021, Konstantinos Christakos and Jan-Victor Björkqvist, MET Norway
 """
 
+from .bnd_mod import Boundary
 from .read import *
 from .pick import *
 from .process import *

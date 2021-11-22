@@ -1,15 +1,25 @@
+from __future__ import annotations # For TYPE_CHECKING
 import numpy as np
 from copy import copy
 from .. import msg
+from abc import ABC, abstractmethod
 from ..aux import check_if_folder, create_filename_obj, create_filename_time, create_filename_lonlat, add_file_extension, add_folder_to_filename
 import netCDF4
 import re
 
-from .bnd_mod import BoundaryWriter # Abstract class
-from .bnd_mod import Boundary # Boundary object
+#from .bnd_mod import BoundaryWriter # Abstract class
+#from
 
-from .process import OceanToWW3
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .bnd_mod import Boundary # Boundary object
+#from .process import OceanToWW3
 from ..defaults import dflt_bnd
+class BoundaryWriter(ABC):
+
+    @abstractmethod
+    def __call__(self, boundar: Boundary) -> None:
+        return output_file, output_folder
 
 class DumpToNc(BoundaryWriter):
     def __init__(self, folder: str='', filestring: str=dflt_bnd['fs']['General'], datestring: str=dflt_bnd['ds']['General']) -> None:
@@ -86,8 +96,7 @@ class WW3(BoundaryWriter):
         if not existed:
             msg.plain(f"Creating folder {self.folder}")
 
-        # Convert from oceanic to mathematical convention
-        boundary_in.process_spectra(OceanToWW3())
+        boundary_in.change_convention(wanted_convention='WW3')
 
         msg.info('Writing WAVEWATCH-III netcdf-output')
 
@@ -251,35 +260,39 @@ class SWAN(BoundaryWriter):
         return
 
     def __call__(self, boundary: Boundary):
-        msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name()}')
+        boundary_in = copy(boundary)
+
+        msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary_in.name()}')
 
         existed = check_if_folder(folder=self.folder, create=True)
         if not existed:
             msg.plain(f"Creating folder {self.folder}")
 
-        output_file = boundary.filename(filestring=self.filestring, datestring=self.datestring, extension=dflt_bnd['ext']['SWAN'])
+        boundary_in.change_convention(wanted_convention='WW3')
+
+        output_file = boundary_in.filename(filestring=self.filestring, datestring=self.datestring, extension=dflt_bnd['ext']['SWAN'])
         output_path = add_folder_to_filename(output_file, folder=self.folder)
 
-        swan_bnd_points = boundary.grid.boundary_points()
-        days = boundary.days()
+        swan_bnd_points = boundary_in.grid.boundary_points()
+        days = boundary_in.days()
 
         with open(output_path, 'w') as file_out:
             file_out.write('SWAN   1\n')
-            file_out.write('$ Data produced by '+boundary.data.source+'\n')
+            file_out.write('$ Data produced by '+boundary_in.data.source+'\n')
             file_out.write('TIME\n')
             file_out.write('          1\n')
             file_out.write('LONLAT\n')
-            file_out.write('          '+format(len(boundary.x()))+'\n')
-            for k in range(len(boundary.x())):
+            file_out.write('          '+format(len(boundary_in.x()))+'\n')
+            for k in range(len(boundary_in.x())):
                 file_out.write('   '+format(swan_bnd_points[k,0],'.4f')+'  '+format(swan_bnd_points[k,1],'.4f')+'\n')
             file_out.write('AFREQ\n')
-            file_out.write('          '+str(len(boundary.freq()))+'\n')
-            for l in range(len(boundary.freq())):
-                file_out.write('   '+format(boundary.freq()[l],'.4f')+'\n')
+            file_out.write('          '+str(len(boundary_in.freq()))+'\n')
+            for l in range(len(boundary_in.freq())):
+                file_out.write('   '+format(boundary_in.freq()[l],'.4f')+'\n')
             file_out.write('NDIR\n')
-            file_out.write('          '+format(len(boundary.dirs()))+'\n')
-            for m in range(len(boundary.dirs())):
-                file_out.write('   '+format(boundary.dirs()[m],'.1f')+'\n')
+            file_out.write('          '+format(len(boundary_in.dirs()))+'\n')
+            for m in range(len(boundary_in.dirs())):
+                file_out.write('   '+format(boundary_in.dirs()[m],'.1f')+'\n')
             file_out.write('QUANT\n')
             file_out.write('          1\n')
             file_out.write('VaDens\n')
@@ -290,15 +303,15 @@ class SWAN(BoundaryWriter):
 
             for day in days:
                 msg.plain(day.strftime('%Y-%m-%d'))
-                times = boundary.times_in_day(day)
+                times = boundary_in.times_in_day(day)
                 for tim in times:
                     time_stamp = str(tim).split('-')[0]+str(tim).split('-')[1]+str(tim).split('-')[2][:2]+'.'+str(tim).split('-')[2][3:5]+'0000\n'
                     file_out.write(time_stamp)
-                    for n in range(len(boundary.x())):
+                    for n in range(len(boundary_in.x())):
                         file_out.write('FACTOR\n')
                         file_out.write(format(self.factor,'1.0E')+'\n')
-                        S = boundary.spec(start_time=tim, end_time=tim, x=[n]).squeeze()
-                        delth = 360/len(boundary.dirs())
+                        S = boundary_in.spec(start_time=tim, end_time=tim, x=[n]).squeeze()
+                        delth = 360/len(boundary_in.dirs())
                         np.savetxt(file_out,S/(delth*self.factor), fmt='%-10.0f')
 
         return output_file, self.folder
