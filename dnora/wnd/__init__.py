@@ -16,5 +16,6 @@ WAVEWATCH III to be used as a wind forcing.
 Copyright 2021, Konstantinos Christakos and Jan-Victor Björkqvist, MET Norway
 """
 
+from .wnd_mod import Forcing
 from .read import *
 from .write import *

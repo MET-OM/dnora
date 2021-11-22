@@ -1,13 +1,41 @@
+from __future__ import annotations
+from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
 from .. import msg
 from copy import copy
 from ..aux import check_if_folder, create_filename_obj, create_filename_time, add_file_extension, add_folder_to_filename
 
-from .wnd_mod import ForcingWriter # Abstract class
-from .wnd_mod import Forcing # Forcing object
-
+#from .wnd_mod import ForcingWriter # Abstract class
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .wnd_mod import Forcing # Boundary object
 from ..defaults import dflt_frc
+
+class ForcingWriter(ABC):
+    @abstractmethod
+    def __call__(self, forcing_out: Forcing) -> None:
+        pass
+
+    def create_filename(self, forcing_out: Forcing, forcing_in_filename: bool=True, grid_in_filename: bool=True, time_in_filename: bool=True) -> str:
+        """Creates a filename based on the boolean swithes set in __init__ and the meta data in the objects"""
+
+        forcing_fn = ''
+        grid_fn = ''
+        time_fn = ''
+
+        if forcing_in_filename:
+            forcing_fn = f"_{forcing_out.name()}"
+
+        if grid_in_filename:
+            grid_fn = f"_{forcing_out.grid.name()}"
+
+        if time_in_filename:
+            time_fn = f"_{str(forcing_out.time()[0])[0:10]}_{str(forcing_out.time()[-1])[0:10]}"
+
+        filename = forcing_fn + grid_fn + time_fn
+
+        return filename
 
 class WW3(ForcingWriter):
     def __init__(self, folder: str='', filestring: str=dflt_frc['fs']['WW3'], datestring: str=dflt_frc['ds']['WW3']) -> None:

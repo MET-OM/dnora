@@ -8,10 +8,21 @@ from ..aux import create_time_stamps, u_v_from_dir, expand_area, lon_in_km
 
 import os, glob
 
-from .wnd_mod import ForcingReader # Abstract class
-from .wnd_mod import Forcing # Forcing object
+#from .wnd_mod import Forcing # Forcing object
 
 from ..grd.grd_mod import Grid # Grid object
+
+class ForcingReader(ABC):
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def __call__(self, start_time, end_time, inds):
+        pass
+
+    def __str__(self):
+        return (f"{self.start_time} - {self.end_time}")
+
 
 class MetNo_NORA3(ForcingReader):
     def __init__(self, stride: int = 1, hours_per_file: int = 1, last_file: str = '', lead_time: int = 4):
