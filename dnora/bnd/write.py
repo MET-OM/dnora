@@ -3,7 +3,7 @@ import numpy as np
 from copy import copy
 from .. import msg
 from abc import ABC, abstractmethod
-from ..aux import check_if_folder, create_filename_obj, create_filename_time, create_filename_lonlat, add_file_extension, add_folder_to_filename
+from ..aux import check_if_folder, add_folder_to_filename
 import netCDF4
 import re
 
@@ -27,7 +27,7 @@ class BoundaryWriter(ABC):
     def __call__(self, boundar: Boundary) -> Tuple[str, str]:
         """Writed the data from the Boundary object and returns the file and
         folder where data were written."""
-        
+
         return output_file, output_folder
 
 class DumpToNc(BoundaryWriter):
