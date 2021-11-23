@@ -4,16 +4,26 @@ from .. import msg
 from abc import ABC, abstractmethod
 
 class BoundarySetter(ABC):
-    """Abstract class for defining metods for setting boundary points in the
-    grid."""
+    """Set boundary points in the grid.
+
+    The dimensions and orientation of the boolean array [True = boundary point]
+    that is returned to the object should be:
+
+    rows = latitude and colums = longitude (i.e.) shape = (nr_lat, nr_lon).
+
+    North = [-1,:]
+    South = [0,:]
+    East = [:,-1]
+    West = [:,0]
+    """
+
     @abstractmethod
     def __init__(self):
         pass
 
     @abstractmethod
     def __call__(self, mask_size: tuple):
-        """This method is called from within the Grid-object
-        """
+        """This method is called from within the Grid-object."""
         return boundary_mask
 
     @abstractmethod
@@ -27,6 +37,7 @@ class BoundarySetter(ABC):
 
 class ClearBoundary(BoundarySetter):
     """Clears all boundary points by setting a mask with False values."""
+
     def __init__(self):
         pass
 
@@ -38,7 +49,17 @@ class ClearBoundary(BoundarySetter):
 
 
 class EdgesAsBoundary(BoundarySetter):
-    def __init__(self, edges: List[str]=['N', 'S', 'E', 'W'], step: int=1):
+    """Set the grid edges as boundary points.
+
+    Any combination of North, South, East, West ['N', 'S', 'E', 'W'] edges
+    can be set.
+
+    If step is e.g. 5, then only every fifth point of the edges are set. This
+    is useful if the boundary spectra are coarse and we want to let the wave
+    model interpolate the spectra.
+    """
+
+    def __init__(self, edges: List[str]=['N', 'S', 'E', 'W'], step: int=1) -> None:
         self.edges = edges
         if step < 1:
             raise ValueError('step cannot be smaller than 1')
@@ -68,6 +89,18 @@ class EdgesAsBoundary(BoundarySetter):
 
 
 class SetMatrix(BoundarySetter):
+    """Set boundary points by providing a boolean array [True = boundary point].
+
+    The dimensions and orientation of the array should be:
+
+    rows = latitude and colums = longitude (i.e.) shape = (nr_lat, nr_lon).
+
+    North = [-1,:]
+    South = [0,:]
+    East = [:,-1]
+    West = [:,0]
+    """
+    
     def __init__(self, matrix):
         self.matrix = matrix
         return

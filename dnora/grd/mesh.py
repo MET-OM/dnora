@@ -14,9 +14,20 @@ class Mesher(ABC):
         """Gets the bathymetrical information and returns a version that is
         meshed to the area and resolution of the grid.
 
+        The returned array should have the dimensions and orientation:
+
+        rows = latitude and colums = longitude
+        I.e. shape = (len(latQ), len(lonQ)).
+
+        North = [-1,:]
+        South = [0,:]
+        East = [:,-1]
+        West = [:,0]
+
         This method is called from within the Grid-object
         """
-        pass
+
+        return meshed_data
 
     @abstractmethod
     def __str__(self):
@@ -29,7 +40,8 @@ class Mesher(ABC):
 
 class Interpolate(Mesher):
     """Interpolates data to grid. A wrapper for scipy.interpolate's griddate."""
-    def __init__(self, method = 'linear'):
+
+    def __init__(self, method: str='linear') -> None:
         self.method = method
 
         return
@@ -49,9 +61,12 @@ class Interpolate(Mesher):
 
 
 class TrivialMesher(Mesher):
-    """Passes along data. NB! This might not fit the grid, and is only used
-    for e.g. recreating a Grid-object from an ouput file.
+    """Passes along data.
+
+    NB! This might not fit the grid, and is only used for e.g. recreating a
+    Grid-object from an ouput file.
     """
+
     def __init__(self):
         pass
 

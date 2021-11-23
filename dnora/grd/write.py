@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 
 from ..defaults import dflt_grd
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 if TYPE_CHECKING:
     from .grd_mod import Grid # Boundary object
 
@@ -15,6 +15,7 @@ class GridWriter(ABC):
     """Abstract class for writing the Grid-object's data to files to be Used
     by the wave models.
     """
+
     @abstractmethod
     def __init__(self):
         pass
@@ -24,14 +25,15 @@ class GridWriter(ABC):
         pass
 
 class WW3(GridWriter):
-    def __init__(self, folder: str = '', matrix = False, filestring: str=dflt_grd['fs']['WW3']) -> None:
+    """Writes the grid to WAVEWATCH III format."""
+
+    def __init__(self, folder: str=dflt_grd['fldr']['WW3'], matrix=False, filestring: str=dflt_grd['fs']['WW3']) -> None:
         self.folder = copy(folder)
         self.matrix = matrix
         self.filestring=copy(filestring)
         return
 
-    def __call__(self, grid: Grid) -> None:
-        #msg.header(f"Writing grid to WW3 format to folder: {self.folder}.")
+    def __call__(self, grid: Grid) -> Tuple:
         msg.header(f'{type(self).__name__}: writing grid topography from {grid.name()}')
 
         mask_out = np.zeros(grid.topo().shape)
@@ -46,7 +48,6 @@ class WW3(GridWriter):
 
         output_files = []
         if self.matrix:
-            #output_file_bathy = create_filename_obj(filestring='mat_$Grid_bathy.txt', objects=[grid])
             output_file = grid.filename(filestring=self.filestring, prefix='mat', suffix='bathy', extension='txt')
             output_files.append(output_file)
             output_path = add_folder_to_filename(output_file, self.folder)
@@ -60,11 +61,6 @@ class WW3(GridWriter):
 
             msg.to_file(output_path)
             np.savetxt(output_path, mask_out, delimiter=',',fmt='%1.0f')
-            # output_file_mapsta = create_filename_obj(filestring='mat_$Grid_mapsta.txt', objects=[grid])
-            # output_path = add_folder_to_filename(output_file_mapsta, self.folder)
-            #
-            # msg.to_file(output_path)
-            # np.savetxt(output_path, mask_out, delimiter=',',fmt='%1.0f')
 
         else:
             output_file = grid.filename(filestring=self.filestring, suffix='bathy', extension='txt')
@@ -86,12 +82,14 @@ class WW3(GridWriter):
         return output_files, self.folder
 
 class SWAN(GridWriter):
-    def __init__(self, folder: str = '', filestring: str=dflt_grd['fs']['SWAN']) -> None:
+    """Writes the grid to SWAN format."""
+
+    def __init__(self, folder: str=dflt_grd['fldr']['SWAN'], filestring: str=dflt_grd['fs']['SWAN']) -> None:
         self.folder = copy(folder)
         self.filestring = copy(filestring)
         return
 
-    def __call__(self, grid: Grid):
+    def __call__(self, grid: Grid) -> Tuple:
         msg.header(f'{type(self).__name__}: writing grid topography from {grid.name()}')
 
         #msg.header(f"Writing grid to SWAN format to folder: {self.folder}.")
@@ -105,7 +103,6 @@ class SWAN(GridWriter):
         if not existed:
             msg.plain(f"Creating folder {self.folder}")
 
-        #output_file = create_filename_obj(filestring='$Grid_SWAN.bot', objects=[grid])
         output_file = grid.filename(filestring=self.filestring, extension='bot')
         output_path = add_folder_to_filename(output_file, self.folder)
 
@@ -116,11 +113,17 @@ class SWAN(GridWriter):
         return output_file, self.folder
 
 class SWASH(SWAN):
-    def __init__(self, folder: str = '', filestring: str=dflt_grd['fs']['SWASH']) -> None:
+    """Writes the grid to SWASH format.
+
+    NB! Format is same as SWAN, and a separate class is defined only to get
+    the file name right.
+    """
+
+    def __init__(self, folder: str=dflt_grd['fldr']['SWASH'], filestring: str=dflt_grd['fs']['SWASH']) -> None:
         self.folder = copy(folder)
         self.filestring = copy(filestring)
         return
 
-    def __call__(self, grid: Grid) -> None:
+    def __call__(self, grid: Grid) -> Tuple:
         output_file, output_folder = super().__call__(grid)
         return output_file, output_folder
