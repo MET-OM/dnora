@@ -234,7 +234,7 @@ def flip_spec(spec,D):
 
     ind_flip = ((ind - 2*steps).astype(int) + len(D)) % len(D)
 
-    spec_flip=spec[:, list(ind_flip)]
+    spec_flip=spec[..., list(ind_flip)]
 
     if flipping_dir:
         spec_flip = spec_flip[0]
@@ -260,7 +260,7 @@ def shift_spec(spec, D, shift = 0):
 
     ind_flip = ((ind + int(shift/dD)).astype(int) + len(D)) % len(D)
 
-    spec_shift=spec[:, list(ind_flip)]
+    spec_shift=spec[..., list(ind_flip)]
     if shifting_dir:
         spec_shift = spec_shift[0]
     return spec_shift

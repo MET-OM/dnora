@@ -60,16 +60,17 @@ class Boundary:
 
             msg.process(f"Processing spectra with {type(spectral_processor).__name__}")
             print(spectral_processor)
-            Nx = len(self.x())
-            Nt = len(self.time())
-            for x in range(Nx):
-                for t in range(Nt):
-                    ct = t/Nt*100
-                    print(f"Processing point {x}/{Nx} ({ct:.0f}%)...", end="\r")
-                    new_spec, new_dirs, new_freq = spectral_processor(self.spec()[t,x,:,:], self.dirs(), self.freq())
+            # Nx = len(self.x())
+            # Nt = len(self.time())
+            # for x in range(Nx):
+            #     for t in range(Nt):
+            #         ct = t/Nt*100
+            #         print(f"Processing point {x}/{Nx} ({ct:.0f}%)...", end="\r")
+                        #new_spec, new_dirs, new_freq = spectral_processor(self.spec()[t,x,:,:], self.dirs(), self.freq())
+            new_spec, new_dirs, new_freq = spectral_processor(self.spec(), self.dirs(), self.freq())
 
-                    self.data.spec.values[t,x,:,:] = new_spec
-
+            #self.data.spec.values[t,x,:,:] = new_spec
+            self.data.spec.values = new_spec
             self.data = self.data.assign_coords(dirs=new_dirs)
             self.data = self.data.assign_coords(freq=new_freq)
 
@@ -84,8 +85,9 @@ class Boundary:
         return
 
     def change_convention(self, wanted_convention: str='') -> None:
-        spectral_processors = processor_for_convention_change(current_convention = self.convention(), wanted_convention = wanted_convention)
-        self.process_spectra(spectral_processors)
+        spectral_processor = processor_for_convention_change(current_convention = self.convention(), wanted_convention = wanted_convention)
+        if spectral_processor is not None:
+            self.process_spectra(spectral_processor)
 
         return
     def compile_to_xr(self, time, freq, dirs, spec, lon, lat, source):

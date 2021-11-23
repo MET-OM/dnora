@@ -46,7 +46,12 @@ class ReGridDirs(SpectralProcessor):
             new_dirs = np.array(range(0,360,dD), dtype='float32') + self.first_dir
 
             #msg.info(f"Interpolating spectra to directional grid {new_dirs[0]:.0f}:{dD}:{new_dirs[-1]:.0f}")
-
+            #if len(spec.shape) > 2:
+            #    Nx
+            #Nx = len(self.x())
+            # Nt = len(self.time())
+            # for x in range(Nx):
+            #     for t in range(Nt):
             new_spec = interp_spec(freq, dirs, spec, freq, new_dirs)
 
         return new_spec, new_dirs, freq
@@ -168,8 +173,8 @@ class OceanToMet(SpectralProcessor):
 
 
 def processor_for_convention_change(current_convention: str, wanted_convention: str) -> SpectralProcessor:
-        if not wanted_convention:
-            msg.info('Convention ({current_convention}) equals wanted convention({wanted_convention}). Doing nothing.')
+        if not wanted_convention or (current_convention == wanted_convention):
+            msg.info(f'Convention ({current_convention}) equals wanted convention({wanted_convention}). Doing nothing.')
             return None
         else:
             if wanted_convention == 'Ocean':
@@ -178,24 +183,24 @@ def processor_for_convention_change(current_convention: str, wanted_convention: 
                 elif current_convention == 'Met':
                     return MetToOcean()
                 else:
-                    raise Exception (msg.info("Can't process conversion {current_convention} >> {wanted_convention} yet!"))
+                    raise Exception (msg.info(f"Can't process conversion {current_convention} >> {wanted_convention} yet!"))
 
             elif wanted_convention == 'Met':
                 if current_convention == 'Ocean':
                     return OceanToMet()
                 else:
-                    raise Exception (msg.info("Can't process conversion {current_convention} >> {wanted_convention} yet!"))
+                    raise Exception (msg.info(f"Can't process conversion {current_convention} >> {wanted_convention} yet!"))
 
             elif wanted_convention == 'WW3':
                 if current_convention == 'Ocean':
                     return OceanToWW3()
                 else:
-                    raise Exception (msg.info("Can't process conversion {current_convention} >> {wanted_convention} yet!"))
+                    raise Exception (msg.info(f"Can't process conversion {current_convention} >> {wanted_convention} yet!"))
 
             elif wanted_convention == 'Math':
                 if current_convention == 'Ocean':
                     return OceanToMath()
                 else:
-                    raise Exception (msg.info("Can't process conversion {current_convention} >> {wanted_convention} yet!"))
+                    raise Exception (msg.info(f"Can't process conversion {current_convention} >> {wanted_convention} yet!"))
             else:
-                raise Exception (msg.info("Wanted convention {wanted_convention} not recognized! (should be Ocean/Met/Math/WW3)"))
+                raise Exception (msg.info(f"Wanted convention {wanted_convention} not recognized! (should be Ocean/Met/Math/WW3)"))
