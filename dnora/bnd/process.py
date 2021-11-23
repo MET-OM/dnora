@@ -11,6 +11,10 @@ class SpectralProcessor(ABC):
         pass
 
     @abstractmethod
+    def get_convention(self) -> str:
+        pass
+
+    @abstractmethod
     def __call__(self, spec, freqs, dirs):
         pass
 
@@ -23,6 +27,9 @@ class Multiply(SpectralProcessor):
     def __init__(self, calib_spec = 1):
         self.calib_spec = calib_spec
         return
+
+    def get_convention(self) -> str:
+        return None
 
     def __call__(self, spec, dirs, freq):
         new_spec = copy(spec)*self.calib_spec
@@ -37,6 +44,9 @@ class ReGridDirs(SpectralProcessor):
 
         return
 
+    def get_convention(self) -> str:
+        return None
+
     def __call__(self, spec, dirs, freq):
 
         if dirs[0] > 0:
@@ -45,14 +55,29 @@ class ReGridDirs(SpectralProcessor):
 
             new_dirs = np.array(range(0,360,dD), dtype='float32') + self.first_dir
 
-            #msg.info(f"Interpolating spectra to directional grid {new_dirs[0]:.0f}:{dD}:{new_dirs[-1]:.0f}")
-            #if len(spec.shape) > 2:
+
+            if len(spec.shape) == 2:
+                new_spec = interp_spec(freq, dirs, spec, freq, new_dirs)
+            elif len(spec.shape) == 3:
+                new_spec = copy(spec)
+                N = spec.shape[0]
+                for n in range(N):
+                    temp_spec = interp_spec(freq, dirs, spec[n,:,:], freq, new_dirs)
+                    new_spec[n,:,:] = temp_spec
+            elif len(spec.shape) == 4:
+                new_spec = copy(spec)
+                N1 = spec.shape[0]
+                N2 = spec.shape[1]
+                for n1 in range(N1):
+                    for n2 in range(N2):
+                        temp_spec = interp_spec(freq, dirs, spec[n1,n2,:], freq, new_dirs)
+                        new_spec[n1,n2,:,:] = temp_spec
             #    Nx
             #Nx = len(self.x())
             # Nt = len(self.time())
             # for x in range(Nx):
             #     for t in range(Nt):
-            new_spec = interp_spec(freq, dirs, spec, freq, new_dirs)
+
 
         return new_spec, new_dirs, freq
 
@@ -80,6 +105,9 @@ class OceanToWW3(SpectralProcessor):
     def __init__(self):
         pass
 
+    def get_convention(self) -> str:
+        return 'WW3'
+
     def __call__(self, spec, dirs, freq = None):
         # Flip direction of the both spectra and directional vector
         spec_flip = flip_spec(spec, dirs)
@@ -101,6 +129,9 @@ class OceanToWW3(SpectralProcessor):
 class WW3ToOcean(SpectralProcessor):
     def __init__(self):
         pass
+
+    def get_convention(self) -> str:
+        return 'Ocean'
 
     def __call__(self, spec, dirs, freq = None):
         # Flip direction of the both spectra and directional vector
@@ -125,6 +156,9 @@ class OceanToMath(SpectralProcessor):
     def __init__(self):
         pass
 
+    def get_convention(self) -> str:
+        return 'Math'
+
     def __call__(self, spec, dirs, freq = None):
         # Flip direction of the both spectra and directional vector
         spec_flip = flip_spec(spec, dirs)
@@ -145,6 +179,9 @@ class MetToOcean(SpectralProcessor):
     def __init__(self):
         pass
 
+    def get_convention(self) -> str:
+        return 'Ocean'
+
     def __call__(self, spec, dirs, freq = None):
         new_spec = shift_spec(spec, dirs, 180)
 
@@ -159,6 +196,9 @@ class MetToOcean(SpectralProcessor):
 class OceanToMet(SpectralProcessor):
     def __init__(self):
         pass
+
+    def get_convention(self) -> str:
+        return 'Met'
 
     def __call__(self, spec, dirs, freq = None):
         if freq is not None:

@@ -74,6 +74,10 @@ class Boundary:
             self.data = self.data.assign_coords(dirs=new_dirs)
             self.data = self.data.assign_coords(freq=new_freq)
 
+            new_convention = spectral_processor.get_convention()
+            if new_convention is not None:
+                msg.info(f"Setting new convention to {new_convention}")
+                self._convention = new_convention
         return
 
     def export_boundary(self, boundary_writer):
