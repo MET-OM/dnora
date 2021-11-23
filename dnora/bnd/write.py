@@ -22,10 +22,12 @@ class BoundaryWriter(ABC):
 
     This object is provided to the .export_boundary() method.
     """
+
     @abstractmethod
     def __call__(self, boundar: Boundary) -> Tuple[str, str]:
         """Writed the data from the Boundary object and returns the file and
         folder where data were written."""
+        
         return output_file, output_folder
 
 class DumpToNc(BoundaryWriter):

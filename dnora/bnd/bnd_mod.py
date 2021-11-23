@@ -91,7 +91,7 @@ class Boundary:
                 self._convention = new_convention
         return
 
-    def export_boundary(self, boundary_writer: BoundaryWriter):
+    def export_boundary(self, boundary_writer: BoundaryWriter) -> None:
         """Exports the boundary spectra to a file.
 
         The bounday_writer defines the file format.
