@@ -47,8 +47,8 @@ class ForcingWriter(ABC):
 
 class WW3(ForcingWriter):
     """Writes wind forcing data to WAVEWATH III netcdf format."""
-    
-    def __init__(self, folder: str=str=dflt_frc['fldr']['WW3'], filestring: str=dflt_frc['fs']['WW3'], datestring: str=dflt_frc['ds']['WW3']) -> None:
+
+    def __init__(self, folder: str=dflt_frc['fldr']['WW3'], filestring: str=dflt_frc['fs']['WW3'], datestring: str=dflt_frc['ds']['WW3']) -> None:
         self.folder = copy(folder)
         self.filestring = copy(filestring)
         self.datestring = copy(datestring)
