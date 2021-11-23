@@ -268,7 +268,7 @@ class SWAN(BoundaryWriter):
         if not existed:
             msg.plain(f"Creating folder {self.folder}")
 
-        boundary_in.change_convention(wanted_convention='WW3')
+        boundary_in.change_convention(wanted_convention='Ocean')
 
         output_file = boundary_in.filename(filestring=self.filestring, datestring=self.datestring, extension=dflt_bnd['ext']['SWAN'])
         output_path = add_folder_to_filename(output_file, folder=self.folder)
