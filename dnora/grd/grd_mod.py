@@ -1,3 +1,4 @@
+from __future__ import annotations # For TYPE_CHECKING
 import xarray as xr
 import numpy as np
 from copy import copy
@@ -12,9 +13,10 @@ from .boundary import BoundarySetter, ClearBoundary
 from .mesh import Mesher, TrivialMesher, Interpolate
 from .process import GridProcessor, TrivialFilter
 
-## -----------------------------------------------------------------------------
-## THE GRID OBJECT
-## -----------------------------------------------------------------------------
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .write import GridWriter # Abstract class
+
 class Grid:
     def __init__(self, lon_min: float = 0., lon_max: float = 0., lat_min: float = 0., lat_max: float = 0., name: str = "AnonymousGrid"):
         """Initializes a new grid by setting the bounding box and name"""
@@ -45,19 +47,20 @@ class Grid:
         return
 
     def process_topo(self, filt: GridProcessor = TrivialFilter()) -> None:
-            """Processes the raw bathymetrical data, e.g. with a filter."""
-            msg.header(f'Filtering topography with {type(filt).__name__}')
+        """Processes the raw bathymetrical data, e.g. with a filter."""
 
-            empty_mask = np.full(self.raw_topo().shape, False)
-            land_sea_mask = self.raw_topo() < 0 # Sea points set to true
+        msg.header(f'Filtering topography with {type(filt).__name__}')
 
-            print(filt)
-            topo = filt(self.raw_topo(), self.raw_lon(), self.raw_lat(), land_sea_mask, empty_mask)
+        empty_mask = np.full(self.raw_topo().shape, False)
+        land_sea_mask = self.raw_topo() < 0 # Sea points set to true
 
-            vars_dict = {'topo': (['lat', 'lon'], topo)}
-            self.rawdata = self.rawdata.assign(vars_dict)
+        print(filt)
+        topo = filt(self.raw_topo(), self.raw_lon(), self.raw_lat(), land_sea_mask, empty_mask)
 
-            return
+        vars_dict = {'topo': (['lat', 'lon'], topo)}
+        self.rawdata = self.rawdata.assign(vars_dict)
+
+        return
 
     def mesh_grid(self, mesher: Mesher = Interpolate(method = 'linear')) -> None:
         """Meshes the raw data down to the grid definitions."""
@@ -93,7 +96,12 @@ class Grid:
 
         return
 
-    def export_grid(self, grid_writer):
+    def export_grid(self, grid_writer: GridWriter) -> None:
+        """Exports the boundary spectra to a file.
+
+        The grid_writer defines the file format.
+        """
+
         output_file, output_folder = grid_writer(self)
 
         # This is set as info in case an input file needs to be generated
@@ -239,7 +247,15 @@ class Grid:
 
     def set_boundary(self, boundary_setter: BoundarySetter) -> None:
         """Marks the points that should be treated as boundary points in the
-        grid."""
+        grid.
+
+        The boundary points are stored in a boolean array where True values
+        mark a boundary point.
+
+        NB! No check for land points are done, so it is possible that a land
+        point is marked as a boundary point. Possibly accounting for this is
+        the responsibility of the GridWriter.
+        """
 
         msg.header(f'Setting boundary points with {type(boundary_setter).__name__}')
         print(boundary_setter)
@@ -252,14 +268,16 @@ class Grid:
         return
 
     def land_sea_mask(self):
-        """Returns bool array of the land-sea mask (True=sea point)"""
+        """Returns bool array of the land-sea mask (True = sea point)"""
+
         if hasattr(self.data, 'land_sea_mask'):
             return copy(self.data.land_sea_mask.values)
         else:
             return np.array([])
 
     def boundary_mask(self):
-        """Returns bool array of boundary points (True=boundary point)"""
+        """Returns bool array of boundary points (True = boundary point)"""
+
         if hasattr(self.data, 'boundary_mask'):
             return copy(self.data.boundary_mask.values)
         else:
@@ -267,6 +285,7 @@ class Grid:
 
     def boundary_points(self):
         """Returns a lon, lat list of the set boundary points."""
+
         if self.boundary_mask().size > 0:
             mask = np.logical_and(self.boundary_mask(), self.land_sea_mask())
             BOUND = self._point_list(mask)
@@ -276,6 +295,7 @@ class Grid:
 
     def land_points(self):
         """Returns a lon, lat list of land points."""
+
         if self.boundary_mask().size > 0:
             mask = np.logical_not(self.land_sea_mask())
             LAND = self._point_list(mask)
@@ -284,7 +304,8 @@ class Grid:
             return np.array([])
 
     def sea_points(self):
-        """Returns a lon, lat list of land points."""
+        """Returns a lon, lat list of sea points."""
+
         if self.boundary_mask().size > 0:
             mask = self.land_sea_mask()
             LAND = self._point_list(mask)
@@ -292,7 +313,16 @@ class Grid:
         else:
             return np.array([])
 
-    def filename(self, filestring: str=dflt_grd['fs']['General'], extension: str='', prefix: str='', suffix: str=''):
+    def filename(self, filestring: str=dflt_grd['fs']['General'], extension: str='', prefix: str='', suffix: str='') -> str:
+        """Creates a filename for the object.
+
+        The filename can be based on e.g. the name of the Grid object itself,
+        or the start and end times.
+
+        This is typically called by a GridWriter object when using
+        the .export_grid() method.
+        """
+
         # Substitute placeholders for $Grid
         filename = create_filename_obj(filestring=filestring, objects=[self])
 
@@ -307,7 +337,16 @@ class Grid:
 
         return filename
 
-    def written_as(self, filestring: str=dflt_grd['fs']['General'], extension: str=''):
+    def written_as(self, filestring: str=dflt_grd['fs']['General'], extension: str='') -> str:
+        """Provide the filename the object has been exported to.
+
+        If it has not been exported, a filename is created based on the
+        metadata of the object / filestring provided in the function call.
+
+        This is typically called when an input file for the model run needs
+        to be created.
+        """
+
         if hasattr(self, '_written_as'):
             filename = self._written_as
         else:
@@ -317,17 +356,28 @@ class Grid:
 
         return filename
 
-    def written_to(self, folder: str=dflt_grd['fldr']['General']):
+    def written_to(self, folder: str=dflt_grd['fldr']['General']) -> str:
+        """Provide the folder the object has been exported to.
+
+        If it has not been exported, a folder is created based on the
+        metadata of the object / filestring provided in the function call.
+
+        This is typically called when an input file for the model run needs
+        to be created.
+        """
+
         if hasattr(self, '_written_to'):
             return self._written_to
         else:
             return folder
 
-    def is_written(self):
+    def is_written(self) -> bool:
+        """True / False statement to check if the object has ever been
+        exported with .export_grid()."""
         return hasattr(self, '_written_as')
 
 
-    def name(self):
+    def name(self) -> str:
         """Return the name of the grid (set at initialization)."""
         return copy(self.data.name)
 
@@ -391,7 +441,7 @@ class Grid:
         is processed in order to make sure that everything is consistent.
         """
 
-        self._set_land_sea_mask()
+        self._set_land_sea_mask(land_sea_mask = self.topo() > 0) # Land points -999
 
         # Create empty (no boundary points) if doesn't exist
         if self.boundary_mask().size == 0:
@@ -409,7 +459,7 @@ class Grid:
             self.data =self.data.drop('boundary_mask')
         return
 
-    def _set_land_sea_mask(self, matrix = None) -> None:
+    def _set_land_sea_mask(self, land_sea_mask) -> None:
         """Sets the land-sea mask based on land points in the gridded
         bathymetrical data.
 
@@ -419,11 +469,11 @@ class Grid:
         changes are made to the topography.
         """
 
-        if matrix is None:
-            land_sea_mask = np.full(self.topo().shape, False)
-            land_sea_mask = self.topo() > 0 # Sea points set to true
-        else:
-            land_sea_mask = matrix
+        # if matrix is None:
+        #     land_sea_mask = np.full(self.topo().shape, False)
+        #     land_sea_mask = self.topo() > 0 # Sea points set to true
+        # else:
+        #     land_sea_mask = matrix
 
         vars_dict = {'land_sea_mask': (['lat', 'lon'], land_sea_mask)}
         self.data = self.data.assign(vars_dict)
@@ -443,6 +493,7 @@ class Grid:
 
     def write_status(self, filename='', folder='') -> None:
         """Writes out the status of the grid to a file."""
+
         if not filename:
             filename = f"{self.data.name}_info.txt"
 
@@ -458,33 +509,37 @@ class Grid:
         return
 
     def __str__(self) -> str:
-            empty_topo = np.mean(self.topo()[self.land_sea_mask()]) == 9999
-            msg.header(f"Status of grid {self.data.name}")
-            msg.plain(f'lon: {self.data.lon_min} - {self.data.lon_max}, lat: {self.data.lat_min} - {self.data.lat_max}')
-            if hasattr(self.data, 'dlon') and hasattr(self.data, 'dlon'):
-                msg.plain(f'dlon, dlat = {self.data.dlon}, {self.data.dlat} deg')
-                msg.plain(f'Inverse: dlon, dlat = 1/{1/self.data.dlon}, 1/{1/self.data.dlat} deg')
-            if hasattr(self.data, 'dx') and hasattr(self.data, 'dy'):
-                msg.plain(f'dx, dy approximately {self.data.dx}, {self.data.dy} metres')
-            if hasattr(self.data, 'nx') and hasattr(self.data, 'ny'):
-                msg.plain(f'nx, ny = {self.data.nx} x {self.data.ny} grid points')
-            if self.topo().size > 0 and (not empty_topo):
-                msg.plain(f"Mean depth: {np.mean(self.topo()[self.land_sea_mask()]):.1f} m")
-                msg.plain(f"Max depth: {np.max(self.topo()[self.land_sea_mask()]):.1f} m")
-                msg.plain(f"Min depth: {np.min(self.topo()[self.land_sea_mask()]):.1f} m")
-            if self.land_sea_mask().size > 0:
-                msg.print_line()
-                msg.plain('Grid contains:')
-                msg.plain(f'{sum(sum(self.land_sea_mask())):d} sea points')
-                msg.plain(f'{sum(sum(np.logical_not(self.land_sea_mask()))):d} land points')
-            if self.boundary_mask().size > 0:
-                msg.plain(f'{sum(sum(np.logical_and(self.boundary_mask(), self.land_sea_mask()))):d} boundary points')
+        """Prints status of the grid."""
+
+        empty_topo = np.mean(self.topo()[self.land_sea_mask()]) == 9999
+
+        msg.header(f"Status of grid {self.data.name}")
+        msg.plain(f'lon: {self.data.lon_min} - {self.data.lon_max}, lat: {self.data.lat_min} - {self.data.lat_max}')
+
+        if hasattr(self.data, 'dlon') and hasattr(self.data, 'dlon'):
+            msg.plain(f'dlon, dlat = {self.data.dlon}, {self.data.dlat} deg')
+            msg.plain(f'Inverse: dlon, dlat = 1/{1/self.data.dlon}, 1/{1/self.data.dlat} deg')
+
+        if hasattr(self.data, 'dx') and hasattr(self.data, 'dy'):
+            msg.plain(f'dx, dy approximately {self.data.dx}, {self.data.dy} metres')
+
+        if hasattr(self.data, 'nx') and hasattr(self.data, 'ny'):
+            msg.plain(f'nx, ny = {self.data.nx} x {self.data.ny} grid points')
+
+        if self.topo().size > 0 and (not empty_topo):
+            msg.plain(f"Mean depth: {np.mean(self.topo()[self.land_sea_mask()]):.1f} m")
+            msg.plain(f"Max depth: {np.max(self.topo()[self.land_sea_mask()]):.1f} m")
+            msg.plain(f"Min depth: {np.min(self.topo()[self.land_sea_mask()]):.1f} m")
+
+        if self.land_sea_mask().size > 0:
             msg.print_line()
-            return ''
-## -----------------------------------------------------------------------------
+            msg.plain('Grid contains:')
+            msg.plain(f'{sum(sum(self.land_sea_mask())):d} sea points')
+            msg.plain(f'{sum(sum(np.logical_not(self.land_sea_mask()))):d} land points')
 
-## -----------------------------------------------------------------------------
-## WRITING THE GRID DATA TO FILES
-## -----------------------------------------------------------------------------
+        if self.boundary_mask().size > 0:
+            msg.plain(f'{sum(sum(np.logical_and(self.boundary_mask(), self.land_sea_mask()))):d} boundary points')
 
-## -----------------------------------------------------------------------------
+        msg.print_line()
+
+        return ''

@@ -1,3 +1,4 @@
+from __future__ import annotations # For TYPE_CHECKING
 from abc import ABC, abstractmethod
 import xarray as xr
 import numpy as np
@@ -7,6 +8,10 @@ from typing import List
 import sys
 import matplotlib.pyplot as plt
 import re
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .write import BoundaryWriter # Abstract class
 
 # dnora imports
 from .. import msg
@@ -86,7 +91,7 @@ class Boundary:
                 self._convention = new_convention
         return
 
-    def export_boundary(self, boundary_writer):
+    def export_boundary(self, boundary_writer: BoundaryWriter):
         """Exports the boundary spectra to a file.
 
         The bounday_writer defines the file format.
@@ -251,7 +256,7 @@ class Boundary:
 
     def is_written(self) -> bool:
         """True / False statement to check if the object has ever been
-        exported."""
+        exported with .export_boundary()."""
 
         return hasattr(self, '_written_as')
 
