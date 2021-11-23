@@ -91,7 +91,7 @@ class SWAN(GridWriter):
         self.filestring = copy(filestring)
         return
 
-    def __call__(self, grid: Grid) -> None:
+    def __call__(self, grid: Grid):
         msg.header(f'{type(self).__name__}: writing grid topography from {grid.name()}')
 
         #msg.header(f"Writing grid to SWAN format to folder: {self.folder}.")
@@ -114,3 +114,13 @@ class SWAN(GridWriter):
         grid.write_status(folder=self.folder)
 
         return output_file, self.folder
+
+class SWASH(SWAN):
+    def __init__(self, folder: str = '', filestring: str=dflt_grd['fs']['SWASH']) -> None:
+        self.folder = copy(folder)
+        self.filestring = copy(filestring)
+        return
+
+    def __call__(self, grid: Grid) -> None:
+        output_file, output_folder = super().__call__(grid)
+        return output_file, output_folder

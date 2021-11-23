@@ -1,12 +1,15 @@
 """Default filestrings and datestrings for Grid"""
 dflt_grd = {'fs': { 'SWAN': '$Grid_SWAN',
                     'WW3': '$Grid',
+                    'SWASH': '$Grid_SWASH',
                     'General': 'topo_$Grid'},
             'fldr': {'SWAN': '',
                     'WW3': '',
+                    'SWASH': '',
                     'General': ''},
             'ext': {'SWAN': 'bot',
                     'WW3': 'txt',
+                    'SWASH': 'bot',
                     'General': 'txt'}
         }
 
