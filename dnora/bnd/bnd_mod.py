@@ -6,18 +6,17 @@ import pandas as pd
 from typing import List
 import sys
 import matplotlib.pyplot as plt
+import re
+
+# dnora imports
 from .. import msg
 from ..aux import distance_2points, day_list, create_filename_obj, create_filename_time, create_filename_lonlat, add_file_extension
-import re
+
 from .process import processor_for_convention_change, Multiply, SpectralProcessor
 from .pick import PointPicker, TrivialPicker
 from .read import BoundaryReader
 from .write import BoundaryWriter
-#from .bnd_abc import BoundaryReader, PointPicker, SpectralProcessor
-#from .bnd import pick_Trivial, process_Multiply
-
 from ..grd.grd_mod import Grid # Grid object
-
 
 from ..defaults import dflt_bnd
 
@@ -26,10 +25,17 @@ class Boundary:
     def __init__(self, grid: Grid, name: str = "AnonymousBoundary"):
         self.grid = copy(grid)
         self._name = copy(name)
-        self._convention = 'None'
+        self._convention = None
         return
 
     def import_boundary(self, start_time: str, end_time: str, boundary_reader: BoundaryReader,  point_picker: PointPicker = TrivialPicker()):
+        """Imports boundary spectra from a certain source.
+
+        Spectra are import between start_time and end_time from the source
+        defined in the boundary_reader. Which spectra to choose spatically
+        are determined by the point_picker.
+        """
+
         self.start_time = copy(start_time)
         self.end_time = copy(end_time)
 
@@ -45,12 +51,18 @@ class Boundary:
         self.data = self.compile_to_xr(time, freq, dirs, spec, lon, lat, source)
         self.mask = [True]*len(self.x())
 
+        # E.g. are the spectra oceanic convention etc.
         self._convention = boundary_reader.get_convention()
 
         return
 
 
     def process_spectra(self, spectral_processors: List[SpectralProcessor] = [Multiply(calib_spec = 1)]):
+        """Process all the individual spectra of the boundary object.
+
+        E.g. change convention form WW3 to Oceanic, interpolate spectra to
+        new directional grid, or multiply everything with a constant.
+        """
 
         if not isinstance(spectral_processors, list):
             spectral_processors = [spectral_processors]
@@ -60,20 +72,14 @@ class Boundary:
 
             msg.process(f"Processing spectra with {type(spectral_processor).__name__}")
             print(spectral_processor)
-            # Nx = len(self.x())
-            # Nt = len(self.time())
-            # for x in range(Nx):
-            #     for t in range(Nt):
-            #         ct = t/Nt*100
-            #         print(f"Processing point {x}/{Nx} ({ct:.0f}%)...", end="\r")
-                        #new_spec, new_dirs, new_freq = spectral_processor(self.spec()[t,x,:,:], self.dirs(), self.freq())
+
             new_spec, new_dirs, new_freq = spectral_processor(self.spec(), self.dirs(), self.freq())
 
-            #self.data.spec.values[t,x,:,:] = new_spec
             self.data.spec.values = new_spec
             self.data = self.data.assign_coords(dirs=new_dirs)
             self.data = self.data.assign_coords(freq=new_freq)
 
+            # Set new convention if the processor changed it
             new_convention = spectral_processor.get_convention()
             if new_convention is not None:
                 msg.info(f"Setting new convention to {new_convention}")
@@ -81,6 +87,11 @@ class Boundary:
         return
 
     def export_boundary(self, boundary_writer):
+        """Exports the boundary spectra to a file.
+
+        The bounday_writer defines the file format.
+        """
+
         output_file, output_folder = boundary_writer(self)
 
         # This is set as info in case an input file needs to be generated
@@ -89,12 +100,35 @@ class Boundary:
         return
 
     def change_convention(self, wanted_convention: str='') -> None:
+        """Changes the convention of the spectra.
+
+        The conventions to choose from are predetermined:
+
+        'Ocean':    Oceanic convention
+                    Directional vector monotonically increasing.
+                    Direction to. North = 0, East = 90.
+
+        'Met':      Meteorological convention
+                    Directional vector monotonically increasing.
+                    Direction from. North = 0, East = 90.
+
+        'Math':     Mathematical convention
+                    Directional vector of type: [90 80 ... 10 0 350 ... 100]
+                    Direction to. North = 90, East = 0.
+
+        'WW3':      WAVEWATCH III output convention
+                    Directional vector of type: [90 80 ... 10 0 350 ... 100]
+                    Direction to. North = 0, East = 90.
+        """
+
         spectral_processor = processor_for_convention_change(current_convention = self.convention(), wanted_convention = wanted_convention)
         if spectral_processor is not None:
             self.process_spectra(spectral_processor)
-
         return
+
     def compile_to_xr(self, time, freq, dirs, spec, lon, lat, source):
+        """Data from .import_boundary() is stored as an xarray Dataset."""
+
         x = np.array(range(spec.shape[1]))
         data = xr.Dataset(
             data_vars=dict(
@@ -115,6 +149,8 @@ class Boundary:
         return data
 
     def slice_data(self, start_time: str='', end_time: str='', x: List[int]=None):
+        """Slice data in space (x) and time. Returns an xarray dataset."""
+
         if x is None:
             x=self.x()
 
@@ -131,11 +167,21 @@ class Boundary:
         return sliced_data
 
     def spec(self, start_time: str='', end_time: str='', x: List[int]=None):
-        spec = self.slice_data(start_time, end_time, x).spec.values
+        """Slice spectra in space (x) and time. Returns an numpy array."""
 
+        spec = self.slice_data(start_time, end_time, x).spec.values
         return spec
 
     def filename(self, filestring: str=dflt_bnd['fs']['General'], datestring: str=dflt_bnd['ds']['General'], n: int=None, extension: str='', defaults: str=''):
+        """Creates a filename for the object.
+
+        The filename can be based on e.g. the name of the Grid or Boundary
+        object itself, or the start and end times.
+
+        This is typically called by a BoundaryWriter object when using
+        the .export_boundary() method.
+        """
+
         # E.g. defaults='SWAN' uses all SWAN defaults
         if defaults:
             filestring = dflt_bnd['fs'][defaults]
@@ -165,7 +211,16 @@ class Boundary:
 
         return filename
 
-    def written_as(self, filestring: str=dflt_bnd['fs']['General'], datestring: str=dflt_bnd['ds']['General'], extension: str='', defaults: str=''):
+    def written_as(self, filestring: str=dflt_bnd['fs']['General'], datestring: str=dflt_bnd['ds']['General'], extension: str='', defaults: str='') -> str:
+        """Provide the filename the object has been exported to.
+
+        If it has not been exported, a filename is created based on the
+        metadata of the object / filestring provided in the function call.
+
+        This is typically called when an input file for the model run needs
+        to be created.
+        """
+
         # E.g. defaults='SWAN' uses all SWAN defaults
         if defaults:
             filestring = dflt_bnd['fs'][defaults]
@@ -179,13 +234,25 @@ class Boundary:
 
         return filename
 
-    def written_to(self, folder: str=dflt_bnd['fldr']['General']):
+    def written_to(self, folder: str=dflt_bnd['fldr']['General']) -> str:
+        """Provide the folder the object has been exported to.
+
+        If it has not been exported, a folder is created based on the
+        metadata of the object / filestring provided in the function call.
+
+        This is typically called when an input file for the model run needs
+        to be created.
+        """
+
         if hasattr(self, '_written_to'):
             return self._written_to
         else:
             return folder
 
-    def is_written(self):
+    def is_written(self) -> bool:
+        """True / False statement to check if the object has ever been
+        exported."""
+
         return hasattr(self, '_written_as')
 
     def time(self):
@@ -211,11 +278,11 @@ class Boundary:
         days = day_list(start_time = self.start_time, end_time = self.end_time)
         return days
 
-    def name(self):
+    def name(self) -> str:
         """Return the name of the grid (set at initialization)."""
         return copy(self._name)
 
-    def convention(self):
+    def convention(self) -> str:
         """Returns the convention (WW3/Ocean/Met/Math) of the spectra"""
         return copy(self._convention)
 
@@ -226,26 +293,3 @@ class Boundary:
 
         times = self.slice_data(start_time=t0, end_time=t1, x=[0]).time.values
         return times
-
-
-
-    #
-    # def create_filename(self, boundary_out: Boundary, boundary_in_filename: bool=True, grid_in_filename: bool=True, time_in_filename: bool=True) -> str:
-    #     """Creates a filename based on the boolean swithes set in __init__ and the meta data in the objects"""
-    #
-    #     boundary_fn = ''
-    #     grid_fn = ''
-    #     time_fn = ''
-    #
-    #     if boundary_in_filename:
-    #         boundary_fn = f"_{boundary_out.name()}"
-    #
-    #     if grid_in_filename:
-    #         grid_fn = f"_{boundary_out.grid.name()}"
-    #
-    #     if time_in_filename:
-    #         time_fn = f"_{str(boundary_out.time()[0])[0:10]}_{str(boundary_out.time()[-1])[0:10]}"
-    #
-    #     filename = boundary_fn + grid_fn + time_fn
-    #
-    #     return filename

@@ -10,19 +10,26 @@ import re
 #from .bnd_mod import BoundaryWriter # Abstract class
 #from
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 if TYPE_CHECKING:
     from .bnd_mod import Boundary # Boundary object
-#from .process import OceanToWW3
-from ..defaults import dflt_bnd
-class BoundaryWriter(ABC):
 
+from ..defaults import dflt_bnd
+
+
+class BoundaryWriter(ABC):
+    """Writes the boundary spectra to a certain file format.
+
+    This object is provided to the .export_boundary() method.
+    """
     @abstractmethod
-    def __call__(self, boundar: Boundary) -> None:
+    def __call__(self, boundar: Boundary) -> Tuple[str, str]:
+        """Writed the data from the Boundary object and returns the file and
+        folder where data were written."""
         return output_file, output_folder
 
 class DumpToNc(BoundaryWriter):
-    def __init__(self, folder: str='', filestring: str=dflt_bnd['fs']['General'], datestring: str=dflt_bnd['ds']['General']) -> None:
+    def __init__(self, folder: str=dflt_bnd['fldr']['General'], filestring: str=dflt_bnd['fs']['General'], datestring: str=dflt_bnd['ds']['General']) -> None:
         self.folder = copy(folder)
 
         self.filestring = copy(filestring)
@@ -30,7 +37,7 @@ class DumpToNc(BoundaryWriter):
 
         return
 
-    def __call__(self, boundary: Boundary) -> None:
+    def __call__(self, boundary: Boundary) -> Tuple[str, str]:
         msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name()}')
 
 
@@ -51,7 +58,7 @@ class DumpToNc(BoundaryWriter):
 
 
 class NcFiles(BoundaryWriter):
-    def __init__(self, folder: str='', filestring: str=dflt_bnd['fs']['General'], datestring: str=dflt_bnd['ds']['General']) -> None:
+    def __init__(self, folder: str=dflt_bnd['fldr']['General'], filestring: str=dflt_bnd['fs']['General'], datestring: str=dflt_bnd['ds']['General']) -> None:
         self.folder = copy(folder)
 
         self.filestring = copy(filestring)
@@ -59,7 +66,7 @@ class NcFiles(BoundaryWriter):
 
         return
 
-    def __call__(self, boundary: Boundary):
+    def __call__(self, boundary: Boundary) -> Tuple[str, str]:
         msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name()}')
 
         existed = check_if_folder(folder=self.folder, create=True)
@@ -81,13 +88,15 @@ class NcFiles(BoundaryWriter):
 
 
 class WW3(BoundaryWriter):
-    def __init__(self, folder: str='', one_file: bool=True, filestring: str=dflt_bnd['fs']['WW3'], datestring: str=dflt_bnd['ds']['WW3']) -> None:
+    def __init__(self, folder: str=dflt_bnd['fldr']['WW3'], one_file: bool=True, filestring: str=dflt_bnd['fs']['WW3'], datestring: str=dflt_bnd['ds']['WW3']) -> None:
         self.folder = copy(folder)
         self.filestring = copy(filestring)
         self.datestring = copy(datestring)
 
         self.one_file = one_file
-    def __call__(self, boundary: Boundary) -> None:
+
+        return
+    def __call__(self, boundary: Boundary) -> Tuple[str, str]:
 
         boundary_in = copy(boundary)
         msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary_in.name()}')
@@ -250,7 +259,7 @@ class WW3(BoundaryWriter):
 
 class SWAN(BoundaryWriter):
     #def __init__(self, factor = 1E-4, folder: str='', boundary_in_filename: bool=True, time_in_filename: bool=True, grid_in_filename: bool=True) -> None:
-    def __init__(self, factor = 1E-4, folder: str='', filestring: str=dflt_bnd['fs']['SWAN'], datestring: str=dflt_bnd['ds']['SWAN']) -> None:
+    def __init__(self, factor = 1E-4, folder: str=dflt_bnd['fldr']['SWAN'], filestring: str=dflt_bnd['fs']['SWAN'], datestring: str=dflt_bnd['ds']['SWAN']) -> None:
         self.factor = factor
 
         self.folder = copy(folder)
@@ -259,7 +268,7 @@ class SWAN(BoundaryWriter):
         self.datestring = copy(datestring)
         return
 
-    def __call__(self, boundary: Boundary):
+    def __call__(self, boundary: Boundary) -> Tuple[str, str]:
         boundary_in = copy(boundary)
 
         msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary_in.name()}')
