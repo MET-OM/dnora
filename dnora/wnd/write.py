@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from .. import msg
 from copy import copy
-from ..aux import check_if_folder, create_filename_obj, create_filename_time, add_file_extension, add_folder_to_filename
+from ..aux import check_if_folder, add_folder_to_filename
 
 #from .wnd_mod import ForcingWriter # Abstract class
 from typing import TYPE_CHECKING, Tuple
@@ -24,26 +24,6 @@ class ForcingWriter(ABC):
         folder where data were written."""
 
         return output_file, output_folder
-
-    # def create_filename(self, forcing_out: Forcing, forcing_in_filename: bool=True, grid_in_filename: bool=True, time_in_filename: bool=True) -> str:
-    #     """Creates a filename based on the boolean swithes set in __init__ and the meta data in the objects"""
-    #
-    #     forcing_fn = ''
-    #     grid_fn = ''
-    #     time_fn = ''
-    #
-    #     if forcing_in_filename:
-    #         forcing_fn = f"_{forcing_out.name()}"
-    #
-    #     if grid_in_filename:
-    #         grid_fn = f"_{forcing_out.grid.name()}"
-    #
-    #     if time_in_filename:
-    #         time_fn = f"_{str(forcing_out.time()[0])[0:10]}_{str(forcing_out.time()[-1])[0:10]}"
-    #
-    #     filename = forcing_fn + grid_fn + time_fn
-    #
-    #     return filename
 
 class WW3(ForcingWriter):
     """Writes wind forcing data to WAVEWATH III netcdf format."""
