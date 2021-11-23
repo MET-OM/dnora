@@ -35,13 +35,13 @@ class EmptyTopo(TopoReader):
 
     def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
         """Creates a trivial topography with all water points."""
-        topo = np.ones((self.grid.data.ny,self.grid.data.nx))*-9999
+        topo = np.ones((self.grid.data.ny,self.grid.data.nx))*9999
         topo_lon = copy(self.grid.lon())
         topo_lat = copy(self.grid.lat())
         return topo, topo_lon, topo_lat
 
     def __str__(self):
-        return("Creating an empty topography with depth values -9999.")
+        return("Creating an empty topography with depth values 9999.")
 
 class EMODNET2018(TopoReader):
     """Reads data from EMODNET"""
@@ -57,6 +57,9 @@ class EMODNET2018(TopoReader):
 
         ds = xr.open_dataset(self.source).sel(COLUMNS=slice(lon0, lon1), LINES=slice(lat0, lat1))
         topo = ds.DEPTH.values
+        land_mask = topo > 0
+        topo = -1*topo
+        topo[land_mask] = -999
         topo_lon = ds.COLUMNS.values
         topo_lat = ds.LINES.values
         return topo, topo_lon, topo_lat

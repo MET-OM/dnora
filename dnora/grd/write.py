@@ -52,7 +52,7 @@ class WW3(GridWriter):
             output_path = add_folder_to_filename(output_file, self.folder)
 
             msg.to_file(output_path)
-            np.savetxt(output_path, -1*grid.topo(), delimiter=',',fmt='%1.6f')
+            np.savetxt(output_path, grid.topo(), delimiter=',',fmt='%1.6f')
 
             output_file = grid.filename(filestring=self.filestring, prefix='mat', suffix='mapsta', extension='txt')
             output_files.append(output_file)
@@ -72,7 +72,7 @@ class WW3(GridWriter):
             output_path = add_folder_to_filename(output_file, self.folder)
 
             msg.to_file(output_path)
-            np.savetxt(output_path, -1*grid.topo().ravel(), delimiter=',',fmt='%1.6f')
+            np.savetxt(output_path, grid.topo().ravel(), delimiter=',',fmt='%1.6f')
 
             output_file = grid.filename(filestring=self.filestring, suffix='mapsta', extension='txt')
             output_files.append(output_file)

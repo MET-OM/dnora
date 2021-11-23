@@ -71,6 +71,7 @@ class Grid:
             self.data = self.data.assign(vars_dict)
 
             self._update_masks()
+            print(self)
             return
 
         else:
@@ -233,8 +234,6 @@ class Grid:
 
         else:
             msg.advice("Doing nothing. Run set_spacing with either dlon AND dlat (in degrees), nx AND ny (in grid points), or dm (in metres).")
-
-        print(self)
 
         return
 
@@ -422,7 +421,7 @@ class Grid:
 
         if matrix is None:
             land_sea_mask = np.full(self.topo().shape, False)
-            land_sea_mask = self.topo() < 0 # Sea points set to true
+            land_sea_mask = self.topo() > 0 # Sea points set to true
         else:
             land_sea_mask = matrix
 
@@ -459,6 +458,7 @@ class Grid:
         return
 
     def __str__(self) -> str:
+            empty_topo = np.mean(self.topo()[self.land_sea_mask()]) == 9999
             msg.header(f"Status of grid {self.data.name}")
             msg.plain(f'lon: {self.data.lon_min} - {self.data.lon_max}, lat: {self.data.lat_min} - {self.data.lat_max}')
             if hasattr(self.data, 'dlon') and hasattr(self.data, 'dlon'):
@@ -468,10 +468,10 @@ class Grid:
                 msg.plain(f'dx, dy approximately {self.data.dx}, {self.data.dy} metres')
             if hasattr(self.data, 'nx') and hasattr(self.data, 'ny'):
                 msg.plain(f'nx, ny = {self.data.nx} x {self.data.ny} grid points')
-            if self.topo().size > 0:
+            if self.topo().size > 0 and (not empty_topo):
                 msg.plain(f"Mean depth: {np.mean(self.topo()[self.land_sea_mask()]):.1f} m")
-                msg.plain(f"Max depth: {np.min(self.topo()[self.land_sea_mask()]):.1f} m")
-                msg.plain(f"Min depth: {np.max(self.topo()[self.land_sea_mask()]):.1f} m")
+                msg.plain(f"Max depth: {np.max(self.topo()[self.land_sea_mask()]):.1f} m")
+                msg.plain(f"Min depth: {np.min(self.topo()[self.land_sea_mask()]):.1f} m")
             if self.land_sea_mask().size > 0:
                 msg.print_line()
                 msg.plain('Grid contains:')

@@ -156,7 +156,7 @@ class SWANInputFile(ModelInputFile):
 
             file_out.write('INPGRID BOTTOM ' + str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(self.grid.nx()-1)+' '+str(
                 self.grid.ny()-1)+' ' + str((delta_X/(self.grid.nx()-1)).round(4)) + ' ' + str((delta_Y/(self.grid.ny()-1)).round(4)) + ' EXC 32767\n')
-            file_out.write('READINP BOTTOM -1 \''+add_folder_to_filename(self.grd_filename, self.grd_folder) +'\' 3 0 FREE \n')
+            file_out.write('READINP BOTTOM 1 \''+add_folder_to_filename(self.grd_filename, self.grd_folder) +'\' 3 0 FREE \n')
             file_out.write('$ \n')
             file_out.write('BOU NEST \''+add_folder_to_filename(self.bnd_filename, self.bnd_folder)+'\' OPEN \n')
             file_out.write('$ \n')

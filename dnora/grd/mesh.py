@@ -40,7 +40,7 @@ class Interpolate(Mesher):
         data[np.isnan(data)] = 0 # Keeping land points as nan lets the shoreline creep out
         M = np.column_stack((data.ravel(), lon0.ravel(),lat0.ravel()))
         meshed_data = griddata(M[:,1:], M[:,0], (lon1, lat1), method=self.method)
-        meshed_data[meshed_data>=0] = 32767
+        meshed_data[meshed_data<=0] = -999
 
         return meshed_data
 
