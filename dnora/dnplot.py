@@ -36,7 +36,7 @@ def grd_topo(grid: Grid, boundary_points: bool=False, save_fig: bool=False, file
     if grid.topo().size > 0:
         if not filename:
             filename = f"{grid.name()}_topo.pdf"
-        levels = np.linspace(np.min(topo), 0, 100, endpoint=True)
+        levels = np.linspace(0, np.max(topo), 100, endpoint=True)
 
         plt.figure()
         plt.contourf(grid.lon(),grid.lat(),topo,levels)
