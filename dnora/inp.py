@@ -155,7 +155,7 @@ class SWANInputFile(ModelInputFile):
             file_out.write('$ \n')
 
             file_out.write('INPGRID BOTTOM ' + str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(self.grid.nx()-1)+' '+str(
-                self.grid.ny()-1)+' ' + str((delta_X/(self.grid.nx()-1)).round(4)) + ' ' + str((delta_Y/(self.grid.ny()-1)).round(4)) + ' EXC -999\n')
+                self.grid.ny()-1)+' ' + str((delta_X/(self.grid.nx()-1)).round(4)) + ' ' + str((delta_Y/(self.grid.ny()-1)).round(4)) + '\n')
             file_out.write('READINP BOTTOM 1 \''+add_folder_to_filename(self.grd_filename, self.grd_folder) +'\' 3 0 FREE \n')
             file_out.write('$ \n')
             file_out.write('BOU NEST \''+add_folder_to_filename(self.bnd_filename, self.bnd_folder)+'\' OPEN \n')
@@ -185,3 +185,137 @@ class SWANInputFile(ModelInputFile):
             file_out.write('STOP \n')
 
         return input_file
+
+
+
+class SWASHInputFile(ModelInputFile):
+    def __init__(self, grid: Grid, forcing: Forcing=None, boundary: Boundary=None,
+                grd_folder: str=None,
+                frc_filestring: str=None, frc_datestring: str=None,
+                frc_folder: str=None,
+                bnd_filestring: str=None, bnd_datestring: str=None,
+                bnd_folder: str=None):
+
+        self.grid = grid
+        self.boundary = boundary
+
+        if Forcing is not None:
+            if frc_filestring is not None:
+                if frc_datestring is None:
+                    frc_datestring = dflt_frc['ds']['SWASH']
+                # User provided filename overrides all else
+
+            if frc_folder is not None:
+                self.frc_folder = frc_folder
+
+        # if Boundary is not None:
+        #     if bnd_filestring is not None:
+        #         if bnd_datestring is None:
+        #             bnd_datestring = dflt_bnd['ds']['SWAN']
+        #         # User provided filename overrides all else
+        #         self.bnd_filename = boundary.filename(filestring=bnd_filestring, datestring=bnd_datestring, extension=dflt_bnd['ext']['SWAN'])
+        #     else:
+        #         # Use the file the object has been written to, and fall back on SWAN defaults if this information doesn't exist
+        #         self.bnd_filename = boundary.written_as(defaults='SWAN')
+
+        #     if bnd_folder is not None:
+        #         self.bnd_folder = bnd_folder
+        #     else:
+        #         self.bnd_folder = boundary.written_to(folder=bnd_folder)
+
+        if grd_folder is not None:
+            self.grd_folder = grd_folder
+        else:
+            self.grd_folder = grid.written_to(folder=grd_folder)
+
+        self.grd_filename = grid.written_as(filestring=dflt_grd['fs']['SWASH'], extension=dflt_grd['ext']['SWASH'])
+
+
+        return
+
+    def __call__(self, start_time=None, end_time=None,bound_side_command='BOU SIDE W CCW CON REG 0.5 14 270 ',
+                 folder='', filestring='input_$T0_$Grid.sws', datestring='%H%M%S'):
+        # path for directory where forcing and boundaries are saved, here it is used the current directory
+        #path_forcing = forcing_folder
+        #path_forcing = os.getcwd() + '/'
+
+        # Define start and end times of model run
+        DATE_START, DATE_END = set_run_times(start_time, end_time, forcing=None, boundary=None)
+
+        STR_START = DATE_START.strftime('%H%M%S')
+        STR_END = DATE_END.strftime('%H%M%S')
+
+        #DATE_START = start_time.replace(
+        #    '-', '').replace('T', '.').replace(':', '')+'00'
+        #DATE_END = end_time.replace(
+        #    '-', '').replace('T', '.').replace(':', '')+'00'
+        delta_X = np.round(np.abs(self.grid.lon()[-1] - self.grid.lon()[0]), 8)
+        delta_Y = np.round(np.abs(self.grid.lat()[-1] - self.grid.lat()[0]), 8)
+
+        # Create input file name
+        input_file = create_filename_obj(filestring, objects=[self.grid])
+        input_file = create_filename_time(input_file, times=[STR_END])
+        input_file = add_folder_to_filename(input_file, folder)
+        #input_file = swash_directory + '/input_' + \
+        #    STR_END+'_'+self.grid.name()+'.sws'
+        msg.to_file(input_file)
+        with open(input_file, 'w') as file_out:
+            file_out.write(
+                '$************************HEADING************************\n')
+            file_out.write('$ \n')
+            file_out.write(' PROJ \'' + self.grid.name() + '\' \'T24\' \n')
+            file_out.write('$ \n')
+            file_out.write(
+                '$*******************MODEL INPUT*************************\n')
+            file_out.write('$ \n')
+            file_out.write('SET NAUT \n')
+            file_out.write('$ \n')
+            file_out.write('MODE NONSTATIONARY TWOD \n')
+            file_out.write('COORD SPHE CCM \n')
+            file_out.write('CGRID REG '+str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(delta_X)+' '+str(
+                delta_Y)+' '+str(self.grid.nx()-1)+' '+str(self.grid.ny()-1)+' \n')
+            file_out.write('$ \n')
+            file_out.write('VERT 1 \n')
+            file_out.write('$ \n')
+            file_out.write('INPGRID BOTTOM ' + str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(self.grid.nx()-1)+' '+str(
+                self.grid.ny()-1)+' ' + str((delta_X/(self.grid.nx()-1)).round(8)) + ' ' + str((delta_Y/(self.grid.ny()-1)).round(8)) +  ' EXC -999 \n')
+            file_out.write('READINP BOTTOM 1 \''+add_folder_to_filename(self.grd_filename, self.grd_folder) +'\' 3 0 FREE \n')
+            file_out.write('$ \n')
+            file_out.write(bound_side_command+' \n')
+            #file_out.write('BOU NEST \''+add_folder_to_filename(self.bnd_filename, self.bnd_folder)+'\' OPEN \n')
+            file_out.write('$ \n')
+            file_out.write(
+                '$*******************************************************\n')
+            file_out.write('$ OUTPUT REQUESTS \n')
+            file_out.write('BLOCK \'COMPGRID\' NOHEAD \''+add_folder_to_filename(self.grid.name()+'.mat',folder)
+                           + '\' & \n')
+            file_out.write(
+                'LAY 3 WATL BOTL OUTPUT ' + STR_START + ' 5 SEC \n')
+            file_out.write('$ \n')
+            file_out.write('COMPUTE '+STR_START+' 0.001 SEC ' + STR_END + '\n')
+            file_out.write('STOP \n')
+
+        return input_file
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
