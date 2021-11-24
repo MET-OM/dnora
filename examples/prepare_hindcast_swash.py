@@ -35,12 +35,12 @@ dnplot.grd_topo(grid)
 output_folder = '/home/konstantinosc/test/'
 swash_directory = '/home/konstantinosc/Programs/swash/'
 # Grid
-grid.export_grid(grid_writer=grd.write.SWAN(folder=output_folder))
+grid.export_grid(grid_writer=grd.write.SWASH(folder=output_folder))
 
 
 
 
-# Write input file for SWAN model run
+# Write input file for SWASH model run
 write_input_file = inp.SWASHInputFile(grid=grid)
 input_file_name = write_input_file(start_time='2020-01-13T18:00', 
                                    end_time='2020-01-13T18:05',
