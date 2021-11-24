@@ -4,29 +4,71 @@ from ..aux import day_list, create_time_stamps, create_filename_time
 from copy import copy
 from .. import msg
 from abc import ABC, abstractmethod
-#from .bnd_mod import BoundaryReader # Abstract class
+from typing import Tuple
 
 class BoundaryReader(ABC):
+    """Reads boundary spectra from some source and provide it to the object."""
     def __init__(self):
         pass
 
     @abstractmethod
     def get_coordinates(self, start_time):
-        pass
+        """Return a list of all the available coordinated in the source.
+
+        These are needed fo the PointPicker object to choose the relevant
+        point to actually read in.
+
+        Provide the result as two equally long nump arrays.
+        """
+        return lon, lat
 
     @abstractmethod
-    def get_convention(self):
-        pass
+    def get_convention(self) -> str:
+        """Return the convention of the spectra returned to the object.
+
+        The conventions to choose from are predetermined:
+
+        'Ocean':    Oceanic convention
+                    Directional vector monotonically increasing.
+                    Direction to. North = 0, East = 90.
+
+        'Met':      Meteorological convention
+                    Directional vector monotonically increasing.
+                    Direction from. North = 0, East = 90.
+
+        'Math':     Mathematical convention
+                    Directional vector of type: [90 80 ... 10 0 350 ... 100]
+                    Direction to. North = 90, East = 0.
+
+        'WW3':      WAVEWATCH III output convention
+                    Directional vector of type: [90 80 ... 10 0 350 ... 100]
+                    Direction to. North = 0, East = 90.
+        """
+        return convention
 
     @abstractmethod
-    def __call__(self, start_time, end_time, inds):
-        pass
+    def __call__(self, start_time, end_time, inds) -> Tuple:
+        """Reads in the spectra from inds between start_time and end_time.
 
-    def __str__(self):
-        return (f"{self.start_time} - {self.end_time}")
+        The variables needed to be returned are:
+
+        time:   Time stamps as numpy.datetime64 array
+        freq:   Frequency vector as numpy array
+        dirs:   Directional vector as numpy array
+        spec:   Boundary spectra [time, station, freq, dirs] as numpy array
+        lon:    Longitude vector as numpy array
+        lat:    Latitude vector as numpy array
+        source: Source of the data as String
+        """
+
+        return time, freq, dirs, spec, lon, lat, source
+
+    #def __str__(self):
+        #return (f"{self.start_time} - {self.end_time}")
+
 
 class ForceFeed(BoundaryReader):
-    def __init__(self, time, freq, dirs, spec, lon, lat, convention):
+    def __init__(self, time, freq, dirs, spec, lon, lat, convention) -> None:
         self.time = copy(time)
         self.freq = copy(freq)
         self.dirs = copy(dirs)
@@ -36,18 +78,18 @@ class ForceFeed(BoundaryReader):
         self.convention = copy(convention)
         return
 
-    def get_convention(self):
+    def get_convention(self) -> str:
         return copy(self.convention)
 
-    def get_coordinates(self, start_time):
+    def get_coordinates(self, start_time) -> Tuple:
         return copy(self.lon), copy(self.lat)
 
-    def __call__(self, start_time, end_time, inds):
+    def __call__(self, start_time, end_time, inds) -> Tuple:
         return  copy(self.time), copy(self).freq, copy(self).dirs, np.reshape(self.spec, (len(self.time), len(self.lon), self.spec.shape[0], self.spec.shape[1])), copy(self.lon), copy(self.lat), ''
 
 
 class MetNo_WAM4km(BoundaryReader):
-    def __init__(self, ignore_nan: bool=True, stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0):
+    def __init__(self, ignore_nan: bool=True, stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0) -> None:
         self.ignore_nan = copy(ignore_nan)
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
@@ -55,11 +97,11 @@ class MetNo_WAM4km(BoundaryReader):
         self.last_file = copy(last_file)
         return
 
-    def get_convention(self):
+    def get_convention(self) -> str:
         return 'Ocean'
 
 
-    def get_coordinates(self, start_time):
+    def get_coordinates(self, start_time) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
 
         start_times, end_times, file_times = create_time_stamps(start_time, start_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
@@ -85,7 +127,7 @@ class MetNo_WAM4km(BoundaryReader):
 
         return lon_all, lat_all
 
-    def __call__(self, start_time, end_time, inds):
+    def __call__(self, start_time, end_time, inds) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time
@@ -127,16 +169,18 @@ class MetNo_WAM4km(BoundaryReader):
 
 
 class MetNo_NORA3(BoundaryReader):
-    def __init__(self, stride: int=24, hours_per_file: int=24, last_file: str='', lead_time: int=0):
+    def __init__(self, stride: int=24, hours_per_file: int=24, last_file: str='', lead_time: int=0) -> None:
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
         self.last_file = copy(last_file)
 
-    def get_convention(self):
+        return
+
+    def get_convention(self) -> str:
         return 'Ocean'
 
-    def get_coordinates(self, start_time):
+    def get_coordinates(self, start_time) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         #day = pd.date_range(start_time, start_time,freq='D')
         start_times, end_times, file_times = create_time_stamps(start_time, start_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
@@ -149,7 +193,7 @@ class MetNo_NORA3(BoundaryReader):
 
         return lon_all, lat_all
 
-    def __call__(self, start_time, end_time, inds):
+    def __call__(self, start_time, end_time, inds) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time
@@ -179,12 +223,12 @@ class MetNo_NORA3(BoundaryReader):
         return  time, freq, dirs, spec, lon, lat, source
 
 
-    def get_url(self, day):
+    def get_url(self, day) -> str:
         url = 'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/SPC'+day.strftime('%Y%m%d')+'00.nc'
         return url
 
 class File_WW3Nc(BoundaryReader):
-    def __init__(self, folder: str='', filestring: str='ww3_T0', datestring: str='%Y%m%dT%H%M', stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0):
+    def __init__(self, folder: str='', filestring: str='ww3_T0', datestring: str='%Y%m%dT%H%M', stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0) -> None:
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
@@ -198,10 +242,12 @@ class File_WW3Nc(BoundaryReader):
         self.filestring = copy(filestring)
         self.datestring = copy(datestring)
 
-    def get_convention(self):
+        return
+
+    def get_convention(self) -> str:
         return 'WW3'
 
-    def get_coordinates(self, start_time):
+    def get_coordinates(self, start_time) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         #day = pd.date_range(start_time, start_time,freq='D')
         start_times, end_times, file_times = create_time_stamps(start_time, start_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
@@ -214,7 +260,7 @@ class File_WW3Nc(BoundaryReader):
 
         return lon_all, lat_all
 
-    def __call__(self, start_time, end_time, inds):
+    def __call__(self, start_time, end_time, inds) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time
@@ -250,6 +296,6 @@ class File_WW3Nc(BoundaryReader):
         return  time, freq, dirs, spec, lon, lat, source
 
 
-    def get_filename(self, day):
+    def get_filename(self, day) -> str:
         filename = self.folder + create_filename_time(self.filestring, [day], self.datestring) + '.nc'
         return filename

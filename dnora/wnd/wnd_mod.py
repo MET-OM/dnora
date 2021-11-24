@@ -18,7 +18,14 @@ class Forcing:
         self._name = copy(name)
         return
 
-    def import_forcing(self, start_time: str, end_time: str, forcing_reader: ForcingReader, expansion_factor: float = 1.2):
+    def import_forcing(self, start_time: str, end_time: str, forcing_reader: ForcingReader, expansion_factor: float=1.2):
+        """Imports forcing data from a certain source.
+
+        Data are import between start_time and end_time from the source
+        defined in the forcing_reader. Data are read around an area defined
+        by the Grid object passed at initialization of this object.
+        """
+
         self.start_time = copy(start_time)
         self.end_time = copy(end_time)
 
@@ -29,26 +36,43 @@ class Forcing:
 
         return
 
-    def export_forcing(self, forcing_writer):
+    def export_forcing(self, forcing_writer) -> None:
+        """Exports the forcing data to a file.
+
+        The forcing_writer defines the file format.
+        """
+
         output_file, output_folder = forcing_writer(self)
 
         # This is set as info in case an input file needs to be generated
         self._written_as = output_file
         self._written_to = output_folder
+
         return
 
 
     def days(self):
         """Determins a Pandas data range of all the days in the time span."""
+
         days = day_list(start_time=self.start_time, end_time=self.end_time)
         return days
 
-    def name(self):
+    def name(self) -> str:
         """Return the name of the grid (set at initialization)."""
+
         return copy(self._name)
 
 
     def filename(self, filestring: str=dflt_frc['fs']['General'], datestring: str=dflt_frc['ds']['General'], extension: str='', defaults: str=''):
+        """Creates a filename for the object.
+
+        The filename can be based on e.g. the name of the Grid or Boundary
+        object itself, or the start and end times.
+
+        This is typically called by a ForcingWriter object when using
+        the .export_forcing() method.
+        """
+
         # E.g. defaults='SWAN' uses all SWAN defaults
         if defaults:
             filestring = dflt_frc['fs'][defaults]
@@ -69,6 +93,15 @@ class Forcing:
         return filename
 
     def written_as(self, filestring: str=dflt_frc['fs']['General'], datestring: str=dflt_frc['ds']['General'], extension: str='', defaults: str=''):
+        """Provide the filename the object has been exported to.
+
+        If it has not been exported, a filename is created based on the
+        metadata of the object / filestring provided in the function call.
+
+        This is typically called when an input file for the model run needs
+        to be created.
+        """
+
         # E.g. defaults='SWAN' uses all SWAN defaults
         if defaults:
             filestring = dflt_frc['fs'][defaults]
@@ -83,22 +116,28 @@ class Forcing:
         return filename
 
     def written_to(self, folder: str=dflt_frc['fldr']['General']):
+        """Provide the folder the object has been exported to.
+
+        If it has not been exported, a folder is created based on the
+        metadata of the object / filestring provided in the function call.
+
+        This is typically called when an input file for the model run needs
+        to be created.
+        """
+
         if hasattr(self, '_written_to'):
             return self._written_to
         else:
             return folder
 
     def is_written(self):
+        """True / False statement to check if the object has ever been
+        exported with .export_forcing()."""
+
         return hasattr(self, '_written_as')
 
     def time(self):
         return copy(pd.to_datetime(self.data.time.values))
-
-    # def start_time(self):
-    #     return self.time()[0]
-    #
-    # def end_time(self):
-    #     return self.time()[-1]
 
     def u(self):
         return copy(self.data.u.values)
@@ -117,6 +156,7 @@ class Forcing:
 
     def lon(self):
         """Returns a longitude vector of the grid."""
+
         if hasattr(self.data, 'lon'):
             lon = copy(self.data.lon.values)
         else:
@@ -125,6 +165,7 @@ class Forcing:
 
     def lat(self):
         """Returns a latitude vector of the grid."""
+
         if hasattr(self.data, 'lat'):
             lat = copy(self.data.lat.values)
         else:
@@ -133,6 +174,7 @@ class Forcing:
 
     def size(self) -> tuple:
         """Returns the size (nx, ny) of the grid."""
+
         return self.data.u.shape
 
     def _point_list(self, mask):
@@ -140,6 +182,7 @@ class Forcing:
 
         Used to e.g. generate list of boundary points or land points.
         """
+
         meshlon, meshlat=np.meshgrid(self.lon(),self.lat())
         lonlat_flat = np.column_stack((meshlon.ravel(),meshlat.ravel()))
         mask_flat = mask.ravel()
@@ -147,7 +190,9 @@ class Forcing:
         return lonlat_flat[mask_flat]
 
 
-    def slice_data(self, start_time: str = '', end_time: str = ''):
+    def slice_data(self, start_time: str='', end_time: str=''):
+        """Slice data in time. Returns an xarray dataset."""
+
         if not start_time:
             # This is not a string, but slicing works also with this input
             start_time = self.time()[0]
@@ -162,6 +207,7 @@ class Forcing:
 
     def times_in_day(self, day):
         """Determines time stamps of one given day."""
+
         t0 = day.strftime('%Y-%m-%d') + "T00:00:00"
         t1 = day.strftime('%Y-%m-%d') + "T23:59:59"
 

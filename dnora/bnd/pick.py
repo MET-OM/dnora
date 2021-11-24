@@ -6,6 +6,8 @@ from abc import ABC, abstractmethod
 from ..grd.grd_mod import Grid # Grid object
 
 class PointPicker(ABC):
+    """PointPickers take in longitude and latitude values, and returns indeces
+    of the chosen points."""
     def __init__(self):
         pass
 
@@ -14,6 +16,7 @@ class PointPicker(ABC):
         return
 
 class TrivialPicker(PointPicker):
+    """Choose all the points in the list."""
     def __init__(self):
         pass
 
@@ -22,6 +25,7 @@ class TrivialPicker(PointPicker):
         return inds
 
 class NearestGridPoint(PointPicker):
+    """Choose the nearest grid point to each boundary point in the grid."""
     def __init__(self):
         pass
 
@@ -41,6 +45,7 @@ class NearestGridPoint(PointPicker):
         return inds
 
 class Area(PointPicker):
+    """Choose all the points within a certain area around the grid."""
     def __init__(self, expansion_factor=1.5):
         self.expansion_factor = expansion_factor
         return

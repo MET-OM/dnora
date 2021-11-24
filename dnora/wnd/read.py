@@ -13,19 +13,40 @@ import os, glob
 from ..grd.grd_mod import Grid # Grid object
 
 class ForcingReader(ABC):
+    """Reads forcing data from some source and provide it to the object.
+
+    The area is defined from the Grid object that is passed.
+    """
+
     def __init__(self):
         pass
 
     @abstractmethod
-    def __call__(self, start_time, end_time, inds):
+    def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float):
         pass
 
-    def __str__(self):
-        return (f"{self.start_time} - {self.end_time}")
+    #def __str__(self):
+    #    return (f"{self.start_time} - {self.end_time}")
 
 
 class MetNo_NORA3(ForcingReader):
-    def __init__(self, stride: int = 1, hours_per_file: int = 1, last_file: str = '', lead_time: int = 4):
+    """Reads wind data of the NORA3 hindcast directly from MET Norways servers.
+
+    The NORA3 HARMONIE-AROME high-resolution (ca 3 km) hindcast for the
+    North Sea, the Norwegian Sea, and the Barents Sea.
+
+    Haakenstad, H., Breivik, Ø., Furevik, B. R., Reistad, M., Bohlinger, P., &
+    Aarnes, O. J. (2021). NORA3: A Nonhydrostatic High-Resolution Hindcast of
+    the North Sea, the Norwegian Sea, and the Barents Sea,
+    Journal of Applied Meteorology and Climatology, 60(10), 1443-1464,
+    DOI: 10.1175/JAMC-D-21-0029.1
+    """
+
+    def __init__(self, stride: int=1, hours_per_file: int=1, last_file: str='', lead_time: int=4):
+        """The data is currently in hourly files. Do not change the default
+        setting unless you have a good reason to do so.
+        """
+
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
@@ -33,7 +54,9 @@ class MetNo_NORA3(ForcingReader):
         return
 
     def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float):
-        """Reads in all boundary spectra between the given times and at for the given indeces"""
+        """Reads boundary spectra between given times and given area around
+        the Grid object."""
+
         self.start_time = start_time
         self.end_time = end_time
 
@@ -60,8 +83,6 @@ class MetNo_NORA3(ForcingReader):
         dlat = 3/111
         mean_lon_in_km = (lon_in_km(grid.lat()[0])+lon_in_km(grid.lat()[-1]))*0.5
         dlon = 3/mean_lon_in_km
-
-
 
         wnd_list = []
         for n in range(len(file_times)):
@@ -112,9 +133,10 @@ class MetNo_NORA3(ForcingReader):
         wind_forcing = wind_forcing.drop_vars(['wind_speed', 'wind_direction'])
         wind_forcing["u"] = (['time', 'lat', 'lon'],  u)
         wind_forcing["v"] = (['time', 'lat', 'lon'],  v)
+
         return wind_forcing
 
-    def get_url(self, time_stamp_file, time_stamp, first_ind=4):
+    def get_url(self, time_stamp_file, time_stamp, first_ind) -> str:
         h0 = int(time_stamp_file.hour) % 6
         folder = time_stamp_file.strftime('%Y')+'/'+time_stamp_file.strftime('%m')+'/'+time_stamp_file.strftime('%d')+'/'+(time_stamp_file - np.timedelta64(h0, 'h')).strftime('%H')
         ind = int((time_stamp.hour-first_ind) % 6) + first_ind
@@ -124,7 +146,18 @@ class MetNo_NORA3(ForcingReader):
 
 
 class MetNo_MyWave3km(ForcingReader):
-    def __init__(self, stride: int = 24, hours_per_file: int = 24, last_file: str = '', lead_time: int = 0):
+    """Reads wind data from the MyWave 3km hindcast directly from MET Norways
+    servers. You should probably use MetNo_NORA3 because:
+
+    The wind data is from NORA3 (see the MetNo_NORA3 reader), is taken
+    from the wave model output. This means that model land points have no data.
+    """
+
+    def __init__(self, stride: int=24, hours_per_file: int=24, last_file: str='', lead_time: int=0):
+        """The data is currently in daily files. Do not change the default
+        setting unless you have a good reason to do so.
+        """
+
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
@@ -215,7 +248,16 @@ class MetNo_MyWave3km(ForcingReader):
 
 
 class MetNo_MEPS(ForcingReader):
+    """Reads wind data from MET Norways MEPS forecast.
+
+    The data is from a 2.5 km AROME model.
+    """
+
     def __init__(self, stride: int = 6, hours_per_file: int = 67, last_file: str = '', lead_time: int = 0):
+        """The data is currently in 6 hourly files. Do not change the default
+        setting unless you have a good reason to do so.
+        """
+
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
