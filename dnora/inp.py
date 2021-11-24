@@ -9,10 +9,10 @@ from .wnd.wnd_mod import Forcing # Forcing object
 from .grd.grd_mod import Grid # Grid object
 from .bnd.bnd_mod import Boundary # Boundary object
 
-from .defaults import dflt_frc, dflt_bnd, dflt_grd
+from .defaults import dflt_frc, dflt_bnd, dflt_grd, dflt_inp
 
 
-from .aux import create_filename_obj, create_filename_time, add_folder_to_filename
+from .aux import create_filename_obj, create_filename_time, add_folder_to_filename, add_file_extension
 
 
 def set_run_times(start_time, end_time, forcing, boundary):
@@ -111,7 +111,7 @@ class SWANInputFile(ModelInputFile):
 
         return
 
-    def __call__(self, start_time=None, end_time=None, folder='', filestring='input_$T0_$Grid.swn', datestring='%Y%m%d', calib_wind=1, calib_wcap=0.5000E-04):
+    def __call__(self, start_time=None, end_time=None, folder=dflt_inp['fldr']['SWAN'], filestring=dflt_inp['fs']['SWAN'], datestring=dflt_inp['ds']['SWAN'], calib_wind=1, calib_wcap=0.5000E-04):
         # path for directory where forcing and boundaries are saved, here it is used the current directory
         #path_forcing = forcing_folder
         #path_forcing = os.getcwd() + '/'
@@ -132,7 +132,8 @@ class SWANInputFile(ModelInputFile):
 
         # Create input file name
         input_file = create_filename_obj(filestring, objects=[self.grid])
-        input_file = create_filename_time(input_file, times=[DATE_START])
+        input_file = create_filename_time(input_file, times=[DATE_START, DATE_END], datestring=datestring)
+        input_file = add_file_extension(input_file, dflt_inp['ext']['SWAN'])
         input_file = add_folder_to_filename(input_file, folder)
         #input_file = swan_directory + '/input_' + \
         #    DATE_START.split('.')[0]+'_'+self.grid.name()+'.swn'
@@ -234,7 +235,7 @@ class SWASHInputFile(ModelInputFile):
         return
 
     def __call__(self, start_time=None, end_time=None,bound_side_command='BOU SIDE W CCW CON REG 0.5 14 270 ',
-                 folder='', filestring='input_$T0_$Grid.sws', datestring='%H%M%S'):
+                 folder=dflt_inp['fldr']['SWASH'], filestring=dflt_inp['fs']['SWASH'], datestring=dflt_inp['ds']['SWASH']):
         # path for directory where forcing and boundaries are saved, here it is used the current directory
         #path_forcing = forcing_folder
         #path_forcing = os.getcwd() + '/'
@@ -254,7 +255,8 @@ class SWASHInputFile(ModelInputFile):
 
         # Create input file name
         input_file = create_filename_obj(filestring, objects=[self.grid])
-        input_file = create_filename_time(input_file, times=[STR_END])
+        input_file = create_filename_time(input_file, times=[DATE_START, DATE_END], datestring=datestring)
+        input_file = add_file_extension(input_file, dflt_inp['ext']['SWASH'])
         input_file = add_folder_to_filename(input_file, folder)
         #input_file = swash_directory + '/input_' + \
         #    STR_END+'_'+self.grid.name()+'.sws'
@@ -296,26 +298,3 @@ class SWASHInputFile(ModelInputFile):
             file_out.write('STOP \n')
 
         return input_file
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

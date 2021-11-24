@@ -62,7 +62,7 @@ class Grid:
 
         return
 
-    def mesh_grid(self, mesher: Mesher = Interpolate(method = 'linear')) -> None:
+    def mesh_grid(self, mesher: Mesher=Interpolate(method = 'linear')) -> None:
         """Meshes the raw data down to the grid definitions."""
 
         if hasattr(self, 'lon') and hasattr(self, 'lon'):
