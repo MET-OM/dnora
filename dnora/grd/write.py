@@ -110,7 +110,7 @@ class SWAN(GridWriter):
         output_path = add_folder_to_filename(output_file, self.folder)
 
         msg.to_file(output_path)
-        np.savetxt(output_path, grid.topo(), delimiter='\t',fmt='%1.0f')
+        np.savetxt(output_path, grid.topo(), delimiter='\t',fmt='%1.2f')
         grid.write_status(folder=self.folder)
 
         return output_file, self.folder
