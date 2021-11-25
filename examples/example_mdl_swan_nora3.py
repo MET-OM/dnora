@@ -18,10 +18,7 @@ bnd_set = grd.boundary.EdgesAsBoundary(edges = ['N', 'W', 'S'], step = 20)
 grid.set_boundary(boundary_setter = bnd_set)
 
 
-model = mdl.SWAN_NORA3()
-model.set_grid(grid)
-
-model.set_run_time(start_time = '2018-08-25T00:00', end_time = '2018-08-25T18:00')
+model = mdl.SWAN_NORA3(grid, start_time = '2018-08-25T00:00', end_time = '2018-08-25T18:00')
 
 model.import_boundary()
 model.import_forcing()
