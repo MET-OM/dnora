@@ -28,7 +28,7 @@ class WW3(GridWriter):
     def _preferred_format(self):
         return 'WW3'
 
-    def __init__(self, matrix=False, ) -> None:
+    def __init__(self, matrix=False) -> None:
         self.matrix = matrix
         return
 
