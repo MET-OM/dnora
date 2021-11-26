@@ -41,10 +41,6 @@ class WW3(GridWriter):
             msg.info(f'Setting {sum(sum(np.logical_and(grid.boundary_mask(), grid.land_sea_mask()))):d} boundary points in grid...')
             mask_out[np.logical_and(grid.boundary_mask(), grid.land_sea_mask())] = 2
 
-        existed = check_if_folder(folder=folder, create=True)
-        if not existed:
-            msg.plain(f"Creating folder {folder}")
-
         output_files = []
         if self.matrix:
             output_file = add_prefix(filename, 'mat')
@@ -100,10 +96,6 @@ class SWAN(GridWriter):
         if grid.boundary_mask().size > 0:
             msg.info(f'Setting {sum(sum(np.logical_and(grid.boundary_mask(), grid.land_sea_mask()))):d} boundary points in grid...')
             mask_out[np.logical_and(grid.boundary_mask(), grid.land_sea_mask())] = 2
-
-        existed = check_if_folder(folder=folder, create=True)
-        if not existed:
-            msg.plain(f"Creating folder {folder}")
 
         #output_file = grid.filename(filestring=filestring, extension='bot')
         output_path = add_folder_to_filename(filename, folder)

@@ -35,10 +35,6 @@ class WW3(ForcingWriter):
     def __call__(self, forcing: Forcing, filename: str, folder: str) -> Tuple[str, str]:
         msg.header(f'{type(self).__name__}: writing wind forcing from {forcing.name()}')
 
-        existed = check_if_folder(folder=folder, create=True)
-        if not existed:
-            msg.plain(f"Creating folder {folder}")
-
         # Add folder
         output_path = add_folder_to_filename(filename, folder=folder)
 
@@ -60,9 +56,6 @@ class SWAN(ForcingWriter):
     def __call__(self, forcing: Forcing, filename: str, folder: str) -> Tuple[str, str]:
         msg.header(f'{type(self).__name__}: writing wind forcing from {forcing.name()}')
 
-        existed = check_if_folder(folder=folder, create=True)
-        if not existed:
-            msg.plain(f"Creating folder {folder}")
 
         # Add folder
         output_path = add_folder_to_filename(filename, folder=folder)

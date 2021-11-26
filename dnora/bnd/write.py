@@ -41,10 +41,6 @@ class DumpToNc(BoundaryWriter):
         msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name()}')
 
 
-        existed = check_if_folder(folder=folder, create=True)
-        if not existed:
-            msg.plain(f"Creating folder {folder}")
-
         output_file = clean_filename(filename, list_of_placeholders)
 
         # Add folder
@@ -63,10 +59,6 @@ class NcFiles(BoundaryWriter):
 
     def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
         msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name()}')
-
-        existed = check_if_folder(folder=folder, create=True)
-        if not existed:
-            msg.plain(f"Creating folder {folder}")
 
         output_files = []
         for n in boundary.x():
@@ -95,10 +87,6 @@ class WW3(BoundaryWriter):
 
         boundary_in = copy(boundary)
         msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary_in.name()}')
-
-        existed = check_if_folder(folder=folder, create=True)
-        if not existed:
-            msg.plain(f"Creating folder {folder}")
 
         boundary_in.change_convention(wanted_convention='WW3')
 
@@ -256,7 +244,7 @@ class WW3(BoundaryWriter):
 class SWAN(BoundaryWriter):
     def __init__(self, factor = 1E-4, out_format = 'SWAN') -> None:
         self.factor = factor
-        self.factor = out_format
+        self.out_format = out_format
         return
 
     def _preferred_format(self):
@@ -266,10 +254,6 @@ class SWAN(BoundaryWriter):
         boundary_in = copy(boundary)
 
         msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary_in.name()}')
-
-        existed = check_if_folder(folder=folder, create=True)
-        if not existed:
-            msg.plain(f"Creating folder {folder}")
 
         output_file = clean_filename(filename, list_of_placeholders)
         output_path = add_folder_to_filename(filename, folder=folder)

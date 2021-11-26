@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 # dnora imports
 from .. import msg
-from ..aux import distance_2points, day_list, create_filename_obj, create_filename_time, create_filename_lonlat, add_file_extension, clean_filename
+from ..aux import distance_2points, day_list, create_filename_obj, create_filename_time, create_filename_lonlat, add_file_extension, clean_filename, check_if_folder
 
 from .process import processor_for_convention_change, Multiply, SpectralProcessor
 from .pick import PointPicker, TrivialPicker
@@ -113,6 +113,9 @@ class Boundary:
         else:
             folder = self.filename(filestring=dflt_bnd['fldr'][out_format])
 
+        existed = check_if_folder(folder=folder, create=True)
+        if not existed:
+            msg.plain(f"Creating folder {folder}")
 
         output_files, output_folder = boundary_writer(self, filename=filename, folder=folder)
 

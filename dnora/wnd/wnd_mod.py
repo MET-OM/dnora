@@ -6,7 +6,7 @@ import sys
 import re
 import matplotlib.pyplot as plt
 from .. import msg
-from ..aux import distance_2points, day_list, create_filename_obj, create_filename_time, add_file_extension, clean_filename
+from ..aux import distance_2points, day_list, create_filename_obj, create_filename_time, add_file_extension, clean_filename, check_if_folder
 from ..defaults import dflt_frc, list_of_placeholders
 
 from .read import ForcingReader
@@ -57,6 +57,9 @@ class Forcing:
         else:
             folder = self.filename(filestring=dflt_frc['fldr'][out_format])
 
+        existed = check_if_folder(folder=folder, create=True)
+        if not existed:
+            msg.plain(f"Creating folder {folder}")
 
         output_files, output_folder = forcing_writer(self, filename=filename, folder=folder)
 

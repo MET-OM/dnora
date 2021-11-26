@@ -6,7 +6,7 @@ from copy import copy
 import sys
 import re
 from .. import msg
-from ..aux import distance_2points, add_prefix, add_suffix, add_file_extension, create_filename_obj, add_folder_to_filename, clean_filename
+from ..aux import distance_2points, add_prefix, add_suffix, add_file_extension, create_filename_obj, add_folder_to_filename, clean_filename, check_if_folder
 from ..defaults import dflt_grd, list_of_placeholders
 from .read import TopoReader, EmptyTopo
 from .boundary import BoundarySetter, ClearBoundary
@@ -119,6 +119,10 @@ class Grid:
             folder = self.filename(filestring=folder)
         else:
             folder = self.filename(filestring=dflt_grd['fldr'][out_format])
+
+        existed = check_if_folder(folder=folder, create=True)
+        if not existed:
+            msg.plain(f"Creating folder {folder}")
 
         output_files, output_folder = grid_writer(self, filename=filename, infofilename=infofilename, folder=folder)
 

@@ -13,10 +13,10 @@ from ..bnd.bnd_mod import Boundary
 from ..wnd.wnd_mod import Forcing
 
 from ..inp import InputFileWriter
-
+from .. import msg
 from ..defaults import dflt_mdl, dflt_inp, dflt_bnd, dflt_frc, dflt_grd
 
-from ..aux import create_filename_obj, create_filename_time, add_folder_to_filename
+from ..aux import create_filename_obj, create_filename_time, add_folder_to_filename, check_if_folder
 
 class ModelRun:
     def __init__(self, grid: Grid, start_time: str, end_time: str,
@@ -115,8 +115,8 @@ class ModelRun:
 
             if self._forcing_writer is None:
                 raise Exception('Define a ForcingWriter!')
-            else:
-                output_files, output_folder = self.forcing().export_forcing(forcing_writer=self._forcing_writer, out_format=out_format, filestring=filestring, datestring=datestring, folder=folder)
+
+            output_files, output_folder = self.forcing().export_forcing(forcing_writer=self._forcing_writer, out_format=out_format, filestring=filestring, datestring=datestring, folder=folder)
 
             self._forcing_exported_as = output_files
             self._forcing_exported_to = output_folder
@@ -132,8 +132,8 @@ class ModelRun:
 
         if self._grid_writer is None:
             raise Exception('Define a GridWriter!')
-        else:
-            output_files, output_folder = self.grid().export_grid(grid_writer=self._grid_writer, out_format=out_format, filestring=filestring, infofilestring=infofilestring, folder=folder)
+
+        output_files, output_folder = self.grid().export_grid(grid_writer=self._grid_writer, out_format=out_format, filestring=filestring, infofilestring=infofilestring, folder=folder)
 
         self._grid_exported_as = output_files
         self._grid_exported_to = output_folder
@@ -175,6 +175,11 @@ class ModelRun:
 
         folder = create_filename_obj(filestring=folder, objects=[self, self.grid(), self.forcing(), self.boundary()])
         folder = create_filename_time(filestring=folder, times=[start_time, end_time], datestring=datestring)
+
+        existed = check_if_folder(folder=folder, create=True)
+        if not existed:
+            msg.plain(f"Creating folder {folder}")
+
 
         if grid_path is None:
             grid_path = add_folder_to_filename(filename=self.grid_exported_as(out_format), folder=self.grid_exported_to(out_format))

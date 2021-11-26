@@ -4,7 +4,7 @@
 import sys
 dnora_directory = '../'
 sys.path.insert(0, dnora_directory)
-from dnora import grd, inp, run, dnplot
+from dnora import grd, inp, run, dnplot, mdl
 # =============================================================================
 # DEFINE GRID OBJECT
 # =============================================================================
@@ -20,7 +20,7 @@ grid = grd.Grid(lon_min, lon_max, lat_min, lat_max, name='Sula')
 grid.set_spacing(dm=20)
 
 # Import topography and mesh it down to the grid definitions
-grid.import_topo(topo_reader=grd.read.EMODNET2018(tile='C5',
+grid.import_topo(topo_reader=grd.read.EMODNET2018(tile='C5'),
                                                   folder='/home/konstantinosc/PhD/github/DNORA/bathy/'))
 
 
@@ -38,17 +38,21 @@ output_folder = '/home/konstantinosc/test/'
 swash_directory = '/home/konstantinosc/Programs/swash/'
 
 # Grid
-grid.export_grid(grid_writer=grd.write.SWASH(folder=output_folder))
+model=mdl.SWASH(grid, start_time='2020-01-13T18:00', end_time='2020-01-13T18:05')
+
+model.export_grid(folder=output_folder)
 
 
 
 
 # Write input file for SWASH model run
-write_input_file = inp.SWASHInputFile(grid=grid)
-input_file_name = write_input_file(start_time='2020-01-13T18:00',
-                                   end_time='2020-01-13T18:05',
-                                   bound_side_command='BOU SIDE W CCW CON REG 0.5 14 270 ' ,
-                                   folder=swash_directory)
+inp_file_writer = inp.SWASH(bound_side_command='BOU SIDE W CCW CON REG 0.5 14 270 ')
+model.write_input_file(input_file_writer=inp_file_writer, folder=swash_directory)
+#write_input_file = inp.SWASHInputFile(grid=grid)
+#input_file_name = write_input_file(start_time='2020-01-13T18:00',
+                                   #end_time='2020-01-13T18:05',
+                                   #bound_side_command='BOU SIDE W CCW CON REG 0.5 14 270 ' ,
+                                   #folder=swash_directory)
 
 
 # =============================================================================
