@@ -9,140 +9,60 @@ from .wnd.wnd_mod import Forcing # Forcing object
 from .grd.grd_mod import Grid # Grid object
 from .bnd.bnd_mod import Boundary # Boundary object
 
-from .defaults import dflt_frc, dflt_bnd, dflt_grd, dflt_inp
+from .defaults import dflt_frc, dflt_bnd, dflt_grd, dflt_inp, list_of_placeholders
 
 
-from .aux import create_filename_obj, create_filename_time, add_folder_to_filename, add_file_extension
+from .aux import add_folder_to_filename, clean_filename
 
-
-def set_run_times(start_time, end_time, forcing, boundary):
-    if start_time is not None:
-        DATE_START = pd.Timestamp(start_time)
-    elif forcing is None and boundary is None:
-        raise Exception('Provide start_time or at least one object (Forcing/Boundary) that has a start time')
-    else:
-        if forcing is not None:
-            frc_start = forcing.time()[0]
-        else:
-            frc_start = pd.Timestamp('1970-01-01 00:00:00')
-
-        if boundary is not None:
-            bnd_start = boundary.time()[0]
-        else:
-            bdn_start = pd.Timestamp('1970-01-01 00:00:00')
-
-        DATE_START = max(bnd_start, frc_start)
-
-    if end_time is not None:
-        DATE_END = pd.Timestamp(end_time)
-    elif forcing is None and boundary is None:
-        raise Exception('Provide end_time or at least one object (Forcing/Boundary) that has a end time')
-    else:
-        if forcing is not None:
-            frc_end = forcing.time()[-1]
-        else:
-            frc_end = pd.Timestamp('2300-01-01 00:00:00')
-
-        if boundary is not None:
-            bnd_end = boundary.time()[-1]
-        else:
-            bdn_end = pd.Timestamp('2300-01-01 00:00:00')
-
-        DATE_END = min(bnd_end, frc_end)
-
-    return DATE_START, DATE_END
-
-class ModelInputFile(ABC):
+class InputFileWriter(ABC):
     def __init__(self):
         pass
+
+    def _preferred_format(self):
+        return 'General'
 
     def __call__(self):
         pass
 
-class SWANInputFile(ModelInputFile):
-    def __init__(self, grid: Grid, forcing: Forcing=None, boundary: Boundary=None,
-                grd_folder: str=None,
-                frc_filestring: str=None, frc_datestring: str=None,
-                frc_folder: str=None,
-                bnd_filestring: str=None, bnd_datestring: str=None,
-                bnd_folder: str=None):
+class SWAN(InputFileWriter):
+    def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, wind=True):
 
-        self.grid = grid
-        self.forcing = forcing
-        self.boundary = boundary
-
-        if Forcing is not None:
-            if frc_filestring is not None:
-                if frc_datestring is None:
-                    frc_datestring = dflt_frc['ds']['SWAN']
-                # User provided filename overrides all else
-                self.frc_filename = forcing.filename(filestring=frc_filestring, datestring=frc_datestring, extension=dflt_frc['ext']['SWAN'])
-            else:
-                # Use the file the object has been written to, and fall back on SWAN defaults if this information doesn't exist
-                self.frc_filename = forcing.written_as(defaults='SWAN')
-
-            if frc_folder is not None:
-                self.frc_folder = frc_folder
-            else:
-                self.frc_folder = forcing.written_to(folder=frc_folder)
-
-        if Boundary is not None:
-            if bnd_filestring is not None:
-                if bnd_datestring is None:
-                    bnd_datestring = dflt_bnd['ds']['SWAN']
-                # User provided filename overrides all else
-                self.bnd_filename = boundary.filename(filestring=bnd_filestring, datestring=bnd_datestring, extension=dflt_bnd['ext']['SWAN'])
-            else:
-                # Use the file the object has been written to, and fall back on SWAN defaults if this information doesn't exist
-                self.bnd_filename = boundary.written_as(defaults='SWAN')
-
-            if bnd_folder is not None:
-                self.bnd_folder = bnd_folder
-            else:
-                self.bnd_folder = boundary.written_to(folder=bnd_folder)
-
-        if grd_folder is not None:
-            self.grd_folder = grd_folder
-        else:
-            self.grd_folder = grid.written_to(folder=grd_folder)
-
-        self.grd_filename = grid.written_as(filestring=dflt_grd['fs']['SWAN'], extension=dflt_grd['ext']['SWAN'])
-
+        self.calib_wind = calib_wind
+        self.calib_wcap = calib_wcap
+        self.wind = wind
 
         return
 
-    def __call__(self, start_time=None, end_time=None, folder=dflt_inp['fldr']['SWAN'], filestring=dflt_inp['fs']['SWAN'], datestring=dflt_inp['ds']['SWAN'], calib_wind=1, calib_wcap=0.5000E-04):
-        # path for directory where forcing and boundaries are saved, here it is used the current directory
-        #path_forcing = forcing_folder
-        #path_forcing = os.getcwd() + '/'
+    def _preferred_format(self):
+        return 'SWAN'
+
+    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, start_time: str, end_time: str, filename: str, folder: str, grid_path: str, forcing_path: str, boundary_path: str):
+        if forcing is None and self.wind == True:
+            msg.info('No forcing object provided. Wind information will NOT be written to SWAN input file!')
+            self.wind = False
+
+
 
         # Define start and end times of model run
-        DATE_START, DATE_END = set_run_times(start_time, end_time, self.forcing, self.boundary)
+        DATE_START = start_time
+        DATE_END = end_time
+        STR_START = pd.Timestamp(DATE_START).strftime('%Y%m%d.%H%M%S')
+        STR_END = pd.Timestamp(DATE_END).strftime('%Y%m%d.%H%M%S')
 
-        STR_START = DATE_START.strftime('%Y%m%d.%H%M%S')
-        STR_END = DATE_END.strftime('%Y%m%d.%H%M%S')
-
-        #DATE_START = start_time.replace(
-        #    '-', '').replace('T', '.').replace(':', '')+'00'
-        #DATE_END = end_time.replace(
-        #    '-', '').replace('T', '.').replace(':', '')+'00'
-        delta_X = np.round(np.abs(self.grid.lon()[-1] - self.grid.lon()[0]), 5)
-        delta_Y = np.round(np.abs(self.grid.lat()[-1] - self.grid.lat()[0]), 5)
-        factor_wind = calib_wind*0.001
+        delta_X = np.round(np.abs(grid.lon()[-1] - grid.lon()[0]), 5)
+        delta_Y = np.round(np.abs(grid.lat()[-1] - grid.lat()[0]), 5)
+        factor_wind = self.calib_wind*0.001
 
         # Create input file name
-        input_file = create_filename_obj(filestring, objects=[self.grid])
-        input_file = create_filename_time(input_file, times=[DATE_START, DATE_END], datestring=datestring)
-        input_file = add_file_extension(input_file, dflt_inp['ext']['SWAN'])
-        input_file = add_folder_to_filename(input_file, folder)
-        #input_file = swan_directory + '/input_' + \
-        #    DATE_START.split('.')[0]+'_'+self.grid.name()+'.swn'
-        msg.to_file(input_file)
-        with open(input_file, 'w') as file_out:
+        output_file = clean_filename(filename, list_of_placeholders)
+        output_path = add_folder_to_filename(output_file, folder)
+
+        msg.to_file(output_path)
+        with open(output_path, 'w') as file_out:
             file_out.write(
                 '$************************HEADING************************\n')
             file_out.write('$ \n')
-            file_out.write(' PROJ \'' + self.grid.name() + '\' \'T24\' \n')
+            file_out.write(' PROJ \'' + grid.name() + '\' \'T24\' \n')
             file_out.write('$ \n')
             file_out.write(
                 '$*******************MODEL INPUT*************************\n')
@@ -151,25 +71,25 @@ class SWANInputFile(ModelInputFile):
             file_out.write('$ \n')
             file_out.write('MODE NONSTATIONARY TWOD \n')
             file_out.write('COORD SPHE CCM \n')
-            file_out.write('CGRID '+str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(delta_X)+' '+str(
-                delta_Y)+' '+str(self.grid.nx()-1)+' '+str(self.grid.ny()-1)+' CIRCLE 36 0.04 1.0 31 \n')
+            file_out.write('CGRID '+str(grid.lon()[0])+' '+str(grid.lat()[0])+' 0. '+str(delta_X)+' '+str(
+                delta_Y)+' '+str(grid.nx()-1)+' '+str(grid.ny()-1)+' CIRCLE 36 0.04 1.0 31 \n')
             file_out.write('$ \n')
 
-            file_out.write('INPGRID BOTTOM ' + str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(self.grid.nx()-1)+' '+str(
-                self.grid.ny()-1)+' ' + str((delta_X/(self.grid.nx()-1)).round(4)) + ' ' + str((delta_Y/(self.grid.ny()-1)).round(4)) + '\n')
-            file_out.write('READINP BOTTOM 1 \''+add_folder_to_filename(self.grd_filename, self.grd_folder) +'\' 3 0 FREE \n')
+            file_out.write('INPGRID BOTTOM ' + str(grid.lon()[0])+' '+str(grid.lat()[0])+' 0. '+str(grid.nx()-1)+' '+str(
+                grid.ny()-1)+' ' + str((delta_X/(grid.nx()-1)).round(4)) + ' ' + str((delta_Y/(grid.ny()-1)).round(4)) + '\n')
+            file_out.write('READINP BOTTOM 1 \''+ grid_path +'\' 3 0 FREE \n')
             file_out.write('$ \n')
-            file_out.write('BOU NEST \''+add_folder_to_filename(self.bnd_filename, self.bnd_folder)+'\' OPEN \n')
+            file_out.write('BOU NEST \''+boundary_path+'\' OPEN \n')
             file_out.write('$ \n')
 
-            if self.forcing is not None:
-                file_out.write('INPGRID WIND '+str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(self.forcing.nx()-1)+' '+str(self.forcing.ny()-1)+' '+str(
-                    (delta_X/(self.forcing.nx()-1)).round(4)) + ' '+str((delta_Y/(self.forcing.ny()-1)).round(4)) + ' NONSTATIONARY ' + STR_START + ' 1 HR ' + STR_END + '\n')
-                file_out.write('READINP WIND '+str(factor_wind)+'  \''+add_folder_to_filename(self.frc_filename, self.frc_folder)+'\' 3 0 0 1 FREE \n')
+            if self.wind:
+                file_out.write('INPGRID WIND '+str(grid.lon()[0])+' '+str(grid.lat()[0])+' 0. '+str(forcing.nx()-1)+' '+str(forcing.ny()-1)+' '+str(
+                    (delta_X/(forcing.nx()-1)).round(4)) + ' '+str((delta_Y/(forcing.ny()-1)).round(4)) + ' NONSTATIONARY ' + STR_START + ' 1 HR ' + STR_END + '\n')
+                file_out.write('READINP WIND '+str(factor_wind)+'  \''+forcing_path+'\' 3 0 0 1 FREE \n')
                 file_out.write('$ \n')
             else:
                 file_out.write('OFF QUAD \n')
-            file_out.write('GEN3 WESTH cds2='+str(calib_wcap) + '\n')
+            file_out.write('GEN3 WESTH cds2='+str(self.calib_wcap) + '\n')
             file_out.write('FRICTION JON 0.067 \n')
             file_out.write('PROP BSBT \n')
             file_out.write('NUM ACCUR NONST 1 \n')
@@ -177,7 +97,9 @@ class SWANInputFile(ModelInputFile):
             file_out.write(
                 '$*******************************************************\n')
             file_out.write('$ Generate block-output \n')
-            file_out.write('BLOCK \'COMPGRID\' HEAD \''+add_folder_to_filename(self.grid.name()+'_'+STR_START.split('.')[0]+'.nc',self.frc_folder)
+            temp_list = forcing_path.split('/')
+            forcing_folder = '/'.join(temp_list[0:-1])
+            file_out.write('BLOCK \'COMPGRID\' HEAD \''+add_folder_to_filename(grid.name()+'_'+STR_START.split('.')[0]+'.nc',forcing_folder)
                            + '\' & \n')
             file_out.write(
                 'LAY 1 HSIGN RTP TPS PDIR TM01 DIR DSPR WIND DEP OUTPUT ' + STR_START + ' 1 HR \n')
@@ -185,87 +107,40 @@ class SWANInputFile(ModelInputFile):
             file_out.write('COMPUTE '+STR_START+' 10 MIN ' + STR_END + '\n')
             file_out.write('STOP \n')
 
-        return input_file
+        return output_file, folder
 
 
 
-class SWASHInputFile(ModelInputFile):
-    def __init__(self, grid: Grid, forcing: Forcing=None, boundary: Boundary=None,
-                grd_folder: str=None,
-                frc_filestring: str=None, frc_datestring: str=None,
-                frc_folder: str=None,
-                bnd_filestring: str=None, bnd_datestring: str=None,
-                bnd_folder: str=None):
-
-        self.grid = grid
-        self.boundary = boundary
-
-        if Forcing is not None:
-            if frc_filestring is not None:
-                if frc_datestring is None:
-                    frc_datestring = dflt_frc['ds']['SWASH']
-                # User provided filename overrides all else
-
-            if frc_folder is not None:
-                self.frc_folder = frc_folder
-
-        # if Boundary is not None:
-        #     if bnd_filestring is not None:
-        #         if bnd_datestring is None:
-        #             bnd_datestring = dflt_bnd['ds']['SWAN']
-        #         # User provided filename overrides all else
-        #         self.bnd_filename = boundary.filename(filestring=bnd_filestring, datestring=bnd_datestring, extension=dflt_bnd['ext']['SWAN'])
-        #     else:
-        #         # Use the file the object has been written to, and fall back on SWAN defaults if this information doesn't exist
-        #         self.bnd_filename = boundary.written_as(defaults='SWAN')
-
-        #     if bnd_folder is not None:
-        #         self.bnd_folder = bnd_folder
-        #     else:
-        #         self.bnd_folder = boundary.written_to(folder=bnd_folder)
-
-        if grd_folder is not None:
-            self.grd_folder = grd_folder
-        else:
-            self.grd_folder = grid.written_to(folder=grd_folder)
-
-        self.grd_filename = grid.written_as(filestring=dflt_grd['fs']['SWASH'], extension=dflt_grd['ext']['SWASH'])
-
+class SWASH(InputFileWriter):
+    def __init__(self, bound_side_command='BOU SIDE W CCW CON REG 0.5 14 270 '):
+        self.bound_side_command = bound_side_command
 
         return
 
-    def __call__(self, start_time=None, end_time=None,bound_side_command='BOU SIDE W CCW CON REG 0.5 14 270 ',
-                 folder=dflt_inp['fldr']['SWASH'], filestring=dflt_inp['fs']['SWASH'], datestring=dflt_inp['ds']['SWASH']):
-        # path for directory where forcing and boundaries are saved, here it is used the current directory
-        #path_forcing = forcing_folder
-        #path_forcing = os.getcwd() + '/'
+    def _preferred_format(self):
+        return 'SWASH'
 
-        # Define start and end times of model run
-        DATE_START, DATE_END = set_run_times(start_time, end_time, forcing=None, boundary=None)
+    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, start_time: str, end_time: str, filename: str, folder: str, grid_path: str, forcing_path: str, boundary_path: str):
 
-        STR_START = DATE_START.strftime('%H%M%S')
-        STR_END = DATE_END.strftime('%H%M%S')
+        DATE_START = start_time
+        DATE_END = end_time
+        STR_START =  pd.Timestamp(DATE_START).strftime('%H%M%S')
+        STR_END =  pd.Timestamp(DATE_END).strftime('%H%M%S')
 
-        #DATE_START = start_time.replace(
-        #    '-', '').replace('T', '.').replace(':', '')+'00'
-        #DATE_END = end_time.replace(
-        #    '-', '').replace('T', '.').replace(':', '')+'00'
-        delta_X = np.round(np.abs(self.grid.lon()[-1] - self.grid.lon()[0]), 8)
-        delta_Y = np.round(np.abs(self.grid.lat()[-1] - self.grid.lat()[0]), 8)
+        delta_X = np.round(np.abs(grid.lon()[-1] - grid.lon()[0]), 8)
+        delta_Y = np.round(np.abs(grid.lat()[-1] - grid.lat()[0]), 8)
 
         # Create input file name
-        input_file = create_filename_obj(filestring, objects=[self.grid])
-        input_file = create_filename_time(input_file, times=[DATE_START, DATE_END], datestring=datestring)
-        input_file = add_file_extension(input_file, dflt_inp['ext']['SWASH'])
-        input_file = add_folder_to_filename(input_file, folder)
-        #input_file = swash_directory + '/input_' + \
-        #    STR_END+'_'+self.grid.name()+'.sws'
-        msg.to_file(input_file)
-        with open(input_file, 'w') as file_out:
+
+        output_file = clean_filename(filename, list_of_placeholders)
+        output_path = add_folder_to_filename(output_file, folder)
+
+        msg.to_file(output_path)
+        with open(output_path, 'w') as file_out:
             file_out.write(
                 '$************************HEADING************************\n')
             file_out.write('$ \n')
-            file_out.write(' PROJ \'' + self.grid.name() + '\' \'T24\' \n')
+            file_out.write(' PROJ \'' + grid.name() + '\' \'T24\' \n')
             file_out.write('$ \n')
             file_out.write(
                 '$*******************MODEL INPUT*************************\n')
@@ -274,22 +149,22 @@ class SWASHInputFile(ModelInputFile):
             file_out.write('$ \n')
             file_out.write('MODE NONSTATIONARY TWOD \n')
             file_out.write('COORD SPHE CCM \n')
-            file_out.write('CGRID REG '+str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(delta_X)+' '+str(
-                delta_Y)+' '+str(self.grid.nx()-1)+' '+str(self.grid.ny()-1)+' \n')
+            file_out.write('CGRID REG '+str(grid.lon()[0])+' '+str(grid.lat()[0])+' 0. '+str(delta_X)+' '+str(
+                delta_Y)+' '+str(grid.nx()-1)+' '+str(grid.ny()-1)+' \n')
             file_out.write('$ \n')
             file_out.write('VERT 1 \n')
             file_out.write('$ \n')
-            file_out.write('INPGRID BOTTOM ' + str(self.grid.lon()[0])+' '+str(self.grid.lat()[0])+' 0. '+str(self.grid.nx()-1)+' '+str(
-                self.grid.ny()-1)+' ' + str((delta_X/(self.grid.nx()-1)).round(8)) + ' ' + str((delta_Y/(self.grid.ny()-1)).round(8)) +  ' EXC -999 \n')
-            file_out.write('READINP BOTTOM 1 \''+add_folder_to_filename(self.grd_filename, self.grd_folder) +'\' 3 0 FREE \n')
+            file_out.write('INPGRID BOTTOM ' + str(grid.lon()[0])+' '+str(grid.lat()[0])+' 0. '+str(grid.nx()-1)+' '+str(
+                grid.ny()-1)+' ' + str((delta_X/(grid.nx()-1)).round(8)) + ' ' + str((delta_Y/(grid.ny()-1)).round(8)) +  ' EXC -999 \n')
+            file_out.write('READINP BOTTOM 1 \''+grid_path +'\' 3 0 FREE \n')
             file_out.write('$ \n')
-            file_out.write(bound_side_command+' \n')
+            file_out.write(self.bound_side_command +' \n')
             #file_out.write('BOU NEST \''+add_folder_to_filename(self.bnd_filename, self.bnd_folder)+'\' OPEN \n')
             file_out.write('$ \n')
             file_out.write(
                 '$*******************************************************\n')
             file_out.write('$ OUTPUT REQUESTS \n')
-            file_out.write('BLOCK \'COMPGRID\' NOHEAD \''+add_folder_to_filename(self.grid.name()+'.mat',folder)
+            file_out.write('BLOCK \'COMPGRID\' NOHEAD \''+add_folder_to_filename(grid.name()+'.mat',folder)
                            + '\' & \n')
             file_out.write(
                 'LAY 3 WATL BOTL OUTPUT ' + STR_START + ' 5 SEC \n')
@@ -297,4 +172,4 @@ class SWASHInputFile(ModelInputFile):
             file_out.write('COMPUTE '+STR_START+' 0.001 SEC ' + STR_END + '\n')
             file_out.write('STOP \n')
 
-        return input_file
+        return output_file, folder

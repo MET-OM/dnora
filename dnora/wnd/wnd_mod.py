@@ -6,8 +6,8 @@ import sys
 import re
 import matplotlib.pyplot as plt
 from .. import msg
-from ..aux import distance_2points, day_list, create_filename_obj, create_filename_time, add_file_extension
-from ..defaults import dflt_frc
+from ..aux import distance_2points, day_list, create_filename_obj, create_filename_time, add_file_extension, clean_filename
+from ..defaults import dflt_frc, list_of_placeholders
 
 from .read import ForcingReader
 from .write import ForcingWriter
@@ -36,34 +36,33 @@ class Forcing:
 
         return
 
-    def export_forcing(self, forcing_writer) -> None:
+    def export_forcing(self, forcing_writer: ForcingWriter, out_format: str=None, filestring: str=None, datestring: str=None, folder: str=None) -> None:
         """Exports the forcing data to a file.
 
         The forcing_writer defines the file format.
         """
+        if out_format is None:
+            out_format = forcing_writer._preferred_format()
 
-        output_file, output_folder = forcing_writer(self)
+        if filestring is None:
+            filestring=dflt_frc['fs'][out_format]
 
-        # This is set as info in case an input file needs to be generated
-        self._written_as = output_file
-        self._written_to = output_folder
+        if datestring is None:
+            datestring=dflt_frc['ds'][out_format]
 
-        return
+        filename = self.filename(filestring=filestring, datestring=datestring)
 
-
-    def days(self):
-        """Determins a Pandas data range of all the days in the time span."""
-
-        days = day_list(start_time=self.start_time, end_time=self.end_time)
-        return days
-
-    def name(self) -> str:
-        """Return the name of the grid (set at initialization)."""
-
-        return copy(self._name)
+        if folder is not None:
+            folder = self.filename(filestring=folder)
+        else:
+            folder = self.filename(filestring=dflt_frc['fldr'][out_format])
 
 
-    def filename(self, filestring: str=dflt_frc['fs']['General'], datestring: str=dflt_frc['ds']['General'], extension: str='', defaults: str=''):
+        output_files, output_folder = forcing_writer(self, filename=filename, folder=folder)
+
+        return output_files, output_folder
+
+    def filename(self, filestring: str=dflt_frc['fs']['General'], datestring: str=dflt_frc['ds']['General'], defaults: str=''):
         """Creates a filename for the object.
 
         The filename can be based on e.g. the name of the Grid or Boundary
@@ -84,57 +83,27 @@ class Forcing:
         # Substitute placeholders for times ($T0 etc.)
         filename = create_filename_time(filestring=filename, times=[self.start_time, self.end_time], datestring=datestring)
 
-        # Possible clean up
-        filename = re.sub(f"__", '_', filename)
-        filename = re.sub(f"_$", '', filename)
-
-        filename = add_file_extension(filename, extension=extension)
-
         return filename
 
-    def written_as(self, filestring: str=dflt_frc['fs']['General'], datestring: str=dflt_frc['ds']['General'], extension: str='', defaults: str=''):
-        """Provide the filename the object has been exported to.
+    def folder(self, folderstring: str=dflt_frc['fldr']['General'], datestring: str=dflt_frc['ds']['General']) -> str:
+        # Substitute placeholders for $Grid
+        folder = create_filename_obj(filestring=folderstring, objects=[self.grid, self])
+        folder = create_filename_time(filestring=folder, times=[self.start_time, self.end_time], datestring=datestring)
+        folder = clean_filename(folder, list_of_placeholders)
 
-        If it has not been exported, a filename is created based on the
-        metadata of the object / filestring provided in the function call.
+        return folder
 
-        This is typically called when an input file for the model run needs
-        to be created.
-        """
 
-        # E.g. defaults='SWAN' uses all SWAN defaults
-        if defaults:
-            filestring = dflt_frc['fs'][defaults]
-            datestring = dflt_frc['ds'][defaults]
-            extension = dflt_frc['ext'][defaults]
+    def days(self):
+        """Determins a Pandas data range of all the days in the time span."""
 
-        if hasattr(self, '_written_as'):
-            filename = self._written_as
-        else:
-            filename = self.filename(filestring=filestring, datestring=datestring, extension=extension)
+        days = day_list(start_time=self.start_time, end_time=self.end_time)
+        return days
 
-        return filename
+    def name(self) -> str:
+        """Return the name of the grid (set at initialization)."""
 
-    def written_to(self, folder: str=dflt_frc['fldr']['General']):
-        """Provide the folder the object has been exported to.
-
-        If it has not been exported, a folder is created based on the
-        metadata of the object / filestring provided in the function call.
-
-        This is typically called when an input file for the model run needs
-        to be created.
-        """
-
-        if hasattr(self, '_written_to'):
-            return self._written_to
-        else:
-            return folder
-
-    def is_written(self):
-        """True / False statement to check if the object has ever been
-        exported with .export_forcing()."""
-
-        return hasattr(self, '_written_as')
+        return copy(self._name)
 
     def time(self):
         return copy(pd.to_datetime(self.data.time.values))

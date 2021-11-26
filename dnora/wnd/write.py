@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from .. import msg
 from copy import copy
-from ..aux import check_if_folder, add_folder_to_filename
+from ..aux import check_if_folder, add_folder_to_filename, clean_filename
 
 #from .wnd_mod import ForcingWriter # Abstract class
 from typing import TYPE_CHECKING, Tuple
@@ -17,9 +17,11 @@ class ForcingWriter(ABC):
 
     This object is provided to the .export_forcing() method.
     """
+    def _preferred_format(self):
+        return 'General'
 
     @abstractmethod
-    def __call__(self, forcing_out: Forcing) -> Tuple[str, str]:
+    def __call__(self, forcing: Forcing, filename: str, folder: str) -> Tuple[str, str]:
         """Writed the data from the Forcing object and returns the file and
         folder where data were written."""
 
@@ -27,53 +29,43 @@ class ForcingWriter(ABC):
 
 class WW3(ForcingWriter):
     """Writes wind forcing data to WAVEWATH III netcdf format."""
+    def _preferred_format(self):
+        return 'WW3'
 
-    def __init__(self, folder: str=dflt_frc['fldr']['WW3'], filestring: str=dflt_frc['fs']['WW3'], datestring: str=dflt_frc['ds']['WW3']) -> None:
-        self.folder = copy(folder)
-        self.filestring = copy(filestring)
-        self.datestring = copy(datestring)
-
-        return
-
-    def __call__(self, forcing: Forcing) -> Tuple[str, str]:
+    def __call__(self, forcing: Forcing, filename: str, folder: str) -> Tuple[str, str]:
         msg.header(f'{type(self).__name__}: writing wind forcing from {forcing.name()}')
 
-        existed = check_if_folder(folder=self.folder, create=True)
+        existed = check_if_folder(folder=folder, create=True)
         if not existed:
-            msg.plain(f"Creating folder {self.folder}")
-
-        output_file = forcing.filename(filestring=self.filestring, datestring=self.datestring, extension='nc')
+            msg.plain(f"Creating folder {folder}")
 
         # Add folder
-        output_path = add_folder_to_filename(output_file, folder=self.folder)
+        output_path = add_folder_to_filename(filename, folder=folder)
 
         msg.to_file(output_path)
         forcing.data.to_netcdf(output_path)
 
-        return output_file, self.folder
+        return filename, folder
 
 
 class SWAN(ForcingWriter):
     """Writes wind forcing data to SWAN ascii format."""
-
-    def __init__(self, folder: str=dflt_frc['fldr']['SWAN'], filestring: str=dflt_frc['fs']['SWAN'], datestring: str=dflt_frc['ds']['SWAN']) -> None:
-        self.folder = copy(folder)
-        self.filestring = copy(filestring)
-        self.datestring = copy(datestring)
-
+    def __init__(self, out_format = 'SWAN'):
+        self.out_format = out_format
         return
 
-    def __call__(self, forcing: Forcing) -> Tuple[str, str]:
+    def _preferred_format(self):
+        return self.out_format
+
+    def __call__(self, forcing: Forcing, filename: str, folder: str) -> Tuple[str, str]:
         msg.header(f'{type(self).__name__}: writing wind forcing from {forcing.name()}')
 
-        existed = check_if_folder(folder=self.folder, create=True)
+        existed = check_if_folder(folder=folder, create=True)
         if not existed:
-            msg.plain(f"Creating folder {self.folder}")
-
-        output_file = forcing.filename(filestring=self.filestring, datestring=self.datestring, extension='asc')
+            msg.plain(f"Creating folder {folder}")
 
         # Add folder
-        output_path = add_folder_to_filename(output_file, folder=self.folder)
+        output_path = add_folder_to_filename(filename, folder=folder)
         msg.to_file(output_path)
 
         days = forcing.days()
@@ -91,5 +83,4 @@ class SWAN(ForcingWriter):
                     np.savetxt(file_out, forcing.v()
                                [n, :, :]*1000, fmt='%i')
 
-
-        return output_file, self.folder
+        return filename, folder

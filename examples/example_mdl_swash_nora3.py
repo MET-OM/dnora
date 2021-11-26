@@ -14,14 +14,13 @@ lat_max = 61.25
 grid = grd.Grid(lon_min, lon_max, lat_min, lat_max, name='Skjerjehamn250')
 
 grid.set_spacing(dm=1000)
-grid.set_boundary(boundary_setter = grd.boundary.EdgesAsBoundary(edges = ['N', 'W', 'S'], step = 20))
+bnd_set = grd.boundary.EdgesAsBoundary(edges = ['N', 'W', 'S'], step = 20)
+grid.set_boundary(boundary_setter = bnd_set)
 
 
-model = mdl.SWAN(grid, start_time = '2018-08-25T00:00', end_time = '2018-08-25T18:00')
+model = mdl.SWASH_NORA3(grid, start_time='2018-08-25T00:00', end_time='2018-08-25T01:00')
 
-model.import_boundary(boundary_reader = bnd.read.MetNo_NORA3())
-model.import_forcing(wnd.read.MetNo_NORA3())
-model.export_boundary()
-model.export_forcing()
+#model.import_forcing(name='NORA3')
+#model.export_forcing()
 
-model.write_input_file()
+model.write_input_file(start_time='2018-08-25T00:00:00', end_time='2018-08-25T00:10:00')

@@ -3,9 +3,10 @@ import numpy as np
 from copy import copy
 from .. import msg
 from abc import ABC, abstractmethod
-from ..aux import check_if_folder, add_folder_to_filename
+from ..aux import check_if_folder, add_folder_to_filename, clean_filename, create_filename_lonlat
 import netCDF4
 import re
+from ..defaults import list_of_placeholders
 
 #from .bnd_mod import BoundaryWriter # Abstract class
 #from
@@ -22,6 +23,8 @@ class BoundaryWriter(ABC):
 
     This object is provided to the .export_boundary() method.
     """
+    def _preferred_format(self):
+        return 'General'
 
     @abstractmethod
     def __call__(self, boundar: Boundary) -> Tuple[str, str]:
@@ -31,81 +34,71 @@ class BoundaryWriter(ABC):
         return output_file, output_folder
 
 class DumpToNc(BoundaryWriter):
-    def __init__(self, folder: str=dflt_bnd['fldr']['General'], filestring: str=dflt_bnd['fs']['General'], datestring: str=dflt_bnd['ds']['General']) -> None:
-        self.folder = copy(folder)
+    def _preferred_format(self):
+        return 'General'
 
-        self.filestring = copy(filestring)
-        self.datestring = copy(datestring)
-
-        return
-
-    def __call__(self, boundary: Boundary) -> Tuple[str, str]:
+    def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
         msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name()}')
 
 
-        output_file = boundary.filename(filestring=self.filestring, datestring=self.datestring, extension=dflt_bnd['ext']['General'])
-
-        existed = check_if_folder(folder=self.folder, create=True)
+        existed = check_if_folder(folder=folder, create=True)
         if not existed:
-            msg.plain(f"Creating folder {self.folder}")
+            msg.plain(f"Creating folder {folder}")
+
+        output_file = clean_filename(filename, list_of_placeholders)
 
         # Add folder
-        output_path = add_folder_to_filename(output_file, folder=self.folder)
+        output_path = add_folder_to_filename(output_file, folder=folder)
 
         # Dumping to a netcdf-file
         msg.to_file(output_path)
         boundary.data.to_netcdf(output_path)
 
-        return output_file, self.folder
+        return output_file, folder
 
 
 class NcFiles(BoundaryWriter):
-    def __init__(self, folder: str=dflt_bnd['fldr']['General'], filestring: str=dflt_bnd['fs']['General'], datestring: str=dflt_bnd['ds']['General']) -> None:
-        self.folder = copy(folder)
+    def _preferred_format(self):
+        return 'General'
 
-        self.filestring = copy(filestring)
-        self.datestring = copy(datestring)
-
-        return
-
-    def __call__(self, boundary: Boundary) -> Tuple[str, str]:
+    def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
         msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name()}')
 
-        existed = check_if_folder(folder=self.folder, create=True)
+        existed = check_if_folder(folder=folder, create=True)
         if not existed:
-            msg.plain(f"Creating folder {self.folder}")
+            msg.plain(f"Creating folder {folder}")
 
         output_files = []
         for n in boundary.x():
-            output_file = boundary.filename(filestring=self.filestring, datestring=self.datestring, n=n, extension=dflt_bnd['ext']['General'])
+            output_file = create_filename_lonlat(filename, lon=boundary.lon()[n], lat=boundary.lat()[n])
+            output_file = clean_filename(output_file, list_of_placeholders)
             output_files.append(output_file)
 
-            output_path = add_folder_to_filename(output_files[n], folder=self.folder)
+            output_path = add_folder_to_filename(output_file, folder=folder)
             msg.to_file(output_path)
 
             ds = boundary.slice_data(x=[n])
             ds.to_netcdf(output_path)
 
-        return output_files, self.folder
+        return output_files, folder
 
 
 class WW3(BoundaryWriter):
-    def __init__(self, folder: str=dflt_bnd['fldr']['WW3'], one_file: bool=True, filestring: str=dflt_bnd['fs']['WW3'], datestring: str=dflt_bnd['ds']['WW3']) -> None:
-        self.folder = copy(folder)
-        self.filestring = copy(filestring)
-        self.datestring = copy(datestring)
-
+    def __init__(self, one_file: bool=True) -> None:
         self.one_file = one_file
-
         return
-    def __call__(self, boundary: Boundary) -> Tuple[str, str]:
+
+    def _preferred_format(self):
+        return 'WW3'
+
+    def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
 
         boundary_in = copy(boundary)
         msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary_in.name()}')
 
-        existed = check_if_folder(folder=self.folder, create=True)
+        existed = check_if_folder(folder=folder, create=True)
         if not existed:
-            msg.plain(f"Creating folder {self.folder}")
+            msg.plain(f"Creating folder {folder}")
 
         boundary_in.change_convention(wanted_convention='WW3')
 
@@ -116,12 +109,11 @@ class WW3(BoundaryWriter):
         if self.one_file:
             if len(boundary_in.x()) == 1:
                 # Uses $Lon $Lat
-                output_files = boundary_in.filename(filestring=self.filestring, datestring=self.datestring, n=0, extension=dflt_bnd['ext']['WW3'])
-            else:
-                # Tries to remove $Lon $Lat in filestring
-                output_files = boundary_in.filename(filestring=self.filestring, datestring=self.datestring, extension=dflt_bnd['ext']['WW3'])
+                filename = create_filename_lonlat(filename, lon=boundary.lon()[0], lat=boundary.lat()[0])
 
-            output_path = add_folder_to_filename(output_files, folder=self.folder)
+            output_files = clean_filename(filename, list_of_placeholders)
+
+            output_path = add_folder_to_filename(output_files, folder=folder)
             msg.plain(f"All points >> {output_path}")
             self.write_netcdf(boundary_in, output_path)
 
@@ -129,15 +121,17 @@ class WW3(BoundaryWriter):
             output_files = []
             for n in boundary_in.x():
                 if boundary_in.mask[n]: # This property is not really used and should always be true
-                    output_file = boundary_in.filename(filestring=self.filestring, datestring=self.datestring, n=n, extension=dflt_bnd['ext']['WW3'])
+                    output_file = create_filename_lonlat(filename, lon=boundary.lon()[n], lat=boundary.lat()[n])
+                    output_file = clean_filename(output_file, list_of_placeholders)
+
                     output_files.append(output_file)
-                    output_path = add_folder_to_filename(output_file, folder=self.folder)
+                    output_path = add_folder_to_filename(output_file, folder=folder)
                     msg.plain(f"Point {n} >> {output_path}")
                     self.write_netcdf(boundary_in, output_path, n)
                 else:
                     msg.info(f"Skipping point {n} ({boundary_in.lon()[n]:10.7f}, {boundary_in.lat()[n]:10.7f}). Masked as False.")
 
-        return output_files, self.folder
+        return output_files, folder
 
     def write_netcdf(self, boundary: Boundary, output_file: str, n: int=None) -> None:
         """Writes WW3 compatible netcdf spectral output from a list containing xarray datasets."""
@@ -260,29 +254,27 @@ class WW3(BoundaryWriter):
 
 
 class SWAN(BoundaryWriter):
-    #def __init__(self, factor = 1E-4, folder: str='', boundary_in_filename: bool=True, time_in_filename: bool=True, grid_in_filename: bool=True) -> None:
-    def __init__(self, factor = 1E-4, folder: str=dflt_bnd['fldr']['SWAN'], filestring: str=dflt_bnd['fs']['SWAN'], datestring: str=dflt_bnd['ds']['SWAN']) -> None:
+    def __init__(self, factor = 1E-4, out_format = 'SWAN') -> None:
         self.factor = factor
-
-        self.folder = copy(folder)
-
-        self.filestring = copy(filestring)
-        self.datestring = copy(datestring)
+        self.factor = out_format
         return
 
-    def __call__(self, boundary: Boundary) -> Tuple[str, str]:
+    def _preferred_format(self):
+        return self.out_format
+
+    def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
         boundary_in = copy(boundary)
 
         msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary_in.name()}')
 
-        existed = check_if_folder(folder=self.folder, create=True)
+        existed = check_if_folder(folder=folder, create=True)
         if not existed:
-            msg.plain(f"Creating folder {self.folder}")
+            msg.plain(f"Creating folder {folder}")
+
+        output_file = clean_filename(filename, list_of_placeholders)
+        output_path = add_folder_to_filename(filename, folder=folder)
 
         boundary_in.change_convention(wanted_convention='Ocean')
-
-        output_file = boundary_in.filename(filestring=self.filestring, datestring=self.datestring, extension=dflt_bnd['ext']['SWAN'])
-        output_path = add_folder_to_filename(output_file, folder=self.folder)
 
         swan_bnd_points = boundary_in.grid.boundary_points()
         days = boundary_in.days()
@@ -325,4 +317,4 @@ class SWAN(BoundaryWriter):
                         delth = 360/len(boundary_in.dirs())
                         np.savetxt(file_out,S/(delth*self.factor), fmt='%-10.0f')
 
-        return output_file, self.folder
+        return output_file, folder

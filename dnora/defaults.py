@@ -1,55 +1,61 @@
 """Default filestrings and datestrings for Grid"""
-dflt_grd = {'fs': { 'SWAN': '$Grid_SWAN',
-                    'WW3': '$Grid',
-                    'SWASH': '$Grid_SWASH',
-                    'General': 'topo_$Grid'},
+dflt_grd = {'fs': { 'SWAN': '#Grid_SWAN.bot',
+                    'WW3': '#Grid.txt',
+                    'SWASH': '#Grid_SWASH.bot',
+                    'General': 'topo_#Grid.txt'},
             'fldr': {'SWAN': '',
                     'WW3': '',
                     'SWASH': '',
                     'General': ''},
-            'ext': {'SWAN': 'bot',
-                    'WW3': 'txt',
-                    'SWASH': 'bot',
-                    'General': 'txt'}
+            'info': {   'SWAN': '#Grid_info.txt',
+                        'WW3': '#Grid_info.txt',
+                        'SWASH': '#Grid_info.txt',
+                        'General': '#Grid_info.txt'}
         }
 
 """Default filestrings and datestrings for Forcing """
-dflt_frc = {'fs': { 'SWAN': 'wind$Forcing$Grid$T0_$T1',
-                    'WW3': 'wind_$Forcing_$Grid_$T0-$T1',
-                    'General': 'wind_$Forcing_$Grid_$T0-$T1'},
+dflt_frc = {'fs': { 'SWAN': 'wind#Forcing#Grid#T0_#T1.asc',
+                    'WW3': 'wind_#Forcing_#Grid_#T0-#T1.nc',
+                    'SWASH': 'wind#Forcing#Grid#T0_#T1.asc',
+                    'General': 'wind_#Forcing_#Grid_#T0-#T1.nc'},
             'ds': { 'SWAN': '%Y%m%d',
                     'WW3': '%Y%m%dT%H%M',
+                    'SWASH': '%Y%m%d',
                     'General': '%Y%m%dT%H%M'},
             'fldr': {'SWAN': '',
                     'WW3': '',
-                    'General': ''},
-            'ext': {'SWAN': 'asc',
-                    'WW3': 'nc',
-                    'General': 'nc'}
+                    'SWASH': '',
+                    'General': ''}
         }
 
 """Default filestrings and datestrings for Boundary"""
-dflt_bnd = {'fs': { 'SWAN': 'spec$Boundary$Grid$T0_$T1',
-                    'WW3': 'ww3_spec_E$LonN$Lat_$Boundary_$Grid_$T0-$T1',
-                    'General': 'spec_$Boundary_$Grid_$T0-$T1'},
+dflt_bnd = {'fs': { 'SWAN': 'spec#Boundary#Grid#T0_#T1.asc',
+                    'WW3': 'ww3_spec_E#LonN#Lat_#Boundary_#Grid_#T0-#T1.nc',
+                    'SWASH': 'spec#Boundary#Grid#T0_#T1.asc',
+                    'General': 'spec_#Boundary_#Grid_#T0-#T1.nc'},
             'ds': { 'SWAN': '%Y%m%d',
                     'WW3': '%Y%m%dT%H%M',
+                    'SWASH': '%Y%m%d',
                     'General': '%Y%m%dT%H%M'},
             'fldr': {'SWAN': '',
                     'WW3': '',
-                    'General': ''},
-            'ext': {'SWAN': 'asc',
-                    'WW3': 'nc',
-                    'General': 'nc'}
+                    'SWASH': '',
+                    'General': ''}
         }
 
 """Default filestrings and datestrings for inp-module"""
-dflt_inp = {'fs': { 'SWAN': 'input_$T0_$Grid',
-                    'SWASH': 'input_$T0_$T1_$Grid'},
+dflt_inp = {'fs': { 'SWAN': 'input_#T0_#Grid.swn',
+                    'SWASH': 'input_#T0_#T1_#Grid.sws'},
             'ds': { 'SWAN': '%Y%m%d',
                     'SWASH': '%H%M%S'},
             'fldr': {'SWAN': '',
-                    'SWASH': ''},
-            'ext': {'SWAN': 'swn',
-                    'SWASH': 'sws'}
+                    'SWASH': ''}
         }
+
+"""Default filestrings and datestrings for mdl-module"""
+dflt_mdl = {'ds': { 'General': '%Y%m%dT%H%M'},
+            'fldr': {'General': ''}
+        }
+
+# Used to clean up filenames
+list_of_placeholders = ['#Grid', '#Forcing', '#Boundary', '#ModelRun', '#T0', '#T1', 'E#Lon', 'N#Lat', '#Lon', '#Lat']

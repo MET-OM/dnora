@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 # dnora imports
 from .. import msg
-from ..aux import distance_2points, day_list, create_filename_obj, create_filename_time, create_filename_lonlat, add_file_extension
+from ..aux import distance_2points, day_list, create_filename_obj, create_filename_time, create_filename_lonlat, add_file_extension, clean_filename
 
 from .process import processor_for_convention_change, Multiply, SpectralProcessor
 from .pick import PointPicker, TrivialPicker
@@ -23,7 +23,7 @@ from .read import BoundaryReader
 from .write import BoundaryWriter
 from ..grd.grd_mod import Grid # Grid object
 
-from ..defaults import dflt_bnd
+from ..defaults import dflt_bnd, list_of_placeholders
 
 
 class Boundary:
@@ -91,18 +91,78 @@ class Boundary:
                 self._convention = new_convention
         return
 
-    def export_boundary(self, boundary_writer: BoundaryWriter) -> None:
+    def export_boundary(self, boundary_writer: BoundaryWriter, out_format: str=None, filestring: str=None, datestring: str=None, folder: str=None) -> None:
         """Exports the boundary spectra to a file.
 
         The bounday_writer defines the file format.
         """
 
-        output_file, output_folder = boundary_writer(self)
+        if out_format is None:
+            out_format = boundary_writer._preferred_format()
 
-        # This is set as info in case an input file needs to be generated
-        self._written_as = output_file
-        self._written_to = output_folder
-        return
+        if filestring is None:
+            filestring=dflt_bnd['fs'][out_format]
+
+        if datestring is None:
+            datestring=dflt_bnd['ds'][out_format]
+
+        filename = self.filename(filestring=filestring, datestring=datestring)
+
+        if folder is not None:
+            folder = self.filename(filestring=folder)
+        else:
+            folder = self.filename(filestring=dflt_bnd['fldr'][out_format])
+
+
+        output_files, output_folder = boundary_writer(self, filename=filename, folder=folder)
+
+        return output_files, output_folder
+
+    def filename(self, filestring: str=dflt_bnd['fs']['General'], datestring: str=dflt_bnd['ds']['General'], defaults: str=''):
+        """Creates a filename for the object.
+
+        The filename can be based on e.g. the name of the Grid or Boundary
+        object itself, or the start and end times.
+
+        This is typically called by a BoundaryWriter object when using
+        the .export_boundary() method.
+        """
+
+        # E.g. defaults='SWAN' uses all SWAN defaults
+        if defaults:
+            filestring = dflt_bnd['fs'][defaults]
+            datestring = dflt_bnd['ds'][defaults]
+
+        # Substitute placeholders for objects ($Grid etc.)
+        filename = create_filename_obj(filestring=filestring, objects=[self, self.grid])
+        # Substitute placeholders for times ($T0 etc.)
+        filename = create_filename_time(filestring=filename, times=[self.start_time, self.end_time], datestring=datestring)
+        filename = clean_filename(filename, list_of_placeholders)
+
+        # Substitute $Lon and $Lat if a single output point is specified
+        # if n is not None:
+        #     filename = create_filename_lonlat(filename, lon=self.lon()[n], lat=self.lat()[n])
+        # else:
+        #     # Trying to remove possible mentions to longitude and latitude
+        #     filename = re.sub(f"E\$Lon", '', filename)
+        #     filename = re.sub(f"N\$Lat", '', filename)
+        #     filename = re.sub(f"\$Lon", '', filename)
+        #     filename = re.sub(f"\$Lat", '', filename)
+        #
+        # # Possible clean up
+        # filename = re.sub(f"__", '_', filename)
+        # filename = re.sub(f"_$", '', filename)
+
+
+        return filename
+
+    def folder(self, folderstring: str=dflt_bnd['fldr']['General'], datestring: str=dflt_bnd['ds']['General']) -> str:
+        # Substitute placeholders for $Grid
+        folder = create_filename_obj(filestring=folderstring, objects=[self.grid, self])
+        folder = create_filename_time(filestring=folder, times=[self.start_time, self.end_time], datestring=datestring)
+        folder = clean_filename(folder, list_of_placeholders)
+
+        return folder
 
     def change_convention(self, wanted_convention: str='') -> None:
         """Changes the convention of the spectra.
@@ -176,89 +236,6 @@ class Boundary:
 
         spec = self.slice_data(start_time, end_time, x).spec.values
         return spec
-
-    def filename(self, filestring: str=dflt_bnd['fs']['General'], datestring: str=dflt_bnd['ds']['General'], n: int=None, extension: str='', defaults: str=''):
-        """Creates a filename for the object.
-
-        The filename can be based on e.g. the name of the Grid or Boundary
-        object itself, or the start and end times.
-
-        This is typically called by a BoundaryWriter object when using
-        the .export_boundary() method.
-        """
-
-        # E.g. defaults='SWAN' uses all SWAN defaults
-        if defaults:
-            filestring = dflt_bnd['fs'][defaults]
-            datestring = dflt_bnd['ds'][defaults]
-            extension = dflt_bnd['ext'][defaults]
-
-        # Substitute placeholders for objects ($Grid etc.)
-        filename = create_filename_obj(filestring=filestring, objects=[self, self.grid])
-        # Substitute placeholders for times ($T0 etc.)
-        filename = create_filename_time(filestring=filename, times=[self.start_time, self.end_time], datestring=datestring)
-
-        # Substitute $Lon and $Lat if a single output point is specified
-        if n is not None:
-            filename = create_filename_lonlat(filename, lon=self.lon()[n], lat=self.lat()[n])
-        else:
-            # Trying to remove possible mentions to longitude and latitude
-            filename = re.sub(f"E\$Lon", '', filename)
-            filename = re.sub(f"N\$Lat", '', filename)
-            filename = re.sub(f"\$Lon", '', filename)
-            filename = re.sub(f"\$Lat", '', filename)
-
-        # Possible clean up
-        filename = re.sub(f"__", '_', filename)
-        filename = re.sub(f"_$", '', filename)
-
-        filename = add_file_extension(filename, extension=extension)
-
-        return filename
-
-    def written_as(self, filestring: str=dflt_bnd['fs']['General'], datestring: str=dflt_bnd['ds']['General'], extension: str='', defaults: str='') -> str:
-        """Provide the filename the object has been exported to.
-
-        If it has not been exported, a filename is created based on the
-        metadata of the object / filestring provided in the function call.
-
-        This is typically called when an input file for the model run needs
-        to be created.
-        """
-
-        # E.g. defaults='SWAN' uses all SWAN defaults
-        if defaults:
-            filestring = dflt_bnd['fs'][defaults]
-            datestring = dflt_bnd['ds'][defaults]
-            extension = dflt_bnd['ext'][defaults]
-
-        if hasattr(self, '_written_as'):
-            filename = self._written_as
-        else:
-            filename =  self.filename(filestring=filestring, datestring=datestring, extension=extenstion)
-
-        return filename
-
-    def written_to(self, folder: str=dflt_bnd['fldr']['General']) -> str:
-        """Provide the folder the object has been exported to.
-
-        If it has not been exported, a folder is created based on the
-        metadata of the object / filestring provided in the function call.
-
-        This is typically called when an input file for the model run needs
-        to be created.
-        """
-
-        if hasattr(self, '_written_to'):
-            return self._written_to
-        else:
-            return folder
-
-    def is_written(self) -> bool:
-        """True / False statement to check if the object has ever been
-        exported with .export_boundary()."""
-
-        return hasattr(self, '_written_as')
 
     def time(self):
         return copy(pd.to_datetime(self.data.time.values))

@@ -6,8 +6,8 @@ from copy import copy
 import sys
 import re
 from .. import msg
-from ..aux import distance_2points, add_prefix, add_suffix, add_file_extension, create_filename_obj, add_folder_to_filename
-from ..defaults import dflt_grd
+from ..aux import distance_2points, add_prefix, add_suffix, add_file_extension, create_filename_obj, add_folder_to_filename, clean_filename
+from ..defaults import dflt_grd, list_of_placeholders
 from .read import TopoReader, EmptyTopo
 from .boundary import BoundarySetter, ClearBoundary
 from .mesh import Mesher, TrivialMesher, Interpolate
@@ -96,18 +96,55 @@ class Grid:
 
         return
 
-    def export_grid(self, grid_writer: GridWriter) -> None:
+    def export_grid(self, grid_writer: GridWriter, out_format: str=None, filestring: str=None, infofilestring: str=None, folder: str=None) -> None:
         """Exports the boundary spectra to a file.
 
         The grid_writer defines the file format.
         """
 
-        output_file, output_folder = grid_writer(self)
+        if out_format is None:
+            out_format = grid_writer._preferred_format()
 
-        # This is set as info in case an input file needs to be generated
-        self._written_as = output_file
-        self._written_to = output_folder
-        return
+        if filestring is not None:
+            filename = self.filename(filestring=filestring)
+        else:
+            filename = self.filename(filestring=dflt_grd['fs'][out_format])
+
+        if infofilestring is not None:
+            infofilename = self.filename(filestring=infofilestring)
+        else:
+            infofilename = self.filename(filestring=dflt_grd['info'][out_format])
+
+        if folder is not None:
+            folder = self.filename(filestring=folder)
+        else:
+            folder = self.filename(filestring=dflt_grd['fldr'][out_format])
+
+        output_files, output_folder = grid_writer(self, filename=filename, infofilename=infofilename, folder=folder)
+
+        return output_files, output_folder
+
+    def filename(self, filestring: str=dflt_grd['fs']['General']) -> str:
+        """Creates a filename for the object.
+
+        The filename can be based on e.g. the name of the Grid object itself,
+        or the start and end times.
+
+        This is typically called by a GridWriter object when using
+        the .export_grid() method.
+        """
+
+        # Substitute placeholders for $Grid
+        filename = create_filename_obj(filestring=filestring, objects=[self])
+
+        return filename
+
+    def folder(self, folderstring: str=dflt_grd['fldr']['General']) -> str:
+        # Substitute placeholders for $Grid
+        folder = create_filename_obj(filestring=folderstring, objects=[self])
+        folder = clean_filename(folder, list_of_placeholders)
+
+        return folder
 
     def set_spacing(self, dlon: float=0, dlat: float=0, dm: float=0, nx: int=0, ny: int=0, floating_edge: bool=False) -> None:
         """Defines longitude and latitude vectors based on desired spacing.
@@ -312,70 +349,6 @@ class Grid:
             return LAND
         else:
             return np.array([])
-
-    def filename(self, filestring: str=dflt_grd['fs']['General'], extension: str='', prefix: str='', suffix: str='') -> str:
-        """Creates a filename for the object.
-
-        The filename can be based on e.g. the name of the Grid object itself,
-        or the start and end times.
-
-        This is typically called by a GridWriter object when using
-        the .export_grid() method.
-        """
-
-        # Substitute placeholders for $Grid
-        filename = create_filename_obj(filestring=filestring, objects=[self])
-
-        filename = add_prefix(filename=filename, prefix=prefix)
-        filename = add_suffix(filename=filename, suffix=suffix)
-
-        # Possible clean up
-        filename = re.sub(f"__", '_', filename)
-        filename = re.sub(f"_$", '', filename)
-
-        filename = add_file_extension(filename, extension=extension)
-
-        return filename
-
-    def written_as(self, filestring: str=dflt_grd['fs']['General'], extension: str='') -> str:
-        """Provide the filename the object has been exported to.
-
-        If it has not been exported, a filename is created based on the
-        metadata of the object / filestring provided in the function call.
-
-        This is typically called when an input file for the model run needs
-        to be created.
-        """
-
-        if hasattr(self, '_written_as'):
-            filename = self._written_as
-        else:
-            filename = self.filename(filestring=filestring)
-
-        filename = add_file_extension(filename, extension=extension)
-
-        return filename
-
-    def written_to(self, folder: str=dflt_grd['fldr']['General']) -> str:
-        """Provide the folder the object has been exported to.
-
-        If it has not been exported, a folder is created based on the
-        metadata of the object / filestring provided in the function call.
-
-        This is typically called when an input file for the model run needs
-        to be created.
-        """
-
-        if hasattr(self, '_written_to'):
-            return self._written_to
-        else:
-            return folder
-
-    def is_written(self) -> bool:
-        """True / False statement to check if the object has ever been
-        exported with .export_grid()."""
-        return hasattr(self, '_written_as')
-
 
     def name(self) -> str:
         """Return the name of the grid (set at initialization)."""

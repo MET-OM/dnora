@@ -63,9 +63,15 @@ def add_prefix(filename: str, prefix: str):
 
 def add_suffix(filename: str, suffix: str):
     if (not suffix == '') and (not suffix[0] == '_'):
-        return f"{filename}_{suffix}"
+        suffix = f"_{suffix}"
+
+    filename_list = filename.split('.')
+
+    if len(filename_list) == 1:
+        return filename+suffix
     else:
-        return f"{filename}{suffix}"
+        return '.'.join(filename_list[0:-1]) + suffix + '.' + filename_list[-1]
+
 
 def add_folder_to_filename(filename: str, folder: str):
     if (not folder == '') and (not folder[-1] == '/'):
@@ -76,24 +82,33 @@ def add_folder_to_filename(filename: str, folder: str):
 def create_filename_time(filestring: str, times, datestring: str='%Y%m%d%H%M'):
     ct = 0
     for t in times:
-        filestring = re.sub(f"\$T{ct}", pd.Timestamp(t).strftime(datestring), filestring)
+        filestring = re.sub(f"#T{ct}", pd.Timestamp(t).strftime(datestring), filestring)
         ct = ct + 1
 
     return filestring
 
 def create_filename_lonlat(filestring: str, lon: float, lat: float):
-    filestring = re.sub(f"\$Lon", f"{lon:010.7f}", filestring)
-    filestring = re.sub(f"\$Lat", f"{lat:010.7f}", filestring)
+    filestring = re.sub("#Lon", f"{lon:010.7f}", filestring)
+    filestring = re.sub("#Lat", f"{lat:010.7f}", filestring)
 
     return filestring
 
 def create_filename_obj(filestring: str, objects):
     for object in objects:
-        obj_str = type(object).__name__
-        obj_name = object.name()
-        filestring = re.sub(f"\${obj_str}", obj_name, filestring)
+        if object is not None:
+            obj_str = type(object).__name__
+            obj_name = object.name()
+            filestring = re.sub(f"#{obj_str}", obj_name, filestring)
 
     return filestring
+
+def clean_filename(filename: str, list_of_placeholders):
+    for s in list_of_placeholders:
+            filename = re.sub(s, '', filename)
+
+    filename = re.sub("_{2,10}", '_', filename)
+
+    return filename
 
 def create_time_stamps(start_time: str, end_time: str, stride: int, hours_per_file: int = 0, last_file: str = '', lead_time: int = 0):
     """Create time stamps to read in blocks of wind forcing from files"""

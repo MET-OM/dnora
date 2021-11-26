@@ -2,7 +2,7 @@ from __future__ import annotations # For TYPE_CHECKING
 import numpy as np
 from copy import copy
 from .. import msg
-from ..aux import check_if_folder, add_folder_to_filename
+from ..aux import check_if_folder, add_folder_to_filename, add_prefix, add_suffix
 from abc import ABC, abstractmethod
 
 from ..defaults import dflt_grd
@@ -16,24 +16,23 @@ class GridWriter(ABC):
     by the wave models.
     """
 
-    @abstractmethod
-    def __init__(self):
-        pass
+    def _preferred_format(self):
+        return 'General'
 
     @abstractmethod
-    def __call__(self, grid: Grid):
+    def __call__(self, grid: Grid) -> Tuple:
         pass
 
 class WW3(GridWriter):
     """Writes the grid to WAVEWATCH III format."""
+    def _preferred_format(self):
+        return 'WW3'
 
-    def __init__(self, folder: str=dflt_grd['fldr']['WW3'], matrix=False, filestring: str=dflt_grd['fs']['WW3']) -> None:
-        self.folder = copy(folder)
+    def __init__(self, matrix=False, ) -> None:
         self.matrix = matrix
-        self.filestring=copy(filestring)
         return
 
-    def __call__(self, grid: Grid) -> Tuple:
+    def __call__(self, grid: Grid, filename: str, infofilename: str, folder: str) -> Tuple:
         msg.header(f'{type(self).__name__}: writing grid topography from {grid.name()}')
 
         mask_out = np.zeros(grid.topo().shape)
@@ -42,54 +41,57 @@ class WW3(GridWriter):
             msg.info(f'Setting {sum(sum(np.logical_and(grid.boundary_mask(), grid.land_sea_mask()))):d} boundary points in grid...')
             mask_out[np.logical_and(grid.boundary_mask(), grid.land_sea_mask())] = 2
 
-        existed = check_if_folder(folder=self.folder, create=True)
+        existed = check_if_folder(folder=folder, create=True)
         if not existed:
-            msg.plain(f"Creating folder {self.folder}")
+            msg.plain(f"Creating folder {folder}")
 
         output_files = []
         if self.matrix:
-            output_file = grid.filename(filestring=self.filestring, prefix='mat', suffix='bathy', extension='txt')
+            output_file = add_prefix(filename, 'mat')
+            output_file = add_suffix(output_file, 'bathy')
             output_files.append(output_file)
-            output_path = add_folder_to_filename(output_file, self.folder)
+            output_path = add_folder_to_filename(output_file, folder)
 
             msg.to_file(output_path)
             np.savetxt(output_path, grid.topo(), delimiter=',',fmt='%1.6f')
 
-            output_file = grid.filename(filestring=self.filestring, prefix='mat', suffix='mapsta', extension='txt')
+            output_file = add_prefix(filename, 'mat')
+            output_file = add_suffix(output_file, 'mapsta')
             output_files.append(output_file)
-            output_path = add_folder_to_filename(output_file, self.folder)
+            output_path = add_folder_to_filename(output_file, folder)
 
             msg.to_file(output_path)
             np.savetxt(output_path, mask_out, delimiter=',',fmt='%1.0f')
 
         else:
-            output_file = grid.filename(filestring=self.filestring, suffix='bathy', extension='txt')
+            output_file = add_suffix(filename, 'bathy')
             output_files.append(output_file)
-            output_path = add_folder_to_filename(output_file, self.folder)
+            output_path = add_folder_to_filename(output_file, folder)
 
             msg.to_file(output_path)
             np.savetxt(output_path, grid.topo().ravel(), delimiter=',',fmt='%1.6f')
 
-            output_file = grid.filename(filestring=self.filestring, suffix='mapsta', extension='txt')
+            output_file = add_suffix(filename, 'mapsta')
             output_files.append(output_file)
-            output_path = add_folder_to_filename(output_file, self.folder)
+            output_path = add_folder_to_filename(output_file, folder)
 
             msg.to_file(output_path)
             np.savetxt(output_path, mask_out.ravel(), delimiter=',',fmt='%1.0f')
 
-        grid.write_status(folder=self.folder)
+        grid.write_status(filename=infofilename, folder=folder)
 
-        return output_files, self.folder
+        return output_files, folder
 
 class SWAN(GridWriter):
     """Writes the grid to SWAN format."""
-
-    def __init__(self, folder: str=dflt_grd['fldr']['SWAN'], filestring: str=dflt_grd['fs']['SWAN']) -> None:
-        self.folder = copy(folder)
-        self.filestring = copy(filestring)
+    def __init__(self, out_format='SWAN'):
+        self.out_format = out_format
         return
 
-    def __call__(self, grid: Grid) -> Tuple:
+    def _preferred_format(self):
+        return self.out_format
+
+    def __call__(self, grid: Grid, filename: str, infofilename: str, folder: str) -> None:
         msg.header(f'{type(self).__name__}: writing grid topography from {grid.name()}')
 
         #msg.header(f"Writing grid to SWAN format to folder: {self.folder}.")
@@ -99,31 +101,28 @@ class SWAN(GridWriter):
             msg.info(f'Setting {sum(sum(np.logical_and(grid.boundary_mask(), grid.land_sea_mask()))):d} boundary points in grid...')
             mask_out[np.logical_and(grid.boundary_mask(), grid.land_sea_mask())] = 2
 
-        existed = check_if_folder(folder=self.folder, create=True)
+        existed = check_if_folder(folder=folder, create=True)
         if not existed:
-            msg.plain(f"Creating folder {self.folder}")
+            msg.plain(f"Creating folder {folder}")
 
-        output_file = grid.filename(filestring=self.filestring, extension='bot')
-        output_path = add_folder_to_filename(output_file, self.folder)
+        #output_file = grid.filename(filestring=filestring, extension='bot')
+        output_path = add_folder_to_filename(filename, folder)
 
         msg.to_file(output_path)
         np.savetxt(output_path, grid.topo(), delimiter='\t',fmt='%1.2f')
-        grid.write_status(folder=self.folder)
+        grid.write_status(filename=infofilename, folder=folder)
 
-        return output_file, self.folder
+        return filename, folder
 
-class SWASH(SWAN):
-    """Writes the grid to SWASH format.
-
-    NB! Format is same as SWAN, and a separate class is defined only to get
-    the file name right.
-    """
-
-    def __init__(self, folder: str=dflt_grd['fldr']['SWASH'], filestring: str=dflt_grd['fs']['SWASH']) -> None:
-        self.folder = copy(folder)
-        self.filestring = copy(filestring)
-        return
-
-    def __call__(self, grid: Grid) -> Tuple:
-        output_file, output_folder = super().__call__(grid)
-        return output_file, output_folder
+# class SWASH(SWAN):
+#     """Writes the grid to SWASH format.
+#
+#     NB! Format is same as SWAN, and a separate class is defined only to get
+#     the file name right.
+#     """
+#     def _preferred_format(self):
+#         return 'SWASH'
+#
+#     def __call__(self, grid: Grid, filename: str, infofilename: str, folder: str) -> Tuple:
+#         filename, folder = super().__call__(grid)
+#         return filename, folder
