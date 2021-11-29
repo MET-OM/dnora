@@ -1,53 +1,54 @@
 import matplotlib.pyplot as plt
+from abc import ABC, abstractmethod
 import numpy as np
 from .grd.grd_mod import Grid, GridProcessor
 from .grd.process import TrivialFilter
 from .bnd.bnd_mod import Boundary
 from .wnd.wnd_mod import Forcing
-
+from .aux import add_suffix
 from . import msg
+from typing import Tuple
 
+class GridPlotter(ABC):
+    """Plots data from Grid-object."""
 
-def grd_topo(grid: Grid, boundary_points: bool=False, save_fig: bool=False, filename: str='', boundary: Boundary=None, forcing: Forcing=None, grid_processor: GridProcessor=TrivialFilter()) -> None:
-    """Creates a plot of the topography when a Grid-object is provided.
+    @abstractmethod
+    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, filename: str) -> Tuple:
+        return fig, filename
 
-    Options
-    boundary:       If a boundary object from dnora.bnd is given, then the
-                    boundary spectra locations are printed on the plot.
+class grd_topo(GridPlotter):
+    def __init__(self):
+        return
 
-    forcing:        If a forcing object from dnora.wnd is given, then the
-                    forcing grid is printed on the plot.
+    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, filename: str) -> Tuple:
+        """Creates a plot of the topography when a Grid-object is provided.
 
-    boundary_points: Show grid boundary points (default: False)
+        Options
+        boundary:       If a boundary object from dnora.bnd is given, then the
+                        boundary spectra locations are printed on the plot.
 
-    save_fig:       If set to true, plot is saved.
+        forcing:        If a forcing object from dnora.wnd is given, then the
+                        forcing grid is printed on the plot.
 
-    filename:       Used if save_fig=True, e.g. 'My_plot.pdf'.
-                    Default is ''{grid.name()}_topo.pdf'
+        filename:       Filename for possibly saving the plot. This can be
+                        modified and returned to the object that saves the plot.
+        """
 
-    grid_processor: A GridProcessor might be provided to modify the data
-                    before plotting. These modifications are not applied
-                    to the data, but are only used for plotting.
-    """
+        # Create basic plot
+        fig = plt.figure()
+        levels = np.linspace(0, np.max(grid.topo()), 100, endpoint=True)
+        plt.contourf(grid.lon(),grid.lat(),grid.topo(),levels)
 
-    # Allows a modification of the topography before plotting
-    topo = grid_processor(grid.topo(), grid.lon(), grid.lat(), grid.land_sea_mask(), grid.boundary_mask())
-
-    if grid.topo().size > 0:
-        if not filename:
-            filename = f"{grid.name()}_topo.pdf"
-        levels = np.linspace(0, np.max(topo), 100, endpoint=True)
-
-        plt.figure()
-        plt.contourf(grid.lon(),grid.lat(),topo,levels)
-
-        if boundary_points:
-            lonlat=grid.boundary_points()
+        # Plot boundary points if they exist
+        lonlat=grid.boundary_points()
+        if lonlat.shape[0] > 0:
             plt.plot(lonlat[:,0], lonlat[:,1],'k*', label='Set boundary points')
 
+        # Plot locations of boundary spectra
         if boundary is not None:
             plt.plot(boundary.lon(), boundary.lat(),'kx', label=f"Available spectra from {boundary.name()}")
 
+        # Plot locations of wind forcing data points
         if forcing is not None:
             lonlat=forcing._point_list(mask=np.full(forcing.size()[1:], True))
             plt.plot(lonlat[:,0], lonlat[:,1],'r.', markersize=1.5, label=f"Forcing from {forcing.name()}")
@@ -56,60 +57,52 @@ def grd_topo(grid: Grid, boundary_points: bool=False, save_fig: bool=False, file
         cbar = plt.colorbar()
         cbar.set_label('Depth (m)', rotation=90)
         plt.title(f"{grid.name()} topography")
-        plt.show()
 
-        if save_fig:
-            plt.savefig(filename, dpi=300)
-            msg.to_file(filename)
-    else:
-        msg.templates('no_topo')
+        return fig, add_suffix(filename, 'topo')
 
-    return
+class grd_mask(GridPlotter):
+    def __init__(self):
+        return
 
-def grd_mask(grid, boundary_points: bool=True, save_fig: bool=False, filename: str='', boundary: Boundary=None, forcing: Forcing=None) -> None:
-    """Creates a plot of the land-sea mask based on the provided Grid object.
+    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, filename: str) -> Tuple:
+        """Creates a plot of the land-sea mask based on the provided Grid object.
 
-    Options
-    boundary:       If a boundary object from dnora.bnd is given, then the
-                    boundary spectra locations are printed on the plot.
+        Options
+        boundary:       If a boundary object from dnora.bnd is given, then the
+                        boundary spectra locations are printed on the plot.
 
-    forcing:        If a forcing object from dnora.wnd is given, then the
-                    forcing grid is printed on the plot.
+        forcing:        If a forcing object from dnora.wnd is given, then the
+                        forcing grid is printed on the plot.
 
-    boundary_points: Show grid boundary points (default: True)
+        boundary_points: Show grid boundary points (default: True)
 
-    save_fig:       If set to true, plot is saved.
+        save_fig:       If set to true, plot is saved.
 
-    filename:       Used if save_fig=True, e.g. 'My_plot.pdf'.
-                    Default is ''{grid.name()}_mask.pdf'
-    """
-    if grid.boundary_mask().size > 0:
-        if not filename:
-            filename = f"{grid.name()}_mask.pdf"
+        filename:       Used if save_fig=True, e.g. 'My_plot.pdf'.
+                        Default is ''{grid.name()}_mask.pdf'
+        """
 
-        plt.figure()
+        fig = plt.figure()
         plt.contourf(grid.lon(),grid.lat(),grid.land_sea_mask())
 
-        if boundary_points:
-            lonlat=grid.boundary_points()
+        # Plot boundary points if they exist
+        lonlat=grid.boundary_points()
+        if lonlat.shape[0] > 0:
             plt.plot(lonlat[:,0], lonlat[:,1],'k*', label='Set boundary points')
 
+        # Plot locations of boundary spectra
         if boundary is not None:
             plt.plot(boundary.lon(), boundary.lat(),'kx', label=f"Available spectra from {boundary.name()}")
 
+        # Plot locations of wind forcing data points
         if forcing is not None:
             lonlat=forcing._point_list(mask=np.full(forcing.size()[1:], True))
             plt.plot(lonlat[:,0], lonlat[:,1],'r.', markersize=1.5, label=f"Forcing from {forcing.name()}")
 
 
-        plt.colorbar()
+        plt.legend(loc="upper right")
+        cbar = plt.colorbar()
+        cbar.set_label('0=Land, 1=Sea', rotation=90)
         plt.title(f"{grid.name()} land-sea mask")
-        plt.show()
 
-        if save_fig:
-            plt.savefig(filename, dpi=300)
-            msg.to_file(filename)
-    else:
-        msg.templates('no_mask')
-
-    return
+        return fig, add_suffix(filename, 'mask')

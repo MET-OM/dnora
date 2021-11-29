@@ -14,16 +14,18 @@ from ..wnd.wnd_mod import Forcing
 
 from ..inp import InputFileWriter
 from .. import msg
-from ..defaults import dflt_mdl, dflt_inp, dflt_bnd, dflt_frc, dflt_grd
+from ..defaults import dflt_mdl, dflt_inp, dflt_bnd, dflt_frc, dflt_grd, dflt_plt, list_of_placeholders
 
-from ..aux import create_filename_obj, create_filename_time, add_folder_to_filename, check_if_folder
+from ..aux import create_filename_obj, create_filename_time, add_folder_to_filename, check_if_folder, clean_filename
+from ..grd.process import GridProcessor, TrivialFilter
+from ..dnplot import GridPlotter, grd_topo
 
 class ModelRun:
     def __init__(self, grid: Grid, start_time: str, end_time: str,
                 name='AnonymousModelRun', folder=dflt_mdl['fldr']['General']):
         self._name = copy(name)
 
-        self._grid = copy(grid)
+        self._grid = grid
         self.start_time = start_time
         self.end_time = end_time
         self._folder = copy(folder)
@@ -199,6 +201,36 @@ class ModelRun:
 
         return
 
+    def plot_grid(self, grid_plotter: GridPlotter=None, grid_processor: GridProcessor=None, save_fig: bool=False, show_fig: bool=True, filestring: str=dflt_plt['fs']['Grid']):
+        if grid_plotter is None:
+            self._grid_plotter = self._get_grid_plotter()
+        else:
+            self._grid_plotter = grid_plotter
+
+        if self._grid_plotter is None:
+            raise Exception('Define a GridPlotter!')
+
+
+        grid_plot = copy(self.grid())
+        if grid_processor is not None:
+            grid_plot.process_grid(grid_processor)
+
+
+        filename = create_filename_obj(filestring=filestring, objects=[self, self.grid(), self.forcing(), self.boundary()])
+
+        fig, filename_out = self._grid_plotter(grid_plot, forcing=self.forcing(), boundary=self.boundary(), filename=filename)
+
+        # Cleans out e.g. #T0 or "__" if they were in the filename
+        filename_out = clean_filename(filename_out, list_of_placeholders)
+
+        if save_fig:
+            fig.savefig(filename_out, dpi=300)
+            msg.to_file(filename_out)
+        if show_fig:
+            fig.show()
+
+        return
+
     def set_foldername(self, folder: str=dflt_mdl['fldr']['General'], datestring: str=dflt_mdl['ds']['General']):
         """Creates a foldername for the object.
 
@@ -312,3 +344,6 @@ class ModelRun:
 
     def _get_input_file_writer(self):
         return None
+
+    def _get_grid_plotter(self):
+        return grd_topo()

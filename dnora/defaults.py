@@ -52,10 +52,19 @@ dflt_inp = {'fs': { 'SWAN': 'input_#T0_#Grid.swn',
                     'SWASH': ''}
         }
 
+
+"""Default filestrings and datestrings for dnplot-module"""
+dflt_plt = {'fs': { 'Grid': '#Grid.pdf'},
+            'ds': { 'Grid': ''},
+            'fldr': {'Grid': ''}
+        }
+
 """Default filestrings and datestrings for mdl-module"""
 dflt_mdl = {'ds': { 'General': '%Y%m%dT%H%M'},
             'fldr': {'General': ''}
         }
+
+
 
 # Used to clean up filenames
 list_of_placeholders = ['#Grid', '#Forcing', '#Boundary', '#ModelRun', '#T0', '#T1', 'E#Lon', 'N#Lat', '#Lon', '#Lat']
