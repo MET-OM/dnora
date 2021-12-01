@@ -26,4 +26,8 @@ model.import_forcing(name='NORA3')
 model.export_boundary()
 model.export_forcing()
 
+# Uses the folder defined in defaults.py 
 model.write_input_file()
+# Assums the model is located in the same folder as the input file was written to
+# This can be overridden with normal folder='#Forcing_#Grid' etc.
+model.run_model()
