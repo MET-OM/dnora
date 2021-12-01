@@ -18,4 +18,5 @@ Copyright 2021, Konstantinos Christakos and Jan-Victor Björkqvist, MET Norway
 
 from .wnd_mod import Forcing
 from .read import *
+from .read_metno import *
 from .write import *

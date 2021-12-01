@@ -52,21 +52,21 @@ class WW3(ModelRun):
 
 class SWAN_NORA3(SWAN):
     def _get_boundary_reader(self):
-        return bnd.read.MetNo_NORA3()
+        return bnd.read_metno.NORA3()
 
     def _get_forcing_reader(self):
-        return wnd.read.MetNo_NORA3()
+        return wnd.read_metno.NORA3()
 
 class SWASH_NORA3(SWASH):
     def _get_boundary_reader(self):
-        return bnd.read.MetNo_NORA3()
+        return bnd.read_metno.NORA3()
 
     def _get_forcing_reader(self):
-        return wnd.read.MetNo_NORA3()
+        return wnd.read_metno.NORA3()
 
 class WW3_NORA3(WW3):
     def _get_boundary_reader(self):
-        return bnd.read.MetNo_NORA3()
+        return bnd.read_metno.NORA3()
 
     def _get_forcing_reader(self):
-        return wnd.read.MetNo_NORA3()
+        return wnd.read_metno.NORA3()

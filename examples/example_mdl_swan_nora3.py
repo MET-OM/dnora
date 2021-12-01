@@ -22,8 +22,8 @@ model = mdl.SWAN_NORA3(grid, start_time = '2018-08-25T00:00', end_time = '2018-0
 
 model.export_grid()
 
-model.import_boundary(name='NORA3')
-model.import_forcing(name='NORA3')
+model.import_boundary()
+model.import_forcing()
 
 model.export_boundary()
 model.export_forcing()
