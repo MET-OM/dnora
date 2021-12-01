@@ -89,7 +89,7 @@ class MetNo_NORA3(ForcingReader):
 
             url = self.get_url(file_times[n], start_times[n], first_ind=self.lead_time)
 
-            msg.info(url)
+            msg.from_file(url)
             msg.plain(f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
 
             nc_fimex = f'dnora_wnd_temp/wind_{n:04.0f}_MetNo_NORA3.nc'
@@ -197,7 +197,7 @@ class MetNo_MyWave3km(ForcingReader):
         for n in range(len(file_times)):
             url = self.get_url(file_times[n])
 
-            msg.info(url)
+            msg.from_file(url)
             msg.plain(
                 f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
 
@@ -308,7 +308,7 @@ class MetNo_MEPS(ForcingReader):
 
             nc_fimex = f'dnora_wnd_temp/wind_{n:04.0f}_MetNo_MEPS.nc'
             url = self.get_url(file_times[n], prefix)
-            msg.info(url)
+            msg.from_file(url)
 
             fimex_command = ['fimex', '--input.file='+url,
                              '--interpolate.method=bilinear',

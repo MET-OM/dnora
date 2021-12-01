@@ -29,8 +29,7 @@ class Forcing:
         self.start_time = copy(start_time)
         self.end_time = copy(end_time)
 
-        msg.header(
-            f"{type(forcing_reader).__name__}: Loading wind forcing...")
+        msg.header(forcing_reader, "Loading wind forcing...")
         self.data = forcing_reader(
             self.grid, start_time, end_time, expansion_factor)
 
@@ -41,6 +40,9 @@ class Forcing:
 
         The forcing_writer defines the file format.
         """
+        msg.header(forcing_writer, f"Writing wind forcing from {self.name()}")
+
+
         if out_format is None:
             out_format = forcing_writer._preferred_format()
 

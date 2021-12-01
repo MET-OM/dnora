@@ -73,8 +73,6 @@ class DumpToNc(BoundaryWriter):
         return 'General'
 
     def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
-        msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name()}')
-
 
         output_file = clean_filename(filename, list_of_placeholders)
 
@@ -102,7 +100,6 @@ class NcFiles(BoundaryWriter):
         return 'General'
 
     def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
-        msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name()}')
 
         output_files = []
         for n in boundary.x():
@@ -134,8 +131,6 @@ class WW3(BoundaryWriter):
 
     def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
 
-        #boundary_in = copy(boundary)
-        msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name()}')
 
         #boundary_in.change_convention(wanted_convention='WW3')
 
@@ -307,8 +302,6 @@ class SWAN(BoundaryWriter):
     def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
         #boundary_in = copy(boundary)
 
-        msg.header(f'{type(self).__name__}: writing boundary spectra from {boundary.name()}')
-
         output_file = clean_filename(filename, list_of_placeholders)
         output_path = add_folder_to_filename(filename, folder=folder)
 
@@ -340,7 +333,7 @@ class SWAN(BoundaryWriter):
             file_out.write('m2/Hz/degr \n')
             file_out.write('-32767\n')
                 #first day
-            msg.info(f'Writing 2d spectra at boundaries to: {output_path}')
+            msg.to_file(f"{output_path}")
 
             for day in days:
                 msg.plain(day.strftime('%Y-%m-%d'))

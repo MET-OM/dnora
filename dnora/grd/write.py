@@ -33,7 +33,6 @@ class WW3(GridWriter):
         return
 
     def __call__(self, grid: Grid, filename: str, infofilename: str, folder: str) -> Tuple:
-        msg.header(f'{type(self).__name__}: writing grid topography from {grid.name()}')
 
         mask_out = np.zeros(grid.topo().shape)
         mask_out[grid.land_sea_mask()] = 1
@@ -88,9 +87,7 @@ class SWAN(GridWriter):
         return self.out_format
 
     def __call__(self, grid: Grid, filename: str, infofilename: str, folder: str) -> None:
-        msg.header(f'{type(self).__name__}: writing grid topography from {grid.name()}')
 
-        #msg.header(f"Writing grid to SWAN format to folder: {self.folder}.")
         mask_out = np.ones(grid.topo().shape)
         mask_out[grid.land_sea_mask()] = 0
         if grid.boundary_mask().size > 0:

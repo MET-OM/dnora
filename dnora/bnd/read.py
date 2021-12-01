@@ -144,7 +144,7 @@ class MetNo_WAM4km(BoundaryReader):
         bnd_list = []
         for n in range(len(file_times)):
             url = self.get_url(file_times[n])
-            msg.info(url)
+            msg.from_file(url)
             msg.plain(f"Reading boundary spectra: {start_times[n]}-{end_times[n]}")
 
             bnd_list.append(xr.open_dataset(url).sel(time = slice(start_times[n], end_times[n]), x = (inds+1)))
@@ -205,7 +205,7 @@ class MetNo_NORA3(BoundaryReader):
         bnd_list = []
         for n in range(len(file_times)):
             url = self.get_url(file_times[n])
-            msg.info(url)
+            msg.from_file(url)
             msg.plain(f"Reading boundary spectra: {start_times[n]}-{end_times[n]}")
             bnd_list.append(xr.open_dataset(url).sel(time = slice(start_times[n], end_times[n]), x = (inds+1)))
 
@@ -271,7 +271,7 @@ class File_WW3Nc(BoundaryReader):
         bnd_list = []
         for n in range(len(file_times)):
             filename = self.get_filename(file_times[n])
-            msg.info(filename)
+            msg.from_file(filename)
             msg.plain(f"Reading boundary spectra: {start_times[n]}-{end_times[n]}")
 
             bnd_list.append(xr.open_dataset(filename).sel(time = slice(start_times[n], end_times[n]), station = (inds+1)))

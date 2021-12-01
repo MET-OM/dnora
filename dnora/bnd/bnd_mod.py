@@ -44,13 +44,13 @@ class Boundary:
         self.start_time = copy(start_time)
         self.end_time = copy(end_time)
 
-        msg.header(f"{type(boundary_reader).__name__}: Reading coordinats of spectra...")
+        msg.header(boundary_reader, "Reading coordinates of spectra...")
         lon_all, lat_all = boundary_reader.get_coordinates(self.start_time)
 
-        msg.header(f"Choosing spectra with {type(point_picker).__name__}")
+        msg.header(point_picker, "Choosing spectra...")
         inds = point_picker(self.grid, lon_all, lat_all)
 
-        msg.header(f"{type(boundary_reader).__name__}: Loading boundary spectra...")
+        msg.header(boundary_reader, "Loading boundary spectra...")
         time, freq, dirs, spec, lon, lat, source = boundary_reader(self.start_time, end_time, inds)
 
         self.data = self.compile_to_xr(time, freq, dirs, spec, lon, lat, source)
@@ -117,6 +117,8 @@ class Boundary:
         existed = check_if_folder(folder=folder, create=True)
         if not existed:
             msg.plain(f"Creating folder {folder}")
+
+        msg.header(boundary_writer, f"Writing boundary spectra from {self.name()}")
 
         # Make sure convention is right for the reader
         wanted_convention = boundary_writer.convention()

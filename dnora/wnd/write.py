@@ -33,7 +33,7 @@ class WW3(ForcingWriter):
         return 'WW3'
 
     def __call__(self, forcing: Forcing, filename: str, folder: str) -> Tuple[str, str]:
-        msg.header(f'{type(self).__name__}: writing wind forcing from {forcing.name()}')
+
 
         # Add folder
         output_path = add_folder_to_filename(filename, folder=folder)
@@ -54,8 +54,6 @@ class SWAN(ForcingWriter):
         return self.out_format
 
     def __call__(self, forcing: Forcing, filename: str, folder: str) -> Tuple[str, str]:
-        msg.header(f'{type(self).__name__}: writing wind forcing from {forcing.name()}')
-
 
         # Add folder
         output_path = add_folder_to_filename(filename, folder=folder)

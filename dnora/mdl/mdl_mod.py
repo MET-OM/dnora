@@ -191,7 +191,7 @@ class ModelRun:
         if boundary_path is None:
             boundary_path = add_folder_to_filename(filename=self.boundary_exported_as(out_format), folder=self.boundary_exported_to(out_format))
 
-        msg.header(f"{type(self._input_file_writer).__name__}: Writing model input file...")
+        msg.header(self._input_file_writer, "Writing model input file...")
 
         output_files, output_folder = self._input_file_writer(grid=self.grid(), forcing=self.forcing(), boundary=self.boundary(), start_time=start_time, end_time=end_time,
                         filename=filename, folder=folder,
@@ -247,7 +247,7 @@ class ModelRun:
             model_folder = create_filename_time(filestring=model_folder, times=[self.start_time, self.end_time], datestring=datestring)
 
         model_folder = clean_filename(model_folder, list_of_placeholders)
-        msg.header(f"{type(self._model_executer).__name__}: Running model...")
+        msg.header(self._model_executer, "Running model...")
         msg.plain(f"Using input file: {add_folder_to_filename(input_file, model_folder)}")
         self._model_executer(input_file=input_file, model_folder=model_folder)
 

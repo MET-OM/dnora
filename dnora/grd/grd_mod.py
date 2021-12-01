@@ -32,7 +32,7 @@ class Grid:
     def import_topo(self, topo_reader: TopoReader) -> None:
         """Reads the raw bathymetrical data."""
 
-        msg.header(f'Importing topography with {type(topo_reader).__name__}')
+        msg.header(topo_reader, "Importing topography...")
         print(topo_reader)
         topo, lon, lat = topo_reader(self.data.lon_min, self.data.lon_max, self.data.lat_min, self.data.lat_max)
 
@@ -49,7 +49,7 @@ class Grid:
     def process_topo(self, filt: GridProcessor = TrivialFilter()) -> None:
         """Processes the raw bathymetrical data, e.g. with a filter."""
 
-        msg.header(f'Filtering topography with {type(filt).__name__}')
+        msg.header(filt, "Filtering topography...")
 
         empty_mask = np.full(self.raw_topo().shape, False)
         land_sea_mask = self.raw_topo() < 0 # Sea points set to true
@@ -67,7 +67,7 @@ class Grid:
 
         if hasattr(self, 'lon') and hasattr(self, 'lon'):
 
-            msg.header(f'Meshing grid bathymetry with {type(mesher).__name__}')
+            msg.header(mesher, "Meshing grid bathymetry...")
             print(mesher)
             topo = mesher(self.raw_topo(), self.raw_lon(), self.raw_lat(), self.lon(), self.lat())
             vars_dict = {'topo': (['lat', 'lon'], topo)}
@@ -84,7 +84,7 @@ class Grid:
     def process_grid(self, filt: GridProcessor = TrivialFilter()) -> None:
         """Processes the gridded bathymetrical data, e.g. with a filter."""
 
-        msg.header(f'Filtering meshed grid with {type(filt).__name__}')
+        msg.header(filt, "Filtering meshed grid...")
         print(filt)
         topo = filt(self.topo(), self.lon(), self.lat(), self.land_sea_mask(), self.boundary_mask())
 
@@ -101,6 +101,8 @@ class Grid:
 
         The grid_writer defines the file format.
         """
+
+        msg.header(grid_writer, f"Writing grid topography from {self.name()}")
 
         if out_format is None:
             out_format = grid_writer._preferred_format()
@@ -168,7 +170,7 @@ class Grid:
                             longitude and ny points in latitude direction.
         """
 
-        msg.header("Setting grid spacing")
+        msg.header(self, "Setting grid spacing...")
 
         # Resetting spacing will lose all information about the old grid.
         # We therefore check that
@@ -298,7 +300,7 @@ class Grid:
         the responsibility of the GridWriter.
         """
 
-        msg.header(f'Setting boundary points with {type(boundary_setter).__name__}')
+        msg.header(boundary_setter, "Setting boundary points...")
         print(boundary_setter)
 
         boundary_mask = boundary_setter(self.land_sea_mask().shape)
@@ -490,7 +492,7 @@ class Grid:
 
         empty_topo = np.mean(self.topo()[self.land_sea_mask()]) == 9999
 
-        msg.header(f"Status of grid {self.data.name}")
+        msg.header(self, f"Status of grid {self.data.name}")
         msg.plain(f'lon: {self.data.lon_min} - {self.data.lon_max}, lat: {self.data.lat_min} - {self.data.lat_max}')
 
         if hasattr(self.data, 'dlon') and hasattr(self.data, 'dlon'):
