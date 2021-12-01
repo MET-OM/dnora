@@ -23,7 +23,7 @@ class BoundaryReader(ABC):
         return lon, lat
 
     @abstractmethod
-    def get_convention(self) -> str:
+    def convention(self) -> str:
         """Return the convention of the spectra returned to the object.
 
         The conventions to choose from are predetermined:
@@ -78,7 +78,7 @@ class ForceFeed(BoundaryReader):
         self.convention = copy(convention)
         return
 
-    def get_convention(self) -> str:
+    def convention(self) -> str:
         return copy(self.convention)
 
     def get_coordinates(self, start_time) -> Tuple:
@@ -97,7 +97,7 @@ class MetNo_WAM4km(BoundaryReader):
         self.last_file = copy(last_file)
         return
 
-    def get_convention(self) -> str:
+    def convention(self) -> str:
         return 'Ocean'
 
 
@@ -177,7 +177,7 @@ class MetNo_NORA3(BoundaryReader):
 
         return
 
-    def get_convention(self) -> str:
+    def convention(self) -> str:
         return 'Ocean'
 
     def get_coordinates(self, start_time) -> Tuple:
@@ -244,7 +244,7 @@ class File_WW3Nc(BoundaryReader):
 
         return
 
-    def get_convention(self) -> str:
+    def convention(self) -> str:
         return 'WW3'
 
     def get_coordinates(self, start_time) -> Tuple:

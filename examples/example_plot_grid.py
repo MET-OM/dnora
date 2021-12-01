@@ -35,7 +35,3 @@ model.plot_grid(save_fig=True, show_fig=False, filestring='#Grid_#Forcing.pdf')
 
 # If one wants to use a different plotter
 model.plot_grid(grid_plotter=dnplot.grd_mask())
-
-# If we clear the boundary points in the grid, it will reflect to the ModelRun-object!
-grid.set_boundary(grd.boundary.ClearBoundary())
-model.plot_grid(grid_plotter=dnplot.grd_mask()) # << No boundary points visible!

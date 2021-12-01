@@ -12,7 +12,7 @@ class SpectralProcessor(ABC):
         pass
 
     @abstractmethod
-    def get_convention(self) -> str:
+    def convention(self) -> str:
         """Return the convention of the spectra returned to the object.
 
         The conventions to choose from are predetermined and listed below.
@@ -35,7 +35,7 @@ class SpectralProcessor(ABC):
                     Directional vector of type: [90 80 ... 10 0 350 ... 100]
                     Direction to. North = 0, East = 90.
         """
-        pass
+        return
 
     @abstractmethod
     def __call__(self, spec, dirs, freq) -> Tuple:
@@ -63,7 +63,7 @@ class Multiply(SpectralProcessor):
         self.calib_spec = calib_spec
         return
 
-    def get_convention(self) -> str:
+    def convention(self) -> str:
         return None
 
     def __call__(self, spec, dirs, freq) -> Tuple:
@@ -81,7 +81,7 @@ class ReGridDirs(SpectralProcessor):
 
         return
 
-    def get_convention(self) -> str:
+    def convention(self) -> str:
         return None
 
     def __call__(self, spec, dirs, freq) -> Tuple:
@@ -146,7 +146,7 @@ class OceanToWW3(SpectralProcessor):
     def __init__(self):
         pass
 
-    def get_convention(self) -> str:
+    def convention(self) -> str:
         return 'WW3'
 
     def __call__(self, spec, dirs, freq = None) -> Tuple:
@@ -181,7 +181,7 @@ class WW3ToOcean(SpectralProcessor):
     def __init__(self):
         pass
 
-    def get_convention(self) -> str:
+    def convention(self) -> str:
         return 'Ocean'
 
     def __call__(self, spec, dirs, freq = None) -> Tuple:
@@ -218,7 +218,7 @@ class OceanToMath(SpectralProcessor):
     def __init__(self):
         pass
 
-    def get_convention(self) -> str:
+    def convention(self) -> str:
         return 'Math'
 
     def __call__(self, spec, dirs, freq = None) -> Tuple:
@@ -251,7 +251,7 @@ class MetToOcean(SpectralProcessor):
     def __init__(self):
         pass
 
-    def get_convention(self) -> str:
+    def convention(self) -> str:
         return 'Ocean'
 
     def __call__(self, spec, dirs, freq = None) -> Tuple:
@@ -280,7 +280,7 @@ class OceanToMet(SpectralProcessor):
     def __init__(self):
         pass
 
-    def get_convention(self) -> str:
+    def convention(self) -> str:
         return 'Met'
 
     def __call__(self, spec, dirs, freq = None) -> Tuple:

@@ -65,7 +65,7 @@ class grd_mask(GridPlotter):
         return
 
     def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, filename: str) -> Tuple:
-        """Creates a plot of the land-sea mask based on the provided Grid object.
+        """Creates a plot of the land-sea mask when a Grid-object is provided.
 
         Options
         boundary:       If a boundary object from dnora.bnd is given, then the
@@ -74,12 +74,8 @@ class grd_mask(GridPlotter):
         forcing:        If a forcing object from dnora.wnd is given, then the
                         forcing grid is printed on the plot.
 
-        boundary_points: Show grid boundary points (default: True)
-
-        save_fig:       If set to true, plot is saved.
-
-        filename:       Used if save_fig=True, e.g. 'My_plot.pdf'.
-                        Default is ''{grid.name()}_mask.pdf'
+        filename:       Filename for possibly saving the plot. This can be
+                        modified and returned to the object that saves the plot.
         """
 
         fig = plt.figure()

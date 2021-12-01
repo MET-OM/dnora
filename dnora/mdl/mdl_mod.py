@@ -25,9 +25,9 @@ class ModelRun:
                 name='AnonymousModelRun', folder=dflt_mdl['fldr']['General']):
         self._name = copy(name)
 
-        self._grid = grid
-        self.start_time = start_time
-        self.end_time = end_time
+        self._grid = copy(grid)
+        self.start_time = copy(start_time)
+        self.end_time = copy(end_time)
         self._folder = copy(folder)
         self._foldername_generated = False
 

@@ -57,7 +57,7 @@ class Boundary:
         self.mask = [True]*len(self.x())
 
         # E.g. are the spectra oceanic convention etc.
-        self._convention = boundary_reader.get_convention()
+        self._convention = boundary_reader.convention()
 
         return
 
@@ -85,7 +85,7 @@ class Boundary:
             self.data = self.data.assign_coords(freq=new_freq)
 
             # Set new convention if the processor changed it
-            new_convention = spectral_processor.get_convention()
+            new_convention = spectral_processor.convention()
             if new_convention is not None:
                 msg.info(f"Setting new convention to {new_convention}")
                 self._convention = new_convention
@@ -97,6 +97,7 @@ class Boundary:
         The bounday_writer defines the file format.
         """
 
+        # For setting the file name
         if out_format is None:
             out_format = boundary_writer._preferred_format()
 
@@ -116,6 +117,10 @@ class Boundary:
         existed = check_if_folder(folder=folder, create=True)
         if not existed:
             msg.plain(f"Creating folder {folder}")
+
+        # Make sure convention is right for the reader
+        wanted_convention = boundary_writer.convention()
+        self.change_convention(wanted_convention=wanted_convention)
 
         output_files, output_folder = boundary_writer(self, filename=filename, folder=folder)
 
