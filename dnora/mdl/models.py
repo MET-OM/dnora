@@ -1,6 +1,6 @@
 from .mdl_mod import ModelRun
 
-from .. import bnd, wnd, grd, inp
+from .. import bnd, wnd, grd, inp, run
 
 class SWAN(ModelRun):
     def _get_boundary_writer(self):
@@ -17,6 +17,9 @@ class SWAN(ModelRun):
 
     def _get_input_file_writer(self):
         return inp.SWAN()
+
+    def _get_model_executer(self):
+        return run.SWAN()
 
 class SWASH(ModelRun):
     def _get_boundary_writer(self):

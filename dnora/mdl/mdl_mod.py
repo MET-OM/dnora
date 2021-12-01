@@ -19,6 +19,7 @@ from ..defaults import dflt_mdl, dflt_inp, dflt_bnd, dflt_frc, dflt_grd, dflt_pl
 from ..aux import create_filename_obj, create_filename_time, add_folder_to_filename, check_if_folder, clean_filename
 from ..grd.process import GridProcessor, TrivialFilter
 from ..dnplot import GridPlotter, grd_topo
+from ..run import ModelExecuter # Abstract class
 
 class ModelRun:
     def __init__(self, grid: Grid, start_time: str, end_time: str,
@@ -190,14 +191,65 @@ class ModelRun:
         if boundary_path is None:
             boundary_path = add_folder_to_filename(filename=self.boundary_exported_as(out_format), folder=self.boundary_exported_to(out_format))
 
-
+        msg.header(f"{type(self._input_file_writer).__name__}: Writing model input file...")
 
         output_files, output_folder = self._input_file_writer(grid=self.grid(), forcing=self.forcing(), boundary=self.boundary(), start_time=start_time, end_time=end_time,
                         filename=filename, folder=folder,
                         grid_path=grid_path, forcing_path=forcing_path, boundary_path=boundary_path)
 
+
+        msg.to_file(add_folder_to_filename(output_files, folder))
+
+
         self._input_file_written_as = output_files
         self._input_file_written_to = output_folder
+
+        return
+
+    def run_model(self, model_executer: ModelExecuter=None, out_format=None, filestring=None, datestring=None, folder=None):
+        if model_executer is None:
+            self._model_executer = self._get_model_executer()
+        else:
+            self._model_executer = model_executer
+
+
+        file_not_provided = filestring is None and datestring is None and out_format is None
+        folder_not_provided = folder is None
+
+        if out_format is None:
+            out_format = self._model_executer._preferred_format()
+
+        # Set possible file- and datestrings
+        if filestring is None:
+            filestring = dflt_inp['fs'][out_format]
+
+        if datestring is None:
+            datestring = dflt_inp['ds'][out_format]
+
+        if folder is None:
+            folder = dflt_inp['fldr'][out_format]
+
+        # If no filename information was provided by the user, then use info about where input file was written (if this info exists)
+        if file_not_provided and hasattr(self, '_input_file_written_as'):
+            input_file = self._input_file_written_as
+        else: # Otherwise use default values and hope for the best
+            input_file = create_filename_obj(filestring=filestring, objects=[self, self.grid(), self.forcing(), self.boundary()])
+            input_file = create_filename_time(filestring=input_file, times=[self.start_time, self.end_time], datestring=datestring)
+
+        input_file = clean_filename(input_file, list_of_placeholders)
+
+
+        # If no folder information was provided by the user, then use info about where the input file was written to (if this info exists)
+        if file_not_provided and hasattr(self, '_input_file_written_to'):
+            model_folder = self._input_file_written_to
+        else: # Otherwise use default values and hope for the best
+            model_folder = create_filename_obj(filestring=folder, objects=[self, self.grid(), self.forcing(), self.boundary()])
+            model_folder = create_filename_time(filestring=model_folder, times=[self.start_time, self.end_time], datestring=datestring)
+
+        model_folder = clean_filename(model_folder, list_of_placeholders)
+        msg.header(f"{type(self._model_executer).__name__}: Running model...")
+        msg.plain(f"Using input file: {add_folder_to_filename(input_file, model_folder)}")
+        self._model_executer(input_file=input_file, model_folder=model_folder)
 
         return
 
@@ -343,6 +395,9 @@ class ModelRun:
         return None
 
     def _get_input_file_writer(self):
+        return None
+
+    def _get_model_executer(self):
         return None
 
     def _get_grid_plotter(self):

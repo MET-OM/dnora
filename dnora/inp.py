@@ -57,7 +57,6 @@ class SWAN(InputFileWriter):
         output_file = clean_filename(filename, list_of_placeholders)
         output_path = add_folder_to_filename(output_file, folder)
 
-        msg.to_file(output_path)
         with open(output_path, 'w') as file_out:
             file_out.write(
                 '$************************HEADING************************\n')
@@ -135,7 +134,6 @@ class SWASH(InputFileWriter):
         output_file = clean_filename(filename, list_of_placeholders)
         output_path = add_folder_to_filename(output_file, folder)
 
-        msg.to_file(output_path)
         with open(output_path, 'w') as file_out:
             file_out.write(
                 '$************************HEADING************************\n')

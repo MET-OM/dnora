@@ -48,8 +48,8 @@ dflt_inp = {'fs': { 'SWAN': 'input_#T0_#Grid.swn',
                     'SWASH': 'input_#T0_#T1_#Grid.sws'},
             'ds': { 'SWAN': '%Y%m%d',
                     'SWASH': '%H%M%S'},
-            'fldr': {'SWAN': '',
-                    'SWASH': ''}
+            'fldr': {'SWAN': 'MySWANFolder',
+                    'SWASH': 'MySWASHFolder'}
         }
 
 
