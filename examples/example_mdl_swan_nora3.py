@@ -20,13 +20,15 @@ grid.set_boundary(boundary_setter = bnd_set)
 
 model = mdl.SWAN_NORA3(grid, start_time = '2018-08-25T00:00', end_time = '2018-08-25T01:00')
 
+model.export_grid()
+
 model.import_boundary(name='NORA3')
 model.import_forcing(name='NORA3')
 
 model.export_boundary()
 model.export_forcing()
 
-# Uses the folder defined in defaults.py 
+# Uses the folder defined in defaults.py
 model.write_input_file()
 # Assums the model is located in the same folder as the input file was written to
 # This can be overridden with normal folder='#Forcing_#Grid' etc.

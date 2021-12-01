@@ -1,11 +1,13 @@
+import os
+
 """Default filestrings and datestrings for Grid"""
 dflt_grd = {'fs': { 'SWAN': '#Grid_SWAN.bot',
                     'WW3': '#Grid.txt',
                     'SWASH': '#Grid_SWASH.bot',
                     'General': 'topo_#Grid.txt'},
-            'fldr': {'SWAN': '',
-                    'WW3': '',
-                    'SWASH': '',
+            'fldr': {'SWAN': os.getcwd(),
+                    'WW3': os.getcwd(),
+                    'SWASH': os.getcwd(),
                     'General': ''},
             'info': {   'SWAN': '#Grid_info.txt',
                         'WW3': '#Grid_info.txt',
@@ -22,9 +24,9 @@ dflt_frc = {'fs': { 'SWAN': 'wind#Forcing#Grid#T0_#T1.asc',
                     'WW3': '%Y%m%dT%H%M',
                     'SWASH': '%Y%m%d',
                     'General': '%Y%m%dT%H%M'},
-            'fldr': {'SWAN': '',
-                    'WW3': '',
-                    'SWASH': '',
+            'fldr': {'SWAN': os.getcwd(),
+                    'WW3': os.getcwd(),
+                    'SWASH': os.getcwd(),
                     'General': ''}
         }
 
@@ -37,9 +39,9 @@ dflt_bnd = {'fs': { 'SWAN': 'spec#Boundary#Grid#T0_#T1.asc',
                     'WW3': '%Y%m%dT%H%M',
                     'SWASH': '%Y%m%d',
                     'General': '%Y%m%dT%H%M'},
-            'fldr': {'SWAN': '',
-                    'WW3': '',
-                    'SWASH': '',
+            'fldr': {'SWAN': os.getcwd(),
+                    'WW3': os.getcwd(),
+                    'SWASH': os.getcwd(),
                     'General': ''}
         }
 
