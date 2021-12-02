@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 def distance_2points(lat1,lon1,lat2,lon2) -> float:
     """Calculate distance between two points"""
-    
+
     R = 6371.0
     lat1 = np.radians(lat1)
     lon1 = np.radians(lon1)
@@ -159,7 +159,7 @@ def clean_filename(filename: str, list_of_placeholders: List[str]) -> str:
 
     return filename
 
-def create_time_stamps(start_time: str, end_time: str, stride: int, lead_time: int=0, last_file: str='', hours_per_file: int=0) -> Tuple:
+def create_time_stamps(start_time: str, end_time: str, stride: int, hours_per_file: int=0, last_file: str='', lead_time: int=0) -> Tuple:
     """Create time stamps to read in blocks of wind forcing from files.
 
     Options
