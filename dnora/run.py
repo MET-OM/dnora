@@ -1,8 +1,5 @@
 from subprocess import Popen
 from abc import ABC, abstractmethod
-# =============================================================================
-# RUN THE WAVE MODEL
-# =============================================================================
 
 class ModelExecuter(ABC):
     """Runs the model."""

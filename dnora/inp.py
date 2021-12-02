@@ -2,17 +2,17 @@ from abc import ABC
 from copy import copy
 import os
 import numpy as np
-from . import msg
 import pandas as pd
 
-from .wnd.wnd_mod import Forcing # Forcing object
-from .grd.grd_mod import Grid # Grid object
-from .bnd.bnd_mod import Boundary # Boundary object
+# Import objects
+from .wnd.wnd_mod import Forcing
+from .grd.grd_mod import Grid
+from .bnd.bnd_mod import Boundary
 
+# Import default values and auxiliry functions
 from .defaults import dflt_frc, dflt_bnd, dflt_grd, dflt_inp, list_of_placeholders
-
-
 from .aux import add_folder_to_filename, clean_filename
+from . import msg
 
 class InputFileWriter(ABC):
     def __init__(self):
