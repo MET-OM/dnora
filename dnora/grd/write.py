@@ -4,7 +4,7 @@ import numpy as np
 from copy import copy
 from abc import ABC, abstractmethod
 
-# Import abstract classes
+# Import objects
 from typing import TYPE_CHECKING, Tuple
 if TYPE_CHECKING:
     from .grd_mod import Grid

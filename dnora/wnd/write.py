@@ -1,16 +1,19 @@
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
-from .. import msg
 from copy import copy
-from ..aux import check_if_folder, add_folder_to_filename, clean_filename
-
-#from .wnd_mod import ForcingWriter # Abstract class
 from typing import TYPE_CHECKING, Tuple
+
+# Import objects
 if TYPE_CHECKING:
     from .wnd_mod import Forcing # Boundary object
+
+# Import default values and auxiliry functions
 from ..defaults import dflt_frc
+from .. import msg
+from ..aux import check_if_folder, add_folder_to_filename, clean_filename
 
 class ForcingWriter(ABC):
     """Writes the forcing data to a certain file format.

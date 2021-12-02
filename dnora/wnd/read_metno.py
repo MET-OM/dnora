@@ -3,15 +3,17 @@ from copy import copy
 import numpy as np
 import xarray as xr
 from subprocess import call
-from .. import msg
-from ..aux import create_time_stamps, u_v_from_dir, expand_area, lon_in_km
-
 import os, glob
+
+# Import objects
+from ..grd.grd_mod import Grid
+
+# Import abstract classes
 from .read import ForcingReader
 
-#from .wnd_mod import Forcing # Forcing object
-
-from ..grd.grd_mod import Grid # Grid object
+# Import auxiliry functions
+from .. import msg
+from ..aux import create_time_stamps, u_v_from_dir, expand_area, lon_in_km
 
 
 class NORA3(ForcingReader):
