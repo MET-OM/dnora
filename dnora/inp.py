@@ -82,8 +82,9 @@ class SWAN(InputFileWriter):
             file_out.write('$ \n')
 
             if self.wind:
+
                 file_out.write('INPGRID WIND '+str(grid.lon()[0])+' '+str(grid.lat()[0])+' 0. '+str(forcing.nx()-1)+' '+str(forcing.ny()-1)+' '+str(
-                    (delta_X/(forcing.nx()-1)).round(4)) + ' '+str((delta_Y/(forcing.ny()-1)).round(4)) + ' NONSTATIONARY ' + STR_START + ' 1 HR ' + STR_END + '\n')
+                    (delta_X/(forcing.nx()-1)).round(4)) + ' '+str((delta_Y/(forcing.ny()-1)).round(4)) + ' NONSTATIONARY ' + STR_START + f" {forcing.dt():.0f} HR " + STR_END + '\n')
                 file_out.write('READINP WIND '+str(factor_wind)+'  \''+forcing_path+'\' 3 0 0 1 FREE \n')
                 file_out.write('$ \n')
             else:
