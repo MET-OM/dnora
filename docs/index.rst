@@ -5,15 +5,36 @@
 
 Welcome to dnora's documentation!
 =====================================
-**dnora** is a Python package for dynamical downscaling of NORA wave hindcast using the spectral wave models SWAN or WAVEWATCH III. 
+**dnora** is a Python package for dynamical downscaling of NORA wave hindcast using the spectral wave models SWAN or WAVEWATCH III and wave-flow model SWASH. 
 
 The package contains functions that: 
   * create a high-resolution grid using open-access bathymetry/topography datasets (e.g., Emodnet 2018 bathymetry)
   * prepare the boundary conditions (NORA3, WAM4-operational wave model at MET Norway, available in https://thredds.met.no/thredds/catalog.html) for the spectral model
   * prepare the wind (NORA3, WAM4) forcing for the spectral model 
-  * create input parameter files (e.g., .swn, .inp) for the spectral model
+  * create input parameter files (e.g., .swn, .inp, .sws) for the models
   * run the spectral model
 
+
+Dependencies
+=====================================
+1. Installation of SWAN. The latest SWAN version can be downloaded from https://sourceforge.net/projects/swanmodel/files/swan/. The installation procedure can be found in: https://swanmodel.sourceforge.io/online_doc/swanimp/node4.html
+
+2. Installation of SWASH. The latest SWASH version can be downloaded from https://sourceforge.net/projects/swash/. The installation procedure can be found in: https://swash.sourceforge.io/online_doc/swashimp/node4.html
+
+To run the models within dnora, the paths, where the models are installed, need to be defined in .bashrc, e.g., ::
+
+   export PATH=${PATH}:/home/user/Programs/swan
+   export PATH=${PATH}:/home/user/Programs/swash
+
+.. code-block:: rst
+
+2. Fimex is a the File Interpolation, Manipulation and EXtraction library for gridded geospatial data (more info in \url{httpshttps://wiki.met.no/fimex/start}). Fimex is applied in DNORA for the preparation of forcing fields (wind and current). In case of running the spectral model without wind forcing, the fimex installation can be neglected.  A detailed installation procedure can be find in \url{https://wiki.met.no/fimex/install}. For a quick installation in linux environment (e.g., Ubuntu), you can follow the steps: i). open the Synaptic Package Manager, ii). search and mark for installation a latest version of fimex,
+ iii) apply installation and iv) check the installation (usually it is installed in /usr/bin/) by typing in command line: \texttt{fimex} or \texttt{fimex-xxx} where \texttt{xxx} is the version number. In case that only \texttt{fimex-xxx} works then add a symbolic link as:
+
+   cd /usr/bin 
+   sudo ln -s fimex-xxx fimex
+
+.. code-block:: rst
 
 Grid generation
 =====================================
