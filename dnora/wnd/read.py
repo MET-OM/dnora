@@ -1,6 +1,8 @@
 from abc import ABC,  abstractmethod
+
 # Import objects
 from ..grd.grd_mod import Grid
+
 
 class ForcingReader(ABC):
     """Reads forcing data from some source and provide it to the object.

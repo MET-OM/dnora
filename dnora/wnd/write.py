@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 # Import default values and auxiliry functions
 from ..defaults import dflt_frc
 from .. import msg
-from ..aux import check_if_folder, add_folder_to_filename, clean_filename
+from ..aux import check_if_folder, add_folder_to_filename
 
 class ForcingWriter(ABC):
     """Writes the forcing data to a certain file format.
