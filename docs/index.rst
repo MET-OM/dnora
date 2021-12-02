@@ -28,11 +28,10 @@ To run the models within dnora, the paths, where the models are installed, need 
 
 .. code-block:: rst
 
-2. Fimex is a the File Interpolation, Manipulation and EXtraction library for gridded geospatial data (more info in \url{httpshttps://wiki.met.no/fimex/start}). Fimex is applied in DNORA for the preparation of forcing fields (wind and current). In case of running the spectral model without wind forcing, the fimex installation can be neglected.  A detailed installation procedure can be find in \url{https://wiki.met.no/fimex/install}. For a quick installation in linux environment (e.g., Ubuntu), you can follow the steps: i). open the Synaptic Package Manager, ii). search and mark for installation a latest version of fimex,
- iii) apply installation and iv) check the installation (usually it is installed in /usr/bin/) by typing in command line: \texttt{fimex} or \texttt{fimex-xxx} where \texttt{xxx} is the version number. In case that only \texttt{fimex-xxx} works then add a symbolic link as:
+3. Fimex is a the File Interpolation, Manipulation and EXtraction library for gridded geospatial data (more info in \url{httpshttps://wiki.met.no/fimex/start}). Fimex is applied in DNORA for the preparation of forcing fields (wind and current). In case of running the spectral model without wind forcing, the fimex installation can be neglected.  A detailed installation procedure can be find in https://wiki.met.no/fimex/install. For a quick installation in linux environment (e.g., Ubuntu), you can follow the steps: open the Synaptic Package Manager, search and mark for installation a latest version of fimex, apply installation and check the installation (usually it is installed in /usr/bin/) by typing in command line: fimex or fimex-xxx where xxx is the version number. In case that only fimex-xxx works then add a symbolic link::
 
-   cd /usr/bin 
-   sudo ln -s fimex-xxx fimex
+      cd /usr/bin 
+      sudo ln -s fimex-xxx fimex
 
 .. code-block:: rst
 
