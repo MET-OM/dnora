@@ -1,15 +1,18 @@
 from __future__ import annotations # For TYPE_CHECKING
+
 import numpy as np
 from copy import copy
-from .. import msg
-from ..aux import check_if_folder, add_folder_to_filename, add_prefix, add_suffix
 from abc import ABC, abstractmethod
 
-from ..defaults import dflt_grd
-
+# Import abstract classes
 from typing import TYPE_CHECKING, Tuple
 if TYPE_CHECKING:
-    from .grd_mod import Grid # Boundary object
+    from .grd_mod import Grid
+
+# Import default values and auxiliry functions
+from ..defaults import dflt_grd
+from .. import msg
+from ..aux import add_folder_to_filename, add_prefix, add_suffix
 
 class GridWriter(ABC):
     """Abstract class for writing the Grid-object's data to files to be Used

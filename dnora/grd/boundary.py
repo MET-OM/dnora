@@ -1,7 +1,9 @@
 import numpy as np
 from typing import List
-from .. import msg
 from abc import ABC, abstractmethod
+
+# Import auxiliry functions
+from .. import msg
 
 class BoundarySetter(ABC):
     """Set boundary points in the grid.
@@ -100,7 +102,7 @@ class SetMatrix(BoundarySetter):
     East = [:,-1]
     West = [:,0]
     """
-    
+
     def __init__(self, matrix):
         self.matrix = matrix
         return

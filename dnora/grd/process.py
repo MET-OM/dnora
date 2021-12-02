@@ -1,7 +1,9 @@
 import numpy as np
-from .. import msg
 from abc import ABC, abstractmethod
 from copy import copy
+
+# Import auxility functions
+from .. import msg
 
 class GridProcessor(ABC):
     """Abstract class for modifying bathymetrical data of the Grid-object."""

@@ -1,9 +1,11 @@
 import xarray as xr
 from copy import copy
 from abc import ABC, abstractmethod
-from ..aux import expand_area
 import numpy as np
 from typing import Tuple
+
+# Import auxiliry functions
+from ..aux import expand_area
 
 class TopoReader(ABC):
     """Abstract class for reading the bathymetry.
@@ -93,7 +95,7 @@ class EMODNET2018(TopoReader):
 
 class ForceFeed(TopoReader):
     """Simply passes on the data it was fed upon initialization"""
-    
+
     def __init__(self, topo, topo_lon, topo_lat):
         self.topo = copy(topo)
         self.topo_lon = copy(topo_lon)
