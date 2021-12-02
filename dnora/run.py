@@ -28,7 +28,7 @@ class SWAN(ModelExecuter):
 
     def __call__(self, input_file: str, model_folder: str) -> None:
         print('Running SWAN----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>')
-        p = Popen(['./swanrun', '-input', input_file], cwd=model_folder)
+        p = Popen(['swanrun', '-input', input_file], cwd=model_folder)
         p.wait()
         return
 
@@ -42,5 +42,5 @@ class SWASH(ModelExecuter):
 
     def __call__(self, input_file: str, model_folder: str) -> None:
         print('Running SWASH----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>')
-        p = Popen(['./swashrun', '-input', input_file], cwd=model_folder)
+        p = Popen(['swashrun', '-input', input_file], cwd=model_folder)
         p.wait()
