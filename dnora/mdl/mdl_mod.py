@@ -23,14 +23,14 @@ from ..run import ModelExecuter # Abstract class
 
 class ModelRun:
     def __init__(self, grid: Grid, start_time: str, end_time: str,
-                name='AnonymousModelRun', folder=dflt_mdl['fldr']['General']):
+                name='AnonymousModelRun'): #, folder=dflt_mdl['fldr']['General']):
         self._name = copy(name)
 
         self._grid = copy(grid)
         self.start_time = copy(start_time)
         self.end_time = copy(end_time)
-        self._folder = copy(folder)
-        self._foldername_generated = False
+        #self._folder = copy(folder)
+        #self._foldername_generated = False
 
 
     # def set_run_time(self, start_time: str, end_time: str):
@@ -283,36 +283,36 @@ class ModelRun:
 
         return
 
-    def set_foldername(self, folder: str=dflt_mdl['fldr']['General'], datestring: str=dflt_mdl['ds']['General']):
-        """Creates a foldername for the object.
-
-        The foldername can be based on e.g. the name of the ModelRun object
-        itself, or the containing Grid or Boundary/Forcing objects (if imported)
-        ,or the start and end times.
-
-        This is typically called by the objects when using the
-        .export_XXXXXXX() method.
-        """
-        if not self._foldername_generated:
-            # Substitute placeholders for objects ($Grid etc.)
-            objects=[self, self.grid()]
-            if hasattr(self, 'forcing'):
-                objects.append(self.forcing)
-            if hasattr(self, 'boundary'):
-                objects.append(self.boundary())
-            folder = create_filename_obj(filestring=folder, objects=objects)
-            # Substitute placeholders for times ($T0 etc.)
-            folder = create_filename_time(filestring=folder, times=[self.start_time, self.end_time], datestring=datestring)
-
-            # Possible clean up
-
-
-            self._folder = folder
-            self._foldername_generated = True
-        return
-
-    def folder(self):
-        return self._folder
+    # def set_foldername(self, folder: str=dflt_mdl['fldr']['General'], datestring: str=dflt_mdl['ds']['General']):
+    #     """Creates a foldername for the object.
+    #
+    #     The foldername can be based on e.g. the name of the ModelRun object
+    #     itself, or the containing Grid or Boundary/Forcing objects (if imported)
+    #     ,or the start and end times.
+    #
+    #     This is typically called by the objects when using the
+    #     .export_XXXXXXX() method.
+    #     """
+    #     if not self._foldername_generated:
+    #         # Substitute placeholders for objects ($Grid etc.)
+    #         objects=[self, self.grid()]
+    #         if hasattr(self, 'forcing'):
+    #             objects.append(self.forcing)
+    #         if hasattr(self, 'boundary'):
+    #             objects.append(self.boundary())
+    #         folder = create_filename_obj(filestring=folder, objects=objects)
+    #         # Substitute placeholders for times ($T0 etc.)
+    #         folder = create_filename_time(filestring=folder, times=[self.start_time, self.end_time], datestring=datestring)
+    #
+    #         # Possible clean up
+    #
+    #
+    #         self._folder = folder
+    #         self._foldername_generated = True
+    #     return
+    #
+    # def folder(self):
+    #     return self._folder
 
     def name(self):
         return self._name
