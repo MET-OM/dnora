@@ -1,11 +1,15 @@
 import xarray as xr
 import numpy as np
-from ..aux import day_list, create_time_stamps, create_filename_time
 from copy import copy
-from .. import msg
 from abc import ABC, abstractmethod
 from typing import Tuple
+
+# Import abstract classes and needed instances of them
 from .read import BoundaryReader
+
+# Import auxiliry functions
+from .. import msg
+from ..aux import day_list, create_time_stamps
 
 class WAM4km(BoundaryReader):
     def __init__(self, ignore_nan: bool=True, stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0) -> None:

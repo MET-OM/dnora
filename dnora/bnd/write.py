@@ -1,22 +1,20 @@
 from __future__ import annotations # For TYPE_CHECKING
+
 import numpy as np
 from copy import copy
-from .. import msg
 from abc import ABC, abstractmethod
-from ..aux import check_if_folder, add_folder_to_filename, clean_filename, create_filename_lonlat
 import netCDF4
 import re
-from ..defaults import list_of_placeholders
 
-#from .bnd_mod import BoundaryWriter # Abstract class
-#from
-
+# Import abstract classes and needed instances of them
 from typing import TYPE_CHECKING, Tuple
 if TYPE_CHECKING:
-    from .bnd_mod import Boundary # Boundary object
+    from .bnd_mod import Boundary
 
-from ..defaults import dflt_bnd
-
+# Import default values and auxiliry functions
+from .. import msg
+from ..defaults import dflt_bnd, list_of_placeholders
+from ..aux import add_folder_to_filename, clean_filename, create_filename_lonlat
 
 class BoundaryWriter(ABC):
     """Writes the boundary spectra to a certain file format.

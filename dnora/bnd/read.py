@@ -1,10 +1,12 @@
 import xarray as xr
 import numpy as np
-from ..aux import day_list, create_time_stamps, create_filename_time
 from copy import copy
-from .. import msg
 from abc import ABC, abstractmethod
 from typing import Tuple
+
+# Import auxiliry functions
+from ..aux import create_time_stamps, create_filename_time
+from .. import msg
 
 class BoundaryReader(ABC):
     """Reads boundary spectra from some source and provide it to the object."""

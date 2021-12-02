@@ -1,9 +1,12 @@
 import numpy as np
-from .. import msg
-from ..aux import min_distance, expand_area
 from abc import ABC, abstractmethod
 
-from ..grd.grd_mod import Grid # Grid object
+# Import objects
+from ..grd.grd_mod import Grid
+
+# Import auxiliry functions
+from .. import msg
+from ..aux import min_distance, expand_area
 
 class PointPicker(ABC):
     """PointPickers take in longitude and latitude values, and returns indeces

@@ -3,10 +3,10 @@ from copy import copy
 from abc import ABC, abstractmethod
 from typing import Tuple
 
+# Import auxiliry functions
 from .. import msg
 from ..aux import interp_spec, shift_spec, flip_spec
 
-#from . import bnd_mod
 class BoundaryProcessor(ABC):
     def __init__(self):
         pass
