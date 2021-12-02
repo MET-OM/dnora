@@ -17,21 +17,25 @@ grid = grd.Grid(lon_min, lon_max, lat_min, lat_max, name='Skjerjehamn250')
 # Set spacing and boundary points
 grid.set_spacing(dm=1000)
 # Import topography and mesh it down to the grid definitions
-grid.import_topo(topo_reader=grd.read.EMODNET2018(tile='D5',
+grid.import_topo(topo_reader=grd.read.EMODNET2018(tile='D5'),
                                                   folder='/home/konstantinosc/PhD/github/DNORA/bathy/'))
 grid.mesh_grid()
 # Set the boundaries
-bnd_set = grd.boundary.EdgesAsBoundary(edges = ['N', 'W', 'S'], step = 10)
-grid.set_boundary(boundary_setter = bnd_set)
+bnd_set = grd.boundary.EdgesAsBoundary(edges=['N', 'W', 'S'], step=20)
+grid.set_boundary(boundary_setter=bnd_set)
 
 
-model = mdl.SWAN_NORA3(grid, start_time = '2018-08-25T00:00', end_time = '2018-08-25T01:00')
+model = mdl.SWAN_NORA3(grid, start_time='2018-08-25T00:00', end_time='2018-08-25T01:00')
 
 # =============================================================================
 # IMPORT BOUNDARIES AND FORCING
 # =============================================================================
-model.import_boundary(name='NORA3')
-model.import_forcing(name='NORA3')
+model.import_boundary()
+model.import_forcing()
+# =============================================================================
+# PLOT GRID, FORCING AND BOUNDARIES
+# =============================================================================
+model.plot_grid()
 # =============================================================================
 # WRITE OUTPUT FOR SWAN RUN
 # =============================================================================
