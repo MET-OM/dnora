@@ -13,14 +13,14 @@ class GridPlotter(ABC):
     """Plots data from Grid-object."""
 
     @abstractmethod
-    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, filename: str) -> Tuple:
+    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, filename: str, plain: bool) -> Tuple:
         return fig, filename
 
 class grd_topo(GridPlotter):
     def __init__(self):
         return
 
-    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, filename: str) -> Tuple:
+    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, filename: str, plain: bool) -> Tuple:
         """Creates a plot of the topography when a Grid-object is provided.
 
         Options
@@ -32,6 +32,9 @@ class grd_topo(GridPlotter):
 
         filename:       Filename for possibly saving the plot. This can be
                         modified and returned to the object that saves the plot.
+
+        plain:          True / False(default). Hint to plotter how much detail
+                        the user wants into the plot.
         """
 
         # Create basic plot
@@ -45,11 +48,11 @@ class grd_topo(GridPlotter):
             plt.plot(lonlat[:,0], lonlat[:,1],'k*', label='Set boundary points')
 
         # Plot locations of boundary spectra
-        if boundary is not None:
+        if not plain and boundary is not None:
             plt.plot(boundary.lon(), boundary.lat(),'kx', label=f"Available spectra from {boundary.name()}")
 
         # Plot locations of wind forcing data points
-        if forcing is not None:
+        if not plain and forcing is not None:
             lonlat=forcing._point_list(mask=np.full(forcing.size()[1:], True))
             plt.plot(lonlat[:,0], lonlat[:,1],'r.', markersize=1.5, label=f"Forcing from {forcing.name()}")
 
@@ -64,7 +67,7 @@ class grd_mask(GridPlotter):
     def __init__(self):
         return
 
-    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, filename: str) -> Tuple:
+    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, filename: str, plain: bool) -> Tuple:
         """Creates a plot of the land-sea mask when a Grid-object is provided.
 
         Options
@@ -76,6 +79,9 @@ class grd_mask(GridPlotter):
 
         filename:       Filename for possibly saving the plot. This can be
                         modified and returned to the object that saves the plot.
+
+        plain:          True / False(default). Hint to plotter how much detail
+                        the user wants into the plot.
         """
 
         fig = plt.figure()
@@ -87,11 +93,11 @@ class grd_mask(GridPlotter):
             plt.plot(lonlat[:,0], lonlat[:,1],'k*', label='Set boundary points')
 
         # Plot locations of boundary spectra
-        if boundary is not None:
+        if not plain and boundary is not None:
             plt.plot(boundary.lon(), boundary.lat(),'kx', label=f"Available spectra from {boundary.name()}")
 
         # Plot locations of wind forcing data points
-        if forcing is not None:
+        if not plain and forcing is not None:
             lonlat=forcing._point_list(mask=np.full(forcing.size()[1:], True))
             plt.plot(lonlat[:,0], lonlat[:,1],'r.', markersize=1.5, label=f"Forcing from {forcing.name()}")
 

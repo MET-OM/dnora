@@ -253,7 +253,7 @@ class ModelRun:
 
         return
 
-    def plot_grid(self, grid_plotter: GridPlotter=None, grid_processor: GridProcessor=None, save_fig: bool=False, show_fig: bool=True, filestring: str=dflt_plt['fs']['Grid']):
+    def plot_grid(self, grid_plotter: GridPlotter=None, grid_processor: GridProcessor=None, plain: bool=False, save_fig: bool=False, show_fig: bool=True, filestring: str=dflt_plt['fs']['Grid']):
         if grid_plotter is None:
             self._grid_plotter = self._get_grid_plotter()
         else:
@@ -270,7 +270,7 @@ class ModelRun:
 
         filename = create_filename_obj(filestring=filestring, objects=[self, self.grid(), self.forcing(), self.boundary()])
 
-        fig, filename_out = self._grid_plotter(grid_plot, forcing=self.forcing(), boundary=self.boundary(), filename=filename)
+        fig, filename_out = self._grid_plotter(grid_plot, forcing=self.forcing(), boundary=self.boundary(), filename=filename, plain=plain)
 
         # Cleans out e.g. #T0 or "__" if they were in the filename
         filename_out = clean_filename(filename_out, list_of_placeholders)
