@@ -251,6 +251,10 @@ class Boundary:
     def time(self):
         return copy(pd.to_datetime(self.data.time.values))
 
+    # def dt(self) -> float:
+    #     """ Returns time step of boundary spectra in hours."""
+    #     return self.time().to_series().diff().dt.total_seconds().values[-1]/3600
+
     def freq(self):
         return copy(self.data.freq.values)
 

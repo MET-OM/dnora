@@ -115,6 +115,10 @@ class Forcing:
     def time(self):
         return copy(pd.to_datetime(self.data.time.values))
 
+    # def dt(self) -> float:
+    #     """ Returns time step of forcing data in hours."""
+    #     return self.time().to_series().diff().dt.total_seconds().values[-1]/3600
+
     def u(self):
         return copy(self.data.u.values)
 
