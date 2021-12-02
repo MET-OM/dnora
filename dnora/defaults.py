@@ -6,8 +6,8 @@ dflt_grd = {'fs': { 'SWAN': '#Grid_SWAN.bot',
                     'SWASH': '#Grid_SWASH.bot',
                     'General': 'topo_#Grid.txt'},
             'fldr': {'SWAN': f"{os.getcwd()}/output",
-                    'WW3': os.getcwd(),
-                    'SWASH': os.getcwd(),
+                    'WW3': f"{os.getcwd()}/output",
+                    'SWASH': f"{os.getcwd()}/output",
                     'General': ''},
             'info': {   'SWAN': '#Grid_info.txt',
                         'WW3': '#Grid_info.txt',
@@ -25,8 +25,8 @@ dflt_frc = {'fs': { 'SWAN': 'wind#Forcing#Grid#T0_#T1.asc',
                     'SWASH': '%Y%m%d',
                     'General': '%Y%m%dT%H%M'},
             'fldr': {'SWAN': f"{os.getcwd()}/output",
-                    'WW3': os.getcwd(),
-                    'SWASH': os.getcwd(),
+                    'WW3': f"{os.getcwd()}/output",
+                    'SWASH': f"{os.getcwd()}/output",
                     'General': ''}
         }
 
@@ -40,8 +40,8 @@ dflt_bnd = {'fs': { 'SWAN': 'spec#Boundary#Grid#T0_#T1.asc',
                     'SWASH': '%Y%m%d',
                     'General': '%Y%m%dT%H%M'},
             'fldr': {'SWAN': f"{os.getcwd()}/output",
-                    'WW3': os.getcwd(),
-                    'SWASH': os.getcwd(),
+                    'WW3': f"{os.getcwd()}/output",
+                    'SWASH': f"{os.getcwd()}/output",
                     'General': ''}
         }
 

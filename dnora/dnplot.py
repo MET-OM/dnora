@@ -16,7 +16,7 @@ class GridPlotter(ABC):
     def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, filename: str, plain: bool) -> Tuple:
         return fig, filename
 
-class grd_topo(GridPlotter):
+class TopoPlotter(GridPlotter):
     def __init__(self):
         return
 
@@ -63,7 +63,7 @@ class grd_topo(GridPlotter):
 
         return fig, add_suffix(filename, 'topo')
 
-class grd_mask(GridPlotter):
+class MaskPlotter(GridPlotter):
     def __init__(self):
         return
 
