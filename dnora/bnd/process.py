@@ -7,7 +7,7 @@ from .. import msg
 from ..aux import interp_spec, shift_spec, flip_spec
 
 #from . import bnd_mod
-class SpectralProcessor(ABC):
+class BoundaryProcessor(ABC):
     def __init__(self):
         pass
 
@@ -56,7 +56,7 @@ class SpectralProcessor(ABC):
         """Describes how the spectral values as processed"""
         pass
 
-class Multiply(SpectralProcessor):
+class Multiply(BoundaryProcessor):
     """Multiplies all spectra with a constant defined at initialization."""
 
     def __init__(self, calib_spec = 1) -> None:
@@ -73,7 +73,7 @@ class Multiply(SpectralProcessor):
     def __str__(self):
         return(f"Multiplying spectral values with {self.calib_spec}")
 
-class ReGridDirs(SpectralProcessor):
+class ReGridDirs(BoundaryProcessor):
     """Interpolates the spectra to have the same resoltuon but to start from
     a certain values, e.g. 0."""
     def __init__(self, first_dir = 0) -> None:
@@ -115,7 +115,7 @@ class ReGridDirs(SpectralProcessor):
     def __str__(self):
         return(f"Interpolating spectra to start from {self.first_dir}")
 
-# class ClearNaN(SpectralProcessor):
+# class ClearNaN(BoundaryProcessor):
 #     def __init__(self):
 #         pass
 #
@@ -132,7 +132,7 @@ class ReGridDirs(SpectralProcessor):
 #
 #         return new_spec, new_mask, new_freq, new_dirs
 
-class OceanToWW3(SpectralProcessor):
+class OceanToWW3(BoundaryProcessor):
     """Changes all spectra from Oceanic convention to WW3 convention.
     'Ocean':    Oceanic convention
                 Directional vector monotonically increasing.
@@ -167,7 +167,7 @@ class OceanToWW3(SpectralProcessor):
     def __str__(self):
         return("Flipping both spectra and direction to mathematical notation. Convention is unchenged.")
 
-class WW3ToOcean(SpectralProcessor):
+class WW3ToOcean(BoundaryProcessor):
     """Changes all spectra from WW3 convention to Oceanic convention.
 
     'Ocean':    Oceanic convention
@@ -203,7 +203,7 @@ class WW3ToOcean(SpectralProcessor):
         return("Flipping both spectra and direction to oceanic notation. Convention is unchanged.")
 
 
-class OceanToMath(SpectralProcessor):
+class OceanToMath(BoundaryProcessor):
     """Changes all spectra from Oceanic convention to Mathematical convention.
 
     'Ocean':    Oceanic convention
@@ -237,7 +237,7 @@ class OceanToMath(SpectralProcessor):
     def __str__(self):
         return("Flipping only spectra to mathematical notation. Convention is now Mathematical.")
 
-class MetToOcean(SpectralProcessor):
+class MetToOcean(BoundaryProcessor):
     """Changes all spectra from Meteorological convention to Ocanic convention.
 
     'Ocean':    Oceanic convention
@@ -265,7 +265,7 @@ class MetToOcean(SpectralProcessor):
     def __str__(self):
         return("Shifting spectrum 180 degrees. Convention is now Oceanic (direction to).")
 
-class OceanToMet(SpectralProcessor):
+class OceanToMet(BoundaryProcessor):
     """Changes all spectra from Oceanic convention to Meteorological convention.
 
     'Ocean':    Oceanic convention
@@ -295,8 +295,8 @@ class OceanToMet(SpectralProcessor):
         return("Shifting spectrum 180 degrees. Convention is not Meteorological (direction from).")
 
 
-def processor_for_convention_change(current_convention: str, wanted_convention: str) -> SpectralProcessor:
-        """Provides a SpectralProcessor object for the .change_convention()
+def processor_for_convention_change(current_convention: str, wanted_convention: str) -> BoundaryProcessor:
+        """Provides a BoundaryProcessor object for the .change_convention()
         method of the Boundary objects.
 
         The conventions to choose from are predetermined:

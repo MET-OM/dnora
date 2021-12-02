@@ -1,24 +1,30 @@
 from __future__ import annotations # For TYPE_CHECKING
+
 import xarray as xr
 import numpy as np
 from copy import copy
-
 import sys
 import re
-from .. import msg
-from ..aux import distance_2points, add_prefix, add_suffix, add_file_extension, create_filename_obj, add_folder_to_filename, clean_filename, check_if_folder
-from ..defaults import dflt_grd, list_of_placeholders
+
+# Import abstract classes and needed instances of them
 from .read import TopoReader, EmptyTopo
 from .boundary import BoundarySetter, ClearBoundary
 from .mesh import Mesher, TrivialMesher, Interpolate
 from .process import GridProcessor, TrivialFilter
-
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .write import GridWriter # Abstract class
+    from .write import GridWriter
+
+# Import default values and auxiliry functions
+from .. import msg
+from ..aux import distance_2points, create_filename_obj, add_folder_to_filename, clean_filename, check_if_folder
+from ..defaults import dflt_grd, list_of_placeholders
+
+
+
 
 class Grid:
-    def __init__(self, lon_min: float = 0., lon_max: float = 0., lat_min: float = 0., lat_max: float = 0., name: str = "AnonymousGrid"):
+    def __init__(self, lon_min: float=0., lon_max: float=0., lat_min: float=0., lat_max: float=0., name: str="AnonymousGrid"):
         """Initializes a new grid by setting the bounding box and name"""
 
         data_dict = {'lon_min': lon_min, 'lon_max': lon_max, 'lat_min': lat_min, 'lat_max': lat_max, 'name': name}
@@ -46,7 +52,7 @@ class Grid:
                     )
         return
 
-    def process_topo(self, filt: GridProcessor = TrivialFilter()) -> None:
+    def process_topo(self, filt: GridProcessor=TrivialFilter()) -> None:
         """Processes the raw bathymetrical data, e.g. with a filter."""
 
         msg.header(filt, "Filtering topography...")
@@ -81,7 +87,7 @@ class Grid:
             msg.templates('no_spacing')
             return
 
-    def process_grid(self, filt: GridProcessor = TrivialFilter()) -> None:
+    def process_grid(self, filt: GridProcessor=TrivialFilter()) -> None:
         """Processes the gridded bathymetrical data, e.g. with a filter."""
 
         msg.header(filt, "Filtering meshed grid...")
@@ -447,12 +453,6 @@ class Grid:
         overwritten automatically by the method _update_masks() if any further
         changes are made to the topography.
         """
-
-        # if matrix is None:
-        #     land_sea_mask = np.full(self.topo().shape, False)
-        #     land_sea_mask = self.topo() > 0 # Sea points set to true
-        # else:
-        #     land_sea_mask = matrix
 
         vars_dict = {'land_sea_mask': (['lat', 'lon'], land_sea_mask)}
         self.data = self.data.assign(vars_dict)

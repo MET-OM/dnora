@@ -4,13 +4,15 @@ from copy import copy
 import pandas as pd
 import sys
 import re
-import matplotlib.pyplot as plt
-from .. import msg
-from ..aux import distance_2points, day_list, create_filename_obj, create_filename_time, add_file_extension, clean_filename, check_if_folder
-from ..defaults import dflt_frc, list_of_placeholders
 
+# Import abstract classes and needed instances of them
 from .read import ForcingReader
 from .write import ForcingWriter
+
+# Import default values and auxiliry functions
+from .. import msg
+from ..aux import day_list, create_filename_obj, create_filename_time, clean_filename, check_if_folder
+from ..defaults import dflt_frc, list_of_placeholders
 
 class Forcing:
     def __init__(self, grid, name='AnonymousForcing'):

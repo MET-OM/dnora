@@ -1,4 +1,5 @@
 from __future__ import annotations # For TYPE_CHECKING
+
 from abc import ABC, abstractmethod
 import xarray as xr
 import numpy as np
@@ -6,28 +7,28 @@ from copy import copy
 import pandas as pd
 from typing import List
 import sys
-import matplotlib.pyplot as plt
 import re
 
+# Import objects
+from ..grd.grd_mod import Grid
+
+# Import abstract classes and needed instances of them
+from .process import BoundaryProcessor, Multiply
+from .pick import PointPicker, TrivialPicker
+from .read import BoundaryReader
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .write import BoundaryWriter # Abstract class
 
-# dnora imports
+# Import default values and auxiliry functions
 from .. import msg
-from ..aux import distance_2points, day_list, create_filename_obj, create_filename_time, create_filename_lonlat, add_file_extension, clean_filename, check_if_folder
-
-from .process import processor_for_convention_change, Multiply, SpectralProcessor
-from .pick import PointPicker, TrivialPicker
-from .read import BoundaryReader
-from .write import BoundaryWriter
-from ..grd.grd_mod import Grid # Grid object
-
+from ..aux import day_list, create_filename_obj, create_filename_time, create_filename_lonlat, clean_filename, check_if_folder
+from .process import processor_for_convention_change
 from ..defaults import dflt_bnd, list_of_placeholders
 
 
 class Boundary:
-    def __init__(self, grid: Grid, name: str = "AnonymousBoundary"):
+    def __init__(self, grid: Grid, name: str="AnonymousBoundary"):
         self.grid = copy(grid)
         self._name = copy(name)
         self._convention = None
@@ -62,30 +63,30 @@ class Boundary:
         return
 
 
-    def process_spectra(self, spectral_processors: List[SpectralProcessor] = [Multiply(calib_spec = 1)]):
+    def process_boundary(self, boundary_processors: List[BoundaryProcessor]=[Multiply(calib_spec = 1)]):
         """Process all the individual spectra of the boundary object.
 
         E.g. change convention form WW3 to Oceanic, interpolate spectra to
         new directional grid, or multiply everything with a constant.
         """
 
-        if not isinstance(spectral_processors, list):
-            spectral_processors = [spectral_processors]
+        if not isinstance(boundary_processors, list):
+            boundary_processors = [boundary_processors]
 
-        for n in range (len(spectral_processors)):
-            spectral_processor = spectral_processors[n]
+        for n in range (len(boundary_processors)):
+            boundary_processor = boundary_processors[n]
 
-            msg.process(f"Processing spectra with {type(spectral_processor).__name__}")
-            print(spectral_processor)
+            msg.process(f"Processing spectra with {type(boundary_processor).__name__}")
+            print(boundary_processor)
 
-            new_spec, new_dirs, new_freq = spectral_processor(self.spec(), self.dirs(), self.freq())
+            new_spec, new_dirs, new_freq = boundary_processor(self.spec(), self.dirs(), self.freq())
 
             self.data.spec.values = new_spec
             self.data = self.data.assign_coords(dirs=new_dirs)
             self.data = self.data.assign_coords(freq=new_freq)
 
             # Set new convention if the processor changed it
-            new_convention = spectral_processor.convention()
+            new_convention = boundary_processor.convention()
             if new_convention is not None:
                 msg.info(f"Setting new convention to {new_convention}")
                 self._convention = new_convention
@@ -196,9 +197,9 @@ class Boundary:
                     Direction to. North = 0, East = 90.
         """
 
-        spectral_processor = processor_for_convention_change(current_convention = self.convention(), wanted_convention = wanted_convention)
-        if spectral_processor is not None:
-            self.process_spectra(spectral_processor)
+        boundary_processor = processor_for_convention_change(current_convention = self.convention(), wanted_convention = wanted_convention)
+        if boundary_processor is not None:
+            self.process_boundary(boundary_processor)
         return
 
     def compile_to_xr(self, time, freq, dirs, spec, lon, lat, source):

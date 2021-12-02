@@ -21,6 +21,7 @@ from ..dnplot import GridPlotter, TopoPlotter
 from ..inp import InputFileWriter
 from ..run import ModelExecuter
 
+# Import default values and auxiliry functions
 from .. import msg
 from ..defaults import dflt_mdl, dflt_inp, dflt_bnd, dflt_frc, dflt_grd, dflt_plt, list_of_placeholders
 from ..aux import create_filename_obj, create_filename_time, add_folder_to_filename, check_if_folder, clean_filename
