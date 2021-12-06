@@ -112,7 +112,7 @@ class SWAN(InputFileWriter):
 
 
 class SWASH(InputFileWriter):
-    def __init__(self, bound_side_command='BOU SIDE W CCW CON REG 0.5 14 270 '):
+    def __init__(self,bound_side_command='BOU SIDE W CCW CON REG 0.5 14 270 '):
         self.bound_side_command = bound_side_command
 
         return
@@ -163,7 +163,9 @@ class SWASH(InputFileWriter):
             file_out.write(
                 '$*******************************************************\n')
             file_out.write('$ OUTPUT REQUESTS \n')
-            file_out.write('BLOCK \'COMPGRID\' NOHEAD \''+add_folder_to_filename(grid.name()+'.mat',folder)
+            temp_list = grid_path.split('/')
+            forcing_folder = '/'.join(temp_list[0:-1])
+            file_out.write('BLOCK \'COMPGRID\' NOHEAD \''+add_folder_to_filename(grid.name()+'.mat',forcing_folder)
                            + '\' & \n')
             file_out.write(
                 'LAY 3 WATL BOTL OUTPUT ' + STR_START + ' 5 SEC \n')
