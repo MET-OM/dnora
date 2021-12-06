@@ -4,23 +4,30 @@
 import sys
 dnora_directory = '../'
 sys.path.insert(0, dnora_directory)
-from dnora import bnd, grd, mdl, wnd
+from dnora import grd, mdl, bnd, wnd
+# =============================================================================
+# DEFINE GRID OBJECT
+# =============================================================================
+# Set grid definitions
+grid = grd.Grid(lon_min=4.0, lon_max=60.53, lat_min=5.73, lat_max=61.25, name='Skjerjehamn')
+grid.set_spacing(dm=1000)
 
-lon_min = 4.0
-lat_min = 60.53
-lon_max = 5.73
-lat_max = 61.25
+# Import topography and mesh it down to the grid definitions
+grid.import_topo(topo_reader=grd.read.EMODNET2018(tile='D5'))
+grid.mesh_grid()
 
-grid = grd.Grid(lon_min, lon_max, lat_min, lat_max, name='Skjerjehamn250')
+# Set the boundaries
+bnd_set = grd.boundary.EdgesAsBoundary(edges=['N', 'W', 'S'])
+grid.set_boundary(boundary_setter=bnd_set)
 
-#grid.set_spacing(dm=1000)
-#bnd_set = grd.boundary.EdgesAsBoundary(edges = ['N', 'W', 'S'], step = 20)
-#grid.set_boundary(boundary_setter = bnd_set)
+# Create a ModelRun-object
+model = mdl.ModelRun(grid, start_time='2018-08-25T00:00',
+                       end_time='2018-08-25T01:00')
 
-
-model = mdl.ModelRun(grid, start_time = '2018-08-25T00:00', end_time = '2018-08-25T18:00')
+model.export_grid(grd.write.WW3())
 
 model.import_boundary(bnd.read_metno.NORA3(), point_picker=bnd.pick.Area())
 model.import_forcing(wnd.read_metno.NORA3())
+
 model.export_boundary(bnd.write.WW3())
 model.export_forcing(wnd.write.WW3())
