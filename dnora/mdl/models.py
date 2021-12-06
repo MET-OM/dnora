@@ -37,6 +37,10 @@ class SWASH(ModelRun):
     def _get_input_file_writer(self):
         return inp.SWASH()
 
+    def _get_model_executer(self):
+        return run.SWASH()
+
+
 class WW3(ModelRun):
     def _get_boundary_writer(self):
         return bnd.write.WW3()
