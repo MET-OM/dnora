@@ -15,7 +15,7 @@ lon_max = 5.73
 lat_max = 61.25
 grid = grd.Grid(lon_min, lon_max, lat_min, lat_max, name='Skjerjehamn250')
 # Set spacing and boundary points
-grid.set_spacing(dm=1000)
+grid.set_spacing(dm=300)
 # Import topography and mesh it down to the grid definitions
 grid.import_topo(topo_reader=grd.read.EMODNET2018(tile='D5',
                                                   folder='/home/konstantinosc/PhD/github/DNORA/bathy/'))
