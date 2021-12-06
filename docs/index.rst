@@ -37,82 +37,90 @@ To run the models within dnora, the paths, where the models are installed, need 
 
 Creating a Grid-object
 =====================================
-This section document the grd-module.  The main idea is that the Grid-object is created,and  a  fixed  set  of  methods  are  used  to  import  a  topography,  mesh  it  down  to  a  grid,  orfilter the data.  The functionality of these methods are controlled by passing them an object(which is a callable function).Adding e.g.  a topography source thus means adding a newTopoFetcher-class that canthen me passed to the Grid-object’s.importtopo()-method.  A similar principle goes foradding meshing of filtering functionalities.
+This section document the grd-module. The grid object is initialized with the following command::
 
-The grid object is initialized with the following command::
-
-   example_grid = grd.Grid(lon_min, lon_max, lat_min, lat_max, name = ’GridName’)
+   grid = grd.Grid(lon_min, lon_max, lat_min, lat_max, name=’GridName’)
 
 .. code-block:: rst
 
-Use ``print(grid)`` to print out the status of te object.
+Use ``print(grid)`` to print out the status of the object.
 
-A desired grid spacing can be set either by providing a desired grid spacing in metres (ap-proximate) or defining the amounts of grid points (exact)::
+A desired grid spacing can be set either by providing a desired grid spacing in metres (approximate) or defining the amounts of grid points (exact)::
 
-   grid.set_spacing(dm = 250) # Set spacing to around 250 metres
-   grid.set_spacing(nx = 291, ny = 249) # Create 291 (lon) x 249 (lat) grid points
+   grid.set_spacing(dm=250) # Set spacing to around 250 metres
+   grid.set_spacing(nx=291, ny=249) # Create 291 (lon) x 249 (lat) grid points
 
 .. code-block:: rst
 
 Both  of  these  options  will  convert  the  input  to  the  native  resolution  in  longitude  andlatitude.  These can, of course, also be set directly by::
    
-   grid.set_spacing(dlon = 0.0048780, dlat = 0.0022573)
+   grid.set_spacing(dlon=0.0048780, dlat=0.0022573)
    
 .. code-block:: rst
 
-In this case ``dlon`` and ``dlat`` are not exact.  If an exact resolution needs to be forced, the ``floatingedge-option`` can be used, e.g.,::
+In this case ``dlon`` and ``dlat`` are not exact.  If an exact resolution needs to be forced, the ``floating_edge``-option can be used, e.g.,::
 
-   grid.set_spacing(dlon = 1/205, dlat = 1/443, floating_edge = True)
+   grid.set_spacing(dlon=1/205, dlat=1/443, floating_edge=True)
    
 .. code-block:: rst
    
-This will enforce the resolution and instead change the initially set ``lon_max`` and ``lat_max`` slightly (if needed).The longitude and latitude vectors, and the name, of the grid can be accessed by::
+This will enforce the resolution and instead change the initially set ``lon_max`` and ``lat_max`` slightly (if needed). The main properties of the grid can be accessed by methods::
 
-   grid.lon()
-   grid.lat()
-   grid.name()
+   grid.lon() # Longitude vector
+   grid.lat() # Latitude vector
+   grid.name() # Name given at initialization
+   grid.nx() # Amount of point in longitude direction
+   grid.ny() # Amount of point in latitude direction
+   grid.size() # Tuple (nx, ny)
    
 .. code-block:: rst
 
 Setting boundary points
 =====================================
 
-Setting boundary points are now only important for being able to write the grid-files, but are also of consequence when importing boundary spectra. The central method is to set the edged of the grid to boundary points::
+Setting boundary points is now only important for being able to write the grid-files, but are also of consequence when importing boundary spectra. The central method is to set the edged of the grid to boundary points::
 
    bnd_set = grd.boundary.EdgesAsBoundary(edges=['N', 'W', 'S'])
    grid.set_boundary(boundary_setter=bnd_set)
 
 .. code-block:: rst
 
-Here the North, West, and South edges are set to boundary points, and this is suitable for e.g. WAVEWATCH III. In SWAN we might want to not set every edge point as a boundary point (and then let the wave model interpolate spectra), especially if the boundary spectra are only available at a coarse resolution. This can be done by initializing the boundary_setter as (every thenth point a boundary point)::
+Here the North, West, and South edges are set to boundary points, and this is suitable for e.g. WAVEWATCH III. In SWAN we might want to not set every edge point as a boundary point (and then let the wave model interpolate spectra), especially if the boundary spectra are only available at a coarse resolution. This can be done by initializing the boundary_setter as (every tenth point a boundary point)::
 
    bnd_set = grd.boundary.EdgesAsBoundary(edges=['N', 'W', 'S'], step=10)
 
 .. code-block:: rst
 
+Information about the boundary points that are set in the grid can be accessed using methods::
+
+   grid.boundary_mask() # Boolean array where True is a boundary point
+   grid.boundary_points() # Array containing a longitude, latitude list of the boundary points
+   
+.. code-block:: rst
 
 
 Importing bathymetrical data
 =====================================
 
-Bathymetrical data is imported to the ``Grid``-object using a separate ``TopoReader``-object. For now, only the ``EMODNET2018``-object is available.::
+The main idea is that the Grid-object is created, and a fixed set of methods are used to import a topography, mesh it down to a grid, or filter the data. The functionality of these methods are controlled by passing them a callable object. Adding e.g. a topography source thus means adding a new ``TopoReader``-class that can then me passed to the ``Grid``-object’s ``.import_topo()``-method. For now, only the ``EMODNET2018``-reader is available::
 
    grid.import_topo(topo_reader=grd.read.EMODNET2018(tile='D5'))
 
 .. code-block:: rst
 
-where the tile defines the geographical area (default 'C5'). This "raw" data can be processed by the ``.process_topo()`` command, taking a ``BoundaryProcessor`` object. The data can me meshed to the desired grid definition by::
+where the tile defines the geographical area (default 'C5'). This "raw" data can be processed by the ``.process_topo()`` command, taking a ``GridProcessor`` object. The data can me meshed to the desired grid definition by::
 
    grid.mesh_grid()
    
 .. code-block:: rst
 
-The default (and currently only available) ``GridMesher`` uses interpolation, and is set as default. After meshing the grid data can also be processed with a ``BoundaryProcessor``. For example, to set all depth below 1 metre to land and after that impose a minimum of 2 metre depth in wet points, use::
+The default (and currently only available) ``GridMesher`` uses interpolation, and is set as default. After meshing the grid data can also be processed with a ``GridProcessor``. For example, to set all depth below 1 metre to land and after that impose a minimum of 2 metre depth in wet points, use::
 
    grid.process_grid(grd.process.SetMinDept(min_depth=1, to_land=True))
-   grid.process_grid(grd.process.SetMinDept(min_depth=2)
+   grid.process_grid(grd.process.SetMinDept(min_depth=2))
   
 .. code-block:: rst
+
 
 Creating a ModelRun-object
 =====================================
@@ -129,7 +137,7 @@ The grid data can now be exported in a certain format using a ``GridWriter``. To
 
 .. code-block:: rst
 
-Boundary and Forcing data can be read using ``BoundaryReader``s and ``ForcingReader``s. To read in boundary spectra and wind forcing from the MET Norway NORA3 hindcast, use::
+Boundary and Forcing data can be read using ``BoundaryReaders`` and ``ForcingReaders``. To read in boundary spectra and wind forcing from the MET Norway NORA3 hindcast, use::
 
    model.import_boundary(bnd.read_metno.NORA3(), point_picker=bnd.pick.Area())
    model.import_forcing(wnd.read_metno.NORA3())
@@ -153,12 +161,12 @@ to write the boundary spectra in WAVEWATCH III format and wind forcing in SWAN f
 
 The spectral convention is defined in the ``BoundaryReader`` and ``BoundaryWriter``, and the ``ModelRun``-object automatically takes care of convention changes (if needed).
 
-NB! The WW3 convention here is thath of the WW3 OUTPUT files, i.e. directional vector looks like a mathematical convention, but it is actually oceanic. This is in line with the bounc.ftn file used in the develop-branch of WAVEWATCH III.
+**NB!** The WW3 convention here is thath of the WW3 *output* files, i.e. directional vector looks like a mathematical convention, but it is actually oceanic. This is in line with the bounc.ftn file used in the develop-branch of WAVEWATCH III.
 
 Creating templates
 =====================================
 
-Several features that are typically used together can be packaged as a "template" by creating a subclass of the ModelRun object. These are defined in the mdl/models.py-file. For example, a ``WW3``-template is defined as::
+Several features that are typically used together can be packaged as a "template" by creating a subclass of the ``ModelRun`` object. These are defined in the ``mdl/models.py``-file. For example, a ``WW3``-template is defined as::
 
    class WW3(ModelRun):
        def _get_boundary_writer(self):
@@ -184,7 +192,7 @@ These defaults can be used by::
    
 .. code-block:: rst
 
-Further subclasses can also be defied. For ecample to have a ``ModelRun``-object that uses WW3 conventions and gets the forcing data from the NORA3-hindcast, a ``WW3_NORA3``-template is defined using the above WW3-template::
+Further subclasses can also be defied. For example to have a ``ModelRun``-object that uses WW3 conventions and gets the forcing data from the NORA3-hindcast, a ``WW3_NORA3``-template is defined using the above ``WW3``-template::
 
    class WW3_NORA3(WW3):
        def _get_boundary_reader(self):
@@ -207,7 +215,7 @@ The defaults of the templates can always be overridden by explicitly providing a
 
    model = mdl.WW3_NORA3(grid, start_time='2018-08-25T00:00', end_time='2018-08-25T01:00')
    
-   model.import_boundary(bnd.read_metno.WAM4km()) # Override default BoundaryReader but use defauly PointPicker from template
+   model.import_boundary(bnd.read_metno.WAM4km()) # Override BoundaryReader but use template PointPicker
    model.export_boundary() # BoundaryWriter defined in template
 .. code-block:: rst
 
@@ -234,7 +242,7 @@ File names and directories
 
 The default file names and directories used in dnora are defined in the ``defaults.py``-file. Different default can be generated for different models, but the styles are not inherently linked to a certain models (see example below).
 
-The default file names and folders used by the different writers are set within the writers, and they convey their preference to the ``ModelRun``-object. These defaults are used if the user doesn't provide anything explicitly. For example, the default file name for writing wind forcing the SWAN model is::
+The default file names and folders used by the different writers are set within the writers, and they convey their preference to the ``ModelRun``-object. These defaults are used if the user doesn't provide anything explicitly. For example, the default file name for writing wind forcing for the SWAN model is::
 
    wind#Forcing#Grid#T0_#T1.asc
 
