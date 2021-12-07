@@ -50,6 +50,6 @@ model.export_boundary()
 model.export_forcing()
 model.write_input_file()
 # =============================================================================
-# SWASH RUN
+# SWAN RUN
 # =============================================================================
 model.run_model()
