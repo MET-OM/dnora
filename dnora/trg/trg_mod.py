@@ -1,5 +1,8 @@
 from copy import copy
+import matplotlib.pyplot as plt
+import matplotlib.tri as mtri
 from .read_tr import TriangReader
+
 
 class TrGrid:
     def __init__(self, name='AnonymousTrianGrid'):
@@ -16,6 +19,12 @@ class TrGrid:
         self._lat = lat
         self._types = types #???
         self._edge_nodes = edge_nodes
+
+    def plot_grid(self) -> None:
+        plt.triplot(self.lon(), self.lat(), triangles = self.tri(), linewidth = 0.2, color='black')
+        plt.show()
+        return
+
 
     def name(self):
         return self._name
