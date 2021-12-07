@@ -4,25 +4,32 @@
 import sys
 dnora_directory = '../'
 sys.path.insert(0, dnora_directory)
-from dnora import trg
+from dnora import trg, grd
 
 
 import numpy as np
-trgrid = trg.TrGrid(name='test')
+grid = trg.TrGrid(name='test')
 
-trgrid.import_triang(trg.read_tr.SmsReader(filename='WW3_grid_01.2dm'))
+grid.import_triang(trg.read_tr.SmsReader(filename='WW3_grid_01.2dm'))
 
 
-print(trgrid.boundary())
+#print(grid.boundary())
 
 #bnd_set = trg.boundary.SetArray(np.arange(101))
 bnd_set = trg.boundary.SetArray([70,72])
 
-trgrid.append_boundary(bnd_set)
+grid.append_boundary(bnd_set)
 
-print(trgrid.boundary())
+#print(grid.boundary())
 
 
-bnd_set = trg.boundary.SetArray([1,2,3])
+#bnd_set = trg.boundary.SetArray([1,2,3])
 
-trgrid.set_boundary(bnd_set)
+#grid.set_boundary(bnd_set)
+
+topo_reader = grd.EMODNET2018()
+grid.import_topo(topo_reader)
+
+
+grid.mesh_grid()
+grid.plot_grid()

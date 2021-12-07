@@ -75,7 +75,7 @@ class Grid:
 
             msg.header(mesher, "Meshing grid bathymetry...")
             print(mesher)
-            topo = mesher(self.raw_topo(), self.raw_lon(), self.raw_lat(), self.lon(), self.lat())
+            topo = mesher(self.raw_topo(), self.raw_lon(), self.raw_lat(), np.meshgrid(self.lon()), np.meshgrid(self.lat()))
             vars_dict = {'topo': (['lat', 'lon'], topo)}
             self.data = self.data.assign(vars_dict)
 
