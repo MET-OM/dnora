@@ -1,10 +1,10 @@
+
 from copy import copy
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.tri as mtri
+
 from .read_tr import TriangReader
 from .boundary import BoundarySetter, ClearBoundary
-
+from .plot import TrGridPlotter, TriPlotter
 
 class TrGrid:
     def __init__(self, name='AnonymousTrianGrid'):
@@ -24,10 +24,18 @@ class TrGrid:
         edge_nodes = edge_nodes.astype(int)
         self._boundary = edge_nodes
 
-    def plot_grid(self) -> None:
-        plt.triplot(self.lon(), self.lat(), triangles = self.tri(), linewidth = 0.2, color='black')
-        plt.plot(self.lon()[self._edge_nodes],self.lat()[self._edge_nodes],'rx')
-        plt.show()
+    def plot_grid(self, grid_plotter: TrGridPlotter=None) -> None:
+        if grid_plotter is None:
+            self._grid_plotter = self._get_grid_plotter()
+        else:
+            self._grid_plotter = grid_plotter
+
+        if self._grid_plotter is None:
+            raise Exception('Define a TrGridPlotter!')
+
+        fig, filename = self._grid_plotter(self)
+        fig.show()
+
         return
 
     def append_boundary(self, boundary_setter: BoundarySetter) -> None:
@@ -67,3 +75,6 @@ class TrGrid:
 
     def boundary(self):
         return copy(self._boundary)
+
+    def _get_grid_plotter(self) -> TrGridPlotter:
+        return TriPlotter()
