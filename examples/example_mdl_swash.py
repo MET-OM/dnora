@@ -9,17 +9,17 @@ from dnora import grd, mdl, inp
 # DEFINE GRID OBJECT
 # =============================================================================
 # Set grid definitions
-lon_min = 5.028305
-lat_min = 59.4087
-lon_max = 5.1560
-lat_max = 59.4635
-grid = grd.Grid(lon_min, lon_max, lat_min, lat_max, name='Roevaer5')
+lon_min = -7.73
+lat_min = 62.0
+lon_max = -7.4
+lat_max = 62.165
+grid = grd.Grid(lon_min, lon_max, lat_min, lat_max, name='Mykines10')
 
 # Set spacing and boundary points
-grid.set_spacing(dm=5)
+grid.set_spacing(dm=10)
 
 # Import topography and mesh it down to the grid definitions
-grid.import_topo(topo_reader=grd.read.EMODNET2018(tile='D5',
+grid.import_topo(topo_reader=grd.read.EMODNET2018(tile='C3',
                                     folder='/home/konstantinosc/bathy/'))
 grid.mesh_grid()
 
@@ -38,7 +38,7 @@ model.plot_grid()
 # =============================================================================
 model.export_grid() 
 model.write_input_file(input_file_writer=inp.SWASH(
-    bound_side_command='BOU SIDE N CCW CON REG 0.5 14 0 '))
+    bound_side_command='BOU SIDE S CCW CON REG 1.0 20 180 '))
 # =============================================================================
 # SWASH RUN
 # =============================================================================
