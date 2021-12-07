@@ -1,7 +1,9 @@
 from copy import copy
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 from .read_tr import TriangReader
+from .boundary import BoundarySetter
 
 
 class TrGrid:
@@ -18,7 +20,9 @@ class TrGrid:
         self._lon = lon
         self._lat = lat
         self._types = types #???
-        self._edge_nodes = edge_nodes
+        edge_nodes = np.array(edge_nodes)
+        edge_nodes = edge_nodes.astype(int)
+        self._boundary = edge_nodes
 
     def plot_grid(self) -> None:
         plt.triplot(self.lon(), self.lat(), triangles = self.tri(), linewidth = 0.2, color='black')
@@ -26,21 +30,27 @@ class TrGrid:
         plt.show()
         return
 
+    def append_boundary(self, boundary_setter: BoundarySetter):
+        new_points = boundary_setter(self.nodes())
+        new_points = np.array(new_points)
+        new_points = new_points.astype(int)
+        self._boundary = np.union1d(new_points, self.boundary())
+        return
 
     def name(self):
-        return self._name
+        return copy(self._name)
 
     def tri(self):
-        return self._tri
+        return copy(self._tri)
 
     def nodes(self):
-        return self._nodes
+        return copy(self._nodes)
 
     def lon(self):
-        return self._lon
+        return copy(self._lon)
 
     def lat(self):
-        return self._lat
+        return copy(self._lat)
 
-    def edge_nodes(self):
-        return self._edge_nodes
+    def boundary(self):
+        return copy(self._boundary)
