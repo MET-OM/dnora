@@ -9,11 +9,12 @@ from dnora import grd, mdl, bnd, wnd
 # DEFINE GRID OBJECT
 # =============================================================================
 # Set grid definitions
-grid = grd.Grid(lon_min=4.0, lon_max=60.53, lat_min=5.73, lat_max=61.25, name='Skjerjehamn')
+grid = grd.Grid(lon_min=4.0, lat_min=60.53, lon_max=5.73, lat_max=61.25, name='Skjerjehamn')
 grid.set_spacing(dm=1000)
 
 # Import topography and mesh it down to the grid definitions
-grid.import_topo(topo_reader=grd.read.EMODNET2018(tile='D5'))
+grid.import_topo(topo_reader=grd.read.EMODNET2018(tile='D5',
+                                    folder='/home/konstantinosc/bathy/'))
 grid.mesh_grid()
 
 # Set the boundaries
