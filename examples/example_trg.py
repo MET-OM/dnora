@@ -21,3 +21,8 @@ bnd_set = trg.boundary.SetArray([70,72])
 trgrid.append_boundary(bnd_set)
 
 print(trgrid.boundary())
+
+
+bnd_set = trg.boundary.SetArray([1,2,3])
+
+trgrid.set_boundary(bnd_set)

@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 from .read_tr import TriangReader
-from .boundary import BoundarySetter
+from .boundary import BoundarySetter, ClearBoundary
 
 
 class TrGrid:
@@ -30,11 +30,24 @@ class TrGrid:
         plt.show()
         return
 
-    def append_boundary(self, boundary_setter: BoundarySetter):
+    def append_boundary(self, boundary_setter: BoundarySetter) -> None:
+        """Set new boundary points but keep the old ones."""
+
         new_points = boundary_setter(self.nodes())
         new_points = np.array(new_points)
         new_points = new_points.astype(int)
         self._boundary = np.union1d(new_points, self.boundary())
+
+        return
+
+    def set_boundary(self, boundary_setter: BoundarySetter) -> None:
+        """Set boundary points. Old ones not kept."""
+
+        new_points = boundary_setter(self.nodes())
+        new_points = np.array(new_points)
+        new_points = new_points.astype(int)
+        self._boundary = new_points
+
         return
 
     def name(self):
