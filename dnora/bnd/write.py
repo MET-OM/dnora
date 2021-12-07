@@ -55,7 +55,7 @@ class BoundaryWriter(ABC):
         """Writed the data from the Boundary object and returns the file and
         folder where data were written."""
 
-        return output_file, output_folder
+        return
 
 class DumpToNc(BoundaryWriter):
     def __init__(self, convention: str='Ocean') -> None:
@@ -115,17 +115,19 @@ class NcFiles(BoundaryWriter):
 
 
 class WW3(BoundaryWriter):
-    def __init__(self, one_file: bool=True) -> None:
+    def __init__(self, one_file: bool=True, convention='WW3', out_format = 'WW3') -> None:
         self.one_file = one_file
+        self._convention=convention
+        self.out_format = out_format
         return
 
     def convention(self) -> str:
         """Convention of spectra"""
-        return 'WW3'
+        return self._convention
 
     def _preferred_format(self):
         """Format of filenames"""
-        return 'WW3'
+        return self.out_format
 
     def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
 
