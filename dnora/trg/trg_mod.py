@@ -22,6 +22,7 @@ class TrGrid:
 
     def plot_grid(self) -> None:
         plt.triplot(self.lon(), self.lat(), triangles = self.tri(), linewidth = 0.2, color='black')
+        plt.plot(self.lon()[self._edge_nodes],self.lat()[self._edge_nodes],'rx')
         plt.show()
         return
 
