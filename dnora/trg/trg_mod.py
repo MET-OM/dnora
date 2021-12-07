@@ -33,7 +33,7 @@ class TrGrid:
         msg.header(topo_reader, "Importing topography...")
         print(topo_reader)
         topo, lon, lat = topo_reader(min(self.lon()), max(self.lon()), min(self.lat()), max(self.lat()))
-
+        topo[topo < 0] = 0
         coords_dict = {'lon': lon, 'lat': lat}
         vars_dict = {'topo': (['lat', 'lon'], topo)}
         self.rawdata = xr.Dataset(
@@ -52,7 +52,7 @@ class TrGrid:
             msg.header(mesher, "Meshing grid bathymetry...")
             print(mesher)
             topo = mesher(self.raw_topo(), self.raw_lon(), self.raw_lat(), self.lon(), self.lat())
-
+            topo[topo < 0] = 0
             self.data = topo
             # coords_dict = {'lon': self.lon(), 'lat': self.lat()}
             # vars_dict = {'topo': (['lat', 'lon'], topo)}
