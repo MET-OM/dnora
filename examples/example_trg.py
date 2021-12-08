@@ -15,8 +15,9 @@ grid.import_triang(trg.read_tr.SmsReader(filename='WW3_grid_01.2dm'))
 bnd_set = trg.boundary.SetArray([70,72])
 grid.append_boundary(bnd_set)
 
-topo_reader = grd.EMODNET2018()
+#topo_reader = grd.EMODNET2018()
+topo_reader = grd.read.EmptyTopo(nx=10, ny=10)
 grid.import_topo(topo_reader)
 
 grid.mesh_grid()
-grid.plot_grid()
+#grid.plot_grid()

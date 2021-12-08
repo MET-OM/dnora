@@ -54,14 +54,15 @@ class TrGrid:
             topo = mesher(self.raw_topo(), self.raw_lon(), self.raw_lat(), self.lon(), self.lat())
             topo[topo < 0] = 0
             self.data = topo
-            # coords_dict = {'lon': self.lon(), 'lat': self.lat()}
-            # vars_dict = {'topo': (['lat', 'lon'], topo)}
-            # self.data = xr.Dataset(
-            #             coords=(coords_dict
-            #             ),
-            #             data_vars=(vars_dict
-            #             ),
-            #             )
+            coords_dict = {'nodes': self.nodes()}
+            #coords_dict = {'lon': self.lon(), 'lat': self.lat()}
+            vars_dict = {'lon': ('nodes', self.lon()), 'lat': ('nodes', self.lat()), 'topo': ('nodes', topo)}
+            self.data = xr.Dataset(
+                     coords=(coords_dict
+                     ),
+                     data_vars=(vars_dict
+                     ),
+                     )
             return
 
         else:
@@ -129,7 +130,7 @@ class TrGrid:
 
     def topo(self):
         """Returns an array containing the unmeshed imported topography."""
-        return copy(self.data)
+        return copy(self.data.topo.values)
 
     def lon(self):
         return copy(self._lon)

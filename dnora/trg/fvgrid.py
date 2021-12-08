@@ -2,6 +2,8 @@ import numpy as np
 from matplotlib.tri.triangulation import Triangulation
 from matplotlib.tri import CubicTriInterpolator
 
+# This function is taken dircetly from the PyFVCOM package
+# https://github.com/pwcazenave/pyfvcom
 def read_sms_mesh(mesh, nodestrings=False):
     """
     Reads in the SMS unstructured grid format. Also creates IDs for output to
@@ -347,7 +349,3 @@ def smoothfield(fieldin, tri, SmoothPts, Niter = 1, SmoothFactor = 1.0):
             field[r] = SmoothFactor*fave + (1 - SmoothFactor) * fieldin[r]
 
     return field
-        
-    
-
-

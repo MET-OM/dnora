@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import xarray as xr
 from copy import copy
 from abc import ABC, abstractmethod
 import numpy as np
-from typing import Tuple
-
+from typing import Tuple, TYPE_CHECKING
+if TYPE_CHECKING:
+    from .grd_mod import Grid
 # Import auxiliry functions
 from ..aux import expand_area
 
@@ -44,15 +47,18 @@ class TopoReader(ABC):
 
 class EmptyTopo(TopoReader):
     """Creates an empty topography. Called when setting initial spacing."""
-    def __init__(self, grid):
-        self.grid = grid
+    def __init__(self, grid: Grid=None, nx=0, ny=0):
+        if grid is not None:
+            self.size = (self.grid.ny(),self.grid.nx())
+        else:
+            self.size = (ny, nx)
         pass
 
     def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
         """Creates a trivial topography with all water points."""
-        topo = np.ones((self.grid.data.ny,self.grid.data.nx))*9999
-        topo_lon = copy(self.grid.lon())
-        topo_lat = copy(self.grid.lat())
+        topo = np.ones(self.size)*9999
+        topo_lon = np.linspace(lon_min, lon_max, self.size[1])
+        topo_lat = np.linspace(lat_min, lat_max, self.size[0])
         return topo, topo_lon, topo_lat
 
     def __str__(self):
