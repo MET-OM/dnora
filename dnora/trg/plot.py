@@ -35,7 +35,7 @@ class TriTopoPlotter(TrGridPlotter):
         cbar = plt.colorbar()
 
         plt.triplot(grid.lon(), grid.lat(), triangles=grid.tri(), linewidth=0.2, color='black')
-        plt.plot(grid.lon()[grid.boundary()-1],grid.lat()[grid.boundary()-1],'rx')
+        plt.plot(grid.lon()[grid.boundary_inds()],grid.lat()[grid.boundary_inds()],'rx')
         plt.xlabel('Longitude')
         plt.ylabel('Latitude')
         cbar.set_label('Depth (m)', rotation=90)
