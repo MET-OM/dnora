@@ -57,7 +57,7 @@ class Area(PointPicker):
         msg.info(f"Using expansion_factor = {self.expansion_factor:.2f}")
 
         # Define area to search in
-        lon_min, lon_max, lat_min, lat_max = expand_area(grid.lon()[0], grid.lon()[-1], grid.lat()[0], grid.lat()[-1], self.expansion_factor)
+        lon_min, lon_max, lat_min, lat_max = expand_area(min(grid.lon()), max(grid.lon()), min(grid.lat()), max(grid.lat()), self.expansion_factor)
 
         masklon = np.logical_and(bnd_lon > lon_min, bnd_lon < lon_max)
         masklat = np.logical_and(bnd_lat > lat_min, bnd_lat < lat_max)
