@@ -101,15 +101,16 @@ class Grid:
 
         msg.header(grid_writer, f"Writing grid topography from {self.name()}")
 
+        ### Formats of file names etc.
         out_format = out_format or grid_writer._preferred_format()
 
         filestring = filestring or dflt_grd['fs'][out_format]
-        filename = create_filename_obj(filestring=filestring, objects=[self])
-
         infofilestring = infofilestring or dflt_grd['info'][out_format]
-        infofilename = create_filename_obj(filestring=infofilestring, objects=[self])
-
         folderstring = folder or dflt_grd['fldr'][out_format]
+
+        ### File names
+        filename = create_filename_obj(filestring=filestring, objects=[self])
+        infofilename = create_filename_obj(filestring=infofilestring, objects=[self])
         folder = create_filename_obj(filestring=folderstring, objects=[self])
 
         existed = check_if_folder(folder=folder, create=True)
@@ -121,10 +122,7 @@ class Grid:
         return output_files, output_folder
 
     def plot_grid(self, grid_plotter: TrGridPlotter=None) -> None:
-        if grid_plotter is None:
-            self._grid_plotter = self._get_grid_plotter()
-        else:
-            self._grid_plotter = grid_plotter
+        self._grid_plotter = grid_plotter or self._get_grid_plotter()
 
         if self._grid_plotter is None:
             raise Exception('Define a TrGridPlotter!')
