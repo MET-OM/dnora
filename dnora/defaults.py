@@ -3,14 +3,17 @@ import os
 """Default filestrings and datestrings for Grid"""
 dflt_grd = {'fs': { 'SWAN': '#Grid_SWAN.bot',
                     'WW3': '#Grid.txt',
+                    'WW3msh': '#Grid.msh',
                     'SWASH': '#Grid_SWASH.bot',
                     'General': 'topo_#Grid.txt'},
             'fldr': {'SWAN': f"{os.getcwd()}/output",
                     'WW3': f"{os.getcwd()}/output",
+                    'WW3msh': f"{os.getcwd()}/output",
                     'SWASH': f"{os.getcwd()}/output",
                     'General': ''},
             'info': {   'SWAN': '#Grid_info.txt',
                         'WW3': '#Grid_info.txt',
+                        'WW3msh': '#Grid_info.txt',
                         'SWASH': '#Grid_info.txt',
                         'General': '#Grid_info.txt'}
         }
