@@ -8,7 +8,7 @@ from dnora import trg, grd
 
 import numpy as np
 
-grid = trg.TrGrid(name='test')
+grid = trg.Grid(name='test')
 print(grid)
 
 grid.import_triang(trg.read_tr.SmsReader(filename='WW3_grid_01.2dm'))
