@@ -6,11 +6,7 @@ What is dnora?
 
 dnora is a software for dynamical downscaling of wave products i.e., NORA3 wave hindcast and WAM4 wave forecast from Norwegian Meteorological Institute.
 
-dnora can:
-- create high resolution grid from open access Emodnet 2018 bathymetry
-- create wind forcing and 2d spectra at the boundaries based on NORA3 or WAM4
-- create parameter file(s) for the wave model (SWAN and SWASH)
-- run the wave model
+Documentation: https://dnora.readthedocs.io/en/latest/
 
 Example of downscaling WAM4 using dnora/SWAN:
 
