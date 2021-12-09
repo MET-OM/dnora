@@ -17,9 +17,9 @@ The package contains functions that:
 
 Dependencies
 =====================================
-1. Installation of SWAN. The latest SWAN version can be downloaded from https://sourceforge.net/projects/swanmodel/files/swan/. The installation procedure can be found in: https://swanmodel.sourceforge.io/online_doc/swanimp/node4.html
+1. Installation of **SWAN**. The latest SWAN version can be downloaded from https://sourceforge.net/projects/swanmodel/files/swan/. The installation procedure can be found in: https://swanmodel.sourceforge.io/online_doc/swanimp/node4.html
 
-2. Installation of SWASH. The latest SWASH version can be downloaded from https://sourceforge.net/projects/swash/. The installation procedure can be found in: https://swash.sourceforge.io/online_doc/swashimp/node4.html
+2. Installation of **SWASH**. The latest SWASH version can be downloaded from https://sourceforge.net/projects/swash/. The installation procedure can be found in: https://swash.sourceforge.io/online_doc/swashimp/node4.html
 
 To run the models within dnora, the paths, where the models are installed, need to be defined in .bashrc, e.g., ::
 
@@ -28,7 +28,7 @@ To run the models within dnora, the paths, where the models are installed, need 
 
 .. code-block:: rst
 
-3. Fimex is a the File Interpolation, Manipulation and EXtraction library for gridded geospatial data (more info in \url{httpshttps://wiki.met.no/fimex/start}). Fimex is applied in DNORA for the preparation of forcing fields (wind and current). In case of running the spectral model without wind forcing, the fimex installation can be neglected.  A detailed installation procedure can be find in https://wiki.met.no/fimex/install. For a quick installation in linux environment (e.g., Ubuntu), you can follow the steps: open the Synaptic Package Manager, search and mark for installation a latest version of fimex, apply installation and check the installation (usually it is installed in /usr/bin/) by typing in command line: fimex or fimex-xxx where xxx is the version number. In case that only fimex-xxx works then add a symbolic link::
+3. **Fimex** is a the File Interpolation, Manipulation and EXtraction library for gridded geospatial data (more info in \url{httpshttps://wiki.met.no/fimex/start}). Fimex is applied in DNORA for the preparation of forcing fields (wind and current). In case of running the spectral model without wind forcing, the fimex installation can be neglected.  A detailed installation procedure can be find in https://wiki.met.no/fimex/install. For a quick installation in linux environment (e.g., Ubuntu), you can follow the steps: open the Synaptic Package Manager, search and mark for installation a latest version of fimex, apply installation and check the installation (usually it is installed in /usr/bin/) by typing in command line: fimex or fimex-xxx where xxx is the version number. In case that only fimex-xxx works then add a symbolic link::
 
       cd /usr/bin 
       sudo ln -s fimex-xxx fimex
