@@ -366,6 +366,9 @@ class Grid:
         """Return the name of the grid (set at initialization)."""
         return copy(self.data.name)
 
+    def structured(self):
+        return True
+
     def size(self) -> tuple:
         """Returns the size (nx, ny) of the grid."""
         return self.land_sea_mask().shape

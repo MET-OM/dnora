@@ -4,12 +4,16 @@ import numpy as np
 
 from ..grd import TopoReader
 from .read_tr import TriangReader
+from .write import TrGridWriter
 from .boundary import BoundarySetter, ClearBoundary
 from .plot import TrGridPlotter, TriTopoPlotter
 from ..grd.mesh import Mesher, Interpolate
 from .. import msg
+from ..aux import create_filename_obj, check_if_folder, add_folder_to_filename
+from ..defaults import dflt_grd
+import sys
 
-class TrGrid:
+class Grid:
     def __init__(self, name='AnonymousTriangGrid'):
         self._name = copy(name)
         return
@@ -89,7 +93,32 @@ class TrGrid:
             msg.plain('No triangular grid imported!')
             return
 
+    def export_grid(self, grid_writer: TrGridWriter, out_format: str=None, filestring: str=None, infofilestring: str=None, folder: str=None) -> None:
+        """Exports the boundary spectra to a file.
 
+        The grid_writer defines the file format.
+        """
+
+        msg.header(grid_writer, f"Writing grid topography from {self.name()}")
+
+        out_format = out_format or grid_writer._preferred_format()
+
+        filestring = filestring or dflt_grd['fs'][out_format]
+        filename = create_filename_obj(filestring=filestring, objects=[self])
+
+        infofilestring = infofilestring or dflt_grd['info'][out_format]
+        infofilename = create_filename_obj(filestring=infofilestring, objects=[self])
+
+        folderstring = folder or dflt_grd['fldr'][out_format]
+        folder = create_filename_obj(filestring=folderstring, objects=[self])
+
+        existed = check_if_folder(folder=folder, create=True)
+        if not existed:
+            msg.plain(f"Creating folder {folder}")
+
+        output_files, output_folder = grid_writer(self, filename=filename, infofilename=infofilename, folder=folder)
+
+        return output_files, output_folder
 
     def plot_grid(self, grid_plotter: TrGridPlotter=None) -> None:
         if grid_plotter is None:
@@ -111,6 +140,9 @@ class TrGrid:
             return copy(self._name)
         else:
             return ''
+
+    def structured(self):
+        return False
 
     def tri(self):
         if hasattr(self, '_tri'):
@@ -175,6 +207,23 @@ class TrGrid:
     def boundary_points(self):
         mask = self.boundary_inds()
         return np.transpose(np.array([self.lon()[mask], self.lat()[mask]]))
+
+    def write_status(self, filename='', folder='') -> None:
+        """Writes out the status of the grid to a file."""
+
+        if not filename:
+            filename = f"{self.name()}_info.txt"
+
+        filename = add_folder_to_filename(filename, folder)
+        msg.to_file(filename)
+
+        stdout = sys.stdout
+        sys.stdout = open(filename, 'w')
+        print(self)
+        sys.stdout.close()
+        sys.stdout = stdout
+
+        return
 
     def __str__(self) -> str:
         """Prints status of the grid."""
