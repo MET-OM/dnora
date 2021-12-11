@@ -57,7 +57,7 @@ def month_list(start_time, end_time):
     months = pd.date_range(start=start_time[:7], end=end_time[:7], freq='MS')
     return months
 
-def add_file_extension(filename: str, extension: str):
+def add_extension(filename: str, extension: str):
     """Adds a file extension to the file name.
 
     If the file already has an extension, then no extension is added. An

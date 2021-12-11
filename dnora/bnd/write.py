@@ -24,7 +24,11 @@ class BoundaryWriter(ABC):
     @abstractmethod
     def _preferred_format(self) -> str:
         """For the file format using defauts.py, e.g. SWAN or WW3"""
-        return
+        return 'General'
+
+    def _preferred_extension(self):
+        return 'nc'
+
 
     @abstractmethod
     def convention(self) -> str:
@@ -51,7 +55,7 @@ class BoundaryWriter(ABC):
         return
 
     @abstractmethod
-    def __call__(self, boundar: Boundary) -> Tuple[str, str]:
+    def __call__(self, boundar: Boundary, filename: str, folder: str) -> Tuple[str, str]:
         """Writed the data from the Boundary object and returns the file and
         folder where data were written."""
 
@@ -66,9 +70,6 @@ class DumpToNc(BoundaryWriter):
         """Convention of spectra"""
         return self._convention
 
-    def _preferred_format(self) -> str:
-        """Format of filenames"""
-        return 'General'
 
     def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
 
@@ -93,9 +94,6 @@ class NcFiles(BoundaryWriter):
         """Convention of spectra"""
         return self._convention
 
-    def _preferred_format(self) -> str:
-        """Format of filenames"""
-        return 'General'
 
     def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
 
@@ -298,6 +296,10 @@ class SWAN(BoundaryWriter):
     def _preferred_format(self):
         """Format of filenames"""
         return self.out_format
+
+    def _preferred_extension(self):
+        return 'asc'
+
 
     def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
         #boundary_in = copy(boundary)

@@ -75,7 +75,9 @@ class Grid:
 
             msg.header(mesher, "Meshing grid bathymetry...")
             print(mesher)
-            topo = mesher(self.raw_topo(), self.raw_lon(), self.raw_lat(), np.meshgrid(self.lon()), np.meshgrid(self.lat()))
+            lonQ, latQ = np.meshgrid(self.lon(), self.lat())
+            topo = mesher(self.raw_topo(), self.raw_lon(), self.raw_lat(), lonQ, latQ)
+
             vars_dict = {'topo': (['lat', 'lon'], topo)}
             self.data = self.data.assign(vars_dict)
 
@@ -102,39 +104,39 @@ class Grid:
 
         return
 
-    def export_grid(self, grid_writer: GridWriter, out_format: str=None, filestring: str=None, infofilestring: str=None, folder: str=None) -> None:
-        """Exports the boundary spectra to a file.
-
-        The grid_writer defines the file format.
-        """
-
-        msg.header(grid_writer, f"Writing grid topography from {self.name()}")
-
-        if out_format is None:
-            out_format = grid_writer._preferred_format()
-
-        if filestring is not None:
-            filename = self.filename(filestring=filestring)
-        else:
-            filename = self.filename(filestring=dflt_grd['fs'][out_format])
-
-        if infofilestring is not None:
-            infofilename = self.filename(filestring=infofilestring)
-        else:
-            infofilename = self.filename(filestring=dflt_grd['info'][out_format])
-
-        if folder is not None:
-            folder = self.filename(filestring=folder)
-        else:
-            folder = self.filename(filestring=dflt_grd['fldr'][out_format])
-
-        existed = check_if_folder(folder=folder, create=True)
-        if not existed:
-            msg.plain(f"Creating folder {folder}")
-
-        output_files, output_folder = grid_writer(self, filename=filename, infofilename=infofilename, folder=folder)
-
-        return output_files, output_folder
+    # def export_grid(self, grid_writer: GridWriter, out_format: str=None, filestring: str=None, infofilestring: str=None, folder: str=None) -> None:
+    #     """Exports the boundary spectra to a file.
+    #
+    #     The grid_writer defines the file format.
+    #     """
+    #
+    #     msg.header(grid_writer, f"Writing grid topography from {self.name()}")
+    #
+    #     if out_format is None:
+    #         out_format = grid_writer._preferred_format()
+    #
+    #     if filestring is not None:
+    #         filename = self.filename(filestring=filestring)
+    #     else:
+    #         filename = self.filename(filestring=dflt_grd['fs'][out_format])
+    #
+    #     if infofilestring is not None:
+    #         infofilename = self.filename(filestring=infofilestring)
+    #     else:
+    #         infofilename = self.filename(filestring=dflt_grd['info'][out_format])
+    #
+    #     if folder is not None:
+    #         folder = self.filename(filestring=folder)
+    #     else:
+    #         folder = self.filename(filestring=dflt_grd['fldr'][out_format])
+    #
+    #     existed = check_if_folder(folder=folder, create=True)
+    #     if not existed:
+    #         msg.plain(f"Creating folder {folder}")
+    #
+    #     output_files, output_folder = grid_writer(self, filename=filename, infofilename=infofilename, folder=folder)
+    #
+    #     return output_files, output_folder
 
     def filename(self, filestring: str=dflt_grd['fs']['General']) -> str:
         """Creates a filename for the object.
@@ -376,7 +378,9 @@ class Grid:
     def topo(self):
         """Returns an array containing the meshed topography of the grid."""
         if hasattr(self.data, 'topo'):
-            return copy(self.data.topo.values)
+            topo = copy(self.data.topo.values)
+            topo[np.logical_not(self.land_sea_mask())] = -999
+            return topo
         else:
             return np.array([])
 
@@ -429,7 +433,7 @@ class Grid:
         is processed in order to make sure that everything is consistent.
         """
 
-        self._set_land_sea_mask(land_sea_mask = self.topo() > 0) # Land points -999
+        self._set_land_sea_mask(land_sea_mask = self.data.topo.values > 0) # Only positive values
 
         # Create empty (no boundary points) if doesn't exist
         if self.boundary_mask().size == 0:

@@ -93,32 +93,32 @@ class Grid:
             msg.plain('No triangular grid imported!')
             return
 
-    def export_grid(self, grid_writer: TrGridWriter, out_format: str=None, filestring: str=None, infofilestring: str=None, folder: str=None) -> None:
-        """Exports the boundary spectra to a file.
-
-        The grid_writer defines the file format.
-        """
-
-        msg.header(grid_writer, f"Writing grid topography from {self.name()}")
-
-        out_format = out_format or grid_writer._preferred_format()
-
-        filestring = filestring or dflt_grd['fs'][out_format]
-        filename = create_filename_obj(filestring=filestring, objects=[self])
-
-        infofilestring = infofilestring or dflt_grd['info'][out_format]
-        infofilename = create_filename_obj(filestring=infofilestring, objects=[self])
-
-        folderstring = folder or dflt_grd['fldr'][out_format]
-        folder = create_filename_obj(filestring=folderstring, objects=[self])
-
-        existed = check_if_folder(folder=folder, create=True)
-        if not existed:
-            msg.plain(f"Creating folder {folder}")
-
-        output_files, output_folder = grid_writer(self, filename=filename, infofilename=infofilename, folder=folder)
-
-        return output_files, output_folder
+    # def export_grid(self, grid_writer: TrGridWriter, out_format: str=None, filestring: str=None, infofilestring: str=None, folder: str=None) -> None:
+    #     """Exports the boundary spectra to a file.
+    #
+    #     The grid_writer defines the file format.
+    #     """
+    #
+    #     msg.header(grid_writer, f"Writing grid topography from {self.name()}")
+    #
+    #     out_format = out_format or grid_writer._preferred_format()
+    #
+    #     filestring = filestring or dflt_grd['fs'][out_format]
+    #     filename = create_filename_obj(filestring=filestring, objects=[self])
+    #
+    #     infofilestring = infofilestring or dflt_grd['info'][out_format]
+    #     infofilename = create_filename_obj(filestring=infofilestring, objects=[self])
+    #
+    #     folderstring = folder or dflt_grd['fldr'][out_format]
+    #     folder = create_filename_obj(filestring=folderstring, objects=[self])
+    #
+    #     existed = check_if_folder(folder=folder, create=True)
+    #     if not existed:
+    #         msg.plain(f"Creating folder {folder}")
+    #
+    #     output_files, output_folder = grid_writer(self, filename=filename, infofilename=infofilename, folder=folder)
+    #
+    #     return output_files, output_folder
 
     def plot_grid(self, grid_plotter: TrGridPlotter=None) -> None:
         if grid_plotter is None:
