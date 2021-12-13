@@ -16,15 +16,17 @@ from ..wnd.write import ForcingWriter
 
 from ..grd.write import GridWriter
 from ..grd.process import GridProcessor, TrivialFilter
+from ..trg.write import TrGridWriter
 
 from ..dnplot import GridPlotter, TopoPlotter
 from ..inp import InputFileWriter
 from ..run import ModelExecuter
 
+from typing import Union
 # Import default values and auxiliry functions
 from .. import msg
 from ..defaults import dflt_mdl, dflt_inp, dflt_bnd, dflt_frc, dflt_grd, dflt_plt, list_of_placeholders
-from ..aux import create_filename_obj, create_filename_time, add_folder_to_filename, check_if_folder, clean_filename
+from ..aux import create_filename_obj, create_filename_time, add_folder_to_filename, check_if_folder, clean_filename, add_extension
 
 class ModelRun:
     def __init__(self, grid: Grid, start_time: str, end_time: str, name='AnonymousModelRun'):
@@ -33,50 +35,40 @@ class ModelRun:
         self.start_time = copy(start_time)
         self.end_time = copy(end_time)
 
-    def import_boundary(self, boundary_reader: BoundaryReader=None, point_picker: PointPicker=None, name: str='') -> None:
+    def import_boundary(self, boundary_reader: BoundaryReader=None, point_picker: PointPicker=None, name: str=None) -> None:
         """Creates a Boundary-object and imports boundary spectra."""
 
-        if boundary_reader is None:
-            self._boundary_reader = self._get_boundary_reader()
-        else:
-            self._boundary_reader = boundary_reader
-
-        if point_picker is None:
-            self._point_picker = self._get_point_picker()
-        else:
-            self._point_picker = point_picker
+        self._boundary_reader = boundary_reader or self._get_boundary_reader()
+        self._point_picker = point_picker or self._get_point_picker()
 
         if self._boundary_reader is None :
             raise Exception('Define a BoundaryReader!')
         elif self._point_picker is None:
             raise Exception('Define a PointPicker!')
-        else:
-            if name:
-                self._boundary = Boundary(grid=self.grid(), name=name)
-            else:
-                self._boundary = Boundary(grid=self.grid(), name=type(self._boundary_reader).__name__)
-            # Import the boundary spectra into the Boundary-object
-            self.boundary().import_boundary(start_time=self.start_time, end_time=self.end_time, boundary_reader=self._boundary_reader, point_picker=self._point_picker)
+
+        # Create boundary object
+        name = name or type(self._boundary_reader).__name__
+        self._boundary = Boundary(grid=self.grid(), name=name)
+
+        # Import the boundary spectra into the Boundary-object
+        self.boundary().import_boundary(start_time=self.start_time, end_time=self.end_time, boundary_reader=self._boundary_reader, point_picker=self._point_picker)
 
         return
 
-    def import_forcing(self, forcing_reader: ForcingReader=None, name: str='') -> None:
+    def import_forcing(self, forcing_reader: ForcingReader=None, name: str=None) -> None:
         """Creates a Forcing-objects and imports forcing data."""
 
-        if forcing_reader is None:
-            self._forcing_reader = self._get_forcing_reader()
-        else:
-            self._forcing_reader = forcing_reader
+        self._forcing_reader = forcing_reader or self._get_forcing_reader()
 
         if self._forcing_reader is None:
             raise Exception('Define a ForcingReader!')
-        else:
-            if name:
-                self._forcing = Forcing(grid=self.grid(), name=name)
-            else:
-                self._forcing = Forcing(grid=self.grid(), name=type(self._forcing_reader).__name__)
-            # Import the forcing data into the Forcing-object
-            self.forcing().import_forcing(start_time=self.start_time, end_time=self.end_time, forcing_reader=self._forcing_reader)
+
+        # Create forcing object
+        name = name or type(self._forcing_reader).__name__
+        self._forcing = Forcing(grid=self.grid(), name=name)
+
+        # Import the forcing data into the Forcing-object
+        self.forcing().import_forcing(start_time=self.start_time, end_time=self.end_time, forcing_reader=self._forcing_reader)
 
         return
 
@@ -84,21 +76,41 @@ class ModelRun:
         """Writes the spectra in the Boundary-object to an external source, e.g.
         a file."""
 
-        if self.boundary() is not None:
-            if boundary_writer is None:
-                 self._boundary_writer = self._get_boundary_writer()
-            else:
-                self._boundary_writer = boundary_writer
-
-            if self._boundary_writer is None:
-                raise Exception('Define a BoundaryWriter!')
-            else:
-                output_files, output_folder = self.boundary().export_boundary(boundary_writer=self._boundary_writer, out_format=out_format, filestring=filestring, datestring=datestring, folder=folder)
-
-            self._boundary_exported_as = output_files
-            self._boundary_exported_to = output_folder
-        else:
+        if self.boundary() is None:
             raise Exception('Import boundary before exporting!')
+
+        self._boundary_writer = boundary_writer or self._get_boundary_writer()
+        if self._boundary_writer is None:
+            raise Exception('Define a BoundaryWriter!')
+
+        msg.header(self._boundary_writer, f"Writing boundary spectra from {self.boundary().name()}")
+
+        # Get formats for file names
+        out_format = out_format or self._boundary_writer._preferred_format()
+        extension = self._boundary_writer._preferred_extension()
+
+        filestring = filestring or dflt_bnd['fs'][out_format]
+        datestring = datestring or dflt_bnd['ds'][out_format]
+        folderstring = folder or dflt_bnd['fldr'][out_format]
+
+        # Create filenames
+        filestring = create_filename_obj(filestring=filestring, objects=[self.grid(), self.forcing(), self.boundary()])
+        filestring = create_filename_time(filestring=filestring, times=[self.start_time, self.end_time], datestring=datestring)
+        filestring = add_extension(filestring, extension)
+
+
+        # Folder
+        folderstring = create_filename_obj(filestring=folderstring, objects=[self.grid(),self.boundary(), self.forcing()])
+        folderstring = create_filename_time(filestring=folderstring, times=[self.start_time, self.end_time], datestring=datestring)
+        existed = check_if_folder(folder=folderstring, create=True)
+        if not existed:
+            msg.plain(f"Creating folder {folderstring}")
+
+
+        output_files, output_folder = self._boundary_writer(self.boundary(), filename=filestring, folder=folderstring)
+
+        self._boundary_exported_as = output_files
+        self._boundary_exported_to = output_folder
 
         return
 
@@ -106,36 +118,80 @@ class ModelRun:
         """Writes the forcing data in the Forcing-object to an external source,
         e.g. a file."""
 
-        if self.forcing() is not None:
-            if forcing_writer is None:
-                 self._forcing_writer = self._get_forcing_writer()
-            else:
-                self._forcing_writer = forcing_writer
-
-            if self._forcing_writer is None:
-                raise Exception('Define a ForcingWriter!')
-
-            output_files, output_folder = self.forcing().export_forcing(forcing_writer=self._forcing_writer, out_format=out_format, filestring=filestring, datestring=datestring, folder=folder)
-
-            self._forcing_exported_as = output_files
-            self._forcing_exported_to = output_folder
-        else:
+        if self.forcing() is None:
             raise Exception('Import forcing before exporting!')
+
+        self._forcing_writer = forcing_writer or self._get_forcing_writer()
+
+        if self._forcing_writer is None:
+            raise Exception('Define a ForcingWriter!')
+
+        msg.header(self._forcing_writer, f"Writing wind forcing from {self.forcing().name()}")
+
+        # Get formats for file names
+        out_format = out_format or self._forcing_writer._preferred_format()
+        extension = self._forcing_writer._preferred_extension()
+
+        filestring = filestring or dflt_frc['fs'][out_format]
+        datestring = datestring or dflt_frc['ds'][out_format]
+        folderstring = folder or dflt_frc['fldr'][out_format]
+
+        # Create filenames
+        filestring = create_filename_obj(filestring=filestring, objects=[self.grid(), self.forcing(), self.boundary()])
+        filestring = create_filename_time(filestring=filestring, times=[self.start_time, self.end_time], datestring=datestring)
+        filestring = add_extension(filestring, extension)
+
+
+        # Folder
+        folderstring = create_filename_obj(filestring=folderstring, objects=[self.grid(),self.boundary(), self.forcing()])
+        folderstring = create_filename_time(filestring=folderstring, times=[self.start_time, self.end_time], datestring=datestring)
+        existed = check_if_folder(folder=folderstring, create=True)
+        if not existed:
+            msg.plain(f"Creating folder {folderstring}")
+
+
+        output_files, output_folder = self._forcing_writer(self.forcing(), filename=filestring, folder=folderstring)
+
+        self._forcing_exported_as = output_files
+        self._forcing_exported_to = output_folder
+
+
         return
 
-    def export_grid(self, grid_writer: GridWriter=None, out_format: str=None, filestring: str=None, infofilestring: str=None, folder: str=None) -> None:
+    def export_grid(self, grid_writer: Union[GridWriter, TrGridWriter]=None, out_format: str=None, filestring: str=None, infofilestring: str=None, folder: str=None) -> None:
         """Writes the grid data in the Grid-object to an external source,
         e.g. a file."""
 
-        if grid_writer is None:
-             self._grid_writer = self._get_grid_writer()
-        else:
-            self._grid_writer = grid_writer
-
+        # Try to use defaul grid writer if not provided
+        self._grid_writer = grid_writer or self._get_grid_writer()
         if self._grid_writer is None:
             raise Exception('Define a GridWriter!')
 
-        output_files, output_folder = self.grid().export_grid(grid_writer=self._grid_writer, out_format=out_format, filestring=filestring, infofilestring=infofilestring, folder=folder)
+        msg.header(self._grid_writer, f"Writing grid topography from {self.grid().name()}")
+
+        # Get formats for file names
+        out_format = out_format or self._grid_writer._preferred_format()
+        extension = self._grid_writer._preferred_extension()
+
+        filestring = filestring or dflt_grd['fs'][out_format]
+        infofilestring = infofilestring or dflt_grd['info'][out_format]
+        folderstring = folder or dflt_grd['fldr'][out_format]
+
+        # Create filenames
+        filestring = create_filename_obj(filestring=filestring, objects=[self.grid()])
+        filestring = add_extension(filestring, extension)
+
+        infofilestring = create_filename_obj(filestring=infofilestring, objects=[self.grid()])
+        infofilestring = add_extension(infofilestring, extension)
+
+        # Folder
+        folderstring = create_filename_obj(filestring=folderstring, objects=[self.grid(),self.boundary(), self.forcing()])
+        existed = check_if_folder(folder=folderstring, create=True)
+        if not existed:
+            msg.plain(f"Creating folder {folderstring}")
+
+        # Write the grid using the GridWriter object
+        output_files, output_folder = self._grid_writer(self.grid(), filename=filestring, infofilename=infofilestring, folder=folderstring)
 
         self._grid_exported_as = output_files
         self._grid_exported_to = output_folder
@@ -148,59 +204,46 @@ class ModelRun:
         """Writes the grid data in the Grid-object to an external source,
         e.g. a file."""
 
-        if input_file_writer is None:
-            self._input_file_writer = self._get_input_file_writer()
-        else:
-            self._input_file_writer = input_file_writer
-
+        self._input_file_writer = input_file_writer or self._get_input_file_writer()
         if self._input_file_writer is None:
             raise Exception('Define an InputFileWriter!')
 
-        if out_format is None:
-            out_format = self._input_file_writer._preferred_format()
+        out_format = out_format or self._input_file_writer._preferred_format()
+        extension = self._input_file_writer._preferred_extension()
 
-        if filestring is None:
-            filestring = dflt_inp['fs'][out_format]
+        filestring = filestring or dflt_inp['fs'][out_format]
+        datestring = datestring or dflt_inp['ds'][out_format]
+        folderstring = folder or dflt_inp['fldr'][out_format]
 
-        if datestring is None:
-            datestring = dflt_inp['ds'][out_format]
 
-        if folder is None:
-            folder = dflt_inp['fldr'][out_format]
-
-        if start_time is None:
-            start_time = self.start_time
-
-        if end_time is None:
-            end_time = self.end_time
+        start_time = start_time or self.start_time
+        end_time = end_time or self.end_time
 
         # Filename and folder for the input file
-        filename = create_filename_obj(filestring=filestring, objects=[self, self.grid(), self.forcing(), self.boundary()])
-        filename = create_filename_time(filestring=filename, times=[start_time, end_time], datestring=datestring)
+        filestring = create_filename_obj(filestring=filestring, objects=[self, self.grid(), self.forcing(), self.boundary()])
+        filestring = create_filename_time(filestring=filestring, times=[start_time, end_time], datestring=datestring)
+        filestring = add_extension(filestring, extension)
 
-        folder = create_filename_obj(filestring=folder, objects=[self, self.grid(), self.forcing(), self.boundary()])
-        folder = create_filename_time(filestring=folder, times=[start_time, end_time], datestring=datestring)
+        folderstring = create_filename_obj(filestring=folderstring, objects=[self, self.grid(), self.forcing(), self.boundary()])
+        folderstring = create_filename_time(filestring=folderstring, times=[start_time, end_time], datestring=datestring)
 
-        existed = check_if_folder(folder=folder, create=True)
+        existed = check_if_folder(folder=folderstring, create=True)
         if not existed:
-            msg.plain(f"Creating folder {folder}")
+            msg.plain(f"Creating folder {folderstring}")
 
 
-        if grid_path is None:
-            grid_path = add_folder_to_filename(filename=self.grid_exported_as(out_format), folder=self.grid_exported_to(out_format))
-        if forcing_path is None:
-            forcing_path = add_folder_to_filename(filename=self.forcing_exported_as(out_format), folder=self.forcing_exported_to(out_format))
-        if boundary_path is None:
-            boundary_path = add_folder_to_filename(filename=self.boundary_exported_as(out_format), folder=self.boundary_exported_to(out_format))
+        grid_path = grid_path or add_folder_to_filename(filename=self.grid_exported_as(out_format), folder=self.grid_exported_to(out_format))
+        forcing_path = forcing_path or add_folder_to_filename(filename=self.forcing_exported_as(out_format), folder=self.forcing_exported_to(out_format))
+        boundary_path = boundary_path or add_folder_to_filename(filename=self.boundary_exported_as(out_format), folder=self.boundary_exported_to(out_format))
 
         msg.header(self._input_file_writer, "Writing model input file...")
 
         output_files, output_folder = self._input_file_writer(grid=self.grid(), forcing=self.forcing(), boundary=self.boundary(), start_time=start_time, end_time=end_time,
-                        filename=filename, folder=folder,
+                        filename=filestring, folder=folderstring,
                         grid_path=grid_path, forcing_path=forcing_path, boundary_path=boundary_path)
 
 
-        msg.to_file(add_folder_to_filename(output_files, folder))
+        msg.to_file(add_folder_to_filename(output_files, output_folder))
 
 
         self._input_file_written_as = output_files

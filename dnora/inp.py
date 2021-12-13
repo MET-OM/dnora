@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from copy import copy
 import os
 import numpy as np
@@ -21,6 +21,10 @@ class InputFileWriter(ABC):
     def _preferred_format(self):
         return 'General'
 
+    def _preferred_extension(self):
+        return ''
+
+    @abstractmethod
     def __call__(self):
         pass
 
@@ -35,6 +39,9 @@ class SWAN(InputFileWriter):
 
     def _preferred_format(self):
         return 'SWAN'
+
+    def _preferred_extension(self):
+        return 'swn'
 
     def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, start_time: str, end_time: str, filename: str, folder: str, grid_path: str, forcing_path: str, boundary_path: str):
         if forcing is None and self.wind == True:
@@ -119,6 +126,9 @@ class SWASH(InputFileWriter):
 
     def _preferred_format(self):
         return 'SWASH'
+
+    def _preferred_extension(self):
+        return 'sws'
 
     def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, start_time: str, end_time: str, filename: str, folder: str, grid_path: str, forcing_path: str, boundary_path: str):
 

@@ -10,14 +10,17 @@ if TYPE_CHECKING:
     from .grd_mod import Grid
 
 # Import default values and auxiliry functions
-from ..defaults import dflt_grd
+from ..defaults import dflt_grd, list_of_placeholders
 from .. import msg
-from ..aux import add_folder_to_filename, add_prefix, add_suffix
+from ..aux import add_folder_to_filename, add_prefix, add_suffix, clean_filename
 
 class GridWriter(ABC):
     """Abstract class for writing the Grid-object's data to files to be Used
     by the wave models.
     """
+
+    def _preferred_extension(self):
+        return 'txt'
 
     def _preferred_format(self):
         return 'General'
@@ -25,6 +28,28 @@ class GridWriter(ABC):
     @abstractmethod
     def __call__(self, grid: Grid) -> Tuple:
         pass
+
+class BoundaryPoints(GridWriter):
+    """Writes boundary points from unsutructured grid."""
+    def __init__(self, include_index = False):
+        self.include_index = copy(include_index)
+        return
+
+    def __call__(self, grid: Grid, filename: str, infofilename: str, folder: str) -> Tuple:
+        output_file = clean_filename(filename, list_of_placeholders)
+        output_path = add_folder_to_filename(output_file, folder)
+
+
+        with open(output_path,'w') as f:
+            if self.include_index and hasattr(grid, 'boundary_inds'):
+                for n in range(len(grid.boundary_points())):
+                    # Going from python 0-indexing to node 1-indexing
+                    f.write(f'{grid.boundary_inds()[n]+1:.0f} {grid.boundary_points()[n,0]:13.10f} {grid.boundary_points()[n,1]:13.10f}\n')
+            else:
+                for n in range(len(grid.boundary_points())):
+                    f.write(f'{grid.boundary_points()[n,0]:13.10f} {grid.boundary_points()[n,1]:13.10f}\n')
+        print(output_path)
+        return output_file, folder
 
 class WW3(GridWriter):
     """Writes the grid to WAVEWATCH III format."""
@@ -88,6 +113,9 @@ class SWAN(GridWriter):
 
     def _preferred_format(self):
         return self.out_format
+
+    def _preferred_extension(self):
+        return 'bot'
 
     def __call__(self, grid: Grid, filename: str, infofilename: str, folder: str) -> None:
 

@@ -49,7 +49,7 @@ class EmptyTopo(TopoReader):
     """Creates an empty topography. Called when setting initial spacing."""
     def __init__(self, grid: Grid=None, nx=0, ny=0):
         if grid is not None:
-            self.size = (self.grid.ny(),self.grid.nx())
+            self.size = (grid.ny(),grid.nx())
         else:
             self.size = (ny, nx)
         pass
@@ -86,9 +86,12 @@ class EMODNET2018(TopoReader):
         topo = ds.DEPTH.values
 
         # Set depth to positive values and land to -999
-        land_mask = topo > 0
+        #land_mask = topo > 0
+
+        #topo[land_mask] = -999
+
+        # Negative valies and NaN's are land
         topo = -1*topo
-        topo[land_mask] = -999
 
         topo_lon = ds.COLUMNS.values
         topo_lat = ds.LINES.values
