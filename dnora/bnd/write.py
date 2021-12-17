@@ -21,7 +21,7 @@ class BoundaryWriter(ABC):
 
     This object is provided to the .export_boundary() method.
     """
-    @abstractmethod
+
     def _preferred_format(self) -> str:
         """For the file format using defauts.py, e.g. SWAN or WW3"""
         return 'General'
@@ -62,14 +62,18 @@ class BoundaryWriter(ABC):
         return
 
 class DumpToNc(BoundaryWriter):
-    def __init__(self, convention: str='Ocean') -> None:
+    def __init__(self, convention: str='Ocean', out_format: str='General') -> None:
         self._convention = convention
+        self.out_format = out_format
         return
 
     def convention(self) -> str:
         """Convention of spectra"""
         return self._convention
 
+    def _preferred_format(self) -> str:
+        """Preferred format of file name"""
+        return self.out_format
 
     def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
 
@@ -347,7 +351,6 @@ class SWAN(BoundaryWriter):
                         file_out.write('FACTOR\n')
                         file_out.write(format(self.factor,'1.0E')+'\n')
                         S = boundary.spec(start_time=tim, end_time=tim, x=[n]).squeeze()
-                        delth = 360/len(boundary.dirs())
-                        np.savetxt(file_out,S/(delth*self.factor), fmt='%-10.0f')
-
+                        # SWAN uses m*m/Hz/deg normalization
+                        np.savetxt(file_out,S*np.pi/(180*self.factor), fmt='%-10.0f')
         return output_file, folder
