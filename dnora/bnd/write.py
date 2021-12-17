@@ -295,7 +295,7 @@ class SWAN(BoundaryWriter):
 
     def convention(self) -> str:
         """Convention of spectra"""
-        return 'Ocean'
+        return 'Met'
 
     def _preferred_format(self):
         """Format of filenames"""
