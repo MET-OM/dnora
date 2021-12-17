@@ -241,8 +241,8 @@ class Grid:
             distance_y = distance_2points(self.data.lat_min, self.data.lon_min, self.data.lat_max, self.data.lon_min)
 
             # Number of points
-            nx = int(np.round(distance_x*1000/dm))
-            ny = int(np.round(distance_y*1000/dm))
+            nx = int(np.round(distance_x*1000/dm)+1)
+            ny = int(np.round(distance_y*1000/dm)+1)
 
             # dx, dy in metres
             dx = distance_x*1000/nx
@@ -251,8 +251,14 @@ class Grid:
             # Define longitudes and latitudes
             lon = np.linspace(self.data.lon_min, self.data.lon_max, nx)
             lat = np.linspace(self.data.lat_min, self.data.lat_max, ny)
-            dlon = (self.data.lon_max-self.data.lon_min)/(nx-1)
-            dlat = (self.data.lat_max-self.data.lat_min)/(ny-1)
+            if nx > 1:
+                dlon = (self.data.lon_max-self.data.lon_min)/(nx-1)
+            else:
+                dlon = 0
+            if ny > 1:
+                dlat = (self.data.lat_max-self.data.lat_min)/(ny-1)
+            else:
+                dlat = 0
 
             reset_grid = True
 
@@ -504,7 +510,8 @@ class Grid:
 
         if hasattr(self.data, 'dlon') and hasattr(self.data, 'dlon'):
             msg.plain(f'dlon, dlat = {self.data.dlon}, {self.data.dlat} deg')
-            msg.plain(f'Inverse: dlon, dlat = 1/{1/self.data.dlon}, 1/{1/self.data.dlat} deg')
+            if self.data.dlon > 0 and self.data.dlat > 0:
+                msg.plain(f'Inverse: dlon, dlat = 1/{1/self.data.dlon}, 1/{1/self.data.dlat} deg')
 
         if hasattr(self.data, 'dx') and hasattr(self.data, 'dy'):
             msg.plain(f'dx, dy approximately {self.data.dx}, {self.data.dy} metres')
