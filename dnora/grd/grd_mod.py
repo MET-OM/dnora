@@ -11,7 +11,7 @@ from .read import TopoReader, EmptyTopo
 from .boundary import BoundarySetter, ClearBoundary
 from .mesh import Mesher, TrivialMesher, Interpolate
 from .process import GridProcessor, TrivialFilter
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 if TYPE_CHECKING:
     from .write import GridWriter
 
@@ -104,39 +104,6 @@ class Grid:
 
         return
 
-    # def export_grid(self, grid_writer: GridWriter, out_format: str=None, filestring: str=None, infofilestring: str=None, folder: str=None) -> None:
-    #     """Exports the boundary spectra to a file.
-    #
-    #     The grid_writer defines the file format.
-    #     """
-    #
-    #     msg.header(grid_writer, f"Writing grid topography from {self.name()}")
-    #
-    #     if out_format is None:
-    #         out_format = grid_writer._preferred_format()
-    #
-    #     if filestring is not None:
-    #         filename = self.filename(filestring=filestring)
-    #     else:
-    #         filename = self.filename(filestring=dflt_grd['fs'][out_format])
-    #
-    #     if infofilestring is not None:
-    #         infofilename = self.filename(filestring=infofilestring)
-    #     else:
-    #         infofilename = self.filename(filestring=dflt_grd['info'][out_format])
-    #
-    #     if folder is not None:
-    #         folder = self.filename(filestring=folder)
-    #     else:
-    #         folder = self.filename(filestring=dflt_grd['fldr'][out_format])
-    #
-    #     existed = check_if_folder(folder=folder, create=True)
-    #     if not existed:
-    #         msg.plain(f"Creating folder {folder}")
-    #
-    #     output_files, output_folder = grid_writer(self, filename=filename, infofilename=infofilename, folder=folder)
-    #
-    #     return output_files, output_folder
 
     def filename(self, filestring: str=dflt_grd['fs']['General']) -> str:
         """Creates a filename for the object.
@@ -178,6 +145,14 @@ class Grid:
                             longitude and ny points in latitude direction.
         """
 
+        def size_in_km():
+            """Calculates approximate size of grid in km."""
+
+            km_x = distance_2points((self.lat()[0]+self.lat()[-1])/2, self.lon()[0], (self.lat()[0]+self.lat()[-1])/2, self.lon()[-1])
+            km_y = distance_2points(self.lat()[0], self.lon()[0], self.lat()[-1], self.lon()[0])
+
+            return km_x, km_y
+
         msg.header(self, "Setting grid spacing...")
 
         # Resetting spacing will lose all information about the old grid.
@@ -193,21 +168,21 @@ class Grid:
             if floating_edge: #Use exactly given dlon/dlat and change lon_max/lat_max accordingly
                 msg.plain("floating_edge = True. Making sure dlon/dlat are keep exactly fixed")
 
-                lon=np.arange(self.data.lon_min,self.data.lon_max+dlon/2,dlon)
-                lat=np.arange(self.data.lat_min,self.data.lat_max+dlon/2,dlat)
+                lon=np.arange(self.lon()[0],self.lon()[-1]+dlon/2,dlon)
+                lat=np.arange(self.lat()[0],self.lat()[-1]+dlon/2,dlat)
 
                 msg.plain(f"Setting lon_max ({self.lon()[-1]} >> {lon[-1]}), lat_max ({self.lat()[-1]} >> {lat[-1]})")
 
-                distance_x = distance_2points((lat[0]+lat[-1])/2, lon[0], (lat[0]+lat[-1])/2, lon[-1])
-                distance_y = distance_2points(lat[0], lon[0], lat[-1], lon[0])
+                km_x = distance_2points((lat[0]+lat[-1])/2, lon[0], (lat[0]+lat[-1])/2, lon[-1])
+                km_y = distance_2points(lat[0], lon[0], lat[-1], lon[0])
 
                 # Number of points
                 nx = len(lon)
                 ny = len(lat)
 
                 # dx, dy in metres
-                dx = distance_x*1000/nx
-                dy = distance_y*1000/ny
+                dx = km_x*1000/nx
+                dy = km_y*1000/ny
 
 
                 attr_dict = {'lon_max': lon[-1], 'lat_max': lat[-1]}
@@ -217,66 +192,82 @@ class Grid:
 
             else: # Keeping edges fixed and rounding dlon/dlat to something suitable
                 # Number of points
-                nx = int((self.data.lon_max-self.data.lon_min)/dlon + 1)
-                ny = int((self.data.lat_max-self.data.lat_min)/dlat + 1)
+                nx = int((self.lon()[-1]-self.lon()[0])/dlon + 1)
+                ny = int((self.lat()[-1]-self.lat()[0])/dlat + 1)
 
                 # Define longitudes and latitudes
-                lon = np.linspace(self.data.lon_min, self.data.lon_max, nx)
-                lat = np.linspace(self.data.lat_min, self.data.lat_max, ny)
-                dlon = (self.data.lon_max-self.data.lon_min)/(nx-1)
-                dlat = (self.data.lat_max-self.data.lat_min)/(ny-1)
+                lon = np.linspace(self.lon()[0], self.lon()[-1], nx)
+                lat = np.linspace(self.lat()[0], self.lat()[-1], ny)
+                if nx > 1:
+                    dlon = (self.lon()[-1]-self.lon()[0])/(nx-1)
+                else:
+                    dlon = 0.
 
-                distance_x = distance_2points((self.data.lat_min+self.data.lat_max)/2, self.data.lon_min, (self.data.lat_min+self.data.lat_max)/2, self.data.lon_max)
-                distance_y = distance_2points(self.data.lat_min, self.data.lon_min, self.data.lat_max, self.data.lon_min)
+                if ny > 1:
+                    dlat = (self.lat()[-1]-self.lat()[0])/(ny-1)
+                else:
+                    dlat = 0.
 
+                km_x, km_y = size_in_km()
                 # dx, dy in metres
-                dx = distance_x*1000/nx
-                dy = distance_y*1000/ny
+                dx = km_x*1000/nx
+                dy = km_y*1000/ny
 
                 reset_grid = True
 
         elif dm:
             msg.plain(f"Setting spacing based on (approximately) dm={dm} metres")
-            distance_x = distance_2points((self.data.lat_min+self.data.lat_max)/2, self.data.lon_min, (self.data.lat_min+self.data.lat_max)/2, self.data.lon_max)
-            distance_y = distance_2points(self.data.lat_min, self.data.lon_min, self.data.lat_max, self.data.lon_min)
 
+            km_x, km_y = size_in_km()
             # Number of points
-            nx = int(np.round(distance_x*1000/dm)+1)
-            ny = int(np.round(distance_y*1000/dm)+1)
+            nx = int(np.round(km_x*1000/dm)+1)
+            ny = int(np.round(km_y*1000/dm)+1)
 
             # dx, dy in metres
-            dx = distance_x*1000/nx
-            dy = distance_y*1000/ny
+            dx = km_x*1000/nx
+            dy = km_y*1000/ny
 
             # Define longitudes and latitudes
-            lon = np.linspace(self.data.lon_min, self.data.lon_max, nx)
-            lat = np.linspace(self.data.lat_min, self.data.lat_max, ny)
+            lon = np.linspace(self.lon()[0], self.lon()[-1], nx)
+            lat = np.linspace(self.lat()[0], self.lat()[-1], ny)
             if nx > 1:
-                dlon = (self.data.lon_max-self.data.lon_min)/(nx-1)
+                dlon = (self.lon()[-1]-self.lon()[0])/(nx-1)
             else:
-                dlon = 0
+                dlon = 0.
             if ny > 1:
-                dlat = (self.data.lat_max-self.data.lat_min)/(ny-1)
+                dlat = (self.lat()[-1]-self.lat()[0])/(ny-1)
             else:
-                dlat = 0
+                dlat = 0.
 
             reset_grid = True
 
         elif nx and ny:
+            # If lon_min==lon_max, then we have only one point
+            if self.nx()<2:
+                nx = 1
+            # If lat_min==lat_max, then we have only one point
+            if self.ny()<2:
+                ny=1
+
             msg.plain(f"Setting spacing to have nx = {nx}, ny = {ny} points.")
 
             # Define longitudes and latitudes
-            lon = np.linspace(self.data.lon_min, self.data.lon_max, nx)
-            lat = np.linspace(self.data.lat_min, self.data.lat_max, ny)
-            dlon = (self.data.lon_max-self.data.lon_min)/(nx-1)
-            dlat = (self.data.lat_max-self.data.lat_min)/(ny-1)
+            lon = np.linspace(self.lon()[0], self.lon()[-1], nx)
+            lat = np.linspace(self.lat()[0], self.lat()[-1], ny)
+            if nx > 1:
+                dlon = (self.lon()[-1]-self.lon()[0])/(nx-1)
+            else:
+                dlon = 0.
 
-            distance_x = distance_2points((self.data.lat_min+self.data.lat_max)/2, self.data.lon_min, (self.data.lat_min+self.data.lat_max)/2, self.data.lon_max)
-            distance_y = distance_2points(self.data.lat_min, self.data.lon_min, self.data.lat_max, self.data.lon_min)
+            if ny > 1:
+                dlat = (self.lat()[-1]-self.lat()[0])/(ny-1)
+            else:
+                dlat = 0.
 
+            km_x, km_y = size_in_km()
             # dx, dy in metres
-            dx = distance_x*1000/nx
-            dy = distance_y*1000/ny
+            dx = km_x*1000/nx
+            dy = km_y*1000/ny
 
             reset_grid = True
 
@@ -285,7 +276,8 @@ class Grid:
             self._drop_topo_and_masks()
 
             # Set the new values to the xarray
-            attr_dict = {'nx': nx, 'ny': ny, 'dx': dx, 'dy': dy, 'dlon': dlon, 'dlat': dlat}
+            #attr_dict = {'nx': nx, 'ny': ny, 'dx': dx, 'dy': dy, 'dlon': dlon, 'dlat': dlat}
+            attr_dict = {'dx': dx, 'dy': dy, 'dlon': dlon, 'dlat': dlat}
             self.data = self.data.assign_attrs(attr_dict)
 
             coords_dict = {'lon': lon, 'lat': lat}
@@ -379,7 +371,8 @@ class Grid:
 
     def size(self) -> tuple:
         """Returns the size (nx, ny) of the grid."""
-        return self.land_sea_mask().shape
+        #return self.land_sea_mask().shape
+        return (self.nx(), self.ny())
 
     def topo(self):
         """Returns an array containing the meshed topography of the grid."""
@@ -392,22 +385,26 @@ class Grid:
 
     def nx(self) -> int:
         """Return the number of points in longitude direction."""
-        if hasattr(self.data, 'nx'):
-            return int(copy(self.data.nx))
-        else:
-            return 0
+        return len(self.lon())
+        # if hasattr(self.data, 'nx'):
+        #     return int(copy(self.data.nx))
+        # else:
+        #     return 0
 
     def ny(self) -> int:
         """Return the number of points in latitude direction."""
-        if hasattr(self.data, 'ny'):
-            return int(copy(self.data.ny))
-        else:
-            return 0
+        return len(self.lat())
+        # if hasattr(self.data, 'ny'):
+        #     return int(copy(self.data.ny))
+        # else:
+        #     return 0
 
     def lon(self):
         """Returns a longitude vector of the grid."""
         if hasattr(self.data, 'lon'):
             lon = copy(self.data.lon.values)
+        elif self.data.lon_min==self.data.lon_max: # Trivial one point grid
+            lon = np.array([self.data.lon_min])
         else:
             lon = np.array([self.data.lon_min, self.data.lon_max])
         return lon
@@ -416,9 +413,23 @@ class Grid:
         """Returns a latitude vector of the grid."""
         if hasattr(self.data, 'lat'):
             lat = copy(self.data.lat.values)
+        elif self.data.lat_min==self.data.lat_max: # Trivial one point grid
+            lat = np.array([self.data.lat_min])
         else:
             lat = np.array([self.data.lat_min, self.data.lat_max])
         return lat
+
+    def dlon(self):
+        return copy(self.data.dlon)
+
+    def dlat(self):
+        return copy(self.data.dlat)
+
+    def dx(self):
+        return copy(self.data.dx)
+
+    def dy(self):
+        return copy(self.data.dy)
 
     def raw_topo(self):
         """Returns an array containing the unmeshed imported topography."""
