@@ -345,7 +345,7 @@ class SWAN(BoundaryWriter):
                         file_out.write('FACTOR\n')
                         file_out.write(format(self.factor,'1.0E')+'\n')
                         S = boundary.spec(start_time=tim, end_time=tim, x=[n]).squeeze()
-                        delth = 360/len(boundary.dirs())
-                        np.savetxt(file_out,S/(delth*self.factor), fmt='%-10.0f')
+                        #delth = 360/len(boundary.dirs())
+                        np.savetxt(file_out,S*np.pi/(180*self.factor), fmt='%-10.0f')
 
         return output_file, folder
