@@ -24,10 +24,10 @@ from ..defaults import dflt_grd, list_of_placeholders
 
 
 class Grid:
-    def __init__(self, lon_min: float=0., lon_max: float=0., lat_min: float=0., lat_max: float=0., name: str="AnonymousGrid"):
+    def __init__(self, lon: Tuple[float, float]=(0.,0.), lat: Tuple[float, float]=(0.,0.), name: str="AnonymousGrid"):
         """Initializes a new grid by setting the bounding box and name"""
 
-        data_dict = {'lon_min': lon_min, 'lon_max': lon_max, 'lat_min': lat_min, 'lat_max': lat_max, 'name': name}
+        data_dict = {'lon_min': lon[0], 'lon_max': lon[1], 'lat_min': lat[0], 'lat_max': lat[1], 'name': name}
         self.data = xr.Dataset(
                     attrs=(data_dict
                     ),
@@ -40,7 +40,7 @@ class Grid:
 
         msg.header(topo_reader, "Importing topography...")
         print(topo_reader)
-        topo, lon, lat = topo_reader(self.data.lon_min, self.data.lon_max, self.data.lat_min, self.data.lat_max)
+        topo, lon, lat = topo_reader(self.lon()[0], self.lon()[-1], self.lat()[0], self.lat()[-1])
 
         coords_dict = {'lon': lon, 'lat': lat}
         vars_dict = {'topo': (['lat', 'lon'], topo)}
@@ -103,29 +103,6 @@ class Grid:
         self._update_masks()
 
         return
-
-
-    def filename(self, filestring: str=dflt_grd['fs']['General']) -> str:
-        """Creates a filename for the object.
-
-        The filename can be based on e.g. the name of the Grid object itself,
-        or the start and end times.
-
-        This is typically called by a GridWriter object when using
-        the .export_grid() method.
-        """
-
-        # Substitute placeholders for $Grid
-        filename = create_filename_obj(filestring=filestring, objects=[self])
-
-        return filename
-
-    def folder(self, folderstring: str=dflt_grd['fldr']['General']) -> str:
-        # Substitute placeholders for $Grid
-        folder = create_filename_obj(filestring=folderstring, objects=[self])
-        folder = clean_filename(folder, list_of_placeholders)
-
-        return folder
 
     def set_spacing(self, dlon: float=0, dlat: float=0, dm: float=0, nx: int=0, ny: int=0, floating_edge: bool=False) -> None:
         """Defines longitude and latitude vectors based on desired spacing.
@@ -372,7 +349,7 @@ class Grid:
     def size(self) -> tuple:
         """Returns the size (nx, ny) of the grid."""
         #return self.land_sea_mask().shape
-        return (self.nx(), self.ny())
+        return (self.ny(), self.nx())
 
     def topo(self):
         """Returns an array containing the meshed topography of the grid."""
@@ -386,18 +363,11 @@ class Grid:
     def nx(self) -> int:
         """Return the number of points in longitude direction."""
         return len(self.lon())
-        # if hasattr(self.data, 'nx'):
-        #     return int(copy(self.data.nx))
-        # else:
-        #     return 0
+
 
     def ny(self) -> int:
         """Return the number of points in latitude direction."""
         return len(self.lat())
-        # if hasattr(self.data, 'ny'):
-        #     return int(copy(self.data.ny))
-        # else:
-        #     return 0
 
     def lon(self):
         """Returns a longitude vector of the grid."""

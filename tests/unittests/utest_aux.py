@@ -3,6 +3,7 @@ import sys
 sys.path.insert(0, "../../")
 from dnora.aux import create_time_stamps, u_v_from_dir
 from dnora.grd import Grid
+from dnora import bnd
 import numpy as np
 
 class TimeStamps(unittest.TestCase):
@@ -183,7 +184,7 @@ class WindDir(unittest.TestCase):
 
 class GridMethodsInit(unittest.TestCase):
 	def test_init(self):
-		grid = Grid(lon_min=1, lon_max=2, lat_min=0, lat_max=2)
+		grid = Grid(lon=(1,2), lat=(0,2))
 		self.assertEqual(np.array_equal(grid.lon(),np.array([1,2])), True)
 		self.assertEqual(np.array_equal(grid.lat(),np.array([0,2])), True)
 		self.assertEqual(grid.nx(), 2)
@@ -191,23 +192,23 @@ class GridMethodsInit(unittest.TestCase):
 		self.assertEqual(grid.size(), (2,2))
 
 	def test_init_one_point_in_lat(self):
-		grid = Grid(lon_min=1, lon_max=2, lat_min=0, lat_max=0)
+		grid = Grid(lon=(1,2), lat=(0,0))
 		self.assertEqual(np.array_equal(grid.lon(),np.array([1, 2])), True)
 		self.assertEqual(np.array_equal(grid.lat(),np.array([0])), True)
 		self.assertEqual(grid.nx(), 2)
 		self.assertEqual(grid.ny(), 1)
-		self.assertEqual(grid.size(), (2,1))
+		self.assertEqual(grid.size(), (1,2))
 
 	def test_init_one_point_in_lon(self):
-		grid = Grid(lon_min=1, lon_max=1, lat_min=0, lat_max=2)
+		grid = Grid(lon=(1,1), lat=(0,2))
 		self.assertEqual(np.array_equal(grid.lon(),np.array([1])), True)
 		self.assertEqual(np.array_equal(grid.lat(),np.array([0,2])), True)
 		self.assertEqual(grid.nx(), 1)
 		self.assertEqual(grid.ny(), 2)
-		self.assertEqual(grid.size(), (1,2))
+		self.assertEqual(grid.size(), (2,1))
 
 	def test_init_one_point(self):
-		grid = Grid(lon_min=1, lon_max=1, lat_min=0, lat_max=0)
+		grid = Grid(lon=(1,1), lat=(0,0))
 		self.assertEqual(np.array_equal(grid.lon(),np.array([1])), True)
 		self.assertEqual(np.array_equal(grid.lat(),np.array([0])), True)
 		self.assertEqual(grid.nx(), 1)
@@ -217,11 +218,11 @@ class GridMethodsInit(unittest.TestCase):
 
 class GridMethodsNxSpacing(unittest.TestCase):
 	def test_nx_spacing_y_trivial(self):
-		grid = Grid(lon_min=1, lon_max=2, lat_min=0, lat_max=0)
+		grid = Grid(lon=(1,2), lat=(0,0))
 		grid.set_spacing(nx=11, ny=11)
 		self.assertEqual(grid.nx(), 11)
 		self.assertEqual(grid.ny(), 1)
-		self.assertEqual(grid.size(), (11,1))
+		self.assertEqual(grid.size(), (1,11))
 		self.assertAlmostEqual(grid.dlon(), 0.1)
 		self.assertAlmostEqual(grid.dlat(), 0.)
 		self.assertAlmostEqual(grid.dx(), 10108.629694959884)
@@ -231,11 +232,11 @@ class GridMethodsNxSpacing(unittest.TestCase):
 		self.assertAlmostEqual(np.array([0.]), grid.lat())
 
 	def test_nx_spacing_x_trivial(self):
-		grid = Grid(lon_min=1, lon_max=1, lat_min=0, lat_max=2)
+		grid = Grid(lon=(1,1), lat=(0,2))
 		grid.set_spacing(nx=11, ny=11)
 		self.assertEqual(grid.nx(), 1)
 		self.assertEqual(grid.ny(), 11)
-		self.assertEqual(grid.size(), (1,11))
+		self.assertEqual(grid.size(), (11,1))
 		self.assertAlmostEqual(grid.dlon(), 0.)
 		self.assertAlmostEqual(grid.dlat(), 0.2)
 		self.assertAlmostEqual(grid.dx(), 0.)
@@ -245,7 +246,7 @@ class GridMethodsNxSpacing(unittest.TestCase):
 		self.assertIsNone(np.testing.assert_almost_equal(np.arange(0, 2.001, 2/10),grid.lat()))
 
 	def test_nx_spacing(self):
-		grid = Grid(lon_min=1, lon_max=2, lat_min=0, lat_max=2)
+		grid = Grid(lon=(1,2), lat=(0,2))
 		grid.set_spacing(nx=11, ny=11)
 		self.assertEqual(grid.nx(), 11)
 		self.assertEqual(grid.ny(), 11)
@@ -256,11 +257,11 @@ class GridMethodsNxSpacing(unittest.TestCase):
 		self.assertAlmostEqual(grid.dy(), 20217.259389919767)
 
 	def test_dm_spacing_y_trivial(self):
-		grid = Grid(lon_min=1, lon_max=2, lat_min=0, lat_max=0)
+		grid = Grid(lon=(1,2), lat=(0,0))
 		grid.set_spacing(dm=1000)
 		self.assertEqual(grid.nx(), 112)
 		self.assertEqual(grid.ny(), 1)
-		self.assertEqual(grid.size(), (112,1))
+		self.assertEqual(grid.size(), (1,112))
 		self.assertAlmostEqual(grid.dlon(), 1/111)
 		self.assertAlmostEqual(grid.dlat(), 0.)
 		self.assertAlmostEqual(grid.dx(), 992.8118450407029)
@@ -270,11 +271,11 @@ class GridMethodsNxSpacing(unittest.TestCase):
 		self.assertAlmostEqual(np.array([0.]), grid.lat())
 
 	def test_dm_spacing_x_trivial(self):
-		grid = Grid(lon_min=1, lon_max=1, lat_min=0, lat_max=2)
+		grid = Grid(lon=(1,1), lat=(0,2))
 		grid.set_spacing(dm=1000)
 		self.assertEqual(grid.nx(), 1)
 		self.assertEqual(grid.ny(), 223)
-		self.assertEqual(grid.size(), (1,223))
+		self.assertEqual(grid.size(), (223,1))
 		self.assertAlmostEqual(grid.dlon(), 0.)
 		self.assertAlmostEqual(grid.dlat(), 2/222)
 		self.assertAlmostEqual(grid.dx(), 0.)
@@ -284,11 +285,11 @@ class GridMethodsNxSpacing(unittest.TestCase):
 		self.assertIsNone(np.testing.assert_almost_equal(np.arange(0, 2.001, 2/222),grid.lat()))
 
 	def test_dm_spacing(self):
-		grid = Grid(lon_min=1, lon_max=2, lat_min=0, lat_max=2)
+		grid = Grid(lon=(1,2), lat=(0,2))
 		grid.set_spacing(dm=1000)
 		self.assertEqual(grid.nx(), 112)
 		self.assertEqual(grid.ny(), 223)
-		self.assertEqual(grid.size(), (112,223))
+		self.assertEqual(grid.size(), (223,112))
 		self.assertAlmostEqual(grid.dlon(), 1/111)
 		self.assertAlmostEqual(grid.dlat(), 2/222)
 		self.assertAlmostEqual(grid.dx(), 992.6606311502364)
@@ -299,11 +300,11 @@ class GridMethodsNxSpacing(unittest.TestCase):
 
 class GridMethodsDlonSpacing(unittest.TestCase):
 	def test_dlon_spacing_y_trivial(self):
-		grid = Grid(lon_min=1, lon_max=2, lat_min=0, lat_max=0)
+		grid = Grid(lon=(1,2), lat=(0,0))
 		grid.set_spacing(dlon=0.1, dlat=0.1)
 		self.assertEqual(grid.nx(), 11)
 		self.assertEqual(grid.ny(), 1)
-		self.assertEqual(grid.size(), (11,1))
+		self.assertEqual(grid.size(), (1,11))
 		self.assertAlmostEqual(grid.dlon(), 0.1)
 		self.assertAlmostEqual(grid.dlat(), 0.)
 		self.assertAlmostEqual(grid.dx(), 10108.629694959884)
@@ -314,11 +315,11 @@ class GridMethodsDlonSpacing(unittest.TestCase):
 
 
 	def test_dlon_spacing_x_trivial(self):
-		grid = Grid(lon_min=1, lon_max=1, lat_min=0, lat_max=2)
+		grid = Grid(lon=(1,1), lat=(0,2))
 		grid.set_spacing(dlon=0.1, dlat=0.1)
 		self.assertEqual(grid.nx(), 1)
 		self.assertEqual(grid.ny(), 21)
-		self.assertEqual(grid.size(), (1,21))
+		self.assertEqual(grid.size(), (21,1))
 		self.assertAlmostEqual(grid.dlon(), 0.)
 		self.assertAlmostEqual(grid.dlat(), 0.1)
 		self.assertAlmostEqual(grid.dx(), 0.)
@@ -328,11 +329,11 @@ class GridMethodsDlonSpacing(unittest.TestCase):
 		self.assertIsNone(np.testing.assert_almost_equal(np.arange(0, 2.01, 0.1),grid.lat()))
 
 	def test_dlon_spacing(self):
-		grid = Grid(lon_min=1, lon_max=2, lat_min=0, lat_max=2)
+		grid = Grid(lon=(1,2), lat=(0,2))
 		grid.set_spacing(dlon=0.1, dlat=0.1)
 		self.assertEqual(grid.nx(), 11)
 		self.assertEqual(grid.ny(), 21)
-		self.assertEqual(grid.size(), (11,21))
+		self.assertEqual(grid.size(), (21,11))
 		self.assertAlmostEqual(grid.dlon(), 0.1)
 		self.assertAlmostEqual(grid.dlat(), 0.1)
 		self.assertAlmostEqual(grid.dx(), 10107.09006262059)
@@ -342,11 +343,11 @@ class GridMethodsDlonSpacing(unittest.TestCase):
 		self.assertIsNone(np.testing.assert_almost_equal(np.arange(0, 2.01, 0.1),grid.lat()))
 
 	def test_dlon_spacing_rounding(self):
-		grid = Grid(lon_min=1, lon_max=2, lat_min=0, lat_max=2)
+		grid = Grid(lon=(1,2), lat=(0,2))
 		grid.set_spacing(dlon=0.11, dlat=0.09)
 		self.assertEqual(grid.nx(), 10)
 		self.assertEqual(grid.ny(), 23)
-		self.assertEqual(grid.size(), (10,23))
+		self.assertEqual(grid.size(), (23,10))
 		self.assertAlmostEqual(grid.dlon(), 0.1111111111111111)
 		self.assertAlmostEqual(grid.dlat(), 0.09090909090909091)
 		self.assertAlmostEqual(grid.dx(), 11117.799068882648)
@@ -361,11 +362,11 @@ class GridMethodsDlonSpacing(unittest.TestCase):
 		self.assertIsNone(np.testing.assert_almost_equal(np.arange(0, 2.01, 0.09090909090909091),grid.lat()))
 
 	def test_dlon_floating_edge(self):
-		grid = Grid(lon_min=1, lon_max=2, lat_min=0, lat_max=2)
+		grid = Grid(lon=(1,2), lat=(0,2))
 		grid.set_spacing(dlon=0.11, dlat=0.09, floating_edge=True)
 		self.assertEqual(grid.nx(), 10)
 		self.assertEqual(grid.ny(), 23)
-		self.assertEqual(grid.size(), (10,23))
+		self.assertEqual(grid.size(), (23,10))
 		self.assertAlmostEqual(grid.dlon(), 0.11)
 		self.assertAlmostEqual(grid.dlat(), 0.09)
 		self.assertAlmostEqual(grid.dx(), 11006.65444371987)
@@ -378,6 +379,51 @@ class GridMethodsDlonSpacing(unittest.TestCase):
 
 		self.assertIsNone(np.testing.assert_almost_equal(np.arange(1, 2.0, 0.11),grid.lon()))
 		self.assertIsNone(np.testing.assert_almost_equal(np.arange(0, 2.0, 0.09),grid.lat()))
+
+class BoundarySpectralConventions(unittest.TestCase):
+	def test_ocean_to_met(self):
+		D=np.arange(0,360,10.)
+		S=np.array([np.arange(0,36,1.), np.arange(0,36,1.)])
+
+		bnd_processor = bnd.process.processor_for_convention_change(current_convention='Ocean', wanted_convention='Met')
+		Snew, Dnew=bnd_processor(spec=S,dirs=D)
+
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		stemp = np.mod(np.arange(18,36+18,1.), 36)
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,np.array([stemp, stemp])))
+
+	def test_met_to_ocean(self):
+		D=np.arange(0,360,10.)
+		S=np.array([np.arange(0,36,1.), np.arange(0,36,1.)])
+
+		bnd_processor = bnd.process.processor_for_convention_change(current_convention='Met', wanted_convention='Ocean')
+		Snew, Dnew=bnd_processor(spec=S,dirs=D)
+
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		stemp = np.mod(np.arange(18,36+18,1.), 36)
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,np.array([stemp, stemp])))
+
+	def test_ocean_to_ww3(self):
+		D=np.arange(0,360,10.)
+		S=np.array([np.arange(0,36,1.), np.arange(0,36,1.)])
+
+		bnd_processor = bnd.process.processor_for_convention_change(current_convention='Ocean', wanted_convention='WW3')
+		Snew, Dnew=bnd_processor(spec=S,dirs=D)
+
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,np.mod(np.arange(0,-360,-10.)+90,360)))
+		stemp = np.mod(np.arange(0,-36,-1.)+9,36)
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,np.array([stemp, stemp])))
+
+	def test_ocean_to_math(self):
+		D=np.arange(0,360,10.)
+		S=np.array([np.arange(0,36,1.), np.arange(0,36,1.)])
+
+		bnd_processor = bnd.process.processor_for_convention_change(current_convention='Ocean', wanted_convention='Math')
+		Snew, Dnew=bnd_processor(spec=S,dirs=D)
+
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		stemp = np.mod(np.arange(0,-36,-1.)+9,36)
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,np.array([stemp, stemp])))
 
 if __name__ == '__main__':
 	unittest.main()
