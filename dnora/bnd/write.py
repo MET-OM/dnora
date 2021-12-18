@@ -306,12 +306,10 @@ class SWAN(BoundaryWriter):
 
 
     def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
-        #boundary_in = copy(boundary)
 
         output_file = clean_filename(filename, list_of_placeholders)
         output_path = add_folder_to_filename(filename, folder=folder)
 
-        #boundary_in.change_convention(wanted_convention='Ocean')
 
         swan_bnd_points = boundary.grid.boundary_points()
         days = boundary.days()
@@ -351,6 +349,7 @@ class SWAN(BoundaryWriter):
                         file_out.write('FACTOR\n')
                         file_out.write(format(self.factor,'1.0E')+'\n')
                         S = boundary.spec(start_time=tim, end_time=tim, x=[n]).squeeze()
-                        # SWAN uses m*m/Hz/deg normalization
+                        
+			# SWAN uses m*m/Hz/deg normalization
                         np.savetxt(file_out,S*np.pi/(180*self.factor), fmt='%-10.0f')
         return output_file, folder
