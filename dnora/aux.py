@@ -218,7 +218,7 @@ def create_time_stamps(start_time: str, end_time: str, stride: int, hours_per_fi
     # First time might not coincide with first step in first file
     start_times.values[0] = pd.Timestamp(start_time)
 
-    if last_file is not '':
+    if last_file:
         # In operational systems we might want to read a longer segment from the last file
         end_times.values[-1] = min([pd.Timestamp(last_file) + pd.DateOffset(hours=(hours_per_file-1)), pd.Timestamp(end_time)])
     else:
