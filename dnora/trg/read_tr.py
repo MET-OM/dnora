@@ -33,7 +33,7 @@ class SmsReader(TriangReader):
         return
 
     def __call__(self) -> Tuple:
-        """The read_sms_mesh-function is taken dircetly from the PyFVCOM package
+        """The read_sms_mesh-function is taken directly from the PyFVCOM package
         https://github.com/pwcazenave/pyfvcom"""
 
         tri, nodes, X, Y, Z, types, nodeStrings = read_sms_mesh(self.filename, nodestrings=True)

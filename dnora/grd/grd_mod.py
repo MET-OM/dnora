@@ -104,29 +104,6 @@ class Grid:
 
         return
 
-
-    # def filename(self, filestring: str=dflt_grd['fs']['General']) -> str:
-    #     """Creates a filename for the object.
-    #
-    #     The filename can be based on e.g. the name of the Grid object itself,
-    #     or the start and end times.
-    #
-    #     This is typically called by a GridWriter object when using
-    #     the .export_grid() method.
-    #     """
-    #
-    #     # Substitute placeholders for $Grid
-    #     filename = create_filename_obj(filestring=filestring, objects=[self])
-    #
-    #     return filename
-
-    # def folder(self, folderstring: str=dflt_grd['fldr']['General']) -> str:
-    #     # Substitute placeholders for $Grid
-    #     folder = create_filename_obj(filestring=folderstring, objects=[self])
-    #     folder = clean_filename(folder, list_of_placeholders)
-    #
-    #     return folder
-
     def set_spacing(self, dlon: float=0, dlat: float=0, dm: float=0, nx: int=0, ny: int=0, floating_edge: bool=False) -> None:
         """Defines longitude and latitude vectors based on desired spacing.
 
