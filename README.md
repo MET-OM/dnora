@@ -13,5 +13,5 @@ Example of downscaling WAM4 using dnora/SWAN:
 ![WAM4-DNORA_Skjerjehamn](https://user-images.githubusercontent.com/67804784/145465772-23a3adf9-4daa-4cac-bd02-70ec28dbf519.gif)
 
 
-
+Dnora contain the code of the function read_sms_mesh from the PyFVCOM package (distributed under the MIT License). The original code can be found at https://github.com/pwcazenave/pyfvcom
 
