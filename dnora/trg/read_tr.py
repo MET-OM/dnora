@@ -1,7 +1,7 @@
 from copy import copy
 from abc import ABC, abstractmethod
 from .fvgrid import read_sms_mesh
-import utm
+#import utm
 from typing import Tuple
 
 class TriangReader(ABC):
@@ -35,8 +35,10 @@ class SmsReader(TriangReader):
     def __call__(self) -> Tuple:
         """The read_sms_mesh-function is taken directly from the PyFVCOM package
         https://github.com/pwcazenave/pyfvcom"""
-
-        tri, nodes, X, Y, Z, types, nodeStrings = read_sms_mesh(self.filename, nodestrings=True)
+	# Imported here to not add dependency when objects are imported for typesetting	
+	import utm
+        
+	tri, nodes, X, Y, Z, types, nodeStrings = read_sms_mesh(self.filename, nodestrings=True)
         lat, lon = utm.to_latlon(X, Y, 33, zone_letter = 'W', strict = False)
         nodeStrings=nodeStrings[0]
         return tri, nodes, lon, lat, types, nodeStrings
