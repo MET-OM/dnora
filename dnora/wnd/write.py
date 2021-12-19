@@ -27,6 +27,8 @@ class ForcingWriter(ABC):
         return 'nc'
 
     def _im_silent(self) -> bool:
+        """Return False if you want to be responsible for printing out the
+        file names."""
         return True
 
     @abstractmethod

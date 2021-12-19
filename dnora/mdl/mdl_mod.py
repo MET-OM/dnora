@@ -27,6 +27,7 @@ from typing import Union
 from .. import msg
 from ..defaults import dflt_mdl, dflt_inp, dflt_bnd, dflt_frc, dflt_grd, dflt_plt, list_of_placeholders
 from ..aux import create_filename_obj, create_filename_time, add_folder_to_filename, check_if_folder, clean_filename, add_extension
+from ..bnd.process import processor_for_convention_change
 
 class ModelRun:
     def __init__(self, grid: Grid, start_time: str, end_time: str, name='AnonymousModelRun'):
@@ -133,6 +134,12 @@ class ModelRun:
             raise Exception('Define a BoundaryWriter!')
 
         msg.header(self._boundary_writer, f"Writing boundary spectra from {self.boundary().name()}")
+
+        boundary_processor = processor_for_convention_change(current_convention = self.boundary().convention(), wanted_convention = self._boundary_writer._convention_in())
+        if boundary_processor is None:
+            msg.info(f"Convention ({self.boundary().convention()}) already equals wanted convention ({self._boundary_writer._convention_in()}).")
+        else:
+            self.boundary().process_boundary(boundary_processor)
 
         # Get general format + extension
         if out_format is None:
@@ -279,7 +286,6 @@ class ModelRun:
         else:
             self._model_executer = model_executer
 
-
         file_not_provided = filestring is None and datestring is None and out_format is None
         folder_not_provided = folder is None
 
@@ -296,23 +302,8 @@ class ModelRun:
         if folder is None:
             folder = dflt_inp['fldr'][out_format]
 
-        # If no filename information was provided by the user, then use info about where input file was written (if this info exists)
-        # if file_not_provided and hasattr(self, '_input_file_written_as'):
-        #     input_file = self._input_file_written_as
-        # else: # Otherwise use default values and hope for the best
-        #     input_file = create_filename_obj(filestring=filestring, objects=[self, self.grid(), self.forcing(), self.boundary()])
-        #     input_file = create_filename_time(filestring=input_file, times=[self.start_time, self.end_time], datestring=datestring)
-
         input_file = self.input_file_written_as(out_format)
         input_file = clean_filename(input_file, list_of_placeholders)
-
-
-        # If no folder information was provided by the user, then use info about where the input file was written to (if this info exists)
-        # if file_not_provided and hasattr(self, '_input_file_written_to'):
-        #     model_folder = self._input_file_written_to
-        # else: # Otherwise use default values and hope for the best
-        #     model_folder = create_filename_obj(filestring=folder, objects=[self, self.grid(), self.forcing(), self.boundary()])
-        #     model_folder = create_filename_time(filestring=model_folder, times=[self.start_time, self.end_time], datestring=datestring)
 
         model_folder = self.input_file_written_to(out_format)
         model_folder = clean_filename(model_folder, list_of_placeholders)

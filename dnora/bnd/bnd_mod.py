@@ -23,7 +23,6 @@ if TYPE_CHECKING:
 # Import default values and auxiliry functions
 from .. import msg
 from ..aux import day_list, create_filename_obj, create_filename_time, create_filename_lonlat, clean_filename, check_if_folder
-from .process import processor_for_convention_change
 from ..defaults import dflt_bnd, list_of_placeholders
 
 
@@ -73,134 +72,39 @@ class Boundary:
         if not isinstance(boundary_processors, list):
             boundary_processors = [boundary_processors]
 
-        for n in range (len(boundary_processors)):
-            boundary_processor = boundary_processors[n]
+        convention_warning = False
 
-            msg.process(f"Processing spectra with {type(boundary_processor).__name__}")
-            print(boundary_processor)
+        for processor in boundary_processors:
 
-            new_spec, new_dirs, new_freq = boundary_processor(self.spec(), self.dirs(), self.freq())
+            msg.process(f"Processing spectra with {type(processor).__name__}")
+
+            old_convention = processor._convention_in()
+            if old_convention is not None:
+                if old_convention != self.convention():
+                    msg.warning(f"Boundary convention ({self.convention()}) doesn't match that expected by the processor ({old_convention})!")
+                    convention_warning=True
+
+
+            new_spec, new_dirs, new_freq = processor(self.spec(), self.dirs(), self.freq())
+
 
             self.data.spec.values = new_spec
             self.data = self.data.assign_coords(dirs=new_dirs)
             self.data = self.data.assign_coords(freq=new_freq)
 
             # Set new convention if the processor changed it
-            new_convention = boundary_processor.convention()
+            new_convention = processor._convention_out()
             if new_convention is not None:
-                msg.info(f"Setting new convention to {new_convention}")
                 self._convention = new_convention
+                if convention_warning:
+                    msg.warning(f"Convention variable set to {new_convention}, but this might be wrong...")
+                else:
+                    msg.info(f"Changing convention from {old_convention} >>> {new_convention}")
+
+            print(processor)
+            msg.blank()
         return
 
-    # def export_boundary(self, boundary_writer: BoundaryWriter, out_format: str=None, filestring: str=None, datestring: str=None, folder: str=None) -> None:
-    #     """Exports the boundary spectra to a file.
-    #
-    #     The bounday_writer defines the file format.
-    #     """
-    #
-    #     # For setting the file name
-    #     if out_format is None:
-    #         out_format = boundary_writer._preferred_format()
-    #
-    #     if filestring is None:
-    #         filestring=dflt_bnd['fs'][out_format]
-    #
-    #     if datestring is None:
-    #         datestring=dflt_bnd['ds'][out_format]
-    #
-    #     filename = self.filename(filestring=filestring, datestring=datestring)
-    #
-    #     if folder is not None:
-    #         folder = self.filename(filestring=folder)
-    #     else:
-    #         folder = self.filename(filestring=dflt_bnd['fldr'][out_format])
-    #
-    #     existed = check_if_folder(folder=folder, create=True)
-    #     if not existed:
-    #         msg.plain(f"Creating folder {folder}")
-    #
-    #     msg.header(boundary_writer, f"Writing boundary spectra from {self.name()}")
-    #
-    #     # Make sure convention is right for the reader
-    #     wanted_convention = boundary_writer.convention()
-    #     self.change_convention(wanted_convention=wanted_convention)
-    #
-    #     output_files, output_folder = boundary_writer(self, filename=filename, folder=folder)
-    #
-    #     return output_files, output_folder
-    #
-    # def filename(self, filestring: str=dflt_bnd['fs']['General'], datestring: str=dflt_bnd['ds']['General'], defaults: str=''):
-    #     """Creates a filename for the object.
-    #
-    #     The filename can be based on e.g. the name of the Grid or Boundary
-    #     object itself, or the start and end times.
-    #
-    #     This is typically called by a BoundaryWriter object when using
-    #     the .export_boundary() method.
-    #     """
-    #
-    #     # E.g. defaults='SWAN' uses all SWAN defaults
-    #     if defaults:
-    #         filestring = dflt_bnd['fs'][defaults]
-    #         datestring = dflt_bnd['ds'][defaults]
-    #
-    #     # Substitute placeholders for objects ($Grid etc.)
-    #     filename = create_filename_obj(filestring=filestring, objects=[self, self.grid])
-    #     # Substitute placeholders for times ($T0 etc.)
-    #     filename = create_filename_time(filestring=filename, times=[self.start_time, self.end_time], datestring=datestring)
-    #     filename = clean_filename(filename, list_of_placeholders)
-    #
-    #     # Substitute $Lon and $Lat if a single output point is specified
-    #     # if n is not None:
-    #     #     filename = create_filename_lonlat(filename, lon=self.lon()[n], lat=self.lat()[n])
-    #     # else:
-    #     #     # Trying to remove possible mentions to longitude and latitude
-    #     #     filename = re.sub(f"E\$Lon", '', filename)
-    #     #     filename = re.sub(f"N\$Lat", '', filename)
-    #     #     filename = re.sub(f"\$Lon", '', filename)
-    #     #     filename = re.sub(f"\$Lat", '', filename)
-    #     #
-    #     # # Possible clean up
-    #     # filename = re.sub(f"__", '_', filename)
-    #     # filename = re.sub(f"_$", '', filename)
-    #
-    #
-    #     return filename
-    #
-    # def folder(self, folderstring: str=dflt_bnd['fldr']['General'], datestring: str=dflt_bnd['ds']['General']) -> str:
-    #     # Substitute placeholders for $Grid
-    #     folder = create_filename_obj(filestring=folderstring, objects=[self.grid, self])
-    #     folder = create_filename_time(filestring=folder, times=[self.start_time, self.end_time], datestring=datestring)
-    #     folder = clean_filename(folder, list_of_placeholders)
-    #
-    #     return folder
-
-    def change_convention(self, wanted_convention: str='') -> None:
-        """Changes the convention of the spectra.
-
-        The conventions to choose from are predetermined:
-
-        'Ocean':    Oceanic convention
-                    Directional vector monotonically increasing.
-                    Direction to. North = 0, East = 90.
-
-        'Met':      Meteorological convention
-                    Directional vector monotonically increasing.
-                    Direction from. North = 0, East = 90.
-
-        'Math':     Mathematical convention
-                    Directional vector of type: [90 80 ... 10 0 350 ... 100]
-                    Direction to. North = 90, East = 0.
-
-        'WW3':      WAVEWATCH III output convention
-                    Directional vector of type: [90 80 ... 10 0 350 ... 100]
-                    Direction to. North = 0, East = 90.
-        """
-
-        boundary_processor = processor_for_convention_change(current_convention = self.convention(), wanted_convention = wanted_convention)
-        if boundary_processor is not None:
-            self.process_boundary(boundary_processor)
-        return
 
     def compile_to_xr(self, time, freq, dirs, spec, lon, lat, source):
         """Data from .import_boundary() is stored as an xarray Dataset."""
@@ -281,7 +185,10 @@ class Boundary:
 
     def convention(self) -> str:
         """Returns the convention (WW3/Ocean/Met/Math) of the spectra"""
-        return copy(self._convention)
+        if hasattr(self, '_convention'):
+            return copy(self._convention)
+        else:
+            return None
 
     def times_in_day(self, day):
         """Determines time stamps of one given day."""

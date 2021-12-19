@@ -35,7 +35,7 @@ class BoundaryWriter(ABC):
         return True
 
     @abstractmethod
-    def convention(self) -> str:
+    def _convention_in(self) -> str:
         """Defines in which format the incoming spectra should be.
 
         The conventions to choose from are predetermined:
@@ -49,6 +49,10 @@ class BoundaryWriter(ABC):
                     Direction from. North = 0, East = 90.
 
         'Math':     Mathematical convention
+                    Directional vector monotonically increasing.
+                    Direction to. North = 90, East = 0.
+
+        'MathVec':  Mathematical convention in vector
                     Directional vector of type: [90 80 ... 10 0 350 ... 100]
                     Direction to. North = 90, East = 0.
 
@@ -71,7 +75,7 @@ class DumpToNc(BoundaryWriter):
         self.out_format = out_format
         return
 
-    def convention(self) -> str:
+    def _convention_in(self) -> str:
         """Convention of spectra"""
         return self._convention
 
@@ -98,7 +102,7 @@ class NcFiles(BoundaryWriter):
         self._convention = convention
         return
 
-    def convention(self) -> str:
+    def _convention_in(self) -> str:
         """Convention of spectra"""
         return self._convention
 
@@ -127,7 +131,7 @@ class WW3(BoundaryWriter):
         self.out_format = out_format
         return
 
-    def convention(self) -> str:
+    def _convention_in(self) -> str:
         """Convention of spectra"""
         return self._convention
 
@@ -300,7 +304,7 @@ class SWAN(BoundaryWriter):
         self.out_format = out_format
         return
 
-    def convention(self) -> str:
+    def _convention_in(self) -> str:
         """Convention of spectra"""
         return 'Met'
 

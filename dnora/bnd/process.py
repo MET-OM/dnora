@@ -11,9 +11,8 @@ class BoundaryProcessor(ABC):
     def __init__(self):
         pass
 
-    @abstractmethod
-    def convention(self) -> str:
-        """Return the convention of the spectra returned to the object.
+    def _convention_out(self) -> str:
+        """The convention of the spectra returned to the object.
 
         The conventions to choose from are predetermined and listed below.
         Return None if the convention is not changed (e.g. interpolation or
@@ -28,6 +27,10 @@ class BoundaryProcessor(ABC):
                     Direction from. North = 0, East = 90.
 
         'Math':     Mathematical convention
+                    Directional vector monotonically increasing.
+                    Direction to. North = 90, East = 0.
+
+        'MathVec':  Mathematical convention in vector
                     Directional vector of type: [90 80 ... 10 0 350 ... 100]
                     Direction to. North = 90, East = 0.
 
@@ -35,7 +38,36 @@ class BoundaryProcessor(ABC):
                     Directional vector of type: [90 80 ... 10 0 350 ... 100]
                     Direction to. North = 0, East = 90.
         """
-        return
+        return None
+
+    def _convention_in(self) -> str:
+        """The convention of the spectra passed to the processor.
+
+        The conventions to choose from are predetermined and listed below.
+        Return None if the convention does not matter (e.g. interpolation or
+        multiplication etc.)
+
+        'Ocean':    Oceanic convention
+                    Directional vector monotonically increasing.
+                    Direction to. North = 0, East = 90.
+
+        'Met':      Meteorological convention
+                    Directional vector monotonically increasing.
+                    Direction from. North = 0, East = 90.
+
+        'Math':     Mathematical convention
+                    Directional vector monotonically increasing.
+                    Direction to. North = 90, East = 0.
+
+        'MathVec':  Mathematical convention in vector
+                    Directional vector of type: [90 80 ... 10 0 350 ... 100]
+                    Direction to. North = 90, East = 0.
+
+        'WW3':      WAVEWATCH III output convention
+                    Directional vector of type: [90 80 ... 10 0 350 ... 100]
+                    Direction to. North = 0, East = 90.
+        """
+        return None
 
     @abstractmethod
     def __call__(self, spec, dirs, freq) -> Tuple:
@@ -63,9 +95,6 @@ class Multiply(BoundaryProcessor):
         self.calib_spec = calib_spec
         return
 
-    def convention(self) -> str:
-        return None
-
     def __call__(self, spec, dirs, freq) -> Tuple:
         new_spec = copy(spec)*self.calib_spec
         return new_spec, dirs, freq
@@ -80,9 +109,6 @@ class ReGridDirs(BoundaryProcessor):
         self.first_dir = copy(first_dir)
 
         return
-
-    def convention(self) -> str:
-        return None
 
     def __call__(self, spec, dirs, freq) -> Tuple:
 
@@ -146,7 +172,10 @@ class OceanToWW3(BoundaryProcessor):
     def __init__(self):
         pass
 
-    def convention(self) -> str:
+    def _convention_in(self) -> str:
+        return 'Ocean'
+
+    def _convention_out(self) -> str:
         return 'WW3'
 
     def __call__(self, spec, dirs, freq = None) -> Tuple:
@@ -165,23 +194,27 @@ class OceanToWW3(BoundaryProcessor):
             return new_spec, new_dirs
 
     def __str__(self):
-        return("Flipping both spectra and direction to mathematical notation. Convention is unchenged.")
+        return("Flipping both spectra and direction to mathematical notation.")
 
 class WW3ToOcean(BoundaryProcessor):
     """Changes all spectra from WW3 convention to Oceanic convention.
 
-    'Ocean':    Oceanic convention
-                Directional vector monotonically increasing.
-                Direction to. North = 0, East = 90.
-
     'WW3':      WAVEWATCH III output convention
                 Directional vector of type: [90 80 ... 10 0 350 ... 100]
                 Direction to. North = 0, East = 90.
+
+    'Ocean':    Oceanic convention
+                Directional vector monotonically increasing.
+                Direction to. North = 0, East = 90.
     """
+
     def __init__(self):
         pass
 
-    def convention(self) -> str:
+    def _convention_in(self) -> str:
+        return 'WW3'
+
+    def _convention_out(self) -> str:
         return 'Ocean'
 
     def __call__(self, spec, dirs, freq = None) -> Tuple:
@@ -190,9 +223,9 @@ class WW3ToOcean(BoundaryProcessor):
         D_flip = flip_spec(dirs, dirs)
 
         # Shift 0 to be at 90
-        new_spec = shift_spec(spec_flip, D_flip, -270)
+        new_spec = shift_spec(spec_flip, D_flip, 90)
         # Also shift direction
-        new_dirs = shift_spec(D_flip, D_flip, -270)
+        new_dirs = shift_spec(D_flip, D_flip, 90)
 
         if freq is not None:
             return new_spec, new_dirs, freq
@@ -200,7 +233,84 @@ class WW3ToOcean(BoundaryProcessor):
             return new_spec, new_dirs
 
     def __str__(self):
-        return("Flipping both spectra and direction to oceanic notation. Convention is unchanged.")
+        return("Flipping both spectra and direction to oceanic notation.")
+
+class MathToOcean(BoundaryProcessor):
+    """Changes all spectra from Mathematical convention to Oceanic convention.
+
+    'Math':     Mathematical convention
+                Directional vector monotonically increasing.
+                Direction to. North = 90, East = 0.
+
+    'Ocean':    Oceanic convention
+                Directional vector monotonically increasing.
+                Direction to. North = 0, East = 90.
+    """
+    def __init__(self):
+        pass
+
+    def _convention_in(self) -> str:
+        return 'Math'
+
+    def _convention_out(self) -> str:
+        return 'Ocean'
+
+    def __call__(self, spec, dirs, freq = None) -> Tuple:
+        # Flip direction of the both spectra and directional vector
+        spec_flip = flip_spec(spec, dirs)
+        D_flip = flip_spec(dirs, dirs)
+
+        # Shift 0 to be at 90
+        new_spec = shift_spec(spec_flip, D_flip, -90)
+        # Also shift direction
+        #new_dirs = shift_spec(D_flip, D_flip, -270)
+
+        if freq is not None:
+            return new_spec, dirs, freq
+        else:
+            return new_spec, dirs
+
+    def __str__(self):
+        return("Flipping spectra to oceanic notation.")
+
+class MathVecToOcean(BoundaryProcessor):
+    """Changes all spectra from MathVec convention to Oceanic convention.
+
+    'MathVec':  Mathematical convention in vector
+                Directional vector of type: [90 80 ... 10 0 350 ... 100]
+                Direction to. North = 90, East = 0.
+
+    'Ocean':    Oceanic convention
+                Directional vector monotonically increasing.
+                Direction to. North = 0, East = 90.
+    """
+
+    def __init__(self):
+        pass
+
+    def _convention_in(self) -> str:
+        return 'MathVec'
+
+    def _convention_out(self) -> str:
+        return 'Ocean'
+
+    def __call__(self, spec, dirs, freq = None) -> Tuple:
+        # Flip direction of the both spectra and directional vector
+        spec_flip = flip_spec(spec, dirs)
+        D_flip = flip_spec(dirs, dirs)
+
+        # Shift 0 to be at 90
+        #new_spec = shift_spec(spec_flip, D_flip, -270)
+        # Also shift direction
+        new_dirs = shift_spec(D_flip, D_flip, -270)
+
+        if freq is not None:
+            return spec, new_dirs, freq
+        else:
+            return spec, new_dirs
+
+    def __str__(self):
+        return("Flipping direction to oceanic notation.")
 
 
 class OceanToMath(BoundaryProcessor):
@@ -211,14 +321,17 @@ class OceanToMath(BoundaryProcessor):
                 Direction to. North = 0, East = 90.
 
     'Math':     Mathematical convention
-                Directional vector of type: [90 80 ... 10 0 350 ... 100]
+                Directional vector monotonically increasing.
                 Direction to. North = 90, East = 0.
     """
 
     def __init__(self):
         pass
 
-    def convention(self) -> str:
+    def _convention_in(self) -> str:
+        return 'Ocean'
+
+    def _convention_out(self) -> str:
         return 'Math'
 
     def __call__(self, spec, dirs, freq = None) -> Tuple:
@@ -235,7 +348,44 @@ class OceanToMath(BoundaryProcessor):
             return new_spec, dirs
 
     def __str__(self):
-        return("Flipping only spectra to mathematical notation. Convention is now Mathematical.")
+        return("Flipping only spectra to mathematical notation.")
+
+class OceanToMathVec(BoundaryProcessor):
+    """Changes all spectra from Oceanic convention to Mathematical convention.
+
+    'Ocean':    Oceanic convention
+                Directional vector monotonically increasing.
+                Direction to. North = 0, East = 90.
+
+    'MathVec':     Mathematical convention
+                Directional vector of type: [90 80 ... 10 0 350 ... 100]
+                Direction to. North = 90, East = 0.
+    """
+
+    def __init__(self):
+        pass
+
+    def _convention_in(self) -> str:
+        return 'Ocean'
+
+    def _convention_out(self) -> str:
+        return 'MathVec'
+
+    def __call__(self, spec, dirs, freq = None) -> Tuple:
+        # Flip direction of the both spectra and directional vector
+        spec_flip = flip_spec(spec, dirs)
+        D_flip = flip_spec(dirs, dirs)
+
+        # Shift 0 to be at 90
+        new_dirs = shift_spec(D_flip, D_flip, -90)
+
+        if freq is not None:
+            return spec, new_dirs, freq
+        else:
+            return spec, new_dirs
+
+    def __str__(self):
+        return("Flipping only directions to mathematical notation.")
 
 class MetToOcean(BoundaryProcessor):
     """Changes all spectra from Meteorological convention to Ocanic convention.
@@ -251,7 +401,10 @@ class MetToOcean(BoundaryProcessor):
     def __init__(self):
         pass
 
-    def convention(self) -> str:
+    def _convention_in(self) -> str:
+        return 'Met'
+
+    def _convention_out(self) -> str:
         return 'Ocean'
 
     def __call__(self, spec, dirs, freq = None) -> Tuple:
@@ -263,7 +416,7 @@ class MetToOcean(BoundaryProcessor):
             return new_spec, dirs
 
     def __str__(self):
-        return("Shifting spectrum 180 degrees. Convention is now Oceanic (direction to).")
+        return("Shifting spectrum 180 degrees.")
 
 class OceanToMet(BoundaryProcessor):
     """Changes all spectra from Oceanic convention to Meteorological convention.
@@ -280,7 +433,10 @@ class OceanToMet(BoundaryProcessor):
     def __init__(self):
         pass
 
-    def convention(self) -> str:
+    def _convention_in(self) -> str:
+        return 'Ocean'
+
+    def _convention_out(self) -> str:
         return 'Met'
 
     def __call__(self, spec, dirs, freq = None) -> Tuple:
@@ -292,7 +448,7 @@ class OceanToMet(BoundaryProcessor):
             return new_spec, new_dirs
 
     def __str__(self):
-        return("Shifting spectrum 180 degrees. Convention is not Meteorological (direction from).")
+        return("Shifting spectrum 180 degrees.")
 
 
 def processor_for_convention_change(current_convention: str, wanted_convention: str) -> BoundaryProcessor:
@@ -310,6 +466,10 @@ def processor_for_convention_change(current_convention: str, wanted_convention: 
                     Direction from. North = 0, East = 90.
 
         'Math':     Mathematical convention
+                    Directional vector monotonically increasing.
+                    Direction to. North = 90, East = 0.
+
+        'MathVec':  Mathematical convention in vector
                     Directional vector of type: [90 80 ... 10 0 350 ... 100]
                     Direction to. North = 90, East = 0.
 
@@ -318,34 +478,37 @@ def processor_for_convention_change(current_convention: str, wanted_convention: 
                     Direction to. North = 0, East = 90.
         """
 
-        if not wanted_convention or (current_convention == wanted_convention):
-            msg.info(f'Convention ({current_convention}) equals wanted convention({wanted_convention}). Doing nothing.')
+        dict_of_processors = {
+        'Ocean':    {'Met': OceanToMet(),
+                    'WW3': OceanToWW3(),
+                    'Math': OceanToMath(),
+                    'MathVec': OceanToMathVec()},
+        'Met':      {'Ocean': MetToOcean(),
+                    'WW3': [MetToOcean(), OceanToWW3()],
+                    'Math': [MetToOcean(), OceanToMath()],
+                    'MathVec': [MetToOcean(), OceanToMathVec()]},
+        'WW3':      {'Ocean': WW3ToOcean(),
+                    'Met': [WW3ToOcean(), OceanToMet()],
+                    'Math': [WW3ToOcean(), OceanToMath()],
+                    'MathVec': [WW3ToOcean(), OceanToMathVec()]},
+        'Math':     {'Ocean': MathToOcean(),
+                    'WW3': [MathToOcean(), OceanToWW3()],
+                    'Met': [MathToOcean(), OceanToMet()],
+                    'MathVec': [MathToOcean(), OceanToMathVec()]},
+        'MathVec':  {'Ocean': MathVecToOcean(),
+                    'Met': [MathVecToOcean(), OceanToMet()],
+                    'WW3': [MathVecToOcean(), OceanToWW3()],
+                    'Math': [MathVecToOcean(), OceanToMath()]}
+        }
+
+
+        if not current_convention in list(dict_of_processors.keys()):
+            raise ValueError (f"Current convention {current_convention} not recognized! (should be {list(dict_of_processors.keys())})")
+        elif not wanted_convention in list(dict_of_processors[current_convention].keys()):
+            raise ValueError (f"Wanted convention {wanted_convention} not recognized! (should be {list(dict_of_processors.keys())})")
+        elif dict_of_processors[current_convention][wanted_convention] is None:
+            raise NotImplementedError(f"Can't process conversion {current_convention} >> {wanted_convention} yet!")
+        elif not wanted_convention or (current_convention == wanted_convention):
             return None
         else:
-            if wanted_convention == 'Ocean':
-                if current_convention == 'WW3':
-                    return WW3ToOcean()
-                elif current_convention == 'Met':
-                    return MetToOcean()
-                else:
-                    raise Exception (msg.info(f"Can't process conversion {current_convention} >> {wanted_convention} yet!"))
-
-            elif wanted_convention == 'Met':
-                if current_convention == 'Ocean':
-                    return OceanToMet()
-                else:
-                    raise Exception (msg.info(f"Can't process conversion {current_convention} >> {wanted_convention} yet!"))
-
-            elif wanted_convention == 'WW3':
-                if current_convention == 'Ocean':
-                    return OceanToWW3()
-                else:
-                    raise Exception (msg.info(f"Can't process conversion {current_convention} >> {wanted_convention} yet!"))
-
-            elif wanted_convention == 'Math':
-                if current_convention == 'Ocean':
-                    return OceanToMath()
-                else:
-                    raise Exception (msg.info(f"Can't process conversion {current_convention} >> {wanted_convention} yet!"))
-            else:
-                raise Exception (msg.info(f"Wanted convention {wanted_convention} not recognized! (should be Ocean/Met/Math/WW3)"))
+            return dict_of_processors[current_convention][wanted_convention]

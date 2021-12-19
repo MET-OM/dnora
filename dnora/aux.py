@@ -318,9 +318,9 @@ def interp_spec(f, D, S, fi, Di):
 # -----------------------------------------------------------------------------
 
 def flip_spec(spec, D):
-    """Flips the spectrum 180 degree. To flip the directional vector, use
+    """Flips the directionality of the spectrum (clock/anticlockwise).
 
-    flip_spec(D,D)
+    To flip the directional vector, use flip_spec(D,D)
     """
 
     # This check enables us to flip directions with flip_spec(D,D)
