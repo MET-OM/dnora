@@ -390,28 +390,49 @@ class Grid:
         return lat
 
     def dlon(self):
-        return copy(self.data.dlon)
+        if hasattr(self.data, 'dlon'):
+            return copy(self.data.dlon)
+        else:
+            return None
 
     def dlat(self):
-        return copy(self.data.dlat)
+        if hasattr(self.data, 'dlat'):
+            return copy(self.data.dlat)
+        else:
+            return None
 
     def dx(self):
-        return copy(self.data.dx)
+        if hasattr(self.data, 'dx'):
+            return copy(self.data.dx)
+        else:
+            return None
 
     def dy(self):
-        return copy(self.data.dy)
+        if hasattr(self.data, 'dt'):
+            return copy(self.data.dy)
+        else:
+            return None
 
     def raw_topo(self):
         """Returns an array containing the unmeshed imported topography."""
-        return copy(self.rawdata.topo.values)
+        if hasattr(self, 'rawdata'):
+            return copy(self.rawdata.topo.values)
+        else:
+            return np.array([])
 
     def raw_lon(self):
         """Returns a longitude vector of the unmeshed imported topography."""
-        return copy(self.rawdata.lon.values)
+        if hasattr(self, 'rawdata'):
+            return copy(self.rawdata.lon.values)
+        else:
+            return np.array([])
 
     def raw_lat(self):
         """Returns a latitude vector of the unmeshed imported topography."""
-        return copy(self.rawdata.lat.values)
+        if hasattr(self, 'rawdata'):
+            return copy(self.rawdata.lat.values)
+        else:
+            return np.array([])
 
     def _update_masks(self) -> None:
         """Sets land-sea mask and boundary point mask.
@@ -468,7 +489,7 @@ class Grid:
         """Writes out the status of the grid to a file."""
 
         if not filename:
-            filename = f"{self.data.name}_info.txt"
+            filename = f"{self.name()}_info.txt"
 
         filename = add_folder_to_filename(filename, folder)
         msg.to_file(filename)
@@ -491,19 +512,19 @@ class Grid:
         else:
             empty_topo = False
 
-        msg.header(self, f"Status of grid {self.data.name}")
-        msg.plain(f'lon: {self.data.lon_min} - {self.data.lon_max}, lat: {self.data.lat_min} - {self.data.lat_max}')
+        msg.header(self, f"Status of grid {self.name()}")
+        msg.plain(f'lon: {self.lon()[0]} - {self.lon()[-1]}, lat: {self.lat()[0]} - {self.lat()[-1]}')
 
-        if hasattr(self.data, 'dlon') and hasattr(self.data, 'dlon'):
-            msg.plain(f'dlon, dlat = {self.data.dlon}, {self.data.dlat} deg')
-            if self.data.dlon > 0 and self.data.dlat > 0:
-                msg.plain(f'Inverse: dlon, dlat = 1/{1/self.data.dlon}, 1/{1/self.data.dlat} deg')
+        if self.dlon() is not None:
+            msg.plain(f'dlon, dlat = {self.dlon()}, {self.dlat()} deg')
+            if self.dlon() > 0 and self.dlat() > 0:
+                msg.plain(f'Inverse: dlon, dlat = 1/{1/self.dlon()}, 1/{1/self.dlat()} deg')
 
-        if hasattr(self.data, 'dx') and hasattr(self.data, 'dy'):
-            msg.plain(f'dx, dy approximately {self.data.dx}, {self.data.dy} metres')
+        if self.dx() is not None:
+            msg.plain(f'dx, dy approximately {self.dx()}, {self.dy()} metres')
 
-        if hasattr(self.data, 'nx') and hasattr(self.data, 'ny'):
-            msg.plain(f'nx, ny = {self.data.nx} x {self.data.ny} grid points')
+        if self.nx() is not None:
+            msg.plain(f'nx, ny = {self.nx()} x {self.ny()} grid points')
 
         if self.topo().size > 0 and (not empty_topo):
             msg.plain(f"Mean depth: {np.mean(self.topo()[self.land_sea_mask()]):.1f} m")

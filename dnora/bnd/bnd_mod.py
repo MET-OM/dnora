@@ -31,6 +31,7 @@ class Boundary:
         self.grid = copy(grid)
         self._name = copy(name)
         self._convention = None
+        self._history = []
         return
 
     def import_boundary(self, start_time: str, end_time: str, boundary_reader: BoundaryReader,  point_picker: PointPicker = TrivialPicker()):
@@ -43,6 +44,7 @@ class Boundary:
 
         self.start_time = copy(start_time)
         self.end_time = copy(end_time)
+        self._history.append(copy(boundary_reader))
 
         msg.header(boundary_reader, "Reading coordinates of spectra...")
         lon_all, lat_all = boundary_reader.get_coordinates(self.start_time)
@@ -77,7 +79,7 @@ class Boundary:
         for processor in boundary_processors:
 
             msg.process(f"Processing spectra with {type(processor).__name__}")
-
+            self._history.append(copy(processor))
             old_convention = processor._convention_in()
             if old_convention is not None:
                 if old_convention != self.convention():
@@ -153,26 +155,41 @@ class Boundary:
         return spec
 
     def time(self):
-        return copy(pd.to_datetime(self.data.time.values))
+        return pd.to_datetime(self.data.time.values)
 
     def dt(self) -> float:
         """ Returns time step of boundary spectra in hours."""
         return self.time().to_series().diff().dt.total_seconds().values[-1]/3600
 
     def freq(self):
-        return copy(self.data.freq.values)
+        if hasattr(self, 'data'):
+            return copy(self.data.freq.values)
+        else:
+            return None
 
     def dirs(self):
-        return copy(self.data.dirs.values)
+        if hasattr(self, 'data'):
+            return copy(self.data.dirs.values)
+        else:
+            return None
 
     def lon(self):
-        return copy(self.data.lon.values)
+        if hasattr(self, 'data'):
+            return copy(self.data.lon.values)
+        else:
+            return None
 
     def lat(self):
-        return copy(self.data.lat.values)
+        if hasattr(self, 'data'):
+            return copy(self.data.lat.values)
+        else:
+            return None
 
     def x(self):
-        return copy(self.data.x.values)
+        if hasattr(self, 'data'):
+            return copy(self.data.x.values)
+        else:
+            return None
 
     def days(self):
         """Determins a Pandas data range of all the days in the time span."""
@@ -197,3 +214,22 @@ class Boundary:
 
         times = self.slice_data(start_time=t0, end_time=t1, x=[0]).time.values
         return times
+
+    def __str__(self) -> str:
+        """Prints status of boundary."""
+
+        msg.header(self, f"Status of boundary {self.name()}")
+        msg.plain(f"Contains data ({len(self.x())} points) for {self.start_time} - {self.end_time}")
+        msg.plain(f"Data covers: lon: {min(self.lon())} - {max(self.lon())}, lat: {min(self.lat())} - {max(self.lat())}")
+        if len(self._history) > 0:
+            msg.blank()
+            msg.plain("Object has the following history:")
+            for obj in self._history:
+                msg.process(f"{obj.__class__.__bases__[0].__name__}: {type(obj).__name__}")
+        #msg.print_line()
+        #msg.plain("The Boundary is for the following Grid:")
+        #print(self.grid)
+
+        msg.print_line()
+
+        return ''
