@@ -13,9 +13,9 @@ dflt_grd = {'fs': { 'SWAN': '#Grid_SWAN',
                         'WW3': '#Grid_info.txt',
                         'SWASH': '#Grid_info.txt',
                         'General': '#Grid_info.txt'},
-            'ext': { 'SWAN': 'asc',
+            'ext': { 'SWAN': 'bot',
                             'WW3': 'txt',
-                            'SWASH': 'asc',
+                            'SWASH': 'bot',
                             'General': 'txt'}
         }
 

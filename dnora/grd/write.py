@@ -25,6 +25,9 @@ class GridWriter(ABC):
     def _preferred_format(self):
         return 'General'
 
+    def _im_silent(self) -> bool:
+        return True
+
     @abstractmethod
     def __call__(self, grid: Grid, filename: str, infofilename: str, folder: str) -> Tuple:
         pass
@@ -75,7 +78,7 @@ class WW3(GridWriter):
             output_files.append(output_file)
             output_path = add_folder_to_filename(output_file, folder)
 
-            msg.to_file(output_path)
+            #msg.to_file(output_path)
             np.savetxt(output_path, grid.topo(), delimiter=',',fmt='%1.6f')
 
             output_file = add_prefix(filename, 'mat')
@@ -83,7 +86,7 @@ class WW3(GridWriter):
             output_files.append(output_file)
             output_path = add_folder_to_filename(output_file, folder)
 
-            msg.to_file(output_path)
+            #msg.to_file(output_path)
             np.savetxt(output_path, mask_out, delimiter=',',fmt='%1.0f')
 
         else:
@@ -91,14 +94,14 @@ class WW3(GridWriter):
             output_files.append(output_file)
             output_path = add_folder_to_filename(output_file, folder)
 
-            msg.to_file(output_path)
+            #msg.to_file(output_path)
             np.savetxt(output_path, grid.topo().ravel(), delimiter=',',fmt='%1.6f')
 
             output_file = add_suffix(filename, 'mapsta')
             output_files.append(output_file)
             output_path = add_folder_to_filename(output_file, folder)
 
-            msg.to_file(output_path)
+            #msg.to_file(output_path)
             np.savetxt(output_path, mask_out.ravel(), delimiter=',',fmt='%1.0f')
 
         grid.write_status(filename=infofilename, folder=folder)
@@ -128,7 +131,7 @@ class SWAN(GridWriter):
         #output_file = grid.filename(filestring=filestring, extension='bot')
         output_path = add_folder_to_filename(filename, folder)
 
-        msg.to_file(output_path)
+        #msg.to_file(output_path)
         np.savetxt(output_path, grid.topo(), delimiter='\t',fmt='%1.2f')
         grid.write_status(filename=infofilename, folder=folder)
 

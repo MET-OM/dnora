@@ -26,9 +26,13 @@ class BoundaryWriter(ABC):
         """For the file format using defauts.py, e.g. SWAN or WW3"""
         return 'General'
 
-    def _preferred_extension(self):
-        return None
+    def _preferred_extension(self) -> str:
+        return 'nc'
 
+    def _im_silent(self) -> bool:
+        """Return False if you want to be responsible for printing out the
+        file names."""
+        return True
 
     @abstractmethod
     def convention(self) -> str:
@@ -127,9 +131,12 @@ class WW3(BoundaryWriter):
         """Convention of spectra"""
         return self._convention
 
-    def _preferred_format(self):
+    def _preferred_format(self) -> str:
         """Format of filenames"""
         return self.out_format
+
+    def _im_silent(self) -> bool:
+        return False
 
     def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
 
@@ -308,7 +315,7 @@ class SWAN(BoundaryWriter):
     def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
 
         output_file = clean_filename(filename, list_of_placeholders)
-        output_path = add_folder_to_filename(filename, folder=folder)
+        output_path = add_folder_to_filename(output_file, folder)
 
 
         swan_bnd_points = boundary.grid.boundary_points()
@@ -337,7 +344,7 @@ class SWAN(BoundaryWriter):
             file_out.write('m2/Hz/degr \n')
             file_out.write('-32767\n')
                 #first day
-            msg.to_file(f"{output_path}")
+            #msg.to_file(f"{output_path}")
 
             for day in days:
                 msg.plain(day.strftime('%Y-%m-%d'))

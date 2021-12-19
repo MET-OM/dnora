@@ -26,6 +26,9 @@ class ForcingWriter(ABC):
     def _preferred_extension(self):
         return 'nc'
 
+    def _im_silent(self) -> bool:
+        return True
+
     @abstractmethod
     def __call__(self, forcing: Forcing, filename: str, folder: str) -> Tuple[str, str]:
         """Writed the data from the Forcing object and returns the file and
@@ -45,7 +48,7 @@ class WW3(ForcingWriter):
         output_path = add_folder_to_filename(filename, folder=folder)
         output_path = clean_filename(output_path, list_of_placeholders)
 
-        msg.to_file(output_path)
+        #msg.to_file(output_path)
         forcing.data.to_netcdf(output_path)
 
         return filename, folder
@@ -69,7 +72,7 @@ class SWAN(ForcingWriter):
         output_path = add_folder_to_filename(filename, folder=folder)
         output_path = clean_filename(output_path, list_of_placeholders)
 
-        msg.to_file(output_path)
+        #msg.to_file(output_path)
 
         days = forcing.days()
         with open(output_path, 'w') as file_out:
