@@ -78,7 +78,7 @@ class FileNames(unittest.TestCase):
 
 		# Should produce default name
 		filename = model.grid_exported_as(out_format='SWAN')
-		exp_filename = 'TestGrid_SWAN.asc'
+		exp_filename = 'TestGrid_SWAN.bot'
 		self.assertEqual(filename, exp_filename)
 
 		folder = model.grid_exported_to(out_format='SWAN')
