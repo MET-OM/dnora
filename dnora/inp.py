@@ -22,10 +22,10 @@ class InputFileWriter(ABC):
         return 'General'
 
     def _preferred_extension(self):
-        return ''
+        return None
 
     @abstractmethod
-    def __call__(self):
+    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, start_time: str, end_time: str, filename: str, folder: str, grid_path: str, forcing_path: str, boundary_path: str):
         pass
 
 class SWAN(InputFileWriter):

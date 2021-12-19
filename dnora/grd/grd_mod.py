@@ -484,7 +484,12 @@ class Grid:
     def __str__(self) -> str:
         """Prints status of the grid."""
 
-        empty_topo = np.mean(self.topo()[self.land_sea_mask()]) == 9999
+        if self.topo().shape==(0,):
+            empty_topo = True
+        elif np.mean(self.topo()[self.land_sea_mask()]) == 9999:
+            empty_topo = True
+        else:
+            empty_topo = False
 
         msg.header(self, f"Status of grid {self.data.name}")
         msg.plain(f'lon: {self.data.lon_min} - {self.data.lon_max}, lat: {self.data.lat_min} - {self.data.lat_max}')

@@ -26,7 +26,7 @@ class GridWriter(ABC):
         return 'General'
 
     @abstractmethod
-    def __call__(self, grid: Grid) -> Tuple:
+    def __call__(self, grid: Grid, filename: str, infofilename: str, folder: str) -> Tuple:
         pass
 
 class BoundaryPoints(GridWriter):

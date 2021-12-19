@@ -12,7 +12,11 @@ dflt_grd = {'fs': { 'SWAN': '#Grid_SWAN',
             'info': {   'SWAN': '#Grid_info.txt',
                         'WW3': '#Grid_info.txt',
                         'SWASH': '#Grid_info.txt',
-                        'General': '#Grid_info.txt'}
+                        'General': '#Grid_info.txt'},
+            'ext': { 'SWAN': 'asc',
+                            'WW3': 'txt',
+                            'SWASH': 'asc',
+                            'General': 'txt'}
         }
 
 """Default filestrings and datestrings for Forcing """
@@ -27,7 +31,11 @@ dflt_frc = {'fs': { 'SWAN': 'wind#Forcing#Grid#T0_#T1',
             'fldr': {'SWAN': f"{os.getcwd()}/output",
                     'WW3': f"{os.getcwd()}/output",
                     'SWASH': f"{os.getcwd()}/output",
-                    'General': ''}
+                    'General': ''},
+            'ext': { 'SWAN': 'asc',
+                    'WW3': 'nc',
+                    'SWASH': 'asc',
+                    'General': 'nc'}
         }
 
 """Default filestrings and datestrings for Boundary"""
@@ -42,7 +50,11 @@ dflt_bnd = {'fs': { 'SWAN': 'spec#Boundary#Grid#T0_#T1',
             'fldr': {'SWAN': f"{os.getcwd()}/output",
                     'WW3': f"{os.getcwd()}/output",
                     'SWASH': f"{os.getcwd()}/output",
-                    'General': ''}
+                    'General': ''},
+            'ext': { 'SWAN': 'asc',
+                    'WW3': 'nc',
+                    'SWASH': 'asc',
+                    'General': 'nc'}
         }
 
 """Default filestrings and datestrings for inp-module"""
@@ -51,7 +63,11 @@ dflt_inp = {'fs': { 'SWAN': 'input_#T0_#Grid',
             'ds': { 'SWAN': '%Y%m%d',
                     'SWASH': '%H%M%S'},
             'fldr': {'SWAN': 'MySWANFolder',
-                    'SWASH': 'MySWASHFolder'}
+                    'SWASH': 'MySWASHFolder'},
+            'ext': { 'SWAN': 'swn',
+                    'WW3': 'inp',
+                    'SWASH': 'sws',
+                    'General': 'txt'}
         }
 
 
