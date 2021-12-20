@@ -96,7 +96,7 @@ class Forcing:
     def lon(self):
         """Returns a longitude vector of the grid."""
 
-        if hasattr(self.data, 'lon'):
+        if hasattr(self, 'data'):
             lon = copy(self.data.lon.values)
         else:
             lon = np.array([])
@@ -105,14 +105,14 @@ class Forcing:
     def lat(self):
         """Returns a latitude vector of the grid."""
 
-        if hasattr(self.data, 'lat'):
+        if hasattr(self, 'data'):
             lat = copy(self.data.lat.values)
         else:
             lat = np.array([])
         return lat
 
     def size(self) -> tuple:
-        """Returns the size (nx, ny) of the grid."""
+        """Returns the size (nt, ny, nx) of the grid."""
 
         return self.u().shape
 
@@ -154,12 +154,14 @@ class Forcing:
         return times
 
     def __str__(self) -> str:
-        """Prints status of boundary."""
+        """Prints status of forcing."""
 
         msg.header(self, f"Status of forcing {self.name()}")
-        msg.plain(f"Contains data for {self.start_time} - {self.end_time}")
-        msg.plain(f"Data covers: lon: {min(self.lon())} - {max(self.lon())}, lat: {min(self.lat())} - {max(self.lat())}")
-        msg.plain(f"and has {self.ny()}x{self.nx()} grid points.")
+        if self.time() is not None:
+            msg.plain(f"Contains data for {self.time()[0]} - {self.time()[-1]}")
+            msg.plain(f"\t dt={self.dt()} hours, i.e. ({self.nt()} time steps)")
+            msg.plain(f"Data covers: lon: {min(self.lon())} - {max(self.lon())}, lat: {min(self.lat())} - {max(self.lat())}")
+            msg.plain(f"\t {self.ny()}x{self.nx()} grid points, dlon/dlat={np.mean(np.diff(self.lon()))}/{np.mean(np.diff(self.lat()))}")
         if len(self._history) > 0:
             msg.blank()
             msg.plain("Object has the following history:")

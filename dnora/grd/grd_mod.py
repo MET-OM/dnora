@@ -408,7 +408,7 @@ class Grid:
             return None
 
     def dy(self):
-        if hasattr(self.data, 'dt'):
+        if hasattr(self.data, 'dy'):
             return copy(self.data.dy)
         else:
             return None
