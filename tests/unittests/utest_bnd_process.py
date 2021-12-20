@@ -5,6 +5,42 @@ from dnora import bnd
 import numpy as np
 from copy import copy
 
+def load_test_spec(shifted=False, math=False):
+	f = np.loadtxt('data/freq.test')
+	if shifted:
+		if math:
+			D = np.loadtxt('data/dir_math_shifted.test')
+		else:
+			D = np.loadtxt('data/dir_shifted.test')
+	else:
+		if math:
+			D = np.loadtxt('data/dir_math.test')
+		else:
+			D = np.loadtxt('data/dir.test')
+
+	S=np.ones((2,2,len(f),len(D)), float)
+	S[0,0,:,:]=np.loadtxt('data/spec1.test')
+	S[0,1,:,:]=np.loadtxt('data/spec2.test')
+	S[1,0,:,:]=np.loadtxt('data/spec3.test')
+	S[1,1,:,:]=np.loadtxt('data/spec4.test')
+
+	return S, D
+
+def loop_conventions(list_of_conventions, S, D):
+	Snew = copy(S)
+	Dnew = copy(D)
+	for n in range(len(list_of_conventions)-1):
+		cur_c = list_of_conventions[n]
+		wan_c = list_of_conventions[n+1]
+		bnd_processor = bnd.process.processor_for_convention_change(current_convention=cur_c, wanted_convention=wan_c)
+		if not isinstance(bnd_processor, list):
+			bnd_processor = [bnd_processor]
+
+		for processor in bnd_processor:
+			Snew, Dnew=processor(spec=Snew,dirs=Dnew)
+			#print(Dnew)
+	return Snew, Dnew
+
 class BoundarySpectralConventionsOcean(unittest.TestCase):
 	def test_ocean_to_met(self):
 		D=np.arange(0,360,10.)
@@ -279,6 +315,143 @@ class BoundarySpectralConventionsMathVec(unittest.TestCase):
 		self.assertIsNone(np.testing.assert_almost_equal(Dnew,np.arange(0,360,10.)))
 		stemp = np.mod(np.arange(0,-36,-1.)+9,36)
 		self.assertIsNone(np.testing.assert_almost_equal(Snew,[stemp, stemp]))
+
+class BoundarySpectralConventionsCircular(unittest.TestCase):
+	def test_ocean_circular(self):
+		S, D = load_test_spec()
+
+		list_of_conventions = ['Ocean', 'Met', 'WW3', 'Math', 'MathVec', 'Ocean']
+
+		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
+
+		list_of_conventions.reverse()
+
+		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
+
+		S, D = load_test_spec(shifted=True) # Spectra starting from 7.5 deg
+
+		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
+
+		list_of_conventions.reverse()
+
+		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
+
+	def test_met_circular(self):
+		S, D = load_test_spec()
+
+		list_of_conventions = ['Met', 'WW3', 'MathVec', 'Ocean', 'Math', 'Met']
+
+		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
+
+		list_of_conventions.reverse()
+
+		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
+
+		S, D = load_test_spec(shifted=True) # Spectra starting from 7.5 deg
+
+		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
+
+		list_of_conventions.reverse()
+
+		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
+
+	def test_ww3_circular(self):
+		S, D = load_test_spec(math=True)
+
+		list_of_conventions = ['WW3', 'Ocean', 'Math', 'MathVec', 'Met', 'WW3']
+
+		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
+
+		list_of_conventions.reverse()
+
+		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
+
+		S, D = load_test_spec(shifted=True, math=True) # Spectra starting from 7.5 deg
+
+		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
+
+		list_of_conventions.reverse()
+
+		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
+
+	def test_math_circular(self):
+		S, D = load_test_spec()
+
+		list_of_conventions = ['Math', 'MathVec', 'WW3', 'Ocean', 'Met', 'WW3', 'Math']
+
+		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
+
+		list_of_conventions.reverse()
+
+		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
+
+		S, D = load_test_spec(shifted=True) # Spectra starting from 7.5 deg
+
+		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
+
+		list_of_conventions.reverse()
+
+		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
+
+	def test_mathvec_circular(self):
+		S, D = load_test_spec(math=True)
+
+		list_of_conventions = ['MathVec', 'WW3', 'Ocean', 'Met', 'Math',  'WW3', 'MathVec']
+
+		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
+
+		list_of_conventions.reverse()
+
+		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
+
+		S, D = load_test_spec(shifted=True, math=True) # Spectra starting from 7.5 deg
+
+		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
+
+		list_of_conventions.reverse()
+
+		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
+		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
+		self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
+
 
 if __name__ == '__main__':
 	unittest.main()

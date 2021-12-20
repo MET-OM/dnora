@@ -440,12 +440,12 @@ class OceanToMet(BoundaryProcessor):
         return 'Met'
 
     def __call__(self, spec, dirs, freq = None) -> Tuple:
+        new_spec = shift_spec(spec, dirs, 180)
+
         if freq is not None:
-            new_spec,  new_dirs, new_freq = MetToOcean()(spec, dirs, freq)
-            return new_spec, new_dirs, freq
+            return new_spec, dirs, freq
         else:
-            new_spec,  new_dirs = MetToOcean()(spec, dirs)
-            return new_spec, new_dirs
+            return new_spec, dirs
 
     def __str__(self):
         return("Shifting spectrum 180 degrees.")
@@ -501,14 +501,13 @@ def processor_for_convention_change(current_convention: str, wanted_convention: 
                     'Math': [MathVecToOcean(), OceanToMath()]}
         }
 
-
+        if not wanted_convention or (current_convention == wanted_convention):
+            return None
         if not current_convention in list(dict_of_processors.keys()):
             raise ValueError (f"Current convention {current_convention} not recognized! (should be {list(dict_of_processors.keys())})")
         elif not wanted_convention in list(dict_of_processors[current_convention].keys()):
             raise ValueError (f"Wanted convention {wanted_convention} not recognized! (should be {list(dict_of_processors.keys())})")
         elif dict_of_processors[current_convention][wanted_convention] is None:
             raise NotImplementedError(f"Can't process conversion {current_convention} >> {wanted_convention} yet!")
-        elif not wanted_convention or (current_convention == wanted_convention):
-            return None
         else:
             return dict_of_processors[current_convention][wanted_convention]

@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import griddata
 from scipy import interpolate
-from statistics import mode
 import os, re
 from typing import TYPE_CHECKING, Tuple, List, Union
 
@@ -358,12 +357,10 @@ def shift_spec(spec, D, shift=0):
         shifting_dir = False
     spec_shift = np.zeros(spec.shape)
 
-    D = np.round(D)
     ind = np.arange(0,len(D), dtype='int')
-    dD = mode(abs(np.diff(D)))
+    dD = 360/len(D)
 
-    if not (shift/dD).is_integer():
-        print('aa')
+    if abs(np.floor(dD)-dD) > 0:
         raise Exception ('Shift needs to be multiple of frequency resolution! Otherwise interpolation would be needed.')
 
     ind_flip = ((ind + int(shift/dD)).astype(int) + len(D)) % len(D)
