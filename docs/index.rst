@@ -12,7 +12,25 @@ The package contains functions that:
   * prepare the boundary conditions (NORA3, WAM4-operational wave model at MET Norway, available in https://thredds.met.no/thredds/catalog.html) for the spectral model
   * prepare the wind (NORA3, WAM4) forcing for the spectral model 
   * create input parameter files (e.g., .swn, .inp, .sws) for the models
-  * run the spectral model
+  * run the wave model
+
+Installing **dnora**
+=============================================
+1. Install anaconda3 or miniconda3
+2. Clone dnora:
+
+.. code-block:: bash
+
+   $ git clone https://github.com/KonstantinChri/dnora.git
+   $ cd dnora/
+
+3. Create environment with the required dependencies and install dnora
+
+.. code-block:: bash
+
+  $ conda config --add channels conda-forge
+  $ conda env create -f environment.yml
+  $ conda activate dnora
 
 
 Dependencies
@@ -28,7 +46,7 @@ To run the models within dnora, the paths, where the models are installed, need 
 
 .. code-block:: rst
 
-3. Fimex is a the File Interpolation, Manipulation and EXtraction library for gridded geospatial data (more info in \url{httpshttps://wiki.met.no/fimex/start}). Fimex is applied in DNORA for the preparation of forcing fields (wind and current). In case of running the spectral model without wind forcing, the fimex installation can be neglected.  A detailed installation procedure can be find in https://wiki.met.no/fimex/install. For a quick installation in linux environment (e.g., Ubuntu), you can follow the steps: open the Synaptic Package Manager, search and mark for installation a latest version of fimex, apply installation and check the installation (usually it is installed in /usr/bin/) by typing in command line: fimex or fimex-xxx where xxx is the version number. In case that only fimex-xxx works then add a symbolic link::
+3. Fimex is a the File Interpolation, Manipulation and EXtraction library for gridded geospatial data (more info in \url{httpshttps://wiki.met.no/fimex/start}). Fimex is applied in DNORA for the preparation of forcing fields (wind and current). In case of running the spectral model without wind forcing, the fimex installation can be neglected.  A detailed installation procedure can be find in https://wiki.met.no/fimex/install. For a quick installation in linux-Ubuntu, you can follow the steps: open the Synaptic Package Manager (add ppa:met-norway/fimex to your system's Software Sources, see https://launchpad.net/~met-norway/+archive/ubuntu/fimex), search and mark for installation a latest version of fimex, apply installation and check the installation (usually it is installed in /usr/bin/) by typing in command line: fimex or fimex-xxx where xxx is the version number. In case that only fimex-xxx works then add a symbolic link::
 
       cd /usr/bin 
       sudo ln -s fimex-xxx fimex
@@ -39,7 +57,7 @@ Creating a Grid-object
 =====================================
 This section document the grd-module. The grid object is initialized with the following command::
 
-   grid = grd.Grid(lon_min, lon_max, lat_min, lat_max, name=’GridName’)
+   grid = grd.Grid(lon=(lon_min, lon_max), lat=(lat_min, lat_max), name=’GridName’)
 
 .. code-block:: rst
 
