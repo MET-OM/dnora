@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import griddata
 from scipy import interpolate
-from statistics import mode
 import os, re
 from typing import TYPE_CHECKING, Tuple, List, Union
 
@@ -57,7 +56,7 @@ def month_list(start_time, end_time):
     months = pd.date_range(start=start_time[:7], end=end_time[:7], freq='MS')
     return months
 
-def add_file_extension(filename: str, extension: str):
+def add_extension(filename: str, extension: str):
     """Adds a file extension to the file name.
 
     If the file already has an extension, then no extension is added. An
@@ -218,7 +217,7 @@ def create_time_stamps(start_time: str, end_time: str, stride: int, hours_per_fi
     # First time might not coincide with first step in first file
     start_times.values[0] = pd.Timestamp(start_time)
 
-    if last_file is not '':
+    if last_file:
         # In operational systems we might want to read a longer segment from the last file
         end_times.values[-1] = min([pd.Timestamp(last_file) + pd.DateOffset(hours=(hours_per_file-1)), pd.Timestamp(end_time)])
     else:
@@ -318,9 +317,9 @@ def interp_spec(f, D, S, fi, Di):
 # -----------------------------------------------------------------------------
 
 def flip_spec(spec, D):
-    """Flips the spectrum 180 degree. To flip the directional vector, use
+    """Flips the directionality of the spectrum (clock/anticlockwise).
 
-    flip_spec(D,D)
+    To flip the directional vector, use flip_spec(D,D)
     """
 
     # This check enables us to flip directions with flip_spec(D,D)
@@ -358,12 +357,10 @@ def shift_spec(spec, D, shift=0):
         shifting_dir = False
     spec_shift = np.zeros(spec.shape)
 
-    D = np.round(D)
     ind = np.arange(0,len(D), dtype='int')
-    dD = mode(abs(np.diff(D)))
+    dD = 360/len(D)
 
-    if not (shift/dD).is_integer():
-        print('aa')
+    if abs(np.floor(dD)-dD) > 0:
         raise Exception ('Shift needs to be multiple of frequency resolution! Otherwise interpolation would be needed.')
 
     ind_flip = ((ind + int(shift/dD)).astype(int) + len(D)) % len(D)

@@ -11,9 +11,9 @@ if TYPE_CHECKING:
     from .wnd_mod import Forcing # Boundary object
 
 # Import default values and auxiliry functions
-from ..defaults import dflt_frc
+from ..defaults import dflt_frc, list_of_placeholders
 from .. import msg
-from ..aux import check_if_folder, add_folder_to_filename
+from ..aux import check_if_folder, add_folder_to_filename, clean_filename
 
 class ForcingWriter(ABC):
     """Writes the forcing data to a certain file format.
@@ -22,6 +22,14 @@ class ForcingWriter(ABC):
     """
     def _preferred_format(self):
         return 'General'
+
+    def _preferred_extension(self):
+        return 'nc'
+
+    def _im_silent(self) -> bool:
+        """Return False if you want to be responsible for printing out the
+        file names."""
+        return True
 
     @abstractmethod
     def __call__(self, forcing: Forcing, filename: str, folder: str) -> Tuple[str, str]:
@@ -40,8 +48,9 @@ class WW3(ForcingWriter):
 
         # Add folder
         output_path = add_folder_to_filename(filename, folder=folder)
+        output_path = clean_filename(output_path, list_of_placeholders)
 
-        msg.to_file(output_path)
+        #msg.to_file(output_path)
         forcing.data.to_netcdf(output_path)
 
         return filename, folder
@@ -56,11 +65,16 @@ class SWAN(ForcingWriter):
     def _preferred_format(self):
         return self.out_format
 
+    def _preferred_extension(self):
+        return 'asc'
+
     def __call__(self, forcing: Forcing, filename: str, folder: str) -> Tuple[str, str]:
 
         # Add folder
         output_path = add_folder_to_filename(filename, folder=folder)
-        msg.to_file(output_path)
+        output_path = clean_filename(output_path, list_of_placeholders)
+
+        #msg.to_file(output_path)
 
         days = forcing.days()
         with open(output_path, 'w') as file_out:

@@ -21,13 +21,21 @@ class BoundaryWriter(ABC):
 
     This object is provided to the .export_boundary() method.
     """
-    @abstractmethod
+
     def _preferred_format(self) -> str:
         """For the file format using defauts.py, e.g. SWAN or WW3"""
-        return
+        return 'General'
+
+    def _preferred_extension(self) -> str:
+        return 'nc'
+
+    def _im_silent(self) -> bool:
+        """Return False if you want to be responsible for printing out the
+        file names."""
+        return True
 
     @abstractmethod
-    def convention(self) -> str:
+    def _convention_in(self) -> str:
         """Defines in which format the incoming spectra should be.
 
         The conventions to choose from are predetermined:
@@ -41,6 +49,10 @@ class BoundaryWriter(ABC):
                     Direction from. North = 0, East = 90.
 
         'Math':     Mathematical convention
+                    Directional vector monotonically increasing.
+                    Direction to. North = 90, East = 0.
+
+        'MathVec':  Mathematical convention in vector
                     Directional vector of type: [90 80 ... 10 0 350 ... 100]
                     Direction to. North = 90, East = 0.
 
@@ -51,24 +63,25 @@ class BoundaryWriter(ABC):
         return
 
     @abstractmethod
-    def __call__(self, boundar: Boundary) -> Tuple[str, str]:
+    def __call__(self, boundar: Boundary, filename: str, folder: str) -> Tuple[str, str]:
         """Writed the data from the Boundary object and returns the file and
         folder where data were written."""
 
         return
 
 class DumpToNc(BoundaryWriter):
-    def __init__(self, convention: str='Ocean') -> None:
+    def __init__(self, convention: str='Ocean', out_format: str='General') -> None:
         self._convention = convention
+        self.out_format = out_format
         return
 
-    def convention(self) -> str:
+    def _convention_in(self) -> str:
         """Convention of spectra"""
         return self._convention
 
     def _preferred_format(self) -> str:
-        """Format of filenames"""
-        return 'General'
+        """Preferred format of file name"""
+        return self.out_format
 
     def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
 
@@ -89,13 +102,10 @@ class NcFiles(BoundaryWriter):
         self._convention = convention
         return
 
-    def convention(self) -> str:
+    def _convention_in(self) -> str:
         """Convention of spectra"""
         return self._convention
 
-    def _preferred_format(self) -> str:
-        """Format of filenames"""
-        return 'General'
 
     def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
 
@@ -121,13 +131,16 @@ class WW3(BoundaryWriter):
         self.out_format = out_format
         return
 
-    def convention(self) -> str:
+    def _convention_in(self) -> str:
         """Convention of spectra"""
         return self._convention
 
-    def _preferred_format(self):
+    def _preferred_format(self) -> str:
         """Format of filenames"""
         return self.out_format
+
+    def _im_silent(self) -> bool:
+        return False
 
     def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
 
@@ -291,21 +304,23 @@ class SWAN(BoundaryWriter):
         self.out_format = out_format
         return
 
-    def convention(self) -> str:
+    def _convention_in(self) -> str:
         """Convention of spectra"""
-        return 'Ocean'
+        return 'Met'
 
     def _preferred_format(self):
         """Format of filenames"""
         return self.out_format
 
+    def _preferred_extension(self):
+        return 'asc'
+
+
     def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
-        #boundary_in = copy(boundary)
 
         output_file = clean_filename(filename, list_of_placeholders)
-        output_path = add_folder_to_filename(filename, folder=folder)
+        output_path = add_folder_to_filename(output_file, folder)
 
-        #boundary_in.change_convention(wanted_convention='Ocean')
 
         swan_bnd_points = boundary.grid.boundary_points()
         days = boundary.days()
@@ -333,7 +348,7 @@ class SWAN(BoundaryWriter):
             file_out.write('m2/Hz/degr \n')
             file_out.write('-32767\n')
                 #first day
-            msg.to_file(f"{output_path}")
+            #msg.to_file(f"{output_path}")
 
             for day in days:
                 msg.plain(day.strftime('%Y-%m-%d'))
@@ -345,7 +360,7 @@ class SWAN(BoundaryWriter):
                         file_out.write('FACTOR\n')
                         file_out.write(format(self.factor,'1.0E')+'\n')
                         S = boundary.spec(start_time=tim, end_time=tim, x=[n]).squeeze()
-                        delth = 360/len(boundary.dirs())
-                        np.savetxt(file_out,S/(delth*self.factor), fmt='%-10.0f')
 
+			# SWAN uses m*m/Hz/deg normalization
+                        np.savetxt(file_out,S*np.pi/(180*self.factor), fmt='%-10.0f')
         return output_file, folder

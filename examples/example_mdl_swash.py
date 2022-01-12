@@ -9,11 +9,7 @@ from dnora import grd, mdl, inp
 # DEFINE GRID OBJECT
 # =============================================================================
 # Set grid definitions
-lon_min = -7.73
-lat_min = 62.0
-lon_max = -7.4
-lat_max = 62.165
-grid = grd.Grid(lon_min, lon_max, lat_min, lat_max, name='Mykines10')
+grid = grd.Grid(lon=(-7.73, -7.4), lat=(62.0, 62.165), name='Mykines10')
 
 # Set spacing and boundary points
 grid.set_spacing(dm=10)
@@ -36,12 +32,10 @@ model.plot_grid()
 # =============================================================================
 # WRITE OUTPUT FOR SWASH RUN
 # =============================================================================
-model.export_grid() 
+model.export_grid()
 model.write_input_file(input_file_writer=inp.SWASH(
     bound_side_command='BOU SIDE S CCW CON REG 1.0 20 180 '))
 # =============================================================================
 # SWASH RUN
 # =============================================================================
 model.run_model()
-
-

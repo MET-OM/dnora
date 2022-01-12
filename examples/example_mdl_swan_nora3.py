@@ -9,11 +9,7 @@ from dnora import grd, mdl
 # DEFINE GRID OBJECT
 # =============================================================================
 # Set grid definitions
-lon_min = 4.0
-lat_min = 60.53
-lon_max = 5.73
-lat_max = 61.25
-grid = grd.Grid(lon_min, lon_max, lat_min, lat_max, name='Skjerjehamn300')
+grid = grd.Grid(lon=(4.00, 5.73), lat=(60.53, 61.25), name='Skjerjehamn300')
 
 # Set spacing and boundary points
 grid.set_spacing(dm=300)
