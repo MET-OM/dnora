@@ -64,7 +64,7 @@ class NORA3(ForcingReader):
             os.remove(f)
 
         # Define area to search in
-        lon_min, lon_max, lat_min, lat_max = expand_area(grid.lon()[0], grid.lon()[-1], grid.lat()[0], grid.lat()[-1], expansion_factor)
+        lon_min, lon_max, lat_min, lat_max = expand_area(min(grid.lon()), max(grid.lon()), min(grid.lat()), max(grid.lat()), expansion_factor)
 
         # Set resolution to about 3 km
         dlat = 3/111
@@ -173,7 +173,7 @@ class MyWave3km(ForcingReader):
 
 
         # Define area to search in
-        lon_min, lon_max, lat_min, lat_max = expand_area(grid.lon()[0], grid.lon()[-1], grid.lat()[0], grid.lat()[-1], expansion_factor)
+        lon_min, lon_max, lat_min, lat_max = expand_area(min(grid.lon()), max(grid.lon()), min(grid.lat()), max(grid.lat()), expansion_factor)
 
         # Setting resolution to roughly 3 km
         dlat = 3/111
@@ -286,7 +286,7 @@ class MEPS(ForcingReader):
         dlon = 2.5/mean_lon_in_km
 
         # Define area to search in
-        lon_min, lon_max, lat_min, lat_max = expand_area(grid.lon()[0], grid.lon()[-1], grid.lat()[0], grid.lat()[-1], expansion_factor)
+        lon_min, lon_max, lat_min, lat_max = expand_area(min(grid.lon()), max(grid.lon()), min(grid.lat()), max(grid.lat()), expansion_factor)
 
         wnd_list = []
         for n in range(len(file_times)):
