@@ -21,6 +21,10 @@ class TrGridWriter(ABC):
     def __call__(self, grid: Grid) -> Tuple:
         pass
 
+    def _im_silent(self) -> bool:
+        """Return False if you want to be responsible for printing out the
+        file names."""
+        return True
 
 
 
