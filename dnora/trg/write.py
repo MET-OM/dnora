@@ -16,6 +16,11 @@ class TrGridWriter(ABC):
 
     def _preferred_extension(self):
         return 'txt'
+        
+    def _im_silent(self) -> bool:
+        """Return False if you want to be responsible for printing out the
+        file names."""
+        return True
 
     @abstractmethod
     def __call__(self, grid: Grid) -> Tuple:
@@ -28,6 +33,11 @@ class WW3(TrGridWriter):
     """Writes the grid to WAVEWATCH III unstructured format."""
     def _preferred_format(self):
         return 'WW3'
+
+    def _im_silent(self) -> bool:
+        """Return False if you want to be responsible for printing out the
+        file names."""
+        return False
 
     def _preferred_extension(self):
         return 'msh'
