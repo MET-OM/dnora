@@ -434,6 +434,22 @@ class Grid:
         else:
             return np.array([])
 
+    def cfl(self, dx=None, f0=0.041180):
+        """Calculates approximate time step [s].
+
+        Based on grid resolution and given lowest frequency [Hz] (default=0.041180)
+        """
+        if dx is None:
+            dx = min(self.dx(), self.dy()) # Grid spacing [m]
+
+        cg = 1.56/f0*0.5 # Deep water group velocity [m/s]
+        dt = dx/cg
+
+        print(f'Grid spacing dx={dx:.0f} m and f0={f0:.8f} Hz')
+        print(f'Approximate minimum time step: dt = dx/cg {dx:.0f}/{cg:.1f} = {dt:.1f} s')
+
+        return dt
+
     def _update_masks(self) -> None:
         """Sets land-sea mask and boundary point mask.
 
