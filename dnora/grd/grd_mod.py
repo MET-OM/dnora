@@ -445,8 +445,8 @@ class Grid:
         cg = 1.56/f0*0.5 # Deep water group velocity [m/s]
         dt = dx/cg
 
-        print(f'Grid spacing dx={dx:.0f} m and f0={f0:.8f} Hz')
-        print(f'Approximate minimum time step: dt = dx/cg {dx:.0f}/{cg:.1f} = {dt:.1f} s')
+        print(f'Grid spacing dx = {dx:.0f} m and f0 = {f0:.8f} Hz')
+        print(f'Approximate minimum time step: dt = dx/cg = {dx:.0f}/{cg:.1f} = {dt:.1f} s')
 
         return dt
 
