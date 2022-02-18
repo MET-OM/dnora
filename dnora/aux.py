@@ -331,10 +331,13 @@ def flip_spec(spec, D):
     spec_flip = np.zeros(spec.shape)
 
     ind = np.arange(0,len(D), dtype='int')
-    dD = np.diff(D).mean()
+    #dD = np.diff(D).mean()
+    dD = 360/len(D)
     steps = D/dD # How many delta-D from 0
 
-    ind_flip = ((ind - 2*steps).astype(int) + len(D)) % len(D)
+    # Need to move indeces the other way if the vector is decreasing than if it is increasing
+    direction = np.sign(np.median(np.diff(D)))
+    ind_flip = ((ind - 2*steps*direction).astype(int) + len(D)) % len(D)
 
     spec_flip=spec[..., list(ind_flip)]
 
@@ -360,8 +363,8 @@ def shift_spec(spec, D, shift=0):
     ind = np.arange(0,len(D), dtype='int')
     dD = 360/len(D)
 
-    if abs(np.floor(dD)-dD) > 0:
-        raise Exception ('Shift needs to be multiple of frequency resolution! Otherwise interpolation would be needed.')
+    if abs(np.floor(shift/dD)-shift/dD) > 0:
+        raise Exception (f'Shift {shift} needs to be multiple of frequency resolution {dD}, but shift/dD={shift/dD}! Otherwise interpolation would be needed.')
 
     ind_flip = ((ind + int(shift/dD)).astype(int) + len(D)) % len(D)
 

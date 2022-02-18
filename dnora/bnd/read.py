@@ -91,7 +91,7 @@ class ForceFeed(BoundaryReader):
 
 
 class File_WW3Nc(BoundaryReader):
-    def __init__(self, folder: str='', filestring: str='ww3_T0', datestring: str='%Y%m%dT%H%M', stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0) -> None:
+    def __init__(self, folder: str='', filename: str='ww3_T0', dateftm: str='%Y%m%dT%H%M', stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0) -> None:
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
@@ -102,8 +102,8 @@ class File_WW3Nc(BoundaryReader):
         else:
             self.folder = copy(folder)
 
-        self.filestring = copy(filestring)
-        self.datestring = copy(datestring)
+        self.filestring = copy(filename)
+        self.datestring = copy(dateftm)
 
         return
 
@@ -149,7 +149,7 @@ class File_WW3Nc(BoundaryReader):
 
         time = bnd.time.values
         freq = bnd.frequency.values
-        dirs = bnd.directions.values
+        dirs = bnd.direction.values
         spec = bnd.efth.values
         lon = bnd.longitude.values[0,:]
         lat = bnd.latitude.values[0,:]
