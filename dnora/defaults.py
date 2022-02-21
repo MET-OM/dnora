@@ -59,13 +59,19 @@ dflt_bnd = {'fs': { 'SWAN': 'spec#Boundary#Grid#T0_#T1',
 
 """Default filestrings and datestrings for inp-module"""
 dflt_inp = {'fs': { 'SWAN': 'input_#T0_#Grid',
-                    'SWASH': 'input_#T0_#T1_#Grid'},
+                    'SWASH': 'input_#T0_#T1_#Grid',
+                    'WW3': 'ww3_',
+                    },
             'ds': { 'SWAN': '%Y%m%d',
-                    'SWASH': '%H%M%S'},
+                    'SWASH': '%H%M%S',
+                    'WW3': '',
+                    },
             'fldr': {'SWAN': 'MySWANFolder',
-                    'SWASH': 'MySWASHFolder'},
+                    'SWASH': 'MySWASHFolder',
+                    'WW3': 'MyWW3Folder',
+                    },
             'ext': { 'SWAN': 'swn',
-                    'WW3': 'inp',
+                    'WW3': 'nml',
                     'SWASH': 'sws',
                     'General': 'txt'}
         }

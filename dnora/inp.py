@@ -189,3 +189,56 @@ class SWASH(InputFileWriter):
             file_out.write('STOP \n')
 
         return output_file, folder
+
+class WW3_grid(InputFileWriter):
+    def __init__(self):
+        self.scaling = 10**6
+        return
+
+    def _preferred_format(self):
+        return 'WW3'
+
+    def _preferred_extension(self):
+        return 'nml'
+
+    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, start_time: str, end_time: str, filename: str, folder: str, grid_path: str, forcing_path: str, boundary_path: str):
+#         &RECT_NML
+#   RECT%NX                =  147
+#   RECT%NY                =  126
+#   RECT%SX               = 965753.       ! grid increment along x-axis
+#   RECT%SY               = 448000.       ! grid increment along y-axis
+#   RECT%SF               = 100000000.       ! scaling division factor for x-y axis
+#   RECT%X0               = 5.39       ! x-coordinate of lower-left corner (deg)
+#   RECT%Y0               = 62.05       ! y-coordinate of lower-left corner (deg)
+#   RECT%SF0              = 1.       ! scaling division factor for x0,y0 coord
+#
+# /
+        nx = grid.nx()
+        ny = grid.ny()
+
+        sx = round(grid.dlon()*self.scaling)
+        sy = round(grid.dlat()*self.scaling)
+
+        sf = self.scaling
+
+        x0 = min(grid.lon())
+        y0 = min(grid.lat())
+        sf0 = 1.
+
+        # Create input file name
+        output_file = clean_filename(filename, list_of_placeholders)
+        output_path = add_folder_to_filename(output_file, folder)
+
+        with open(output_path, 'w') as file_out:
+            file_out.write('&RECT_NML\n')
+            file_out.write(f'  RECT%NX          = {nx:.0f}\n')
+            file_out.write(f'  RECT%NY          = {ny:.0f}\n')
+            file_out.write(f'  RECT%SX          = {sx:.0f}.\n')
+            file_out.write(f'  RECT%SY          = {sy:.0f}.\n')
+            file_out.write(f'  RECT%SF          = {sf:.0f}.\n')
+            file_out.write(f'  RECT%X0          = {x0}\n')
+            file_out.write(f'  RECT%Y0          = {y0}\n')
+            file_out.write(f'  RECT%SF0         = {sf0:.0f}.\n')
+            file_out.write('/')
+
+        return output_file, folder
