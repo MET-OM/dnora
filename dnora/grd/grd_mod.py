@@ -9,7 +9,7 @@ import re
 # Import abstract classes and needed instances of them
 from .read import TopoReader, EmptyTopo
 from .boundary import BoundarySetter, ClearBoundary
-from .mesh import Mesher, TrivialMesher, Interpolate
+from .mesh import Mesher, Interpolate
 from .process import GridProcessor, TrivialFilter
 from typing import TYPE_CHECKING, Tuple
 if TYPE_CHECKING:
@@ -60,9 +60,13 @@ class Grid:
 
         topo, lon, lat = force_to_xyz(topo, lon, lat)
 
+        # Depth is positive, so set everything that is not positive to nan
+        topo[topo<=0]=np.nan
+
         # This was used for structured topography
         #coords_dict = {'lon': lon, 'lat': lat}
         #vars_dict = {'topo': (['lat', 'lon'], topo)}
+
         points = [x for x in range(len(lon))]
         coords_dict = {'points': points}
         vars_dict = {'topo': (['points'], topo), 'lon': (['points'], lon), 'lat': (['points'], lat)}
@@ -79,14 +83,17 @@ class Grid:
 
         msg.header(filt, "Filtering topography...")
 
-        empty_mask = np.full(self.raw_topo().shape, False)
-        land_sea_mask = self.raw_topo() < 0 # Sea points set to true
+        #empty_mask = np.full(self.raw_topo().shape, False)
+        land_sea_mask = self.raw_topo() > 0 # Sea points set to true
 
         print(filt)
-        topo = filt(self.raw_topo(), self.raw_lon(), self.raw_lat(), land_sea_mask, empty_mask)
+        topo = filt.topo(self.raw_topo(), self.raw_lon(), self.raw_lat(), land_sea_mask)
 
-        vars_dict = {'topo': (['lat', 'lon'], topo)}
-        self.rawdata = self.rawdata.assign(vars_dict)
+        if topo is None:
+            msg.warning('Filtering of raw topography is not implemented')
+        else:
+            vars_dict = {'topo': (['points'], topo)}
+            self.rawdata = self.rawdata.assign(vars_dict)
 
         return
 
@@ -116,10 +123,13 @@ class Grid:
 
         msg.header(filt, "Filtering meshed grid...")
         print(filt)
-        topo = filt(self.topo(), self.lon(), self.lat(), self.land_sea_mask(), self.boundary_mask())
+        topo = filt.grid(self.topo(), self.lon(), self.lat(), self.land_sea_mask(), self.boundary_mask())
 
-        vars_dict = {'topo': (['lat', 'lon'], topo)}
-        self.data = self.data.assign(vars_dict)
+        if topo is None:
+            msg.warning('Filtering of mesed topography is not implemented')
+        else:
+            vars_dict = {'topo': (['lat', 'lon'], topo)}
+            self.data = self.data.assign(vars_dict)
 
         msg.info('Upodating land-sea mask and boundary mask')
         self._update_masks()

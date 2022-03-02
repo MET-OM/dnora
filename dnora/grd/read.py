@@ -40,7 +40,7 @@ class TopoReader(ABC):
     def __str__(self):
         """Describes what topography is read and from where.
 
-        This is called by the Grid-objeect to provide output to the user.
+        This is called by the Grid-object to provide output to the user.
         """
         pass
 

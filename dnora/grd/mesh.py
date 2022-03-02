@@ -14,7 +14,7 @@ class Mesher(ABC):
         """Gets the bathymetrical information and returns a version that is
         meshed to the area and resolution of the grid.
 
-        data, lon, lat = 1D np.arrays of same length
+        data, lon, lat = 1D np.arrays of same length (depth >0, other is nan)
         lonQ, latQ = 2D np.arrays of desired grid size
 
         The returned array should have the dimensions and orientation:

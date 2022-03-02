@@ -11,13 +11,19 @@ class GridProcessor(ABC):
     def __init__(self):
         pass
 
-    @abstractmethod
-    def __call__(self, data, lon, lat, land_sea_mask, boundary_mask):
-        """Gets the bathymetrical information and returns a modified version.
+    def topo(self, data, lon, lat, land_sea_mask):
+        """Gets raw bathymetrical information in xyz-format and returns modified version.
 
         This method is called from within the Grid-object
         """
-        pass
+        return None
+
+    def grid(self, data, lon, lat, land_sea_mask, boundary_mask):
+        """Gets meshed bathymetrical information and returns a modified version.
+
+        This method is called from within the Grid-object
+        """
+        return None
 
     @abstractmethod
     def __str__(self):
@@ -35,7 +41,10 @@ class TrivialFilter(GridProcessor):
     def __init__(self):
         pass
 
-    def __call__(self, data, lon, lat, land_sea_mask, boundary_mask):
+    def topo(self, data, lon, lat, land_sea_mask):
+        return copy(data)
+
+    def grid(self, data, lon, lat, land_sea_mask, boundary_mask):
         return copy(data)
 
     def __str__(self):
@@ -53,17 +62,20 @@ class SetMinDepth(GridProcessor):
         self.min_depth = min_depth
         return
 
-    def __call__(self, data, lon, lat, land_sea_mask, boundary_mask):
+    def topo(self, data, lon, lat, land_sea_mask):
+        return self.grid(data, lon, lat, land_sea_mask)
+
+    def grid(self, data, lon, lat, land_sea_mask, boundary_mask=None):
         shallow_points = data < self.min_depth
 
         if self.to_land:
             new_data = copy(data)
-            new_data[np.logical_and(shallow_points, land_sea_mask)] = -999 # Don't touch land points by usign self.mask
+            new_data[np.logical_and(shallow_points, land_sea_mask)] = np.nan # Don't touch land points
             msg.plain(f"Affected {np.count_nonzero(np.logical_and(shallow_points, land_sea_mask))} points")
         else:
             # Set points to the limiter
             new_data = copy(data)
-            new_data[np.logical_and(shallow_points, land_sea_mask)] = self.min_depth # Don't touch land points by usign self.mask
+            new_data[np.logical_and(shallow_points, land_sea_mask)] = self.min_depth # Don't touch land points
             msg.plain(f"Affected {np.count_nonzero(np.logical_and(shallow_points, land_sea_mask))} points")
         return new_data
 
