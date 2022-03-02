@@ -20,7 +20,7 @@ class TopoPlotter(GridPlotter):
     def __init__(self):
         return
 
-    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, filename: str, plain: bool) -> Tuple:
+    def __call__(self, grid: Grid, forcing: Forcing=None, boundary: Boundary=None, filename: str='', plain: bool=True) -> Tuple:
         """Creates a plot of the topography when a Grid-object is provided.
 
         Options
@@ -61,13 +61,15 @@ class TopoPlotter(GridPlotter):
         cbar.set_label('Depth (m)', rotation=90)
         plt.title(f"{grid.name()} topography")
 
+
+
         return fig, add_suffix(filename, 'topo')
 
 class MaskPlotter(GridPlotter):
     def __init__(self):
         return
 
-    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, filename: str, plain: bool) -> Tuple:
+    def __call__(self, grid: Grid, forcing: Forcing=None, boundary: Boundary=None, filename: str='', plain: bool=True) -> Tuple:
         """Creates a plot of the land-sea mask when a Grid-object is provided.
 
         Options

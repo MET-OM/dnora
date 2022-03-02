@@ -286,7 +286,8 @@ class Grid:
             msg.info("Initializing with an empty topography")
             self.import_topo(topo_reader=EmptyTopo(self))
 
-            self.mesh_grid(mesher=TrivialMesher())
+            #self.mesh_grid(mesher=TrivialMesher())
+            self.mesh_grid(mesher=Interpolate(method='nearest'))
 
         else:
             msg.advice("Doing nothing. Run set_spacing with either dlon AND dlat (in degrees), nx AND ny (in grid points), or dm (in metres).")
