@@ -14,10 +14,13 @@ class Mesher(ABC):
         """Gets the bathymetrical information and returns a version that is
         meshed to the area and resolution of the grid.
 
+        data, lon, lat = 1D np.arrays of same length
+        lonQ, latQ = 2D np.arrays of desired grid size
+
         The returned array should have the dimensions and orientation:
 
         rows = latitude and colums = longitude
-        I.e. shape = (len(latQ), len(lonQ)).
+        I.e. shape = ("lat", "lon").
 
         North = [-1,:]
         South = [0,:]
@@ -47,10 +50,10 @@ class Interpolate(Mesher):
         return
 
     def __call__(self, data, lon, lat, lonQ, latQ):
-        lon0, lat0 = np.meshgrid(lon, lat)
+        #lon0, lat0 = np.meshgrid(lon, lat)
         data[np.logical_not(data>0)] = 0 # Keeping land points as nan lets the shoreline creep out
-        M = np.column_stack((data.ravel(), lon0.ravel(),lat0.ravel()))
-
+        #M = np.column_stack((data.ravel(), lon0.ravel(),lat0.ravel()))
+        M = np.column_stack((data, lon, lat))
         meshed_data = griddata(M[:,1:], M[:,0], (lonQ, latQ), method=self.method)
 
         return meshed_data
@@ -59,18 +62,18 @@ class Interpolate(Mesher):
         return(f"Meshing using {self.method} interpolation.")
 
 
-class TrivialMesher(Mesher):
-    """Passes along data.
-
-    NB! This might not fit the grid, and is only used for e.g. recreating a
-    Grid-object from an ouput file.
-    """
-
-    def __init__(self):
-        pass
-
-    def __call__(self, data, lon, lat, lonQ, latQ):
-        return copy(data)
-
-    def __str__(self):
-        return("Passing input data along as final meshed grid.")
+# class TrivialMesher(Mesher):
+#     """Passes along data.
+#
+#     NB! This might not fit the grid, and is only used for e.g. recreating a
+#     Grid-object from an ouput file.
+#     """
+#
+#     def __init__(self):
+#         pass
+#
+#     def __call__(self, data, lon, lat, lonQ, latQ):
+#         return copy(data)
+#
+#     def __str__(self):
+#         return("Passing input data along as final meshed grid.")
