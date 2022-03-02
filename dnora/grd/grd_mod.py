@@ -20,6 +20,22 @@ from .. import msg
 from ..aux import distance_2points, create_filename_obj, add_folder_to_filename, clean_filename, check_if_folder
 from ..defaults import dflt_grd, list_of_placeholders
 
+def force_to_xyz(data, lon, lat):
+    '''If the data is given in a matrix, convert it to xyz vectors.
+
+    Does nothing is data is already in xyz.'''
+    # If the data is in a matrix
+    if len(data.shape) > 1:
+        lon0, lat0 = np.meshgrid(lon, lat)
+        x = lon0.ravel()
+        y = lat0.ravel()
+        z = data.ravel()
+    else:
+        x = lon
+        y = lat
+        z = data
+
+    return z, x, y
 
 
 
@@ -42,8 +58,14 @@ class Grid:
         print(topo_reader)
         topo, lon, lat = topo_reader(self.lon()[0], self.lon()[-1], self.lat()[0], self.lat()[-1])
 
-        coords_dict = {'lon': lon, 'lat': lat}
-        vars_dict = {'topo': (['lat', 'lon'], topo)}
+        topo, lon, lat = force_to_xyz(topo, lon, lat)
+
+        # This was used for structured topography
+        #coords_dict = {'lon': lon, 'lat': lat}
+        #vars_dict = {'topo': (['lat', 'lon'], topo)}
+        points = [x for x in range(len(lon))]
+        coords_dict = {'points': points}
+        vars_dict = {'topo': (['points'], topo), 'lon': (['points'], lon), 'lat': (['points'], lat)}
         self.rawdata = xr.Dataset(
                     coords=(coords_dict
                     ),
