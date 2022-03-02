@@ -11,18 +11,7 @@ if TYPE_CHECKING:
 from ..aux import expand_area
 
 class TopoReader(ABC):
-    """Abstract class for reading the bathymetry.
-
-    The dimensions and orientation of the bathymetry array that is returned to
-    the object should be:
-
-    rows = latitude and colums = longitude (i.e.) shape = (nr_lat, nr_lon).
-
-    North = [-1,:]
-    South = [0,:]
-    East = [:,-1]
-    West = [:,0]
-    """
+    """Abstract class for reading the bathymetry. """
 
     @abstractmethod
     def __init__(self):
@@ -32,9 +21,33 @@ class TopoReader(ABC):
     def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
         """Reads the bathymetrical information from a source and returns the data.
 
+        !!!! DEPTH VALUES ARE POSITIVE AND EVERYTHING ELSE (including 0)
+        IS INTERPRETED AS LAND. LON, LAT IN WGS84 !!!
+
+
+
+        Two format options are available:
+
+        1) Matrix, where topo_lon, topo_lat are vectors and topo is the
+        corresponding matrix.
+
+        The dimensions and orientation of the bathymetry array that is returned to
+        the object should be:
+
+        rows = latitude and colums = longitude (i.e.) shape = (nr_lat, nr_lon).
+
+        North = [-1,:]
+        South = [0,:]
+        East = [:,-1]
+        West = [:,0]
+
+        2) Xyz, where topo, topo_lon, topo_lat are all vectors with the same length.
+
+        ----
+
         This method is called from within the Grid-object
         """
-        pass
+        return topo, topo_lon, topo_lat
 
     @abstractmethod
     def __str__(self):
