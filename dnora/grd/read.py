@@ -84,12 +84,12 @@ class EMODNET2018(TopoReader):
     since no API to the database exists.
     """
 
-    def __init__(self, expansion_factor: float=1.2, tile: str='C5', folder: str='/lustre/storeB/project/fou/om/WW3/bathy/emodnet_115m_x_115m') -> Tuple:
+    def __init__(self, expansion_factor: float=1.2, tile: str='C5', folder: str='/lustre/storeB/project/fou/om/WW3/bathy/emodnet_115m_x_115m'):
         self.source=f'{folder}/{tile}_2018.dtm'
         self.expansion_factor = expansion_factor
         return
 
-    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
+    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float) -> Tuple:
         # Area is expanded a bit to not get in trouble in the meshing stage
         # when we interpoolate or filter
         lon0, lon1, lat0, lat1 = expand_area(lon_min, lon_max, lat_min, lat_max, self.expansion_factor)
@@ -97,11 +97,6 @@ class EMODNET2018(TopoReader):
         ds = xr.open_dataset(self.source).sel(COLUMNS=slice(lon0, lon1), LINES=slice(lat0, lat1))
 
         topo = ds.DEPTH.values
-
-        # Set depth to positive values and land to -999
-        #land_mask = topo > 0
-
-        #topo[land_mask] = -999
 
         # Negative valies and NaN's are land
         topo = -1*topo
@@ -114,6 +109,27 @@ class EMODNET2018(TopoReader):
     def __str__(self):
         return(f"Reading EMODNET topography from {self.source}.")
 
+
+class Merge(TopoReader):
+    """Merges raw topography from several grids"""
+
+    def __init__(self, list_of_grids=None):
+        self.list_of_grids = copy(list_of_grids)
+        return
+    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float) -> Tuple:
+
+        topo = np.array([])
+        topo_lon = np.array([])
+        topo_lat = np.array([])
+        for grid in self.list_of_grids:
+            topo = np.append(topo,grid.raw_topo())
+            topo_lon = np.append(topo_lon,grid.raw_lon())
+            topo_lat = np.append(topo_lat,grid.raw_lat())
+
+        return topo, topo_lon, topo_lat
+
+    def __str__(self):
+        return("Merging data from several grids.")
 
 class ForceFeed(TopoReader):
     """Simply passes on the data it was fed upon initialization"""
