@@ -124,6 +124,7 @@ class KartverketNo50m(TopoReader):
                  tile: str='B1008', folder: str='/lustre/storeB/project/fou/om/WW3/bathy/kartverket_50m_x_50m') -> Tuple:
         self.source=f'{folder}/{tile}_grid50_utm33.xyz'
         self.expansion_factor = expansion_factor
+        self.utmzone = utmzone
         return
             
     def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
