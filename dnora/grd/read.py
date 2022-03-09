@@ -163,7 +163,7 @@ class MshFile(TopoReader):
 
     def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float) -> Tuple:
         import meshio
-        msg.plain('Meshio will probably trow a warning now. Probably safe to ignore.')
+
         mesh = meshio.read(self.filename)
 
         topo_lon = mesh.points[:,0]

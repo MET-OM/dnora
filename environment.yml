@@ -9,6 +9,7 @@ dependencies:
   - netcdf4
   - pandas
   - xarray<0.19
+  - meshio
   - pip
 
   
