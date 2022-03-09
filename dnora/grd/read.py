@@ -154,6 +154,36 @@ class KartverketNo50m(TopoReader):
     def __str__(self):
         return(f"Reading Kartverket topography from {self.source}.")
 
+class GEBCO2021(TopoReader):
+    """ Reads the GEBCO_2021 gridded bathymetric data set. A global terrain model for ocean and land, providing elevation data, in meters, on a 15 arc-second interval grid.
+        Data (in netCDF format) can be downloaded here: https://www.gebco.net/data_and_products/gridded_bathymetry_data/
+    """
+    def __init__(self, expansion_factor: float=1.2, tile: str='n61.0_s59.0_w4.0_e6.0', folder: str='/lustre/storeB/project/fou/om/WW3/bathy/gebco2021'):
+        self.source=f'{folder}/gebco_2021_{tile}.nc'
+        self.expansion_factor = expansion_factor
+        return
+
+    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
+        # Area is expanded a bit to not get in trouble in the meshing stage
+        # when we interpoolate or filter
+        lon0, lon1, lat0, lat1 = expand_area(lon_min, lon_max, lat_min, lat_max, self.expansion_factor)
+
+        ds = xr.open_dataset(self.source).sel(lon=slice(lon0, lon1), lat=slice(lat0, lat1))
+
+        elevation = ds.elevation.values
+    
+        # Negative valies and NaN's are land
+        topo = -1*elevation
+
+        topo_lon = ds.lon.values
+        topo_lat = ds.lat.values
+        
+        return topo, topo_lon, topo_lat
+    
+    def __str__(self):
+        return(f"Reading GEBCO2021 topography from {self.source}.")
+
+
 
 class Merge(TopoReader):
     """Merges raw topography from several grids"""
