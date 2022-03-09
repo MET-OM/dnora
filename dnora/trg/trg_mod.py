@@ -138,7 +138,7 @@ class Grid:
         if hasattr(self, 'rawdata') and hasattr(self.rawdata, 'topo'):
             return copy(self.rawdata.topo.values)
         else:
-            return None
+            return np.array([])
 
     def raw_lon(self):
         """Returns a longitude vector of the unmeshed imported topography."""
@@ -158,7 +158,22 @@ class Grid:
         if hasattr(self, '_nodes'):
             return copy(self._nodes)
         else:
-            return None
+            return np.array([])
+
+    def ny(self) -> int:
+        """Return the number of points in longitude direction."""
+        return len(self.lat())
+
+
+    def nx(self) -> int:
+        """Return the number of points in latitude direction."""
+        return 1
+
+    def size(self) -> tuple:
+        """Returns the size (nx, ny) of the grid."""
+        #return self.land_sea_mask().shape
+        return (self.ny(), self.nx())
+
 
     def topo(self):
         """Returns an array containing the meshed topography."""
@@ -233,6 +248,43 @@ class Grid:
         msg.print_line()
 
         return ''
+
+    def __repr__(self):
+        lines = [f"<dnora {obj.__class__.__bases__[0].__name__} object> (unstructured)", f"  Name: {self.name()}"]
+
+        if self.topo().shape==(0,):
+            empty_topo = True
+        elif np.mean(self.topo()) == 9999:
+            empty_topo = True
+        else:
+            empty_topo = False
+
+        if self.raw_topo().shape==(0,):
+            empty_raw_topo = True
+        elif np.mean(self.raw_topo()) == 9999:
+            empty_raw_topo = True
+        else:
+            empty_raw_topo = False
+
+        if len(self.nodes())>0:
+            lines.append(f"  Number of points: {self.nodes().shape[0]}")
+            lines.append(f"  Number of triangles: {self.tri().shape[0]}")
+        else:
+            lines.append(f"  Number of points: Use method .import_triang() to set structure.")
+        lines.append(f"  Data:")
+        if not empty_raw_topo:
+            lines.append(f'\traw_topo: {self.raw_topo().shape}')
+        else:
+            lines.append(f'\traw_topo: import using .import_topo()')
+        if not empty_topo:
+            lines.append(f'\ttopo {self.topo().shape}')
+        else:
+            lines.append(f'\ttopo: mesh using .mesh_grid()')
+
+        lines.append('\n  Use print() for grid details.')
+
+        return "\n".join(lines)
+
 
     # def _get_grid_plotter(self) -> TrGridPlotter:
     #     return TriTopoPlotter()

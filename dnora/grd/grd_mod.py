@@ -592,3 +592,38 @@ class Grid:
         msg.print_line()
 
         return ''
+
+    def __repr__(self):
+        lines = [f"<dnora {obj.__class__.__bases__[0].__name__} object> (structured)", f"  Name: {self.name()}"]
+
+        if self.topo().shape==(0,):
+            empty_topo = True
+        elif np.mean(self.topo()[self.land_sea_mask()]) == 9999:
+            empty_topo = True
+        else:
+            empty_topo = False
+
+        if self.raw_topo().shape==(0,):
+            empty_raw_topo = True
+        elif np.mean(self.raw_topo()) == 9999:
+            empty_raw_topo = True
+        else:
+            empty_raw_topo = False
+
+        if self.nx()>2 or self.ny()>2:
+            lines.append(f"  Number of points: (nx={self.nx()}, ny={self.ny()})")
+        else:
+            lines.append(f"  Number of points: Use method .set_spacing() to set structure.")
+        lines.append(f"  Data:")
+        if not empty_raw_topo:
+            lines.append(f'\traw_topo: {self.raw_topo().shape}')
+        else:
+            lines.append(f'\traw_topo: import using .import_topo()')
+        if not empty_topo:
+            lines.append(f'\ttopo {self.topo().shape}')
+        else:
+            lines.append(f'\ttopo: mesh using .mesh_grid()')
+
+        lines.append('\n  Use print() for grid details.')
+
+        return "\n".join(lines)
