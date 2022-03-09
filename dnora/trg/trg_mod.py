@@ -8,6 +8,7 @@ from .write import TrGridWriter
 from .boundary import BoundarySetter, ClearBoundary
 from .plot import TrGridPlotter, TriTopoPlotter
 from ..grd.mesh import Mesher, Interpolate
+from ..grd.grd_mod import force_to_xyz
 from .. import msg
 from ..aux import create_filename_obj, check_if_folder, add_folder_to_filename
 from ..defaults import dflt_grd
@@ -37,15 +38,27 @@ class Grid:
         msg.header(topo_reader, "Importing topography...")
         print(topo_reader)
         topo, lon, lat = topo_reader(min(self.lon()), max(self.lon()), min(self.lat()), max(self.lat()))
-        topo[topo < 0] = 0
-        coords_dict = {'lon': lon, 'lat': lat}
-        vars_dict = {'topo': (['lat', 'lon'], topo)}
+
+        topo, lon, lat = force_to_xyz(topo, lon, lat)
+
+        # Depth is positive, so set everything that is not positive to nan
+        topo[topo<=0]=np.nan
+
+        # This was used for structured topography
+        #coords_dict = {'lon': lon, 'lat': lat}
+        #vars_dict = {'topo': (['lat', 'lon'], topo)}
+
+        points = [x for x in range(len(lon))]
+        coords_dict = {'points': points}
+        vars_dict = {'topo': (['points'], topo), 'lon': (['points'], lon), 'lat': (['points'], lat)}
         self.rawdata = xr.Dataset(
                     coords=(coords_dict
                     ),
                     data_vars=(vars_dict
                     ),
                     )
+
+
         return
 
     def append_boundary(self, boundary_setter: BoundarySetter) -> None:

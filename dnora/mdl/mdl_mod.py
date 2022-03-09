@@ -320,6 +320,10 @@ class ModelRun:
         """Plot the data in the Grid-object, possibly overlaying data from the
         Boundary- and Forcing-objects."""
 
+        if len(self.grid().topo())==0:
+            msg.warning('Grid not meshed and nothing to plot!')
+            return
+
         if grid_plotter is None:
             self._grid_plotter = self._get_grid_plotter()
         else:
@@ -356,6 +360,11 @@ class ModelRun:
                 filestring: str=dflt_plt['fs']['Grid']) -> None:
         """Plot the raw data in the Grid-object, possibly overlaying data from the
         Boundary- and Forcing-objects."""
+
+
+        if self.grid().raw_topo() is None:
+            msg.warning('No topography imported so nothing to plot!')
+            return
 
         if grid_plotter is None:
             self._grid_plotter = self._get_topo_plotter()

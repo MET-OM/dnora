@@ -8,6 +8,7 @@ from .wnd.wnd_mod import Forcing
 from .aux import add_suffix
 from . import msg
 from typing import Tuple
+import matplotlib.tri as mtri
 
 class GridPlotter(ABC):
     """Plots data from Grid-object."""
@@ -44,7 +45,13 @@ class TopoPlotter(GridPlotter):
         # Create basic plot
         fig = plt.figure()
         levels = np.linspace(0, np.max(grid.topo()), 20, endpoint=True)
-        plt.contourf(grid.lon(),grid.lat(),grid.topo(),levels)
+
+        if grid.structured():
+            plt.contourf(grid.lon(),grid.lat(),grid.topo(),levels)
+        else:
+            triang = mtri.Triangulation(grid.lon(), grid.lat(), triangles = grid.tri())
+            plt.tricontourf(triang, grid.topo(), levels)
+            plt.triplot(grid.lon(), grid.lat(), triangles=grid.tri(), linewidth=0.2, color='black')
 
         # Plot boundary points if they exist
         lonlat=grid.boundary_points()
@@ -97,9 +104,7 @@ class TopoPlotter(GridPlotter):
         plt.plot(grid.raw_lon()[~mask],grid.raw_lat()[~mask], 'w.', markersize=0.5)
 
         # Plot grid edges
-        lonQ, latQ = np.meshgrid(grid.lon(), grid.lat())
-        lonQ=lonQ.ravel()
-        latQ=latQ.ravel()
+
 
         x0=min(grid.lon())
         x1=max(grid.lon())
@@ -112,7 +117,14 @@ class TopoPlotter(GridPlotter):
         plt.plot(x,y,'k', label='Grid')
 
         if len(grid.lon())>2:
-            plt.plot(lonQ, latQ,'k.', markersize=1, label='Grid points')
+            if grid.structured():
+                lonQ, latQ = np.meshgrid(grid.lon(), grid.lat())
+                lonQ=lonQ.ravel()
+                latQ=latQ.ravel()
+            elif grid.tri() is None: # Unstruct without triangulation
+                plt.scatter(grid.lon(), grid.lat(),2,'k', label='Grid points')
+            else:
+                plt.triplot(grid.lon(), grid.lat(), triangles=grid.tri(), linewidth=0.2, color='black')
 
         # Plot boundary points if they exist
         lonlat=grid.boundary_points()
