@@ -529,7 +529,7 @@ class ModelRun:
         return TopoPlotter()
 
     def __repr__(self):
-        lines = [f"<dnora {obj.__class__.__bases__[0].__name__} object> ({type(self).__name__})", f"  Name: {self.name()}"]
+        lines = [f"<dnora ModelRun object> ({type(self).__name__})", f"  Name: {self.name()}"]
 
         lines.append(f'  Covering time: {self.start_time} - {self.end_time}')
 
@@ -539,13 +539,13 @@ class ModelRun:
         else:
             gridtype = 'unstructured'
 
-        lines.append(f'\tgrid object ({gridtype}): {self.grid().name()}, {self.grid().size()}')
+        lines.append(f'\tgrid object ({gridtype}): {self.grid().name()} {self.grid().size()}')
         if self.forcing() is not None:
-            lines.append(f'\tforcing object: {self.forcing().name()}, {self.forcing().size()}')
+            lines.append(f'\tforcing object: {self.forcing().name()} {self.forcing().size()}')
         else:
             lines.append(f'\tforcing: use .import_forcing()')
         if self.boundary() is not None:
-            lines.append(f'\tboundary object: {self.boundary().name()}, {self.boundary().size()}')
+            lines.append(f'\tboundary object: {self.boundary().name()} {self.boundary().size()}')
         else:
             lines.append(f'\tboundary: use .import_boundary()')
 

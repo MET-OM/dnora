@@ -250,7 +250,7 @@ class Grid:
         return ''
 
     def __repr__(self):
-        lines = [f"<dnora {obj.__class__.__bases__[0].__name__} object> (unstructured)", f"  Name: {self.name()}"]
+        lines = [f"<dnora Grid object> (unstructured)", f"  Name: {self.name()}"]
 
         if self.topo().shape==(0,):
             empty_topo = True
