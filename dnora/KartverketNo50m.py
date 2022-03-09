@@ -30,16 +30,20 @@ class KartverketNo50m(TopoReader):
         
         df = pd.read_csv(self.source, sep= ' ', header=None)
         df.columns = ['x','y','z']
-        df['x'] = df['x'].astype(float)
-        df['y'] = df['y'].astype(float)
-        df['z'] = df['z'].astype(float)
+        x = np.array(df['x'].astype(float))
+        y = np.array(df['y'].astype(float))
+        z = np.array(df['z'].astype(float))
         
         # Converting from utm to latitude and longitude 
         lat, lon = utm.to_latlon(df['x'], df['y'], utmzone, northern=True, strict=False)
         
-        topo_lat = lat.loc[lat0:lat1]
-        topo_lon = lon.loc[lon0:lon1]
-        topo = df['z']
+        mask_lat = np.logical_and(lat0 < lat, lat < lat1)
+        mask_lon = np.logical_and(lon0 < lon, lon < lon1)
+        mask = np.logical_and(mask_lat, mask_lon)
+    
+        topo_lat = lat[mask]
+        topo_lon = lon[mask]
+        topo = z[mask]
 
         return topo, topo_lon, topo_lat
 
