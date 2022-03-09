@@ -106,16 +106,16 @@ class Grid:
             return
 
 
-    def plot_grid(self, grid_plotter: TrGridPlotter=None) -> None:
-        self._grid_plotter = grid_plotter or self._get_grid_plotter()
-
-        if self._grid_plotter is None:
-            raise Exception('Define a TrGridPlotter!')
-
-        fig, filename = self._grid_plotter(self)
-        fig.show()
-
-        return
+    # def plot_grid(self, grid_plotter: TrGridPlotter=None) -> None:
+    #     self._grid_plotter = grid_plotter or self._get_grid_plotter()
+    #
+    #     if self._grid_plotter is None:
+    #         raise Exception('Define a TrGridPlotter!')
+    #
+    #     fig, filename = self._grid_plotter(self)
+    #     fig.show()
+    #
+    #     return
 
 
     def name(self):
@@ -234,5 +234,5 @@ class Grid:
 
         return ''
 
-    def _get_grid_plotter(self) -> TrGridPlotter:
-        return TriTopoPlotter()
+    # def _get_grid_plotter(self) -> TrGridPlotter:
+    #     return TriTopoPlotter()
