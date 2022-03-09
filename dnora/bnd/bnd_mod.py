@@ -165,25 +165,25 @@ class Boundary:
         if hasattr(self, 'data'):
             return copy(self.data.freq.values)
         else:
-            return None
+            return np.array([])
 
     def dirs(self):
         if hasattr(self, 'data'):
             return copy(self.data.dirs.values)
         else:
-            return None
+            return np.array([])
 
     def lon(self):
         if hasattr(self, 'data'):
             return copy(self.data.lon.values)
         else:
-            return None
+            return np.array([])
 
     def lat(self):
         if hasattr(self, 'data'):
             return copy(self.data.lat.values)
         else:
-            return None
+            return np.array([])
 
     def x(self):
         if hasattr(self, 'data'):
