@@ -56,7 +56,7 @@ class MshReader(TriangReader):
     def __call__(self) -> Tuple:
 
         import meshio
-        mesh = meshio.read('output/Sulafjorden_bathy.msh')
+        mesh = meshio.read(self.filename)
 
         for cell in mesh.cells:
             if cell.type == 'vertex': # Boundary points

@@ -9,6 +9,8 @@ if TYPE_CHECKING:
     from .grd_mod import Grid
 # Import auxiliry functions
 from ..aux import expand_area
+import warnings
+from .. import msg
 
 class TopoReader(ABC):
     """Abstract class for reading the bathymetry. """
@@ -150,3 +152,33 @@ class ForceFeed(TopoReader):
 
     def __str__(self):
         return("Passing on the topography I was initialized with.")
+
+class MshFile(TopoReader):
+    """Reads topography data from msh-file"""
+
+    def __init__(self, filename: str, expansion_factor: float=1.2):
+        self.filename = copy(filename)
+        self.expansion_factor = expansion_factor
+        return
+
+    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float) -> Tuple:
+        import meshio
+        msg.plain('Meshio will probably trow a warning now. Probably safe to ignore.')
+        mesh = meshio.read(self.filename)
+
+        topo_lon = mesh.points[:,0]
+        topo_lat = mesh.points[:,1]
+        topo = mesh.points[:,2]
+
+        lon0, lon1, lat0, lat1 = expand_area(lon_min, lon_max, lat_min, lat_max, self.expansion_factor)
+        mask1=np.logical_and(topo_lon>=lon0, topo_lon<=lon1)
+        mask2=np.logical_and(topo_lat>=lat0, topo_lat<=lat1)
+        mask = np.logical_and(mask1, mask2)
+        topo_lon = topo_lon[mask]
+        topo_lat = topo_lat[mask]
+        topo=topo[mask]
+
+        return topo, topo_lon, topo_lat
+
+    def __str__(self):
+        return(f"Reading topography from {self.filename}.")
