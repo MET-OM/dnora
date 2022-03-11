@@ -102,6 +102,41 @@ class EMODNET2018(TopoReader):
         return(f"Reading EMODNET topography from {self.source}.")
 
 
+class EMODNET_MFDATA(TopoReader):
+    """Reads bathymetry from multiple EMODNET tiles in netcdf format.
+
+    Please supply the 'source' argument with a glob pattern.
+    """
+
+    def __init__(self, source: str, expansion_factor: float=1.2, **kwarg) -> Tuple:
+        super().__init__(**kwarg)
+        self.source = source
+        self.expansion_factor = expansion_factor
+        return
+
+    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
+        # Area is expanded a bit to not get in trouble in the meshing stage
+        # when we interpoolate or filter
+        lon0, lon1, lat0, lat1 = expand_area(lon_min, lon_max, lat_min, lat_max, self.expansion_factor)
+
+        def _crop(ds):
+            """
+            EMODNET tiles overlap by two cells on each boundary.
+            """
+            return ds.isel(lon=slice(2, -1), lat=slice(2, -1))
+
+        with xr.open_mfdataset(self.source, preprocess=_crop) as ds:
+            ds  = ds.sel(lon=slice(lon0, lon1), lat=slice(lat0, lat1))
+            topo = ds.elevation.values
+            topo = -1*topo
+            topo_lon = ds.lon.values
+            topo_lat = ds.lat.values
+            return topo, topo_lon, topo_lat
+
+    def __str__(self):
+        return(f"Reading EMODNET topography from {self.source}.")
+
+
 class ForceFeed(TopoReader):
     """Simply passes on the data it was fed upon initialization"""
 
