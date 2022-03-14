@@ -125,13 +125,16 @@ class EMODNET_MFDATA(TopoReader):
             """
             return ds.isel(lon=slice(2, -1), lat=slice(2, -1))
 
-        with xr.open_mfdataset(self.source, preprocess=_crop) as ds:
-            ds  = ds.sel(lon=slice(lon0, lon1), lat=slice(lat0, lat1))
-            topo = ds.elevation.values
-            topo = -1*topo
-            topo_lon = ds.lon.values
-            topo_lat = ds.lat.values
-            return topo, topo_lon, topo_lat
+        import dask
+        with dask.config.set(**{'array.slicing.split_large_chunks': False}):
+            with xr.open_mfdataset(self.source, preprocess=_crop) as ds:
+                ds  = ds.sel(lon=slice(lon0, lon1), lat=slice(lat0, lat1))
+                return ds['elevation']
+                topo = ds.elevation.values
+                topo = -1*topo
+                topo_lon = ds.lon.values
+                topo_lat = ds.lat.values
+                return topo, topo_lon, topo_lat
 
     def __str__(self):
         return(f"Reading EMODNET topography from {self.source}.")
