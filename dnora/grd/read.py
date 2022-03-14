@@ -105,7 +105,7 @@ class EMODNET2018(TopoReader):
 class EMODNET_MFDATA(TopoReader):
     """Reads bathymetry from multiple EMODNET tiles in netcdf format.
 
-    Please supply the 'source' argument with a glob pattern.
+    For reading several files at once, supply the 'source' argument with a glob pattern.
     """
 
     def __init__(self, source: str, expansion_factor: float=1.2, **kwarg) -> Tuple:
