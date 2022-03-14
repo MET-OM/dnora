@@ -69,8 +69,9 @@ class WAM4km(BoundaryReader):
             url = self.get_url(file_times[n])
             msg.from_file(url)
             msg.plain(f"Reading boundary spectra: {start_times[n]}-{end_times[n]}")
-
-            bnd_list.append(xr.open_dataset(url).sel(time = slice(start_times[n], end_times[n]), x = (inds+1)))
+            with xr.open_dataset(url) as f:
+                this_ds = f.sel(time = slice(start_times[n], end_times[n]), x = (inds+1))[['SPEC', 'longitude', 'latitude']].copy()
+            bnd_list.append(this_ds)
 
         msg.info("Merging dataset together (this might take a while)...")
         bnd=xr.concat(bnd_list, dim="time").squeeze('y')
