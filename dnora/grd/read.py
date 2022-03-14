@@ -126,7 +126,7 @@ class EMODNET_MFDATA(TopoReader):
             return ds.isel(lon=slice(2, -1), lat=slice(2, -1))
 
         import dask
-        with dask.config.set(**{'array.slicing.split_large_chunks': True}):
+        with dask.config.set(**{'array.slicing.split_large_chunks': False}):
             with xr.open_mfdataset(self.source, preprocess=_crop) as ds:
                 ds = ds.sel(lon=slice(lon0, lon1), lat=slice(lat0, lat1))
                 topo = -1 * ds.elevation.values
