@@ -31,6 +31,13 @@ Installing **dnora**
   $ conda config --add channels conda-forge
   $ conda env create -f environment.yml
   $ conda activate dnora
+  
+To update the enviroment using a new environment.yml, run:
+
+.. code-block:: bash
+
+   $ conda env update --file environment.yml --prune
+
 
 
 Dependencies
