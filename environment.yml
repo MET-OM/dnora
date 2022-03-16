@@ -8,8 +8,9 @@ dependencies:
   - scipy>=1.7
   - netcdf4
   - pandas
-  - xarray<0.19
+  - xarray=>0.20.1
   - pip
+  - utm
 
   
   
