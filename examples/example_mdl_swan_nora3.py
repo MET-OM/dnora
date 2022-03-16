@@ -15,8 +15,8 @@ grid = grd.Grid(lon=(4.00, 5.73), lat=(60.53, 61.25), name='Skjerjehamn300')
 grid.set_spacing(dm=300)
 
 # Import topography and mesh it down to the grid definitions
-grid.import_topo(topo_reader=grd.read.EMODNET2018(tile='D5',
-                                    folder='/home/konstantinosc/bathy/'))
+grid.import_topo(topo_reader=grd.read.EMODNET2018(tile='D5'))#,
+                                    #folder='/home/konstantinosc/bathy/'))
 # This can be used to get an empty topography for testing
 #grid.import_topo(topo_reader=grd.read.EmptyTopo(grid=grid))
 
@@ -40,15 +40,15 @@ model.import_forcing()
 # =============================================================================
 # PLOT GRID, FORCING AND BOUNDARIES
 # =============================================================================
-model.plot_grid()
+#model.plot_grid()
 # =============================================================================
 # WRITE OUTPUT FOR SWAN RUN
 # =============================================================================
-model.export_grid()
-model.export_boundary()
-model.export_forcing()
-model.write_input_file()
+#model.export_grid()
+#model.export_boundary()
+#model.export_forcing()
+#model.write_input_file()
 # =============================================================================
 # SWAN RUN
 # =============================================================================
-model.run_model()
+#model.run_model()

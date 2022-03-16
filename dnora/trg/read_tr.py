@@ -42,7 +42,8 @@ class SmsReader(TriangReader):
         tri, nodes, X, Y, Z, types, nodeStrings = read_sms_mesh(self.filename, nodestrings=True)
 
         lat, lon = utm.to_latlon(X, Y, 33, zone_letter = 'W', strict = False)
-        nodeStrings=nodeStrings[0]
+        if len(nodeStrings) > 0:
+            nodeStrings=nodeStrings[0]
         return tri, nodes, lon, lat, types, nodeStrings
 
     def __str__(self):
