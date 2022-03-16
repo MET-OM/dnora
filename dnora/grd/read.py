@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import xarray as xr
+import pandas as pd
+import utm
 from copy import copy
 from abc import ABC, abstractmethod
 import numpy as np
@@ -108,6 +110,117 @@ class EMODNET2018(TopoReader):
 
     def __str__(self):
         return(f"Reading EMODNET topography from {self.source}.")
+
+class KartverketNo50m(TopoReader):
+    """Reads data from Kartverket bathymetry.
+        
+        High resolution bathymetry dataset for the whole Norwegian Coast.
+        Can be found at:
+        https://kartkatalog.geonorge.no/metadata/dybdedata-terrengmodeller-50-meters-grid-landsdekkende/bbd687d0-d34f-4d95-9e60-27e330e0f76e
+        
+        """
+    
+    def __init__(self, expansion_factor: float=1.2, utmzone: int=33,
+                 tile: str='B1008', folder: str='/lustre/storeB/project/fou/om/WW3/bathy/kartverket_50m_x_50m') -> Tuple:
+        self.source=f'{folder}/{tile}_grid50_utm33.xyz'
+        self.expansion_factor = expansion_factor
+        self.utmzone = utmzone
+        return
+            
+    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
+        # Area is expanded a bit to not get in trouble in the meshing stage
+        # when we interpoolate or filter
+        lon0, lon1, lat0, lat1 = expand_area(lon_min, lon_max, lat_min, lat_max, self.expansion_factor)
+        
+        print(f'Expansion factor: {self.expansion_factor}')
+        
+        df = pd.read_csv(self.source, sep= ' ', header=None)
+        df.columns = ['x','y','z']
+        x = np.array(df['x'].astype(float)) 
+        y = np.array(df['y'].astype(float))
+        z = np.array(df['z'].astype(float))
+        
+        # Converting from utm to latitude and longitude
+        lat, lon = utm.to_latlon(x, y, self.utmzone, northern=True, strict=False)
+        
+        # Applying given max and min values for lat and lon
+        mask_lat = np.logical_and(lat0 <= lat, lat <= lat1)
+        mask_lon = np.logical_and(lon0 <= lon, lon <= lon1)
+        mask = np.logical_and(mask_lat, mask_lon)
+                
+        #topo_lon = lon[mask]
+        x = x[mask]
+        y = y[mask]
+        topo = z[mask]
+
+        # Adding NaN values for land area
+        x_grid = np.unique(x) #np.arange(min(x), max(x), 50)
+        y_grid = np.unique(y) #np.arange(min(y), max(y), 50)
+        grid = np.empty((len(y_grid),len(x_grid)))
+        grid[:] = np.nan
+        
+        # Adding depth values for all defined points, leaving the rest as NaN
+        for i in range(len(topo)): 
+            xpos = np.where(x_grid==x[i])[0][0]
+            ypos = np.where(y_grid==y[i])[0][0]
+            grid[ypos][xpos] = topo[i]
+            
+        # Converting grid back to list of points usind Pandas
+        df = pd.DataFrame(grid)
+        df = df.unstack().reset_index()
+        df['x'] = [x_grid[i] for i in df['level_0']]
+        df['y'] = [y_grid[i] for i in df['level_1']]
+
+        topo_lat, topo_lon = utm.to_latlon(df['x'], df['y'], 33, northern=True, strict = False)
+        topo = df[0]
+        
+        # Masking again to get rid of additional values
+        mask_lat = np.logical_and(lat0 < topo_lat, topo_lat < lat1)
+        mask_lon = np.logical_and(lon0 < topo_lon, topo_lon < lon1)
+        mask = np.logical_and(mask_lat, mask_lon)
+
+        topo_lat = topo_lat[mask]
+        topo_lon = topo_lon[mask]
+        topo = topo[mask]
+        
+
+        return topo, topo_lon, topo_lat
+
+    def __str__(self):
+        return(f"Reading Kartverket topography from {self.source}.")
+
+class GEBCO2021(TopoReader):
+    """ Reads the GEBCO_2021 gridded bathymetric data set. 
+        A global terrain model for ocean and land, 
+        providing elevation data, in meters, on a 15 arc-second interval grid.
+        Reference: GEBCO Compilation Group (2021) GEBCO 2021 Grid (doi:10.5285/c6612cbe-50b3-0cff- e053-6c86abc09f8f)
+        Data (in netCDF format) can be downloaded here: https://www.gebco.net/data_and_products/gridded_bathymetry_data/
+    """
+    def __init__(self, expansion_factor: float=1.2, tile: str='n61.0_s59.0_w4.0_e6.0', folder: str='/lustre/storeB/project/fou/om/WW3/bathy/gebco2021'):
+        self.source=f'{folder}/gebco_2021_{tile}.nc'
+        self.expansion_factor = expansion_factor
+        return
+
+    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
+        # Area is expanded a bit to not get in trouble in the meshing stage
+        # when we interpoolate or filter
+        lon0, lon1, lat0, lat1 = expand_area(lon_min, lon_max, lat_min, lat_max, self.expansion_factor)
+
+        ds = xr.open_dataset(self.source).sel(lon=slice(lon0, lon1), lat=slice(lat0, lat1))
+
+        elevation = ds.elevation.values.astype(float)
+    
+        # Negative valies and NaN's are land
+        topo = -1*elevation
+
+        topo_lon = ds.lon.values.astype(float)
+        topo_lat = ds.lat.values.astype(float)
+        
+        return topo, topo_lon, topo_lat
+    
+    def __str__(self):
+        return(f"Reading GEBCO2021 topography from {self.source}.")
+
 
 
 class Merge(TopoReader):
