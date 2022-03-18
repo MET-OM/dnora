@@ -17,6 +17,13 @@ grid.set_spacing(dm=300)
 # Import topography and mesh it down to the grid definitions
 grid.import_topo(topo_reader=grd.read.EMODNET2018(tile='D5',
                                     folder='/home/konstac/bathy/'))
+
+#grid.import_topo(topo_reader=grd.read.GEBCO2021(tile='n66.357421875_s57.041015625_w0.703125_e10.37109375',
+#                                    folder='/home/konstac/bathy/'))
+
+#grid.import_topo(topo_reader=grd.read.KartverketNo50m(tile='B1008',
+#                                    folder='/home/konstac/bathy/'))
+
 # This can be used to get an empty topography for testing
 #grid.import_topo(topo_reader=grd.read.EmptyTopo(grid=grid))
 
@@ -30,8 +37,8 @@ grid.set_boundary(boundary_setter=bnd_set)
 # =============================================================================
 # DEFINE MODEL OBJECT
 # =============================================================================
-model = mdl.SWAN_NORA3(grid, start_time='2018-08-25T00:00',
-                             end_time='2018-08-25T03:00')
+model = mdl.SWAN_NORA3(grid, start_time='2020-11-19T03:00',
+                             end_time ='2020-11-19T15:00')
 # =============================================================================
 # IMPORT BOUNDARIES AND FORCING
 # =============================================================================
