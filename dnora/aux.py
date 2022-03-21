@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from .bnd.bnd_mod import Boundary
     from .wnd.wnd_mod import Forcing
 
-def distance_2points(lat1,lon1,lat2,lon2) -> float:
+def distance_2points(lat1, lon1, lat2, lon2) -> float:
     """Calculate distance between two points"""
 
     R = 6371.0
@@ -35,7 +35,7 @@ def min_distance(lon, lat, lon_vec , lat_vec) -> Tuple[float, int]:
     """
 
     dx = []
-    for n in range(len(lat_vec)):
+    for n, __ in enumerate(lat_vec):
         dx.append(distance_2points(lat, lon, lat_vec[n], lon_vec[n]))
 
     return np.array(dx).min(), np.array(dx).argmin()
@@ -45,6 +45,130 @@ def lon_in_km(lat: float) -> float:
 
     return distance_2points(lat, 0, lat, 1)
 
+def domain_size_in_km(lon: Tuple(float, float), lat: Tuple(float, float)) -> Tuple[float, float]:
+    """Calculates approximate size of grid in km."""
+
+    km_x = distance_2points((lat[0]+lat[1])/2, lon[0], (lat[0]+lat[1])/2,lon[1])
+    km_y = distance_2points(lat[0], lon[0], lat[1], lon[0])
+
+    return km_x, km_y
+
+def force_to_xyz(data: np.ndarray, lon: np.ndarray, lat: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    '''If the data is given in a matrix, convert it to xyz vectors.
+
+    Does nothing is data is already in xyz.'''
+    # If the data is in a matrix
+    if len(data.shape) > 1:
+        lon0, lat0 = np.meshgrid(lon, lat)
+        x = lon0.ravel()
+        y = lat0.ravel()
+        z = data.ravel()
+    else:
+        x = lon
+        y = lat
+        z = data
+
+    return z, x, y
+
+def set_spacing_dlon_dlat_fixed_edges(dlon: float, dlat:float, lon: Tuple[float, float], lat: Tuple[float, float]) -> Tuple[float, float, float, float, np.ndarray, np.ndarray]:
+    """Given dlon, dlat and lon,lat edges, set other spacing varialbles.
+
+    Preserves edges (not dlon,dlat)
+    """
+    nx = int((lon[1]-lon[0])/dlon + 1)
+    ny = int((lat[1]-lat[0])/dlat + 1)
+
+    # Define longitudes and latitudes
+    lon_array = np.linspace(lon[0], lon[1], nx)
+    lat_array = np.linspace(lat[0], lat[1], ny)
+
+    if nx > 1:
+        dlon = (lon[1]-lon[0])/(nx-1)
+    else:
+        dlon = 0.
+
+    if ny > 1:
+        dlat = (lat[1]-lat[0])/(ny-1)
+    else:
+        dlat = 0.
+
+    lon = (min(lon_array), max(lon_array))
+    lat = (min(lat_array), max(lat_array))
+    km_x, km_y = domain_size_in_km(lon, lat)
+
+    # dx, dy in metres
+    dx = km_x*1000/nx
+    dy = km_y*1000/ny
+
+    return dlon, dlat, dx, dy, lon_array, lat_array
+
+def set_spacing_dlon_dlat_floating_edges(dlon: float, dlat:float, lon: Tuple[float, float], lat: Tuple[float, float]) -> Tuple[float, float, float, float, np.ndarray, np.ndarray]:
+    """Given dlon, dlat and lon,lat edges, set other spacing varialbles
+
+    Preserves dlon, dlat (not edges)
+    """
+    lon_array = np.arange(lon[0],lon[1]+dlon/2,dlon)
+    lat_array = np.arange(lat[0],lat[1]+dlon/2,dlat)
+
+    lon = (min(lon_array), max(lon_array))
+    lat = (min(lat_array), max(lat_array))
+    km_x, km_y = domain_size_in_km(lon, lat)
+
+    # Number of points
+    nx = len(lon_array)
+    ny = len(lat_array)
+
+    # dx, dy in metres
+    dx = km_x*1000/nx
+    dy = km_y*1000/ny
+
+    return dlon, dlat, dx, dy, lon_array, lat_array
+
+def set_spacing_dx_dy(dx: float, dy:float, lon: Tuple[float, float], lat: Tuple[float, float]) -> Tuple[float, float, float, float, np.ndarray, np.ndarray]:
+    km_x, km_y = domain_size_in_km(lon, lat)
+    # Number of points
+    nx = int(np.round(km_x*1000/dx)+1)
+    ny = int(np.round(km_y*1000/dy)+1)
+
+    # dx, dy in metres
+    dx = km_x*1000/nx
+    dy = km_y*1000/ny
+
+    if nx > 1:
+        dlon = (lon[1]-lon[0])/(nx-1)
+    else:
+        dlon = 0.
+    if ny > 1:
+        dlat = (lat[1]-lat[0])/(ny-1)
+    else:
+        dlat = 0.
+
+    # Define longitudes and latitudes
+    lon_array = np.linspace(lon[0], lon[1], nx)
+    lat_array = np.linspace(lat[0], lat[1], ny)
+
+    return dlon, dlat, dx, dy, lon_array, lat_array
+
+def set_spacing_nx_ny(nx: float, ny:float, lon: Tuple[float, float], lat: Tuple[float, float]) -> Tuple[float, float, float, float, np.ndarray, np.ndarray]:
+    # Define longitudes and latitudes
+    lon_array = np.linspace(lon[0], lon[1], nx)
+    lat_array = np.linspace(lat[0], lat[1], ny)
+    if nx > 1:
+        dlon = (lon[1]-lon[0])/(nx-1)
+    else:
+        dlon = 0.
+
+    if ny > 1:
+        dlat = (lat[-1]-lat[0])/(ny-1)
+    else:
+        dlat = 0.
+
+    km_x, km_y = domain_size_in_km(lon, lat)
+    # dx, dy in metres
+    dx = km_x*1000/nx
+    dy = km_y*1000/ny
+
+    return dlon, dlat, dx, dy, lon_array, lat_array
 
 def day_list(start_time, end_time):
     """Determins a Pandas data range of all the days in the time span of the InputModel objext"""
