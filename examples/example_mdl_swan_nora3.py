@@ -47,15 +47,15 @@ model.import_forcing()
 # =============================================================================
 # PLOT GRID, FORCING AND BOUNDARIES
 # =============================================================================
-model.plot_grid()
+#model.plot_grid()
 # =============================================================================
 # WRITE OUTPUT FOR SWAN RUN
 # =============================================================================
-model.export_grid()
-model.export_boundary()
-model.export_forcing()
-model.write_input_file()
+#model.export_grid()
+#model.export_boundary()
+#model.export_forcing()
+#model.write_input_file()
 # =============================================================================
 # SWAN RUN
 # =============================================================================
-model.run_model()
+#model.run_model()

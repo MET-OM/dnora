@@ -50,7 +50,9 @@ class TopoPlotter(GridPlotter):
             plt.contourf(grid.lon(),grid.lat(),grid.topo(),levels)
         else:
             triang = mtri.Triangulation(grid.lon(), grid.lat(), triangles = grid.tri())
-            plt.tricontourf(triang, grid.topo(), levels)
+            topo=grid.topo()
+            topo[np.isnan(topo)]=0 # Land to zero
+            plt.tricontourf(triang, topo, levels)
             plt.triplot(grid.lon(), grid.lat(), triangles=grid.tri(), linewidth=0.2, color='black')
 
         # Plot boundary points if they exist

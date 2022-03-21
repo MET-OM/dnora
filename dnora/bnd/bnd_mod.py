@@ -165,36 +165,40 @@ class Boundary:
         if hasattr(self, 'data'):
             return copy(self.data.freq.values)
         else:
-            return None
+            return np.array([])
 
     def dirs(self):
         if hasattr(self, 'data'):
             return copy(self.data.dirs.values)
         else:
-            return None
+            return np.array([])
 
     def lon(self):
         if hasattr(self, 'data'):
             return copy(self.data.lon.values)
         else:
-            return None
+            return np.array([])
 
     def lat(self):
         if hasattr(self, 'data'):
             return copy(self.data.lat.values)
         else:
-            return None
+            return np.array([])
 
     def x(self):
         if hasattr(self, 'data'):
             return copy(self.data.x.values)
         else:
-            return None
+            return np.array([])
 
     def days(self):
         """Determins a Pandas data range of all the days in the time span."""
         days = day_list(start_time = self.start_time, end_time = self.end_time)
         return days
+
+    def size(self):
+        return (len(self.time()), len(self.x()))
+
 
     def name(self) -> str:
         """Return the name of the grid (set at initialization)."""

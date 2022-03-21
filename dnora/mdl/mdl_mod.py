@@ -366,7 +366,7 @@ class ModelRun:
         Boundary- and Forcing-objects."""
 
 
-        if self.grid().raw_topo() is None:
+        if len(self.grid().raw_topo()) == 0:
             msg.warning('No topography imported so nothing to plot!')
             return
 
@@ -527,3 +527,27 @@ class ModelRun:
 
     def _get_topo_plotter(self) -> GridPlotter:
         return TopoPlotter()
+
+    def __repr__(self):
+        lines = [f"<dnora ModelRun object> ({type(self).__name__})", f"  Name: {self.name()}"]
+
+        lines.append(f'  Covering time: {self.start_time} - {self.end_time}')
+
+        lines.append(f"  Contains:")
+        if self.grid().structured():
+            gridtype = 'structured'
+        else:
+            gridtype = 'unstructured'
+
+        lines.append(f'\tgrid object ({gridtype}): {self.grid().name()} {self.grid().size()}')
+        if self.forcing() is not None:
+            lines.append(f'\tforcing object: {self.forcing().name()} {self.forcing().size()}')
+        else:
+            lines.append(f'\tforcing: use .import_forcing()')
+        if self.boundary() is not None:
+            lines.append(f'\tboundary object: {self.boundary().name()} {self.boundary().size()}')
+        else:
+            lines.append(f'\tboundary: use .import_boundary()')
+
+
+        return "\n".join(lines)
