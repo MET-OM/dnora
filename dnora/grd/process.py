@@ -57,26 +57,24 @@ class SetMinDepth(GridProcessor):
     are set to land. Otherwise the shallow points are set to min_depth.
     """
 
-    def __init__(self, min_depth: float, to_land: bool=False):
+    def __init__(self, min_depth: float, to_land: bool=False) -> None:
         self.to_land = to_land
         self.min_depth = min_depth
-        return
 
-    def topo(self, data, lon, lat, land_sea_mask):
+    def topo(self, data, lon, lat, sea_mask):
         return self.grid(data, lon, lat, land_sea_mask)
 
-    def grid(self, data, lon, lat, land_sea_mask, boundary_mask=None):
+    def grid(self, data, lon, lat, sea_mask, boundary_mask=None):
         shallow_points = data < self.min_depth
-
         if self.to_land:
             new_data = copy(data)
-            new_data[np.logical_and(shallow_points, land_sea_mask)] = np.nan # Don't touch land points
-            msg.plain(f"Affected {np.count_nonzero(np.logical_and(shallow_points, land_sea_mask))} points")
+            new_data[np.logical_and(shallow_points,sea_mask)] = np.nan # Don't touch land points
+            msg.plain(f"Affected {np.count_nonzero(np.logical_and(shallow_points, sea_mask))} points")
         else:
             # Set points to the limiter
             new_data = copy(data)
-            new_data[np.logical_and(shallow_points, land_sea_mask)] = self.min_depth # Don't touch land points
-            msg.plain(f"Affected {np.count_nonzero(np.logical_and(shallow_points, land_sea_mask))} points")
+            new_data[np.logical_and(shallow_points, sea_mask)] = self.min_depth # Don't touch land points
+            msg.plain(f"Affected {np.count_nonzero(np.logical_and(shallow_points, sea_mask))} points")
         return new_data
 
     def __str__(self):
@@ -84,3 +82,19 @@ class SetMinDepth(GridProcessor):
             return(f"Setting points shallower than {self.min_depth} to land (-999)")
         else:
             return(f"Setting points shallower than {self.min_depth} to {self.min_depth}")
+
+class SetConstantDepth(GridProcessor):
+    """Set a constant depth for the grid. """
+
+    def __init__(self, depth: float) -> None:
+        self.depth = depth
+
+    def grid(self, data, lon, lat, sea_mask, boundary_mask=None):
+        land_mask = np.logical_not(sea_mask)
+        new_data = np.ones((len(lat), len(lon)))*self.depth
+        new_data[land_mask] = np.nan # Don't touch land points
+        msg.plain(f"Affected {np.count_nonzero(sea_mask)} points")
+        return new_data
+
+    def __str__(self):
+        return(f"Creating a grid with constant depth {self.depth}")
