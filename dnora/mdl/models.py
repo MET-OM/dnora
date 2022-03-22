@@ -54,6 +54,19 @@ class WW3(ModelRun):
     def _get_grid_writer(self):
         return grd.write.WW3()
 
+class HOS_ocean(ModelRun):
+    def _get_boundary_writer(self):
+        return bnd.write.HOS_ocean(out_format='HOS_ocean')
+
+    def _get_point_picker(self):
+        return bnd.pick.NearestGridPoint()
+
+    def _get_input_file_writer(self):
+        return inp.HOS_ocean()
+
+    def _get_model_executer(self):
+        return run.HOS_ocean()
+
 class SWAN_NORA3(SWAN):
     def _get_boundary_reader(self):
         return bnd.read_metno.NORA3()

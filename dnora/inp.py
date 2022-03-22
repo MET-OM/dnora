@@ -11,7 +11,7 @@ from .bnd.bnd_mod import Boundary
 
 # Import default values and auxiliry functions
 from .defaults import dflt_frc, dflt_bnd, dflt_grd, dflt_inp, list_of_placeholders
-from .aux import add_folder_to_filename, clean_filename
+from .aux import add_folder_to_filename, clean_filename, check_if_folder
 from . import msg
 
 class InputFileWriter(ABC):
@@ -188,6 +188,98 @@ class SWASH(InputFileWriter):
             file_out.write('COMPUTE '+STR_START+' 0.001 SEC ' + STR_END + '\n')
             file_out.write('STOP \n')
 
+        return output_file, folder
+
+class HOS_ocean(InputFileWriter):
+    def __init__(self, xlen=80, ylen=20,T_stop=100,f_out=1,toler=1.0e-7,n=4,Ta=0,
+    depth = 100, Tp_real=10,Hs_real=4.5,gamma=3.3,beta=0.78,random_phases=1):
+
+        self.xlen = xlen
+        self.ylen = ylen
+        self.T_stop = T_stop
+        self.f_out = f_out
+        self.toler = toler
+        self.n = n
+        self.Ta = Ta
+        self.depth = depth #np.mean(self.topo()[self.land_sea_mask()])
+        self.Tp_real = Tp_real
+        self.Hs_real = Hs_real
+        self.gamma = gamma
+        self.beta = beta
+        self.random_phases = random_phases
+        return
+
+    def _preferred_format(self):
+        return 'HOS_ocean'
+
+    def _preferred_extension(self):
+        return 'dat'
+
+    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, start_time: str, end_time: str, filename: str, folder: str, grid_path: str, forcing_path: str, boundary_path: str):
+
+        # Create input file name
+        output_file = clean_filename(filename, list_of_placeholders)
+        output_path = add_folder_to_filename(output_file, folder)
+        check_if_folder(folder=folder+'/Results')
+        print(output_path)
+
+
+        with open(output_path, 'w') as file_out:
+            file_out.write(
+                'Restart previous computation :: i_restart        :: 0\n')
+            file_out.write('Choice of computed case      :: i_case           :: 3\n')
+
+            file_out.write('--- Geometry of the horizontal domain\n')
+            file_out.write(
+                'Length in x-direction        :: xlen             :: '+format(self.xlen,".1f")+'\n')
+            file_out.write(
+                'Length in y-direction        :: ylen             :: '+format(self.ylen,".1f")+'\n')
+
+            file_out.write('--- Time stuff \n')
+            file_out.write(
+                'Duration of the simulation   :: T_stop           :: '+format(self.T_stop,".1f")+'\n')
+            file_out.write(
+                'Sampling frequency (output)  :: f_out            :: '+format(self.f_out,".1f")+'\n')
+            file_out.write(
+                'Tolerance of RK scheme       :: toler            :: '+format(self.toler,".2e")+'\n')
+            file_out.write(
+                'Dommermuth initialisation    :: n                :: '+format(self.n,".0f")+'\n')
+            file_out.write(
+                'Dommermuth initialisation    :: Ta               :: '+format(self.Ta,".1f")+'\n')
+
+            file_out.write('--- Physical dimensional parameters \n')
+            file_out.write(
+                'Gravity                      :: grav             :: 9.81\n')
+            file_out.write(
+                'Water depth                  :: depth            :: '+format(self.depth,".1f")+'\n')
+
+            file_out.write('--- Irregular waves (i_case=3) \n')
+            file_out.write(
+                'Peak period in s             :: Tp_real          :: '+format(self.Tp_real,".1f")+'\n')
+            file_out.write(
+                'Significant wave height in m :: Hs_real          :: '+format(self.Hs_real,".1f")+'\n')
+            file_out.write(
+                'JONSWAP Spectrum             :: gamma            :: '+format(self.gamma,".1f")+'\n')
+            file_out.write(
+                'Directionality (Dysthe)      :: beta             :: '+format(self.beta,".5f")+'\n')
+            file_out.write(
+                'Random phases generation     :: random_phases    :: '+format(self.random_phases,".0f")+'\n')
+
+            file_out.write('--- Output files \n')
+            file_out.write(
+                'Tecplot version              :: tecplot          :: 11\n')
+            file_out.write(
+                'Output: 1-dim. ; 0-nondim.   :: i_out_dim        :: 1\n')
+            file_out.write(
+                '3d free surface quantities   :: i_3d             :: 1\n')
+            file_out.write(
+                '3d modes                     :: i_a_3d           :: 0\n')
+            file_out.write(
+                '2d free surface, center line :: i_2d             :: 0\n')
+            file_out.write(
+                'Wave probes in domain        :: i_prob           :: 0\n')
+            file_out.write(
+                'Swense output 1="yes",0="no" :: i_sw             :: 0\n')
         return output_file, folder
 
 class WW3_grid(InputFileWriter):
