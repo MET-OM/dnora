@@ -192,7 +192,8 @@ class SWASH(InputFileWriter):
 
 class HOS_ocean(InputFileWriter):
     def __init__(self, xlen=80, ylen=20,T_stop=100,f_out=1,toler=1.0e-7,n=4,Ta=0,
-    depth = 100, Tp_real=10,Hs_real=4.5,gamma=3.3,beta=0.78,random_phases=1):
+    depth = 100, Tp_real=10,Hs_real=4.5,gamma=3.3,beta=0.78,random_phases=1,
+    tecplot=11,i_out_dim=1,i_3d=1,i_a_3d=0,i_2d=1,i_prob=0,i_sw=0):
 
         self.xlen = xlen
         self.ylen = ylen
@@ -207,6 +208,13 @@ class HOS_ocean(InputFileWriter):
         self.gamma = gamma
         self.beta = beta
         self.random_phases = random_phases
+        self.tecplot = tecplot
+        self.i_out_dim = i_out_dim
+        self.i_3d = i_3d
+        self.i_a_3d = i_a_3d
+        self.i_2d = i_2d
+        self.i_prob = i_prob
+        self.i_sw = i_sw
         return
 
     def _preferred_format(self):
@@ -267,19 +275,19 @@ class HOS_ocean(InputFileWriter):
 
             file_out.write('--- Output files \n')
             file_out.write(
-                'Tecplot version              :: tecplot          :: 11\n')
+                'Tecplot version              :: tecplot          :: '+format(self.tecplot,".0f")+'\n')
             file_out.write(
-                'Output: 1-dim. ; 0-nondim.   :: i_out_dim        :: 1\n')
+                'Output: 1-dim. ; 0-nondim.   :: i_out_dim        :: '+format(self.i_out_dim,".0f")+'\n')
             file_out.write(
-                '3d free surface quantities   :: i_3d             :: 1\n')
+                '3d free surface quantities   :: i_3d             :: '+format(self.i_3d,".0f")+'\n')
             file_out.write(
-                '3d modes                     :: i_a_3d           :: 0\n')
+                '3d modes                     :: i_a_3d           :: '+format(self.i_a_3d,".0f")+'\n')
             file_out.write(
-                '2d free surface, center line :: i_2d             :: 0\n')
+                '2d free surface, center line :: i_2d             :: '+format(self.i_2d,".0f")+'\n')
             file_out.write(
-                'Wave probes in domain        :: i_prob           :: 0\n')
+                'Wave probes in domain        :: i_prob           :: '+format(self.i_prob,".0f")+'\n')
             file_out.write(
-                'Swense output 1="yes",0="no" :: i_sw             :: 0\n')
+                'Swense output 1="yes",0="no" :: i_sw             :: '+format(self.i_sw,".0f")+'\n')
         return output_file, folder
 
 class WW3_grid(InputFileWriter):
