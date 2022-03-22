@@ -193,7 +193,7 @@ class SWASH(InputFileWriter):
 class HOS_ocean(InputFileWriter):
     def __init__(self, xlen=80, ylen=20,T_stop=100,f_out=1,toler=1.0e-7,n=4,Ta=0,
     depth = 100, Tp_real=10,Hs_real=4.5,gamma=3.3,beta=0.78,random_phases=1,
-    tecplot=11,i_out_dim=1,i_3d=1,i_a_3d=0,i_2d=1,i_prob=0,i_sw=0):
+    tecplot=11,i_out_dim=1,i_3d=1,i_a_3d=0,i_2d=0,i_prob=0,i_sw=0):
 
         self.xlen = xlen
         self.ylen = ylen
