@@ -15,6 +15,7 @@ grid = grd.Grid(lon=(4.00, 5.73), lat=(60.53, 61.25), name='Skjerjehamn300')
 grid.set_spacing(dm=300)
 
 # Import topography and mesh it down to the grid definitions
+
 #grid.import_topo(topo_reader=grd.read.EMODNET2018(tile='D5',
 #                                    folder='/home/konstantinosc/bathy/'))
 topo_reader=grd.read.EMODNET_MFDATA('/lustre/storeB/project/fou/om/WW3/bathy/emodnet_115m_x_115m/*2018.dtm')
@@ -54,3 +55,8 @@ grid.import_topo(topo_reader=topo_reader)
 # # SWAN RUN
 # # =============================================================================
 # model.run_model()
+
+# SWAN RUN
+# =============================================================================
+#model.run_model()
+

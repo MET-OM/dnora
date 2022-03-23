@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from .fvgrid import read_sms_mesh
 #import utm
 from typing import Tuple
+import numpy as np
 
 class TriangReader(ABC):
     """Abstract class for reading the triangular object."""
@@ -41,8 +42,37 @@ class SmsReader(TriangReader):
         tri, nodes, X, Y, Z, types, nodeStrings = read_sms_mesh(self.filename, nodestrings=True)
 
         lat, lon = utm.to_latlon(X, Y, 33, zone_letter = 'W', strict = False)
-        nodeStrings=nodeStrings[0]
+        if len(nodeStrings) > 0:
+            nodeStrings=nodeStrings[0]
         return tri, nodes, lon, lat, types, nodeStrings
 
     def __str__(self):
         return "Reading triangular grid from SMS-file."
+
+class MshReader(TriangReader):
+    def __init__(self, filename: str):
+        self.filename = copy(filename)
+        return
+
+    def __call__(self) -> Tuple:
+
+        import meshio
+        mesh = meshio.read(self.filename)
+
+        for cell in mesh.cells:
+            if cell.type == 'vertex': # Boundary points
+                nodeStrings = cell.data[:,0]
+            elif cell.type == 'triangle':
+                tri = cell.data
+
+        lon = mesh.points[:,0]
+        lat = mesh.points[:,1]
+        #Z = mesh.points[:,2]
+
+        types = None # This is not used in DNORA and I have no idea what it is
+        nodes = np.array((range(len(mesh.points[:,0]))))+1
+
+        return tri, nodes, lon, lat, types, nodeStrings
+
+    def __str__(self):
+        return "Reading triangular grid from Msh-file."

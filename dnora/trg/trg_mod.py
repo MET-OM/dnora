@@ -8,6 +8,7 @@ from .write import TrGridWriter
 from .boundary import BoundarySetter, ClearBoundary
 from .plot import TrGridPlotter, TriTopoPlotter
 from ..grd.mesh import Mesher, Interpolate
+from ..grd.grd_mod import force_to_xyz
 from .. import msg
 from ..aux import create_filename_obj, check_if_folder, add_folder_to_filename
 from ..defaults import dflt_grd
@@ -37,15 +38,27 @@ class Grid:
         msg.header(topo_reader, "Importing topography...")
         print(topo_reader)
         topo, lon, lat = topo_reader(min(self.lon()), max(self.lon()), min(self.lat()), max(self.lat()))
-        topo[topo < 0] = 0
-        coords_dict = {'lon': lon, 'lat': lat}
-        vars_dict = {'topo': (['lat', 'lon'], topo)}
+
+        topo, lon, lat = force_to_xyz(topo, lon, lat)
+
+        # Depth is positive, so set everything that is not positive to nan
+        topo[topo<=0]=np.nan
+
+        # This was used for structured topography
+        #coords_dict = {'lon': lon, 'lat': lat}
+        #vars_dict = {'topo': (['lat', 'lon'], topo)}
+
+        points = [x for x in range(len(lon))]
+        coords_dict = {'points': points}
+        vars_dict = {'topo': (['points'], topo), 'lon': (['points'], lon), 'lat': (['points'], lat)}
         self.rawdata = xr.Dataset(
                     coords=(coords_dict
                     ),
                     data_vars=(vars_dict
                     ),
                     )
+
+
         return
 
     def append_boundary(self, boundary_setter: BoundarySetter) -> None:
@@ -93,16 +106,16 @@ class Grid:
             return
 
 
-    def plot_grid(self, grid_plotter: TrGridPlotter=None) -> None:
-        self._grid_plotter = grid_plotter or self._get_grid_plotter()
-
-        if self._grid_plotter is None:
-            raise Exception('Define a TrGridPlotter!')
-
-        fig, filename = self._grid_plotter(self)
-        fig.show()
-
-        return
+    # def plot_grid(self, grid_plotter: TrGridPlotter=None) -> None:
+    #     self._grid_plotter = grid_plotter or self._get_grid_plotter()
+    #
+    #     if self._grid_plotter is None:
+    #         raise Exception('Define a TrGridPlotter!')
+    #
+    #     fig, filename = self._grid_plotter(self)
+    #     fig.show()
+    #
+    #     return
 
 
     def name(self):
@@ -125,7 +138,7 @@ class Grid:
         if hasattr(self, 'rawdata') and hasattr(self.rawdata, 'topo'):
             return copy(self.rawdata.topo.values)
         else:
-            return None
+            return np.array([])
 
     def raw_lon(self):
         """Returns a longitude vector of the unmeshed imported topography."""
@@ -145,7 +158,22 @@ class Grid:
         if hasattr(self, '_nodes'):
             return copy(self._nodes)
         else:
-            return None
+            return np.array([])
+
+    def ny(self) -> int:
+        """Return the number of points in longitude direction."""
+        return len(self.lat())
+
+
+    def nx(self) -> int:
+        """Return the number of points in latitude direction."""
+        return 1
+
+    def size(self) -> tuple:
+        """Returns the size (nx, ny) of the grid."""
+        #return self.land_sea_mask().shape
+        return (self.ny(), self.nx())
+
 
     def topo(self):
         """Returns an array containing the meshed topography."""
@@ -221,5 +249,42 @@ class Grid:
 
         return ''
 
-    def _get_grid_plotter(self) -> TrGridPlotter:
-        return TriTopoPlotter()
+    def __repr__(self):
+        lines = [f"<dnora Grid object> (unstructured)", f"  Name: {self.name()}"]
+
+        if self.topo().shape==(0,):
+            empty_topo = True
+        elif np.mean(self.topo()) == 9999:
+            empty_topo = True
+        else:
+            empty_topo = False
+
+        if self.raw_topo().shape==(0,):
+            empty_raw_topo = True
+        elif np.mean(self.raw_topo()) == 9999:
+            empty_raw_topo = True
+        else:
+            empty_raw_topo = False
+
+        if len(self.nodes())>0:
+            lines.append(f"  Number of points: {self.nodes().shape[0]}")
+            lines.append(f"  Number of triangles: {self.tri().shape[0]}")
+        else:
+            lines.append(f"  Number of points: Use method .import_triang() to set structure.")
+        lines.append(f"  Data:")
+        if not empty_raw_topo:
+            lines.append(f'\traw_topo: {self.raw_topo().shape}')
+        else:
+            lines.append(f'\traw_topo: import using .import_topo()')
+        if not empty_topo:
+            lines.append(f'\ttopo {self.topo().shape}')
+        else:
+            lines.append(f'\ttopo: mesh using .mesh_grid()')
+
+        lines.append('\n  Use print() for grid details.')
+
+        return "\n".join(lines)
+
+
+    # def _get_grid_plotter(self) -> TrGridPlotter:
+    #     return TriTopoPlotter()

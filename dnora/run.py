@@ -41,3 +41,16 @@ class SWASH(ModelExecuter):
         print('Running SWASH----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>')
         p = Popen(['swashrun', '-input', input_file], cwd=model_folder)
         p.wait()
+
+class HOS_ocean(ModelExecuter):
+    def __init__(self):
+        return
+
+    def _preferred_format(self) -> str:
+        """For generation of file name."""
+        return 'HOS_ocean'
+
+    def __call__(self, input_file: str, model_folder: str) -> None:
+        print('Running HOS_ocean------------------->>>>>>>>>>>>>>>>>>>>>>>>>>')
+        p = Popen(['HOS-ocean'],cwd=model_folder)
+        p.wait()

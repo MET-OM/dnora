@@ -31,19 +31,30 @@ Installing **dnora**
   $ conda config --add channels conda-forge
   $ conda env create -f environment.yml
   $ conda activate dnora
+  
+To update the enviroment using a new environment.yml, run:
+
+.. code-block:: bash
+
+   $ conda env update --file environment.yml --prune
+
 
 
 Dependencies
 =====================================
-1. Installation of **SWAN**. The latest SWAN version can be downloaded from https://sourceforge.net/projects/swanmodel/files/swan/. The installation procedure can be found in: https://swanmodel.sourceforge.io/online_doc/swanimp/node4.html
+1. Installation of **SWAN**. The latest SWAN version can be downloaded from https://sourceforge.net/projects/swanmodel/files/swan/ . The installation procedure can be found in: https://swanmodel.sourceforge.io/online_doc/swanimp/node4.html
 
-2. Installation of **SWASH**. The latest SWASH version can be downloaded from https://sourceforge.net/projects/swash/. The installation procedure can be found in: https://swash.sourceforge.io/online_doc/swashimp/node4.html
+2. Installation of **SWASH**. The latest SWASH version can be downloaded from https://sourceforge.net/projects/swash/ . The installation procedure can be found in: https://swash.sourceforge.io/online_doc/swashimp/node4.html
+
+3. Installation of **HOS-ocean**. The latest HOS-ocean version can be downloaded from https://github.com/LHEEA/HOS-ocean . The installation procedure can be found in: https://github.com/LHEEA/HOS-ocean/wiki/Installation
 
 To run the models within dnora, the paths, where the models are installed, need to be defined in .bashrc, e.g., ::
 
    export PATH=${PATH}:/home/user/Programs/swan
    export PATH=${PATH}:/home/user/Programs/swash
-
+   export PATH=${PATH}:/home/user/Programs/HOS-ocean/bin
+   
+  
 .. code-block:: rst
 
 3. Fimex is a the File Interpolation, Manipulation and EXtraction library for gridded geospatial data (more info in \url{httpshttps://wiki.met.no/fimex/start}). Fimex is applied in DNORA for the preparation of forcing fields (wind and current). In case of running the spectral model without wind forcing, the fimex installation can be neglected.  A detailed installation procedure can be find in https://wiki.met.no/fimex/install. For a quick installation in linux-Ubuntu, you can follow the steps: open the Synaptic Package Manager (add ppa:met-norway/fimex to your system's Software Sources, see https://launchpad.net/~met-norway/+archive/ubuntu/fimex), search and mark for installation a latest version of fimex, apply installation and check the installation (usually it is installed in /usr/bin/) by typing in command line: fimex or fimex-xxx where xxx is the version number. In case that only fimex-xxx works then add a symbolic link::
