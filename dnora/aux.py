@@ -320,7 +320,7 @@ def create_time_stamps(start_time: str, end_time: str, stride: int, hours_per_fi
 
     # FIND FILE STAMPS
     start_stamp = pd.Timestamp(start_time) - pd.DateOffset(hours=lead_time)
-    if last_file is not '':
+    if last_file != '':
         end_stamp = pd.Timestamp(last_file)
 
         # E.g. we want to start a forecast at 06:00 but the last (and only) file is 00:00
