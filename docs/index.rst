@@ -56,6 +56,8 @@ To run the models within dnora, the paths, where the models are installed, need 
    export PATH=${PATH}:/home/user/Programs/swash
    export PATH=${PATH}:/home/user/Programs/HOS-ocean/bin
    
+   source ~/.bashrc
+   
   
 .. code-block:: rst
 
