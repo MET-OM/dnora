@@ -8,11 +8,11 @@ Welcome to dnora's documentation!
 **dnora** is a Python package for dynamical downscaling of NORA wave hindcast using the spectral wave models SWAN or WAVEWATCH III and wave-flow model SWASH. 
 
 The package contains functions that: 
-  * create a high-resolution grid using open-access bathymetry/topography datasets (e.g., Emodnet 2018 bathymetry)
-  * prepare the boundary conditions (NORA3, WAM4-operational wave model at MET Norway, available in https://thredds.met.no/thredds/catalog.html) for the spectral model
-  * prepare the wind (NORA3, WAM4) forcing for the spectral model 
-  * create input parameter files (e.g., .swn, .inp, .sws) for the models
-  * run the wave model
+  * create a high-resolution grid using open-access bathymetry/topography datasets,
+  * prepare the boundary conditions (NORA3, WAM4-operational wave model at MET Norway, available in https://thredds.met.no/thredds/catalog.html) for the spectral models (SWAN, WW3)
+  * prepare the wind (NORA3, WAM4) forcing for the spectral models 
+  * create input parameter files (e.g., .swn, .inp, .sws) for the spectral and phase-resolving models (SWAN, WW3, SWASH, HOS-ocean)
+  * run the wave models
 
 Installing **dnora**
 =============================================
@@ -44,9 +44,11 @@ Dependencies
 =====================================
 1. Installation of **SWAN**. The latest SWAN version can be downloaded from https://sourceforge.net/projects/swanmodel/files/swan/ . The installation procedure can be found in: https://swanmodel.sourceforge.io/online_doc/swanimp/node4.html
 
-2. Installation of **SWASH**. The latest SWASH version can be downloaded from https://sourceforge.net/projects/swash/ . The installation procedure can be found in: https://swash.sourceforge.io/online_doc/swashimp/node4.html
+2. Installation of **WAVEWATCH III**. The latest model version can be downloaded from https://github.com/NOAA-EMC/WW3 . The installation procedure can be found in: https://github.com/NOAA-EMC/WW3/wiki/Quick-Start
 
-3. Installation of **HOS-ocean**. The latest HOS-ocean version can be downloaded from https://github.com/LHEEA/HOS-ocean . The installation procedure can be found in: https://github.com/LHEEA/HOS-ocean/wiki/Installation
+3. Installation of **SWASH**. The latest model version can be downloaded from https://sourceforge.net/projects/swash/ . The installation procedure can be found in: https://swash.sourceforge.io/online_doc/swashimp/node4.html
+
+4. Installation of **HOS-ocean**. The latest HOS-ocean version can be downloaded from https://github.com/LHEEA/HOS-ocean . The installation procedure can be found in: https://github.com/LHEEA/HOS-ocean/wiki/Installation
 
 To run the models within dnora, the paths, where the models are installed, need to be defined in .bashrc, e.g., ::
 
@@ -57,7 +59,7 @@ To run the models within dnora, the paths, where the models are installed, need 
   
 .. code-block:: rst
 
-3. Fimex is a the File Interpolation, Manipulation and EXtraction library for gridded geospatial data (more info in \url{httpshttps://wiki.met.no/fimex/start}). Fimex is applied in DNORA for the preparation of forcing fields (wind and current). In case of running the spectral model without wind forcing, the fimex installation can be neglected.  A detailed installation procedure can be find in https://wiki.met.no/fimex/install. For a quick installation in linux-Ubuntu, you can follow the steps: open the Synaptic Package Manager (add ppa:met-norway/fimex to your system's Software Sources, see https://launchpad.net/~met-norway/+archive/ubuntu/fimex), search and mark for installation a latest version of fimex, apply installation and check the installation (usually it is installed in /usr/bin/) by typing in command line: fimex or fimex-xxx where xxx is the version number. In case that only fimex-xxx works then add a symbolic link::
+3. Fimex is a the File Interpolation, Manipulation and EXtraction library for gridded geospatial data (more info in \url{httpshttps://wiki.met.no/fimex/start}). Fimex is applied in DNORA for the preparation of forcing fields (wind). **In case of running the spectral model without wind forcing, the fimex installation can be neglected**.  A detailed installation procedure can be find in https://wiki.met.no/fimex/install. For a quick installation in linux-Ubuntu, you can follow the steps: open the Synaptic Package Manager (add ppa:met-norway/fimex to your system's Software Sources, see https://launchpad.net/~met-norway/+archive/ubuntu/fimex), search and mark for installation a latest version of fimex, apply installation and check the installation (usually it is installed in /usr/bin/) by typing in command line: fimex or fimex-xxx where xxx is the version number. In case that only fimex-xxx works then add a symbolic link::
 
       cd /usr/bin 
       sudo ln -s fimex-xxx fimex
