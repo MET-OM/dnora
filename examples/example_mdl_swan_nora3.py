@@ -18,7 +18,7 @@ grid.set_spacing(dm=300)
 
 #grid.import_topo(topo_reader=grd.read.EMODNET2018(tile='D5',
 #                                    folder='/home/konstantinosc/bathy/'))
-topo_reader=grd.read.EMODNET_MFDATA('/lustre/storeB/project/fou/om/WW3/bathy/emodnet_115m_x_115m/*2018.dtm')
+topo_reader=grd.read.EMODNET2020(tile='*')
 grid.import_topo(topo_reader=topo_reader)
 # This can be used to get an empty topography for testing
 #grid.import_topo(topo_reader=grd.read.EmptyTopo(grid=grid))
