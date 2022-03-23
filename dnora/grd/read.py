@@ -124,11 +124,15 @@ class EMODNET_MFDATA(TopoReader):
             EMODNET tiles overlap by two cells on each boundary.
             """
             return ds.isel(lon=slice(2, -1), lat=slice(2, -1))
+            #return ds.isel(COLUMNS=slice(2, -1), LINES=slice(2, -1))
 
         import dask
         with dask.config.set(**{'array.slicing.split_large_chunks': False}):
             with xr.open_mfdataset(self.source, preprocess=_crop) as ds:
                 ds = ds.sel(lon=slice(lon0, lon1), lat=slice(lat0, lat1))
+                #topo = -1 * ds.DEPTH.values
+                #topo_lon = ds.COLUMNS.values
+                #topo_lat = ds.LINES.values
                 topo = -1 * ds.elevation.values
                 topo_lon = ds.lon.values
                 topo_lat = ds.lat.values
