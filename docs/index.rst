@@ -131,13 +131,19 @@ Information about the boundary points that are set in the grid can be accessed u
 Importing bathymetrical data
 =====================================
 
-The main idea is that the Grid-object is created, and a fixed set of methods are used to import a topography, mesh it down to a grid, or filter the data. The functionality of these methods are controlled by passing them a callable object. Adding e.g. a topography source thus means adding a new ``TopoReader``-class that can then me passed to the ``Grid``-object’s ``.import_topo()``-method. For now, only the ``EMODNET2018``-reader is available::
+The main idea is that the Grid-object is created, and a fixed set of methods are used to import a topography, mesh it down to a grid, or filter the data. The functionality of these methods are controlled by passing them a callable object. Adding e.g. a topography source thus means adding a new ``TopoReader``-class that can then me passed to the ``Grid``-object’s ``.import_topo()``-method. Different bathymetry options such as the ``EMODNET2018``,``EMODNET2020`` (possible to read multiple files using tile='*'),``KartverketNo50m``,``GEBCO2021``-readers are available::
 
-   grid.import_topo(topo_reader=grd.read.EMODNET2018(tile='D5'))
+
+   topo_reader=grd.read.EMODNET2018(tile='D5',folder='/home/user/bathy/')
+   topo_reader=grd.read.EMODNET2020(tile='D5',folder='/home/user/bathy/')
+   topo_reader=grd.read.GEBCO2021(tile='n66.357421875_s57.041015625_w0.703125_e10.37109375',folder='/home/user/bathy/')
+   topo_reader=grd.read.KartverketNo50m(tile='B1008',folder='/home/user/bathy/')
+
+   grid.import_topo(topo_reader=topo_reader)
 
 .. code-block:: rst
 
-where the tile defines the geographical area (default 'C5'). This "raw" data can be processed by the ``.process_topo()`` command, taking a ``GridProcessor`` object. The data can me meshed to the desired grid definition by::
+where the tile indicates the geographical area. This "raw" data can be processed by the ``.process_topo()`` command, taking a ``GridProcessor`` object. The data can me meshed to the desired grid definition by::
 
    grid.mesh_grid()
    
@@ -154,7 +160,7 @@ The default (and currently only available) ``GridMesher`` uses interpolation, an
 Creating a ModelRun-object
 =====================================
 
-The ``ModelRun``-object is the second central object and contain all forcing and boundary data. This object is always defined for a certain grid and a certain time::
+The ``ModelRun``-object is the second central object and contain all forcing and boundary data. This object is always defined for a certain grid and a certain time (if start_time/end_time is not given, it assumes default values::
 
    model = mdl.ModelRun(grid, start_time='2018-08-25T00:00', end_time='2018-08-25T01:00')
 
