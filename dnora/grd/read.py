@@ -120,6 +120,7 @@ class KartverketNo50m(TopoReader):
         Can be found at:
         https://kartkatalog.geonorge.no/metadata/dybdedata-terrengmodeller-50-meters-grid-landsdekkende/bbd687d0-d34f-4d95-9e60-27e330e0f76e
 
+        Contributed by: https://github.com/emiliebyer
         """
 
     def __init__(self, expansion_factor: float=1.2, utmzone: int=33,
@@ -197,6 +198,8 @@ class GEBCO2021(TopoReader):
         providing elevation data, in meters, on a 15 arc-second interval grid.
         Reference: GEBCO Compilation Group (2021) GEBCO 2021 Grid (doi:10.5285/c6612cbe-50b3-0cff- e053-6c86abc09f8f)
         Data (in netCDF format) can be downloaded here: https://www.gebco.net/data_and_products/gridded_bathymetry_data/
+
+        Contributed by: https://github.com/emiliebyer
     """
     def __init__(self, expansion_factor: float=1.2, tile: str='n61.0_s59.0_w4.0_e6.0', folder: str='/lustre/storeB/project/fou/om/WW3/bathy/gebco2021'):
         self.source=f'{folder}/gebco_2021_{tile}.nc'
@@ -250,6 +253,8 @@ class EMODNET2020(TopoReader):
     """Reads bathymetry from multiple EMODNET tiles in netcdf format.
 
     For reading several files at once, supply the 'tile' argument with a glob pattern, e.g. 'C*'.
+
+    Contributed by: https://github.com/poplarShift
     """
 
     def __init__(self, tile: str='C5', expansion_factor: float=1.2, folder: str='/lustre/storeB/project/fou/om/WW3/bathy/emodnet2020') -> Tuple:
@@ -269,7 +274,7 @@ class EMODNET2020(TopoReader):
             return ds.isel(lon=slice(2, -1), lat=slice(2, -1))
 
         import dask
-        with dask.config.set(**{'array.slicing.split_large_chunks': False}):
+        with dask.config.set(**{'array.slicing.split_large_chunks': True}):
             with xr.open_mfdataset(self.source, preprocess=_crop) as ds:
                 ds = ds.sel(lon=slice(lon0, lon1), lat=slice(lat0, lat1))
                 topo = -1 * ds.elevation.values
