@@ -191,12 +191,12 @@ class SWASH(InputFileWriter):
         return output_file, folder
 
 class HOS_ocean(InputFileWriter):
-    def __init__(self, xlen=80, ylen=20,T_stop=100,f_out=1,toler=1.0e-7,n=4,Ta=0,
+    def __init__(self,n1=256, n2=64, xlen=None, ylen=80,T_stop=100,f_out=1,toler=1.0e-7,n=4,Ta=0,
     depth = 100, Tp_real=10,Hs_real=4.5,gamma=3.3,beta=0.78,random_phases=1,
     tecplot=11,i_out_dim=1,i_3d=1,i_a_3d=0,i_2d=0,i_prob=0,i_sw=0):
 
-        self.xlen = xlen
-        self.ylen = ylen
+        self.n1 = n1 # default is 256 at HOS-ocean-1.5/sources/HOS/variables_3D.f90
+        self.n2 = n2 # default is 256 at HOS-ocean-1.5/sources/HOS/variables_3D.f90
         self.T_stop = T_stop
         self.f_out = f_out
         self.toler = toler
@@ -215,6 +215,12 @@ class HOS_ocean(InputFileWriter):
         self.i_2d = i_2d
         self.i_prob = i_prob
         self.i_sw = i_sw
+        if xlen is None:
+            self.xlen = (self.n1*9.81*self.Tp_real**2)/(8*2*np.pi) # according to n1*2*np.pi/xlen = 5 k_p
+            self.ylen = (self.n2*9.81*self.Tp_real**2)/(8*2*np.pi)
+        else:
+            self.xlen = xlen
+            self.ylen = ylen
         return
 
     def _preferred_format(self):
