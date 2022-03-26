@@ -13,9 +13,8 @@ model = mdl.HOS_ocean(grid=grid)
 # =============================================================================
 # WRITE OUTPUT FOR HOS-ocean RUN
 # =============================================================================
-model.write_input_file(input_file_writer=inp.HOS_ocean(
-                       xlen=80, ylen=20,T_stop=100,f_out=1,
-                       depth = 100, Tp_real=10.5,Hs_real=4.0))
+model.write_input_file(input_file_writer=inp.HOS_ocean(xlen=80, ylen=20,
+                                 T_stop=300,Tp_real=10,Hs_real=2,Ta=100))
 # =============================================================================
 # =============================================================================
 # HOS-ocean RUN
