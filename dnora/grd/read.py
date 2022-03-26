@@ -3,7 +3,6 @@ from __future__ import annotations
 import xarray as xr
 import pandas as pd
 import utm
-import os
 from copy import copy
 from abc import ABC, abstractmethod
 import numpy as np
@@ -131,7 +130,7 @@ class KartverketNo50m(TopoReader):
         self.source=f'{folder}/{tile}_grid50_utm33.xyz'
         self.expansion_factor = expansion_factor
         self.utmzone = utmzone
-        
+
         return
 
     def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
