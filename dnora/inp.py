@@ -39,7 +39,7 @@ class SWAN(InputFileWriter):
         self.calib_wind = calib_wind
         self.calib_wcap = calib_wcap
         self.wind = wind
-        self.spec_points = spec_points
+        self.spec_points = spec_points # list of (lon, lat) points, e.g.,[(4.4, 60.6),(4.4, 60.8)] 
 
         return
 
