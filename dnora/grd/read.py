@@ -3,6 +3,7 @@ from __future__ import annotations
 import xarray as xr
 import pandas as pd
 import utm
+import os
 from copy import copy
 from abc import ABC, abstractmethod
 import numpy as np
@@ -120,6 +121,8 @@ class KartverketNo50m(TopoReader):
         Can be found at:
         https://kartkatalog.geonorge.no/metadata/dybdedata-terrengmodeller-50-meters-grid-landsdekkende/bbd687d0-d34f-4d95-9e60-27e330e0f76e
 
+        For reading several files at once, supply the 'tile' argument with a glob pattern, e.g. 'B*'.
+
         Contributed by: https://github.com/emiliebyer
         """
 
@@ -128,6 +131,7 @@ class KartverketNo50m(TopoReader):
         self.source=f'{folder}/{tile}_grid50_utm33.xyz'
         self.expansion_factor = expansion_factor
         self.utmzone = utmzone
+        
         return
 
     def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
@@ -137,7 +141,8 @@ class KartverketNo50m(TopoReader):
 
         print(f'Expansion factor: {self.expansion_factor}')
 
-        df = pd.read_csv(self.source, sep= ' ', header=None)
+        import dask.dataframe as dd
+        df = dd.read_csv(self.source, sep= ' ', header=None)
         df.columns = ['x','y','z']
         x = np.array(df['x'].astype(float))
         y = np.array(df['y'].astype(float))
