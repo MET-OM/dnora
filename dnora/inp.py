@@ -34,11 +34,12 @@ class InputFileWriter(ABC):
         pass
 
 class SWAN(InputFileWriter):
-    def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, wind=True):
+    def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, wind=True, spec_points=None):
 
         self.calib_wind = calib_wind
         self.calib_wcap = calib_wcap
         self.wind = wind
+        self.spec_points = spec_points # list of (lon, lat) points, e.g.,[(4.4, 60.6),(4.4, 60.8)] 
 
         return
 
@@ -52,8 +53,6 @@ class SWAN(InputFileWriter):
         if forcing is None and self.wind == True:
             msg.info('No forcing object provided. Wind information will NOT be written to SWAN input file!')
             self.wind = False
-
-
 
         # Define start and end times of model run
         DATE_START = start_time
@@ -116,6 +115,14 @@ class SWAN(InputFileWriter):
             file_out.write(
                 'LAY 1 HSIGN RTP TPS PDIR TM01 DIR DSPR WIND DEP OUTPUT ' + STR_START + ' 1 HR \n')
             file_out.write('$ \n')
+            if self.spec_points is  not None:
+                file_out.write('POINTS \'pkt\' &\n')
+                for i in range(len(self.spec_points)):
+                    file_out.write(str(self.spec_points[i][0])+' '+str(self.spec_points[i][1])+ ' &\n')
+                file_out.write('SPECOUT \'pkt\' SPEC2D ABS \''+add_folder_to_filename(grid.name()+'_'+STR_START.split('.')[0]+'_spec.nc',forcing_folder)+ '\' & \n')
+                file_out.write('OUTPUT ' + STR_START + ' 1 HR \n')
+            else:
+                pass
             file_out.write('COMPUTE '+STR_START+' 10 MIN ' + STR_END + '\n')
             file_out.write('STOP \n')
 
@@ -191,12 +198,12 @@ class SWASH(InputFileWriter):
         return output_file, folder
 
 class HOS_ocean(InputFileWriter):
-    def __init__(self, xlen=80, ylen=20,T_stop=100,f_out=1,toler=1.0e-7,n=4,Ta=0,
+    def __init__(self,n1=256, n2=64, xlen=None, ylen=80,T_stop=100,f_out=1,toler=1.0e-7,n=4,Ta=0,
     depth = 100, Tp_real=10,Hs_real=4.5,gamma=3.3,beta=0.78,random_phases=1,
     tecplot=11,i_out_dim=1,i_3d=1,i_a_3d=0,i_2d=0,i_prob=0,i_sw=0):
 
-        self.xlen = xlen
-        self.ylen = ylen
+        self.n1 = n1 # default is 256 at HOS-ocean-1.5/sources/HOS/variables_3D.f90
+        self.n2 = n2 # default is 256 at HOS-ocean-1.5/sources/HOS/variables_3D.f90
         self.T_stop = T_stop
         self.f_out = f_out
         self.toler = toler
@@ -215,6 +222,12 @@ class HOS_ocean(InputFileWriter):
         self.i_2d = i_2d
         self.i_prob = i_prob
         self.i_sw = i_sw
+        if xlen is None:
+            self.xlen = (self.n1*9.81*self.Tp_real**2)/(8*2*np.pi) # according to n1*2*np.pi/xlen = 5 k_p
+            self.ylen = (self.n2*9.81*self.Tp_real**2)/(8*2*np.pi)
+        else:
+            self.xlen = xlen
+            self.ylen = ylen
         return
 
     def _preferred_format(self):
