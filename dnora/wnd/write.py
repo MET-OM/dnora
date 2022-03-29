@@ -44,13 +44,10 @@ class WW3(ForcingWriter):
         return 'WW3'
 
     def __call__(self, forcing: Forcing, filename: str, folder: str) -> Tuple[str, str]:
-
-
         # Add folder
         output_path = add_folder_to_filename(filename, folder=folder)
         output_path = clean_filename(output_path, list_of_placeholders)
 
-        #msg.to_file(output_path)
         forcing.data.to_netcdf(output_path)
 
         return filename, folder
