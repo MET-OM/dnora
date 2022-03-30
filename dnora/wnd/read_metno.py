@@ -118,8 +118,8 @@ class NORA3(ForcingReader):
 
         # Remove speed and dir and add components to dataset
         wind_forcing = wind_forcing.drop_vars(['wind_speed', 'wind_direction'])
-        wind_forcing["u"] = (['time', 'lat', 'lon'],  u)
-        wind_forcing["v"] = (['time', 'lat', 'lon'],  v)
+        wind_forcing['u'] = u #(['time', 'lat', 'lon'],  u)
+        wind_forcing['v'] = v # (['time', 'lat', 'lon'],  v)
 
         return wind_forcing
 

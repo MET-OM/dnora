@@ -3,6 +3,7 @@ from __future__ import annotations # For TYPE_CHECKING
 import numpy as np
 from copy import copy
 from abc import ABC, abstractmethod
+import utm
 
 # Import objects
 from typing import TYPE_CHECKING, Tuple
@@ -138,6 +139,48 @@ class SWAN(GridWriter):
         grid.write_status(filename=infofilename, folder=folder)
 
         return filename, folder
+
+class Xyz(GridWriter):
+    """Writes the grid to Xyz-format."""
+    def __init__(self, use_raw=False, utm=False):
+        self._use_raw = use_raw
+        self._utm = utm
+        pass
+
+    def __call__(self, grid: Grid, filename: str, infofilename: str, folder: str) -> None:
+
+        #output_file = grid.filename(filestring=filestring, extension='bot')
+        output_path = add_folder_to_filename(filename, folder)
+
+        if self._use_raw:
+            z = grid.raw_topo();
+            x = grid.raw_lon()
+            y = grid.raw_lat()
+        else:
+            z = grid.topo();
+            x = grid.lon()
+            y = grid.lat()
+
+
+
+        with open(output_path, 'w') as f:
+            f.write(f'{filename}\n')
+            for nx, lon in enumerate(x):
+                for ny, lat in enumerate(y):
+                    if self._utm:
+                        [lon_out, lat_out, utm_zone, utm_letter] = utm.from_latlon(lat, lon, 33, 'W')
+                        fmt='.4f'
+                    else:
+                        lon_out=lon
+                        lat_out=lat
+                        fmt='.9f'
+                    if ~np.isnan(z[ny,nx]):
+                        f.write(f'{lon_out:{fmt}},{lat_out:{fmt}},{z[ny,nx]:.1f}\n')
+        #np.savetxt(output_path, grid.topo(), delimiter='\t',fmt='%1.2f')
+        #grid.write_status(filename=infofilename, folder=folder)
+
+        return filename, folder
+
 
 # class SWASH(SWAN):
 #     """Writes the grid to SWASH format.

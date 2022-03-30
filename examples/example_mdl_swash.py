@@ -9,14 +9,14 @@ from dnora import grd, mdl, inp
 # DEFINE GRID OBJECT
 # =============================================================================
 # Set grid definitions
-grid = grd.Grid(lon=(-7.73, -7.4), lat=(62.0, 62.165), name='Mykines10')
+grid = grd.Grid(lon=(12.25, 12.39), lat=(44.75, 44.85), name='Gorino25')
 
 # Set spacing and boundary points
-grid.set_spacing(dm=10)
+grid.set_spacing(dm=25)
 
 # Import topography and mesh it down to the grid definitions
-grid.import_topo(topo_reader=grd.read.EMODNET2018(tile='C3',
-                                    folder='/home/konstantinosc/bathy/'))
+grid.import_topo(topo_reader=grd.read.EMODNET2020(tile='E5',
+                                    folder='/home/konstac/bathy/'))
 grid.mesh_grid()
 
 # =============================================================================
@@ -27,7 +27,7 @@ model = mdl.SWASH(grid, start_time='2018-08-25T00:00', end_time='2018-08-25T02:0
 # =============================================================================
 # PLOT GRID, FORCING AND BOUNDARIES
 # =============================================================================
-model.plot_grid()
+model.plot_grid(save_fig=True,show_fig=False)
 
 # =============================================================================
 # WRITE OUTPUT FOR SWASH RUN

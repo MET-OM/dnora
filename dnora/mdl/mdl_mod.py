@@ -30,7 +30,7 @@ from ..aux import create_filename_obj, create_filename_time, add_folder_to_filen
 from ..bnd.process import processor_for_convention_change
 
 class ModelRun:
-    def __init__(self, grid: Grid, start_time: str, end_time: str, name='AnonymousModelRun'):
+    def __init__(self, grid: Grid, start_time: str='1970-01-01T00:00', end_time: str='2030-12-31T23:59', name: str='AnonymousModelRun'):
         self._name = copy(name)
         self._grid = copy(grid)
         self.start_time = copy(start_time)
@@ -76,6 +76,10 @@ class ModelRun:
     def export_grid(self, grid_writer: Union[GridWriter, TrGridWriter]=None, out_format: str=None, filename: str=None, infofilename: str=None, folder: str=None) -> None:
         """Writes the grid data in the Grid-object to an external source,
         e.g. a file."""
+
+        if len(self.grid().topo())==0:
+            msg.warning('Grid not meshed so nothing to export!')
+            return
 
         # Try to use defaul grid writer if not provided
         self._grid_writer = grid_writer or self._get_grid_writer()
@@ -320,6 +324,10 @@ class ModelRun:
         """Plot the data in the Grid-object, possibly overlaying data from the
         Boundary- and Forcing-objects."""
 
+        if len(self.grid().topo())==0:
+            msg.warning('Grid not meshed and nothing to plot!')
+            return
+
         if grid_plotter is None:
             self._grid_plotter = self._get_grid_plotter()
         else:
@@ -331,21 +339,65 @@ class ModelRun:
 
         grid_plot = copy(self.grid())
         if grid_processor is not None:
-            grid_plot.process_grid(grid_processor)
+            grid_plot.process_grid.grid(grid_processor)
 
 
         filename = create_filename_obj(filestring=filestring, objects=[self, self.grid(), self.forcing(), self.boundary()])
 
-        fig, filename_out = self._grid_plotter(grid_plot, forcing=self.forcing(), boundary=self.boundary(), filename=filename, plain=plain)
+        fig, filename_out = self._grid_plotter.grid(grid_plot, forcing=self.forcing(), boundary=self.boundary(), filename=filename, plain=plain)
 
         # Cleans out e.g. #T0 or "__" if they were in the filename
-        filename_out = clean_filename(filename_out, list_of_placeholders)
+        if filename_out is not None:
+            filename_out = clean_filename(filename_out, list_of_placeholders)
 
-        if save_fig:
-            fig.savefig(filename_out, dpi=300)
-            msg.to_file(filename_out)
-        if show_fig:
-            fig.show()
+        if fig is not None:
+            if save_fig:
+                fig.savefig(filename_out, dpi=300)
+                msg.to_file(filename_out)
+            if show_fig:
+                fig.show()
+
+        return
+
+    def plot_topo(self, grid_plotter: GridPlotter=None, grid_processor: GridProcessor=None,
+                plain: bool=True, save_fig: bool=False, show_fig: bool=True,
+                filestring: str=dflt_plt['fs']['Grid']) -> None:
+        """Plot the raw data in the Grid-object, possibly overlaying data from the
+        Boundary- and Forcing-objects."""
+
+
+        if len(self.grid().raw_topo()) == 0:
+            msg.warning('No topography imported so nothing to plot!')
+            return
+
+        if grid_plotter is None:
+            self._grid_plotter = self._get_topo_plotter()
+        else:
+            self._grid_plotter = grid_plotter
+
+        if self._grid_plotter is None:
+            raise Exception('Define a GridPlotter!')
+
+
+        grid_plot = copy(self.grid())
+        if grid_processor is not None:
+            grid_plot.process_grid.topo(grid_processor)
+
+
+        filename = create_filename_obj(filestring=filestring, objects=[self, self.grid(), self.forcing(), self.boundary()])
+
+        fig, filename_out = self._grid_plotter.topo(grid_plot, forcing=self.forcing(), boundary=self.boundary(), filename=filename, plain=plain)
+
+        # Cleans out e.g. #T0 or "__" if they were in the filename
+        if filename_out is not None:
+            filename_out = clean_filename(filename_out, list_of_placeholders)
+
+        if fig is not None:
+            if save_fig:
+                fig.savefig(filename_out, dpi=300)
+                msg.to_file(filename_out)
+            if show_fig:
+                fig.show()
 
         return
 
@@ -472,3 +524,30 @@ class ModelRun:
 
     def _get_grid_plotter(self) -> GridPlotter:
         return TopoPlotter()
+
+    def _get_topo_plotter(self) -> GridPlotter:
+        return TopoPlotter()
+
+    def __repr__(self):
+        lines = [f"<dnora ModelRun object> ({type(self).__name__})", f"  Name: {self.name()}"]
+
+        lines.append(f'  Covering time: {self.start_time} - {self.end_time}')
+
+        lines.append(f"  Contains:")
+        if self.grid().structured():
+            gridtype = 'structured'
+        else:
+            gridtype = 'unstructured'
+
+        lines.append(f'\tgrid object ({gridtype}): {self.grid().name()} {self.grid().size()}')
+        if self.forcing() is not None:
+            lines.append(f'\tforcing object: {self.forcing().name()} {self.forcing().size()}')
+        else:
+            lines.append(f'\tforcing: use .import_forcing()')
+        if self.boundary() is not None:
+            lines.append(f'\tboundary object: {self.boundary().name()} {self.boundary().size()}')
+        else:
+            lines.append(f'\tboundary: use .import_boundary()')
+
+
+        return "\n".join(lines)
