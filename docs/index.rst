@@ -136,13 +136,19 @@ Information about the boundary points that are set in the grid can be accessed u
 Importing bathymetrical data
 =====================================
 
-The main idea is that the Grid-object is created, and a fixed set of methods are used to import a topography, mesh it down to a grid, or filter the data. The functionality of these methods are controlled by passing them a callable object. Adding e.g. a topography source thus means adding a new ``TopoReader``-class that can then me passed to the ``Grid``-object’s ``.import_topo()``-method. Different bathymetry options such as the ``EMODNET2018``,``EMODNET2020``(read several files using tile='*'),``KartverketNo50m``(read several files using tile='*'),``GEBCO2021``-readers are available::
+The main idea is that the Grid-object is created, and a fixed set of methods are used to import a topography, mesh it down to a grid, or filter the data. The functionality of these methods are controlled by passing them a callable object. Adding e.g. a topography source thus means adding a new ``TopoReader``-class that can then me passed to the ``Grid``-object’s ``.import_topo()``-method. Different bathymetry readers such as::
 
+   ``EMODNET2018``: reads files with NetCDF format (version 2018) from https://portal.emodnet-bathymetry.eu/,
+   ``EMODNET2018``: reads files with NetCDF format (version 2020, possible to read several files using tile='*') from https://portal.emodnet-bathymetry.eu/,
+   ``KartverketNo50m``: reads files with xyz format (possible to read several files using tile='*') from https://kartkatalog.geonorge.no/metadata/dybdedata-terrengmodeller-50-meters-grid-landsdekkende/bbd687d0-d34f-4d95-9e60-27e330e0f76e
+   ``GEBCO2021``: reads files with NetCDF format from https://download.gebco.net/
 
-   topo_reader=grd.read.EMODNET2018(tile='D5',folder='/home/user/bathy/')
-   topo_reader=grd.read.EMODNET2020(tile='D5',folder='/home/user/bathy/')
-   topo_reader=grd.read.GEBCO2021(tile='n66.357421875_s57.041015625_w0.703125_e10.37109375',folder='/home/user/bathy/')
-   topo_reader=grd.read.KartverketNo50m(tile='B1008',folder='/home/user/bathy/')
+Examples::
+
+   topo_reader=grd.read.EMODNET2018(tile='D5',folder='/home/user/bathy/') 
+   topo_reader=grd.read.EMODNET2020(tile='D5',folder='/home/user/bathy/') 
+   topo_reader=grd.read.GEBCO2021(tile='n66.357421875_s57.041015625_w0.703125_e10.37109375',folder='/home/user/bathy/') 
+   topo_reader=grd.read.KartverketNo50m(tile='B1008',folder='/home/user/bathy/') 
 
    grid.import_topo(topo_reader=topo_reader)
 
