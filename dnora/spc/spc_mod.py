@@ -36,7 +36,7 @@ class Spectra:
         msg.header(point_picker, "Choosing spectra...")
         inds = point_picker(self.grid, lon_all, lat_all)
 
-        msg.header(spectral_reader, "Loading boundary spectra...")
+        msg.header(spectral_reader, "Loading omnidirectional spectra...")
         time, freq, spec, mdir, spr, lon, lat, source = spectral_reader(self.start_time, self.end_time, inds)
 
         self.data = self.compile_to_xr(time, freq, spec, mdir, spr, lon, lat, source)

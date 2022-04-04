@@ -5,6 +5,7 @@ import re
 from ..grd.grd_mod import Grid
 from ..bnd.bnd_mod import Boundary
 from ..wnd.wnd_mod import Forcing
+from ..spc.spc_mod import Spectra
 
 # Import abstract classes and needed instances of them
 from ..bnd.read import BoundaryReader
@@ -13,6 +14,8 @@ from ..bnd.pick import PointPicker
 
 from ..wnd.read import ForcingReader
 from ..wnd.write import ForcingWriter
+
+from ..spc.read import SpectralReader, BoundaryToSpectra
 
 from ..grd.write import GridWriter
 from ..grd.process import GridProcessor, TrivialFilter
@@ -72,6 +75,30 @@ class ModelRun:
         self.forcing().import_forcing(start_time=self.start_time, end_time=self.end_time, forcing_reader=self._forcing_reader)
 
         return
+
+    def import_spectra(self, spectral_reader: SpectralReader=None, name: str=None) -> None:
+        """Creates a Spectra-object and import omnidirectional spectral data."""
+        self._spectral_reader = spectral_reader or self._get_spectral_reader()
+
+        if self._spectral_reader is None:
+            raise Exception('Define a SpectralReader!')
+
+        # Create forcing object
+        name = name or type(self._spectral_reader).__name__
+        self._spectra = Spectra(grid=self.grid(), name=name)
+
+        # Import the forcing data into the Forcing-object
+        self.spectra().import_spectra(start_time=self.start_time, end_time=self.end_time, spectral_reader=self._spectral_reader)
+
+    def boundary_to_spectra(self):
+        if self.boundary() is None:
+            msg.warning('No Boundary to convert to Spectra!')
+
+        spectral_reader = BoundaryToSpectra(self.boundary())
+        msg.header(spectral_reader, 'Converting the boundary spectra to omnidirectional spectra...')
+        name = self.boundary().name()
+        self.import_spectra(spectral_reader, name)
+
 
     def export_grid(self, grid_writer: Union[GridWriter, TrGridWriter]=None, out_format: str=None, filename: str=None, infofilename: str=None, folder: str=None) -> None:
         """Writes the grid data in the Grid-object to an external source,
@@ -422,6 +449,13 @@ class ModelRun:
         else:
             return None
 
+    def spectra(self) -> Spectra:
+        """Returns the spectral object if exists."""
+        if hasattr(self, '_spectra'):
+            return self._spectra
+        else:
+            return None
+
     def filename(self, filestring: str, datestring: str='', extension: str='') -> str:
         filename = create_filename_obj(filestring=filestring, objects=[self, self.grid(), self.forcing(), self.boundary()])
         filename = create_filename_time(filestring=filename, times=[self.start_time, self.end_time], datestring=datestring)
@@ -508,6 +542,9 @@ class ModelRun:
         return None
 
     def _get_forcing_writer(self) -> ForcingWriter:
+        return None
+
+    def _get_spectral_reader(self) -> SpectralReader:
         return None
 
     def _get_grid_writer(self) -> GridWriter:
