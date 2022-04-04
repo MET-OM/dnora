@@ -77,18 +77,18 @@ class ForceFeed(BoundaryReader):
         self.spec = copy(spec)
         self.lon = copy(lon)
         self.lat = copy(lat)
-        self.convention = copy(convention)
+        self._convention = copy(convention)
         return
 
     def convention(self) -> str:
-        return copy(self.convention)
+        return copy(self._convention)
 
     def get_coordinates(self, start_time) -> Tuple:
         return copy(self.lon), copy(self.lat)
 
     def __call__(self, start_time, end_time, inds) -> Tuple:
-        return  copy(self.time), copy(self).freq, copy(self).dirs, np.reshape(self.spec, (len(self.time), len(self.lon), self.spec.shape[0], self.spec.shape[1])), copy(self.lon), copy(self.lat), ''
-
+        #return  copy(self.time), copy(self.freq), copy(self.dirs), np.reshape(self.spec, (len(self.time), len(self.lon), self.spec.shape[0], self.spec.shape[1])), copy(self.lon), copy(self.lat), ''
+        return  copy(self.time), copy(self.freq), copy(self.dirs), copy(self.spec), copy(self.lon), copy(self.lat), ''
 
 class File_WW3Nc(BoundaryReader):
     def __init__(self, folder: str='', filename: str='ww3_T0', dateftm: str='%Y%m%dT%H%M', stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0) -> None:
