@@ -37,7 +37,7 @@ class WaveParameter(ABC):
         pass
 
     #@abstractmethod
-    def cf_name(self) -> str:
+    def standard_name(self) -> str:
         pass
 
     #@abstractmethod
@@ -74,7 +74,7 @@ class WaveParameter(ABC):
 
         # Set parameter specific attributes
         wave_parameter[self.name()].attrs['unit'] = self.unit()
-        wave_parameter[self.name()].attrs['cf_name'] = self.cf_name()  # None if not defined
+        wave_parameter[self.name()].attrs['standard_name'] = self.standard_name()  # None if not defined
 
         return wave_parameter
 
@@ -120,7 +120,7 @@ class Hs(WaveParameter):
     def unit(self):
         return 'm'
 
-    def cf_name(self):
+    def standard_name(self):
         return 'sea_surface_wave_significant_height'
 
 class Tm01(WaveParameter):
@@ -137,7 +137,7 @@ class Tm01(WaveParameter):
     def unit(self):
         return 's'
 
-    def cf_name(self):
+    def standard_name(self):
         return 'sea_surface_wave_mean_period_from_variance_spectral_density_first_frequency_moment'
 
 class Tm_10(WaveParameter):
@@ -154,7 +154,7 @@ class Tm_10(WaveParameter):
     def unit(self):
         return 's'
 
-    def cf_name(self):
+    def standard_name(self):
         return 'sea_surface_wave_mean_period_from_variance_spectral_density_inverse_frequency_moment'
 
 class Tm02(WaveParameter):
@@ -171,7 +171,7 @@ class Tm02(WaveParameter):
     def unit(self):
         return 's'
 
-    def cf_name(self):
+    def standard_name(self):
         return 'sea_surface_wave_mean_period_from_variance_spectral_density_second_frequency_moment'
 
 class Fm(WaveParameter):
@@ -237,7 +237,7 @@ class Dirm(WaveParameter):
     def unit(self):
         return 'deg'
 
-    def cf_name(self):
+    def standard_name(self):
         return 'sea_surface_wave_from_direction'
 
 class Sprm(WaveParameter):
@@ -274,5 +274,5 @@ class Sprm(WaveParameter):
     def unit(self):
         return 'deg'
 
-    def cf_name(self):
+    def standard_name(self):
         return 'sea_surface_wave_directional_spread'
