@@ -16,6 +16,7 @@ from ..wnd.read import ForcingReader
 from ..wnd.write import ForcingWriter
 
 from ..spc.read import SpectralReader, BoundaryToSpectra
+from ..spc.write import SpectralWriter
 
 from ..grd.write import GridWriter
 from ..grd.process import GridProcessor, TrivialFilter
@@ -200,6 +201,58 @@ class ModelRun:
         self._boundary_exported_to = output_folder
 
         if self._boundary_writer._im_silent():
+            for file in output_files:
+                msg.to_file(add_folder_to_filename(file, output_folder))
+
+        return
+
+    def export_spectra(self, spectral_writer: SpectralWriter=None, out_format: str=None, filename: str=None, datefmt: str=None, folder: str=None) -> None:
+        """Writes the spectra in the Spectra-object to an external source, e.g.
+        a file."""
+
+        if self.spectra() is None:
+            raise Exception('Import spectra before exporting!')
+
+        self._spectral_writer = spectral_writer or self._get_spectral_writer()
+        if self._spectral_writer is None:
+            raise Exception('Define a SpectralWriter!')
+
+        msg.header(self._spectral_writer, f"Writing omnidirectional spectra from {self.spectra().name()}")
+
+        # NOT IMPPELMENTED YET
+        # spectral_processor = processor_for_convention_change(current_convention = self.spectra().convention(), wanted_convention = self._spectral_writer._convention_in())
+        # if spectral_processor is None:
+        #     msg.info(f"Convention ({self.spectra().convention()}) already equals wanted convention ({self._spectral_writer._convention_in()}).")
+        # else:
+        #     self.spectra().process_spectra(spectral_processor)
+
+        # Get general format + extension
+        if out_format is None:
+            out_format = self._spectral_writer._preferred_format()
+            extension = self._spectral_writer._preferred_extension()
+        else:
+            extension = dflt_bnd['ext'][out_format]
+
+        filename = filename or dflt_bnd['fs'][out_format]
+        datestring = datefmt or dflt_bnd['ds'][out_format]
+        folder = folder or dflt_bnd['fldr'][out_format]
+
+        filename = self.filename(filename, datestring, extension)
+        folder = self.filename(folder, datestring)
+
+        existed = check_if_folder(folder=folder, create=True)
+        if not existed:
+            msg.plain(f"Creating folder {folder}")
+
+        output_files, output_folder = self._spectral_writer(self.spectra(), filename, folder)
+
+        if type(output_files) is not list:
+            output_files = [output_files]
+
+        self._spectra_exported_as = output_files
+        self._spectra_exported_to = output_folder
+
+        if self._spectral_writer._im_silent():
             for file in output_files:
                 msg.to_file(add_folder_to_filename(file, output_folder))
 
@@ -545,6 +598,9 @@ class ModelRun:
         return None
 
     def _get_spectral_reader(self) -> SpectralReader:
+        return None
+
+    def _get_spectral_writer(self) -> SpectralWriter:
         return None
 
     def _get_grid_writer(self) -> GridWriter:
