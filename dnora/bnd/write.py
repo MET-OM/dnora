@@ -63,7 +63,7 @@ class BoundaryWriter(ABC):
         return
 
     @abstractmethod
-    def __call__(self, boundar: Boundary, filename: str, folder: str) -> Tuple[str, str]:
+    def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
         """Writed the data from the Boundary object and returns the file and
         folder where data were written."""
 
