@@ -1,6 +1,6 @@
 from .mdl_mod import ModelRun
 
-from .. import bnd, wnd, grd, inp, run
+from .. import bnd, wnd, grd, inp, run, spc
 
 class SWAN(ModelRun):
     def _get_boundary_writer(self):
@@ -66,6 +66,13 @@ class HOS_ocean(ModelRun):
 
     def _get_model_executer(self):
         return run.HOS_ocean()
+
+class REEF3D(ModelRun):
+    def _get_spectral_writer(self):
+        return spc.write.REEF3D()
+
+    def _get_point_picker(self):
+        return bnd.pick.NearestGridPoint()
 
 class SWAN_NORA3(SWAN):
     def _get_boundary_reader(self):

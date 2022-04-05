@@ -5,11 +5,13 @@ dflt_grd = {'fs': { 'SWAN': '#Grid_SWAN',
                     'WW3': '#Grid',
                     'SWASH': '#Grid_SWASH',
                     'HOS_ocean': '#Grid_HOS_ocean',
+                    'REEF3D': 'geo',
                     'General': 'topo_#Grid'},
             'fldr': {'SWAN': f"{os.getcwd()}/output",
                     'WW3': f"{os.getcwd()}/output",
                     'SWASH': f"{os.getcwd()}/output",
                     'HOS_ocean': f"{os.getcwd()}/output",
+                    'REEF3D': f"{os.getcwd()}/output",
                     'General': ''},
             'info': {   'SWAN': '#Grid_info.txt',
                         'WW3': '#Grid_info.txt',
@@ -20,6 +22,7 @@ dflt_grd = {'fs': { 'SWAN': '#Grid_SWAN',
                             'WW3': 'txt',
                             'SWASH': 'bot',
                             'HOS_ocean': 'dat',
+                            'REEF3D': 'dat',
                             'General': 'txt'}
         }
 
@@ -61,6 +64,30 @@ dflt_bnd = {'fs': { 'SWAN': 'spec#Boundary#Grid#T0_#T1',
                     'General': 'nc'}
         }
 
+
+"""Default filestrings and datestrings for Spectra"""
+dflt_spc = {'fs': { 'SWAN': 'spec1d#Spectra#Grid#T0_#T1',
+                    'WW3': 'ww3_spec1d_E#LonN#Lat_#Spectra_#Grid_#T0-#T1',
+                    'SWASH': 'spec1d#Spectra#Grid#T0_#T1',
+                    'REEF3D': 'spectrum-file',
+                    'General': 'spec1d_#Spectra_#Grid_#T0-#T1'},
+            'ds': { 'SWAN': '%Y%m%d',
+                    'WW3': '%Y%m%dT%H%M',
+                    'SWASH': '%Y%m%d',
+                    'REEF3D': '%Y%m%dT%H%M',
+                    'General': '%Y%m%dT%H%M'},
+            'fldr': {'SWAN': f"{os.getcwd()}/output",
+                    'WW3': f"{os.getcwd()}/output",
+                    'SWASH': f"{os.getcwd()}/output",
+                    'REEF3D': f"{os.getcwd()}/output",
+                    'General': ''},
+            'ext': { 'SWAN': 'asc',
+                    'WW3': 'nc',
+                    'SWASH': 'asc',
+                    'REEF3D': 'dat',
+                    'General': 'nc'}
+        }
+
 """Default filestrings and datestrings for inp-module"""
 dflt_inp = {'fs': { 'SWAN': 'input_#T0_#Grid',
                     'SWASH': 'input_#T0_#T1_#Grid',
@@ -99,4 +126,4 @@ dflt_mdl = {'ds': { 'General': '%Y%m%dT%H%M'},
 
 
 # Used to clean up filenames
-list_of_placeholders = ['#Grid', '#Forcing', '#Boundary', '#ModelRun', '#T0', '#T1', 'E#Lon', 'N#Lat', '#Lon', '#Lat']
+list_of_placeholders = ['#Grid', '#Forcing', '#Boundary', '#Spectra', '#ModelRun', '#T0', '#T1', 'E#Lon', 'N#Lat', '#Lon', '#Lat']

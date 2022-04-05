@@ -77,7 +77,7 @@ class DumpToNc(SpectralWriter):
         return output_file, folder
 
 class REEF3D(SpectralWriter):
-    def __init__(self, convention: str='Met', out_format: str='SWAN') -> None:
+    def __init__(self, convention: str='Met', out_format: str='REEF3D') -> None:
         self._convention = convention
         self.out_format = out_format
         return
@@ -89,6 +89,9 @@ class REEF3D(SpectralWriter):
     def _preferred_format(self) -> str:
         """Preferred format of file name"""
         return self.out_format
+
+    def _preferred_extension(self) -> str:
+        return 'dat'
 
     def __call__(self, spectra: Spectra, filename: str, folder: str) -> Tuple[str, str]:
 

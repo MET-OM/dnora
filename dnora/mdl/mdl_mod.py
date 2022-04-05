@@ -29,7 +29,7 @@ from ..run import ModelExecuter
 from typing import Union
 # Import default values and auxiliry functions
 from .. import msg
-from ..defaults import dflt_mdl, dflt_inp, dflt_bnd, dflt_frc, dflt_grd, dflt_plt, list_of_placeholders
+from ..defaults import dflt_mdl, dflt_inp, dflt_bnd, dflt_spc, dflt_frc, dflt_grd, dflt_plt, list_of_placeholders
 from ..aux import create_filename_obj, create_filename_time, add_folder_to_filename, check_if_folder, clean_filename, add_extension
 from ..bnd.process import processor_for_convention_change
 
@@ -231,11 +231,11 @@ class ModelRun:
             out_format = self._spectral_writer._preferred_format()
             extension = self._spectral_writer._preferred_extension()
         else:
-            extension = dflt_bnd['ext'][out_format]
+            extension = dflt_spc['ext'][out_format]
 
-        filename = filename or dflt_bnd['fs'][out_format]
-        datestring = datefmt or dflt_bnd['ds'][out_format]
-        folder = folder or dflt_bnd['fldr'][out_format]
+        filename = filename or dflt_spc['fs'][out_format]
+        datestring = datefmt or dflt_spc['ds'][out_format]
+        folder = folder or dflt_spc['fldr'][out_format]
 
         filename = self.filename(filename, datestring, extension)
         folder = self.filename(folder, datestring)

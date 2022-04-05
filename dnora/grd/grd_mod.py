@@ -187,7 +187,7 @@ class Grid:
         if hasattr(self.data, 'land_sea_mask'):
             return copy(self.data.land_sea_mask.values)
         else:
-            return np.array([])
+            return np.full((self.ny(), self.nx()), True)
 
     def boundary_mask(self) -> np.ndarray:
         """Returns bool array of boundary points (True = boundary point)"""
@@ -195,7 +195,7 @@ class Grid:
         if hasattr(self.data, 'boundary_mask'):
             return copy(self.data.boundary_mask.values)
         else:
-            return np.array([])
+            return np.full((self.ny(), self.nx()), False)
 
     def boundary_points(self) -> np.ndarray:
         """Returns a lon, lat list of the set boundary points."""
@@ -348,12 +348,12 @@ class Grid:
     def _drop_topo_and_masks(self) -> None:
         """Drops the gridded data and masks."""
 
-        if self.topo().size > 0:
-            self.data =self.data.drop('topo')
-        if self.land_sea_mask().size > 0:
-            self.data =self.data.drop('land_sea_mask')
-        if self.boundary_mask().size > 0:
-            self.data =self.data.drop('boundary_mask')
+        if hasattr(self.data, 'topo'):
+            self.data = self.data.drop('topo')
+        if hasattr(self.data, 'land_sea_mask'):
+            self.data = self.data.drop('land_sea_mask')
+        if hasattr(self.data, 'boundary_mask'):
+            self.data = self.data.drop('boundary_mask')
         return
 
     def _set_land_sea_mask(self, land_sea_mask) -> None:
