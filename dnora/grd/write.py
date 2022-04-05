@@ -181,6 +181,44 @@ class Xyz(GridWriter):
 
         return filename, folder
 
+class REEF3D(GridWriter):
+    """Writes the grid to Xyz-format in relative Cartesian grid."""
+    def __init__(self, use_raw=False):
+        self._use_raw = use_raw
+        pass
+
+    def _preferred_extension(self):
+        return 'dat'
+
+    def _preferred_format(self):
+        return 'REEF3D'
+
+    def __call__(self, grid: Grid, filename: str, infofilename: str, folder: str) -> None:
+
+        output_path = add_folder_to_filename(filename, folder)
+
+        if self._use_raw:
+            z = grid.raw_topo();
+            [x, y, utm_zone, utm_letter] = utm.from_latlon(grid.raw_lat(), grid.raw_lon())
+            x = x-min(x) # metres from corner
+            y = y-min(y)
+        else:
+            z = grid.topo();
+            x, y = np.meshgrid(np.linspace(0,grid.nx()*grid.dx(),grid.nx()), np.linspace(0,grid.ny()*grid.dy(),grid.ny()))
+            x = x.ravel()
+            y = y.ravel()
+            z = z.ravel()
+
+        fmt='.5f'
+        with open(output_path, 'w') as f:
+            for i, __ in enumerate(x):
+                f.write(f'{x[i]:{fmt}} {y[i]:{fmt}} {z[i]:.1f}\n')
+
+        #np.savetxt(output_path, grid.topo(), delimiter='\t',fmt='%1.2f')
+        #grid.write_status(filename=infofilename, folder=folder)
+
+        return filename, folder
+
 
 # class SWASH(SWAN):
 #     """Writes the grid to SWASH format.

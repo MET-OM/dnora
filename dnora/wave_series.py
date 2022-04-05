@@ -18,7 +18,7 @@ class WaveSeries:
         self.data = xr.merge(dsets)
 
     def plot(self, parameter: str, x: List[int]=None) -> np.ndarray:
-        plt.plot(self.time(), self.slice_data(x=x)[parameter])
+        self.slice_data(x=x)[parameter].plot()
         plt.show()
 
     def parameters(self) -> List[str]:
