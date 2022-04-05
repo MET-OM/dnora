@@ -5,12 +5,13 @@ import matplotlib.pyplot as plt
 from typing import List
 from copy import copy
 import pandas as pd
+from wave_parameters import WaveParameter
 
 class WaveSeries:
     def __call__(self, parameter: str) -> np.ndarray:
         return self.data[parameter].values
 
-    def from_spectra(self, spec, parameters):
+    def from_spectra(self, spec: xr.Dataset, parameters: List[WaveParameter]):
         dsets = []
         for wp in parameters:
             dsets.append(wp(spec))

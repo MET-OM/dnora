@@ -36,20 +36,11 @@ class WaveParameter(ABC):
     def name(self) -> str:
         pass
 
-    #@abstractmethod
-    def standard_name(self) -> str:
-        pass
-
-    #@abstractmethod
-    def long_name(self) -> str:
-        pass
-
-    #@abstractmethod
-    def aliases(self) -> List[str]:
-        pass
-
     @abstractmethod
     def unit(self) -> str:
+        pass
+
+    def standard_name(self) -> str:
         pass
 
     def _is_boundary(self, spec: xr.Dataset) -> bool:
