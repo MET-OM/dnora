@@ -497,3 +497,32 @@ def shift_spec(spec, D, shift=0):
         spec_shift = spec_shift[0]
 
     return spec_shift
+
+def get_default_value(key: str, module:str, primary: str, secondary: dict, fallback: dict):
+    """Get a key (e.g. folder) from the defaults list.
+
+    1) Given primary filename overrides all defaults.
+
+    2) Tries Model+module specific value (e.g. SWAN-wnd-folder)
+
+    3) Tries Model specifc values (e.g. SWAN-folder)
+
+    4) Returns ModelRun defaults (e.g. ModulRun-wnd-folder)
+    """
+
+    if primary is not None:
+        return primary
+
+    if module not in fallback.keys():
+        raise ValueError(f'Default values (in ModelRun) not defined for module {module}!')
+    fallback_filename = fallback[module].get(key)
+    module_filename = None
+
+    # Try module specific filename is module settings defined
+    if secondary.get(module) is not None:
+        module_filename = secondary[module].get(key) or module_filename
+
+    # If filename not defined for specific module, try Model specific name
+    module_filename = module_filename or secondary.get(key)
+
+    return module_filename or fallback_filename

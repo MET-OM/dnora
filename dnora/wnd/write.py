@@ -20,61 +20,56 @@ class ForcingWriter(ABC):
 
     This object is provided to the .export_forcing() method.
     """
-    def _preferred_format(self):
-        return 'General'
-
-    def _preferred_extension(self):
-        return 'nc'
+    @abstractmethod
+    def _extension(self):
+        pass
 
     def _im_silent(self) -> bool:
         """Return False if you want to be responsible for printing out the
         file names."""
         return True
 
+    def _clean_filename(self):
+        """If this is set to False, then the ModelRun object does not clean
+        the filename, and possible placeholders (e.g. #T0) can still be
+        present.
+        """
+        return True
+
     @abstractmethod
-    def __call__(self, forcing: Forcing, filename: str, folder: str) -> Tuple[str, str]:
+    def __call__(self, forcing: Forcing, filename: str, folder: str) -> List[str]:
         """Writed the data from the Forcing object and returns the file and
         folder where data were written."""
 
-        return output_file, output_folder
+        return output_file
 
 class WW3(ForcingWriter):
     """Writes wind forcing data to WAVEWATH III netcdf format."""
-    def _preferred_format(self):
-        return 'WW3'
+    def _extension(self):
+        return 'nc'
 
-    def __call__(self, forcing: Forcing, filename: str, folder: str) -> Tuple[str, str]:
+    def __call__(self, forcing: Forcing, filename: str, folder: str) -> List[str]:
         # Add folder
-        output_path = add_folder_to_filename(filename, folder=folder)
-        output_path = clean_filename(output_path, list_of_placeholders)
+        output_file = add_folder_to_filename(filename, folder=folder)
 
         forcing.data.to_netcdf(output_path)
 
-        return filename, folder
+        return output_file
 
 
 class SWAN(ForcingWriter):
     """Writes wind forcing data to SWAN ascii format."""
-    def __init__(self, out_format = 'SWAN'):
-        self.out_format = out_format
-        return
 
-    def _preferred_format(self):
-        return self.out_format
-
-    def _preferred_extension(self):
+    def _extension(self):
         return 'asc'
 
-    def __call__(self, forcing: Forcing, filename: str, folder: str) -> Tuple[str, str]:
+    def __call__(self, forcing: Forcing, filename: str, folder: str) -> List[str]:
 
         # Add folder
-        output_path = add_folder_to_filename(filename, folder=folder)
-        output_path = clean_filename(output_path, list_of_placeholders)
-
-        #msg.to_file(output_path)
+        output_file = add_folder_to_filename(filename, folder=folder)
 
         days = forcing.days()
-        with open(output_path, 'w') as file_out:
+        with open(output_file, 'w') as file_out:
             for day in days:
                 msg.plain(day.strftime('%Y-%m-%d'))
                 times = forcing.times_in_day(day)
@@ -88,4 +83,4 @@ class SWAN(ForcingWriter):
                     np.savetxt(file_out, forcing.v()
                                [n, :, :]*1000, fmt='%i')
 
-        return filename, folder
+        return output_file

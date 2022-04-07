@@ -1,6 +1,7 @@
 from copy import copy
 import re
-
+from pathlib import Path
+import yaml
 # Import objects
 from ..grd.grd_mod import Grid
 from ..bnd.bnd_mod import Boundary
@@ -30,7 +31,7 @@ from typing import Union
 # Import default values and auxiliry functions
 from .. import msg
 from ..defaults import dflt_mdl, dflt_inp, dflt_bnd, dflt_spc, dflt_frc, dflt_grd, dflt_plt, list_of_placeholders
-from ..aux import create_filename_obj, create_filename_time, add_folder_to_filename, check_if_folder, clean_filename, add_extension
+from ..aux import create_filename_obj, create_filename_time, add_folder_to_filename, check_if_folder, clean_filename, add_extension, get_default_value
 from ..bnd.process import processor_for_convention_change
 
 class ModelRun:
@@ -39,6 +40,9 @@ class ModelRun:
         self._grid = copy(grid)
         self.start_time = copy(start_time)
         self.end_time = copy(end_time)
+        defaults_file = Path(__file__).parents[1].joinpath(Path('defaults.yml'))
+        with open(defaults_file, 'r') as file:
+          self._defaults = yaml.safe_load(file)
 
     def import_boundary(self, boundary_reader: BoundaryReader=None, point_picker: PointPicker=None, name: str=None) -> None:
         """Creates a Boundary-object and imports boundary spectra."""
@@ -101,7 +105,8 @@ class ModelRun:
         self.import_spectra(spectral_reader, name)
 
 
-    def export_grid(self, grid_writer: Union[GridWriter, TrGridWriter]=None, out_format: str=None, filename: str=None, infofilename: str=None, folder: str=None) -> None:
+    def export_grid(self, grid_writer: Union[GridWriter, TrGridWriter]=None,
+                    filename: str=None, folder: str=None, dateformat: str=None) -> None:
         """Writes the grid data in the Grid-object to an external source,
         e.g. a file."""
 
@@ -116,45 +121,39 @@ class ModelRun:
 
         msg.header(self._grid_writer, f"Writing grid topography from {self.grid().name()}")
 
-        # Get general format + extension
-        if out_format is None:
-            out_format = self._grid_writer._preferred_format()
-            extension = self._grid_writer._preferred_extension()
-        else:
-            extension = dflt_grd['ext'][out_format]
+        # Replace #Grid etc and add file extension
+        filename, folder = self._prepare_file_output(module='grd',
+                                filename=filename, folder=folder,
+                                extension=self._grid_writer._extension(),
+                                dateformat=dateformat)
 
-        # Get formats for filenames
-        filename = filename or dflt_grd['fs'][out_format]
-        infofilename = infofilename or dflt_grd['info'][out_format]
-        folder = folder or dflt_grd['fldr'][out_format]
-
-        # Create filenames
-        filename = self.filename(filename, extension=extension)
-        infofilename = self.filename(infofilename)
-        folder = self.filename(folder)
-
-        existed = check_if_folder(folder, create=True)
-        if not existed:
-            msg.plain(f"Creating folder {folder}")
+        if self._grid_writer._clean_filename():
+            filename = clean_filename(filename, self._defaults['list_of_placeholders'])
 
         # Write the grid using the GridWriter object
-        output_files, output_folder = self._grid_writer(self.grid(), filename, infofilename, folder)
-
+        output_files = self._grid_writer(self.grid(), filename, folder)
         if type(output_files) is not list:
             output_files = [output_files]
 
+        # Write status file
+        infofilename = str(Path(output_files[0]).with_suffix('')) + '_dnora_info.txt'
+        self.grid().write_status(filename=infofilename)
+
         # Store name and location where file was written
-        self._grid_exported_as = output_files
-        self._grid_exported_to = output_folder
+        self._grid_exported_to = []
+        for file in output_files:
+            self._grid_exported_to.append(file)
 
         if self._grid_writer._im_silent():
             for file in output_files:
-                msg.to_file(add_folder_to_filename(file, output_folder))
+                msg.to_file(file)
 
         return
 
 
-    def export_boundary(self, boundary_writer: BoundaryWriter=None, out_format: str=None, filename: str=None, datefmt: str=None, folder: str=None) -> None:
+    def export_boundary(self, boundary_writer: BoundaryWriter=None,
+                        filename: str=None, folder: str=None,
+                        dateformat: str=None) -> None:
         """Writes the spectra in the Boundary-object to an external source, e.g.
         a file."""
 
@@ -167,46 +166,37 @@ class ModelRun:
 
         msg.header(self._boundary_writer, f"Writing boundary spectra from {self.boundary().name()}")
 
-        boundary_processor = processor_for_convention_change(current_convention = self.boundary().convention(), wanted_convention = self._boundary_writer._convention_in())
+        boundary_processor = processor_for_convention_change(current_convention = self.boundary().convention(), wanted_convention = self._boundary_writer._convention())
         if boundary_processor is None:
-            msg.info(f"Convention ({self.boundary().convention()}) already equals wanted convention ({self._boundary_writer._convention_in()}).")
+            msg.info(f"Convention ({self.boundary().convention()}) already equals wanted convention ({self._boundary_writer._convention()}).")
         else:
             self.boundary().process_boundary(boundary_processor)
 
-        # Get general format + extension
-        if out_format is None:
-            out_format = self._boundary_writer._preferred_format()
-            extension = self._boundary_writer._preferred_extension()
-        else:
-            extension = dflt_bnd['ext'][out_format]
-
-        filename = filename or dflt_bnd['fs'][out_format]
-        datestring = datefmt or dflt_bnd['ds'][out_format]
-        folder = folder or dflt_bnd['fldr'][out_format]
-
-        filename = self.filename(filename, datestring, extension)
-        folder = self.filename(folder, datestring)
-
-        existed = check_if_folder(folder=folder, create=True)
-        if not existed:
-            msg.plain(f"Creating folder {folder}")
+        # Replace #Boundary etc and add file extension
+        filename, folder = self._prepare_file_output(module='bnd',
+                                filename=filename, folder=folder,
+                                extension=self._boundary_writer._extension(),
+                                dateformat=dateformat)
 
 
-        output_files, output_folder = self._boundary_writer(self.boundary(), filename, folder)
+        output_files = self._boundary_writer(self.boundary(), filename, folder)
 
         if type(output_files) is not list:
             output_files = [output_files]
 
-        self._boundary_exported_as = output_files
-        self._boundary_exported_to = output_folder
+        # Store name and location where file was written
+        self._boundary_exported_to = []
+        for file in output_files:
+            self._boundary_exported_to.append(file)
 
         if self._boundary_writer._im_silent():
             for file in output_files:
-                msg.to_file(add_folder_to_filename(file, output_folder))
-
+                msg.to_file(file)
         return
 
-    def export_spectra(self, spectral_writer: SpectralWriter=None, out_format: str=None, filename: str=None, datefmt: str=None, folder: str=None) -> None:
+    def export_spectra(self, spectral_writer: SpectralWriter=None,
+                        filename: str=None, folder: str=None,
+                        dateformat: str=None) -> None:
         """Writes the spectra in the Spectra-object to an external source, e.g.
         a file."""
 
@@ -226,39 +216,31 @@ class ModelRun:
         # else:
         #     self.spectra().process_spectra(spectral_processor)
 
-        # Get general format + extension
-        if out_format is None:
-            out_format = self._spectral_writer._preferred_format()
-            extension = self._spectral_writer._preferred_extension()
-        else:
-            extension = dflt_spc['ext'][out_format]
+        # Replace #Spectra etc and add file extension
+        filename, folder = self._prepare_file_output(module='spc',
+                                filename=filename, folder=folder,
+                                extension=self._spectral_writer._extension(),
+                                dateformat=dateformat)
 
-        filename = filename or dflt_spc['fs'][out_format]
-        datestring = datefmt or dflt_spc['ds'][out_format]
-        folder = folder or dflt_spc['fldr'][out_format]
-
-        filename = self.filename(filename, datestring, extension)
-        folder = self.filename(folder, datestring)
-
-        existed = check_if_folder(folder=folder, create=True)
-        if not existed:
-            msg.plain(f"Creating folder {folder}")
-
-        output_files, output_folder = self._spectral_writer(self.spectra(), filename, folder)
+        output_files = self._spectral_writer(self.spectra(), filename, folder)
 
         if type(output_files) is not list:
             output_files = [output_files]
 
-        self._spectra_exported_as = output_files
-        self._spectra_exported_to = output_folder
+        # Store name and location where file was written
+        self._spectra_exported_to = []
+        for file in output_files:
+            self._spectra_exported_to.append(file)
 
         if self._spectral_writer._im_silent():
             for file in output_files:
-                msg.to_file(add_folder_to_filename(file, output_folder))
+                msg.to_file(file)
 
         return
 
-    def export_forcing(self, forcing_writer: ForcingWriter=None, out_format: str=None, filename: str=None, datefmt: str=None, folder: str=None) -> None:
+    def export_forcing(self, forcing_writer: ForcingWriter=None,
+                        filename: str=None, folder: str=None,
+                         dateformat: str=None,) -> None:
         """Writes the forcing data in the Forcing-object to an external source,
         e.g. a file."""
 
@@ -272,41 +254,32 @@ class ModelRun:
 
         msg.header(self._forcing_writer, f"Writing wind forcing from {self.forcing().name()}")
 
-        # Get general format + extension
-        if out_format is None:
-            out_format = self._forcing_writer._preferred_format()
-            extension = self._forcing_writer._preferred_extension()
-        else:
-            extension = dflt_frc['ext'][out_format]
+        # Replace #Spectra etc and add file extension
+        filename, folder = self._prepare_file_output(module='wnd',
+                                filename=filename, folder=folder,
+                                extension=self._forcing_writer._extension(),
+                                dateformat=dateformat)
 
-        filename = filename or dflt_frc['fs'][out_format]
-        datestring = datefmt or dflt_frc['ds'][out_format]
-        folder = folder or dflt_frc['fldr'][out_format]
-
-        filename = self.filename(filename, datestring, extension)
-        folder = self.filename(folder, datestring)
-
-        existed = check_if_folder(folder, create=True)
-        if not existed:
-            msg.plain(f"Creating folder {folderstring}")
-
-
-        output_files, output_folder = self._forcing_writer(self.forcing(), filename, folder)
+        output_files = self._forcing_writer(self.forcing(), filename, folder)
 
         if type(output_files) is not list:
             output_files = [output_files]
 
-        self._forcing_exported_as = output_files
-        self._forcing_exported_to = output_folder
+        # Store name and location where file was written
+        self._forcing_exported_to = []
+        for file in output_files:
+            self._forcing_exported_to.append(file)
 
         if self._forcing_writer._im_silent():
             for file in output_files:
-                msg.to_file(add_folder_to_filename(file, output_folder))
+                msg.to_file(file)
 
         return
 
-    def write_input_file(self, input_file_writer: InputFileWriter=None, out_format=None, filename=None, datefmt=None, folder=None,
-                        grid_path: str=None, forcing_path: str=None, boundary_path: str=None,
+    def write_input_file(self, input_file_writer: InputFileWriter=None,
+                        filename=None, folder=None, dateformat=None,
+                        grid_path: str=None, forcing_path: str=None,
+                        boundary_path: str=None,
                         start_time: str=None, end_time: str=None) -> None:
         """Writes the grid data in the Grid-object to an external source,
         e.g. a file."""
@@ -315,28 +288,12 @@ class ModelRun:
         if self._input_file_writer is None:
             raise Exception('Define an InputFileWriter!')
 
-        # Get general format + extension
-        if out_format is None:
-            out_format = self._input_file_writer._preferred_format()
-            extension = self._input_file_writer._preferred_extension()
-        else:
-            extension = dflt_inp['ext'][out_format]
+        # Replace #Spectra etc and add file extension
+        filename, folder = self._prepare_file_output(module='wnd',
+                                filename=filename, folder=folder,
+                                extension=self._forcing_writer._extension(),
+                                dateformat=dateformat)
 
-        filename = filename or dflt_inp['fs'][out_format]
-        datestring = datefmt or dflt_inp['ds'][out_format]
-        folder = folder or dflt_inp['fldr'][out_format]
-
-
-        start_time = start_time or self.start_time
-        end_time = end_time or self.end_time
-
-        # Filename and folder for the input file
-        filename = self.filename(filename, datestring, extension)
-        folder = self.filename(folder)
-
-        existed = check_if_folder(folder, create=True)
-        if not existed:
-            msg.plain(f"Creating folder {folder}")
 
         # These are used to write info to the input file where to find the
         # forcing etc. data that has previously been exported
@@ -346,19 +303,24 @@ class ModelRun:
 
         msg.header(self._input_file_writer, "Writing model input file...")
 
-        output_files, output_folder = self._input_file_writer(grid=self.grid(), forcing=self.forcing(), boundary=self.boundary(), start_time=start_time, end_time=end_time,
+        output_files = self._input_file_writer(grid=self.grid(),
+                        forcing=self.forcing(), boundary=self.boundary(),
+                        start_time=start_time, end_time=end_time,
                         filename=filename, folder=folder,
-                        grid_path=grid_path, forcing_path=forcing_path, boundary_path=boundary_path)
+                        grid_path=grid_path, forcing_path=forcing_path,
+                        boundary_path=boundary_path)
 
         if type(output_files) is not list:
             output_files = [output_files]
 
-        self._input_file_written_as = output_files
-        self._input_file_written_to = output_folder
+        # Store name and location where file was written
+        self._input_file_exported_to = []
+        for file in output_files:
+            self._input_file_exported_to.append(file)
 
         if self._input_file_writer._im_silent():
             for file in output_files:
-                msg.to_file(add_folder_to_filename(file, output_folder))
+                msg.to_file(file)
 
         return
 
@@ -509,12 +471,31 @@ class ModelRun:
         else:
             return None
 
-    def filename(self, filestring: str, datestring: str='', extension: str='') -> str:
-        filename = create_filename_obj(filestring=filestring, objects=[self, self.grid(), self.forcing(), self.boundary()])
-        filename = create_filename_time(filestring=filename, times=[self.start_time, self.end_time], datestring=datestring)
-        filename = add_extension(filename, extension)
+    def _prepare_file_output(self, module: str, filename: str, folder: str, extension: str, dateformat: str) -> tuple[str, str]:
+        """Creates and clean filenames and foldernames for output
 
-        return filename
+        module = 'grd' etc. depending on what we are writing"""
+        def replace_placeholders(filestring: str) -> str:
+            filestring = create_filename_obj(filestring=filestring, objects=[self, self.grid(), self.forcing(), self.boundary()])
+            filestring = create_filename_time(filestring=filestring, times=[self.start_time, self.end_time], datestring=dateformat)
+            return filestring
+
+        fmt = self._get_default_format()
+        filename = get_default_value(key='filename', module=module, primary=filename, secondary=self._defaults[fmt], fallback=self._defaults['ModelRun'])
+        folder = get_default_value(key='folder', module=module, primary=folder, secondary=self._defaults[fmt], fallback=self._defaults['ModelRun'])
+        dateformat = get_default_value(key='dateformat', module=module, primary=dateformat, secondary=self._defaults[fmt], fallback=self._defaults['ModelRun'])
+
+        folder = Path(replace_placeholders(folder))
+        if not folder.is_dir():
+            msg.plain(f"Creating folder {folder}")
+            folder.mkdir()
+
+        filename = replace_placeholders(filename)
+        filename = Path(filename).with_suffix(f'.{extension}')
+
+        return str(filename), str(folder)
+
+
 
     def grid_exported_to(self, out_format: str='General') -> str:
         if hasattr(self, '_grid_exported_to'):
@@ -523,10 +504,13 @@ class ModelRun:
             return self.filename(filestring=dflt_grd['fldr'][out_format])
 
     def grid_exported_as(self, out_format: str='General') -> str:
-        if hasattr(self, '_grid_exported_tas'):
+        if hasattr(self, '_grid_exported_as'):
             return self._grid_exported_as[0]
         else:
-            return self.filename(filestring=dflt_grd['fs'][out_format], extension=dflt_grd['ext'][out_format])
+            fmt = self._get_default_format()
+            filename = get_default_value(key='filename', module='grd', primary=None, secondary=self._defaults[fmt], fallback=self._defaults['ModelRun'])
+            folder = get_default_value(key='folder', module='grd', primary=None, secondary=self._defaults[fmt], fallback=self._defaults['ModelRun'])
+            return filename
 
     def grid_exported_path(self, out_format: str='General') -> str:
         return add_folder_to_filename(filename=self.grid_exported_as(out_format), folder=self.grid_exported_to(out_format))
@@ -537,7 +521,9 @@ class ModelRun:
         elif self.forcing() is None:
             return ''
         else:
-            return self.filename(filestring=dflt_frc['fldr'][out_format], datestring=dflt_frc['ds'][out_format])
+            fmt = self._get_default_format()
+            filename = get_default_value(key='filename', module='wnd', primary=None, secondary=self._defaults[fmt], fallback=self._defaults['ModelRun'])
+            return filename
 
     def forcing_exported_as(self, out_format: str='General') -> str:
         if hasattr(self, '_forcing_exported_as'):
@@ -584,6 +570,8 @@ class ModelRun:
     def input_file_written_path(self, out_format: str='General') -> str:
         return add_folder_to_filename(filename=self.input_file_written_as(out_format), folder=self.input_file_written_to(out_format))
 
+    def _get_default_format(self) -> str:
+        return 'ModelRun'
 
     def _get_boundary_reader(self) -> BoundaryReader:
         return None

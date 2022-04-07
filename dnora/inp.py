@@ -15,14 +15,9 @@ from .aux import add_folder_to_filename, clean_filename, check_if_folder
 from . import msg
 
 class InputFileWriter(ABC):
-    def __init__(self):
+    @abstractmethod
+    def _extension(self):
         pass
-
-    def _preferred_format(self):
-        return 'General'
-
-    def _preferred_extension(self):
-        return 'txt'
 
     def _im_silent(self) -> bool:
         """Return False if you want to be responsible for printing out the
@@ -31,7 +26,7 @@ class InputFileWriter(ABC):
 
     @abstractmethod
     def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, start_time: str, end_time: str, filename: str, folder: str, grid_path: str, forcing_path: str, boundary_path: str):
-        pass
+        return output_file
 
 class SWAN(InputFileWriter):
     def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, wind=True, spec_points=None):
@@ -39,14 +34,11 @@ class SWAN(InputFileWriter):
         self.calib_wind = calib_wind
         self.calib_wcap = calib_wcap
         self.wind = wind
-        self.spec_points = spec_points # list of (lon, lat) points, e.g.,[(4.4, 60.6),(4.4, 60.8)] 
+        self.spec_points = spec_points # list of (lon, lat) points, e.g.,[(4.4, 60.6),(4.4, 60.8)]
 
         return
 
-    def _preferred_format(self):
-        return 'SWAN'
-
-    def _preferred_extension(self):
+    def _extension(self):
         return 'swn'
 
     def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, start_time: str, end_time: str, filename: str, folder: str, grid_path: str, forcing_path: str, boundary_path: str):
@@ -65,10 +57,9 @@ class SWAN(InputFileWriter):
         factor_wind = self.calib_wind*0.001
 
         # Create input file name
-        output_file = clean_filename(filename, list_of_placeholders)
-        output_path = add_folder_to_filename(output_file, folder)
+        output_file = add_folder_to_filename(output_file, folder)
 
-        with open(output_path, 'w') as file_out:
+        with open(output_file, 'w') as file_out:
             file_out.write(
                 '$************************HEADING************************\n')
             file_out.write('$ \n')
@@ -126,7 +117,7 @@ class SWAN(InputFileWriter):
             file_out.write('COMPUTE '+STR_START+' 10 MIN ' + STR_END + '\n')
             file_out.write('STOP \n')
 
-        return output_file, folder
+        return output_file
 
 
 
@@ -136,10 +127,7 @@ class SWASH(InputFileWriter):
 
         return
 
-    def _preferred_format(self):
-        return 'SWASH'
-
-    def _preferred_extension(self):
+    def _extension(self):
         return 'sws'
 
     def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, start_time: str, end_time: str, filename: str, folder: str, grid_path: str, forcing_path: str, boundary_path: str):
@@ -154,10 +142,9 @@ class SWASH(InputFileWriter):
 
         # Create input file name
 
-        output_file = clean_filename(filename, list_of_placeholders)
-        output_path = add_folder_to_filename(output_file, folder)
+        output_file = add_folder_to_filename(output_file, folder)
 
-        with open(output_path, 'w') as file_out:
+        with open(output_file, 'w') as file_out:
             file_out.write(
                 '$************************HEADING************************\n')
             file_out.write('$ \n')
@@ -195,7 +182,7 @@ class SWASH(InputFileWriter):
             file_out.write('COMPUTE '+STR_START+' 0.001 SEC ' + STR_END + '\n')
             file_out.write('STOP \n')
 
-        return output_file, folder
+        return output_file
 
 class HOS_ocean(InputFileWriter):
     def __init__(self,n1=256, n2=64, xlen=None, ylen=80,T_stop=100,f_out=1,toler=1.0e-7,n=4,Ta=0,
@@ -230,22 +217,16 @@ class HOS_ocean(InputFileWriter):
             self.ylen = ylen
         return
 
-    def _preferred_format(self):
-        return 'HOS_ocean'
-
-    def _preferred_extension(self):
+    def _extension(self):
         return 'dat'
 
     def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, start_time: str, end_time: str, filename: str, folder: str, grid_path: str, forcing_path: str, boundary_path: str):
 
         # Create input file name
-        output_file = clean_filename(filename, list_of_placeholders)
-        output_path = add_folder_to_filename(output_file, folder)
+        output_file = add_folder_to_filename(output_file, folder)
         check_if_folder(folder=folder+'/Results')
-        print(output_path)
 
-
-        with open(output_path, 'w') as file_out:
+        with open(output_file, 'w') as file_out:
             file_out.write(
                 'Restart previous computation :: i_restart        :: 0\n')
             file_out.write('Choice of computed case      :: i_case           :: 3\n')
@@ -301,17 +282,14 @@ class HOS_ocean(InputFileWriter):
                 'Wave probes in domain        :: i_prob           :: '+format(self.i_prob,".0f")+'\n')
             file_out.write(
                 'Swense output 1="yes",0="no" :: i_sw             :: '+format(self.i_sw,".0f")+'\n')
-        return output_file, folder
+        return output_file
 
 class WW3_grid(InputFileWriter):
     def __init__(self):
         self.scaling = 10**6
         return
 
-    def _preferred_format(self):
-        return 'WW3'
-
-    def _preferred_extension(self):
+    def _extension(self):
         return 'nml'
 
     def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, start_time: str, end_time: str, filename: str, folder: str, grid_path: str, forcing_path: str, boundary_path: str):
@@ -339,8 +317,7 @@ class WW3_grid(InputFileWriter):
         sf0 = 1.
 
         # Create input file name
-        output_file = clean_filename(filename, list_of_placeholders)
-        output_path = add_folder_to_filename(output_file, folder)
+        output_file = add_folder_to_filename(output_file, folder)
 
         with open(output_path, 'w') as file_out:
             file_out.write('&RECT_NML\n')
@@ -354,4 +331,4 @@ class WW3_grid(InputFileWriter):
             file_out.write(f'  RECT%SF0         = {sf0:.0f}.\n')
             file_out.write('/')
 
-        return output_file, folder
+        return output_file

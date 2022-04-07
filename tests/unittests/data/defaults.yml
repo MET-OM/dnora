@@ -1,0 +1,47 @@
+ModelRun:
+  grd:
+    folder: output
+    filename: 'grid_#Grid'
+    dateformat: '%Y%m%dT%H%M'
+  wnd:
+    folder: output
+    filename: 'wind_#Forcing_#Grid_#T0-#T1'
+    dateformat: '%Y%m%dT%H%M'
+  bnd:
+    folder: output
+    filename: 'boundary_#Boundary_#Grid_#T0-#T1'
+    dateformat: '%Y%m%dT%H%M'
+  spc:
+    folder: output
+    filename: 'spec_#Boundary_#Grid_#T0-#T1'
+    dateformat: '%Y%m%dT%H%M'
+
+SWAN:
+  folder: swanoutput
+  dateformat: '%Y%m%d'
+  grd:
+    filename: '#Grid_SWAN'
+  wnd:
+    filename: 'wind#Forcing#Grid#T0_#T1'
+    folder: wndoutput
+  bnd:
+    filename: 'spec#Boundary#Grid#T0#T1'
+
+WW3:
+  dateformat: '%Y%m%d'
+  grd:
+    filename: '#Grid_SWAN'
+  wnd:
+    filename: 'wind#Forcing#Grid#T0_#T1'
+    folder: wndoutput
+  bnd:
+    filename: 'spec#Boundary#Grid#T0#T1'
+
+SWASH:
+  grd:
+    filename: '#Grid_SWAN'
+    dateformat: '%Y%m%d'
+  wnd:
+    filename: 'wind#Forcing#Grid#T0_#T1'
+  bnd:
+    filename: 'spec#Boundary#Grid#T0#T1'

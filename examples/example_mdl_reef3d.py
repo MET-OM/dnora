@@ -1,12 +1,15 @@
 # REEF3D
 from dnora import grd, bnd, mdl
 
+use_raw = True
+
 grid = grd.Grid(lon=(5.0, 5.2), lat=(58., 58.1))
 
 grid.import_topo(grd.read.EMODNET2020(tile='*'))
 
-#grid.set_spacing(dm=1000)
-#grid.mesh_grid()
+if not use_raw:
+    grid.set_spacing(dm=1000)
+    grid.mesh_grid()
 
 grid.set_boundary(grd.boundary.SetAll())
 grid.set_boundary(boundary_setter=grd.boundary.MidPointAsBoundary(edges=['W']))
@@ -16,5 +19,4 @@ model.import_boundary(bnd.read_metno.NORA3())
 model.boundary_to_spectra()
 model.export_spectra()
 
-model.export_grid(grd.write.REEF3D(use_raw=True))  # Use when not meshed
-#model.export_grid(grd.write.REEF3D())  # Use when meshed
+model.export_grid(grd.write.REEF3D(use_raw=use_raw))  # Use when not meshed
