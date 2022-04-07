@@ -10,80 +10,81 @@ list_of_placeholders:
   - '#Lon'
   - '#Lat'
 
-list_of_modules:
-  grid: grd
-  forcing: wnd
-  boundary: bnd
-  spectra: spc
-  input_file: inp
-
 ModelRun:
-  grd:
+  grid:
     folder: output
     filename: 'grid_#Grid'
     dateformat: '%Y%m%dT%H%M'
-  wnd:
+  forcing:
     folder: output
     filename: 'wind_#Forcing_#Grid_#T0-#T1'
     dateformat: '%Y%m%dT%H%M'
-  bnd:
+  boundary:
     folder: output
     filename: 'spec2d_#Boundary_#Grid_#T0-#T1'
     dateformat: '%Y%m%dT%H%M'
-  spc:
+  spectra:
     folder: output
     filename: 'spec1d_#Spectra_#Grid_#T0-#T1'
     dateformat: '%Y%m%dT%H%M'
-  inp:
+  input_file:
     folder: output
     filename: 'inputfile_#Grid_#Forcing_#Boundary_#Spectra_#T0_#T1_#Lon_#Lat'
     dateformat: '%Y%m%dT%H%M'
+  dnplot_grid:
+    folder: figures
+    filename: 'grid_#Grid_#Forcing_#Boundary'
+    dateformat: ''
+  dnplot_topo:
+    folder: figures
+    filename: 'topo_#Grid_#Forcing_#Boundary'
+    dateformat: ''
 
 SWAN:
   dateformat: '%Y%m%d'
-  grd:
+  grid:
     filename: '#Grid_SWAN'
-  wnd:
+  forcing:
     filename: 'wind#Forcing#Grid#T0_#T1'
-  bnd:
+  boundary:
     filename: 'spec#Boundary#Grid#T0#T1'
-  inp:
+  input_file:
     filename: 'input_#T0_#Grid'
     folder: 'MySWANFolder'
 
 SWASH:
   dateformat: '%Y%m%d'
-  grd:
+  grid:
     filename: '#Grid_SWASH'
-  wnd:
+  forcing:
     filename: 'wind#Forcing#Grid#T0_#T1'
-  bnd:
+  boundary:
     filename: 'spec#Boundary#Grid#T0#T1'
-  inp:
+  input_file:
     filename: 'input_#T0_#T1_#Grid'
     folder: 'MySWASHFolder'
 
 WW3:
-  grd:
+  grid:
     filename: '#Grid'
-  bnd:
+  boundary:
     filename: 'ww3_spec_E#LonN#Lat_#Boundary_#Grid_#T0-#T1'
-  inp:
+  input_file:
     filename: 'ww3_'
     folder: 'MyWW3Folder'
 
 HOS_ocean:
-  grd:
+  grid:
     filename: '#Grid_HOS_ocean'
-  inp:
+  input_file:
     filename: 'input_HOS'
     folder: MyHOS_oceanFolder'
 
 REEF3D:
-  grd:
+  grid:
     filename: '#Grid_HOS_ocean'
-  bnd:
+  boundary:
     filename: 'ww3_spec_E#LonN#Lat_#Boundary_#Grid_#T0-#T1'
-  inp:
+  input_file:
     filename: 'input_HOS'
     folder: MyHOS_oceanFolder'

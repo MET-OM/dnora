@@ -10,7 +10,7 @@ from .grd.grd_mod import Grid
 from .bnd.bnd_mod import Boundary
 
 from . import msg
-
+from . import file_module
 class InputFileWriter(ABC):
     @abstractmethod
     def _extension(self):
@@ -107,7 +107,7 @@ class SWAN(InputFileWriter):
             file_out.write('$ Generate block-output \n')
             temp_list = forcing_path.split('/')
             forcing_folder = '/'.join(temp_list[0:-1])
-            file_out.write('BLOCK \'COMPGRID\' HEAD \''+add_folder_to_filename(grid.name()+'_'+STR_START.split('.')[0]+'.nc',forcing_folder)
+            file_out.write('BLOCK \'COMPGRID\' HEAD \''+file_module.add_folder_to_filename(grid.name()+'_'+STR_START.split('.')[0]+'.nc',forcing_folder)
                            + '\' & \n')
             file_out.write(
                 'LAY 1 HSIGN RTP TPS PDIR TM01 DIR DSPR WIND DEP OUTPUT ' + STR_START + ' 1 HR \n')
@@ -116,7 +116,7 @@ class SWAN(InputFileWriter):
                 file_out.write('POINTS \'pkt\' &\n')
                 for i in range(len(self.spec_points)):
                     file_out.write(str(self.spec_points[i][0])+' '+str(self.spec_points[i][1])+ ' &\n')
-                file_out.write('SPECOUT \'pkt\' SPEC2D ABS \''+add_folder_to_filename(grid.name()+'_'+STR_START.split('.')[0]+'_spec.nc',forcing_folder)+ '\' & \n')
+                file_out.write('SPECOUT \'pkt\' SPEC2D ABS \''+file_module.add_folder_to_filename(grid.name()+'_'+STR_START.split('.')[0]+'_spec.nc',forcing_folder)+ '\' & \n')
                 file_out.write('OUTPUT ' + STR_START + ' 1 HR \n')
             else:
                 pass
@@ -178,7 +178,7 @@ class SWASH(InputFileWriter):
             file_out.write('$ OUTPUT REQUESTS \n')
             temp_list = grid_path.split('/')
             forcing_folder = '/'.join(temp_list[0:-1])
-            file_out.write('BLOCK \'COMPGRID\' NOHEAD \''+add_folder_to_filename(grid.name()+'.mat',forcing_folder)
+            file_out.write('BLOCK \'COMPGRID\' NOHEAD \''+file_module.add_folder_to_filename(grid.name()+'.mat',forcing_folder)
                            + '\' & \n')
             file_out.write(
                 'LAY 3 WATL BOTL OUTPUT ' + STR_START + ' 5 SEC \n')

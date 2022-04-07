@@ -34,7 +34,10 @@ from typing import Union
 from .. import msg
 from ..bnd.process import processor_for_convention_change
 
+from .. import file_module
+
 WritingFunction = Union[GridWriter, BoundaryWriter, SpectralWriter, ForcingWriter]
+PlottingFunction = Union[GridPlotter]
 
 class ModelRun:
     def __init__(self, grid: Grid, start_time: str='1970-01-01T00:00', end_time: str='2030-12-31T23:59', name: str='AnonymousModelRun'):
@@ -44,7 +47,9 @@ class ModelRun:
         self.end_time = copy(end_time)
         self._exported_to = {}
 
-    def import_boundary(self, boundary_reader: BoundaryReader=None, point_picker: PointPicker=None, name: str=None) -> None:
+    def import_boundary(self, boundary_reader: BoundaryReader=None,
+                        point_picker: PointPicker=None, name: str=None,
+                        dry_run: bool=False) -> None:
         """Creates a Boundary-object and imports boundary spectra."""
 
         self._boundary_reader = boundary_reader or self._get_boundary_reader()
@@ -60,11 +65,16 @@ class ModelRun:
         self._boundary = Boundary(grid=self.grid(), name=name)
 
         # Import the boundary spectra into the Boundary-object
-        self.boundary().import_boundary(start_time=self.start_time, end_time=self.end_time, boundary_reader=self._boundary_reader, point_picker=self._point_picker)
+        if not dry_run:
+            self.boundary().import_boundary(start_time=self.start_time,
+                                            end_time=self.end_time,
+                                            boundary_reader=self._boundary_reader,
+                                            point_picker=self._point_picker)
+        else:
+            msg.info('Dry run! No boundary spectra will be imported.')
 
-        return
-
-    def import_forcing(self, forcing_reader: ForcingReader=None, name: str=None) -> None:
+    def import_forcing(self, forcing_reader: ForcingReader=None,
+                        name: str=None, dry_run: bool=False) -> None:
         """Creates a Forcing-objects and imports forcing data."""
 
         self._forcing_reader = forcing_reader or self._get_forcing_reader()
@@ -77,11 +87,15 @@ class ModelRun:
         self._forcing = Forcing(grid=self.grid(), name=name)
 
         # Import the forcing data into the Forcing-object
-        self.forcing().import_forcing(start_time=self.start_time, end_time=self.end_time, forcing_reader=self._forcing_reader)
+        if not dry_run:
+            self.forcing().import_forcing(start_time=self.start_time,
+                                        end_time=self.end_time,
+                                        forcing_reader=self._forcing_reader)
+        else:
+            msg.info('Dry run! No forcing will be imported.')
 
-        return
-
-    def import_spectra(self, spectral_reader: SpectralReader=None, name: str=None) -> None:
+    def import_spectra(self, spectral_reader: SpectralReader=None,
+                        name: str=None, dry_run: bool=False) -> None:
         """Creates a Spectra-object and import omnidirectional spectral data."""
         self._spectral_reader = spectral_reader or self._get_spectral_reader()
 
@@ -93,17 +107,24 @@ class ModelRun:
         self._spectra = Spectra(grid=self.grid(), name=name)
 
         # Import the forcing data into the Forcing-object
-        self.spectra().import_spectra(start_time=self.start_time, end_time=self.end_time, spectral_reader=self._spectral_reader)
+        if not dry_run:
+            self.spectra().import_spectra(start_time=self.start_time,
+                                        end_time=self.end_time,
+                                        spectral_reader=self._spectral_reader)
+        else:
+            msg.info('Dry run! No omnidirectional spectra will be imported.')
 
-    def boundary_to_spectra(self):
+    def boundary_to_spectra(self, dry_run: bool=False):
         if self.boundary() is None:
             msg.warning('No Boundary to convert to Spectra!')
 
         spectral_reader = BoundaryToSpectra(self.boundary())
         msg.header(spectral_reader, 'Converting the boundary spectra to omnidirectional spectra...')
         name = self.boundary().name()
-        self.import_spectra(spectral_reader, name)
-
+        if not dry_run:
+            self.import_spectra(spectral_reader, name)
+        else:
+            msg.info('Dry run! No boundary will not be converted to spectra.')
 
     def export_grid(self, grid_writer: Union[GridWriter, TrGridWriter]=None,
                     filename: str=None, folder: str=None, dateformat: str=None,
@@ -136,18 +157,24 @@ class ModelRun:
         """Writes the spectra in the Boundary-object to an external source, e.g.
         a file."""
 
-        if self.boundary() is None:
+        if self.boundary() is None and not dry_run:
             raise Exception('Import boundary before exporting!')
 
         self._boundary_writer = boundary_writer or self._get_boundary_writer()
         if self._boundary_writer is None:
             raise Exception('Define a BoundaryWriter!')
 
-        msg.header(self._boundary_writer, f"Writing boundary spectra from {self.boundary().name()}")
+        if self.boundary() is None:
+            msg.header(self._boundary_writer, f"Writing boundary spectra from DryRunBoundary")
+        else:
+            msg.header(self._boundary_writer, f"Writing boundary spectra from {self.boundary().name()}")
 
-        boundary_processor = processor_for_convention_change(
-                            current_convention = self.boundary().convention(),
-                            wanted_convention = self._boundary_writer._convention())
+        if dry_run:
+            boundary_processor = None
+        else:
+            boundary_processor = processor_for_convention_change(
+                                current_convention = self.boundary().convention(),
+                                wanted_convention = self._boundary_writer._convention())
 
         if boundary_processor is None:
             msg.info(f"Convention ({self.boundary().convention()}) already equals wanted convention ({self._boundary_writer._convention()}).")
@@ -164,14 +191,17 @@ class ModelRun:
         """Writes the spectra in the Spectra-object to an external source, e.g.
         a file."""
 
-        if self.spectra() is None:
+        if self.spectra() is None and not dry_run:
             raise Exception('Import spectra before exporting!')
 
         self._spectral_writer = spectral_writer or self._get_spectral_writer()
         if self._spectral_writer is None:
             raise Exception('Define a SpectralWriter!')
 
-        msg.header(self._spectral_writer, f"Writing omnidirectional spectra from {self.spectra().name()}")
+        if self.spectra() is None:
+            msg.header(self._spectral_writer, f"Writing omnidirectional spectra from DryRunSpectra")
+        else:
+            msg.header(self._spectral_writer, f"Writing omnidirectional spectra from {self.spectra().name()}")
 
         # NOT IMPPELMENTED YET
         # spectral_processor = processor_for_convention_change(current_convention = self.spectra().convention(), wanted_convention = self._spectral_writer._convention_in())
@@ -192,7 +222,7 @@ class ModelRun:
         """Writes the forcing data in the Forcing-object to an external source,
         e.g. a file."""
 
-        if self.forcing() is None:
+        if self.forcing() is None and not dry_run:
             raise Exception('Import forcing before exporting!')
 
         self._forcing_writer = forcing_writer or self._get_forcing_writer()
@@ -200,7 +230,10 @@ class ModelRun:
         if self._forcing_writer is None:
             raise Exception('Define a ForcingWriter!')
 
-        msg.header(self._forcing_writer, f"Writing wind forcing from {self.forcing().name()}")
+        if self.forcing() is not None:
+            msg.header(self._forcing_writer, f"Writing wind forcing from {self.forcing().name()}")
+        else:
+            msg.header(self._forcing_writer, f"Writing wind forcing from DryRunForcing")
 
         __ = self._export_object(filename, folder, dateformat,
                             writer_function=self._forcing_writer,
@@ -229,7 +262,9 @@ class ModelRun:
                                 _folder=folder,
                                 _dateformat=dateformat,
                                 extension=self._input_file_writer._extension(),
-                                module='wnd')
+                                dnora_obj='input_file')
+
+        file_object.create_folder()
 
         # These are used to write info to the input file where to find the
         # forcing etc. data that has previously been exported
@@ -249,7 +284,7 @@ class ModelRun:
             output_files = self._input_file_writer(grid=self.grid(),
                             forcing=self.forcing(), boundary=self.boundary(),
                             start_time=start_time, end_time=end_time,
-                            filename=file_object.filepaht(),
+                            filename=file_object.filepath(),
                             grid_path=grid_path, forcing_path=forcing_path,
                             boundary_path=boundary_path)
             if type(output_files) is not list:
@@ -269,32 +304,45 @@ class ModelRun:
 
     def run_model(self, model_executer: ModelExecuter=None,
                 input_file: str=None, folder: str=None,
-                dateformat: str=None) -> None:
+                dateformat: str=None, input_file_extension: str=None,
+                dry_run: bool=False) -> None:
         """Run the model."""
 
-        self._model_executer = model_executedr or self._get_model_executer()
+        self._model_executer = model_executer or self._get_model_executer()
         if self._model_executer is None:
             raise Exception('Define a ModelExecuter!')
 
-        filename, folder = self._prepare_file_output(module='run',
-                                filename=filename, folder=folder,
-                                extension=self._model_executer._extension(),
-                                dateformat=dateformat)
-
-        if self._model_execture._clean_filename():
-            filename = clean_filename(filename, self._defaults['list_of_placeholders'])
-
         # We always assume that the model is located in the folder the input
         # file was written to
-        input_path = Path(self.exported_to('input_file'))
-        input_file = input_path.name
-        model_folder = input_path.parent
+
+        # Option 1) Use user provided
+        # Option 2) Use knowledge of where has been exported
+        # Option 3) Use default values to guess where is has previously been exported
+        exported_path = Path(self.exported_to('input_file')[0])
+        primary_file = input_file or exported_path.name
+        primary_folder = folder or str(exported_path.parent)
+
+        if hasattr(self, '_input_file_writer'):
+            extension = input_file_extension or self._input_file_writer._extension()
+        else:
+            extension = input_file_extension or 'swn'
+
+        file_object = FileNames(format=self._get_default_format(),
+                                clean_names=True,
+                                list_of_objects=self.list_of_objects(),
+                                _filename=primary_file,
+                                _folder=primary_folder,
+                                _dateformat=dateformat,
+                                extension=extension,
+                                dnora_obj='input_file')
+
 
         msg.header(self._model_executer, "Running model...")
-        msg.plain(f"Using input file: {str(input_path)}")
-        self._model_executer(input_file=input_file, model_folder=model_folder)
-
-        return
+        msg.plain(f"Using input file: {file_object.filepath()}")
+        if not dry_run:
+            self._model_executer(input_file=file_object.filename(), model_folder=file_object.folder())
+        else:
+            msg.info('Dry run! Model will not run.')
 
     def _export_object(self, filename: str, folder: str, dateformat: str,
                     writer_function: WritingFunction, dnora_obj: str,
@@ -309,21 +357,21 @@ class ModelRun:
                                 _dateformat=dateformat,
                                 extension=writer_function._extension(),
                                 dnora_obj=dnora_obj)
-
         if dry_run:
             msg.info('Dry run! No files will be written.')
             output_files = [file_object.filepath()]
         else:
             # Write the object using the WriterFunction
+            file_object.create_folder()
             obj = eval(f'self.{dnora_obj}()')
             output_files = writer_function(obj, file_object.filepath())
             if type(output_files) is not list:
                 output_files = [output_files]
 
         # Store name and location where file was written
-        self._exported_to[object] = []
+        self._exported_to[dnora_obj] = []
         for file in output_files:
-            self._exported_to[object].append(file)
+            self._exported_to[dnora_obj].append(file)
 
         if writer_function._im_silent() or dry_run:
             for file in output_files:
@@ -331,8 +379,9 @@ class ModelRun:
 
         return output_files
 
-    def plot_grid(self, grid_plotter: GridPlotter=None, grid_processor: GridProcessor=None,
-                plain: bool=False, save_fig: bool=False, show_fig: bool=True) -> None:
+    def plot_grid(self, grid_plotter: GridPlotter=None, filename: str=None,
+                    folder: str=None, dateformat: str=None, plain: bool=False,
+                    save_fig: bool=False, show_fig: bool=True) -> None:
         """Plot the data in the Grid-object, possibly overlaying data from the
         Boundary- and Forcing-objects."""
 
@@ -340,39 +389,20 @@ class ModelRun:
             msg.warning('Grid not meshed and nothing to plot!')
             return
 
-        if grid_plotter is None:
-            self._grid_plotter = self._get_grid_plotter()
-        else:
-            self._grid_plotter = grid_plotter
+        self._grid_plotter = grid_plotter or self._get_grid_plotter()
 
         if self._grid_plotter is None:
             raise Exception('Define a GridPlotter!')
 
+        self._plot_object(filename=filename, folder=folder,
+                            dateformat=dateformat,
+                            plotting_function=self._grid_plotter,
+                            plain=plain, save_fig=save_fig,
+                            show_fig=show_fig, dnora_obj='dnplot_grid')
 
-        grid_plot = copy(self.grid())
-        if grid_processor is not None:
-            grid_plot.process_grid.grid(grid_processor)
-
-
-        filename = create_filename_obj(filestring=filestring, objects=[self, self.grid(), self.forcing(), self.boundary()])
-
-        fig, filename_out = self._grid_plotter.grid(grid_plot, forcing=self.forcing(), boundary=self.boundary(), filename=filename, plain=plain)
-
-        # Cleans out e.g. #T0 or "__" if they were in the filename
-        if filename_out is not None:
-            filename_out = clean_filename(filename_out, list_of_placeholders)
-
-        if fig is not None:
-            if save_fig:
-                fig.savefig(filename_out, dpi=300)
-                msg.to_file(filename_out)
-            if show_fig:
-                fig.show()
-
-        return
-
-    def plot_topo(self, grid_plotter: GridPlotter=None, grid_processor: GridProcessor=None,
-                plain: bool=True, save_fig: bool=False, show_fig: bool=True) -> None:
+    def plot_topo(self, grid_plotter: GridPlotter=None, filename: str=None,
+                folder: str=None, dateformat: str=None, plain: bool=True,
+                save_fig: bool=False, show_fig: bool=True) -> None:
         """Plot the raw data in the Grid-object, possibly overlaying data from the
         Boundary- and Forcing-objects."""
 
@@ -381,36 +411,49 @@ class ModelRun:
             msg.warning('No topography imported so nothing to plot!')
             return
 
-        if grid_plotter is None:
-            self._grid_plotter = self._get_topo_plotter()
-        else:
-            self._grid_plotter = grid_plotter
+        self._grid_plotter = grid_plotter or self._get_topo_plotter()
 
         if self._grid_plotter is None:
             raise Exception('Define a GridPlotter!')
 
+        self._plot_object(filename=filename, folder=folder,
+                            dateformat=dateformat,
+                            plotting_function=self._grid_plotter,
+                            plain=plain, save_fig=save_fig,
+                            show_fig=show_fig, dnora_obj='dnplot_topo')
 
-        grid_plot = copy(self.grid())
-        if grid_processor is not None:
-            grid_plot.process_grid.topo(grid_processor)
 
+    def _plot_object(self, filename: str, folder: str, dateformat: str,
+                    plotting_function: PlottingFunction, plain: bool,
+                    save_fig: bool, show_fig: bool, dnora_obj: str):
+        """Plots a dnora object, e.g. a grid"""
 
-        filename = create_filename_obj(filestring=filestring, objects=[self, self.grid(), self.forcing(), self.boundary()])
+        if filename is not None:
+            save_fig = True
 
-        fig, filename_out = self._grid_plotter.topo(grid_plot, forcing=self.forcing(), boundary=self.boundary(), filename=filename, plain=plain)
+        # Controls generation of file names using the proper defaults etc.
+        file_object = FileNames(format=self._get_default_format(),
+                                clean_names=True,
+                                list_of_objects=self.list_of_objects(),
+                                _filename=filename,
+                                _folder=folder,
+                                _dateformat=dateformat,
+                                extension=plotting_function._extension(),
+                                dnora_obj=dnora_obj)
 
-        # Cleans out e.g. #T0 or "__" if they were in the filename
-        if filename_out is not None:
-            filename_out = clean_filename(filename_out, list_of_placeholders)
+        file_object.create_folder()
+
+        if dnora_obj == 'dnplot_grid':
+            fig = plotting_function.grid(dict_of_objects=self.dict_of_objects(), plain=plain)
+        elif dnora_obj == 'dnplot_topo':
+            fig = plotting_function.topo(dict_of_objects=self.dict_of_objects(), plain=plain)
 
         if fig is not None:
             if save_fig:
-                fig.savefig(filename_out, dpi=300)
-                msg.to_file(filename_out)
+                fig.savefig(file_object.filepath(), dpi=300)
+                msg.to_file(file_object.filepath())
             if show_fig:
                 fig.show()
-
-        return
 
     def name(self) -> str:
         return self._name
@@ -440,8 +483,19 @@ class ModelRun:
         else:
             return None
 
+    def input_file(self) -> None:
+        """Only defined to have method for all objects"""
+        return None
+
+
+    def dict_of_objects(self) -> dict[str: ModelRun, str: Grid, str: Forcing, str: Boundary, str: Spectra]:
+        return {'ModelRun': self, 'Grid': self.grid(), 'Forcing': self.forcing(), 'Boundary': self.boundary(), 'Spectra': self.spectra()}
+
     def list_of_objects(self) -> list[ModelRun, Grid, Forcing, Boundary, Spectra]:
-        return [self, self.grid(), self.forcing(), self.boundary(), self.spectra()]
+        return list(self.dict_of_objects().values())
+
+    def list_of_object_strings(self) -> list[str]:
+        return list(self.dict_of_objects().keys())
 
     def exported_to(self, object: str) -> str:
         """Returns the path the object (e.g. grid) was exported to.

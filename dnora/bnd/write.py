@@ -105,7 +105,7 @@ class NcFiles(BoundaryWriter):
         output_files = []
         for n in boundary.x():
             output_file = file_module.replace_lonlat(filename, lon=boundary.lon()[n], lat=boundary.lat()[n])
-            output_file = file_module.clean(output_file, list_of_placeholders)
+            output_file = file_module.clean(output_file)
             output_files.append(output_file)
 
             msg.to_file(output_file)

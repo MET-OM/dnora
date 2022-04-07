@@ -3,6 +3,7 @@ import yaml
 from dataclasses import dataclass
 import pandas as pd
 import re
+from . import msg
 
 def add_prefix(filename: str, prefix: str) -> str:
     """Adds a prefix to a filename, e.g. FileName.txt -> new_FileName.txt"""
@@ -70,6 +71,9 @@ def clean(filename: str, list_of_placeholders: list[str]) -> str:
 
     Also removes multiple underscores '___'
     """
+    defaults_file = Path(__file__).parent.joinpath(Path('defaults.yml'))
+    with open(defaults_file, 'r') as file:
+      list_of_placeholders = yaml.safe_load(file)['list_of_placeholders']
 
     for s in list_of_placeholders:
             filename = re.sub(s, '', filename)
@@ -78,29 +82,30 @@ def clean(filename: str, list_of_placeholders: list[str]) -> str:
 
     return filename
 
-def get_default_value(key: str, module:str, primary: dict, fallback: dict):
+def get_default_value(key: str, dnora_obj:str, primary: dict, fallback: dict):
     """Get a key (e.g. folder) from the defaults list.
 
-    1) Tries Model+module specific value (e.g. SWAN-wnd-folder)
+    1) Tries Model+dnora_obj specific value (e.g. SWAN-wnd-folder)
 
     2) Tries Model specifc values (e.g. SWAN-folder)
 
     3) Returns ModelRun defaults (e.g. ModulRun-wnd-folder)
     """
 
-    if module not in fallback.keys():
-        raise ValueError(f'Default values not defined for module {module}!')
-    fallback_filename = fallback[module].get(key)
+    dnora_obj = dnora_obj.lower()
+    if dnora_obj not in fallback.keys():
+        raise ValueError(f'Default values not defined for {dnora_obj}!')
+    fallback_filename = fallback[dnora_obj].get(key)
 
-    # Try module specific filename is module settings defined
-    module_filename = None
-    if primary.get(module) is not None:
-        module_filename = primary[module].get(key) or module_filename
+    # Try dnora_obj specific filename is dnora_obj settings defined
+    dnora_obj_filename = None
+    if primary.get(dnora_obj) is not None:
+        dnora_obj_filename = primary[dnora_obj].get(key) or dnora_obj_filename
 
-    # If filename not defined for specific module, try Model specific name
-    module_filename = module_filename or primary.get(key)
+    # If filename not defined for specific dnora_obj, try Model specific name
+    dnora_obj_filename = dnora_obj_filename or primary.get(key)
 
-    return module_filename or fallback_filename
+    return dnora_obj_filename or fallback_filename
 
 def add_folder_to_filename(filename: str, folder: str) -> str:
     return str(Path(folder).joinpath(filename))
@@ -113,14 +118,13 @@ def split_filepath(filepath: str) -> tuple[str, str]:
 @dataclass
 class FileNames:
     format: str
+    dnora_obj: str
     clean_names: bool
     list_of_objects: list
     _filename: str
     _folder: str
     _dateformat: str
     extension: str
-    module: str = None
-    dnora_obj: str = None
 
     def __post_init__(self):
         defaults_file = Path(__file__).parent.joinpath(Path('defaults.yml'))
@@ -129,21 +133,17 @@ class FileNames:
         self.fallback = self._defaults['ModelRun']
         self.primary = self._defaults[self.format]
         self.placeholders = self._defaults['list_of_placeholders']
-        if self.module is None and self.dnora_obj is None:
-            raise ValueError('Provide either module or object!')
-        if self.module is None:
-            self.module = self._defaults['list_of_modules'][self.dnora_obj]
 
     def dateformat(self) -> str:
-        return self._dateformat or get_default_value('dateformat', self.module, self.primary, self.fallback)
+        return self._dateformat or get_default_value('dateformat', self.dnora_obj, self.primary, self.fallback)
 
     def filename(self) -> str:
-        filename = self._filename or get_default_value('filename', self.module, self.primary, self.fallback)
+        filename = self._filename or get_default_value('filename', self.dnora_obj, self.primary, self.fallback)
         filename = self.replace_placeholders(filename, self.dateformat())
         return Path(filename).with_suffix(f'.{self.extension}')
 
     def folder(self) -> str:
-        folder = self._folder or get_default_value('folder', self.module, self.primary, self.fallback)
+        folder = self._folder or get_default_value('folder', self.dnora_obj, self.primary, self.fallback)
         return Path(self.replace_placeholders(folder, self.dateformat()))
 
     def filepath(self) -> str:
