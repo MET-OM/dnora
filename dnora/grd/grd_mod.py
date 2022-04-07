@@ -17,9 +17,8 @@ if TYPE_CHECKING:
 
 # Import default values and auxiliry functions
 from .. import msg
+from .. import file_module
 from ..aux import force_to_xyz, distance_2points, domain_size_in_km, set_spacing_dlon_dlat_fixed_edges, set_spacing_dlon_dlat_floating_edges, set_spacing_dx_dy, set_spacing_nx_ny
-from ..aux import create_filename_obj, add_folder_to_filename, clean_filename, check_if_folder
-from ..defaults import dflt_grd, list_of_placeholders
 
 
 class Grid:
@@ -388,7 +387,7 @@ class Grid:
         if not filename:
             filename = f"{self.name()}_info.txt"
 
-        filename = add_folder_to_filename(filename, folder)
+        filename = file_module.add_folder_to_filename(filename, folder)
         msg.to_file(filename)
 
         stdout = sys.stdout

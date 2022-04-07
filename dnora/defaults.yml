@@ -10,6 +10,13 @@ list_of_placeholders:
   - '#Lon'
   - '#Lat'
 
+list_of_modules:
+  grid: grd
+  forcing: wnd
+  boundary: bnd
+  spectra: spc
+  input_file: inp
+
 ModelRun:
   grd:
     folder: output

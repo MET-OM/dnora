@@ -22,8 +22,7 @@ if TYPE_CHECKING:
 
 # Import default values and auxiliry functions
 from .. import msg
-from ..aux import day_list, create_filename_obj, create_filename_time, create_filename_lonlat, clean_filename, check_if_folder
-from ..defaults import dflt_bnd, list_of_placeholders
+from ..aux import day_list
 
 
 class Boundary:

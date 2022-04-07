@@ -13,8 +13,7 @@ if TYPE_CHECKING:
 
 # Import default values and auxiliry functions
 from .. import msg
-from ..defaults import dflt_bnd, list_of_placeholders
-from ..aux import add_folder_to_filename, clean_filename, create_filename_lonlat
+from .. import file_module
 
 class BoundaryWriter(ABC):
     """Writes the boundary spectra to a certain file format.
@@ -66,32 +65,24 @@ class BoundaryWriter(ABC):
         return
 
     @abstractmethod
-    def __call__(self, boundary: Boundary, filename: str, folder: str) -> List[str]:
+    def __call__(self, boundary: Boundary, filename: str) -> List[str]:
         """Writed the data from the Boundary object and returns the file and
         folder where data were written."""
 
         return output_files
 
 class DumpToNc(BoundaryWriter):
-    def __init__(self, convention: str='Ocean', out_format: str='General') -> None:
+    def __init__(self, convention: str='Ocean') -> None:
         self._convention_in = convention
-        self.out_format = out_format
         return
 
     def _convention(self) -> str:
         """Convention of spectra"""
         return self._convention_in
 
-
-    def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
-
-        # Add folder
-        output_path = add_folder_to_filename(output_file, folder=folder)
-
-        # Dumping to a netcdf-file
-        boundary.data.to_netcdf(output_path)
-
-        return output_path
+    def __call__(self, boundary: Boundary, filename: str) -> Tuple[str, str]:
+        boundary.data.to_netcdf(filename)
+        return filename
 
 
 class NcFiles(BoundaryWriter):
@@ -109,13 +100,12 @@ class NcFiles(BoundaryWriter):
     def _clean_filename(self):
         return False
 
-    def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
+    def __call__(self, boundary: Boundary, filename: str) -> Tuple[str, str]:
 
         output_files = []
         for n in boundary.x():
-            output_file = create_filename_lonlat(filename, lon=boundary.lon()[n], lat=boundary.lat()[n])
-            output_file = clean_filename(output_file, list_of_placeholders)
-            output_file = add_folder_to_filename(output_file, folder=folder)
+            output_file = file_module.replace_lonlat(filename, lon=boundary.lon()[n], lat=boundary.lat()[n])
+            output_file = file_module.clean(output_file, list_of_placeholders)
             output_files.append(output_file)
 
             msg.to_file(output_file)
@@ -127,10 +117,9 @@ class NcFiles(BoundaryWriter):
 
 
 class WW3(BoundaryWriter):
-    def __init__(self, one_file: bool=True, convention='WW3', out_format = 'WW3') -> None:
+    def __init__(self, one_file: bool=True, convention='WW3') -> None:
         self.one_file = one_file
         self._convention_in = convention
-        self.out_format = out_format
         return
 
     def _extension(self):
@@ -147,22 +136,14 @@ class WW3(BoundaryWriter):
         return False
 
     def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
-
-
-        #boundary_in.change_convention(wanted_convention='WW3')
-
         msg.info('Writing WAVEWATCH-III netcdf-output')
-
-
 
         if self.one_file:
             if len(boundary.x()) == 1:
                 # Uses $Lon $Lat
-                filename = create_filename_lonlat(filename, lon=boundary.lon()[0], lat=boundary.lat()[0])
+                filename = file_module.replace_lonlat(filename, lon=boundary.lon()[0], lat=boundary.lat()[0])
 
-            output_files = clean_filename(filename, list_of_placeholders)
-
-            output_files = add_folder_to_filename(output_files, folder=folder)
+            output_files = file_module.clean(filename, list_of_placeholders)
             msg.plain(f"All points >> {output_files}")
             self.write_netcdf(boundary, output_files)
 
@@ -170,9 +151,8 @@ class WW3(BoundaryWriter):
             output_files = []
             for n in boundary.x():
                 if boundary.mask[n]: # This property is not really used and should always be true
-                    output_file = create_filename_lonlat(filename, lon=boundary.lon()[n], lat=boundary.lat()[n])
-                    output_file = clean_filename(output_file, list_of_placeholders)
-                    output_file = add_folder_to_filename(output_file, folder=folder)
+                    output_file = file_module.replace_lonlat(filename, lon=boundary.lon()[n], lat=boundary.lat()[n])
+                    output_file = file_module.clean(output_file, list_of_placeholders)
                     output_files.append(output_file)
 
                     msg.plain(f"Point {n} >> {output_file}")
@@ -303,9 +283,8 @@ class WW3(BoundaryWriter):
 
 
 class SWAN(BoundaryWriter):
-    def __init__(self, factor = 1E-4, out_format = 'SWAN') -> None:
+    def __init__(self, factor = 1E-4) -> None:
         self.factor = factor
-        self.out_format = out_format
         return
 
     def _convention(self) -> str:
@@ -315,15 +294,13 @@ class SWAN(BoundaryWriter):
     def _extension(self):
         return 'asc'
 
+    def __call__(self, boundary: Boundary, filename: str) -> Tuple[str, str]:
 
-    def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
-
-        output_file = add_folder_to_filename(filename, folder)
 
         swan_bnd_points = boundary.grid.boundary_points()
         days = boundary.days()
 
-        with open(output_file, 'w') as file_out:
+        with open(filename, 'w') as file_out:
             file_out.write('SWAN   1\n')
             file_out.write('$ Data produced by '+boundary.data.source+'\n')
             file_out.write('TIME\n')
@@ -361,4 +338,4 @@ class SWAN(BoundaryWriter):
 
 			# SWAN uses m*m/Hz/deg normalization
                         np.savetxt(file_out,S*np.pi/(180*self.factor), fmt='%-10.0f')
-        return output_file
+        return filename

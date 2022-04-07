@@ -10,10 +10,8 @@ from typing import TYPE_CHECKING, Tuple
 if TYPE_CHECKING:
     from .grd_mod import Grid
 
-# Import default values and auxiliry functions
-from ..defaults import dflt_grd, list_of_placeholders
 from .. import msg
-from ..aux import add_folder_to_filename, add_prefix, add_suffix, clean_filename
+from .. import file_module
 
 class GridWriter(ABC):
     """Abstract class for writing the Grid-object's data to files to be Used
@@ -50,12 +48,10 @@ class BoundaryPoints(GridWriter):
     def _extension(self):
         return 'txt'
 
-    def __call__(self, grid: Grid, filename: str, folder: str) -> Tuple:
-        output_file = clean_filename(filename, list_of_placeholders)
-        output_path = add_folder_to_filename(output_file, folder)
+    def __call__(self, grid: Grid, filename: str) -> Tuple:
+        output_file = file_module.clean(filename, list_of_placeholders)
 
-
-        with open(output_path,'w') as f:
+        with open(output_file,'w') as f:
             if self.include_index and hasattr(grid, 'boundary_inds'):
                 for n in range(len(grid.boundary_points())):
                     # Going from python 0-indexing to node 1-indexing
@@ -63,8 +59,8 @@ class BoundaryPoints(GridWriter):
             else:
                 for n in range(len(grid.boundary_points())):
                     f.write(f'{grid.boundary_points()[n,0]:13.10f} {grid.boundary_points()[n,1]:13.10f}\n')
-        print(output_path)
-        return output_path
+        print(output_file)
+        return output_file
 
 class WW3(GridWriter):
     """Writes the grid to WAVEWATCH III format."""
@@ -75,7 +71,7 @@ class WW3(GridWriter):
         self.matrix = matrix
         return
 
-    def __call__(self, grid: Grid, filename: str, folder: str) -> Tuple:
+    def __call__(self, grid: Grid, filename: str) -> Tuple:
 
         mask_out = np.zeros(grid.topo().shape)
         mask_out[grid.land_sea_mask()] = 1
@@ -83,42 +79,36 @@ class WW3(GridWriter):
             msg.info(f'Setting {sum(sum(np.logical_and(grid.boundary_mask(), grid.land_sea_mask()))):d} boundary points in grid...')
             mask_out[np.logical_and(grid.boundary_mask(), grid.land_sea_mask())] = 2
 
-        output_paths = []
+        output_files = []
         if self.matrix:
-            output_file = add_prefix(filename, 'mat')
-            output_file = add_suffix(output_file, 'bathy')
-            output_file = add_folder_to_filename(output_file, folder)
-            output_paths.append(output_file)
+            output_file = file_module.add_prefix(filename, 'mat')
+            output_file = file_module.add_suffix(output_file, 'bathy')
+            output_files.append(output_file)
 
             #msg.to_file(output_path)
             np.savetxt(output_file, grid.topo(), delimiter=',',fmt='%1.6f')
 
-            output_file = add_prefix(filename, 'mat')
-            output_file = add_suffix(output_file, 'mapsta')
-            output_file = add_folder_to_filename(output_file, folder)
-            output_paths.append(output_file)
+            output_file = file_module.add_prefix(filename, 'mat')
+            output_file = file_module.add_suffix(output_file, 'mapsta')
+            output_files.append(output_file)
 
             #msg.to_file(output_path)
             np.savetxt(output_file, mask_out, delimiter=',',fmt='%1.0f')
 
         else:
-            output_file = add_suffix(filename, 'bathy')
-            output_file = add_folder_to_filename(output_file, folder)
-            output_paths.append(output_file)
+            output_file = file_module.add_suffix(filename, 'bathy')
+            output_files.append(output_file)
 
             #msg.to_file(output_path)
             np.savetxt(output_file, grid.topo().ravel(), delimiter=',',fmt='%1.6f')
 
-            output_file = add_suffix(filename, 'mapsta')
-            output_file = add_folder_to_filename(output_file, folder)
-            output_paths.append(output_file)
+            output_file = file_module.add_suffix(filename, 'mapsta')
+            output_files.append(output_file)
 
             #msg.to_file(output_path)
             np.savetxt(output_file, mask_out.ravel(), delimiter=',',fmt='%1.0f')
 
-
-
-        return output_paths
+        return output_files
 
 class SWAN(GridWriter):
     """Writes the grid to SWAN format."""
@@ -129,7 +119,7 @@ class SWAN(GridWriter):
     def _extension(self):
         return 'bot'
 
-    def __call__(self, grid: Grid, filename: str, folder: str) -> None:
+    def __call__(self, grid: Grid, filename: str) -> None:
 
         mask_out = np.ones(grid.topo().shape)
         mask_out[grid.land_sea_mask()] = 0
@@ -138,12 +128,11 @@ class SWAN(GridWriter):
             mask_out[np.logical_and(grid.boundary_mask(), grid.land_sea_mask())] = 2
 
         #output_file = grid.filename(filestring=filestring, extension='bot')
-        output_path = add_folder_to_filename(filename, folder)
 
         #msg.to_file(output_path)
-        np.savetxt(output_path, grid.topo(), delimiter='\t',fmt='%1.2f')
+        np.savetxt(filename, grid.topo(), delimiter='\t',fmt='%1.2f')
 
-        return output_path
+        return filename
 
 class Xyz(GridWriter):
     """Writes the grid to Xyz-format."""
@@ -155,10 +144,7 @@ class Xyz(GridWriter):
     def _extension(self):
         return 'xyz'
 
-    def __call__(self, grid: Grid, filename: str, folder: str) -> None:
-
-        #output_file = grid.filename(filestring=filestring, extension='bot')
-        output_path = add_folder_to_filename(filename, folder)
+    def __call__(self, grid: Grid, filename: str) -> None:
 
         if self._use_raw:
             z = grid.raw_topo();
@@ -169,7 +155,7 @@ class Xyz(GridWriter):
             x = grid.lon()
             y = grid.lat()
 
-        with open(output_path, 'w') as f:
+        with open(filename, 'w') as f:
             f.write(f'{filename}\n')
             for nx, lon in enumerate(x):
                 for ny, lat in enumerate(y):
@@ -184,7 +170,7 @@ class Xyz(GridWriter):
                         f.write(f'{lon_out:{fmt}},{lat_out:{fmt}},{z[ny,nx]:.1f}\n')
 
 
-        return output_path
+        return filename
 
 class REEF3D(GridWriter):
     """Writes the grid to Xyz-format in relative Cartesian grid."""
@@ -195,9 +181,7 @@ class REEF3D(GridWriter):
     def _extension(self):
         return 'dat'
 
-    def __call__(self, grid: Grid, filename: str, folder: str) -> None:
-
-        output_path = add_folder_to_filename(filename, folder)
+    def __call__(self, grid: Grid, filename: str) -> None:
 
         if self._use_raw:
             z = grid.raw_topo();
@@ -212,22 +196,9 @@ class REEF3D(GridWriter):
             z = z.ravel()
 
         fmt='.5f'
-        with open(output_path, 'w') as f:
+        with open(filename, 'w') as f:
             for i, __ in enumerate(x):
                 f.write(f'{x[i]:{fmt}} {y[i]:{fmt}} {z[i]:.1f}\n')
 
 
-        return output_path
-
-# class SWASH(SWAN):
-#     """Writes the grid to SWASH format.
-#
-#     NB! Format is same as SWAN, and a separate class is defined only to get
-#     the file name right.
-#     """
-#     def _preferred_format(self):
-#         return 'SWASH'
-#
-#     def __call__(self, grid: Grid, filename: str, infofilename: str, folder: str) -> Tuple:
-#         filename, folder = super().__call__(grid)
-#         return filename, folder
+        return filename

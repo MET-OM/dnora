@@ -11,9 +11,7 @@ if TYPE_CHECKING:
     from .wnd_mod import Forcing # Boundary object
 
 # Import default values and auxiliry functions
-from ..defaults import dflt_frc, list_of_placeholders
 from .. import msg
-from ..aux import check_if_folder, add_folder_to_filename, clean_filename
 
 class ForcingWriter(ABC):
     """Writes the forcing data to a certain file format.
@@ -37,7 +35,7 @@ class ForcingWriter(ABC):
         return True
 
     @abstractmethod
-    def __call__(self, forcing: Forcing, filename: str, folder: str) -> List[str]:
+    def __call__(self, forcing: Forcing, filename: str) -> List[str]:
         """Writed the data from the Forcing object and returns the file and
         folder where data were written."""
 
@@ -48,13 +46,9 @@ class WW3(ForcingWriter):
     def _extension(self):
         return 'nc'
 
-    def __call__(self, forcing: Forcing, filename: str, folder: str) -> List[str]:
-        # Add folder
-        output_file = add_folder_to_filename(filename, folder=folder)
-
-        forcing.data.to_netcdf(output_path)
-
-        return output_file
+    def __call__(self, forcing: Forcing, filename: str) -> List[str]:
+        forcing.data.to_netcdf(filename)
+        return filename
 
 
 class SWAN(ForcingWriter):
@@ -63,13 +57,10 @@ class SWAN(ForcingWriter):
     def _extension(self):
         return 'asc'
 
-    def __call__(self, forcing: Forcing, filename: str, folder: str) -> List[str]:
-
-        # Add folder
-        output_file = add_folder_to_filename(filename, folder=folder)
+    def __call__(self, forcing: Forcing, filename: str) -> List[str]:
 
         days = forcing.days()
-        with open(output_file, 'w') as file_out:
+        with open(filename, 'w') as file_out:
             for day in days:
                 msg.plain(day.strftime('%Y-%m-%d'))
                 times = forcing.times_in_day(day)
@@ -83,4 +74,4 @@ class SWAN(ForcingWriter):
                     np.savetxt(file_out, forcing.v()
                                [n, :, :]*1000, fmt='%i')
 
-        return output_file
+        return filename

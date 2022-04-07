@@ -5,7 +5,7 @@ from .grd.grd_mod import Grid, GridProcessor
 from .grd.process import TrivialFilter
 from .bnd.bnd_mod import Boundary
 from .wnd.wnd_mod import Forcing
-from .aux import add_suffix
+from . import file_module
 from . import msg
 from typing import Tuple
 import matplotlib.tri as mtri
@@ -76,7 +76,7 @@ class TopoPlotter(GridPlotter):
 
 
 
-        return fig, add_suffix(filename, 'topo')
+        return fig, file_module.add_suffix(filename, 'topo')
 
     def topo(self, grid: Grid, forcing: Forcing=None, boundary: Boundary=None, filename: str='', plain: bool=True) -> Tuple:
         """Creates a plot of the topography when a Grid-object is provided.
@@ -150,7 +150,7 @@ class TopoPlotter(GridPlotter):
 
 
 
-        return fig, add_suffix(filename, 'topo')
+        return fig, file_module.add_suffix(filename, 'topo')
 
 
 class MaskPlotter(GridPlotter):
@@ -197,4 +197,4 @@ class MaskPlotter(GridPlotter):
         cbar.set_label('0=Land, 1=Sea', rotation=90)
         plt.title(f"{grid.name()} land-sea mask")
 
-        return fig, add_suffix(filename, 'mask')
+        return fig, file_module.add_suffix(filename, 'mask')
