@@ -77,7 +77,7 @@ class WW3(TrGridWriter):
                 grid.lat(),
                 grid.topo(),
             ]).transpose()
-            fmt_node = '%10.0f%22.8f%22.8f%22.8f}'
+            fmt_node = '%10.0f%22.8f%22.8f%22.8f'
 
             f.write('$Nodes\n')
             f.write(f"{len(grid.lon()):12.0f}\n")
