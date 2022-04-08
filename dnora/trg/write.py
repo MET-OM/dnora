@@ -92,7 +92,7 @@ class WW3(TrGridWriter):
                 N_bound*[2],
                 N_bound*[1],
                 N_bound*[0],
-                grid.boundary_inds()+1
+                grid.boundary_inds()
             ]).transpose()
             fmt_bound = '%10.0f%10.0f%10.0f%10.0f%10.0f%10.0f'
 
