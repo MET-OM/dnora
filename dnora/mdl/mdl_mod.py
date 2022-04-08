@@ -497,6 +497,15 @@ class ModelRun:
     def list_of_object_strings(self) -> list[str]:
         return list(self.dict_of_objects().keys())
 
+    def dict_of_object_names(self) -> dict[str: str]:
+        d = {}
+        for a,b in self.dict_of_objects().items():
+            if b is None:
+                d[a] = None
+            else:
+                d[a] = b.name()
+        return d
+
     def exported_to(self, object: str) -> str:
         """Returns the path the object (e.g. grid) was exported to.
 

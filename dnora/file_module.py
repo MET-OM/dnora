@@ -7,22 +7,39 @@ from . import msg
 
 def add_prefix(filename: str, prefix: str) -> str:
     """Adds a prefix to a filename, e.g. FileName.txt -> new_FileName.txt"""
-    if (not prefix == '') and (not prefix[-1] == '_'):
-        return f"{prefix}_{filename}"
-    else:
-        return f"{prefix}{filename}"
+    if prefix == '':
+        return filename
+
+    if prefix[-1] == '_':
+        prefix = prefix[:-1]
+
+    if filename == '':
+            return prefix
+
+    if filename[0] == '_':
+        filename = filename[1:]
+
+    return f'{prefix}_{filename}'
 
 def add_suffix(filename: str, suffix: str) -> str:
     """Adds a suffix to a filename, e.g. FileName.txt -> FileName_new.txt"""
-    if (not suffix == '') and (not suffix[0] == '_'):
-        suffix = f"_{suffix}"
+    if suffix == '':
+        return filename
+
+    if suffix[0] == '_':
+        suffix = suffix[1:]
+
+    if filename == '':
+        return suffix
 
     filename_list = filename.split('.')
 
     if len(filename_list) == 1:
-        return filename+suffix
+        return f'{filename}_{suffix}'
     else:
-        return '.'.join(filename_list[0:-1]) + suffix + '.' + filename_list[-1]
+        filename = '.'.join(filename_list[0:-1])
+        extension = f'{filename_list[-1]}'
+        return f'{filename}_{suffix}.{extension}'
 
 def replace_times(filename: str, dateformat: str, times: list) -> str:
     """Substitutes the strings #T0, #T1, #T2... etc. in filname with time
@@ -47,9 +64,9 @@ def replace_lonlat(filename: str, lon: float, lat: float) -> str:
     filename = re.sub("#Lon", f"{lon:010.7f}", filename)
     filename = re.sub("#Lat", f"{lat:010.7f}", filename)
 
-    return filestring
+    return filename
 
-def replace_objects(filename: str, objects: list) -> str:
+def replace_objects(filename: str, dict_of_object_names: dict[str: str]) -> str:
     """Substitutes the strings #{Object} in filename with the name given to
     the object.
 
@@ -57,11 +74,9 @@ def replace_objects(filename: str, objects: list) -> str:
         -> Sula_NORA3_file.txt
     """
 
-    for object in objects:
-        if object is not None:
-            obj_str = type(object).__name__
-            obj_name = object.name()
-            filename = re.sub(f"#{obj_str}", obj_name, filename)
+    for obj_type, obj_name in dict_of_object_names.items():
+        if obj_name is not None:
+            filename = re.sub(f"#{obj_type}", obj_name, filename)
 
     return filename
 
@@ -69,7 +84,7 @@ def clean(filename: str, list_of_placeholders: list[str]) -> str:
     """ Cleans out the file name from possible used placeholders, e.g. #Grid
     as given in the list.
 
-    Also removes multiple underscores '___'
+    Also removes multiple underscores '___' etc.
     """
     defaults_file = Path(__file__).parent.joinpath(Path('defaults.yml'))
     with open(defaults_file, 'r') as file:
@@ -79,10 +94,14 @@ def clean(filename: str, list_of_placeholders: list[str]) -> str:
             filename = re.sub(s, '', filename)
 
     filename = re.sub("_{2,10}", '_', filename)
+    filename = re.sub("_-_", '', filename)
+    filename = re.sub("_-", '_', filename)
+    if filename and filename[-1] == '_':
+        filename = filename[:-1]
 
     return filename
 
-def get_default_value(key: str, dnora_obj:str, primary: dict, fallback: dict):
+def get_default_value(key: str, dnora_obj: str, primary: dict, fallback: dict):
     """Get a key (e.g. folder) from the defaults list.
 
     1) Tries Model+dnora_obj specific value (e.g. SWAN-wnd-folder)
