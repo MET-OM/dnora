@@ -7,26 +7,25 @@ import netCDF4
 import re
 
 # Import abstract classes and needed instances of them
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .spc_mod import Spectra
-
-from .. import msg
-from ..aux import add_folder_to_filename, clean_filename
-from ..defaults import list_of_placeholders
 
 class SpectralWriter(ABC):
     """Writes omnidirectional spectra spectra to a certain file format.
 
     This object is provided to the .export_spectra() method.
     """
+    def _clean_filename(self):
+        """If this is set to False, then the ModelRun object does not clean
+        the filename, and possible placeholders (e.g. #T0) can still be
+        present.
+        """
+        return True
 
-    def _preferred_format(self) -> str:
-        """For the file format using defauts.py, e.g. SWAN or WW3"""
-        return 'General'
-
-    def _preferred_extension(self) -> str:
-        return 'nc'
+    @abstractmethod
+    def _extension(self) -> str:
+        pass
 
     def _im_silent(self) -> bool:
         """Return False if you want to be responsible for printing out the
@@ -34,7 +33,7 @@ class SpectralWriter(ABC):
         return True
 
     @abstractmethod
-    def _convention_in(self) -> str:
+    def _convention(self) -> str:
         """Defines in which format the incoming spectra should be.
 
         The conventions to choose from are predetermined:
@@ -45,65 +44,46 @@ class SpectralWriter(ABC):
         """
 
     @abstractmethod
-    def __call__(self, spectra: Spectra, filename: str, folder: str) -> Tuple[str, str]:
+    def __call__(self, spectra: Spectra, filename: str) -> tuple[str, str]:
         """Write the data from the Spectra object and returns the file and
         folder where data were written."""
 
 class DumpToNc(SpectralWriter):
-    def __init__(self, convention: str='Met', out_format: str='General') -> None:
-        self._convention = convention
-        self.out_format = out_format
+    def __init__(self, convention: str='Met') -> None:
+        self._convention_in = convention
         return
 
-    def _convention_in(self) -> str:
+    def _extension(self) -> str:
+        return 'nc'
+
+    def _convention(self) -> str:
         """Convention of spectra"""
-        return self._convention
+        return self._convention_in
 
-    def _preferred_format(self) -> str:
-        """Preferred format of file name"""
-        return self.out_format
+    def __call__(self, spectra: Spectra, filename: str) -> tuple[str, str]:
 
-    def __call__(self, spectra: Spectra, filename: str, folder: str) -> Tuple[str, str]:
+        spectra.data.to_netcdf(filename)
 
-        output_file = clean_filename(filename, list_of_placeholders)
-
-        # Add folder
-        output_path = add_folder_to_filename(output_file, folder=folder)
-
-        # Dumping to a netcdf-file
-        msg.to_file(output_path)
-        spectra.data.to_netcdf(output_path)
-
-        return output_file, folder
+        return filename
 
 class REEF3D(SpectralWriter):
-    def __init__(self, convention: str='Met', out_format: str='REEF3D') -> None:
-        self._convention = convention
-        self.out_format = out_format
+    def __init__(self, convention: str='Met') -> None:
+        self._convention_in = convention
         return
 
-    def _convention_in(self) -> str:
+    def _convention(self) -> str:
         """Convention of spectra"""
-        return self._convention
+        return self._convention_in
 
-    def _preferred_format(self) -> str:
-        """Preferred format of file name"""
-        return self.out_format
-
-    def _preferred_extension(self) -> str:
+    def _extension(self) -> str:
         return 'dat'
 
-    def __call__(self, spectra: Spectra, filename: str, folder: str) -> Tuple[str, str]:
-
-        output_file = clean_filename(filename, list_of_placeholders)
-
-        # Add folder
-        output_path = add_folder_to_filename(output_file, folder=folder)
+    def __call__(self, spectra: Spectra, filename: str) -> tuple[str, str]:
 
         # Take first spectra and first time step for now
         x = 0
         t = 0
-        with open(output_path, 'w') as f:
+        with open(filename, 'w') as f:
             spec = spectra.data.spec.values[x,t,:]
             freq = spectra.data.freq.values
             freq = freq*2*np.pi
@@ -111,4 +91,4 @@ class REEF3D(SpectralWriter):
             for i, w in enumerate(freq):
                 f.write(f'{w:.7f} {spec[i]:.7f}\n')
 
-        return output_file, folder
+        return filename

@@ -9,20 +9,19 @@ from .wnd.wnd_mod import Forcing
 from .grd.grd_mod import Grid
 from .bnd.bnd_mod import Boundary
 
-# Import default values and auxiliry functions
-from .defaults import dflt_frc, dflt_bnd, dflt_grd, dflt_inp, list_of_placeholders
-from .aux import add_folder_to_filename, clean_filename, check_if_folder
 from . import msg
-
+from . import file_module
 class InputFileWriter(ABC):
-    def __init__(self):
+    @abstractmethod
+    def _extension(self):
         pass
 
-    def _preferred_format(self):
-        return 'General'
-
-    def _preferred_extension(self):
-        return 'txt'
+    def _clean_filename(self):
+        """If this is set to False, then the ModelRun object does not clean
+        the filename, and possible placeholders (e.g. #T0) can still be
+        present.
+        """
+        return True
 
     def _im_silent(self) -> bool:
         """Return False if you want to be responsible for printing out the
@@ -30,26 +29,28 @@ class InputFileWriter(ABC):
         return True
 
     @abstractmethod
-    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, start_time: str, end_time: str, filename: str, folder: str, grid_path: str, forcing_path: str, boundary_path: str):
-        pass
+    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary,
+                start_time: str, end_time: str, filename: str,
+                grid_path: str, forcing_path: str, boundary_path: str) -> str:
+        return output_file
 
 class SWAN(InputFileWriter):
-    def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, wind=True, spec_points=None):
+    def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, wind=True, spec_points=None, extension='swn'):
 
         self.calib_wind = calib_wind
         self.calib_wcap = calib_wcap
         self.wind = wind
-        self.spec_points = spec_points # list of (lon, lat) points, e.g.,[(4.4, 60.6),(4.4, 60.8)] 
-
+        self.spec_points = spec_points # list of (lon, lat) points, e.g.,[(4.4, 60.6),(4.4, 60.8)]
+        self._extension_in = extension
         return
 
-    def _preferred_format(self):
-        return 'SWAN'
+    def _extension(self):
+        return self._extension_in
 
-    def _preferred_extension(self):
-        return 'swn'
+    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary,
+                start_time: str, end_time: str, filename: str,
+                grid_path: str, forcing_path: str, boundary_path: str):
 
-    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, start_time: str, end_time: str, filename: str, folder: str, grid_path: str, forcing_path: str, boundary_path: str):
         if forcing is None and self.wind == True:
             msg.info('No forcing object provided. Wind information will NOT be written to SWAN input file!')
             self.wind = False
@@ -64,11 +65,7 @@ class SWAN(InputFileWriter):
         delta_Y = np.round(np.abs(grid.lat()[-1] - grid.lat()[0]), 5)
         factor_wind = self.calib_wind*0.001
 
-        # Create input file name
-        output_file = clean_filename(filename, list_of_placeholders)
-        output_path = add_folder_to_filename(output_file, folder)
-
-        with open(output_path, 'w') as file_out:
+        with open(filename, 'w') as file_out:
             file_out.write(
                 '$************************HEADING************************\n')
             file_out.write('$ \n')
@@ -110,7 +107,7 @@ class SWAN(InputFileWriter):
             file_out.write('$ Generate block-output \n')
             temp_list = forcing_path.split('/')
             forcing_folder = '/'.join(temp_list[0:-1])
-            file_out.write('BLOCK \'COMPGRID\' HEAD \''+add_folder_to_filename(grid.name()+'_'+STR_START.split('.')[0]+'.nc',forcing_folder)
+            file_out.write('BLOCK \'COMPGRID\' HEAD \''+file_module.add_folder_to_filename(grid.name()+'_'+STR_START.split('.')[0]+'.nc',forcing_folder)
                            + '\' & \n')
             file_out.write(
                 'LAY 1 HSIGN RTP TPS PDIR TM01 DIR DSPR WIND DEP OUTPUT ' + STR_START + ' 1 HR \n')
@@ -119,14 +116,14 @@ class SWAN(InputFileWriter):
                 file_out.write('POINTS \'pkt\' &\n')
                 for i in range(len(self.spec_points)):
                     file_out.write(str(self.spec_points[i][0])+' '+str(self.spec_points[i][1])+ ' &\n')
-                file_out.write('SPECOUT \'pkt\' SPEC2D ABS \''+add_folder_to_filename(grid.name()+'_'+STR_START.split('.')[0]+'_spec.nc',forcing_folder)+ '\' & \n')
+                file_out.write('SPECOUT \'pkt\' SPEC2D ABS \''+file_module.add_folder_to_filename(grid.name()+'_'+STR_START.split('.')[0]+'_spec.nc',forcing_folder)+ '\' & \n')
                 file_out.write('OUTPUT ' + STR_START + ' 1 HR \n')
             else:
                 pass
             file_out.write('COMPUTE '+STR_START+' 10 MIN ' + STR_END + '\n')
             file_out.write('STOP \n')
 
-        return output_file, folder
+        return filename
 
 
 
@@ -136,13 +133,12 @@ class SWASH(InputFileWriter):
 
         return
 
-    def _preferred_format(self):
-        return 'SWASH'
-
-    def _preferred_extension(self):
+    def _extension(self):
         return 'sws'
 
-    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, start_time: str, end_time: str, filename: str, folder: str, grid_path: str, forcing_path: str, boundary_path: str):
+    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary,
+                start_time: str, end_time: str, filename: str,
+                grid_path: str, forcing_path: str, boundary_path: str):
 
         DATE_START = start_time
         DATE_END = end_time
@@ -152,12 +148,7 @@ class SWASH(InputFileWriter):
         delta_X = np.round(np.abs(grid.lon()[-1] - grid.lon()[0]), 8)
         delta_Y = np.round(np.abs(grid.lat()[-1] - grid.lat()[0]), 8)
 
-        # Create input file name
-
-        output_file = clean_filename(filename, list_of_placeholders)
-        output_path = add_folder_to_filename(output_file, folder)
-
-        with open(output_path, 'w') as file_out:
+        with open(filename, 'w') as file_out:
             file_out.write(
                 '$************************HEADING************************\n')
             file_out.write('$ \n')
@@ -187,7 +178,7 @@ class SWASH(InputFileWriter):
             file_out.write('$ OUTPUT REQUESTS \n')
             temp_list = grid_path.split('/')
             forcing_folder = '/'.join(temp_list[0:-1])
-            file_out.write('BLOCK \'COMPGRID\' NOHEAD \''+add_folder_to_filename(grid.name()+'.mat',forcing_folder)
+            file_out.write('BLOCK \'COMPGRID\' NOHEAD \''+file_module.add_folder_to_filename(grid.name()+'.mat',forcing_folder)
                            + '\' & \n')
             file_out.write(
                 'LAY 3 WATL BOTL OUTPUT ' + STR_START + ' 5 SEC \n')
@@ -195,7 +186,7 @@ class SWASH(InputFileWriter):
             file_out.write('COMPUTE '+STR_START+' 0.001 SEC ' + STR_END + '\n')
             file_out.write('STOP \n')
 
-        return output_file, folder
+        return filename
 
 class HOS_ocean(InputFileWriter):
     def __init__(self,n1=256, n2=64, xlen=None, ylen=80,T_stop=100,f_out=1,toler=1.0e-7,n=4,Ta=0,
@@ -230,22 +221,18 @@ class HOS_ocean(InputFileWriter):
             self.ylen = ylen
         return
 
-    def _preferred_format(self):
-        return 'HOS_ocean'
-
-    def _preferred_extension(self):
+    def _extension(self):
         return 'dat'
 
-    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, start_time: str, end_time: str, filename: str, folder: str, grid_path: str, forcing_path: str, boundary_path: str):
+    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary,
+                start_time: str, end_time: str, filename: str,
+                grid_path: str, forcing_path: str, boundary_path: str):
 
         # Create input file name
-        output_file = clean_filename(filename, list_of_placeholders)
-        output_path = add_folder_to_filename(output_file, folder)
-        check_if_folder(folder=folder+'/Results')
-        print(output_path)
+        __, folder = file_module.split_filepath(filename)
+        filename.create_folder(folder=folder+'/Results')
 
-
-        with open(output_path, 'w') as file_out:
+        with open(filename, 'w') as file_out:
             file_out.write(
                 'Restart previous computation :: i_restart        :: 0\n')
             file_out.write('Choice of computed case      :: i_case           :: 3\n')
@@ -301,20 +288,19 @@ class HOS_ocean(InputFileWriter):
                 'Wave probes in domain        :: i_prob           :: '+format(self.i_prob,".0f")+'\n')
             file_out.write(
                 'Swense output 1="yes",0="no" :: i_sw             :: '+format(self.i_sw,".0f")+'\n')
-        return output_file, folder
+        return filename
 
 class WW3_grid(InputFileWriter):
     def __init__(self):
         self.scaling = 10**6
         return
 
-    def _preferred_format(self):
-        return 'WW3'
-
-    def _preferred_extension(self):
+    def _extension(self):
         return 'nml'
 
-    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, start_time: str, end_time: str, filename: str, folder: str, grid_path: str, forcing_path: str, boundary_path: str):
+    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary,
+                start_time: str, end_time: str, filename: str,
+                grid_path: str, forcing_path: str, boundary_path: str):
 #         &RECT_NML
 #   RECT%NX                =  147
 #   RECT%NY                =  126
@@ -338,11 +324,8 @@ class WW3_grid(InputFileWriter):
         y0 = min(grid.lat())
         sf0 = 1.
 
-        # Create input file name
-        output_file = clean_filename(filename, list_of_placeholders)
-        output_path = add_folder_to_filename(output_file, folder)
 
-        with open(output_path, 'w') as file_out:
+        with open(filename, 'w') as file_out:
             file_out.write('&RECT_NML\n')
             file_out.write(f'  RECT%NX          = {nx:.0f}\n')
             file_out.write(f'  RECT%NY          = {ny:.0f}\n')
@@ -354,4 +337,4 @@ class WW3_grid(InputFileWriter):
             file_out.write(f'  RECT%SF0         = {sf0:.0f}.\n')
             file_out.write('/')
 
-        return output_file, folder
+        return filename

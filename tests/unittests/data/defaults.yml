@@ -1,0 +1,90 @@
+list_of_placeholders:
+  - '#Grid'
+  - '#Forcing'
+  - '#Boundary'
+  - '#Spectra'
+  - '#T0'
+  - '#T1'
+  - 'E#Lon'
+  - 'N#Lat'
+  - '#Lon'
+  - '#Lat'
+
+ModelRun:
+  grid:
+    folder: output
+    filename: 'grid_#Grid'
+    dateformat: '%Y%m%dT%H%M'
+  forcing:
+    folder: output
+    filename: 'wind_#Forcing_#Grid_#T0-#T1'
+    dateformat: '%Y%m%dT%H%M'
+  boundary:
+    folder: output
+    filename: 'spec2d_#Boundary_#Grid_#T0-#T1'
+    dateformat: '%Y%m%dT%H%M'
+  spectra:
+    folder: output
+    filename: 'spec1d_#Spectra_#Grid_#T0-#T1'
+    dateformat: '%Y%m%dT%H%M'
+  input_file:
+    folder: output
+    filename: 'inputfile_#Grid_#Forcing_#Boundary_#Spectra_#T0_#T1_#Lon_#Lat'
+    dateformat: '%Y%m%dT%H%M'
+  dnplot_grid:
+    folder: figures
+    filename: 'grid_#Grid_#Forcing_#Boundary'
+    dateformat: ''
+  dnplot_topo:
+    folder: figures
+    filename: 'topo_#Grid_#Forcing_#Boundary'
+    dateformat: ''
+
+SWAN:
+  dateformat: '%Y%m%d'
+  grid:
+    filename: '#Grid_SWAN'
+  forcing:
+    filename: 'wind#Forcing#Grid#T0_#T1'
+  boundary:
+    filename: 'spec#Boundary#Grid#T0#T1'
+  input_file:
+    filename: 'input_#T0_#Grid'
+    folder: 'MySWANFolder'
+
+SWASH:
+  dateformat: '%Y%m%d'
+  grid:
+    filename: '#Grid_SWASH'
+  forcing:
+    filename: 'wind#Forcing#Grid#T0_#T1'
+  boundary:
+    filename: 'spec#Boundary#Grid#T0#T1'
+  input_file:
+    filename: 'input_#T0_#T1_#Grid'
+    folder: 'MySWASHFolder'
+
+WW3:
+  grid:
+    filename: '#Grid'
+  boundary:
+    filename: 'ww3_spec_E#LonN#Lat_#Boundary_#Grid_#T0-#T1'
+  input_file:
+    filename: 'ww3_'
+    folder: 'MyWW3Folder'
+
+HOS_ocean:
+  grid:
+    filename: '#Grid_HOS_ocean'
+  input_file:
+    filename: 'input_HOS'
+    folder: MyHOS_oceanFolder'
+
+REEF3D:
+  grid:
+    filename: '#Grid_HOS_ocean'
+  boundary:
+    filename: 'ww3_spec_E#LonN#Lat_#Boundary_#Grid_#T0-#T1'
+  input_file:
+    filename: 'input_HOS'
+    folder: MyHOS_oceanFolder

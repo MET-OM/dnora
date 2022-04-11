@@ -11,9 +11,7 @@ from .write import ForcingWriter
 
 # Import default values and auxiliry functions
 from .. import msg
-from ..aux import day_list, create_filename_obj, create_filename_time, clean_filename, check_if_folder
-from ..defaults import dflt_frc, list_of_placeholders
-
+from ..aux import day_list
 class Forcing:
     def __init__(self, grid, name='AnonymousForcing'):
         self.grid = copy(grid)
