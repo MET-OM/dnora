@@ -19,7 +19,7 @@ class BoundarySetter(ABC):
     West = [:,0]
     """
     @abstractmethod
-    def __call__(self, mask_size: tuple):
+    def __call__(self, sea_mask: np.ndarray) -> np.ndarray:
         """This method is called from within the Grid-object."""
         return boundary_mask
 
@@ -38,7 +38,8 @@ class ClearBoundary(BoundarySetter):
     def __init__(self):
         pass
 
-    def __call__(self, mask_size: tuple):
+    def __call__(self, sea_mask: np.ndarray):
+        mask_size = sea_mask.shape
         return np.full(mask_size, False)
 
     def __str__(self):
@@ -64,7 +65,9 @@ class EdgesAsBoundary(BoundarySetter):
             self.step = int(step)
         return
 
-    def __call__(self, mask_size: tuple):
+    def __call__(self, sea_mask: np.ndarray):
+        mask_size = sea_mask.shape
+
         if mask_size == (1, 1):
             return np.full(mask_size, True)
 
@@ -99,7 +102,8 @@ class MidPointAsBoundary(BoundarySetter):
         self.edges = edges
 
 
-    def __call__(self, mask_size: tuple):
+    def __call__(self, sea_mask: np.ndarray):
+        mask_size = sea_mask.shape
         if mask_size == (1, 1):
             return np.full(mask_size, True)
 
@@ -109,15 +113,23 @@ class MidPointAsBoundary(BoundarySetter):
 
         # --------- North boundary ----------
         if 'N' in self.edges:
+            edge = sea_mask[-1,:]
+            nx = np.round(np.median(np.where(edge))).astype(int)
             boundary_mask[-1,nx] = True
         ## --------- South boundary ----------
         if 'S' in self.edges:
+            edge = sea_mask[0,:]
+            nx = np.round(np.median(np.where(edge))).astype(int)
             boundary_mask[0,nx] = True
         ## --------- East boundary ----------
         if 'E' in self.edges:
+            edge = sea_mask[:,-1]
+            ny = np.round(np.median(np.where(edge))).astype(int)
             boundary_mask[ny,-1] = True
         ## --------- West boundary ----------
         if 'W' in self.edges:
+            edge = sea_mask[:,0]
+            ny = np.round(np.median(np.where(edge))).astype(int)
             boundary_mask[ny,0] = True
 
         return boundary_mask
@@ -155,7 +167,8 @@ class SetMatrix(BoundarySetter):
 class SetAll(BoundarySetter):
     """Set all points to boundary points. """
 
-    def __call__(self, mask_size: tuple):
+    def __call__(self, sea_mask: np.ndarray):
+        mask_size = sea_mask.shape
         return np.full(mask_size, True)
 
     def __str__(self):

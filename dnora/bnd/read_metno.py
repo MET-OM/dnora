@@ -135,7 +135,6 @@ class NORA3(BoundaryReader):
                 this_ds = f.sel(time = slice(start_times[n], end_times[n]), x = (inds+1))[['SPEC', 'longitude', 'latitude', 'time', 'freq', 'direction']].copy()
             bnd_list.append(this_ds)
             #bnd_list.append(xr.open_dataset(url).sel(time = slice(start_times[n], end_times[n]), x = (inds+1)))
-
         bnd=xr.concat(bnd_list, dim="time").squeeze('y')
 
         time = bnd.time.values

@@ -52,6 +52,10 @@ class Boundary:
         msg.header(point_picker, "Choosing spectra...")
         inds = point_picker(self.grid, lon_all, lat_all)
 
+        if len(inds) < 1:
+            msg.warning("PointPicker didn't find any points. Aborting import of boundary.")
+            return
+
         msg.header(boundary_reader, "Loading boundary spectra...")
         time, freq, dirs, spec, lon, lat, source = boundary_reader(self.start_time, end_time, inds)
 

@@ -92,9 +92,9 @@ class ModelRun:
         self.spectra().import_spectra(start_time=self.start_time, end_time=self.end_time, spectral_reader=self._spectral_reader)
 
     def boundary_to_spectra(self):
-        if self.boundary() is None:
-            msg.warning('No Boundary to convert to Spectra!')
-
+        if self.boundary() is None or not len(self.boundary().lon()):
+            msg.warning('No Boundary to convert to Spectra. Aborting conversion.')
+            return
         spectral_reader = BoundaryToSpectra(self.boundary())
         msg.header(spectral_reader, 'Converting the boundary spectra to omnidirectional spectra...')
         name = self.boundary().name()

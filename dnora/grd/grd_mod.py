@@ -176,7 +176,7 @@ class Grid:
         msg.header(boundary_setter, "Setting boundary points...")
         print(boundary_setter)
 
-        boundary_mask = boundary_setter(self.land_sea_mask().shape)
+        boundary_mask = boundary_setter(self.land_sea_mask())
 
         vars_dict = {'boundary_mask': (['lat', 'lon'], boundary_mask)}
         self.data = self.data.assign(vars_dict)
