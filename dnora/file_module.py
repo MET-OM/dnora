@@ -139,7 +139,9 @@ class FileNames:
     format: str
     dnora_obj: str
     clean_names: bool
-    list_of_objects: list
+    dict_of_object_names: list
+    start_time: str
+    end_time: str
     _filename: str
     _folder: str
     _dateformat: str
@@ -175,11 +177,9 @@ class FileNames:
             folder.mkdir()
 
     def replace_placeholders(self, unclean_string: str, dateformat: str) -> str:
-        unclean_string = replace_objects(unclean_string, self.list_of_objects)
+        unclean_string = replace_objects(unclean_string, self.dict_of_object_names)
 
-        start_time = self.list_of_objects[0].start_time
-        end_time = self.list_of_objects[0].end_time
-        clean_string = replace_times(unclean_string, dateformat, [start_time, end_time])
+        clean_string = replace_times(unclean_string, dateformat, [self.start_time, self.end_time])
 
         if self.clean_names:
             clean_string = clean(clean_string, list_of_placeholders=self.placeholders)

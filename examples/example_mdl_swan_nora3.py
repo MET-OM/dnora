@@ -33,13 +33,13 @@ grid.set_boundary(boundary_setter=bnd_set)
 # DEFINE MODEL OBJECT
 # =============================================================================
 model = mdl.SWAN_NORA3(grid, start_time='2018-08-25T00:00',
-                             end_time='2018-08-25T00:00')
+                             end_time='2018-08-25T00:00', dry_run=False)
 # =============================================================================
 # IMPORT BOUNDARIES AND FORCING
 # =============================================================================
-model.import_boundary(dry_run=True)
-#model.import_forcing(dry_run=True)
-#model.boundary_to_spectra(dry_run=True)
+model.import_boundary()
+model.import_forcing()
+model.boundary_to_spectra()
 # =============================================================================
 # PLOT GRID, FORCING AND BOUNDARIES
 # =============================================================================
@@ -47,12 +47,12 @@ model.import_boundary(dry_run=True)
 # =============================================================================
 # WRITE OUTPUT FOR SWAN RUN
 # =============================================================================
-model.export_grid(dry_run=True)
-model.export_boundary(dry_run=True)
-#model.export_forcing(dry_run=True)
-#model.export_spectra(dry_run=True)
-#model.write_input_file(dry_run=True)
+model.export_grid()
+model.export_boundary()
+model.export_forcing()
+model.export_spectra()
+model.write_input_file()
 # =============================================================================
 # SWAN RUN
 # =============================================================================
-#model.run_model(dry_run=True)
+model.run_model(dry_run=True)

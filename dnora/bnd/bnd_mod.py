@@ -133,7 +133,7 @@ class Boundary:
 
     def slice_data(self, start_time: str='', end_time: str='', x: List[int]=None) -> xr.Dataset:
         """Slice data in space (x) and time."""
-        if not hasattr(self, data):
+        if not hasattr(self, 'data'):
             return None
 
         if x is None:
@@ -204,7 +204,8 @@ class Boundary:
         """Determins a Pandas data range of all the days in the time span."""
         if len(self.time()) == 0:
             return []
-        return pd.date_range(start=self.time()[0].split('T')[0], end=self.time()[-1].split('T')[0], freq='D')
+        return pd.date_range(start=str(self.time()[0]).split(' ')[0],
+                end=str(self.time()[-1]).split(' ')[0], freq='D')
 
         #days = day_list(start_time = self.start_time, end_time = self.end_time)
         #return days
