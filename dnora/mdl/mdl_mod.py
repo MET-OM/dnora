@@ -105,9 +105,10 @@ class ModelRun:
         """Writes the grid data in the Grid-object to an external source,
         e.g. a file."""
 
-        if len(self.grid().topo())==0:
-            msg.warning('Grid not meshed so nothing to export!')
-            return
+        # REMOVED for REEF3D
+        #if len(self.grid().topo())==0:
+        #    msg.warning('Grid not meshed so nothing to export!')
+        #    return
 
         # Try to use defaul grid writer if not provided
         self._grid_writer = grid_writer or self._get_grid_writer()

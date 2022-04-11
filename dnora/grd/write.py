@@ -209,6 +209,10 @@ class REEF3D(GridWriter):
             y = y.ravel()
             z = z.ravel()
 
+        print('Max depth(m):',np.nanmax(z))
+        z = -1*z +np.nanmax(z)# set at zero the maximum depth.
+        z[np.isnan(z)] = np.nanmax(z) + 14 # + 14 for land points
+
         fmt='.5f'
         with open(output_path, 'w') as f:
             for i, __ in enumerate(x):
