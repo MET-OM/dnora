@@ -188,6 +188,112 @@ class SWASH(InputFileWriter):
 
         return filename
 
+class REEF3D(InputFileWriter):
+    def __init__(self, option = 'REEF3D'):
+        self.option = option
+        return
+
+    def _extension(self):
+        return 'txt'
+
+    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary,
+                start_time: str, end_time: str, filename: str, forcing_path: str,
+                grid_path: str, boundary_path: str):
+
+        if self.option == 'DiveMESH':
+            filename =  '/'.join(filename.split('/')[:-1])+'/control.txt'
+            with open(filename, 'w') as file_out:
+                file_out.write('C 11 6' '\n')
+                file_out.write('C 12 7' '\n')
+                file_out.write('C 13 7' '\n')
+                file_out.write('C 14 7' '\n')
+                file_out.write('C 15 21' '\n')
+                file_out.write('C 16 3' '\n')
+                file_out.write(' \n')
+
+                file_out.write('B 1 20.0' '\n')
+                file_out.write('B 2 600 800 10' '\n')
+                file_out.write('B 10 0.0 12000.0 0.0 16000.0 0.0 1.0' '\n')
+                file_out.write(' \n')
+
+                file_out.write('B 103 5' '\n')
+                file_out.write('B 113 2.5' '\n')
+                file_out.write('B 116 1.0' '\n')
+                file_out.write(' \n')
+
+                file_out.write('G 10 1' '\n')
+                file_out.write('G 15 2' '\n')
+                file_out.write('G 20 0' '\n')
+                file_out.write('G 31 14' '\n')
+                file_out.write('G 41 1' '\n')
+                file_out.write(' \n')
+
+                file_out.write('M 10 12' '\n')
+                file_out.write('M 20 2' '\n')
+        elif self.option == 'REEF3D':
+            with open(filename, 'w') as file_out:
+                file_out.write('A 10 3  // choose the model reef::fnpf' '\n')
+                file_out.write('A 310 3 // 3rd-order runge-kutta for fsfbc time treatment' '\n')
+                file_out.write('A 311 5 // 5th-order weno for fsfbc spatial treatment including wetting-drying' '\n')
+                file_out.write('A 320 1 // 2nd-order laplace' '\n')
+                file_out.write(' \n')
+
+                file_out.write('A 341 2.0 // size of coastal relaxation zone by a factor of the horizontal cell size' '\n')
+                file_out.write('A 343 1   // turn on wetting-drying' '\n')
+                file_out.write('A 345 0.001 // wetting-drying water depth threshold' '\n')
+                file_out.write('A 346 2.1   // added viscosity within the coastal relaxation zone' '\n')
+                file_out.write(' \n')
+
+                file_out.write('A 350 1 // viscosity damping wave breaking algorithm' '\n')
+                file_out.write('A 351 3 // breaking wave detection for both deep and shallow water' '\n')
+                file_out.write('A 352 3 // additional filtering for viscosity based breaking for both deep and shallow water' '\n')
+                file_out.write('A 361 5 // filtering outer iterations' '\n')
+                file_out.write('A 362 2 // filtering inner iterations' '\n')
+                file_out.write('A 365 1.86 // artificial viscosity for breaking wave energy dissipation' '\n')
+                file_out.write(' \n')
+
+                file_out.write('B 85 10 // spectrum file' '\n')
+                file_out.write('B 90 1 // wave input' '\n')
+                file_out.write('B 92 31 // 1st-order irregular wave' '\n')
+                file_out.write(' \n')
+
+                file_out.write('B 96 400.0 400.0 // wave generation zone length and numerical beach length' '\n')
+                file_out.write('B 107 0.0 12000.0 0.0 0.0 200.0 // wave generation zone length and numerical beach length' '\n')
+                file_out.write('B 107 0.0 12000.0 16000.0 12000.0 200.0 // customised numerical beach at the side walls' '\n')
+                file_out.write('B 107 25000.0 12000.0 0.0 16000.0 200.0 // customised numerical beach at the end of the tank' '\n')
+                file_out.write('B 107 0.0 0.0 2900.0 3500.0 200.0 // customised numerical beach at the side walls' '\n')
+                file_out.write('B 108 0.0 0.0 10000.0 14000.0 200.0 // customised wave generation zone' '\n')
+                file_out.write('B 98 2 // relaxation method 2 for wave generation' '\n')
+                file_out.write('B 99 2 // relaxation method 2 for numerical beach' '\n')
+                file_out.write(' \n')
+
+                file_out.write('F 60 506.6 // still water depth' '\n')
+                file_out.write(' \n')
+
+                file_out.write('G 50 1 // read in geo bathymetry' '\n')
+                file_out.write(' \n')
+
+                file_out.write('I 30 0 // turn off full tank initialisation, one can turn it on for a quick check of the setup' '\n')
+                file_out.write(' \n')
+
+                file_out.write('N 41 600.0 // simulation time' '\n')
+                file_out.write('N 47 1.0 // cfl number' '\n')
+                file_out.write(' \n')
+
+                file_out.write('M 10 12 // number of processors' '\n')
+                file_out.write(' \n')
+
+                file_out.write('P 180 1 // turn on .vtp free surface printout' '\n')
+                file_out.write('P 185 0.0 600.0 0.5 // print out .vtp files interval based on simulation time window' '\n')
+                file_out.write(' \n')
+
+                file_out.write('W 22 -9.81 // gravity' '\n')
+                file_out.write(' \n')
+
+        return filename
+
+
+
 class HOS_ocean(InputFileWriter):
     def __init__(self,n1=256, n2=64, xlen=None, ylen=80,T_stop=100,f_out=1,toler=1.0e-7,n=4,Ta=0,
     depth = 100, Tp_real=10,Hs_real=4.5,gamma=3.3,beta=0.78,random_phases=1,

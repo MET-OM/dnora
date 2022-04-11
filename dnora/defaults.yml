@@ -82,9 +82,11 @@ HOS_ocean:
 
 REEF3D:
   grid:
-    filename: '#Grid_HOS_ocean'
-  boundary:
-    filename: 'ww3_spec_E#LonN#Lat_#Boundary_#Grid_#T0-#T1'
+    filename: 'geo'
+    folder: '#Grid_REEF3D'
+  spectra:
+    filename: 'spectrum-file'
+    folder: '#Grid_REEF3D'
   input_file:
-    filename: 'input_HOS'
-    folder: MyHOS_oceanFolder'
+    filename: 'ctrl'
+    folder: '#Grid_REEF3D'

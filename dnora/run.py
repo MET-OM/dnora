@@ -54,3 +54,21 @@ class HOS_ocean(ModelExecuter):
         print('Running HOS_ocean------------------->>>>>>>>>>>>>>>>>>>>>>>>>>')
         p = Popen(['HOS-ocean'],cwd=model_folder)
         p.wait()
+
+
+class REEF3D(ModelExecuter):
+    def __init__(self):
+        return
+
+    def _preferred_format(self) -> str:
+        """For generation of file name."""
+        return 'REEF3D'
+
+    #def __call__(self, input_file: str, model_folder: str) -> None:
+        #print(input_file, model_folder)
+        #model_folder = '/home/konstac/Programs/REEF3D_v22/'
+        #print('Copying REEF3D------------------->>>>>>>>>>>>>>>>>>>>>>>>>>')
+        #p = call(['cp ',model_folder+'/REEF3D/bin/REEF3D','REEF3D'],cwd=model_folder)
+        #print('Copying DiveMESH------------------->>>>>>>>>>>>>>>>>>>>>>>>>>')
+        #p = call(['cp ',model_folder+'/REEF3D/bin/DiveMESH','DiveMESH'],cwd=model_folder)
+        #p.wait()
