@@ -10,11 +10,10 @@ from dnora import grd, mdl, bnd, wnd
 # =============================================================================
 # Set grid definitions
 grid = grd.Grid(lon=(4.00, 5.73), lat=(60.53, 61.25), name='Skjerjehamn')
-grid.set_spacing(dm=1000)
+grid.set_spacing(dm=10000)
 
 # Import topography and mesh it down to the grid definitions
-grid.import_topo(topo_reader=grd.read.EMODNET2018(tile='D5',
-                                    folder='/home/konstantinosc/bathy/'))
+#grid.import_topo(topo_reader=grd.read.EMODNET2020(tile='*'))
 grid.mesh_grid()
 
 # Set the boundaries

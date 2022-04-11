@@ -5,13 +5,17 @@ from .grd.grd_mod import Grid, GridProcessor
 from .grd.process import TrivialFilter
 from .bnd.bnd_mod import Boundary
 from .wnd.wnd_mod import Forcing
-from .aux import add_suffix
+from . import file_module
 from . import msg
 from typing import Tuple
 import matplotlib.tri as mtri
 
 class GridPlotter(ABC):
     """Plots data from Grid-object."""
+
+    @abstractmethod
+    def _extension(self) -> str:
+        pass
 
     def grid(self, grid: Grid, forcing: Forcing, boundary: Boundary, filename: str, plain: bool) -> Tuple:
         msg.warning('Plotting of meshed grid not implemented!')
@@ -22,25 +26,22 @@ class GridPlotter(ABC):
         return None, None
 
 class TopoPlotter(GridPlotter):
-    def __init__(self):
-        return
 
-    def grid(self, grid: Grid, forcing: Forcing=None, boundary: Boundary=None, filename: str='', plain: bool=True) -> Tuple:
+    def _extension(self):
+        return 'pdf'
+
+    def grid(self, dict_of_objects: dict, plain: bool=True):
         """Creates a plot of the topography when a Grid-object is provided.
 
         Options
-        boundary:       If a boundary object from dnora.bnd is given, then the
-                        boundary spectra locations are printed on the plot.
-
-        forcing:        If a forcing object from dnora.wnd is given, then the
-                        forcing grid is printed on the plot.
-
-        filename:       Filename for possibly saving the plot. This can be
-                        modified and returned to the object that saves the plot.
 
         plain:          True / False(default). Hint to plotter how much detail
                         the user wants into the plot.
         """
+
+        grid = dict_of_objects['Grid']
+        boundary = dict_of_objects['Boundary']
+        forcing = dict_of_objects['Forcing']
 
         # Create basic plot
         fig = plt.figure()
@@ -76,24 +77,20 @@ class TopoPlotter(GridPlotter):
 
 
 
-        return fig, add_suffix(filename, 'topo')
+        return fig
 
-    def topo(self, grid: Grid, forcing: Forcing=None, boundary: Boundary=None, filename: str='', plain: bool=True) -> Tuple:
+    def topo(self, dict_of_objects: dict, plain: bool=True):
         """Creates a plot of the topography when a Grid-object is provided.
 
         Options
-        boundary:       If a boundary object from dnora.bnd is given, then the
-                        boundary spectra locations are printed on the plot.
-
-        forcing:        If a forcing object from dnora.wnd is given, then the
-                        forcing grid is printed on the plot.
-
-        filename:       Filename for possibly saving the plot. This can be
-                        modified and returned to the object that saves the plot.
 
         plain:          True / False(default). Hint to plotter how much detail
                         the user wants into the plot.
         """
+
+        grid = dict_of_objects['Grid']
+        boundary = dict_of_objects['Boundary']
+        forcing = dict_of_objects['Forcing']
 
         # Create basic plot
         fig = plt.figure()
@@ -150,12 +147,12 @@ class TopoPlotter(GridPlotter):
 
 
 
-        return fig, add_suffix(filename, 'topo')
+        return fig
 
 
 class MaskPlotter(GridPlotter):
-    def __init__(self):
-        return
+    def _extension(self):
+        return 'pdf'
 
     def grid(self, grid: Grid, forcing: Forcing=None, boundary: Boundary=None, filename: str='', plain: bool=True) -> Tuple:
         """Creates a plot of the land-sea mask when a Grid-object is provided.
@@ -197,4 +194,4 @@ class MaskPlotter(GridPlotter):
         cbar.set_label('0=Land, 1=Sea', rotation=90)
         plt.title(f"{grid.name()} land-sea mask")
 
-        return fig, add_suffix(filename, 'mask')
+        return fig, file_module.add_suffix(filename, 'mask')
