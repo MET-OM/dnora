@@ -9,8 +9,8 @@ import dnora.wave_parameters as wp
 
 grid = grd.Grid(lon=(5.95, 6.15), lat=(62.35, 62.47), name='Sula')
 grid.set_spacing(dm=50)
-grid.import_topo(grd.read.KartverketNo50m(tile='*'),
-                                    folder='/home/konstac/bathy/'))
+#grid.import_topo(grd.read.KartverketNo50m(tile='*'),
+                                    #folder='/home/konstac/bathy/'))
 
 grid.mesh_grid()
 grid.set_boundary(boundary_setter=grd.boundary.MidPointAsBoundary(edges=['W']))

@@ -33,6 +33,8 @@ from ..defaults import dflt_mdl, dflt_inp, dflt_bnd, dflt_spc, dflt_frc, dflt_gr
 from ..aux import create_filename_obj, create_filename_time, add_folder_to_filename, check_if_folder, clean_filename, add_extension
 from ..bnd.process import processor_for_convention_change
 
+##
+
 class ModelRun:
     def __init__(self, grid: Grid, start_time: str='1970-01-01T00:00', end_time: str='2030-12-31T23:59', name: str='AnonymousModelRun'):
         self._name = copy(name)
