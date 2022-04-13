@@ -41,7 +41,7 @@ class SWASH(ModelRun):
         return bnd.pick.NearestGridPoint()
 
     def _get_grid_writer(self):
-        return grd.write.SWAN(extension='sws')
+        return grd.write.SWAN()
 
     def _get_input_file_writer(self):
         return inp.SWASH()

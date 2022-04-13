@@ -64,11 +64,9 @@ class REEF3D(ModelExecuter):
         """For generation of file name."""
         return 'REEF3D'
 
-    #def __call__(self, input_file: str, model_folder: str) -> None:
-        #print(input_file, model_folder)
-        #model_folder = '/home/konstac/Programs/REEF3D_v22/'
-        #print('Copying REEF3D------------------->>>>>>>>>>>>>>>>>>>>>>>>>>')
-        #p = call(['cp ',model_folder+'/REEF3D/bin/REEF3D','REEF3D'],cwd=model_folder)
-        #print('Copying DiveMESH------------------->>>>>>>>>>>>>>>>>>>>>>>>>>')
-        #p = call(['cp ',model_folder+'/REEF3D/bin/DiveMESH','DiveMESH'],cwd=model_folder)
-        #p.wait()
+    def __call__(self, input_file: str, model_folder: str) -> None:
+        p = Popen(['DiveMESH'],cwd=model_folder)
+        p.wait()
+        p = Popen(['REEF3D'],cwd=model_folder)
+        #p = Popen(['/usr/bin/mpirun -n 12 --oversubscribe  ./REEF3D'],cwd=model_folder)
+        p.wait()

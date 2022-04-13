@@ -331,7 +331,7 @@ class ModelRun:
         # Option 3) Use default values to guess where is has previously been exported
         exported_path = Path(self.exported_to('input_file')[0])
         primary_file = input_file or exported_path.name
-        primary_folder = folder or str(exported_path.parent)
+        primary_folder = folder #or str(exported_path.parent)
 
         if hasattr(self, '_input_file_writer'):
             extension = input_file_extension or self._input_file_writer._extension()
