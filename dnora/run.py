@@ -57,7 +57,8 @@ class HOS_ocean(ModelExecuter):
 
 
 class REEF3D(ModelExecuter):
-    def __init__(self):
+    def __init__(self, nproc=1):
+        self.nproc = nproc
         return
 
     def _preferred_format(self) -> str:
@@ -67,6 +68,9 @@ class REEF3D(ModelExecuter):
     def __call__(self, input_file: str, model_folder: str) -> None:
         p = Popen(['DiveMESH'],cwd=model_folder)
         p.wait()
-        p = Popen(['REEF3D'],cwd=model_folder)
-        #p = Popen(['/usr/bin/mpirun -n 12 --oversubscribe  ./REEF3D'],cwd=model_folder)
+
+        if self.nproc == 1:
+            p = Popen(['REEF3D'],cwd=model_folder)
+        else:
+            p = Popen(['/usr/bin/mpirun -n '+str(self.nproc)+' --oversubscribe REEF3D'],cwd=model_folder)
         p.wait()

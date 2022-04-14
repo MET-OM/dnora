@@ -50,7 +50,7 @@ SWAN:
     filename: 'spec#Boundary#Grid#T0#T1'
   input_file:
     filename: 'input_#T0_#Grid'
-    folder: 'MySWANFolder'
+  folder: '#Grid_SWAN'
 
 SWASH:
   dateformat: '%Y%m%d'

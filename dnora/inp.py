@@ -84,16 +84,16 @@ class SWAN(InputFileWriter):
 
             file_out.write('INPGRID BOTTOM ' + str(grid.lon()[0])+' '+str(grid.lat()[0])+' 0. '+str(grid.nx()-1)+' '+str(
                 grid.ny()-1)+' ' + str((delta_X/(grid.nx()-1)).round(6)) + ' ' + str((delta_Y/(grid.ny()-1)).round(6)) + '\n')
-            file_out.write('READINP BOTTOM 1 \''+ grid_path +'\' 3 0 FREE \n')
+            file_out.write('READINP BOTTOM 1 \''+ grid_path.split('/')[-1] +'\' 3 0 FREE \n')
             file_out.write('$ \n')
-            file_out.write('BOU NEST \''+boundary_path+'\' OPEN \n')
+            file_out.write('BOU NEST \''+boundary_path.split('/')[-1]+'\' OPEN \n')
             file_out.write('$ \n')
 
             if self.wind:
 
                 file_out.write('INPGRID WIND '+str(grid.lon()[0])+' '+str(grid.lat()[0])+' 0. '+str(forcing.nx()-1)+' '+str(forcing.ny()-1)+' '+str(
                     (delta_X/(forcing.nx()-1)).round(6)) + ' '+str((delta_Y/(forcing.ny()-1)).round(6)) + ' NONSTATIONARY ' + STR_START + f" {forcing.dt():.0f} HR " + STR_END + '\n')
-                file_out.write('READINP WIND '+str(factor_wind)+'  \''+forcing_path+'\' 3 0 0 1 FREE \n')
+                file_out.write('READINP WIND '+str(factor_wind)+'  \''+forcing_path.split('/')[-1]+'\' 3 0 0 1 FREE \n')
                 file_out.write('$ \n')
             else:
                 file_out.write('OFF QUAD \n')
@@ -107,7 +107,7 @@ class SWAN(InputFileWriter):
             file_out.write('$ Generate block-output \n')
             temp_list = forcing_path.split('/')
             forcing_folder = '/'.join(temp_list[0:-1])
-            file_out.write('BLOCK \'COMPGRID\' HEAD \''+file_module.add_folder_to_filename(grid.name()+'_'+STR_START.split('.')[0]+'.nc',forcing_folder)
+            file_out.write('BLOCK \'COMPGRID\' HEAD \''+grid.name()+'_'+STR_START.split('.')[0]+'.nc'
                            + '\' & \n')
             file_out.write(
                 'LAY 1 HSIGN RTP TPS PDIR TM01 DIR DSPR WIND DEP OUTPUT ' + STR_START + ' 1 HR \n')
@@ -116,7 +116,7 @@ class SWAN(InputFileWriter):
                 file_out.write('POINTS \'pkt\' &\n')
                 for i in range(len(self.spec_points)):
                     file_out.write(str(self.spec_points[i][0])+' '+str(self.spec_points[i][1])+ ' &\n')
-                file_out.write('SPECOUT \'pkt\' SPEC2D ABS \''+file_module.add_folder_to_filename(grid.name()+'_'+STR_START.split('.')[0]+'_spec.nc',forcing_folder)+ '\' & \n')
+                file_out.write('SPECOUT \'pkt\' SPEC2D ABS \''+grid.name()+'_'+STR_START.split('.')[0]+'_spec.nc'+ '\' & \n')
                 file_out.write('OUTPUT ' + STR_START + ' 1 HR \n')
             else:
                 pass
@@ -189,8 +189,9 @@ class SWASH(InputFileWriter):
         return filename
 
 class REEF3D(InputFileWriter):
-    def __init__(self, option = 'REEF3D'):
+    def __init__(self, option = 'REEF3D', nproc = 1):
         self.option = option
+        self.nproc = nproc # number of processors
         return
 
     def _extension(self):
@@ -233,7 +234,7 @@ class REEF3D(InputFileWriter):
                 #file_out.write('G 41 1' '\n')
                 file_out.write(' \n')
 
-                file_out.write('M 10 1 // number of processors' '\n')
+                file_out.write('M 10 '+str(self.nproc)+' // number of processors' '\n')
                 file_out.write('M 20 2 // decomposition method 2' '\n')
         elif self.option == 'REEF3D':
             with open(filename, 'w') as file_out:
@@ -272,7 +273,7 @@ class REEF3D(InputFileWriter):
                 file_out.write('B 99 2 // relaxation method 2 for numerical beach' '\n')
                 file_out.write(' \n')
 
-                file_out.write('F 60 506.6 // still water depth' '\n')
+                file_out.write('F 60 '+str(grid.data.topo.max().round(1).values)+' // still water depth' '\n')
                 file_out.write(' \n')
 
                 file_out.write('G 50 1 // read in geo bathymetry' '\n')
@@ -285,7 +286,7 @@ class REEF3D(InputFileWriter):
                 file_out.write('N 47 1.0 // cfl number' '\n')
                 file_out.write(' \n')
 
-                file_out.write('M 10 1 // number of processors' '\n')
+                file_out.write('M 10 '+str(self.nproc)+' // number of processors' '\n')
                 file_out.write(' \n')
 
                 file_out.write('P 180 1 // turn on .vtp free surface printout' '\n')

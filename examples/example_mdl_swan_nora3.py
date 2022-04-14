@@ -15,7 +15,6 @@ grid = grd.Grid(lon=(4.00, 5.73), lat=(60.53, 61.25), name='Skjerjehamn300')
 grid.set_spacing(dm=300)
 
 # Import topography and mesh it down to the grid definitions
-
 topo_reader=grd.read.EMODNET2020(tile='*',folder='/home/konstac/bathy/')
 grid.import_topo(topo_reader=topo_reader)
 
