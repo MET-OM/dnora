@@ -50,11 +50,18 @@ Dependencies
 
 4. Installation of **HOS-ocean**. The latest HOS-ocean version can be downloaded from https://github.com/LHEEA/HOS-ocean . The installation procedure can be found in: https://github.com/LHEEA/HOS-ocean/wiki/Installation
 
+5. Installation of **REEF3D**. The latest REEF3D and DIVEMesh versions can be downloaded from https://github.com/REEF3D . The installation procedure can be found in: https://reef3d.wordpress.com/installation/ . Note: Only REEF3D::FNPF has been tested in dnora.
+
 To run the models within dnora, the paths, where the models are installed, need to be defined in .bashrc, e.g., ::
 
    export PATH=${PATH}:/home/user/Programs/swan
+   
    export PATH=${PATH}:/home/user/Programs/swash
+   
    export PATH=${PATH}:/home/user/Programs/HOS-ocean/bin
+   
+   export PATH=${PATH}:/home/user/Programs/REEF3D_xx/DIVEMesh/bin
+   export PATH=${PATH}:/home/user/Programs/REEF3D_xx/REEF3D/bin
 
    source ~/.bashrc
 
