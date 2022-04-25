@@ -101,7 +101,7 @@ class Hs(WaveParameter):
     """Singificant wave height from spectra"""
 
     def __call__(self, spec: xr.Dataset):
-        hs = 4*Moment(0)(spec)
+        hs = 4*(Moment(0)(spec))**0.5
         hs = self._format_dataset(hs, spec)
         return hs
 
