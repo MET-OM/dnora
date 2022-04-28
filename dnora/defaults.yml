@@ -39,9 +39,14 @@ ModelRun:
     folder: figures
     filename: 'topo_#Grid_#Forcing_#Boundary'
     dateformat: ''
+  dnplot_forcing:
+    folder: figures
+    filename: 'wind_#Grid_#Forcing'
+    dateformat: ''
 
 SWAN:
   dateformat: '%Y%m%d'
+  folder: 'MySWANFolder'
   grid:
     filename: '#Grid_SWAN'
   forcing:
@@ -50,7 +55,7 @@ SWAN:
     filename: 'spec#Boundary#Grid#T0#T1'
   input_file:
     filename: 'input_#T0_#Grid'
-    folder: 'MySWANFolder'
+
 
 SWASH:
   dateformat: '%Y%m%d'

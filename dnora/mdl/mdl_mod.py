@@ -24,7 +24,7 @@ from ..grd.write import GridWriter
 from ..grd.process import GridProcessor, TrivialFilter
 from ..trg.write import TrGridWriter
 
-from ..dnplot import GridPlotter, TopoPlotter
+from ..dnplot.dnplot import GridPlotter, TopoPlotter, ForcingPlotter
 from ..inp import InputFileWriter
 from ..run import ModelExecuter
 
@@ -442,6 +442,26 @@ class ModelRun:
                             plain=plain, save_fig=save_fig,
                             show_fig=show_fig, dnora_obj='dnplot_topo')
 
+    def plot_forcing(self, forcing_plotter: GridPlotter=None, filename: str=None,
+                    folder: str=None, dateformat: str=None, plain: bool=False,
+                    save_fig: bool=False, show_fig: bool=True) -> None:
+        """Plot the data in the Forcing-object."""
+
+        if self.forcing() is None:
+            msg.warning('No forcing data to plot!')
+            return
+
+        self._forcing_plotter = forcing_plotter or self._get_forcing_plotter()
+
+        if self._forcing_plotter is None:
+            raise Exception('Define a GridPlotter!')
+
+        self._plot_object(filename=filename, folder=folder,
+                            dateformat=dateformat,
+                            plotting_function=self._forcing_plotter,
+                            plain=plain, save_fig=save_fig,
+                            show_fig=show_fig, dnora_obj='dnplot_forcing')
+
 
     def _plot_object(self, filename: str, folder: str, dateformat: str,
                     plotting_function: PlottingFunction, plain: bool,
@@ -465,7 +485,7 @@ class ModelRun:
 
         file_object.create_folder()
 
-        if dnora_obj == 'dnplot_grid':
+        if dnora_obj in ['dnplot_grid', 'dnplot_forcing']:
             fig = plotting_function.grid(dict_of_objects=self.dict_of_objects(), plain=plain)
         elif dnora_obj == 'dnplot_topo':
             fig = plotting_function.topo(dict_of_objects=self.dict_of_objects(), plain=plain)
@@ -585,6 +605,9 @@ class ModelRun:
 
     def _get_topo_plotter(self) -> GridPlotter:
         return TopoPlotter()
+
+    def _get_forcing_plotter(self) -> GridPlotter:
+        return ForcingPlotter()
 
     def __repr__(self):
         lines = [f"<dnora ModelRun object> ({type(self).__name__})", f"  Name: {self.name()}"]
