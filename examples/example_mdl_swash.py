@@ -9,7 +9,10 @@ from dnora import grd, mdl, inp
 # DEFINE GRID OBJECT
 # =============================================================================
 # Set grid definitions
-grid = grd.Grid(lon=(4.93, 5.34), lat=(62.10, 62.24), name='Stad25')
+grid = grd.Grid(lon=(4.84, 4.92), lat=(59.27, 59.33), name='Utsira')
+#grid = grd.Grid(lon=(12.26, 12.34), lat=(44.78, 44.85), name='IsoladellAmore20')
+#grid = grd.Grid(lon=(12.3, 12.425), lat=(45.20, 45.44), name='Venezia')
+
 
 # Set spacing and boundary points
 grid.set_spacing(dm=25)
@@ -22,7 +25,7 @@ grid.mesh_grid()
 # =============================================================================
 # DEFINE MODEL OBJECT
 # =============================================================================
-model = mdl.SWASH(grid, start_time='2018-08-25T00:00', end_time='2018-08-25T02:00')
+model = mdl.SWASH(grid, start_time='2018-08-25T00:00', end_time='2018-08-25T00:30')
 
 # =============================================================================
 # PLOT GRID, FORCING AND BOUNDARIES
@@ -34,7 +37,11 @@ model.plot_grid(save_fig=True,show_fig=False)
 # =============================================================================
 model.export_grid()
 model.write_input_file(input_file_writer=inp.SWASH(
-    bound_side_command='BOU SIDE N CCW CON REG 1.0 20 0 '))
+    bound_side_command='BOU SIDE N CCW CON REG 0.5 20 0 ')) # Utsira
+#model.write_input_file(input_file_writer=inp.SWASH(
+#    bound_side_command='BOU SIDE S CCW CON REG 0.5 6 180 ')) # IsoladellAmore
+#model.write_input_file(input_file_writer=inp.SWASH(
+#    bound_side_command='BOU SIDE S CCW CON REG 0.5 16 180 ')) # Venezia
 # =============================================================================
 # SWASH RUN
 # =============================================================================
