@@ -189,9 +189,10 @@ class SWASH(InputFileWriter):
         return filename
 
 class REEF3D(InputFileWriter):
-    def __init__(self, option = 'REEF3D', nproc = 1):
+    def __init__(self, option = 'REEF3D', edges = ['W'], nproc = 1):
         self.option = option
         self.nproc = nproc # number of processors
+        self.edges = edges
         return
 
     def _extension(self):
@@ -207,10 +208,27 @@ class REEF3D(InputFileWriter):
         if self.option == 'DiveMESH':
             filename =  '/'.join(filename.split('/')[:-1])+'/control.txt'
             with open(filename, 'w') as file_out:
-                file_out.write('C 11 6 // left side: wave generation' '\n')
-                file_out.write('C 12 7 // side: numerical beach' '\n')
-                file_out.write('C 13 7 // side: numerical beach' '\n')
-                file_out.write('C 14 7 // right side: numerical beach' '\n')
+                if 'W' in self.edges:
+                    file_out.write('C 11 6 // West side: wave generation' '\n')
+                    file_out.write('C 12 7 // side: numerical beach' '\n')
+                    file_out.write('C 13 7 // side: numerical beach' '\n')
+                    file_out.write('C 14 7 // side: numerical beach' '\n')
+                elif 'N' in self.edges:
+                    file_out.write('C 12 6 // North side: wave generation' '\n')
+                    file_out.write('C 13 3 // side: numerical beach' '\n')
+                    file_out.write('C 14 3 // side: numerical beach' '\n')
+                    file_out.write('C 11 7 // side: numerical beach' '\n')
+                elif 'E' in self.edges:
+                    file_out.write('C 14 6 // East side: wave generation' '\n')
+                    file_out.write('C 11 7 // side: numerical beach' '\n')
+                    file_out.write('C 12 7 // side: numerical beach' '\n')
+                    file_out.write('C 13 7 // side: numerical beach' '\n')
+                elif 'S' in self.edges:
+                    file_out.write('C 13 6 // South side: wave generation' '\n')
+                    file_out.write('C 11 7 // side: numerical beach' '\n')
+                    file_out.write('C 12 7 // side: numerical beach' '\n')
+                    file_out.write('C 14 7 // side: numerical beach' '\n')
+
                 file_out.write('C 15 21 // bottom: wall boundary' '\n')
                 file_out.write('C 16 3 // top: symmetry plane' '\n')
                 file_out.write(' \n')
@@ -263,12 +281,12 @@ class REEF3D(InputFileWriter):
                 file_out.write('B 92 31 // 1st-order irregular wave' '\n')
                 file_out.write(' \n')
 
-                file_out.write('B 96 400.0 400.0 // wave generation zone length and numerical beach length' '\n')
-                file_out.write('B 107 0.0 '+str(int(geodat.x.max()))+' 0.0 0.0 200.0 // wave generation zone length and numerical beach length' '\n')
-                file_out.write('B 107 0.0 '+str(int(geodat.x.max()))+' '+str(int(geodat.y.max()))+' '+str(int(geodat.x.max()))+' 200.0 // customised numerical beach at the side walls' '\n')
+                file_out.write('B 96 200.0 400.0 // wave generation zone length and numerical beach length' '\n')
+                #file_out.write('B 107 0.0 '+str(int(geodat.x.max()))+' 0.0 0.0 200.0 // wave generation zone length and numerical beach length' '\n')
+                #file_out.write('B 107 0.0 '+str(int(geodat.x.max()))+' '+str(int(geodat.y.max()))+' '+str(int(geodat.x.max()))+' 200.0 // customised numerical beach at the side walls' '\n')
                 #file_out.write('B 107 25000.0 12000.0 0.0 16000.0 200.0 // customised numerical beach at the end of the tank' '\n')
                 #file_out.write('B 107 0.0 0.0 2900.0 3500.0 200.0 // customised numerical beach at the side walls' '\n')
-                file_out.write('B 108 0.0 0.0 0.0 '+str(int(geodat.y.max()))+' 200.0 // customised wave generation zone' '\n')
+                #file_out.write('B 108 0.0 0.0 0.0 '+str(int(geodat.y.max()))+' 200.0 // customised wave generation zone' '\n')
                 file_out.write('B 98 2 // relaxation method 2 for wave generation' '\n')
                 file_out.write('B 99 2 // relaxation method 2 for numerical beach' '\n')
                 file_out.write(' \n')
@@ -282,7 +300,7 @@ class REEF3D(InputFileWriter):
                 file_out.write('I 30 0 // turn off full tank initialisation, one can turn it on for a quick check of the setup' '\n')
                 file_out.write(' \n')
 
-                file_out.write('N 41 600.0 // simulation time' '\n')
+                file_out.write('N 41 1800.0 // simulation time' '\n')
                 file_out.write('N 47 1.0 // cfl number' '\n')
                 file_out.write(' \n')
 
@@ -290,7 +308,7 @@ class REEF3D(InputFileWriter):
                 file_out.write(' \n')
 
                 file_out.write('P 180 1 // turn on .vtp free surface printout' '\n')
-                file_out.write('P 185 0.0 600.0 0.5 // print out .vtp files interval based on simulation time window' '\n')
+                file_out.write('P 185 0.0 1800.0 0.5 // print out .vtp files interval based on simulation time window' '\n')
                 file_out.write(' \n')
 
                 file_out.write('W 22 -9.81 // gravity' '\n')
