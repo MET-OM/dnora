@@ -4,7 +4,7 @@
 import sys
 dnora_directory = '../'
 sys.path.insert(0, dnora_directory)
-from dnora import grd, mdl, inp
+from dnora import grd, mdl, inp, bnd
 # =============================================================================
 # DEFINE GRID OBJECT
 # =============================================================================
@@ -16,22 +16,21 @@ grid = grd.Grid(lon=(4.84, 4.92), lat=(59.27, 59.33), name='Utsira')
 
 # Set spacing and boundary points
 grid.set_spacing(dm=25)
-
+grid.set_boundary(grd.boundary.MidPointAsBoundary(edges='N'))
 # Import topography and mesh it down to the grid definitions
 grid.import_topo(topo_reader=grd.read.EMODNET2020(tile='*',
-                                    folder='/home/konstac/bathy/'))
+                                    folder='/home/janvb/Documents/EMODNET2020/'))
 grid.mesh_grid()
 
 # =============================================================================
 # DEFINE MODEL OBJECT
 # =============================================================================
-model = mdl.SWASH(grid, start_time='2018-08-25T00:00', end_time='2018-08-25T00:30')
+model = mdl.SWASH(grid, start_time='2018-08-25T00:00', end_time='2018-08-25T00:01')
 
 # =============================================================================
 # PLOT GRID, FORCING AND BOUNDARIES
 # =============================================================================
 model.plot_grid(save_fig=True,show_fig=False)
-
 # =============================================================================
 # WRITE OUTPUT FOR SWASH RUN
 # =============================================================================
@@ -45,4 +44,4 @@ model.write_input_file(input_file_writer=inp.SWASH(
 # =============================================================================
 # SWASH RUN
 # =============================================================================
-model.run_model()
+model.run_model(dry_run=True, mat_to_nc=True)

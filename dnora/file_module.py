@@ -158,10 +158,11 @@ class FileNames:
     def dateformat(self) -> str:
         return self._dateformat or get_default_value('dateformat', self.dnora_obj, self.primary, self.fallback)
 
-    def filename(self) -> str:
+    def filename(self, extension: str=None) -> str:
         filename = self._filename or get_default_value('filename', self.dnora_obj, self.primary, self.fallback)
         filename = self.replace_placeholders(filename, self.dateformat())
-        return Path(filename).with_suffix(f'.{self.extension}')
+        extension = extension or self.extension
+        return Path(filename).with_suffix(f'.{extension}')
 
     def folder(self) -> str:
         folder = self._folder or get_default_value('folder', self.dnora_obj, self.primary, self.fallback)

@@ -27,11 +27,12 @@ class SWAN(ModelExecuter):
         print('Running SWAN----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>')
         p = Popen(['swanrun', '-input', input_file], cwd=model_folder)
         p.wait()
+
         return
 
 class SWASH(ModelExecuter):
     def __init__(self):
-        return
+        pass
 
     def _preferred_format(self) -> str:
         """For generation of file name."""
