@@ -1,8 +1,9 @@
 from copy import copy
+from functools import reduce
 from abc import ABC, abstractmethod
 from .fvgrid import read_sms_mesh
 #import utm
-from typing import Tuple
+from typing import Tuple, Iterable
 import numpy as np
 
 class TriangReader(ABC):
@@ -33,8 +34,15 @@ class SmsReader(TriangReader):
         self.filename = copy(filename)
         return
 
-    def __call__(self) -> Tuple:
-        """The read_sms_mesh-function is taken directly from the PyFVCOM package
+    def __call__(self, nodestring_subset: Iterable=None) -> Tuple:
+        """
+        Parameters
+        ----------
+        nodestring_subset : 0-based indices of individual nodestrings to include
+            as open boundary nodes, as ordered in the .2dm file.
+            Default: include all
+
+        The read_sms_mesh-function is taken directly from the PyFVCOM package
         https://github.com/pwcazenave/pyfvcom"""
 
         import utm
@@ -42,8 +50,10 @@ class SmsReader(TriangReader):
         tri, nodes, X, Y, Z, types, nodeStrings = read_sms_mesh(self.filename, nodestrings=True)
 
         lat, lon = utm.to_latlon(X, Y, 33, zone_letter = 'W', strict = False)
-        if len(nodeStrings) > 0:
-            nodeStrings=nodeStrings[0]
+
+        if nodestring_subset is not None:
+            nodeStrings = [nodeStrings[i] for i in nodestring_subset]
+        nodeStrings = reduce(lambda x, y: x+y, nodeStrings)
         return tri, nodes, lon, lat, types, nodeStrings
 
     def __str__(self):
