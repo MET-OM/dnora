@@ -1,11 +1,9 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-
 import numpy as np
-
-from ..aux import add_suffix, add_folder_to_filename, clean_filename
+from .. import file_module
 from .. import msg
-from ..defaults import list_of_placeholders
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -26,15 +24,17 @@ class TrGridWriter(ABC):
         """Return False if you want to be responsible for printing out the
         file names."""
         return True
+    def _clean_filename(self):
+        """If this is set to False, then the ModelRun object does not clean
+        the filename, and possible placeholders (e.g. #T0) can still be
+        present.
+        """
+        return True
 
     @abstractmethod
     def __call__(self, grid: Grid) -> Tuple:
         pass
 
-    def _im_silent(self) -> bool:
-        """Return False if you want to be responsible for printing out the
-        file names."""
-        return True
 
 
 
@@ -43,28 +43,17 @@ class WW3(TrGridWriter):
     def _preferred_format(self):
         return 'WW3'
 
-    def _im_silent(self) -> bool:
-        """Return False if you want to be responsible for printing out the
-        file names."""
-        return False
-
-    def _preferred_extension(self):
+    def _extension(self):
         return 'msh'
 
     def __init__(self) -> None:
         return
 
-    def __call__(self, grid: Grid, filename: str, infofilename: str, folder: str) -> Tuple:
+    def __call__(self, grid: Grid, filename: str) -> Tuple:
 
-        output_file = add_suffix(filename, 'bathy')
-        output_path = add_folder_to_filename(output_file, folder)
-        output_path = clean_filename(output_path, list_of_placeholders)
+        output_file = file_module.add_suffix(filename, 'bathy')
 
-        grid.write_status(filename=infofilename, folder=folder)
-
-        msg.to_file(output_path)
-
-        with open(output_path,'w') as f:
+        with open(output_file,'w') as f:
             # Write header
             f.write('$MeshFormat\n')
             f.write('2 0 8\n')
@@ -116,4 +105,4 @@ class WW3(TrGridWriter):
             np.savetxt(f, arr_ele, fmt=fmt_ele)
             f.write('$EndElements\n')
 
-        return output_file, folder
+        return output_file

@@ -17,9 +17,8 @@ if TYPE_CHECKING:
 
 # Import default values and auxiliry functions
 from .. import msg
+from .. import file_module
 from ..aux import force_to_xyz, distance_2points, domain_size_in_km, set_spacing_dlon_dlat_fixed_edges, set_spacing_dlon_dlat_floating_edges, set_spacing_dx_dy, set_spacing_nx_ny
-from ..aux import create_filename_obj, add_folder_to_filename, clean_filename, check_if_folder
-from ..defaults import dflt_grd, list_of_placeholders
 
 
 class Grid:
@@ -176,7 +175,7 @@ class Grid:
         msg.header(boundary_setter, "Setting boundary points...")
         print(boundary_setter)
 
-        boundary_mask = boundary_setter(self.land_sea_mask().shape)
+        boundary_mask = boundary_setter(self.land_sea_mask())
 
         vars_dict = {'boundary_mask': (['lat', 'lon'], boundary_mask)}
         self.data = self.data.assign(vars_dict)
@@ -187,7 +186,7 @@ class Grid:
         if hasattr(self.data, 'land_sea_mask'):
             return copy(self.data.land_sea_mask.values)
         else:
-            return np.array([])
+            return np.full((self.ny(), self.nx()), True)
 
     def boundary_mask(self) -> np.ndarray:
         """Returns bool array of boundary points (True = boundary point)"""
@@ -195,7 +194,7 @@ class Grid:
         if hasattr(self.data, 'boundary_mask'):
             return copy(self.data.boundary_mask.values)
         else:
-            return np.array([])
+            return np.full((self.ny(), self.nx()), False)
 
     def boundary_points(self) -> np.ndarray:
         """Returns a lon, lat list of the set boundary points."""
@@ -239,11 +238,11 @@ class Grid:
         #return self.land_sea_mask().shape
         return (self.ny(), self.nx())
 
-    def topo(self) -> np.ndarray:
+    def topo(self, land: float=-999) -> np.ndarray:
         """Returns an array containing the meshed topography of the grid."""
         if hasattr(self.data, 'topo'):
             topo = copy(self.data.topo.values)
-            topo[np.logical_not(self.land_sea_mask())] = -999
+            topo[np.logical_not(self.land_sea_mask())] = land
             return topo
         else:
             return np.array([])
@@ -348,12 +347,12 @@ class Grid:
     def _drop_topo_and_masks(self) -> None:
         """Drops the gridded data and masks."""
 
-        if self.topo().size > 0:
-            self.data =self.data.drop('topo')
-        if self.land_sea_mask().size > 0:
-            self.data =self.data.drop('land_sea_mask')
-        if self.boundary_mask().size > 0:
-            self.data =self.data.drop('boundary_mask')
+        if hasattr(self.data, 'topo'):
+            self.data = self.data.drop('topo')
+        if hasattr(self.data, 'land_sea_mask'):
+            self.data = self.data.drop('land_sea_mask')
+        if hasattr(self.data, 'boundary_mask'):
+            self.data = self.data.drop('boundary_mask')
         return
 
     def _set_land_sea_mask(self, land_sea_mask) -> None:
@@ -388,7 +387,7 @@ class Grid:
         if not filename:
             filename = f"{self.name()}_info.txt"
 
-        filename = add_folder_to_filename(filename, folder)
+        filename = file_module.add_folder_to_filename(filename, folder)
         msg.to_file(filename)
 
         stdout = sys.stdout

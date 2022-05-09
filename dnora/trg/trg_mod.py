@@ -10,8 +10,7 @@ from .plot import TrGridPlotter, TriTopoPlotter
 from ..grd.mesh import Mesher, Interpolate
 from ..grd.grd_mod import force_to_xyz
 from .. import msg
-from ..aux import create_filename_obj, check_if_folder, add_folder_to_filename
-from ..defaults import dflt_grd
+from .. import file_module
 import sys
 
 class Grid:
@@ -104,19 +103,6 @@ class Grid:
         else:
             msg.plain('No triangular grid imported!')
             return
-
-
-    # def plot_grid(self, grid_plotter: TrGridPlotter=None) -> None:
-    #     self._grid_plotter = grid_plotter or self._get_grid_plotter()
-    #
-    #     if self._grid_plotter is None:
-    #         raise Exception('Define a TrGridPlotter!')
-    #
-    #     fig, filename = self._grid_plotter(self)
-    #     fig.show()
-    #
-    #     return
-
 
     def name(self):
         if hasattr(self, '_name'):
@@ -212,7 +198,7 @@ class Grid:
         if not filename:
             filename = f"{self.name()}_info.txt"
 
-        filename = add_folder_to_filename(filename, folder)
+        filename = file_module.add_folder_to_filename(filename, folder)
         msg.to_file(filename)
 
         stdout = sys.stdout
@@ -284,7 +270,3 @@ class Grid:
         lines.append('\n  Use print() for grid details.')
 
         return "\n".join(lines)
-
-
-    # def _get_grid_plotter(self) -> TrGridPlotter:
-    #     return TriTopoPlotter()

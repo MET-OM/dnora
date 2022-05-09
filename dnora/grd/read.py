@@ -275,7 +275,7 @@ class EMODNET2020(TopoReader):
             """
             EMODNET tiles overlap by two cells on each boundary.
             """
-            return ds.isel(lon=slice(2, -1), lat=slice(2, -1))
+            return ds.isel(lon=slice(2, -2), lat=slice(2, -2))
 
         import dask
         with dask.config.set(**{'array.slicing.split_large_chunks': True}):

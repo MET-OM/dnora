@@ -11,9 +11,7 @@ from .write import ForcingWriter
 
 # Import default values and auxiliry functions
 from .. import msg
-from ..aux import day_list, create_filename_obj, create_filename_time, clean_filename, check_if_folder
-from ..defaults import dflt_frc, list_of_placeholders
-
+from ..aux import day_list
 class Forcing:
     def __init__(self, grid, name='AnonymousForcing'):
         self.grid = copy(grid)
@@ -74,6 +72,14 @@ class Forcing:
             return copy(self.data.v.values)
         else:
             return np.array([[[]]])
+
+    def magnitude(self):
+        if np.min(self.u()).shape == 0:
+            return np.array([[[]]])
+        if np.min(self.v()).shape == 0:
+            return self.u()
+
+        return (self.u()**2 + self.v()**2)**0.5
 
     def nx(self):
         if min(self.size()) > 0:
