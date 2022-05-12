@@ -5,7 +5,6 @@ Created on Thu May 12 12:33:03 2022
 
 @author: emiliebyermoen
 """
-
 import xarray as xr
 
 
@@ -29,36 +28,55 @@ class ThreddsFetcher:
     
     Initiate with one of the following bouys 
     'G':'G_Halsafjorden'
+    'G1':'G1_Halsafjorden'
+    'G2':'G2_Halsafjorden'
     'F':'F_Vartdalsfjorden'
     'D':'D_Breisundet'
     'C':'C_Sulafjorden'
+    'C1':'C1_Sulafjorden'
     'B':'B_Sulafjorden'
+    'B1':'B1_Sulafjorden'
+    'A':'A_Sulafjorden'
     """
     
     def __init__(self,location: str):
         self.location = location
         
-    def get_url(self, year=None, month=None):
+    def get_url(self, year=None, month=None, data=None):
         """
         Returns url to file on Thredds for the given bouy, year and month.
+        Data should be 'wave' or 'wind'. 
         """
+        if data is None:
+            data = 'wave' 
+            
         locations = {'G':'G_Halsafjorden',
+                     'G1':'G1_Halsafjorden',
+                     'G2':'G2_Halsafjorden',
                      'F':'F_Vartdalsfjorden',
                      'D':'D_Breisundet',
                      'C':'C_Sulafjorden',
-                     'B':'B_Sulafjorden'
+                     'C1':'C1_Sulafjorden',
+                     'B':'B_Sulafjorden',
+                     'B1':'B1_Sulafjorden',
+                     'A':'A_Sulafjorden'
                      }
-        return f'https://thredds.met.no/thredds/dodsC/obs/buoy-svv-e39/{year}/{month}/{year}{month}_E39_{locations[self.location]}_wave.nc'
+        return f'https://thredds.met.no/thredds/dodsC/obs/buoy-svv-e39/{year}/{month}/{year}{month}_E39_{locations[self.location]}_{data}.nc'
     
     def get_aggregated_url(self):
         """
         Returns url to file with aggregated data information on Thredds.
         """
         locations = {'G':'G_Halsafjorden',
+                     'G1':'G1_Halsafjorden',
+                     'G2':'G2_Halsafjorden',
                      'F':'F_Vartdalsfjorden',
                      'D':'D_Breisundet',
                      'C':'C_Sulafjorden',
-                     'B':'B_Sulafjorden'
+                     'C1':'C1_Sulafjorden',
+                     'B':'B_Sulafjorden',
+                     'B1':'B1_Sulafjorden',
+                     'A':'A_Sulafjorden'
                      }
         return f'https://thredds.met.no/thredds/dodsC/obs/buoy-svv-e39/Aggregated_BUOY_observations/{locations[self.location]}_wave.ncml'
     
@@ -87,9 +105,11 @@ class ThreddsFetcher:
         Time input should be given on the fomat:
             'YYYY/MM/DDTHH:mm'
         
-        Wave elements in the Thredds E39 project bouy data: 
+        Elements in the Thredds E39 project bouy data: 
         'latitude'   Degree north (-90,90)
         'longitude'  Degree east (-180,180)
+        
+        Wave elements:
         'Hm0'        Significant wave height estimate from spectrum
         'hm0a'       Low frequency band Significant wave height estimated from spectrum
         'hm0b'       High frequency band Significant wave height estimated from spectrum
@@ -106,19 +126,25 @@ class ThreddsFetcher:
         'mdirb'      High frequency mean wave direction (from) calculated from directional spectrum
         'thtp'       Mean wave direction at the peak of the heave variance spectrum
         'sprtp'      Wave spreading at the peak of the heave variance spectrum
+        
+        Wind elements: 
+        'WindSpeed'      Wind speed (m/s)
+        'WindGust'       3 second Wind Gust (m/s)
+        'WindDirection'  Wind from direction [0,360]
         """
 
         ds = xr.open_dataset(self.get_aggregated_url())
         
         # Checks if the requested elements are in the Thredds data
-        available_elements = []
+        wave_elements = []
+        wind_elements = []
         for element in elements:
                 if element in ds.data_vars:
-                    available_elements.append(element) 
-    
-        if len(available_elements) == 0: 
-            available_elements = None
-        else: 
+                    wave_elements.append(element) 
+                elif element in ['WindSpeed','WindGust','WindDirection']: 
+                    wind_elements.append(element)
+            
+        if len(wave_elements)>0 or len(wind_elements)>0:
             # Checks if lat, lon of the bouy is within the given lat, lon boundaries
             if is_in_area(lon, lat, ds.geospatial_lon_min, ds.geospatial_lat_min):
             # The following alternative to that over would make the code slower and is not nessicary here I think:
@@ -128,10 +154,11 @@ class ThreddsFetcher:
             else: 
                 available_time = None
 
-        return {'time': available_time, 'elements': available_elements}
+        return {'time': available_time, 'wave_elements': wave_elements, 
+                'wind_elements': wind_elements}
 
     def fetch_data(self,lon: tuple=None, lat: tuple=None, date=None,
-                     elements: list=None):
+                     wave_elements: list=[], wind_elements: list=[]):
         """
         Returns xarray.Dataset for given time interval with given elemnts
         and given bouy (from the E39 bouy stations).
@@ -144,11 +171,15 @@ class ThreddsFetcher:
         for timestep in date: 
             year, split, month = str(timestep.astype('datetime64[M]')).partition('-')
             if (year, month) not in yearmonths:
-                ds = xr.open_dataset(self.get_url(year=year, month=month))
-                #ds = xr.open_dataset(f'https://thredds.met.no/thredds/dodsC/obs/buoy-svv-e39/{year}/{month}/{year}{month}_E39_D_Breisundet_wave.nc')
+                if len(wave_elements)>0:
+                    ds_wave = xr.open_dataset(self.get_url(year=year, month=month, data='wave'))
+                if len(wind_elements)>0: 
+                    ds_wind = xr.open_dataset(self.get_url(year=year, month=month, data='wind'))
                 yearmonths.append((year, month))
-                for element in elements:
-                    data[f'{element}_{year}/{month}'] = ds[element].sel(time=slice(date[0],date[-1]))
-                    #data[f'{locations[self.location]}_{element}_{year}/{month}'] = ds[element].sel(time=slice(date[0],date[-1]))
+                for element in wave_elements:
+                    data[f'{element}_{year}/{month}'] = ds_wave[element].sel(time=slice(date[0],date[-1]))
+                for element in wind_elements: 
+                    data[f'{element}_{year}/{month}'] = ds_wind[element].sel(time=slice(date[0],date[-1]))
         combined = xr.merge(data[file] for file in data.keys())
         return combined
+        
