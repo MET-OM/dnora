@@ -20,13 +20,13 @@ def is_in_area(lon, lat, lonq, latq):
     return True
 
 
-class ThreddsFetcher:
+class E39BuoyFetcher:
     """
     A class that searches for and returns avaiable data 
-    within given boundaries for the bouy data 
+    within given boundaries for the buoy data
     from the E39 project made availiable in Thredds. 
     
-    Initiate with one of the following bouys 
+    Initiate with one of the following buoys 
     'G':'G_Halsafjorden'
     'G1':'G1_Halsafjorden'
     'G2':'G2_Halsafjorden'
