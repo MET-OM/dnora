@@ -21,15 +21,17 @@ class TrGridWriter(ABC):
         """Return False if you want to be responsible for printing out the
         file names."""
         return True
+    def _clean_filename(self):
+        """If this is set to False, then the ModelRun object does not clean
+        the filename, and possible placeholders (e.g. #T0) can still be
+        present.
+        """
+        return True
 
     @abstractmethod
     def __call__(self, grid: Grid) -> Tuple:
         pass
 
-    def _im_silent(self) -> bool:
-        """Return False if you want to be responsible for printing out the
-        file names."""
-        return True
 
 
 
