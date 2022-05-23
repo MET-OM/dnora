@@ -61,7 +61,7 @@ class WW3(TrGridWriter):
 
             # Write Nodes
             arr_node = np.stack([
-                grid.nodes(),
+                grid.nodes()+1,
                 grid.lon(),
                 grid.lat(),
                 grid.topo(),
@@ -81,7 +81,7 @@ class WW3(TrGridWriter):
                 N_bound*[2],
                 N_bound*[1],
                 N_bound*[0],
-                grid.boundary_inds()
+                grid.boundary_inds()+1
             ]).transpose()
             fmt_bound = '%10.0f%10.0f%10.0f%10.0f%10.0f%10.0f'
 
