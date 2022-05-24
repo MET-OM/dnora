@@ -6,6 +6,7 @@ Created on Thu May 12 12:33:03 2022
 @author: emiliebyermoen
 """
 import xarray as xr
+from abc import ABC, abstractmethod
 
 
 def is_in_area(lon, lat, lonq, latq):
@@ -22,7 +23,32 @@ def is_in_area(lon, lat, lonq, latq):
     return True
 
 
-class E39BuoyFetcher:
+class TimeSeriesReader(ABC): 
+    """ Reads and returns time series withing given time interval
+    """
+    @abstractmethod
+    def is_available(self, time_interval, elements, lon: tuple=None, lat: tuple=None):
+        """
+        time_interval:  tuple=(start, end) on 'YYYY/MM/DDTHH:mm' or numpy.datetime64 format
+        elements:       list of elements to look for in data (str)
+        
+        Returns dictionary available with 'time', 'wave_elements' and 'wind_elements'
+        """
+        return available 
+    
+    @abstractmethod
+    def fetch_data(self, time_interval, wave_elements:list, wind_elements:list):
+        """
+        time_interval:      array of numpy.datetime64 or tuple=(start, end)
+        wave_elements:      list/array (str)
+        wind_elements:      list/array (str)
+        
+        Returns data on xarray.Dataset or xarray.DataArray format. 
+        """
+        return data
+
+
+class E39BuoyFetcher(TimeSeriesReader):
     """
     A class that searches for and returns avaiable data 
     within given boundaries for the buoy data
@@ -184,7 +210,7 @@ class E39BuoyFetcher:
         combined = xr.merge(data[file] for file in data.keys())
         return combined
         
-class KystverketBuoyFetcher:
+class KystverketBuoyFetcher(TimeSeriesReader):
     """
     Searches for and returns available data within given
     boundaries from Kystverket buoys available at Thredds.
