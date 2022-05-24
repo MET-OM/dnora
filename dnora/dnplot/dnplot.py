@@ -68,7 +68,7 @@ class ForcingPlotter(GridPlotter):
             title_str = f"{forcing.name()}: {str(forcing.time()[val])}"
             vmax = np.max(forcing.magnitude())
             figure_dict = basic_funcs.plot_field(forcing.lon(), forcing.lat(), forcing.u()[val,:,:], forcing.v()[val,:,:],
-                            var='ff', title_str=title_str, fig=self.fig, ax=self.ax, cbar=self._init_plot, vmin=0, vmax=vmax, barbs=True)
+                            var='ff', title_str=title_str, fig_dict={'fig': self.fig, 'ax': self.ax}, cbar=self._init_plot, vmin=0, vmax=vmax, barbs=False)
             self.fig = figure_dict.get('fig')
             self.ax = figure_dict.get('ax')
             self._init_plot = False

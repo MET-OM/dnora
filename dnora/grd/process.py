@@ -79,7 +79,7 @@ class SetMinDepth(GridProcessor):
 
     def __str__(self):
         if self.to_land:
-            return(f"Setting points shallower than {self.depth} to land (-999)")
+            return(f"Setting points shallower than {self.depth} to land (NaN)")
         else:
             return(f"Setting points shallower than {self.depth} to {self.depth}")
 

@@ -8,6 +8,7 @@ from .write import TrGridWriter
 from .boundary import BoundarySetter, ClearBoundary
 from .plot import TrGridPlotter, TriTopoPlotter
 from ..grd.mesh import Mesher, Interpolate
+from ..grd.process import GridProcessor
 from ..grd.grd_mod import force_to_xyz
 from .. import msg
 from .. import file_module
@@ -106,6 +107,27 @@ class Grid:
         else:
             msg.plain('No triangular grid imported!')
             return
+
+    def process_grid(self, filt: GridProcessor=None) -> None:
+        """Processes the gridded bathymetrical data, e.g. with a filter."""
+
+        if filt is None:
+            msg.warning('Provide a GridProcessor!')
+            return
+
+        msg.header(filt, "Processing meshed grid...")
+        print(filt)
+        true_mask = np.full(self.topo().shape, True)
+        topo = filt.grid(self.topo(), self.lon(), self.lat(),
+                        sea_mask = np.full(self.topo().shape, True),
+                        boundary_mask = np.full(self.topo().shape, False))
+
+        if topo is None:
+            msg.warning('Processing of mesed topography is not implemented')
+        else:
+            vars_dict = {'topo': ('nodes', topo)}
+            self.data = self.data.assign(vars_dict)
+
 
     def name(self):
         if hasattr(self, '_name'):
