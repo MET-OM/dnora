@@ -9,7 +9,9 @@ import xarray as xr
 
 
 def is_in_area(lon, lat, lonq, latq):
-    """ Lon = (lon_min,lon:max), lat = (lat_min,lat_max), lonq=value, latq=value
+    """ 
+    Lon = (lon_min,lon:max), lat = (lat_min,lat_max), lonq=value, latq=value
+    If input values lon and lat is Nona, the function returns True. 
     """
     if lon is not None: 
         if lonq<lon[0] or lon[1]<lonq:
@@ -42,14 +44,11 @@ class E39BuoyFetcher:
     def __init__(self,location: str):
         self.location = location
         
-    def get_url(self, year=None, month=None, data=None):
+    def get_url(self, year, month, data):
         """
         Returns url to file on Thredds for the given bouy, year and month.
         Data should be 'wave' or 'wind'. 
         """
-        if data is None:
-            data = 'wave' 
-            
         locations = {'G':'G_Halsafjorden',
                      'G1':'G1_Halsafjorden',
                      'G2':'G2_Halsafjorden',
@@ -92,8 +91,7 @@ class E39BuoyFetcher:
         lat = (ds.geospatial_lat_min+ds.geospatial_lat_max)/2 
         return lon, lat
     
-    def is_available(self,lon: tuple=None, lat: tuple=None, date: tuple=None,
-                     elements: list=None):
+    def is_available(self, time_interval, elements, lon: tuple=None, lat: tuple=None):
         """ 
         Returns dictionary with (1) array of points in time within 
         the given time interval (for given bouy contained in Thredds, see catalog:
@@ -146,41 +144,41 @@ class E39BuoyFetcher:
             
         if len(wave_elements)>0 or len(wind_elements)>0:
             # Checks if lat, lon of the bouy is within the given lat, lon boundaries
+            # The is_in_area function returns True if boundaries are given as None 
             if is_in_area(lon, lat, ds.geospatial_lon_min, ds.geospatial_lat_min):
             # The following alternative to that over would make the code slower and is not nessicary here I think:
             # if is_in_area(lon, lat, self.position) 
                 # Collects array of all the points in time that are contained within the time boundary given
-                available_time = ds.sel(time=slice(date[0], date[1]))['time'].values
+                available_time = ds.sel(time=slice(time_interval[0], time_interval[-1]))['time'].values
             else: 
                 available_time = None
 
         return {'time': available_time, 'wave_elements': wave_elements, 
                 'wind_elements': wind_elements}
 
-    def fetch_data(self,lon: tuple=None, lat: tuple=None, date=None,
-                     wave_elements: list=[], wind_elements: list=[]):
+    def fetch_data(self, time_interval, wave_elements: list=[], wind_elements: list=[]):
         """
         Returns xarray.Dataset for given time interval with given elemnts
         and given bouy (from the E39 bouy stations).
         
-        Input date array should be on np.datetime64 format.
+        Input date array time_interval should be on np.datetime64 format.
         """
         fetch_wave = len(wave_elements)>0
         fetch_wind = len(wind_elements)>0
         
         data = {}
         yearmonths = []
-        for timestep in date: 
+        for timestep in time_interval: 
             year, split, month = str(timestep.astype('datetime64[M]')).partition('-')
             if (year, month) not in yearmonths:
                 if fetch_wave:
-                    ds_wave = xr.open_dataset(self.get_url(year=year, month=month, data='wave'))
+                    ds_wave = xr.open_dataset(self.get_url(year, month, 'wave'))
                     for element in wave_elements:
-                        data[f'{element}_{year}/{month}'] = ds_wave[element].sel(time=slice(date[0],date[-1]))
+                        data[f'{element}_{year}/{month}'] = ds_wave[element].sel(time=slice(time_interval[0],time_interval[-1]))
                 if fetch_wind: 
-                    ds_wind = xr.open_dataset(self.get_url(year=year, month=month, data='wind'))
+                    ds_wind = xr.open_dataset(self.get_url(year, month, 'wind'))
                     for element in wind_elements: 
-                        data[f'{element}_{year}/{month}'] = ds_wind[element].sel(time=slice(date[0],date[-1]))
+                        data[f'{element}_{year}/{month}'] = ds_wind[element].sel(time=slice(time_interval[0],time_interval[-1]))
                 yearmonths.append((year, month))
                 
         combined = xr.merge(data[file] for file in data.keys())
@@ -188,16 +186,15 @@ class E39BuoyFetcher:
         
 class KystverketBuoyFetcher:
     """
-        Searches for and returns available data within given
-        boundaries from Kystverket buoys available at Thredds.
+    Searches for and returns available data within given
+    boundaries from Kystverket buoys available at Thredds.
         
-        See catalog: https://thredds.met.no/thredds/catalog/obs/kystverketbuoy/catalog.html
+    See catalog: https://thredds.met.no/thredds/catalog/obs/kystverketbuoy/catalog.html
         
-        Initiate with one of the following bouys:
-        'F':    Fauskane
-        'V':    Vestfjorden
-        
-        """
+    Initiate with one of the following bouys:
+    'F':    Fauskane
+    'V':    Vestfjorden
+    """
     
     def __init__(self, location: str):
         self.location = location
@@ -211,24 +208,24 @@ class KystverketBuoyFetcher:
         locations = {'F':'Fauskane',
             'V':'Vestfjorden'}
         
-                return f'https://thredds.met.no/thredds/dodsC/obs/kystverketbuoy/{year}/{month}/{year}{month}_Kystverket-Smartbuoy-{locations[self.location]}_{sensor}.nc'
+        return f'https://thredds.met.no/thredds/dodsC/obs/kystverketbuoy/{year}/{month}/{year}{month}_Kystverket-Smartbuoy-{locations[self.location]}_{sensor}.nc'
 
-def position(self):
-    """
+    def position(self):
+        """
         Returns position of bouy given in the aggregated dataset on Thredds.
         
         Noe: I haven't used this, but I thought it might be helpful
         if we wanted to make the program choose which bouy to take.
         """
-            ds = xr.open_dataset(self.get_url,'2020','01','wave')
-            lon = (ds.geospatial_lon_min+ds.geospatial_lon_max)/2
-            lat = (ds.geospatial_lat_min+ds.geospatial_lat_max)/2
-            return lon, lat
+        ds = xr.open_dataset(self.get_url,'2020','01','wave')
+        lon = (ds.geospatial_lon_min+ds.geospatial_lon_max)/2
+        lat = (ds.geospatial_lat_min+ds.geospatial_lat_max)/2
+        return lon, lat
         
         
-        def is_available(self, lon: tuple=None, lat: tuple=None, date: tuple=None, elements: list=None):
+    def is_available(self, time_interval, elements, lon: tuple=None, lat: tuple=None):
         """
-            Returns ditionary with
+            Returns dictionary with
             1) tuple of time (start,stop) with None if the start time or end time does not exist
             2) list of wave elements avaiable (out of those given)
             3) list of wind elements avaiable (out of those given)
@@ -287,18 +284,18 @@ def position(self):
         # those times in the datasets, it will return None
         start_time = None
         end_time = None
-        start_year = date[0][0:4]
-        start_month = date[0][5:7]
+        start_year = time_interval[0][0:4]
+        start_month = time_interval[0][5:7]
         if len(start_month)==0:
             start_month = '01'
-        end_year = date[1][0:4]
-        end_month = date[1][5:7]
+        end_year = time_interval[-1][0:4]
+        end_month = time_interval[-1][5:7]
         if len(end_month)==0:
             end_month = '12'
 
         # Checks if first point of time interval do exist as file in Thredds
         start_ds = xr.open_dataset(self.get_url(start_year, start_month, 'wave'))
-        start_time = start_ds.sel(time=slice(date[0], date[1]))['time'].values[0]
+        start_time = start_ds.sel(time=slice(time_interval[0], time_interval[-1]))['time'].values[0]
         
         # Checks if the requested elements are in the Thredds data
         wave_elements = []
@@ -306,8 +303,8 @@ def position(self):
         for element in elements:
             if element in start_ds.data_vars:
                 wave_elements.append(element)
-                elif element in ['Gust_Direction','Gust_Speed','Average_Wind_Direction','Average_Wind_Speed']:
-                    wind_elements.append(element)
+            elif element in ['Gust_Direction','Gust_Speed','Average_Wind_Direction','Average_Wind_Speed']:
+                wind_elements.append(element)
         
         if len(wave_elements)>0 or len(wind_elements)>0:
             # Checks if lat, lon of the bouy is within the given lat, lon boundaries
@@ -319,23 +316,20 @@ def position(self):
                     end_ds = start_ds
                 else:
                     end_ds = xr.open_dataset(self.get_url(end_year, end_month, 'wave'))
-end_time = end_ds.sel(time=slice(date[0],date[1]))['time'].values[-1]
+                end_time = end_ds.sel(time=slice(time_interval[0],time_interval[-1]))['time'].values[-1]
 
-return {'time': (start_time, end_time), 'wave_elements': wave_elements,
-    'wind_elements': wind_elements}
+        return {'time': (start_time, end_time), 'wave_elements': wave_elements, 'wind_elements': wind_elements}
     
-    def fetch_data(self,lon: tuple=None, lat: tuple=None, date: tuple=None,
-                   wave_elements: list=[], wind_elements: list=[]):
+    def fetch_data(self, time_interval, wave_elements: list=[], wind_elements: list=[]):
         """
-            Returns xarray.Dataset for given time interval with given elemnts
-            and given bouy (from the E39 bouy stations).
-            
-            Input date array should be on np.datetime64 format. (start,end)
-            """
-        start_year = str(date[0])[0:4]
-        start_month = str(date[0])[5:7]
-        end_year = str(date[1])[0:4]
-        end_month = str(date[1])[5:7]
+        Returns xarray.Dataset for given time interval with given elemnts
+        and given bouy (from the E39 bouy stations).
+        Input time_interval should be on format (start, end) should be on np.datetime64 format. (start,end)
+        """
+        start_year = str(time_interval[0])[0:4]
+        start_month = str(time_interval[0])[5:7]
+        end_year = str(time_interval[-1])[0:4]
+        end_month = str(time_interval[-1])[5:7]
         
         yearmonths = []
         if start_year == end_year:
@@ -347,23 +341,23 @@ return {'time': (start_time, end_time), 'wave_elements': wave_elements,
                         yearmonths.append((start_year,f'0{month}')) #need a 0 before the number to get right syntax for creating url later
                     else:
                         yearmonths.append((start_year,f'{month}'))
-    else:
-        for month in range(int(start_month),13):
-            if month<10:
-                yearmonths.append((start_year, f'0{month}'))
+        else:
+            for month in range(int(start_month),13):
+                if month<10:
+                    yearmonths.append((start_year, f'0{month}'))
                 else:
                     yearmonths.append((start_year, f'{month}'))
-        if int(end_year)-int(start_year)>1:
-            for year in range(int(start_year)+1,int(end_year)):
-                for month in range(1,10):
-                    yearmonths.append((f'{year}',f'0{month}'))
+            if int(end_year)-int(start_year)>1:
+                for year in range(int(start_year)+1,int(end_year)):
+                    for month in range(1,10):
+                        yearmonths.append((f'{year}',f'0{month}'))
                     for month in range(10,13):
                         yearmonths.append((f'{year}',f'{month}'))
-for month in range(1,int(end_month)+1):
-    if month<10:
-        yearmonths.append((end_year,f'0{month}'))
-            else:
-                yearmonths.append((end_year,f'{month}'))
+            for month in range(1,int(end_month)+1):
+                if month<10:
+                    yearmonths.append((end_year,f'0{month}'))
+                else:
+                    yearmonths.append((end_year,f'{month}'))
         
         fetch_wave = len(wave_elements)>0
         fetch_wind = len(wind_elements)>0
@@ -372,11 +366,17 @@ for month in range(1,int(end_month)+1):
             if fetch_wave:
                 ds_wave = xr.open_dataset(self.get_url(year, month, 'wave'))
                 for element in wave_elements:
-                    data[f'{element}_{year}/{month}'] = ds_wave[element].sel(time=slice(date[0],date[-1]))
+                    data[f'{element}_{year}/{month}'] = ds_wave[element].sel(time=slice(time_interval[0],time_interval[-1]))
             if fetch_wind:
                 ds_wind = xr.open_dataset(self.get_url(year, month, 'wind'))
                 for element in wind_elements:
-                    data[f'{element}_{year}/{month}'] = ds_wind[element].sel(time=slice(date[0],date[-1]))
+                    data[f'{element}_{year}/{month}'] = ds_wind[element].sel(time=slice(time_interval[0],time_interval[-1]))
 
-    combined = xr.merge(data[file] for file in data.keys())
+        combined = xr.merge(data[file] for file in data.keys())
+        
         return combined
+
+    
+    
+    
+    
