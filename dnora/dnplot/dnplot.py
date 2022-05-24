@@ -10,7 +10,9 @@ from .. import msg
 from typing import Tuple
 import matplotlib.tri as mtri
 from . import basic_funcs
+import cmocean.cm
 from matplotlib.widgets import Slider, Button, RadioButtons, TextBox
+from matplotlib.colors import LinearSegmentedColormap
 class GridPlotter(ABC):
     """Plots data from Grid-object."""
 
@@ -18,13 +20,13 @@ class GridPlotter(ABC):
     def _extension(self) -> str:
         pass
 
-    def grid(self, dict_of_objects: dict, plain: bool) -> Tuple:
+    def grid(self, dict_of_objects: dict, plain: bool) -> dict:
         msg.warning('Plotting of meshed data not implemented!')
-        return None, None
+        return None
 
-    def topo(self, dict_of_objects: dict, plain: bool) -> Tuple:
+    def topo(self, dict_of_objects: dict, plain: bool) -> dict:
         msg.warning('Plotting of xyz data not implemented!')
-        return None, None
+        return None
 
 class TopoPlotter(GridPlotter):
     def _extension(self):
@@ -35,8 +37,9 @@ class TopoPlotter(GridPlotter):
         boundary = dict_of_objects['Boundary']
         forcing = dict_of_objects['Forcing']
         #
-        fig, ax = basic_funcs.plot_field(grid.lon(), grid.lat(), grid.topo(land=np.nan), var='topo', title_str=f"{grid.name()}")
-
+        figure_dict = basic_funcs.plot_field(grid.lon(), grid.lat(), grid.topo(land=np.nan), var='topo', title_str=f"{grid.name()}")
+        fig = figure_dict.get('fig')
+        ax = figure_dict.get('ax')
         lonlat=grid.boundary_points()
         if lonlat.shape[0] > 0:
             ax.plot(lonlat[:,0], lonlat[:,1],'k*', label='Set boundary points')
@@ -53,7 +56,7 @@ class TopoPlotter(GridPlotter):
         #ax.legend(loc="upper right")
         ax.legend(bbox_to_anchor=(0.3, 1.2))
 
-        return fig
+        return {'fig': fig, 'ax': ax}
 
 
 class ForcingPlotter(GridPlotter):
@@ -83,7 +86,7 @@ class ForcingPlotter(GridPlotter):
         #giver.on_clicked(update_plot)
         plt.show(block=True)
 
-        return self.fig
+        return {'fig': self.fig, 'ax': self.ax}
 
 class OldTopoPlotter(GridPlotter):
 
@@ -104,40 +107,46 @@ class OldTopoPlotter(GridPlotter):
         forcing = dict_of_objects['Forcing']
 
         # Create basic plot
-        fig = plt.figure()
-        levels = np.linspace(0, np.max(grid.topo()), 20, endpoint=True)
+        fig, ax = plt.subplots()
+
 
         if grid.structured():
-            plt.contourf(grid.lon(),grid.lat(),grid.topo(),levels)
+            levels = np.linspace(0, np.max(grid.topo()), 20, endpoint=True)
+            cont = ax.contourf(grid.lon(),grid.lat(),grid.topo(),levels)
         else:
+
+            levels = np.linspace(0, np.max(grid.topo()), 20, endpoint=True)
             triang = mtri.Triangulation(grid.lon(), grid.lat(), triangles = grid.tri())
             topo=grid.topo()
             topo[np.isnan(topo)]=0 # Land to zero
-            plt.tricontourf(triang, topo, levels)
-            plt.triplot(grid.lon(), grid.lat(), triangles=grid.tri(), linewidth=0.2, color='black')
+            cmap = cmocean.cm.topo_r
+            colors = cmap(np.linspace(0.5, 1, cmap.N // 2))
+            cmap2 = LinearSegmentedColormap.from_list('Upper Half', colors)
+            cont = ax.tricontourf(triang, topo, levels, cmap=cmap2)
+            ax.triplot(grid.lon(), grid.lat(), triangles=grid.tri(), linewidth=0.2, color='black')
 
         # Plot boundary points if they exist
         lonlat=grid.boundary_points()
         if lonlat.shape[0] > 0:
-            plt.plot(lonlat[:,0], lonlat[:,1],'k*', label='Set boundary points')
+            ax.plot(lonlat[:,0], lonlat[:,1],'k*', label='Set boundary points')
 
         # Plot locations of boundary spectra
         if not plain and boundary is not None:
-            plt.plot(boundary.lon(), boundary.lat(),'kx', label=f"Available spectra from {boundary.name()}")
+            ax.plot(boundary.lon(), boundary.lat(),'kx', label=f"Available spectra from {boundary.name()}")
 
         # Plot locations of wind forcing data points
         if not plain and forcing is not None:
             lonlat=forcing._point_list(mask=np.full(forcing.size()[1:], True))
-            plt.plot(lonlat[:,0], lonlat[:,1],'r.', markersize=1.5, label=f"Forcing from {forcing.name()}")
+            ax.plot(lonlat[:,0], lonlat[:,1],'r.', markersize=1.5, label=f"Forcing from {forcing.name()}")
 
-        plt.legend(loc="upper right")
-        cbar = plt.colorbar()
+        ax.legend(loc="upper left")
+        cbar = fig.colorbar(cont)
         cbar.set_label('Depth (m)', rotation=90)
-        plt.title(f"{grid.name()} topography")
+        #ax.title(f"{grid.name()} topography")
 
 
 
-        return fig
+        return {'fig': fig, 'ax': ax, 'cbar': cbar}
 
     def topo(self, dict_of_objects: dict, plain: bool=True):
         """Creates a plot of the topography when a Grid-object is provided.

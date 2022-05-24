@@ -135,7 +135,7 @@ class WW3(BoundaryWriter):
     def _im_silent(self) -> bool:
         return False
 
-    def __call__(self, boundary: Boundary, filename: str, folder: str) -> Tuple[str, str]:
+    def __call__(self, boundary: Boundary, filename: str) -> Tuple[str, str]:
         msg.info('Writing WAVEWATCH-III netcdf-output')
 
         if self.one_file:
@@ -143,7 +143,7 @@ class WW3(BoundaryWriter):
                 # Uses $Lon $Lat
                 filename = file_module.replace_lonlat(filename, lon=boundary.lon()[0], lat=boundary.lat()[0])
 
-            output_files = file_module.clean(filename, list_of_placeholders)
+            output_files = file_module.clean(filename)
             msg.plain(f"All points >> {output_files}")
             self.write_netcdf(boundary, output_files)
 
@@ -152,7 +152,7 @@ class WW3(BoundaryWriter):
             for n in boundary.x():
                 if boundary.mask[n]: # This property is not really used and should always be true
                     output_file = file_module.replace_lonlat(filename, lon=boundary.lon()[n], lat=boundary.lat()[n])
-                    output_file = file_module.clean(output_file, list_of_placeholders)
+                    output_file = file_module.clean(output_file)
                     output_files.append(output_file)
 
                     msg.plain(f"Point {n} >> {output_file}")

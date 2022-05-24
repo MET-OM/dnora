@@ -83,6 +83,39 @@ class SetMinDepth(GridProcessor):
         else:
             return(f"Setting points shallower than {self.depth} to {self.depth}")
 
+class SetMaxDepth(GridProcessor):
+    """Modify depth points deeper than a certain threshold.
+
+    If to_land is True (default=False), then points deeper than depth
+    are set to land. Otherwise the shallow points are set to depth.
+    """
+
+    def __init__(self, depth: float, to_land: bool=False) -> None:
+        self.to_land = to_land
+        self.depth = depth
+
+    def topo(self, data, lon, lat, sea_mask):
+        return self.grid(data, lon, lat, land_sea_mask)
+
+    def grid(self, data, lon, lat, sea_mask, boundary_mask=None):
+        deep_points = data > self.depth
+        if self.to_land:
+            new_data = copy(data)
+            new_data[np.logical_and(deep_points,sea_mask)] = np.nan # Don't touch land points
+            msg.plain(f"Affected {np.count_nonzero(np.logical_and(deep_points, sea_mask))} points")
+        else:
+            # Set points to the limiter
+            new_data = copy(data)
+            new_data[np.logical_and(deep_points, sea_mask)] = self.depth # Don't touch land points
+            msg.plain(f"Affected {np.count_nonzero(np.logical_and(deep_points, sea_mask))} points")
+        return new_data
+
+    def __str__(self):
+        if self.to_land:
+            return(f"Setting points deeper than {self.depth} to land (nan)")
+        else:
+            return(f"Setting points deeper than {self.depth} to {self.depth}")
+
 class SetConstantDepth(GridProcessor):
     """Set a constant depth for the grid. """
 

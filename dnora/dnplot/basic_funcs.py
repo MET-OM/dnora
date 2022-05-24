@@ -113,6 +113,8 @@ def plot_magnitude(fig, ax, lon, lat, data, var, vmin=None, vmax=None, cbar=True
         vmax = np.max(data)
     vmin = np.floor(vmin).astype(int)
     vmax = np.ceil(vmax).astype(int)
+    if vmax == vmin:
+        vmax += 1
     levels = np.linspace(vmin, vmax, vmax-vmin+1)
     xx, yy = np.meshgrid(lon, lat)
     cont = ax.contourf(xx, yy, data, cmap=cmap, levels=levels)
