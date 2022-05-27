@@ -31,7 +31,8 @@ Installing **dnora**
   $ conda config --add channels conda-forge
   $ conda env create -f environment.yml
   $ conda activate dnora
-
+  $ pip install -e .
+  
 To update the enviroment using a new environment.yml, run:
 
 .. code-block:: bash
@@ -55,11 +56,11 @@ Dependencies
 To run the models within dnora, the paths, where the models are installed, need to be defined in .bashrc, e.g., ::
 
    export PATH=${PATH}:/home/user/Programs/swan
-   
+
    export PATH=${PATH}:/home/user/Programs/swash
-   
+
    export PATH=${PATH}:/home/user/Programs/HOS-ocean/bin
-   
+
    export PATH=${PATH}:/home/user/Programs/REEF3D_xx/DIVEMesh/bin
    export PATH=${PATH}:/home/user/Programs/REEF3D_xx/REEF3D/bin
 
@@ -152,10 +153,10 @@ The main idea is that the Grid-object is created, and a fixed set of methods are
 
 Examples::
 
-   topo_reader=grd.read.EMODNET2018(tile='D5',folder='/home/user/bathy/') 
-   topo_reader=grd.read.EMODNET2020(tile='D5',folder='/home/user/bathy/') 
-   topo_reader=grd.read.GEBCO2021(tile='n66.357421875_s57.041015625_w0.703125_e10.37109375',folder='/home/user/bathy/') 
-   topo_reader=grd.read.KartverketNo50m(tile='B1008',folder='/home/user/bathy/') 
+   topo_reader=grd.read.EMODNET2018(tile='D5',folder='/home/user/bathy/')
+   topo_reader=grd.read.EMODNET2020(tile='D5',folder='/home/user/bathy/')
+   topo_reader=grd.read.GEBCO2021(tile='n66.357421875_s57.041015625_w0.703125_e10.37109375',folder='/home/user/bathy/')
+   topo_reader=grd.read.KartverketNo50m(tile='B1008',folder='/home/user/bathy/')
 
    grid.import_topo(topo_reader=topo_reader)
 

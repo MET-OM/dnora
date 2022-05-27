@@ -1,9 +1,6 @@
 # =============================================================================
 # IMPORT dnora
 # =============================================================================
-import sys
-dnora_directory = '../'
-sys.path.insert(0, dnora_directory)
 from dnora import grd, mdl, bnd, inp, run
 import dnora.wave_parameters as wp
 

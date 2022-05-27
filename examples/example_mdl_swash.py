@@ -1,9 +1,6 @@
 # =============================================================================
 # IMPORT dnora
 # =============================================================================
-import sys
-dnora_directory = '../'
-sys.path.insert(0, dnora_directory)
 from dnora import grd, mdl, inp, bnd
 # =============================================================================
 # DEFINE GRID OBJECT
@@ -19,7 +16,7 @@ grid.set_spacing(dm=25)
 grid.set_boundary(grd.boundary.MidPointAsBoundary(edges='N'))
 # Import topography and mesh it down to the grid definitions
 grid.import_topo(topo_reader=grd.read.EMODNET2020(tile='*',
-                                    folder='/home/janvb/Documents/EMODNET2020/'))
+                                    folder='/home/konstac/bathy/'))
 grid.mesh_grid()
 
 # =============================================================================
@@ -44,4 +41,4 @@ model.write_input_file(input_file_writer=inp.SWASH(
 # =============================================================================
 # SWASH RUN
 # =============================================================================
-model.run_model(dry_run=True, mat_to_nc=True)
+model.run_model(dry_run=False, mat_to_nc=True)
