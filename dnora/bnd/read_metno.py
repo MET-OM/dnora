@@ -1,4 +1,6 @@
+import os
 import xarray as xr
+import glob
 import numpy as np
 from copy import copy
 from abc import ABC, abstractmethod
@@ -12,12 +14,17 @@ from .. import msg
 from ..aux import day_list, create_time_stamps
 
 class WAM4km(BoundaryReader):
-    def __init__(self, ignore_nan: bool=True, stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0) -> None:
+    def __init__(self, ignore_nan: bool=True, stride: int=6,
+                 hours_per_file: int=73, last_file: str='', lead_time: int=0,
+                 cache: bool=True, clean_cache: bool=False) -> None:
         self.ignore_nan = copy(ignore_nan)
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
         self.last_file = copy(last_file)
+        self.cache = copy(cache)
+        self.clean_cache = copy(clean_cache)
+        self.cache_folder = 'dnora_bnd_temp'
         return
 
     def convention(self) -> str:
@@ -59,6 +66,14 @@ class WAM4km(BoundaryReader):
         if hasattr(self, 'pointers'):
             inds = self.pointers[0][inds]
 
+        if self.clean_cache:
+            for f in glob.glob(os.path.join(self.cache_folder, '*')):
+                os.remove(f)
+
+        if self.cache:
+            if not os.path.isdir(self.cache_folder):
+                os.mkdir(self.cache_folder)
+                print("Creating cache folder %s..." % cache_folder)
 
         start_times, end_times, file_times = create_time_stamps(start_time, end_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
 
@@ -67,14 +82,31 @@ class WAM4km(BoundaryReader):
         bnd_list = []
         for n in range(len(file_times)):
             url = self.get_url(file_times[n])
-            msg.from_file(url)
+            url_or_cache, data_from_cache = self.get_filepath_if_cached(url)
+            msg.from_file(url_or_cache)
             msg.plain(f"Reading boundary spectra: {start_times[n]}-{end_times[n]}")
-            with xr.open_dataset(url) as f:
-                this_ds = f.sel(time = slice(start_times[n], end_times[n]), x = (inds+1))[['SPEC', 'longitude', 'latitude', 'time', 'freq', 'direction']].copy()
-            bnd_list.append(this_ds)
+            if data_from_cache:
+                this_ds = xr.load_dataset(url_or_cache)
+                bnd_list.append(this_ds)
+            else:
+                try:
+                    with xr.open_dataset(url) as f:
+                        this_ds = f.sel(
+                            time=slice(start_times[n], end_times[n]),
+                            x=inds+1,
+                        )[
+                            ['SPEC', 'longitude', 'latitude', 'time', 'freq', 'direction']
+                        ].copy()
+                    bnd_list.append(this_ds)
+                    if self.cache:
+                        self.write_to_cache(this_ds, url)
+
+                except OSError:
+                    msg.plain(f'FILE NOT FOUND, SKIPPING: {url}')
+
 
         msg.info("Merging dataset together (this might take a while)...")
-        bnd=xr.concat(bnd_list, dim="time").squeeze('y')
+        bnd = xr.concat(bnd_list, dim="time").squeeze('y')
 
         time = bnd.time.values
         freq = bnd.freq.values
@@ -90,6 +122,29 @@ class WAM4km(BoundaryReader):
     def get_url(self, day):
         url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/'+day.strftime('%d')+'/MyWave_wam4_SPC_'+day.strftime('%Y%m%d')+'T'+day.strftime('%H')+'Z.nc'
         return url
+
+    def get_filepath_if_cached(self, url: str) -> Tuple:
+        """
+        Returns the filepath if the file is cached locally, otherwise
+        hands back the URL.
+        """
+        maybe_cache = self._url_to_filename(url)
+        if os.path.exists(maybe_cache):
+            return maybe_cache, True
+        else:
+            return url, False
+
+    def write_to_cache(self, ds, url):
+        cache = self._url_to_filename(url)
+        msg.plain(f'Caching {url} to {cache}')
+        ds.to_netcdf(cache)
+
+    def _url_to_filename(self, url):
+        """
+        Sanitizes a url to a valid file name.
+        """
+        fname = "".join(x for x in url if x.isalnum() or x == '.')
+        return os.path.join(self.cache_folder, fname)
 
 
 class NORA3(BoundaryReader):
