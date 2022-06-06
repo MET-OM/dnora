@@ -79,7 +79,8 @@ class ModelRun:
             msg.info('Dry run! No boundary spectra will be imported.')
 
     def import_forcing(self, forcing_reader: ForcingReader=None,
-                        name: str=None, dry_run: bool=False) -> None:
+                        name: str=None, dry_run: bool=False,
+                        expansion_factor: float=1.2) -> None:
         """Creates a Forcing-objects and imports forcing data."""
         self._dry_run = dry_run
 
@@ -96,7 +97,8 @@ class ModelRun:
         if not self.dry_run():
             self.forcing().import_forcing(start_time=self.start_time,
                                         end_time=self.end_time,
-                                        forcing_reader=self._forcing_reader)
+                                        forcing_reader=self._forcing_reader,
+                                        expansion_factor=expansion_factor)
         else:
             msg.info('Dry run! No forcing will be imported.')
 
