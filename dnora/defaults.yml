@@ -55,11 +55,7 @@ SWAN:
     filename: 'spec#Boundary#Grid#T0#T1'
   input_file:
     filename: 'input_#T0_#Grid'
-<<<<<<< HEAD
   folder: '#Grid_SWAN'
-=======
-
->>>>>>> dev_dnplot
 
 SWASH:
   dateformat: '%Y%m%d'
