@@ -1,11 +1,14 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
+import numpy as np
 from .. import file_module
 from .. import msg
 
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from .trg_mod import Grid
+
 class TrGridWriter(ABC):
     """Abstract class for writing the TrGrid-object's data to files to be Used
     by the wave models.
@@ -57,25 +60,49 @@ class WW3(TrGridWriter):
             f.write('$EndMeshFormat\n')
 
             # Write Nodes
+            arr_node = np.stack([
+                grid.nodes()+1,
+                grid.lon(),
+                grid.lat(),
+                grid.topo(),
+            ]).transpose()
+            fmt_node = '%10.0f%22.8f%22.8f%22.8f'
+
             f.write('$Nodes\n')
             f.write(f"{len(grid.lon()):12.0f}\n")
-            #inds = list(range(1,len(lon)+1))
-            for n in range(len(grid.nodes())):
-                f.write(f"{grid.nodes()[n]:10.0f}{grid.lon()[n]:22.8f}{grid.lat()[n]:22.8f}{abs(grid.topo()[n]):22.8f}\n")
+            np.savetxt(f, arr_node, fmt=fmt_node)
             f.write('$EndNodes\n')
 
             # Write Elements
+            N_bound = len(grid.boundary_inds())
+            arr_bound = np.stack([
+                np.arange(1, N_bound+1),
+                N_bound*[15],
+                N_bound*[2],
+                N_bound*[1],
+                N_bound*[0],
+                grid.boundary_inds()+1
+            ]).transpose()
+            fmt_bound = '%10.0f%10.0f%10.0f%10.0f%10.0f%10.0f'
+
+            N_ele = len(grid.tri())
+            arr_ele = np.stack([
+                np.arange(1, N_ele+1)+N_bound,
+                N_ele*[2],
+                N_ele*[3],
+                N_ele*[0],
+                np.arange(1, N_ele+1),
+                N_ele*[0],
+                grid.tri()[:, 0]+1,
+                grid.tri()[:, 1]+1,
+                grid.tri()[:, 2]+1,
+            ]).transpose()
+            fmt_ele = '%8.0f%8.0f%8.0f%8.0f%8.0f%8.0f%8.0f%8.0f%8.0f'
+
             f.write('$Elements\n')
             f.write(f"{len(grid.tri())+len(grid.boundary_inds()):12.0f}\n")
-            # Write boundary points
-            ct = 0
-            for n in range(len(grid.boundary_inds())):
-                ct += 1
-                f.write(f"{ct:10.0f}{15:10.0f}{2:10.0f}{1:10.0f}{0:10.0f}{grid.boundary_inds()[n]+1:10.0f}\n")
-            for n in range(len(grid.tri())):
-                ct += 1
-                #161       2       3       0       1       0       1       2       3
-                f.write(f"{ct:8.0f}{2:8.0f}{3:8.0f}{0:8.0f}{n+1:8.0f}{0:8.0f}{grid.tri()[n,0]+1:8.0f}{grid.tri()[n,1]+1:8.0f}{grid.tri()[n,2]+1:8.0f}\n")
+            np.savetxt(f, arr_bound, fmt=fmt_bound)
+            np.savetxt(f, arr_ele, fmt=fmt_ele)
             f.write('$EndElements\n')
 
         return output_file
