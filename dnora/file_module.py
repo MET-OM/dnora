@@ -48,7 +48,6 @@ def replace_times(filename: str, dateformat: str, times: list) -> str:
     e.g. #T0_file.txt, ['2020-05-04 18:00'], %Y%m%d%H%M -> 202005041800_file.txt
     """
 
-
     for ct, t in enumerate(times):
         filename = re.sub(f"#T{ct}", pd.Timestamp(t).strftime(dateformat), filename)
 

@@ -67,15 +67,15 @@ class ForcingPlotter(GridPlotter):
         def update_plot(val):
             title_str = f"{forcing.name()}: {str(forcing.time()[val])}"
             vmax = np.max(forcing.magnitude())
-            figure_dict = basic_funcs.plot_field(forcing.lon(), forcing.lat(), forcing.u()[val,:,:], forcing.v()[val,:,:],
-                            var='ff', title_str=title_str, fig_dict={'fig': self.fig, 'ax': self.ax}, cbar=self._init_plot, vmin=0, vmax=vmax, barbs=False)
-            self.fig = figure_dict.get('fig')
-            self.ax = figure_dict.get('ax')
+            self.fig_dict = basic_funcs.plot_field(forcing.lon(), forcing.lat(), forcing.u()[val,:,:], forcing.v()[val,:,:],
+                            var='ff', title_str=title_str, fig_dict=self.fig_dict, cbar=self._init_plot, vmin=0, vmax=vmax, barbs=False)
+            # self.fig = fig_dict.get('fig')
+            # self.ax = fig_dict.get('ax')
             self._init_plot = False
 
         forcing = dict_of_objects['Forcing']
-        self.fig, self.ax = plt.subplots()
-
+        fig, ax = plt.subplots()
+        self.fig_dict = {'fig': fig, 'ax': ax}
         ax_slider = plt.axes([0.17, 0.05, 0.65, 0.03])
         time_slider = Slider(ax_slider, 'time_index', 0, len(forcing.time())-1, valinit=0, valstep=1)
         time_slider.on_changed(update_plot)
@@ -86,7 +86,7 @@ class ForcingPlotter(GridPlotter):
         #giver.on_clicked(update_plot)
         plt.show(block=True)
 
-        return {'fig': self.fig, 'ax': self.ax}
+        return self.fig_dict
 
 class OldTopoPlotter(GridPlotter):
 

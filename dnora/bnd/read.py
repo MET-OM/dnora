@@ -160,6 +160,8 @@ class File_WW3Nc(BoundaryReader):
         return  time, freq, dirs, spec, lon, lat, source
 
 
-    def get_filename(self, day) -> str:
-        filename = self.folder + file_module.replace_times(self.filestring, [day], self.datestring) + '.nc'
+    def get_filename(self, time) -> str:
+        filename = self.folder + file_module.replace_times(self.filename,
+                                                        self.dateformat,
+                                                        [time]) + '.nc'
         return filename

@@ -87,7 +87,7 @@ def plot_magnitude(fig_dict, lon, lat, data, var, vmin=None, vmax=None, cbar=Tru
         vmax = np.max(data)
     vmin = np.floor(vmin).astype(int)
     vmax = np.ceil(vmax).astype(int)
-    breakpoint()
+
     if vmax-vmin<20:
         levels = np.linspace(vmin, vmax, np.floor(vmax-vmin+1))
     else:
