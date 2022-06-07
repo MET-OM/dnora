@@ -27,11 +27,12 @@ class SWAN(ModelExecuter):
         print('Running SWAN----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>')
         p = Popen(['swanrun', '-input', input_file], cwd=model_folder)
         p.wait()
+
         return
 
 class SWASH(ModelExecuter):
     def __init__(self):
-        return
+        pass
 
     def _preferred_format(self) -> str:
         """For generation of file name."""
@@ -53,4 +54,24 @@ class HOS_ocean(ModelExecuter):
     def __call__(self, input_file: str, model_folder: str) -> None:
         print('Running HOS_ocean------------------->>>>>>>>>>>>>>>>>>>>>>>>>>')
         p = Popen(['HOS-ocean'],cwd=model_folder)
+        p.wait()
+
+
+class REEF3D(ModelExecuter):
+    def __init__(self, nproc=1):
+        self.nproc = nproc
+        return
+
+    def _preferred_format(self) -> str:
+        """For generation of file name."""
+        return 'REEF3D'
+
+    def __call__(self, input_file: str, model_folder: str) -> None:
+        p = Popen(['DiveMESH'],cwd=model_folder)
+        p.wait()
+
+        if self.nproc == 1:
+            p = Popen(['REEF3D'],cwd=model_folder)
+        else:
+            p = Popen(['/usr/bin/mpirun -n '+str(self.nproc)+' --oversubscribe REEF3D'],cwd=model_folder)
         p.wait()

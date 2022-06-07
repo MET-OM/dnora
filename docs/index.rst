@@ -31,7 +31,8 @@ Installing **dnora**
   $ conda config --add channels conda-forge
   $ conda env create -f environment.yml
   $ conda activate dnora
-
+  $ pip install -e .
+  
 To update the enviroment using a new environment.yml, run:
 
 .. code-block:: bash
@@ -50,18 +51,26 @@ Dependencies
 
 4. Installation of **HOS-ocean**. The latest HOS-ocean version can be downloaded from https://github.com/LHEEA/HOS-ocean . The installation procedure can be found in: https://github.com/LHEEA/HOS-ocean/wiki/Installation
 
+5. Installation of **REEF3D**. The latest REEF3D and DIVEMesh versions can be downloaded from https://github.com/REEF3D . The installation procedure can be found in: https://reef3d.wordpress.com/installation/ . Note: Only REEF3D::FNPF has been tested in dnora.
+
 To run the models within dnora, the paths, where the models are installed, need to be defined in .bashrc, e.g., ::
 
    export PATH=${PATH}:/home/user/Programs/swan
+
    export PATH=${PATH}:/home/user/Programs/swash
+
    export PATH=${PATH}:/home/user/Programs/HOS-ocean/bin
+
+   export PATH=${PATH}:/home/user/Programs/REEF3D_xx/DIVEMesh/bin
+   export PATH=${PATH}:/home/user/Programs/REEF3D_xx/REEF3D/bin
 
    source ~/.bashrc
 
 
 .. code-block:: rst
 
-3. Fimex is a the File Interpolation, Manipulation and EXtraction library for gridded geospatial data (more info in \url{httpshttps://wiki.met.no/fimex/start}). Fimex is applied in DNORA for the preparation of forcing fields (wind). **In case of running the spectral model without wind forcing, the fimex installation can be neglected**.  A detailed installation procedure can be find in https://wiki.met.no/fimex/install. For a quick installation in linux-Ubuntu, you can follow the steps: open the Synaptic Package Manager (add ppa:met-norway/fimex to your system's Software Sources, see https://launchpad.net/~met-norway/+archive/ubuntu/fimex), search and mark for installation a latest version of fimex, apply installation and check the installation (usually it is installed in /usr/bin/) by typing in command line: fimex or fimex-xxx where xxx is the version number. In case that only fimex-xxx works then add a symbolic link::
+3. Fimex is a the File Interpolation, Manipulation and EXtraction library for gridded geospatial data (more info in \url{httpshttps://wiki.met.no/fimex/start}). Fimex is used in DNORA for the preparation of forcing fields (wind). **In case of running the spectral model without wind forcing, the fimex installation can be neglected**.  A detailed installation procedure can be find in https://wiki.met.no/fimex/install. For a quick installation in Linux-Ubuntu, you can follow the steps: open the Synaptic Package Manager (to install it: sudo apt-get install synaptic
+) --> Settings --> Repositories --> Other Software --> Add:  **ppa:met-norway/fimex** to your system's Software Sources (see https://launchpad.net/~met-norway/+archive/ubuntu/fimex). Then, search and mark for installation a latest version of fimex, and press apply installation. Check the installation (usually it is installed in /usr/bin/) by typing in command line: fimex or fimex-xxx where xxx is the version number. In case that only fimex-xxx works then add a symbolic link::
 
       cd /usr/bin
       sudo ln -s fimex-xxx fimex
@@ -135,8 +144,14 @@ Information about the boundary points that are set in the grid can be accessed u
 Importing bathymetrical data
 =====================================
 
-The main idea is that the Grid-object is created, and a fixed set of methods are used to import a topography, mesh it down to a grid, or filter the data. The functionality of these methods are controlled by passing them a callable object. Adding e.g. a topography source thus means adding a new ``TopoReader``-class that can then me passed to the ``Grid``-object’s ``.import_topo()``-method. Different bathymetry options such as the ``EMODNET2018``,``EMODNET2020``(read several files using tile='*'),``KartverketNo50m``(read several files using tile='*'),``GEBCO2021``-readers are available::
+The main idea is that the Grid-object is created, and a fixed set of methods are used to import a topography, mesh it down to a grid, or filter the data. The functionality of these methods are controlled by passing them a callable object. Adding e.g. a topography source thus means adding a new ``TopoReader``-class that can then me passed to the ``Grid``-object’s ``.import_topo()``-method. Different bathymetry readers such as::
 
+   ``EMODNET2018``: reads files with NetCDF format (version 2018) from https://portal.emodnet-bathymetry.eu/,
+   ``EMODNET2018``: reads files with NetCDF format (version 2020, possible to read several files using tile='*') from https://portal.emodnet-bathymetry.eu/,
+   ``KartverketNo50m``: reads files with xyz format (possible to read several files using tile='*') from https://kartkatalog.geonorge.no/metadata/dybdedata-terrengmodeller-50-meters-grid-landsdekkende/bbd687d0-d34f-4d95-9e60-27e330e0f76e
+   ``GEBCO2021``: reads files with NetCDF format from https://download.gebco.net/
+
+Examples::
 
    topo_reader=grd.read.EMODNET2018(tile='D5',folder='/home/user/bathy/')
    topo_reader=grd.read.EMODNET2020(tile='D5',folder='/home/user/bathy/')

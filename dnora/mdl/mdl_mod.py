@@ -35,7 +35,7 @@ from .. import msg
 from ..bnd.process import processor_for_convention_change
 
 from .. import file_module
-
+from ..converters import convert_swash_mat_to_netcdf
 WritingFunction = Union[GridWriter, BoundaryWriter, SpectralWriter, ForcingWriter]
 PlottingFunction = Union[GridPlotter]
 
@@ -316,7 +316,7 @@ class ModelRun:
     def run_model(self, model_executer: ModelExecuter=None,
                 input_file: str=None, folder: str=None,
                 dateformat: str=None, input_file_extension: str=None,
-                dry_run: bool=False) -> None:
+                dry_run: bool=False, mat_to_nc: bool=False) -> None:
         """Run the model."""
         self._dry_run = dry_run
         self._model_executer = model_executer or self._get_model_executer()
@@ -331,7 +331,7 @@ class ModelRun:
         # Option 3) Use default values to guess where is has previously been exported
         exported_path = Path(self.exported_to('input_file')[0])
         primary_file = input_file or exported_path.name
-        primary_folder = folder or str(exported_path.parent)
+        primary_folder = folder #or str(exported_path.parent)
 
         if hasattr(self, '_input_file_writer'):
             extension = input_file_extension or self._input_file_writer._extension()
@@ -356,6 +356,10 @@ class ModelRun:
             self._model_executer(input_file=file_object.filename(), model_folder=file_object.folder())
         else:
             msg.info('Dry run! Model will not run.')
+        if mat_to_nc:
+            input_file = f'{file_object.folder()}/{self.grid().name()}.mat'
+            output_file = f'{file_object.folder()}/{self.grid().name()}.nc'
+            convert_swash_mat_to_netcdf(input_file=input_file,output_file=output_file, lon=self.grid().lon_edges(), lat=self.grid().lat_edges(), dt=1)
 
     def dry_run(self):
         """Checks if method or global ModelRun dryrun is True.

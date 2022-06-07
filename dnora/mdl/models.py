@@ -41,7 +41,7 @@ class SWASH(ModelRun):
         return bnd.pick.NearestGridPoint()
 
     def _get_grid_writer(self):
-        return grd.write.SWAN(extension='sws')
+        return grd.write.SWAN()
 
     def _get_input_file_writer(self):
         return inp.SWASH()
@@ -91,6 +91,12 @@ class REEF3D(ModelRun):
 
     def _get_point_picker(self):
         return bnd.pick.NearestGridPoint()
+
+    def _get_input_file_writer(self):
+        return inp.REEF3D()
+
+    def _get_model_executer(self):
+        return run.REEF3D()
 
 class SWAN_NORA3(SWAN):
     def _get_boundary_reader(self):
