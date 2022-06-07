@@ -24,7 +24,7 @@ from ..grd.write import GridWriter
 from ..grd.process import GridProcessor, TrivialFilter
 from ..trg.write import TrGridWriter
 
-from ..dnplot import GridPlotter, TopoPlotter
+from ..dnplot.dnplot import GridPlotter, TopoPlotter, ForcingPlotter
 from ..inp import InputFileWriter
 from ..run import ModelExecuter
 
@@ -79,7 +79,8 @@ class ModelRun:
             msg.info('Dry run! No boundary spectra will be imported.')
 
     def import_forcing(self, forcing_reader: ForcingReader=None,
-                        name: str=None, dry_run: bool=False) -> None:
+                        name: str=None, dry_run: bool=False,
+                        expansion_factor: float=1.2) -> None:
         """Creates a Forcing-objects and imports forcing data."""
         self._dry_run = dry_run
 
@@ -96,7 +97,8 @@ class ModelRun:
         if not self.dry_run():
             self.forcing().import_forcing(start_time=self.start_time,
                                         end_time=self.end_time,
-                                        forcing_reader=self._forcing_reader)
+                                        forcing_reader=self._forcing_reader,
+                                        expansion_factor=expansion_factor)
         else:
             msg.info('Dry run! No forcing will be imported.')
 
@@ -405,7 +407,7 @@ class ModelRun:
 
     def plot_grid(self, grid_plotter: GridPlotter=None, filename: str=None,
                     folder: str=None, dateformat: str=None, plain: bool=False,
-                    save_fig: bool=False, show_fig: bool=True) -> None:
+                    save_fig: bool=False, show_fig: bool=True) -> dict:
         """Plot the data in the Grid-object, possibly overlaying data from the
         Boundary- and Forcing-objects."""
 
@@ -418,15 +420,17 @@ class ModelRun:
         if self._grid_plotter is None:
             raise Exception('Define a GridPlotter!')
 
-        self._plot_object(filename=filename, folder=folder,
+        figure_dict = self._plot_object(filename=filename, folder=folder,
                             dateformat=dateformat,
                             plotting_function=self._grid_plotter,
                             plain=plain, save_fig=save_fig,
                             show_fig=show_fig, dnora_obj='dnplot_grid')
 
+        return figure_dict
+        
     def plot_topo(self, grid_plotter: GridPlotter=None, filename: str=None,
                 folder: str=None, dateformat: str=None, plain: bool=True,
-                save_fig: bool=False, show_fig: bool=True) -> None:
+                save_fig: bool=False, show_fig: bool=True) -> dict:
         """Plot the raw data in the Grid-object, possibly overlaying data from the
         Boundary- and Forcing-objects."""
 
@@ -440,16 +444,38 @@ class ModelRun:
         if self._grid_plotter is None:
             raise Exception('Define a GridPlotter!')
 
-        self._plot_object(filename=filename, folder=folder,
+        figure_dict = self._plot_object(filename=filename, folder=folder,
                             dateformat=dateformat,
                             plotting_function=self._grid_plotter,
                             plain=plain, save_fig=save_fig,
                             show_fig=show_fig, dnora_obj='dnplot_topo')
+        return figure_dict
 
+    def plot_forcing(self, forcing_plotter: GridPlotter=None, filename: str=None,
+                    folder: str=None, dateformat: str=None, plain: bool=False,
+                    save_fig: bool=False, show_fig: bool=True) -> dict:
+        """Plot the data in the Forcing-object."""
+
+        if self.forcing() is None:
+            msg.warning('No forcing data to plot!')
+            return
+
+        self._forcing_plotter = forcing_plotter or self._get_forcing_plotter()
+
+        if self._forcing_plotter is None:
+            raise Exception('Define a GridPlotter!')
+
+        figure_dict = self._plot_object(filename=filename, folder=folder,
+                            dateformat=dateformat,
+                            plotting_function=self._forcing_plotter,
+                            plain=plain, save_fig=save_fig,
+                            show_fig=show_fig, dnora_obj='dnplot_forcing')
+
+        return figure_dict
 
     def _plot_object(self, filename: str, folder: str, dateformat: str,
                     plotting_function: PlottingFunction, plain: bool,
-                    save_fig: bool, show_fig: bool, dnora_obj: str):
+                    save_fig: bool, show_fig: bool, dnora_obj: str) -> dict:
         """Plots a dnora object, e.g. a grid"""
 
         if filename is not None:
@@ -469,17 +495,18 @@ class ModelRun:
 
         file_object.create_folder()
 
-        if dnora_obj == 'dnplot_grid':
-            fig = plotting_function.grid(dict_of_objects=self.dict_of_objects(), plain=plain)
+        if dnora_obj in ['dnplot_grid', 'dnplot_forcing']:
+            figure_dict = plotting_function.grid(dict_of_objects=self.dict_of_objects(), plain=plain)
         elif dnora_obj == 'dnplot_topo':
-            fig = plotting_function.topo(dict_of_objects=self.dict_of_objects(), plain=plain)
-
+            figure_dict = plotting_function.topo(dict_of_objects=self.dict_of_objects(), plain=plain)
+        fig = figure_dict.get('fig')
         if fig is not None:
             if save_fig:
                 fig.savefig(file_object.filepath(), dpi=300)
                 msg.to_file(file_object.filepath())
             if show_fig:
                 fig.show()
+        return figure_dict
 
     def name(self) -> str:
         return self._name
@@ -589,6 +616,9 @@ class ModelRun:
 
     def _get_topo_plotter(self) -> GridPlotter:
         return TopoPlotter()
+
+    def _get_forcing_plotter(self) -> GridPlotter:
+        return ForcingPlotter()
 
     def __repr__(self):
         lines = [f"<dnora ModelRun object> ({type(self).__name__})", f"  Name: {self.name()}"]

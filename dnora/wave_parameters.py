@@ -3,6 +3,15 @@ import xarray as xr
 from typing import List
 import numpy as np
 
+def list_of_units() -> list[str]:
+    return ['m', 's', 'rad', 'deg']
+
+def pad_units(unit_dict: dict) -> dict:
+    for unit in list_of_units():
+        if unit_dict.get(unit) is None:
+            unit_dict[unit] = 0
+    return unit_dict
+
 class WaveParameter(ABC):
     """Calculates a wave parameter from spectra xarray
 
@@ -37,8 +46,41 @@ class WaveParameter(ABC):
         pass
 
     @abstractmethod
-    def unit(self) -> str:
+    def units(self) -> dict:
+        """Dictorany or units 's', 'm', 'rad' and 'deg',
+        e.g. for 1D-spectrum {'s': 1, 'm': 2}"""
         pass
+
+    def unit(self, ordered_list=None) -> str:
+        unit = ''
+        for key in list_of_units():
+            value = self.units().get(key, 0)
+            if np.isclose(value, int(value)):
+                value = int(value)
+
+            if np.isclose(value,1):
+                unit += f'{key}'
+            elif not np.isclose(value, 0):
+                unit += f'{key}**{value}'
+        if not unit:
+            unit = '-'
+        return unit
+
+    def _product_of_units(self, unit_dict1: dict, unit_dict2: dict=None, division: bool=False, power=1) -> dict:
+        # Create 0 dict if not given
+        unit_dict2 = unit_dict2 or pad_units({})
+        if division:
+            factor = -1
+        else:
+            factor = 1
+
+        unit_dict1 = pad_units(unit_dict1)
+        unit_dict2 = pad_units(unit_dict2)
+        new_units = {}
+        for key, values in unit_dict1.items():
+            new_units[key] = (unit_dict1[key] + unit_dict2[key]*factor)*power
+
+        return new_units
 
     def standard_name(self) -> str:
         pass
@@ -86,8 +128,8 @@ class Moment(WaveParameter):
 
         return moment
 
-    def unit(self):
-        pass
+    def units(self):
+        return {'m': 2, 's': -self._moment}
 
     def name(self):
         """ 1 returns 'm1', 0.5 returns 'm05' etc."""
@@ -97,23 +139,66 @@ class Moment(WaveParameter):
         else:
             return f'm{strs[0]}{strs[1]}'
 
+class PowerMoment(WaveParameter):
+    """Spectral moment from spectra but with a E^k energy weight
+    PowerMoment(n,1) equales Moment(n)
+    """
+    def __init__(self, moment: float,power: float) -> None:
+        self._moment = moment
+        self._power = power
+
+    def __call__(self, spec: xr.Dataset):
+        moment = spec
+        if self._is_boundary(moment):
+            dD = 360/len(moment.dirs)
+            moment = dD*np.pi/180*moment.sum(dim='dirs')
+
+        moment = (moment**self._power*(moment.freq**self._moment)).integrate(coord='freq')
+        moment = self._format_dataset(moment, spec)
+
+        return moment
+
+    def units(self):
+        return {'m': 2*self._power, 's': self._power-self._moment-1}
+
+    def name(self):
+        """ 1,0.5 returns m1_p05, 0.5, 4 returns m05_p4 etc."""
+        strs = f'{self._moment:.1f}'.split('.')
+        strs_power = f'{self._power:.1f}'.split('.')
+
+        if strs[1] == '0':
+            str_m = f'm{strs[0]}'
+        else:
+            str_m = f'm{strs[0]}{strs[1]}'
+
+        if strs_power[1] == '0':
+            str_p = f'{strs_power[0]}'
+        else:
+            str_p = f'{strs_power[0]}{strs_power[1]}'
+
+        return f'{str_m}_p{str_p}'
+
 class Hs(WaveParameter):
     """Singificant wave height from spectra"""
 
     def __call__(self, spec: xr.Dataset):
 <<<<<<< HEAD
+<<<<<<< HEAD
         hs = 4*(Moment(0)(spec))**0.5
 =======
         hs = 4*Moment(0)(spec)**0.5
 >>>>>>> dev_kc
+=======
+        hs = 4*Moment(0)(spec)**0.5
+>>>>>>> dev_dnplot
         hs = self._format_dataset(hs, spec)
         return hs
 
     def name(self):
         return 'hs'
 
-    def unit(self):
-        return 'm'
+    def units(self):
+        return self._product_of_units(Moment(0).units(), power=0.5)
 
     def standard_name(self):
         return 'sea_surface_wave_significant_height'
@@ -129,8 +214,8 @@ class Tm01(WaveParameter):
     def name(self):
         return 'tm01'
 
-    def unit(self):
-        return 's'
+    def units(self):
+        return self._product_of_units(Moment(0).units(), Moment(1).units(), division=True)
 
     def standard_name(self):
         return 'sea_surface_wave_mean_period_from_variance_spectral_density_first_frequency_moment'
@@ -146,8 +231,8 @@ class Tm_10(WaveParameter):
     def name(self):
         return 'tm_10'
 
-    def unit(self):
-        return 's'
+    def units(self):
+        return self._product_of_units(Moment(-1).units(), Moment(0).units(), division=True)
 
     def standard_name(self):
         return 'sea_surface_wave_mean_period_from_variance_spectral_density_inverse_frequency_moment'
@@ -163,8 +248,8 @@ class Tm02(WaveParameter):
     def name(self):
         return 'tm02'
 
-    def unit(self):
-        return 's'
+    def units(self):
+        return self._product_of_units(Moment(0).units(), Moment(2).units(), division=True, power=0.5)
 
     def standard_name(self):
         return 'sea_surface_wave_mean_period_from_variance_spectral_density_second_frequency_moment'
@@ -180,8 +265,8 @@ class Fm(WaveParameter):
     def name(self):
         return 'fm'
 
-    def unit(self):
-        return 'Hz'
+    def units(self):
+        return self._product_of_units(Moment(1).units(), Moment(0).units(), division=True)
 
 class Wm(WaveParameter):
     """Mean angular freqeuncy from spectra"""
@@ -194,8 +279,10 @@ class Wm(WaveParameter):
     def name(self):
         return 'wm'
 
-    def unit(self):
-        return 'rad/s'
+    def units(self):
+        units = self._product_of_units(Moment(1).units(), Moment(0).units(), division=True)
+        units['rad'] = 1
+        return units
 
 class Dirm(WaveParameter):
     """Mean wave direction"""
@@ -229,8 +316,8 @@ class Dirm(WaveParameter):
     def name(self):
         return 'dirm'
 
-    def unit(self):
-        return 'deg'
+    def units(self):
+        return {'deg': 1}
 
     def standard_name(self):
         return 'sea_surface_wave_from_direction'
@@ -266,8 +353,8 @@ class Sprm(WaveParameter):
     def name(self):
         return 'sprm'
 
-    def unit(self):
-        return 'deg'
+    def units(self):
+        return {'deg': 1}
 
     def standard_name(self):
         return 'sea_surface_wave_directional_spread'

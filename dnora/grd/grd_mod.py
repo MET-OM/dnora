@@ -238,11 +238,11 @@ class Grid:
         #return self.land_sea_mask().shape
         return (self.ny(), self.nx())
 
-    def topo(self) -> np.ndarray:
+    def topo(self, land: float=-999) -> np.ndarray:
         """Returns an array containing the meshed topography of the grid."""
         if hasattr(self.data, 'topo'):
             topo = copy(self.data.topo.values)
-            topo[np.logical_not(self.land_sea_mask())] = -999
+            topo[np.logical_not(self.land_sea_mask())] = land
             return topo
         else:
             return np.array([])

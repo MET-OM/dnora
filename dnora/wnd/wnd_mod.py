@@ -73,6 +73,14 @@ class Forcing:
         else:
             return np.array([[[]]])
 
+    def magnitude(self):
+        if np.min(self.u()).shape == 0:
+            return np.array([[[]]])
+        if np.min(self.v()).shape == 0:
+            return self.u()
+
+        return (self.u()**2 + self.v()**2)**0.5
+
     def nx(self):
         if min(self.size()) > 0:
             return self.size()[2]

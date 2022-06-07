@@ -124,7 +124,6 @@ class NORA3(BoundaryReader):
 
         start_times, end_times, file_times = create_time_stamps(start_time, end_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
         #days = day_list(start_time = self.start_time, end_time = self.end_time)
-
         msg.info(f"Getting boundary spectra from NORA3 from {self.start_time} to {self.end_time}")
         bnd_list = []
         for n in range(len(file_times)):
