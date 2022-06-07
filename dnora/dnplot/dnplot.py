@@ -14,6 +14,20 @@ from . import basic_funcs
 import cmocean.cm
 from matplotlib.widgets import Slider, Button, RadioButtons, TextBox
 from matplotlib.colors import LinearSegmentedColormap
+from typing import Tuple
+
+def bounds_of_objects(list_of_objects) -> Tuple:
+    x0, x1, y0, y1 = (180., -180., 90., -90.)
+    for dnora_obj in list_of_objects:
+        if dnora_obj is not None:
+            x0 = min(x0, np.min(dnora_obj.lon()))
+            x1 = max(x1, np.max(dnora_obj.lon()))
+            y0 = min(y0, np.min(dnora_obj.lat()))
+            y1 = max(y1, np.max(dnora_obj.lat()))
+
+    return x0, x1, y0, y1
+
+
 class GridPlotter(ABC):
     """Plots data from Grid-object."""
 
@@ -57,11 +71,7 @@ class TopoPlotter(GridPlotter):
 
         #ax.legend(loc="upper right")
         ax.legend(bbox_to_anchor=(0.3, 1.2))
-        x0 = np.min([min(grid.lon()), min(forcing.lon()), min(boundary.lon())])
-        x1 = np.max([max(grid.lon()), max(forcing.lon()), max(boundary.lon())])
-        y0 = np.min([min(grid.lat()), min(forcing.lat()), min(boundary.lat())])
-        y1 = np.max([max(grid.lat()), max(forcing.lat()), max(boundary.lat())])
-
+        x0, x1, y0, y1 = bounds_of_objects([grid, forcing, boundary])
         x0, x1, y0, y1 = aux.expand_area(x0, x1, y0, y1, 1.2)
 
         ax.set_xlim([x0,x1])
@@ -155,9 +165,10 @@ class ForcingPlotter(GridPlotter):
         forcing = dict_of_objects['Forcing']
         fig, ax = plt.subplots()
         self.fig_dict = {'fig': fig, 'ax': ax}
-        ax_slider = plt.axes([0.17, 0.05, 0.65, 0.03])
-        time_slider = Slider(ax_slider, 'time_index', 0, len(forcing.time())-1, valinit=0, valstep=1)
-        time_slider.on_changed(update_plot)
+        if len(forcing.time()) > 1:
+            ax_slider = plt.axes([0.17, 0.05, 0.65, 0.03])
+            time_slider = Slider(ax_slider, 'time_index', 0, len(forcing.time())-1, valinit=0, valstep=1)
+            time_slider.on_changed(update_plot)
         self._init_plot = True
         update_plot(0)
         #axnodenr = plt.axes([0.02,0.9,0.2,0.03])
