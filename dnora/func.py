@@ -7,8 +7,8 @@ from .grd.read import ForceFeed
 from .grd.mesh import TrivialMesher
 from .grd.boundary import SetMatrix
 
-# Import auxiliry functions
-from .aux import read_ww3_info, add_folder_to_filename
+# Import aux_funcsiliry functions
+from .aux_funcs import read_ww3_info, add_folder_to_filename
 
 def regenerate_ww3(gridname: str, folder: str='') -> Grid:
     """Recreate a WW3 grid object based on the _info, _bathy and _mapsta files"""

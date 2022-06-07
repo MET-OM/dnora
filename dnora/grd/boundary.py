@@ -2,7 +2,7 @@ import numpy as np
 from typing import List
 from abc import ABC, abstractmethod
 
-# Import auxiliry functions
+# Import aux_funcsiliry functions
 from .. import msg
 
 class BoundarySetter(ABC):

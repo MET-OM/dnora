@@ -2,7 +2,7 @@ import numpy as np
 from abc import ABC, abstractmethod
 from copy import copy
 import scipy.ndimage as ndimage
-# Import auxility functions
+# Import aux_funcsility functions
 from .. import msg
 
 class GridProcessor(ABC):

@@ -11,9 +11,9 @@ from ..grd.grd_mod import Grid
 # Import abstract classes
 from .read import ForcingReader
 
-# Import auxiliry functions
+# Import aux_funcsiliry functions
 from .. import msg
-from ..aux import create_time_stamps, u_v_from_dir, expand_area, lon_in_km
+from ..aux_funcs import create_time_stamps, u_v_from_dir, expand_area, lon_in_km
 
 
 class NORA3(ForcingReader):

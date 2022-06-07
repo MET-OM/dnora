@@ -7,7 +7,7 @@ from ..bnd.bnd_mod import Boundary
 from ..wnd.wnd_mod import Forcing
 from .. import file_module
 from .. import msg
-from .. import aux
+from .. import aux_funcs
 from typing import Tuple
 import matplotlib.tri as mtri
 from . import basic_funcs
@@ -72,7 +72,7 @@ class TopoPlotter(GridPlotter):
         #ax.legend(loc="upper right")
         ax.legend(bbox_to_anchor=(0.3, 1.2))
         x0, x1, y0, y1 = bounds_of_objects([grid, forcing, boundary])
-        x0, x1, y0, y1 = aux.expand_area(x0, x1, y0, y1, 1.2)
+        x0, x1, y0, y1 = aux_funcs.expand_area(x0, x1, y0, y1, 1.2)
 
         ax.set_xlim([x0,x1])
         ax.set_ylim([y0,y1])

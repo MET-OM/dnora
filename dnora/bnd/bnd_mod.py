@@ -20,9 +20,9 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .write import BoundaryWriter # Abstract class
 
-# Import default values and auxiliry functions
+# Import default values and aux_funcsiliry functions
 from .. import msg
-from ..aux import day_list
+from ..aux_funcs import day_list
 
 
 class Boundary:

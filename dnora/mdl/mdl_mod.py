@@ -30,7 +30,7 @@ from ..run import ModelExecuter
 
 from ..file_module import FileNames
 from typing import Union
-# Import default values and auxiliry functions
+# Import default values and aux_funcsiliry functions
 from .. import msg
 from ..bnd.process import processor_for_convention_change
 

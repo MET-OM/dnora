@@ -3,7 +3,7 @@ import xarray as xr
 # Import objects
 from ..grd.grd_mod import Grid
 from .. import file_module
-from .. import aux
+from .. import aux_funcs
 from .. import msg
 
 class ForcingReader(ABC):
@@ -40,9 +40,9 @@ class File_WW3Nc(ForcingReader):
             end_times = [end_time]
             file_times = [start_time]
         else:
-            start_times, end_times, file_times = aux.create_time_stamps(start_time, end_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
+            start_times, end_times, file_times = aux_funcs.create_time_stamps(start_time, end_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
 
-        lon_min, lon_max, lat_min, lat_max = aux.expand_area(min(grid.lon()), max(grid.lon()), min(grid.lat()), max(grid.lat()), expansion_factor)
+        lon_min, lon_max, lat_min, lat_max = aux_funcs.expand_area(min(grid.lon()), max(grid.lon()), min(grid.lat()), max(grid.lat()), expansion_factor)
 
         msg.info(f"Getting wind data from {self.filename} from {start_time} to {end_time}")
         wnd_list = []

@@ -4,9 +4,9 @@ from abc import ABC, abstractmethod
 # Import objects
 from ..grd.grd_mod import Grid
 
-# Import auxiliry functions
+# Import aux_funcsiliry functions
 from .. import msg
-from ..aux import min_distance, expand_area
+from ..aux_funcs import min_distance, expand_area
 
 class PointPicker(ABC):
     """PointPickers take in longitude and latitude values, and returns indeces

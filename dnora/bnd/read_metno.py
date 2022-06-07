@@ -7,9 +7,9 @@ from typing import Tuple
 # Import abstract classes and needed instances of them
 from .read import BoundaryReader
 
-# Import auxiliry functions
+# Import aux_funcsiliry functions
 from .. import msg
-from ..aux import day_list, create_time_stamps
+from ..aux_funcs import day_list, create_time_stamps
 
 class WAM4km(BoundaryReader):
     def __init__(self, ignore_nan: bool=True, stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0) -> None:
