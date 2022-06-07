@@ -5,7 +5,7 @@ import numpy as np
 from copy import copy
 from abc import ABC, abstractmethod
 from typing import Tuple
-
+import pandas as pd
 # Import abstract classes and needed instances of them
 from .read import BoundaryReader
 
@@ -73,7 +73,7 @@ class WAM4km(BoundaryReader):
         if self.cache:
             if not os.path.isdir(self.cache_folder):
                 os.mkdir(self.cache_folder)
-                print("Creating cache folder %s..." % cache_folder)
+                print("Creating cache folder %s..." % self.cache_folder)
 
         start_times, end_times, file_times = create_time_stamps(start_time, end_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
 
@@ -81,39 +81,50 @@ class WAM4km(BoundaryReader):
         msg.info(f"Getting boundary spectra from WAM4 from {self.start_time} to {self.end_time}")
         bnd_list = []
         for n in range(len(file_times)):
-            url = self.get_url(file_times[n])
-            url_or_cache, data_from_cache = self.get_filepath_if_cached(url)
-            msg.from_file(url_or_cache)
+
+
             msg.plain(f"Reading boundary spectra: {start_times[n]}-{end_times[n]}")
-            if data_from_cache:
-                this_ds = xr.load_dataset(url_or_cache)
+
+            file_time = file_times[n]
+            ct = 1
+            keep_trying = True
+            while keep_trying:
+
+                url = self.get_url(file_time)
+                url_or_cache, data_from_cache = self.get_filepath_if_cached(url)
+                if data_from_cache and ct == 1:
+                    this_ds = xr.load_dataset(url_or_cache)
+                else:
+                    try:
+                        with xr.open_dataset(url) as f:
+                            this_ds = f.sel(
+                                time=slice(start_times[n], end_times[n]),
+                                x=inds+1,
+                            )[
+                                ['SPEC', 'longitude', 'latitude', 'time', 'freq', 'direction']
+                            ].copy()
+                    except OSError:
+                            this_ds = None
+
+                file_consistent = self.file_is_consistent(this_ds, bnd_list, url)
+
+                if file_consistent:
+                    keep_trying =False
+
+                elif self.data_left_to_try_with(n, ct, file_times, end_times):
+                    file_time = file_times[n-ct]
+                    ct += 1
+                else:
+                    this_ds = None
+                    keep_trying = False
+
+            # We are now out of the while loop
+            if this_ds is not None:
+                msg.from_file(url_or_cache)
                 bnd_list.append(this_ds)
-            else:
-                try:
-                    with xr.open_dataset(url) as f:
-                        this_ds = f.sel(
-                            time=slice(start_times[n], end_times[n]),
-                            x=inds+1,
-                        )[
-                            ['SPEC', 'longitude', 'latitude', 'time', 'freq', 'direction']
-                        ].copy()
-                    if (
-                        not bnd_list # always trust the first file that is read
-                        or ( # for the rest, check for consistency with first file
-                            (this_ds.longitude == bnd_list[0].longitude).all() and
-                            (this_ds.latitude  == bnd_list[0].latitude ).all()
-
-                        )):
-                        bnd_list.append(this_ds)
-                        if self.cache:
-                            self.write_to_cache(this_ds, url)
-                    else:
-                        msg.plain(f'SKIPPING, file inconsistent: {url}')
-
-
-                except OSError:
-                    msg.plain(f'SKIPPING, file not found: {url}')
-
+                if self.cache:
+                    self.write_to_cache(this_ds, url)
+                this_ds = None
 
         msg.info("Merging dataset together (this might take a while)...")
         bnd = xr.concat(bnd_list, dim="time").squeeze('y')
@@ -128,6 +139,32 @@ class WAM4km(BoundaryReader):
         source = f"{bnd.title}, {bnd.institution}"
 
         return  time, freq, dirs, spec, lon, lat, source
+
+    def file_is_consistent(self, this_ds, bnd_list, url) -> bool:
+        if this_ds is None:
+            msg.plain(f'SKIPPING, file not found: {url}')
+            return False
+
+        if (
+            not bnd_list # always trust the first file that is read
+            or ( # for the rest, check for consistency with first file
+                (this_ds.longitude == bnd_list[0].longitude).all() and
+                (this_ds.latitude  == bnd_list[0].latitude ).all()
+
+            )):
+            return True
+
+        msg.plain(f'SKIPPING, file inconsistent: {url}')
+        return False
+
+    def data_left_to_try_with(self, n, ct, file_times, end_times) -> bool:
+        if n-ct<0:
+            return False
+
+        if pd.Timestamp(end_times[n])-pd.Timestamp(file_times[n-ct])>pd.Timedelta(self.hours_per_file, 'hours'):
+            return False
+
+        return True
 
     def get_url(self, day):
         url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/'+day.strftime('%d')+'/MyWave_wam4_SPC_'+day.strftime('%Y%m%d')+'T'+day.strftime('%H')+'Z.nc'
