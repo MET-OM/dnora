@@ -89,11 +89,15 @@ def plot_magnitude(fig_dict, lon, lat, data, var, vmin=None, vmax=None, cbar=Tru
     vmax = np.ceil(vmax).astype(int)
 
     if vmax-vmin<20:
-        levels = np.linspace(vmin, vmax, np.floor(vmax-vmin+1))
+        levels = np.linspace(vmin, vmax, np.floor(vmax-vmin+1).astype(int))
     else:
         levels = np.linspace(vmin, vmax, 11)
+
     xx, yy = np.meshgrid(lon, lat)
-    cont = ax.contourf(xx, yy, data, cmap=cmap, levels=levels)
+    if len(levels) > 1:
+        cont = ax.contourf(xx, yy, data, cmap=cmap, levels=levels)
+    else:
+        cont = ax.pcolor(lon, lat, data, cmap=cmap)
     fig_dict['levels']=levels
 
     if cbar:
@@ -193,8 +197,8 @@ def plot_field(lon, lat, xdata, ydata=None, fig_dict=None, position=111,
         fig_dict['ax']=ax
     ax.set(title=f"{default[var]['name']} {title_str}")
     gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True, color='gray', alpha=0.5, linestyle='--')
-    gl.xlabels_top = None
-    gl.ylabels_right = None
+    gl.top_labels = None
+    gl.right_labels = None
 
     if ydata is not None and var == 'ff': #interpretes the data as wind in x- and y-direction
         windMagnitude = (xdata**2 + ydata**2)**0.5

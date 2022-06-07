@@ -427,7 +427,7 @@ class ModelRun:
                             show_fig=show_fig, dnora_obj='dnplot_grid')
 
         return figure_dict
-        
+
     def plot_topo(self, grid_plotter: GridPlotter=None, filename: str=None,
                 folder: str=None, dateformat: str=None, plain: bool=True,
                 save_fig: bool=False, show_fig: bool=True) -> dict:
@@ -499,7 +499,11 @@ class ModelRun:
             figure_dict = plotting_function.grid(dict_of_objects=self.dict_of_objects(), plain=plain)
         elif dnora_obj == 'dnplot_topo':
             figure_dict = plotting_function.topo(dict_of_objects=self.dict_of_objects(), plain=plain)
-        fig = figure_dict.get('fig')
+
+        if figure_dict is not None:
+            fig = figure_dict.get('fig')
+        else:
+            fig = None
         if fig is not None:
             if save_fig:
                 fig.savefig(file_object.filepath(), dpi=300)
