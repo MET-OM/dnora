@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Tuple
 if TYPE_CHECKING:
     from .bnd_mod import Boundary
 
-# Import default values and auxiliry functions
+# Import default values and aux_funcsiliry functions
 from .. import msg
 from .. import file_module
 

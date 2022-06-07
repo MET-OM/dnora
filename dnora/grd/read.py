@@ -9,8 +9,8 @@ import numpy as np
 from typing import Tuple, TYPE_CHECKING
 if TYPE_CHECKING:
     from .grd_mod import Grid
-# Import auxiliry functions
-from ..aux import expand_area
+# Import aux_funcsiliry functions
+from ..aux_funcs import expand_area
 import warnings
 from .. import msg
 

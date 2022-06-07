@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from copy import copy
 import numpy as np
 from typing import Iterable
-# Import auxiliry functions
+# Import aux_funcsiliry functions
 from .. import msg
 
 class BoundarySetter(ABC):

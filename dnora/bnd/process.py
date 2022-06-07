@@ -3,9 +3,9 @@ from copy import copy
 from abc import ABC, abstractmethod
 from typing import Tuple
 
-# Import auxiliry functions
+# Import aux_funcsiliry functions
 from .. import msg
-from ..aux import interp_spec, shift_spec, flip_spec
+from ..aux_funcs import interp_spec, shift_spec, flip_spec
 
 class BoundaryProcessor(ABC):
     def __init__(self):

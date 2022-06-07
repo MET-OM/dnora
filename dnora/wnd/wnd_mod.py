@@ -9,9 +9,9 @@ import re
 from .read import ForcingReader
 from .write import ForcingWriter
 
-# Import default values and auxiliry functions
+# Import default values and aux_funcsiliry functions
 from .. import msg
-from ..aux import day_list
+from ..aux_funcs import day_list
 class Forcing:
     def __init__(self, grid, name='AnonymousForcing'):
         self.grid = copy(grid)

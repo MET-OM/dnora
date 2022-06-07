@@ -1,7 +1,7 @@
 import unittest
 import sys
 sys.path.insert(0, "../../")
-from dnora.aux import create_time_stamps, u_v_from_dir
+from dnora.aux_funcs import create_time_stamps, u_v_from_dir
 import numpy as np
 
 class TimeStamps(unittest.TestCase):
