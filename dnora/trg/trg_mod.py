@@ -1,18 +1,20 @@
 import xarray as xr
 from copy import copy
 import numpy as np
-
+from typing import Iterable
 from ..grd import TopoReader
 from .read_tr import TriangReader
 from .write import TrGridWriter
 from .boundary import BoundarySetter, ClearBoundary
 from .plot import TrGridPlotter, TriTopoPlotter
 from ..grd.mesh import Mesher, Interpolate
+from ..grd.process import GridProcessor
 from ..grd.grd_mod import force_to_xyz
 from .. import msg
-from ..aux import create_filename_obj, check_if_folder, add_folder_to_filename
-from ..defaults import dflt_grd
+from .. import file_module
 import sys
+
+
 
 class Grid:
     def __init__(self, name='AnonymousTriangGrid'):
@@ -64,22 +66,23 @@ class Grid:
     def append_boundary(self, boundary_setter: BoundarySetter) -> None:
         """Set new boundary points but keep the old ones."""
 
-        new_points = boundary_setter(self.nodes())
-        new_points = np.array(new_points)
-        new_points = new_points.astype(int)
-        self._boundary = np.union1d(new_points, self.boundary_inds())
+        new_points, new_tri, new_nodes, new_lon, new_lat = boundary_setter(self.nodes(), self.tri(), self.lon(), self.lat())
 
-        return
+        self._boundary = np.union1d(np.array(new_points).astype(int), self.boundary_inds())
+        self._tri = np.array(new_tri).astype(int)
+        self._nodes = np.array(new_nodes).astype(int)
+        self._lon = np.array(new_lon)
+        self._lat = np.array(new_lat)
 
     def set_boundary(self, boundary_setter: BoundarySetter) -> None:
         """Set boundary points. Old ones not kept."""
 
-        new_points = boundary_setter(self.nodes())
-        new_points = np.array(new_points)
-        new_points = new_points.astype(int)
-        self._boundary = new_points
-
-        return
+        new_points, new_tri, new_nodes, new_lon, new_lat = boundary_setter(self.nodes(), self.tri(), self.lon(), self.lat())
+        self._boundary = np.array(new_points).astype(int)
+        self._tri = np.array(new_tri).astype(int)
+        self._nodes = np.array(new_nodes).astype(int)
+        self._lon = np.array(new_lon)
+        self._lat = np.array(new_lat)
 
     def mesh_grid(self, mesher: Mesher=Interpolate(method = 'linear')) -> None:
         """Meshes the raw data down to the grid definitions."""
@@ -105,17 +108,25 @@ class Grid:
             msg.plain('No triangular grid imported!')
             return
 
+    def process_grid(self, filt: GridProcessor=None) -> None:
+        """Processes the gridded bathymetrical data, e.g. with a filter."""
 
-    # def plot_grid(self, grid_plotter: TrGridPlotter=None) -> None:
-    #     self._grid_plotter = grid_plotter or self._get_grid_plotter()
-    #
-    #     if self._grid_plotter is None:
-    #         raise Exception('Define a TrGridPlotter!')
-    #
-    #     fig, filename = self._grid_plotter(self)
-    #     fig.show()
-    #
-    #     return
+        if filt is None:
+            msg.warning('Provide a GridProcessor!')
+            return
+
+        msg.header(filt, "Processing meshed grid...")
+        print(filt)
+        true_mask = np.full(self.topo().shape, True)
+        topo = filt.grid(self.topo(), self.lon(), self.lat(),
+                        sea_mask = np.full(self.topo().shape, True),
+                        boundary_mask = np.full(self.topo().shape, False))
+
+        if topo is None:
+            msg.warning('Processing of mesed topography is not implemented')
+        else:
+            vars_dict = {'topo': ('nodes', topo)}
+            self.data = self.data.assign(vars_dict)
 
 
     def name(self):
@@ -212,7 +223,7 @@ class Grid:
         if not filename:
             filename = f"{self.name()}_info.txt"
 
-        filename = add_folder_to_filename(filename, folder)
+        filename = file_module.add_folder_to_filename(filename, folder)
         msg.to_file(filename)
 
         stdout = sys.stdout
@@ -284,7 +295,3 @@ class Grid:
         lines.append('\n  Use print() for grid details.')
 
         return "\n".join(lines)
-
-
-    # def _get_grid_plotter(self) -> TrGridPlotter:
-    #     return TriTopoPlotter()

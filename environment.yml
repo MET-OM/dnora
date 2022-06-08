@@ -13,6 +13,8 @@ dependencies:
   - pip
   - utm
   - dask
-  
+  - pytest
+  - cmocean
+  - cartopy
   
 

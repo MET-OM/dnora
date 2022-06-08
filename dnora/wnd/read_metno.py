@@ -4,16 +4,16 @@ import numpy as np
 import xarray as xr
 from subprocess import call
 import os, glob
-
+import time
 # Import objects
 from ..grd.grd_mod import Grid
 
 # Import abstract classes
 from .read import ForcingReader
 
-# Import auxiliry functions
+# Import aux_funcsiliry functions
 from .. import msg
-from ..aux import create_time_stamps, u_v_from_dir, expand_area, lon_in_km
+from ..aux_funcs import create_time_stamps, u_v_from_dir, expand_area, lon_in_km
 
 
 class NORA3(ForcingReader):
@@ -99,8 +99,17 @@ class NORA3(ForcingReader):
                              end_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
                              '--process.rotateVector.direction=latlon',
                              '--output.file='+nc_fimex]
-
-
+            # read_success = False
+            # for ct in range(5):  # try 6 times
+            #     try:
+            #         call(fimex_command)
+            #         read_success = True
+            #     except:
+            #         print(f'......Retry {ct}.....')
+            #         time.sleep(10)  # wait for 10 seconds before re-trying
+            #
+            # # Don't want to catch the last execption
+            # if not read_success:
             call(fimex_command)
             wnd_list.append(xr.open_dataset(nc_fimex).squeeze())
 
@@ -118,8 +127,8 @@ class NORA3(ForcingReader):
 
         # Remove speed and dir and add components to dataset
         wind_forcing = wind_forcing.drop_vars(['wind_speed', 'wind_direction'])
-        wind_forcing['u'] = u #(['time', 'lat', 'lon'],  u)
-        wind_forcing['v'] = v # (['time', 'lat', 'lon'],  v)
+        wind_forcing['u'] = (['time', 'lat', 'lon'],  u.data)
+        wind_forcing['v'] = (['time', 'lat', 'lon'],  v.data)
 
         return wind_forcing
 
@@ -221,8 +230,9 @@ class MyWave3km(ForcingReader):
 
         # Remove speed and dir and add components to dataset
         wind_forcing = wind_forcing.drop_vars(['ff', 'dd'])
-        wind_forcing["u"] = (['time', 'lat', 'lon'],  u)
-        wind_forcing["v"] = (['time', 'lat', 'lon'],  v)
+        wind_forcing["u"] = (['time', 'lat', 'lon'],  u.data)
+        wind_forcing["v"] = (['time', 'lat', 'lon'],  v.data)
+
         return wind_forcing
 
     def get_url(self, time_stamp):
