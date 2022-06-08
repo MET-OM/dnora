@@ -29,7 +29,8 @@ class NORA3(ForcingReader):
     DOI: 10.1175/JAMC-D-21-0029.1
     """
 
-    def __init__(self, stride: int=1, hours_per_file: int=1, last_file: str='', lead_time: int=4):
+    def __init__(self, stride: int=1, hours_per_file: int=1, last_file: str='',
+                 lead_time: int=4, clean_cache: bool=False):
         """The data is currently in hourly files. Do not change the default
         setting unless you have a good reason to do so.
         """
@@ -38,6 +39,8 @@ class NORA3(ForcingReader):
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
         self.last_file = copy(last_file)
+        self.clean_cache = copy(clean_cache)
+        self.cache_folder = 'dnora_wnd_temp'
         return
 
     def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float):
@@ -54,14 +57,15 @@ class NORA3(ForcingReader):
             f"Getting wind forcing from NORA3 from {self.start_time} to {self.end_time}")
 
 
-        temp_folder = 'dnora_wnd_temp'
+        temp_folder = self.cache_folder
         if not os.path.isdir(temp_folder):
             os.mkdir(temp_folder)
             print("Creating folder %s..." % temp_folder)
 
-        msg.plain("Removing old files from temporary folder...")
-        for f in glob.glob("dnora_wnd_temp/*MetNo_NORA3.nc"):
-            os.remove(f)
+        if self.clean_cache:
+            msg.plain("Removing old files from temporary folder...")
+            for f in glob.glob("dnora_wnd_temp/*.nc"):
+                os.remove(f)
 
         # Define area to search in
         lon_min, lon_max, lat_min, lat_max = expand_area(min(grid.lon()), max(grid.lon()), min(grid.lat()), max(grid.lat()), expansion_factor)
@@ -75,34 +79,39 @@ class NORA3(ForcingReader):
         for n in range(len(file_times)):
 
             url = self.get_url(file_times[n], start_times[n], first_ind=self.lead_time)
+            url_or_cache, data_from_cache = self.get_filepath_if_cached(url)
 
-            msg.from_file(url)
+            msg.from_file(url_or_cache)
             msg.plain(f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
-
-            nc_fimex = f'dnora_wnd_temp/wind_{n:04.0f}_MetNo_NORA3.nc'
-
-            fimex_command = ['fimex', '--input.file='+url,
-                             '--interpolate.method=bilinear',
-                             '--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0',
-                             '--interpolate.xAxisValues='
-                             + str(lon_min)+','+str(lon_min+dlon)
-                             + ',...,'+str(lon_max)+'',
-                             '--interpolate.yAxisValues='
-                             + str(lat_min)+','+str(lat_min+dlat)
-                             + ',...,'+str(lat_max)+'',
-                             '--interpolate.xAxisUnit=degree', '--interpolate.yAxisUnit=degree',
-                             '--process.rotateVector.all',
-                             '--extract.selectVariables=wind_speed', '--extract.selectVariables=wind_direction',
-                             '--extract.reduceTime.start=' + \
-                             start_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
-                             '--extract.reduceTime.end=' + \
-                             end_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
-                             '--process.rotateVector.direction=latlon',
-                             '--output.file='+nc_fimex]
-
-
-            call(fimex_command)
-            wnd_list.append(xr.open_dataset(nc_fimex).squeeze())
+            if data_from_cache:
+                this_ds = xr.load_dataset(url_or_cache)
+                wnd_list.append(this_ds)
+            else:
+                try:
+                    nc_fimex = self._url_to_filename(url_or_cache)
+                    fimex_command = ['fimex', '--input.file='+url_or_cache,
+                                     '--interpolate.method=bilinear',
+                                     '--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0',
+                                     '--interpolate.xAxisValues='
+                                     + str(lon_min)+','+str(lon_min+dlon)
+                                     + ',...,'+str(lon_max)+'',
+                                     '--interpolate.yAxisValues='
+                                     + str(lat_min)+','+str(lat_min+dlat)
+                                     + ',...,'+str(lat_max)+'',
+                                     '--interpolate.xAxisUnit=degree', '--interpolate.yAxisUnit=degree',
+                                     '--process.rotateVector.all',
+                                     '--extract.selectVariables=wind_speed', '--extract.selectVariables=wind_direction',
+                                     '--extract.reduceTime.start=' + \
+                                     start_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
+                                     '--extract.reduceTime.end=' + \
+                                     end_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
+                                     '--process.rotateVector.direction=latlon',
+                                     '--output.file='+nc_fimex]
+                    call(fimex_command)
+                    msg.plain(f'Cached {url_or_cache} to {nc_fimex}')
+                    wnd_list.append(xr.open_dataset(nc_fimex).squeeze())
+                except OSError:
+                    msg.plain(f'SKIPPING, error while treating: {url}')
 
         wind_forcing = xr.concat(wnd_list, dim="time")
 
@@ -130,6 +139,24 @@ class NORA3(ForcingReader):
         filename = 'fc' + time_stamp_file.strftime('%Y')+time_stamp_file.strftime('%m')+time_stamp_file.strftime('%d')+(time_stamp_file - np.timedelta64(h0, 'h')).strftime('%H')+'_' + f"{ind:03d}" + '_fp.nc'
         url = 'https://thredds.met.no/thredds/dodsC/nora3/'+folder + '/' + filename
         return url
+
+    def get_filepath_if_cached(self, url: str):
+        """
+        Returns the filepath if the file is cached locally, otherwise
+        hands back the URL.
+        """
+        maybe_cache = self._url_to_filename(url)
+        if os.path.exists(maybe_cache):
+            return maybe_cache, True
+        else:
+            return url, False
+
+    def _url_to_filename(self, url):
+        """
+        Sanitizes a url to a valid file name.
+        """
+        fname = "".join(x for x in url if x.isalnum() or x == '.')
+        return os.path.join(self.cache_folder, fname)
 
 
 class MyWave3km(ForcingReader):

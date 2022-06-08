@@ -1,4 +1,6 @@
+import os
 import xarray as xr
+import glob
 import numpy as np
 from copy import copy
 from abc import ABC, abstractmethod
@@ -24,6 +26,9 @@ class CachedBoundaryReader(CachedReaderMixin):
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
         self.last_file = copy(last_file)
+        self.cache = copy(cache)
+        self.clean_cache = copy(clean_cache)
+        self.cache_folder = 'dnora_bnd_temp'
         return
 
     def __call__(self, start_time, end_time, inds) -> Tuple:
@@ -35,6 +40,14 @@ class CachedBoundaryReader(CachedReaderMixin):
         if hasattr(self, 'pointers'):
             inds = self.pointers[0][inds]
 
+        if self.clean_cache:
+            for f in glob.glob(os.path.join(self.cache_folder, '*')):
+                os.remove(f)
+
+        if self.cache:
+            if not os.path.isdir(self.cache_folder):
+                os.mkdir(self.cache_folder)
+                print("Creating cache folder %s..." % cache_folder)
 
         start_times, end_times, file_times = create_time_stamps(start_time, end_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
 
@@ -91,7 +104,7 @@ class CachedMetnoBoundaryReader(CachedBoundaryReader):
         return lon_all, lat_all
 
 class WAM4km(CachedMetnoBoundaryReader, CachedReaderMixin):
-    """Read WAM4km input"""
+    """Read WAM4km boundary spectra"""
     def __init__(self, ignore_nan=True, stride=6,
                  hours_per_file=73, last_file='', lead_time=0,
                  **kwarg) -> None:
@@ -144,6 +157,7 @@ class WAM4km(CachedMetnoBoundaryReader, CachedReaderMixin):
 
 
 class NORA3(CachedMetnoBoundaryReader, CachedReaderMixin):
+    """Read NORA3 boundary spectra"""
     def __init__(self, *argv,
                  stride: int=24, hours_per_file: int=24, last_file: str='',
                  lead_time: int=0,
