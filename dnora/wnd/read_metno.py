@@ -65,7 +65,7 @@ class NORA3(ForcingReader, CachedReaderMixin):
 
         if self.clean_cache:
             msg.plain("Removing old files from temporary folder...")
-            for f in glob.glob("dnora_wnd_temp/*.nc"):
+            for f in glob.glob(os.path.join(self.cache_folder, "*.nc")):
                 os.remove(f)
 
         # Define area to search in
@@ -89,7 +89,7 @@ class NORA3(ForcingReader, CachedReaderMixin):
                 wnd_list.append(this_ds)
             else:
                 try:
-                    nc_fimex = self._url_to_filename(url_or_cache)
+                    nc_fimex = self._url_to_filename(url_or_cache, grid=grid)
                     fimex_command = ['fimex', '--input.file='+url_or_cache,
                                      '--interpolate.method=bilinear',
                                      '--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0',
