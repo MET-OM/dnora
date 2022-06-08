@@ -501,7 +501,7 @@ def shift_spec(spec, D, shift=0):
 
 class CachedReaderMixin:
     """
-    Utitility mixin for help with caching remote forcing data.
+    Utility mixin for help with caching remote forcing data.
     """
     def __init__(self, backend_name, *argv, **kwarg):
         super().__init__(*argv, **kwarg)
@@ -522,7 +522,7 @@ class CachedReaderMixin:
         """
         Sanitizes a url to a valid file name.
         """
-        gridname = grid.name + '_'  if grid is not None else ''
+        gridname = grid.name() + '_'  if grid is not None else ''
         fname = gridname + "".join(x for x in url if x.isalnum() or x == '.')
         return os.path.join(self.cache_folder, fname)
 

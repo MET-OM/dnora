@@ -11,7 +11,7 @@ from .read import BoundaryReader
 
 # Import auxiliry functions
 from .. import msg
-from ..aux import day_list, create_time_stamps
+from ..aux import day_list, create_time_stamps, CachedReaderMixin
 
 class CachedBoundaryReader(CachedReaderMixin):
     """
