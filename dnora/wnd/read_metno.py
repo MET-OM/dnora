@@ -13,10 +13,11 @@ from .read import ForcingReader
 
 # Import auxiliry functions
 from .. import msg
-from ..aux import create_time_stamps, u_v_from_dir, expand_area, lon_in_km
+from ..aux import (create_time_stamps, u_v_from_dir, expand_area, lon_in_km,
+                   CachedReaderMixin)
 
 
-class NORA3(ForcingReader):
+class NORA3(ForcingReader, CachedReaderMixin):
     """Reads wind data of the NORA3 hindcast directly from MET Norways servers.
 
     The NORA3 HARMONIE-AROME high-resolution (ca 3 km) hindcast for the
@@ -79,7 +80,7 @@ class NORA3(ForcingReader):
         for n in range(len(file_times)):
 
             url = self.get_url(file_times[n], start_times[n], first_ind=self.lead_time)
-            url_or_cache, data_from_cache = self.get_filepath_if_cached(url)
+            url_or_cache, data_from_cache = self.get_filepath_if_cached(grid, url)
 
             msg.from_file(url_or_cache)
             msg.plain(f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
@@ -88,7 +89,7 @@ class NORA3(ForcingReader):
                 wnd_list.append(this_ds)
             else:
                 try:
-                    nc_fimex = self._url_to_filename(url_or_cache)
+                    nc_fimex = self._url_to_filename(grid, url_or_cache)
                     fimex_command = ['fimex', '--input.file='+url_or_cache,
                                      '--interpolate.method=bilinear',
                                      '--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0',
@@ -139,24 +140,6 @@ class NORA3(ForcingReader):
         filename = 'fc' + time_stamp_file.strftime('%Y')+time_stamp_file.strftime('%m')+time_stamp_file.strftime('%d')+(time_stamp_file - np.timedelta64(h0, 'h')).strftime('%H')+'_' + f"{ind:03d}" + '_fp.nc'
         url = 'https://thredds.met.no/thredds/dodsC/nora3/'+folder + '/' + filename
         return url
-
-    def get_filepath_if_cached(self, url: str):
-        """
-        Returns the filepath if the file is cached locally, otherwise
-        hands back the URL.
-        """
-        maybe_cache = self._url_to_filename(url)
-        if os.path.exists(maybe_cache):
-            return maybe_cache, True
-        else:
-            return url, False
-
-    def _url_to_filename(self, url):
-        """
-        Sanitizes a url to a valid file name.
-        """
-        fname = "".join(x for x in url if x.isalnum() or x == '.')
-        return os.path.join(self.cache_folder, fname)
 
 
 class MyWave3km(ForcingReader):

@@ -11,9 +11,9 @@ from .read import BoundaryReader
 
 # Import auxiliry functions
 from .. import msg
-from ..aux import day_list, create_time_stamps
+from ..aux import day_list, create_time_stamps, CachedReaderMixin
 
-class WAM4km(BoundaryReader):
+class WAM4km(BoundaryReader, CachedReaderMixin):
     def __init__(self, ignore_nan: bool=True, stride: int=6,
                  hours_per_file: int=73, last_file: str='', lead_time: int=0,
                  cache: bool=True, clean_cache: bool=False) -> None:
@@ -82,7 +82,7 @@ class WAM4km(BoundaryReader):
         bnd_list = []
         for n in range(len(file_times)):
             url = self.get_url(file_times[n])
-            url_or_cache, data_from_cache = self.get_filepath_if_cached(url)
+            url_or_cache, data_from_cache = self.get_filepath_if_cached(grid, url)
             msg.from_file(url_or_cache)
             msg.plain(f"Reading boundary spectra: {start_times[n]}-{end_times[n]}")
             if data_from_cache:
@@ -99,7 +99,7 @@ class WAM4km(BoundaryReader):
                         ].copy()
                     bnd_list.append(this_ds)
                     if self.cache:
-                        self.write_to_cache(this_ds, url)
+                        self.write_to_cache(this_ds, grid, url)
 
                 except OSError:
                     msg.plain(f'FILE NOT FOUND, SKIPPING: {url}')
@@ -122,29 +122,6 @@ class WAM4km(BoundaryReader):
     def get_url(self, day):
         url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/'+day.strftime('%d')+'/MyWave_wam4_SPC_'+day.strftime('%Y%m%d')+'T'+day.strftime('%H')+'Z.nc'
         return url
-
-    def get_filepath_if_cached(self, url: str) -> Tuple:
-        """
-        Returns the filepath if the file is cached locally, otherwise
-        hands back the URL.
-        """
-        maybe_cache = self._url_to_filename(url)
-        if os.path.exists(maybe_cache):
-            return maybe_cache, True
-        else:
-            return url, False
-
-    def write_to_cache(self, ds, url):
-        cache = self._url_to_filename(url)
-        msg.plain(f'Caching {url} to {cache}')
-        ds.to_netcdf(cache)
-
-    def _url_to_filename(self, url):
-        """
-        Sanitizes a url to a valid file name.
-        """
-        fname = "".join(x for x in url if x.isalnum() or x == '.')
-        return os.path.join(self.cache_folder, fname)
 
 
 class NORA3(BoundaryReader):

@@ -497,3 +497,30 @@ def shift_spec(spec, D, shift=0):
         spec_shift = spec_shift[0]
 
     return spec_shift
+
+class CachedReaderMixin:
+    """
+    Utitility mixin for help with caching remote forcing data.
+    """
+    def get_filepath_if_cached(self, grid, url: str):
+        """
+        Returns the filepath if the file is cached locally, otherwise
+        hands back the URL.
+        """
+        maybe_cache = self._url_to_filename(grid, url)
+        if os.path.exists(maybe_cache):
+            return maybe_cache, True
+        else:
+            return url, False
+
+    def _url_to_filename(self, grid, url):
+        """
+        Sanitizes a url to a valid file name.
+        """
+        fname = grid.name + '_' + "".join(x for x in url if x.isalnum() or x == '.')
+        return os.path.join(self.cache_folder, fname)
+
+    def write_to_cache(self, ds, grid, url):
+        cache = self._url_to_filename(grid, url)
+        msg.plain(f'Caching {url} to {cache}')
+        ds.to_netcdf(cache)
