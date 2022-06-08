@@ -141,6 +141,24 @@ class NORA3(ForcingReader, CachedReaderMixin):
         url = 'https://thredds.met.no/thredds/dodsC/nora3/'+folder + '/' + filename
         return url
 
+    def get_filepath_if_cached(self, url: str):
+        """
+        Returns the filepath if the file is cached locally, otherwise
+        hands back the URL.
+        """
+        maybe_cache = self._url_to_filename(url)
+        if os.path.exists(maybe_cache):
+            return maybe_cache, True
+        else:
+            return url, False
+
+    def _url_to_filename(self, url):
+        """
+        Sanitizes a url to a valid file name.
+        """
+        fname = "".join(x for x in url if x.isalnum() or x == '.')
+        return os.path.join(self.cache_folder, fname)
+
 
 class MyWave3km(ForcingReader):
     """Reads wind data from the MyWave 3km hindcast directly from MET Norways

@@ -95,11 +95,22 @@ class WAM4km(BoundaryReader, CachedReaderMixin):
                         )[
                             ['SPEC', 'longitude', 'latitude', 'time', 'freq', 'direction']
                         ].copy()
-                    bnd_list.append(this_ds)
-                    self.write_to_cache(this_ds, grid, url)
+                    if (
+                        not bnd_list # always trust the first file that is read
+                        or ( # for the rest, check for consistency with first file
+                            (this_ds.longitude == bnd_list[0].longitude).all() and
+                            (this_ds.latitude  == bnd_list[0].latitude ).all()
+
+                        )):
+                        bnd_list.append(this_ds)
+                        if self.cache:
+                            self.write_to_cache(this_ds, url)
+                    else:
+                        msg.plain(f'SKIPPING, file inconsistent: {url}')
+
 
                 except OSError:
-                    msg.plain(f'FILE NOT FOUND, SKIPPING: {url}')
+                    msg.plain(f'SKIPPING, file not found: {url}')
 
 
         msg.info("Merging dataset together (this might take a while)...")
