@@ -71,40 +71,50 @@ class NORA3(ForcingReader):
         mean_lon_in_km = (lon_in_km(grid.lat()[0])+lon_in_km(grid.lat()[-1]))*0.5
         dlon = 3/mean_lon_in_km
 
-        wnd_list = []
-        for n in range(len(file_times)):
+        urls = [
+            self.get_url(file_time, start_time, first_ind=self.lead_time)
+            for file_time, start_time in zip(file_times, start_times)
+        ]
 
-            url = self.get_url(file_times[n], start_times[n], first_ind=self.lead_time)
+        msg.plain('Reading from these URLs:')
+        for url in urls:
+            msg.plain(url)
 
-            msg.from_file(url)
-            msg.plain(f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
+        ds = xr.open_mfdataset(urls)
+        # subsets
+        c = (
+            (ds.longitude>=lon_min-dlon) & (ds.longitude<=lon_max+dlon)
+            & (ds.latitude>=lat_min-dlat) & (ds.latitude<=lat_max+dlat)
+        )
+        ct = (ds.time>=start_times[0]) & (ds.time<=end_times[-1])
+        ds = ds.isel(x=c.any('y'), y=c.any('x'), time=ct)[['wind_direction', 'wind_speed']]
 
-            nc_fimex = f'dnora_wnd_temp/wind_{n:04.0f}_MetNo_NORA3.nc'
+        nc_fimex_in = 'dnora_fimex_in.nc'
+        nc_fimex_out = 'dnora_fimex_out.nc'
+        ds.to_netcdf(nc_fimex_in)
 
-            fimex_command = ['fimex', '--input.file='+url,
-                             '--interpolate.method=bilinear',
-                             '--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0',
-                             '--interpolate.xAxisValues='
-                             + str(lon_min)+','+str(lon_min+dlon)
-                             + ',...,'+str(lon_max)+'',
-                             '--interpolate.yAxisValues='
-                             + str(lat_min)+','+str(lat_min+dlat)
-                             + ',...,'+str(lat_max)+'',
-                             '--interpolate.xAxisUnit=degree', '--interpolate.yAxisUnit=degree',
-                             '--process.rotateVector.all',
-                             '--extract.selectVariables=wind_speed', '--extract.selectVariables=wind_direction',
-                             '--extract.reduceTime.start=' + \
-                             start_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
-                             '--extract.reduceTime.end=' + \
-                             end_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
-                             '--process.rotateVector.direction=latlon',
-                             '--output.file='+nc_fimex]
+        fimex_command = ['fimex', '--input.file='+nc_fimex_in,
+                         '--interpolate.method=bilinear',
+                         '--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0',
+                         '--interpolate.xAxisValues='
+                         + str(lon_min)+','+str(lon_min+dlon)
+                         + ',...,'+str(lon_max)+'',
+                         '--interpolate.yAxisValues='
+                         + str(lat_min)+','+str(lat_min+dlat)
+                         + ',...,'+str(lat_max)+'',
+                         '--interpolate.xAxisUnit=degree', '--interpolate.yAxisUnit=degree',
+                         '--process.rotateVector.all',
+                         '--extract.selectVariables=wind_speed', '--extract.selectVariables=wind_direction',
+                         '--extract.reduceTime.start=' + \
+                         start_time,
+                         '--extract.reduceTime.end=' + \
+                         end_time,
+                         '--process.rotateVector.direction=latlon',
+                         '--output.file='+nc_fimex_out]
 
+        call(fimex_command)
 
-            call(fimex_command)
-            wnd_list.append(xr.open_dataset(nc_fimex).squeeze())
-
-        wind_forcing = xr.concat(wnd_list, dim="time")
+        wind_forcing = xr.open_dataset(nc_fimex_out).squeeze()
 
         # Fimex has already rotated the longitudes and latitudes, so calling them rlon/rlat is now incorrect
         wind_forcing = wind_forcing.rename_dims({'y': 'lat', 'x': 'lon'})
