@@ -16,13 +16,12 @@ from ..aux import day_list, create_time_stamps, CachedReaderMixin
 class WAM4km(BoundaryReader, CachedReaderMixin):
     def __init__(self, ignore_nan: bool=True, stride: int=6,
                  hours_per_file: int=73, last_file: str='', lead_time: int=0,
-                 cache: bool=True, clean_cache: bool=False) -> None:
+                 clean_cache: bool=False) -> None:
         self.ignore_nan = copy(ignore_nan)
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
         self.last_file = copy(last_file)
-        self.cache = copy(cache)
         self.clean_cache = copy(clean_cache)
         self.cache_folder = 'dnora_bnd_temp'
         return
@@ -70,10 +69,9 @@ class WAM4km(BoundaryReader, CachedReaderMixin):
             for f in glob.glob(os.path.join(self.cache_folder, '*')):
                 os.remove(f)
 
-        if self.cache:
-            if not os.path.isdir(self.cache_folder):
-                os.mkdir(self.cache_folder)
-                print("Creating cache folder %s..." % cache_folder)
+        if not os.path.isdir(self.cache_folder):
+            os.mkdir(self.cache_folder)
+            print("Creating cache folder %s..." % cache_folder)
 
         start_times, end_times, file_times = create_time_stamps(start_time, end_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
 
@@ -98,8 +96,7 @@ class WAM4km(BoundaryReader, CachedReaderMixin):
                             ['SPEC', 'longitude', 'latitude', 'time', 'freq', 'direction']
                         ].copy()
                     bnd_list.append(this_ds)
-                    if self.cache:
-                        self.write_to_cache(this_ds, grid, url)
+                    self.write_to_cache(this_ds, grid, url)
 
                 except OSError:
                     msg.plain(f'FILE NOT FOUND, SKIPPING: {url}')
