@@ -81,13 +81,19 @@ class NORA3(ForcingReader):
             msg.plain(url)
 
         ds = xr.open_mfdataset(urls)
+        ds0 = xr.open_dataset(urls[0])
         # subsets
         c = (
             (ds.longitude>=lon_min-dlon) & (ds.longitude<=lon_max+dlon)
             & (ds.latitude>=lat_min-dlat) & (ds.latitude<=lat_max+dlat)
-        )
-        ct = (ds.time>=start_times[0]) & (ds.time<=end_times[-1])
-        ds = ds.isel(x=c.any('y'), y=c.any('x'), time=ct)[['wind_direction', 'wind_speed']]
+        ).compute()
+        cx = c.any('y')
+        cy = c.any('x')
+        ct = ((ds.time>=start_times[0]) & (ds.time<=end_times[-1])).compute()
+        ds = ds.isel(x=cx, y=cy, time=ct)[[
+            'wind_direction', 'wind_speed',
+            'projection_lambert', 'forecast_reference_time',
+        ]]
 
         nc_fimex_in = 'dnora_fimex_in.nc'
         nc_fimex_out = 'dnora_fimex_out.nc'
