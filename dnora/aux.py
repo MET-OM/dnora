@@ -6,6 +6,7 @@ from scipy.interpolate import griddata
 from scipy import interpolate
 import os, re
 from typing import TYPE_CHECKING, Tuple, List, Union
+from .msg import plain as msgplain
 
 if TYPE_CHECKING:
     from .grd.grd_mod import Grid
@@ -497,3 +498,44 @@ def shift_spec(spec, D, shift=0):
         spec_shift = spec_shift[0]
 
     return spec_shift
+
+class CachedReaderMixin:
+    """
+    Utitility mixin for help with caching remote forcing data.
+    """
+    def __init__(self, backend_name, *argv, **kwarg):
+        super().__init__(*argv, **kwarg)
+        self.backend_name = backend_name # e.g. NORA3_spectra
+
+    def get_filepath_if_cached(self, url: str, grid=None):
+        """
+        Returns the filepath if the file is cached locally, otherwise
+        hands back the URL.
+        """
+        maybe_cache = self._url_to_filename(url, grid=grid)
+        if os.path.exists(maybe_cache):
+            return maybe_cache, True
+        else:
+            return url, False
+
+    def _url_to_filename(self,  url, grid=None):
+        """
+        Sanitizes a url to a valid file name.
+        """
+        gridname = grid.name + '_'  if grid is not None else ''
+        fname = gridname + "".join(x for x in url if x.isalnum() or x == '.')
+        return os.path.join(self.cache_folder, fname)
+
+    def write_to_cache(self, ds, url, cache):
+        msgplain(f'Caching {url} to {cache}')
+        ds.to_netcdf(cache)
+
+    @staticmethod
+    def is_consistent(this_ds, ds_list):
+        return (
+            not ds_list # always trust the first file that is read
+            or ( # for the rest, check for consistency with first file
+                (this_ds.longitude == ds_list[0].longitude).all() and
+                (this_ds.latitude  == ds_list[0].latitude ).all()
+
+        ))
