@@ -112,7 +112,7 @@ class NORA3(ForcingReader, CachedReaderMixin):
                     msg.plain(f'Cached {url_or_cache} to {nc_fimex}')
                     wnd_list.append(xr.open_dataset(nc_fimex).squeeze())
                 except OSError:
-                    msg.plain(f'SKIPPING, error while treating: {url}')
+                    msg.plain(f'SKIPPING, error while treating: {url_or_cache}')
 
         wind_forcing = xr.concat(wnd_list, dim="time")
 
