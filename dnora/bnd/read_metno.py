@@ -103,8 +103,7 @@ class WAM4km(BoundaryReader, CachedReaderMixin):
 
                         )):
                         bnd_list.append(this_ds)
-                        if self.cache:
-                            self.write_to_cache(this_ds, url)
+                        self.write_to_cache(this_ds, url)
                     else:
                         msg.plain(f'SKIPPING, file inconsistent: {url}')
 
