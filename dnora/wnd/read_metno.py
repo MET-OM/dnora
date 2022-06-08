@@ -111,11 +111,12 @@ class NORA3(ForcingReader):
                          '--interpolate.xAxisUnit=degree', '--interpolate.yAxisUnit=degree',
                          '--process.rotateVector.all',
                          '--extract.selectVariables=wind_speed', '--extract.selectVariables=wind_direction',
-                         '--extract.reduceTime.start=' + \
-                         start_time,
-                         '--extract.reduceTime.end=' + \
-                         end_time,
+                         # '--extract.reduceTime.start=' + \
+                         # start_times[0].strftime('%Y-%m-%dT%H:%M:%S'),
+                         # '--extract.reduceTime.end=' + \
+                         # end_times[-1].strftime('%Y-%m-%dT%H:%M:%S'),
                          '--process.rotateVector.direction=latlon',
+                         '--debug',
                          '--output.file='+nc_fimex_out]
 
         call(fimex_command)
