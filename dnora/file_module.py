@@ -48,7 +48,6 @@ def replace_times(filename: str, dateformat: str, times: list) -> str:
     e.g. #T0_file.txt, ['2020-05-04 18:00'], %Y%m%d%H%M -> 202005041800_file.txt
     """
 
-
     for ct, t in enumerate(times):
         filename = re.sub(f"#T{ct}", pd.Timestamp(t).strftime(dateformat), filename)
 
@@ -80,15 +79,20 @@ def replace_objects(filename: str, dict_of_object_names: dict[str: str]) -> str:
 
     return filename
 
-def clean(filename: str, list_of_placeholders: list[str]) -> str:
+def get_list_of_placeholders():
+    defaults_file = Path(__file__).parent.joinpath(Path('defaults.yml'))
+    with open(defaults_file, 'r') as file:
+      defaults = yaml.safe_load(file)
+    return defaults['list_of_placeholders']
+
+def clean(filename: str, list_of_placeholders: list[str]=None) -> str:
     """ Cleans out the file name from possible used placeholders, e.g. #Grid
     as given in the list.
 
     Also removes multiple underscores '___' etc.
     """
-    defaults_file = Path(__file__).parent.joinpath(Path('defaults.yml'))
-    with open(defaults_file, 'r') as file:
-      list_of_placeholders = yaml.safe_load(file)['list_of_placeholders']
+    if list_of_placeholders is None:
+        list_of_placeholders = get_list_of_placeholders()
 
     for s in list_of_placeholders:
             filename = re.sub(s, '', filename)
@@ -153,15 +157,16 @@ class FileNames:
           self._defaults = yaml.safe_load(file)
         self.fallback = self._defaults['ModelRun']
         self.primary = self._defaults[self.format]
-        self.placeholders = self._defaults['list_of_placeholders']
+        #self.placeholders = self._defaults['list_of_placeholders']
 
     def dateformat(self) -> str:
         return self._dateformat or get_default_value('dateformat', self.dnora_obj, self.primary, self.fallback)
 
-    def filename(self) -> str:
+    def filename(self, extension: str=None) -> str:
         filename = self._filename or get_default_value('filename', self.dnora_obj, self.primary, self.fallback)
         filename = self.replace_placeholders(filename, self.dateformat())
-        return Path(filename).with_suffix(f'.{self.extension}')
+        extension = extension or self.extension
+        return Path(filename).with_suffix(f'.{extension}')
 
     def folder(self) -> str:
         folder = self._folder or get_default_value('folder', self.dnora_obj, self.primary, self.fallback)
@@ -182,6 +187,6 @@ class FileNames:
         clean_string = replace_times(unclean_string, dateformat, [self.start_time, self.end_time])
 
         if self.clean_names:
-            clean_string = clean(clean_string, list_of_placeholders=self.placeholders)
+            clean_string = clean(clean_string)
 
         return clean_string

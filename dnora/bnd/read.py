@@ -4,10 +4,10 @@ from copy import copy
 from abc import ABC, abstractmethod
 from typing import Tuple
 
-# Import auxiliry functions
+# Import aux_funcsiliry functions
 from .. import file_module
 from .. import msg
-from .. import aux
+from .. import aux_funcs
 
 class BoundaryReader(ABC):
     """Reads boundary spectra from some source and provide it to the object."""
@@ -114,7 +114,7 @@ class File_WW3Nc(BoundaryReader):
     def get_coordinates(self, start_time) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         #day = pd.date_range(start_time, start_time,freq='D')
-        start_times, end_times, file_times = aux.create_time_stamps(start_time, start_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
+        start_times, end_times, file_times = aux_funcs.create_time_stamps(start_time, start_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
         filename = self.get_filename(file_times[0])
 
         data = xr.open_dataset(filename).isel(time = [0])
@@ -129,7 +129,7 @@ class File_WW3Nc(BoundaryReader):
         self.start_time = start_time
         self.end_time = end_time
 
-        start_times, end_times, file_times = aux.create_time_stamps(start_time, end_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
+        start_times, end_times, file_times = aux_funcs.create_time_stamps(start_time, end_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
 
         msg.info(f"Getting boundary spectra from NORA3 from {self.start_time} to {self.end_time}")
         bnd_list = []
@@ -160,6 +160,8 @@ class File_WW3Nc(BoundaryReader):
         return  time, freq, dirs, spec, lon, lat, source
 
 
-    def get_filename(self, day) -> str:
-        filename = self.folder + file_module.replace_times(self.filestring, [day], self.datestring) + '.nc'
+    def get_filename(self, time) -> str:
+        filename = self.folder + file_module.replace_times(self.filename,
+                                                        self.dateformat,
+                                                        [time]) + '.nc'
         return filename

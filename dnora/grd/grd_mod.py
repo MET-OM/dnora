@@ -15,10 +15,10 @@ from typing import TYPE_CHECKING, Tuple
 if TYPE_CHECKING:
     from .write import GridWriter
 
-# Import default values and auxiliry functions
+# Import default values and aux_funcsiliry functions
 from .. import msg
 from .. import file_module
-from ..aux import force_to_xyz, distance_2points, domain_size_in_km, set_spacing_dlon_dlat_fixed_edges, set_spacing_dlon_dlat_floating_edges, set_spacing_dx_dy, set_spacing_nx_ny
+from ..aux_funcs import force_to_xyz, distance_2points, domain_size_in_km, set_spacing_dlon_dlat_fixed_edges, set_spacing_dlon_dlat_floating_edges, set_spacing_dx_dy, set_spacing_nx_ny
 
 
 class Grid:
@@ -238,11 +238,11 @@ class Grid:
         #return self.land_sea_mask().shape
         return (self.ny(), self.nx())
 
-    def topo(self) -> np.ndarray:
+    def topo(self, land: float=-999) -> np.ndarray:
         """Returns an array containing the meshed topography of the grid."""
         if hasattr(self.data, 'topo'):
             topo = copy(self.data.topo.values)
-            topo[np.logical_not(self.land_sea_mask())] = -999
+            topo[np.logical_not(self.land_sea_mask())] = land
             return topo
         else:
             return np.array([])

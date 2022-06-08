@@ -9,8 +9,8 @@ import numpy as np
 from typing import Tuple, TYPE_CHECKING
 if TYPE_CHECKING:
     from .grd_mod import Grid
-# Import auxiliry functions
-from ..aux import expand_area
+# Import aux_funcsiliry functions
+from ..aux_funcs import expand_area
 import warnings
 from .. import msg
 
@@ -275,7 +275,7 @@ class EMODNET2020(TopoReader):
             """
             EMODNET tiles overlap by two cells on each boundary.
             """
-            return ds.isel(lon=slice(2, -1), lat=slice(2, -1))
+            return ds.isel(lon=slice(2, -2), lat=slice(2, -2))
 
         import dask
         with dask.config.set(**{'array.slicing.split_large_chunks': True}):

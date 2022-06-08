@@ -4,9 +4,9 @@ from abc import ABC, abstractmethod
 # Import objects
 from ..grd.grd_mod import Grid
 
-# Import auxiliry functions
+# Import aux_funcsiliry functions
 from .. import msg
-from ..aux import min_distance, expand_area
+from ..aux_funcs import min_distance, expand_area
 
 class PointPicker(ABC):
     """PointPickers take in longitude and latitude values, and returns indeces
@@ -28,8 +28,11 @@ class TrivialPicker(PointPicker):
         return inds
 
 class NearestGridPoint(PointPicker):
-    """Choose the nearest grid point to each boundary point in the grid."""
-    def __init__(self):
+    """Choose the nearest grid point to each boundary point in the grid.
+    Set a maximum allowed distance using `max_dist` (in km) at instantiation time.
+    """
+    def __init__(self, max_dist=None):
+        self.max_dist = max_dist
         pass
 
     def __call__(self, grid, bnd_lon, bnd_lat):
@@ -41,8 +44,12 @@ class NearestGridPoint(PointPicker):
         inds = []
         for n in range(len(lat)):
             dx, ind = min_distance(lon[n], lat[n], bnd_lon, bnd_lat)
-            msg.plain(f"Point {n}: lat: {lat[n]:10.7f}, lon: {lon[n]:10.7f} <<< ({bnd_lat[ind]: .7f}, {bnd_lon[ind]: .7f}). Distance: {dx:.1f} km")
-            inds.append(ind)
+            ms = f"Point {n}: lat: {lat[n]:10.7f}, lon: {lon[n]:10.7f} <<< ({bnd_lat[ind]: .7f}, {bnd_lon[ind]: .7f}). Distance: {dx:.1f} km"
+            if self.max_dist is None or dx <= self.max_dist:
+                msg.plain(ms)
+                inds.append(ind)
+            else:
+                msg.plain('DISCARDED, too far: '+ms)
 
         inds = np.array(inds)
         return inds

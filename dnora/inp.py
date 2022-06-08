@@ -84,16 +84,16 @@ class SWAN(InputFileWriter):
 
             file_out.write('INPGRID BOTTOM ' + str(grid.lon()[0])+' '+str(grid.lat()[0])+' 0. '+str(grid.nx()-1)+' '+str(
                 grid.ny()-1)+' ' + str((delta_X/(grid.nx()-1)).round(6)) + ' ' + str((delta_Y/(grid.ny()-1)).round(6)) + '\n')
-            file_out.write('READINP BOTTOM 1 \''+ grid_path +'\' 3 0 FREE \n')
+            file_out.write('READINP BOTTOM 1 \''+ grid_path.split('/')[-1] +'\' 3 0 FREE \n')
             file_out.write('$ \n')
-            file_out.write('BOU NEST \''+boundary_path+'\' OPEN \n')
+            file_out.write('BOU NEST \''+boundary_path.split('/')[-1]+'\' OPEN \n')
             file_out.write('$ \n')
 
             if self.wind:
 
-                file_out.write('INPGRID WIND '+str(grid.lon()[0])+' '+str(grid.lat()[0])+' 0. '+str(forcing.nx()-1)+' '+str(forcing.ny()-1)+' '+str(
+                file_out.write('INPGRID WIND '+str(forcing.lon()[0])+' '+str(forcing.lat()[0])+' 0. '+str(forcing.nx()-1)+' '+str(forcing.ny()-1)+' '+str(
                     (delta_X/(forcing.nx()-1)).round(6)) + ' '+str((delta_Y/(forcing.ny()-1)).round(6)) + ' NONSTATIONARY ' + STR_START + f" {forcing.dt():.0f} HR " + STR_END + '\n')
-                file_out.write('READINP WIND '+str(factor_wind)+'  \''+forcing_path+'\' 3 0 0 1 FREE \n')
+                file_out.write('READINP WIND '+str(factor_wind)+'  \''+forcing_path.split('/')[-1]+'\' 3 0 0 1 FREE \n')
                 file_out.write('$ \n')
             else:
                 file_out.write('OFF QUAD \n')
@@ -107,7 +107,7 @@ class SWAN(InputFileWriter):
             file_out.write('$ Generate block-output \n')
             temp_list = forcing_path.split('/')
             forcing_folder = '/'.join(temp_list[0:-1])
-            file_out.write('BLOCK \'COMPGRID\' HEAD \''+file_module.add_folder_to_filename(grid.name()+'_'+STR_START.split('.')[0]+'.nc',forcing_folder)
+            file_out.write('BLOCK \'COMPGRID\' HEAD \''+grid.name()+'_'+STR_START.split('.')[0]+'.nc'
                            + '\' & \n')
             file_out.write(
                 'LAY 1 HSIGN RTP TPS PDIR TM01 DIR DSPR WIND DEP OUTPUT ' + STR_START + ' 1 HR \n')
@@ -116,7 +116,7 @@ class SWAN(InputFileWriter):
                 file_out.write('POINTS \'pkt\' &\n')
                 for i in range(len(self.spec_points)):
                     file_out.write(str(self.spec_points[i][0])+' '+str(self.spec_points[i][1])+ ' &\n')
-                file_out.write('SPECOUT \'pkt\' SPEC2D ABS \''+file_module.add_folder_to_filename(grid.name()+'_'+STR_START.split('.')[0]+'_spec.nc',forcing_folder)+ '\' & \n')
+                file_out.write('SPECOUT \'pkt\' SPEC2D ABS \''+grid.name()+'_'+STR_START.split('.')[0]+'_spec.nc'+ '\' & \n')
                 file_out.write('OUTPUT ' + STR_START + ' 1 HR \n')
             else:
                 pass
@@ -168,7 +168,7 @@ class SWASH(InputFileWriter):
             file_out.write('$ \n')
             file_out.write('INPGRID BOTTOM ' + str(grid.lon()[0])+' '+str(grid.lat()[0])+' 0. '+str(grid.nx()-1)+' '+str(
                 grid.ny()-1)+' ' + str((delta_X/(grid.nx()-1)).round(8)) + ' ' + str((delta_Y/(grid.ny()-1)).round(8)) +  ' EXC -999 \n')
-            file_out.write('READINP BOTTOM 1 \''+grid_path +'\' 3 0 FREE \n')
+            file_out.write('READINP BOTTOM 1 \''+grid_path.split('/')[-1] +'\' 3 0 FREE \n')
             file_out.write('$ \n')
             file_out.write(self.bound_side_command +' \n')
             #file_out.write('BOU NEST \''+add_folder_to_filename(self.bnd_filename, self.bnd_folder)+'\' OPEN \n')
@@ -178,7 +178,7 @@ class SWASH(InputFileWriter):
             file_out.write('$ OUTPUT REQUESTS \n')
             temp_list = grid_path.split('/')
             forcing_folder = '/'.join(temp_list[0:-1])
-            file_out.write('BLOCK \'COMPGRID\' NOHEAD \''+file_module.add_folder_to_filename(grid.name()+'.mat',forcing_folder)
+            file_out.write('BLOCK \'COMPGRID\' NOHEAD \''+grid.name()+'.mat'
                            + '\' & \n')
             file_out.write(
                 'LAY 3 WATL BOTL OUTPUT ' + STR_START + ' 5 SEC \n')
@@ -187,6 +187,136 @@ class SWASH(InputFileWriter):
             file_out.write('STOP \n')
 
         return filename
+
+class REEF3D(InputFileWriter):
+    def __init__(self, option = 'REEF3D', edges = ['W'], nproc = 1):
+        self.option = option
+        self.nproc = nproc # number of processors
+        self.edges = edges
+        return
+
+    def _extension(self):
+        return 'txt'
+
+    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary,
+                start_time: str, end_time: str, filename: str, forcing_path: str,
+                grid_path: str, boundary_path: str):
+
+        geodat = pd.read_csv(grid_path, sep = ' ') # read geo.dat
+        geodat.columns = ['x', 'y', 'z']
+
+        if self.option == 'DiveMESH':
+            filename =  '/'.join(filename.split('/')[:-1])+'/control.txt'
+            with open(filename, 'w') as file_out:
+                if 'W' in self.edges:
+                    file_out.write('C 11 6 // West side: wave generation' '\n')
+                    file_out.write('C 12 7 // side: numerical beach' '\n')
+                    file_out.write('C 13 7 // side: numerical beach' '\n')
+                    file_out.write('C 14 7 // side: numerical beach' '\n')
+                elif 'N' in self.edges:
+                    file_out.write('C 12 6 // North side: wave generation' '\n')
+                    file_out.write('C 13 3 // side: numerical beach' '\n')
+                    file_out.write('C 14 3 // side: numerical beach' '\n')
+                    file_out.write('C 11 7 // side: numerical beach' '\n')
+                elif 'E' in self.edges:
+                    file_out.write('C 14 6 // East side: wave generation' '\n')
+                    file_out.write('C 11 7 // side: numerical beach' '\n')
+                    file_out.write('C 12 7 // side: numerical beach' '\n')
+                    file_out.write('C 13 7 // side: numerical beach' '\n')
+                elif 'S' in self.edges:
+                    file_out.write('C 13 6 // South side: wave generation' '\n')
+                    file_out.write('C 11 7 // side: numerical beach' '\n')
+                    file_out.write('C 12 7 // side: numerical beach' '\n')
+                    file_out.write('C 14 7 // side: numerical beach' '\n')
+
+                file_out.write('C 15 21 // bottom: wall boundary' '\n')
+                file_out.write('C 16 3 // top: symmetry plane' '\n')
+                file_out.write(' \n')
+
+                file_out.write('B 1 '+str(int(grid.dx().round(0)))+' // horizontal mesh size dx' '\n')
+                file_out.write('B 2 '+str(int(geodat.x.max()/int(grid.dx().round(0))))+
+                ' '+str(int(geodat.y.max()/int(grid.dx().round(0))))
+                +' 10 // number of cells in x, y and z directions' '\n')
+                file_out.write('B 10 0.0 '+str(int(geodat.x.max()))+' 0.0 '+str(int(geodat.y.max()))+' 0.0 1.0 // rectangular domain size' '\n')
+                file_out.write(' \n')
+
+                file_out.write('B 103 5 // vertical grid clustering' '\n')
+                file_out.write('B 113 2.5 // the stretching factor for the vertical grid clustering' '\n')
+                file_out.write('B 116 1.0 // the focal point for the vertical grid clustering, which is water depth here' '\n')
+                file_out.write(' \n')
+
+                file_out.write('G 10 1 // turn geodat on/off' '\n')
+                file_out.write('G 15 2 // local inverse distance interpolation' '\n')
+                file_out.write('G 20 0 // use automatic grid size off' '\n')
+                file_out.write('G 31 14 // number of smoothing iterations' '\n')
+                #file_out.write('G 41 1' '\n')
+                file_out.write(' \n')
+
+                file_out.write('M 10 '+str(self.nproc)+' // number of processors' '\n')
+                file_out.write('M 20 2 // decomposition method 2' '\n')
+        elif self.option == 'REEF3D':
+            with open(filename, 'w') as file_out:
+                file_out.write('A 10 3  // choose the model reef::fnpf' '\n')
+                file_out.write('A 310 3 // 3rd-order runge-kutta for fsfbc time treatment' '\n')
+                file_out.write('A 311 5 // 5th-order weno for fsfbc spatial treatment including wetting-drying' '\n')
+                file_out.write('A 320 1 // 2nd-order laplace' '\n')
+                file_out.write(' \n')
+
+                file_out.write('A 341 2.0 // size of coastal relaxation zone by a factor of the horizontal cell size' '\n')
+                file_out.write('A 343 1   // turn on wetting-drying' '\n')
+                file_out.write('A 345 0.001 // wetting-drying water depth threshold' '\n')
+                file_out.write('A 346 2.1   // added viscosity within the coastal relaxation zone' '\n')
+                file_out.write(' \n')
+
+                file_out.write('A 350 1 // viscosity damping wave breaking algorithm' '\n')
+                file_out.write('A 351 3 // breaking wave detection for both deep and shallow water' '\n')
+                file_out.write('A 352 3 // additional filtering for viscosity based breaking for both deep and shallow water' '\n')
+                file_out.write('A 361 5 // filtering outer iterations' '\n')
+                file_out.write('A 362 2 // filtering inner iterations' '\n')
+                file_out.write('A 365 1.86 // artificial viscosity for breaking wave energy dissipation' '\n')
+                file_out.write(' \n')
+
+                file_out.write('B 85 10 // spectrum file' '\n')
+                file_out.write('B 90 1 // wave input' '\n')
+                file_out.write('B 92 31 // 1st-order irregular wave' '\n')
+                file_out.write(' \n')
+
+                file_out.write('B 96 200.0 400.0 // wave generation zone length and numerical beach length' '\n')
+                #file_out.write('B 107 0.0 '+str(int(geodat.x.max()))+' 0.0 0.0 200.0 // wave generation zone length and numerical beach length' '\n')
+                #file_out.write('B 107 0.0 '+str(int(geodat.x.max()))+' '+str(int(geodat.y.max()))+' '+str(int(geodat.x.max()))+' 200.0 // customised numerical beach at the side walls' '\n')
+                #file_out.write('B 107 25000.0 12000.0 0.0 16000.0 200.0 // customised numerical beach at the end of the tank' '\n')
+                #file_out.write('B 107 0.0 0.0 2900.0 3500.0 200.0 // customised numerical beach at the side walls' '\n')
+                #file_out.write('B 108 0.0 0.0 0.0 '+str(int(geodat.y.max()))+' 200.0 // customised wave generation zone' '\n')
+                file_out.write('B 98 2 // relaxation method 2 for wave generation' '\n')
+                file_out.write('B 99 2 // relaxation method 2 for numerical beach' '\n')
+                file_out.write(' \n')
+
+                file_out.write('F 60 '+str(grid.data.topo.max().round(1).values)+' // still water depth' '\n')
+                file_out.write(' \n')
+
+                file_out.write('G 50 1 // read in geo bathymetry' '\n')
+                file_out.write(' \n')
+
+                file_out.write('I 30 0 // turn off full tank initialisation, one can turn it on for a quick check of the setup' '\n')
+                file_out.write(' \n')
+
+                file_out.write('N 41 1800.0 // simulation time' '\n')
+                file_out.write('N 47 1.0 // cfl number' '\n')
+                file_out.write(' \n')
+
+                file_out.write('M 10 '+str(self.nproc)+' // number of processors' '\n')
+                file_out.write(' \n')
+
+                file_out.write('P 180 1 // turn on .vtp free surface printout' '\n')
+                file_out.write('P 185 0.0 1800.0 0.5 // print out .vtp files interval based on simulation time window' '\n')
+                file_out.write(' \n')
+
+                file_out.write('W 22 -9.81 // gravity' '\n')
+                file_out.write(' \n')
+
+        return filename
+
+
 
 class HOS_ocean(InputFileWriter):
     def __init__(self,n1=256, n2=64, xlen=None, ylen=80,T_stop=100,f_out=1,toler=1.0e-7,n=4,Ta=0,
