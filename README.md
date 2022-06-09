@@ -8,6 +8,8 @@ dnora is a software for dynamical downscaling of wave products i.e., NORA3 wave 
 
 More information in [documentation](https://dnora.readthedocs.io/en/latest/)
 
+Examples in [youtube](https://youtu.be/pTmjBnsXNz8) 
+
 Example of downscaling NORA3 using dnora/SWAN offshore Tromsø, Norway:
 ![dnora](https://user-images.githubusercontent.com/67804784/147151236-b9ef920c-34a2-4da0-9877-6241723eff80.gif)
 
