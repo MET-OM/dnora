@@ -53,7 +53,10 @@ class ModelRun:
 
     def import_boundary(self, boundary_reader: BoundaryReader=None,
                         point_picker: PointPicker=None, name: str=None,
-                        dry_run: bool=False) -> None:
+                        dry_run: bool=False,
+                        write_cache: bool=False,
+                        read_cache: bool=False,
+                        cache_name: str='#Grid_#Lon0_#Lon1_#Lat0_#Lat1') -> None:
         """Creates a Boundary-object and imports boundary spectra."""
 
         self._dry_run = dry_run
@@ -74,13 +77,19 @@ class ModelRun:
             self.boundary().import_boundary(start_time=self.start_time,
                                             end_time=self.end_time,
                                             boundary_reader=self._boundary_reader,
-                                            point_picker=self._point_picker)
+                                            point_picker=self._point_picker,
+                                            write_cache=write_cache,
+                                            read_cache=read_cache,
+                                            cache_name=cache_name)
         else:
             msg.info('Dry run! No boundary spectra will be imported.')
 
     def import_forcing(self, forcing_reader: ForcingReader=None,
                         name: str=None, dry_run: bool=False,
-                        expansion_factor: float=1.2) -> None:
+                        expansion_factor: float=1.2,
+                        write_cache: bool=False,
+                        read_cache: bool=False,
+                        cache_name: str='#Grid_#Lon0_#Lon1_#Lat0_#Lat1') -> None:
         """Creates a Forcing-objects and imports forcing data."""
         self._dry_run = dry_run
 
@@ -98,7 +107,10 @@ class ModelRun:
             self.forcing().import_forcing(start_time=self.start_time,
                                         end_time=self.end_time,
                                         forcing_reader=self._forcing_reader,
-                                        expansion_factor=expansion_factor)
+                                        expansion_factor=expansion_factor,
+                                        read_cache=read_cache,
+                                        write_cache=write_cache,
+                                        cache_name=cache_name)
         else:
             msg.info('Dry run! No forcing will be imported.')
 

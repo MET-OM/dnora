@@ -66,9 +66,35 @@ class BoundaryReader(ABC):
 
         return time, freq, dirs, spec, lon, lat, source
 
+    def name(self) -> str:
+        return type(self).__name__
+
     #def __str__(self):
         #return (f"{self.start_time} - {self.end_time}")
 
+
+class DnoraNc(BoundaryReader):
+    def __init__(self, files: str, convention: str) -> None:
+        self._convention = convention
+        self.files = files
+
+
+    def convention(self) -> str:
+        return copy(self._convention)
+
+    def get_coordinates(self, start_time) -> Tuple:
+        data = xr.open_dataset(self.files[0]).isel(time = [0])
+        return data.lon.values, data.lat.values
+
+
+
+    def __call__(self, start_time, end_time, inds) -> Tuple:
+        def _crop(ds):
+            return ds.sel(time=slice(start_time, end_time))
+        msg.info(f"Getting boundary spectra from cached netcdf (e.g. {self.files[0]}) from {start_time} to {end_time}")
+        with xr.open_mfdataset(self.files, preprocess=_crop) as ds:
+            ds = ds.sel(x=inds)
+            return ds.time.values, ds.freq.values, ds.dirs.values, ds.spec.values, ds.lon.values, ds.lat.values, ds.source
 
 class ForceFeed(BoundaryReader):
     def __init__(self, time, freq, dirs, spec, lon, lat, convention) -> None:

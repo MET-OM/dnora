@@ -15,6 +15,22 @@ class ForcingReader(ABC):
     def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float):
         pass
 
+    def name(self) -> str:
+        return type(self).__name__
+
+class DnoraNc(ForcingReader):
+    def __init__(self, files: str) -> None:
+        self.files = files
+
+    def __call__(self, grid, start_time, end_time, expansion_factor):
+        def _crop(ds):
+            return ds.sel(time=slice(start_time, end_time), lon=slice(lon_min, lon_max), lat=slice(lat_min, lat_max))
+        lon_min, lon_max, lat_min, lat_max = aux_funcs.expand_area(min(grid.lon()), max(grid.lon()), min(grid.lat()), max(grid.lat()), expansion_factor)
+        msg.info(f"Getting wind forcing from cached netcdf (e.g. {self.files[0]}) from {start_time} to {end_time}")
+        with xr.open_mfdataset(self.files, preprocess=_crop) as ds:
+            return ds
+
+
 class File_WW3Nc(ForcingReader):
     def __init__(self, folder: str='', filename: str='ww3_wind_T0', dateformat: str='%Y%m%dT%H%M', stride: int=None, hours_per_file: int=24, last_file: str='', lead_time: int=0) -> None:
         self.stride = stride

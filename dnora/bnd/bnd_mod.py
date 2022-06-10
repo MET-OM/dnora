@@ -8,22 +8,23 @@ import pandas as pd
 from typing import List
 import sys
 import re
-
+from calendar import monthrange
+import glob
 # Import objects
 from ..grd.grd_mod import Grid
 
 # Import abstract classes and needed instances of them
 from .process import BoundaryProcessor, Multiply
 from .pick import PointPicker, TrivialPicker
-from .read import BoundaryReader
+from .read import BoundaryReader, DnoraNc
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .write import BoundaryWriter # Abstract class
 
 # Import default values and aux_funcsiliry functions
 from .. import msg
-from ..aux_funcs import day_list
-
+from .. import aux_funcs
+from .. import file_module
 
 class Boundary:
     def __init__(self, grid: Grid, name: str="AnonymousBoundary"):
@@ -33,13 +34,25 @@ class Boundary:
         self._history = []
         return
 
-    def import_boundary(self, start_time: str, end_time: str, boundary_reader: BoundaryReader,  point_picker: PointPicker = TrivialPicker()):
+    def import_boundary(self, start_time: str, end_time: str,
+                        boundary_reader: BoundaryReader,
+                        point_picker: PointPicker = TrivialPicker(),
+                        write_cache: bool=False,
+                        read_cache: bool=False,
+                        cache_name: str='#Grid_#Lon0_#Lon1_#Lat0_#Lat1'):
         """Imports boundary spectra from a certain source.
 
         Spectra are import between start_time and end_time from the source
         defined in the boundary_reader. Which spectra to choose spatically
         are determined by the point_picker.
         """
+        if write_cache or read_cache:
+            cache_folder, cache_name = aux_funcs.setup_cache('bnd', boundary_reader.name(), cache_name, self.grid)
+
+        if read_cache:
+            msg.info('Reading boundary data from cache!!!')
+            original_boundary_reader = copy(boundary_reader)
+            boundary_reader = DnoraNc(files=glob.glob(f'{cache_folder}/{cache_name}*'), convention = boundary_reader.convention())
 
         self._history.append(copy(boundary_reader))
 
@@ -53,11 +66,40 @@ class Boundary:
             msg.warning("PointPicker didn't find any points. Aborting import of boundary.")
             return
 
+        ### Main reading happens here
         msg.header(boundary_reader, "Loading boundary spectra...")
         time, freq, dirs, spec, lon, lat, source = boundary_reader(start_time, end_time, inds)
-
         self.data = self.compile_to_xr(time, freq, dirs, spec, lon, lat, source)
-        self.mask = [True]*len(self.x())
+
+
+        ### Patch data if read from cache and all data not found
+        if read_cache:
+            patch_start, patch_end = aux_funcs.determine_patch_periods(self.time(), start_time, end_time)
+            if patch_start:
+                msg.info('Not all data found in cache. Patching from original source...')
+
+                lon_all, lat_all = original_boundary_reader.get_coordinates(start_time)
+                inds = point_picker(self.grid, lon_all, lat_all)
+                bnd_list = [self.data]
+                for t0, t1 in zip(patch_start, patch_end):
+                    time, freq, dirs, spec, lon, lat, source = original_boundary_reader(t0, t1, inds)
+                    bnd_list.append(self.compile_to_xr(time, freq, dirs, spec, lon, lat, source))
+
+                self.data = xr.concat(bnd_list, dim="time").sortby('time')
+
+
+        if write_cache:
+            msg.info('Caching data:')
+            for month in self.months():
+                cache_file = f"{cache_name}_{month.strftime('%Y-%m')}.nc"
+                t0 = f"{month.strftime('%Y-%m-01')}"
+                d1 = monthrange(int(month.strftime('%Y')), int(month.strftime('%m')))[1]
+                t1 = f"{month.strftime(f'%Y-%m-{d1}')}"
+
+                self.data.sel(time=slice(t0, t1)).to_netcdf(f'{cache_folder}/{cache_file}')
+                msg.to_file(f'{cache_folder}/{cache_file}')
+
+        #self.mask = [True]*len(self.x())
 
         # E.g. are the spectra oceanic convention etc.
         self._convention = boundary_reader.convention()
@@ -207,8 +249,14 @@ class Boundary:
         return pd.date_range(start=str(self.time()[0]).split(' ')[0],
                 end=str(self.time()[-1]).split(' ')[0], freq='D')
 
-        #days = day_list(start_time = self.start_time, end_time = self.end_time)
-        #return days
+    def months(self):
+        """Determins a Pandas data range of all the months in the time span."""
+        if len(self.time()) == 0:
+            return []
+        t0 = self.time()[0].strftime('%Y-%m') + '-01'
+        t1 = self.time()[-1].strftime('%Y-%m') + '-01'
+
+        return pd.date_range(start=t0, end=t1, freq='MS')
 
     def size(self):
         return (len(self.time()), len(self.x()))
