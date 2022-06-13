@@ -62,8 +62,8 @@ def plot_arrows(fig_dict, lon, lat, xdata, ydata, var, scale=100, reduce_arrows:
         step_lat = reduce_arrows
         step_lon = reduce_arrows
     else:
-        step_lat = round(len(lat)/10)
-        step_lon = round(len(lon)/10)
+        step_lat = max(round(len(lat)/10),1)
+        step_lon = max(round(len(lon)/10),1)
 
     ax = fig_dict.get('ax')
     for m in range(0,len(lon), step_lon):
