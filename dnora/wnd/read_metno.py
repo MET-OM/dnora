@@ -138,6 +138,7 @@ class NORA3(ForcingReader):
         ind = int((time_stamp.hour-first_ind) % 6) + first_ind
         filename = 'fc' + time_stamp_file.strftime('%Y')+time_stamp_file.strftime('%m')+time_stamp_file.strftime('%d')+(time_stamp_file - np.timedelta64(h0, 'h')).strftime('%H')+'_' + f"{ind:03d}" + '_fp.nc'
         url = 'https://thredds.met.no/thredds/dodsC/nora3/'+folder + '/' + filename
+        #url = '/lustre/storeB/project/fou/om/WINDSURFER/HM40h12/netcdf/'+folder + '/' + filename
         return url
 
 
