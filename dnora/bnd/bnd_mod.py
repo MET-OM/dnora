@@ -46,6 +46,18 @@ class Boundary:
         defined in the boundary_reader. Which spectra to choose spatically
         are determined by the point_picker.
         """
+
+        ### Some boundary readers may need to define an area and grid when
+        ### reading the database. This is set to make that possible.
+        ### The regular grid doesn't necessarily match the boundary points
+        ### exactly.
+        boundary_point_grid = Grid(lon=self.grid.lon_edges(),
+                                    lat=self.grid.lat_edges(),
+                                    name='boundary_points')
+        boundary_point_grid.set_spacing(nx=self.grid.boundary_nx(),
+                                        ny=self.grid.boundary_ny())
+        boundary_reader.set_restricted_area(boundary_point_grid)
+
         if write_cache or read_cache:
             cache_folder, cache_name = aux_funcs.setup_cache('bnd', boundary_reader.name(), cache_name, self.grid)
 

@@ -26,7 +26,7 @@ def download_era5_from_cds(start_time, end_time, lon, lat, folder='dnora_wnd_tem
     end_time = pd.Timestamp(end_time)
     c = cdsapi.Client()
 
-    filename = f'{folder}/EC_ERA5_{start_time.year:.0f}_{start_time.month:02.0f}.nc'
+    filename = f'{folder}/EC_ERA5.nc'
     # cds_command_test = {
     #     'product_type': 'reanalysis',
     #     'format': 'netcdf',

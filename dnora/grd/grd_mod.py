@@ -157,6 +157,9 @@ class Grid:
 
             msg.plain(f"Setting spacing to have nx = {nx}, ny = {ny} points.")
             dlon, dlat, dx, dy, lon_array, lat_array = set_spacing_nx_ny(nx=nx, ny=ny, lon=self.lon_edges(), lat=self.lat_edges())
+        else:
+            print(f'Can not set grid spacing to zero since no non-zero values given!')
+            return
 
         self._reset_grid(dlon, dlat, dx, dy, lon_array, lat_array)
 
@@ -254,6 +257,27 @@ class Grid:
     def ny(self) -> int:
         """Return the number of points in latitude direction."""
         return len(self.lat())
+
+    def boundary_nx(self) -> int:
+        """Return approximate number of grid points in the longitude direction
+        """
+        abs_diff = np.abs(np.diff(np.where(self.boundary_mask())))
+        if abs_diff.size == 0:
+            return 0
+        abs_diff=np.median(abs_diff[abs_diff>0]).astype(int)
+
+        return np.ceil(self.nx()/abs_diff+1).astype(int)
+
+    def boundary_ny(self) -> int:
+        """Return approximate number of grid points in the longitude direction
+        """
+        abs_diff = np.abs(np.diff(np.where(self.boundary_mask())))
+        if abs_diff.size == 0:
+            return 0
+        abs_diff=np.median(abs_diff[abs_diff>0]).astype(int)
+
+        return np.ceil(self.ny()/abs_diff+1).astype(int)
+
 
     def lon(self) -> np.ndarray:
         """Returns a longitude vector of the grid."""
@@ -370,11 +394,14 @@ class Grid:
 
         return
 
-    def _point_list(self, mask):
+    def _point_list(self, mask=None):
         """Provides a list on longitudes and latitudes with a given mask.
 
         Used to e.g. generate list of boundary points or land points.
         """
+
+        if mask is None:
+            mask = np.ones(self.size(), dtype=bool)
         meshlon, meshlat=np.meshgrid(self.lon(),self.lat())
         lonlat_flat = np.column_stack((meshlon.ravel(),meshlat.ravel()))
         mask_flat = mask.ravel()

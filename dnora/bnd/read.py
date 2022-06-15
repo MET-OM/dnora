@@ -3,7 +3,7 @@ import numpy as np
 from copy import copy
 from abc import ABC, abstractmethod
 from typing import Tuple
-
+from ..grd.grd_mod import Grid
 # Import aux_funcsiliry functions
 from .. import file_module
 from .. import msg
@@ -13,6 +13,21 @@ class BoundaryReader(ABC):
     """Reads boundary spectra from some source and provide it to the object."""
     def __init__(self):
         pass
+
+    def set_restricted_area(self, area_grid: Grid) -> None:
+        """This is set automatically by the .import_boundary() method.
+        This can be used to restrict the database to just the area around the
+        grid if that is needed a priori (e.g. in ERA5).
+
+        The grid spacing is approximately set to match the spacing of the
+        boundary points
+        """
+        self._restricted_area = area_grid
+
+    def get_restricted_area(self) -> Grid:
+        if not hasattr(self, '_restricted_area'):
+            return None
+        return self._restricted_area
 
     @abstractmethod
     def get_coordinates(self, start_time):
