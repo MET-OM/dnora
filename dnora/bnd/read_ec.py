@@ -12,6 +12,19 @@ import cdsapi
 # Import aux_funcsiliry functions
 from .. import msg
 from ..aux_funcs import create_time_stamps, expand_area, int_list_of_days, int_list_of_months, int_list_of_years
+
+
+def renormalize_era5_spec(bnd_spec):
+    bnd_spec = bnd_spec.assign_coords(direction=np.arange(7.5, 352.5 + 15, 15))
+    bnd_spec = bnd_spec.assign_coords(frequency=np.full(30, 0.03453) * (1.1 ** np.arange(0, 30)))
+    bnd_spec = 10 ** bnd_spec
+    bnd_spec = bnd_spec.fillna(0)
+    return bnd_spec
+
+def reshape_bnd_spec(bnd_spec):
+    pass
+
+
 def download_era5_from_cds(start_time, end_time, lon, lat, dlon, dlat, folder='dnora_wnd_temp') -> str:
     """Downloads ERA5 10 m wind data from the Copernicus Climate Data Store for a
     given area and time period"""
@@ -45,7 +58,7 @@ def download_era5_from_cds(start_time, end_time, lon, lat, dlon, dlat, folder='d
         'stream': 'wave',
         'time': '00:00:00/03:00:00/06:00:00/09:00:00/12:00:00/15:00:00/18:00:00/21:00:00',
         'area': f'{lat[1]}/{lon[0]}/{lat[0]}/{lon[1]}', # north, west, south, east
-        'grid': f'{dlat:.4f}/{dlon:.4f}', # latitude/longitude
+        'grid': f'{dlon:.4f}/{dlat:.4f}',
         'type': 'an',
         'format': 'netcdf',
         }
@@ -79,50 +92,39 @@ class ERA5(BoundaryReader):
             os.remove(f)
 
         restricted_area = self.get_restricted_area()
-        breakpoint()
+
         nc_file = download_era5_from_cds(start_time, end_time,
                                         lon=restricted_area.lon_edges(),
                                         lat=restricted_area.lat_edges(),
                                         dlon=restricted_area.dlon(),
                                         dlat=restricted_area.dlat(),
                                         folder=temp_folder)
+
+
+
+        bnd_spec = xr.open_dataset(nc_file)
+
+        bnd_spec = renormalize_era5_spec(bnd_spec)
         breakpoint()
-        wind_forcing = xr.open_dataset(nc_file)
-        wind_forcing = wind_forcing.rename_dims({'longitude': 'lon', 'latitude': 'lat'})
-        wind_forcing = wind_forcing.rename_vars({'longitude': 'lon', 'latitude': 'lat'})
-        wind_forcing = wind_forcing.rename_vars({'u10': 'u', 'v10': 'v'})
 
+        lon, lat = np.meshgrid(bnd_spec.longitude.values, bnd_spec.latitude.values[::-1])
+        lon = lon.ravel()
+        lat = lat.ravel()
 
+        # This spec is time, freq, dir, lat, lon
+        spec = bnd_spec.d2fd.values
+        # Latitude was flipped to be ascending, so flip that dimension
+        spec = np.flip(spec, 3)
 
+        # This is time, freq, dir, station
+        spec = np.reshape(spec, (len(bnd_spec.time),len(bnd_spec.frequency),len(bnd_spec.direction),len(lon)))
+        # This is time, station, freq, dir (as we want it)
+        spec = np.moveaxis(spec,3,1)
 
+        freq = bnd_spec.frequency.values
+        dirs = bnd_spec.direction.values
+        time = bnd_spec.time.values
 
-
-
-
-        self.start_time = start_time
-        self.end_time = end_time
-
-        start_times, end_times, file_times = create_time_stamps(start_time, end_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
-        #days = day_list(start_time = self.start_time, end_time = self.end_time)
-        msg.info(f"Getting boundary spectra from NORA3 from {self.start_time} to {self.end_time}")
-        bnd_list = []
-        for n in range(len(file_times)):
-            url = self.get_url(file_times[n])
-            msg.from_file(url)
-            msg.plain(f"Reading boundary spectra: {start_times[n]}-{end_times[n]}")
-            with xr.open_dataset(url) as f:
-                this_ds = f.sel(time = slice(start_times[n], end_times[n]), x = (inds+1))[['SPEC', 'longitude', 'latitude', 'time', 'freq', 'direction']].copy()
-            bnd_list.append(this_ds)
-            #bnd_list.append(xr.open_dataset(url).sel(time = slice(start_times[n], end_times[n]), x = (inds+1)))
-        bnd=xr.concat(bnd_list, dim="time").squeeze('y')
-
-        time = bnd.time.values
-        freq = bnd.freq.values
-        dirs = bnd.direction.values
-        spec = bnd.SPEC.values
-        lon = bnd.longitude.values[0,:]
-        lat = bnd.latitude.values[0,:]
-
-        source = f"{bnd.title}, {bnd.institution}"
+        source = 'ECMWF-ERA5 from Copernicus Climate Data Store'
 
         return  time, freq, dirs, spec, lon, lat, source
