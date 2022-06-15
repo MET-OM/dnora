@@ -29,7 +29,8 @@ class NORA3(ForcingReader):
     DOI: 10.1175/JAMC-D-21-0029.1
     """
 
-    def __init__(self, stride: int=1, hours_per_file: int=1, last_file: str='', lead_time: int=4):
+    def __init__(self, stride: int=1, hours_per_file: int=1, last_file: str='',
+                lead_time: int=4, source: str='thredds'):
         """The data is currently in hourly files. Do not change the default
         setting unless you have a good reason to do so.
         """
@@ -38,6 +39,7 @@ class NORA3(ForcingReader):
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
         self.last_file = copy(last_file)
+        self.source = source
         return
 
     def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float):
@@ -74,7 +76,7 @@ class NORA3(ForcingReader):
         wnd_list = []
         for n in range(len(file_times)):
 
-            url = self.get_url(file_times[n], start_times[n], first_ind=self.lead_time)
+            url = self.get_url(file_times[n], start_times[n], first_ind=self.lead_time, source=self.source)
 
             msg.from_file(url)
             msg.plain(f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
@@ -132,13 +134,16 @@ class NORA3(ForcingReader):
 
         return wind_forcing
 
-    def get_url(self, time_stamp_file, time_stamp, first_ind) -> str:
+    def get_url(self, time_stamp_file, time_stamp, first_ind, source='thredds') -> str:
         h0 = int(time_stamp_file.hour) % 6
         folder = time_stamp_file.strftime('%Y')+'/'+time_stamp_file.strftime('%m')+'/'+time_stamp_file.strftime('%d')+'/'+(time_stamp_file - np.timedelta64(h0, 'h')).strftime('%H')
         ind = int((time_stamp.hour-first_ind) % 6) + first_ind
         filename = 'fc' + time_stamp_file.strftime('%Y')+time_stamp_file.strftime('%m')+time_stamp_file.strftime('%d')+(time_stamp_file - np.timedelta64(h0, 'h')).strftime('%H')+'_' + f"{ind:03d}" + '_fp.nc'
-        url = 'https://thredds.met.no/thredds/dodsC/nora3/'+folder + '/' + filename
-        return url
+        if source=='thredds':
+            return 'https://thredds.met.no/thredds/dodsC/nora3/'+folder + '/' + filename
+        if source=='lustre':
+            return '/lustre/storeB/project/fou/om/WINDSURFER/HM40h12/netcdf/'+folder + '/' + filename
+
 
 
 class MyWave3km(ForcingReader):
