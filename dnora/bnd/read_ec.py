@@ -57,8 +57,8 @@ def download_era5_from_cds(start_time, end_time, lon, lat, dlon, dlat, folder='d
         'param': '251.140',
         'stream': 'wave',
         'time': '00:00:00/03:00:00/06:00:00/09:00:00/12:00:00/15:00:00/18:00:00/21:00:00',
-        'area': f'{lat[1]}/{lon[0]}/{lat[0]}/{lon[1]}', # north, west, south, east
-        'grid': f'{dlon:.4f}/{dlat:.4f}',
+        'area': f'{lat[1]+0.0001}/{lon[0]}/{lat[0]}/{lon[1]+0.0001}', # north, west, south, east
+        'grid': f'{dlon}/{dlat}',
         'type': 'an',
         'format': 'netcdf',
         }
@@ -92,7 +92,7 @@ class ERA5(BoundaryReader):
             os.remove(f)
 
         restricted_area = self.get_restricted_area()
-
+        breakpoint()
         nc_file = download_era5_from_cds(start_time, end_time,
                                         lon=restricted_area.lon_edges(),
                                         lat=restricted_area.lat_edges(),
