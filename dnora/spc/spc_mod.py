@@ -91,6 +91,16 @@ class Spectra:
         spec = self.slice_data(start_time, end_time, x).spec.values
         return spec
 
+    def mdir(self, start_time: str='', end_time: str='', x: List[int]=None):
+        """Slice mean direction in space (x) and time. Returns an numpy array."""
+
+        return self.slice_data(start_time, end_time, x).mdir.values
+
+    def spr(self, start_time: str='', end_time: str='', x: List[int]=None):
+        """Slice mean direction in space (x) and time. Returns an numpy array."""
+
+        return self.slice_data(start_time, end_time, x).spr.values
+
     def time(self):
         return pd.to_datetime(self.data.time.values)
 

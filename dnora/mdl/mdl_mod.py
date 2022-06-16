@@ -417,6 +417,15 @@ class ModelRun:
 
         return output_files
 
+    def plot_spectra(self):
+        from dnora.dnplot import dnplot
+        __ = dnplot.SpecPlotter().spectra(dict_of_objects=self.dict_of_objects(), plain=False)
+
+    def plot_boundary(self):
+        from dnora.dnplot import dnplot
+        __ = dnplot.SpecPlotter().boundary(dict_of_objects=self.dict_of_objects(), plain=False)
+
+
     def plot_grid(self, grid_plotter: GridPlotter=None, filename: str=None,
                     folder: str=None, dateformat: str=None, plain: bool=False,
                     save_fig: bool=False, show_fig: bool=True) -> dict:
