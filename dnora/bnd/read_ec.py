@@ -105,7 +105,6 @@ class ERA5(BoundaryReader):
         bnd_spec = xr.open_dataset(nc_file)
 
         bnd_spec = renormalize_era5_spec(bnd_spec)
-        breakpoint()
 
         lon, lat = np.meshgrid(bnd_spec.longitude.values, bnd_spec.latitude.values[::-1])
         lon = lon.ravel()
