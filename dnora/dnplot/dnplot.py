@@ -232,6 +232,7 @@ class SpecPlotter(SpectralPlotter):
             sliders['station'] = Slider(ax_slider2, 'station_index', 0, len(spectra.x())-1, valinit=0, valstep=1)
             sliders['station'].on_changed(update)
         # self._init_plot = True
+
         update()
         #axnodenr = plt.axes([0.02,0.9,0.2,0.03])
         #giver    = Button(axnodenr,'Next')
@@ -251,13 +252,14 @@ class SpecPlotter(SpectralPlotter):
         def update_plot() -> None:
             title_str = f"{boundary.name()}: {str(boundary.time()[self.time_val])} lon={boundary.lon()[self.station_val]:.4f}, lat={boundary.lat()[self.station_val]:.4f} (x={self.station_val})"
             vmax = np.max(boundary.spec())
-            vmin = np.min(boundary.spec())
+            #vmin = 10*np.min(boundary.spec()[boundary.spec()>0])
+            vmin = 0.1
             self.fig_dict = basic_funcs.plot_polar_spectra(boundary.freq(), boundary.dirs(),
                             boundary.spec()[self.time_val,self.station_val,:],
-                            title_str=title_str, fig_dict=self.fig_dict, vmax=vmax, vmin=vmin)
+                            title_str=title_str, fig_dict=self.fig_dict, vmax=vmax, vmin=vmin, cbar=self._init_plot)
             # self.fig = fig_dict.get('fig')
             # self.ax = fig_dict.get('ax')
-            #self._init_plot = False
+            self._init_plot = False
 
         boundary = dict_of_objects['Boundary']
         fig, ax = plt.subplots()
@@ -273,7 +275,7 @@ class SpecPlotter(SpectralPlotter):
             ax_slider2 = plt.axes([0.17, 0.01, 0.65, 0.03])
             sliders['station'] = Slider(ax_slider2, 'station_index', 0, len(boundary.x())-1, valinit=0, valstep=1)
             sliders['station'].on_changed(update)
-        # self._init_plot = True
+        self._init_plot = True
         update()
         #axnodenr = plt.axes([0.02,0.9,0.2,0.03])
         #giver    = Button(axnodenr,'Next')

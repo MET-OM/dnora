@@ -54,7 +54,7 @@ def plot_spectra(freq, spec, mdir, spr, title_str, fig_dict, ymax):
 
     return fig_dict
 
-def plot_polar_spectra(freq, dirs, spec, title_str, fig_dict, vmax, vmin):
+def plot_polar_spectra(freq, dirs, spec, title_str, fig_dict, vmax, vmin, cbar=True):
 
     if fig_dict is None:
         fig_dict = {}
@@ -79,12 +79,28 @@ def plot_polar_spectra(freq, dirs, spec, title_str, fig_dict, vmax, vmin):
     last_row = np.transpose([spec[:,0]])
     spec_plot = np.hstack([spec, last_row])
     dir_plot = np.hstack([dirs, dirs[0]+360])
-    ax.contourf(np.deg2rad(dir_plot), freq, spec_plot, cmap="ocean_r",vmin=vmin, vmax=vmax,levels=25)
+
+    # if vmax-vmin<20:
+    #     levels = np.linspace(vmin, vmax, np.floor(vmax-vmin+1).astype(int))
+    # # else:
+    levels = np.linspace(vmin, vmax, 20)
+    print(vmin)
+    cont = ax.contourf(np.deg2rad(dir_plot), freq, spec_plot, cmap="ocean_r",vmin=vmin, vmax=vmax, levels=levels)
+    fig_dict['cont'] = cont
     ax.set_theta_zero_location("N")
     ax.set_theta_direction(-1)
     ax.set_xticklabels(['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'])
     ax.set_ylabel('')
     ax.set_xlabel('')
+    ax.set_title(title_str)
+
+    orientation = 'vertical'
+
+    if cbar:
+        cax = fig.add_axes([ax.get_position().x1+0.04,ax.get_position().y0,0.02,ax.get_position().height])
+        cbar = fig.colorbar(cont, orientation=orientation, cax=cax, label=f"E(f, theta) (m**2/Hz/rad)")
+        fig_dict['cbar'] = cbar
+        fig_dict['cax'] = cax
     return fig_dict
 
 
