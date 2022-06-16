@@ -12,13 +12,13 @@ grid = grd.Grid(lon=(4.00, 5.73), lat=(60.53, 61.25), name='Skjerjehamn250')
 grid.set_spacing(dm=250)
 
 # Import topography and mesh it down to the grid definitions
-#topo_reader=grd.read.EMODNET2020(tile='*',folder='/home/janvb/Documents/EMODNET2020/')
-#grid.import_topo(topo_reader=topo_reader)
+topo_reader=grd.read.EMODNET2020(tile='*',folder='/home/janvb/Documents/EMODNET2020/')
+grid.import_topo(topo_reader=topo_reader)
 
 # This can be used to get an empty topography for testing
 #grid.import_topo(topo_reader=grd.read.EmptyTopo(grid=grid))
 #
-#grid.mesh_grid()
+grid.mesh_grid()
 #
 # Set the boundaries
 bnd_set = grd.boundary.EdgesAsBoundary(edges=['N', 'W', 'S'], step=20)
