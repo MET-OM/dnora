@@ -59,9 +59,9 @@ class Boundary:
         boundary_reader.set_restricted_area(boundary_point_grid)
 
         if write_cache or read_cache:
-            cache_folder, cache_name = aux_funcs.setup_cache('bnd', boundary_reader.name(), cache_name, self.grid)
+            cache_folder, cache_name, cache_empty = aux_funcs.setup_cache('bnd', boundary_reader.name(), cache_name, self.grid)
 
-        if read_cache:
+        if read_cache and not cache_empty:
             msg.info('Reading boundary data from cache!!!')
             original_boundary_reader = copy(boundary_reader)
             boundary_reader = DnoraNc(files=glob.glob(f'{cache_folder}/{cache_name}*'), convention = boundary_reader.convention())
@@ -85,7 +85,7 @@ class Boundary:
 
 
         ### Patch data if read from cache and all data not found
-        if read_cache:
+        if read_cache and not cache_empty:
             patch_start, patch_end = aux_funcs.determine_patch_periods(self.time(), start_time, end_time)
             if patch_start:
                 msg.info('Not all data found in cache. Patching from original source...')

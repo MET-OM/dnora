@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import griddata
 from scipy import interpolate
-import os, re
+import os, re, glob
 from typing import TYPE_CHECKING, Tuple, List, Union
 from . import file_module
 if TYPE_CHECKING:
@@ -468,7 +468,9 @@ def setup_cache(obj_type: str, reader_name: str, cache_name: str, grid):
                                                         'Lon1': f'{max(grid.lon()):.2f}',
                                                         'Lat0': f'{min(grid.lat()):.2f}',
                                                         'Lat1': f'{max(grid.lat()):.2f}'})
-    return cache_folder, cache_name
+    cache_empty = not glob.glob(f'{cache_folder}/{cache_name}*')
+
+    return cache_folder, cache_name, cache_empty
 
 
 def determine_patch_periods(times, start_time, end_time):

@@ -38,9 +38,9 @@ class Forcing:
         self._history.append(copy(forcing_reader))
 
         if write_cache or read_cache:
-            cache_folder, cache_name = aux_funcs.setup_cache('wnd', forcing_reader.name(), cache_name, self.grid)
+            cache_folder, cache_name, cache_empty = aux_funcs.setup_cache('wnd', forcing_reader.name(), cache_name, self.grid)
 
-        if read_cache:
+        if read_cache and not cache_empty:
             msg.info('Reading wind forcing data from cache!!!')
             original_forcing_reader = copy(forcing_reader)
             forcing_reader = DnoraNc(files=glob.glob(f'{cache_folder}/{cache_name}*'))
@@ -50,7 +50,7 @@ class Forcing:
             self.grid, start_time, end_time, expansion_factor)
 
         ### Patch data if read from cache and all data not found
-        if read_cache:
+        if read_cache and not cache_empty:
             patch_start, patch_end = aux_funcs.determine_patch_periods(self.time(), start_time, end_time)
             if patch_start:
                 msg.info('Not all data found in cache. Patching from original source...')
