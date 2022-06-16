@@ -9,7 +9,7 @@ from typing import List
 import sys
 import re
 from calendar import monthrange
-import glob
+import glob, os
 # Import objects
 from ..grd.grd_mod import Grid
 
@@ -107,9 +107,11 @@ class Boundary:
                 t0 = f"{month.strftime('%Y-%m-01')}"
                 d1 = monthrange(int(month.strftime('%Y')), int(month.strftime('%m')))[1]
                 t1 = f"{month.strftime(f'%Y-%m-{d1}')}"
-
-                self.data.sel(time=slice(t0, t1)).to_netcdf(f'{cache_folder}/{cache_file}')
-                msg.to_file(f'{cache_folder}/{cache_file}')
+                outfile = f'{cache_folder}/{cache_file}'
+                if os.path.exists(outfile):
+                    os.remove(outfile)
+                self.data.sel(time=slice(t0, t1)).to_netcdf(outfile)
+                msg.to_file(outfile)
 
         #self.mask = [True]*len(self.x())
 

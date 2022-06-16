@@ -4,7 +4,7 @@ from copy import copy
 import pandas as pd
 import sys
 import re
-import glob
+import glob, os
 from calendar import monthrange
 # Import abstract classes and needed instances of them
 from .read import ForcingReader, DnoraNc
@@ -68,9 +68,11 @@ class Forcing:
                 t0 = f"{month.strftime('%Y-%m-01')}"
                 d1 = monthrange(int(month.strftime('%Y')), int(month.strftime('%m')))[1]
                 t1 = f"{month.strftime(f'%Y-%m-{d1}')}"
-
-                self.data.sel(time=slice(t0, t1)).to_netcdf(f'{cache_folder}/{cache_file}')
-                msg.to_file(f'{cache_folder}/{cache_file}')
+                outfile = f'{cache_folder}/{cache_file}'
+                if os.path.exists(outfile):
+                    os.remove(outfile)
+                self.data.sel(time=slice(t0, t1)).to_netcdf(outfile)
+                msg.to_file(outfile)
 
         return
 

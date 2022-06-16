@@ -131,6 +131,6 @@ class ERA5(ForcingReader):
         wind_forcing = wind_forcing.rename_vars({'longitude': 'lon', 'latitude': 'lat'})
         wind_forcing = wind_forcing.rename_vars({'u10': 'u', 'v10': 'v'})
 
-
+        wind_forcing = wind_forcing.isel(lat=slice(None,None,-1)) # ERA5 gives lat as descending
 
         return wind_forcing

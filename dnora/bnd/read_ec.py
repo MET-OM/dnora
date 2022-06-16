@@ -126,4 +126,9 @@ class ERA5(BoundaryReader):
 
         source = 'ECMWF-ERA5 from Copernicus Climate Data Store'
 
+        # Inds given by point picker
+        lon = lon[inds]
+        lat = lat[inds]
+        spec = spec[:,inds,:,:]
+
         return  time, freq, dirs, spec, lon, lat, source

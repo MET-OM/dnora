@@ -27,8 +27,10 @@ class DnoraNc(ForcingReader):
             return ds.sel(time=slice(start_time, end_time), lon=slice(lon_min, lon_max), lat=slice(lat_min, lat_max))
         lon_min, lon_max, lat_min, lat_max = aux_funcs.expand_area(min(grid.lon()), max(grid.lon()), min(grid.lat()), max(grid.lat()), expansion_factor)
         msg.info(f"Getting wind forcing from cached netcdf (e.g. {self.files[0]}) from {start_time} to {end_time}")
-        with xr.open_mfdataset(self.files, preprocess=_crop) as ds:
-            return ds
+
+        # These files might get deleted, so we don't want to use dask for a lazy load
+        ds = xr.open_mfdataset(self.files, preprocess=_crop)
+        return ds
 
 
 class File_WW3Nc(ForcingReader):
