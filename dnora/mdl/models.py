@@ -105,6 +105,14 @@ class SWAN_NORA3(SWAN):
     def _get_forcing_reader(self):
         return wnd.read_metno.NORA3()
 
+class SWAN_ERA5(SWAN):
+    def _get_boundary_reader(self):
+        return bnd.read_ec.ERA5()
+
+    def _get_forcing_reader(self):
+        return wnd.read_ec.ERA5()
+
+
 class SWASH_NORA3(SWASH):
     def _get_boundary_reader(self):
         return bnd.read_metno.NORA3()
