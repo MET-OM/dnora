@@ -61,6 +61,7 @@ class SWAN(ForcingWriter):
 
         days = forcing.days()
         with open(filename, 'w') as file_out:
+            ct = 0
             for day in days:
                 msg.plain(day.strftime('%Y-%m-%d'))
                 times = forcing.times_in_day(day)
@@ -69,9 +70,10 @@ class SWAN(ForcingWriter):
                         times[n]).strftime('%Y%m%d.%H%M%S')+'\n'
                     file_out.write(time_stamp)
                     np.savetxt(file_out, forcing.u()
-                               [n, :, :]*1000, fmt='%i')
+                               [ct, :, :]*1000, fmt='%i')
                     file_out.write(time_stamp)
                     np.savetxt(file_out, forcing.v()
-                               [n, :, :]*1000, fmt='%i')
+                               [ct, :, :]*1000, fmt='%i')
+                    ct += 1
 
         return filename
