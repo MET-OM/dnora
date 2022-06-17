@@ -4,9 +4,9 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import griddata
 from scipy import interpolate
-import os, re
+import os, re, glob
 from typing import TYPE_CHECKING, Tuple, List, Union
-
+from . import file_module
 if TYPE_CHECKING:
     from .grd.grd_mod import Grid
     from .bnd.bnd_mod import Boundary
@@ -171,14 +171,75 @@ def set_spacing_nx_ny(nx: float, ny:float, lon: Tuple[float, float], lat: Tuple[
     return dlon, dlat, dx, dy, lon_array, lat_array
 
 def day_list(start_time, end_time):
-    """Determins a Pandas data range of all the days in the time span of the InputModel objext"""
-    days = pd.date_range(start=start_time.split('T')[0], end=end_time.split('T')[0], freq='D')
+    """Determins a Pandas data range of all the days in the time span"""
+    t0 = pd.Timestamp(start_time).strftime('%Y-%m-%d')
+    t1 = pd.Timestamp(end_time).strftime('%Y-%m-%d')
+    days = pd.date_range(start=t0, end=t1, freq='D')
     return days
 
 def month_list(start_time, end_time):
-    """Determins a Pandas data range of all the months in the time span of the InputModel objext"""
-    months = pd.date_range(start=start_time[:7], end=end_time[:7], freq='MS')
-    return months
+    """Determins a Pandas data range of all the months in the time span"""
+    t0 = pd.Timestamp(start_time).strftime('%Y-%m')
+    t1 = pd.Timestamp(end_time).strftime('%Y-%m')
+    days = pd.date_range(start=t0, end=t1, freq='MS')
+    return days
+
+def year_list(start_time, end_time):
+    """Determins a Pandas data range of all the years in the time span"""
+    t0 = pd.Timestamp(start_time).strftime('%Y-%m-%d')
+    t1 = pd.Timestamp(end_time).strftime('%Y-%m-%d')
+    days = pd.date_range(start=t0, end=t1, freq='YS')
+    return days
+
+def last_day_in_month(time_stamp):
+    year = int(pd.Timestamp(timp_stamp).strftime('%Y'))
+    month = int(pd.Timestamp(timp_stamp).strftime('%m'))
+    last_day = calendar.monthrange(year, month)[1]
+    return last_day
+
+# def month_list(start_time, end_time):
+#     """Determins a Pandas data range of all the months in the time span of the InputModel objext"""
+#     months = pd.date_range(start=start_time[:7], end=end_time[:7], freq='MS')
+#     return months
+
+def int_list_of_years(start_time, end_time):
+    year0 = min(pd.Series(day_list(start_time, end_time)).dt.year)
+    year1 = max(pd.Series(day_list(start_time, end_time)).dt.year)
+    return np.linspace(year0,year1,year1-year0+1).astype(int)
+
+def int_list_of_months(start_time, end_time):
+    if len(int_list_of_years(start_time, end_time))>1:
+        raise Exception('Only use this function for times within a single year!')
+    month0 = min(pd.Series(day_list(start_time, end_time)).dt.month)
+    month1 = max(pd.Series(day_list(start_time, end_time)).dt.month)
+    return np.linspace(month0,month1,month1-month0+1).astype(int)
+
+def int_list_of_days(start_time, end_time):
+    if len(int_list_of_months(start_time, end_time))>1:
+        raise Exception('Only use this function for times within a single month!')
+    day0 = min(pd.Series(day_list(start_time, end_time)).dt.day)
+    day1 = max(pd.Series(day_list(start_time, end_time)).dt.day)
+    return np.linspace(day0,day1,day1-day0+1).astype(int)
+
+def crop_datetimeindex_to_year(times, year: int):
+    mask = pd.Series(times).dt.year == year
+    return times[mask]
+
+def crop_datetimeindex_to_month(times, month: int):
+    mask = pd.Series(times).dt.month == month
+    return times[mask]
+
+def create_monthly_time_stamps(start_time: str, end_time: str):
+    start_times = month_list(start_time, end_time)
+    end_times = month_list(start_time, end_time)
+
+    start_times = start_times[1:]
+    end_times=start_times-pd.DateOffset(minutes=1)
+    end_times = end_times.append(pd.DatetimeIndex([end_time]))
+
+    start_times = pd.DatetimeIndex([start_time]).append(start_times)
+
+    return start_times, end_times
 
 def create_time_stamps(start_time: str, end_time: str, stride: int, hours_per_file: int=0, last_file: str='', lead_time: int=0) -> Tuple:
     """Create time stamps to read in blocks of wind forcing from files.
@@ -395,3 +456,51 @@ def shift_spec(spec, D, shift=0):
         spec_shift = spec_shift[0]
 
     return spec_shift
+
+
+def setup_cache(obj_type: str, reader_name: str, cache_name: str, grid):
+    main_folder = f'{obj_type}_cache'
+    check_if_folder(main_folder)
+    cache_folder = f'{main_folder}/{reader_name}'
+    check_if_folder(cache_folder)
+    cache_name = file_module.replace_objects(cache_name, {'Grid': grid.name()})
+    cache_name = file_module.replace_objects(cache_name, {'Lon0': f'{min(grid.lon()):.2f}',
+                                                        'Lon1': f'{max(grid.lon()):.2f}',
+                                                        'Lat0': f'{min(grid.lat()):.2f}',
+                                                        'Lat1': f'{max(grid.lat()):.2f}'})
+    cache_empty = not glob.glob(f'{cache_folder}/{cache_name}*')
+
+    return cache_folder, cache_name, cache_empty
+
+
+def determine_patch_periods(times, start_time, end_time):
+    """Determines if there is some periods that we need to patch from thredds
+    adter reading cached data"""
+
+    # This is not optimal, but seems to work
+    dt = times[1]-times[0]
+    wanted_times = pd.date_range(start=start_time, end=end_time, freq=dt)
+    wanted_times.isin(times)
+
+    if np.all(wanted_times.isin(times)):
+        return [], []
+    wt=wanted_times.isin(times)
+
+    was_found = ''.join([str((w*1)) for w in wt]) # string of '0001110111110000'
+    #was_found = '000011111111111100011111111111111111111111100011111111111111011111111111110000' # Testing
+    inds = list(range(len(was_found)))
+    was_found = re.sub('01', '0.1', was_found)
+    was_found = re.sub('10', '1.0', was_found)
+
+    list_of_blocks = was_found.split('.')
+
+    patch_start = []
+    patch_end = []
+    for block in list_of_blocks:
+        if block[0] == '0': # These need to be patched
+            ind_subset = inds[0:len(block)]
+            patch_start.append(wanted_times[ind_subset[0]])
+            patch_end.append(wanted_times[ind_subset[-1]])
+        inds[0:len(block)] = []
+
+    return patch_start, patch_end

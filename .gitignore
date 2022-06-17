@@ -7,3 +7,5 @@ dnora/trg/__pycache__
 dnora/grd/__pycache__
 dnora/mdl/__pycache__
 dnora/examples/output
+dnora/output
+dnora/jobs
