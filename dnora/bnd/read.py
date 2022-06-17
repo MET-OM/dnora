@@ -3,7 +3,7 @@ import numpy as np
 from copy import copy
 from abc import ABC, abstractmethod
 from typing import Tuple
-
+from ..grd.grd_mod import Grid
 # Import aux_funcsiliry functions
 from .. import file_module
 from .. import msg
@@ -13,6 +13,21 @@ class BoundaryReader(ABC):
     """Reads boundary spectra from some source and provide it to the object."""
     def __init__(self):
         pass
+
+    def set_restricted_area(self, area_grid: Grid) -> None:
+        """This is set automatically by the .import_boundary() method.
+        This can be used to restrict the database to just the area around the
+        grid if that is needed a priori (e.g. in ERA5).
+
+        The grid spacing is approximately set to match the spacing of the
+        boundary points
+        """
+        self._restricted_area = area_grid
+
+    def get_restricted_area(self) -> Grid:
+        if not hasattr(self, '_restricted_area'):
+            return None
+        return self._restricted_area
 
     @abstractmethod
     def get_coordinates(self, start_time):
@@ -66,9 +81,35 @@ class BoundaryReader(ABC):
 
         return time, freq, dirs, spec, lon, lat, source
 
+    def name(self) -> str:
+        return type(self).__name__
+
     #def __str__(self):
         #return (f"{self.start_time} - {self.end_time}")
 
+
+class DnoraNc(BoundaryReader):
+    def __init__(self, files: str, convention: str) -> None:
+        self._convention = convention
+        self.files = files
+
+
+    def convention(self) -> str:
+        return copy(self._convention)
+
+    def get_coordinates(self, start_time) -> Tuple:
+        data = xr.open_dataset(self.files[0]).isel(time = [0])
+        return data.lon.values, data.lat.values
+
+
+
+    def __call__(self, start_time, end_time, inds) -> Tuple:
+        def _crop(ds):
+            return ds.sel(time=slice(start_time, end_time))
+        msg.info(f"Getting boundary spectra from cached netcdf (e.g. {self.files[0]}) from {start_time} to {end_time}")
+        ds = xr.open_mfdataset(self.files, preprocess=_crop)
+        ds = ds.sel(x=inds)
+        return ds.time.values, ds.freq.values, ds.dirs.values, ds.spec.values, ds.lon.values, ds.lat.values, ds.source
 
 class ForceFeed(BoundaryReader):
     def __init__(self, time, freq, dirs, spec, lon, lat, convention) -> None:

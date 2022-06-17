@@ -16,5 +16,6 @@ dependencies:
   - pytest
   - cmocean
   - cartopy
+  - cdsapi
   
 

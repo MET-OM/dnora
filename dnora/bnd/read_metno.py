@@ -195,12 +195,14 @@ class WAM4km(BoundaryReader):
 
 
 class NORA3(BoundaryReader):
-    def __init__(self, stride: int=24, hours_per_file: int=24, last_file: str='', lead_time: int=0) -> None:
+    def __init__(self, stride: int=24, hours_per_file: int=24,
+                last_file: str='', lead_time: int=0,
+                source: str='thredds') -> None:
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
         self.last_file = copy(last_file)
-
+        self.source = source
         return
 
     def convention(self) -> str:
@@ -210,7 +212,7 @@ class NORA3(BoundaryReader):
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         #day = pd.date_range(start_time, start_time,freq='D')
         start_times, end_times, file_times = create_time_stamps(start_time, start_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
-        url = self.get_url(file_times[0])
+        url = self.get_url(file_times[0], source=self.source)
 
         data = xr.open_dataset(url).isel(time = [0])
 
@@ -229,7 +231,7 @@ class NORA3(BoundaryReader):
         msg.info(f"Getting boundary spectra from NORA3 from {self.start_time} to {self.end_time}")
         bnd_list = []
         for n in range(len(file_times)):
-            url = self.get_url(file_times[n])
+            url = self.get_url(file_times[n], source=self.source)
             msg.from_file(url)
             msg.plain(f"Reading boundary spectra: {start_times[n]}-{end_times[n]}")
             with xr.open_dataset(url) as f:
@@ -250,6 +252,8 @@ class NORA3(BoundaryReader):
         return  time, freq, dirs, spec, lon, lat, source
 
 
-    def get_url(self, day) -> str:
-        url = 'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/SPC'+day.strftime('%Y%m%d')+'00.nc'
-        return url
+    def get_url(self, day, source) -> str:
+        if source == 'thredds':
+            return 'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/SPC'+day.strftime('%Y%m%d')+'00.nc'
+        if source == 'lustre':
+            return '/lustre/storeB/project/fou/om/WINDSURFER/mw3hindcast/spectra/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/SPC'+day.strftime('%Y%m%d')+'00.nc'
