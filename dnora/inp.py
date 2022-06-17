@@ -63,8 +63,15 @@ class SWAN(InputFileWriter):
 
         delta_X = np.round(np.abs(grid.lon()[-1] - grid.lon()[0]), 5)
         delta_Y = np.round(np.abs(grid.lat()[-1] - grid.lat()[0]), 5)
+<<<<<<< HEAD
         delta_XF = np.round(np.abs(forcing.lon()[-1] - forcing.lon()[0]), 5)
         delta_YF = np.round(np.abs(forcing.lat()[-1] - forcing.lat()[0]), 5)
+=======
+
+        delta_Xf = np.round(np.abs(forcing.lon()[-1] - forcing.lon()[0]), 5)
+        delta_Yf = np.round(np.abs(forcing.lat()[-1] - forcing.lat()[0]), 5)
+
+>>>>>>> d23d13de5f8e264962de7f45e914b90158abef35
         factor_wind = self.calib_wind*0.001
 
         with open(filename, 'w') as file_out:
@@ -94,7 +101,11 @@ class SWAN(InputFileWriter):
             if self.wind:
 
                 file_out.write('INPGRID WIND '+str(forcing.lon()[0])+' '+str(forcing.lat()[0])+' 0. '+str(forcing.nx()-1)+' '+str(forcing.ny()-1)+' '+str(
+<<<<<<< HEAD
                     (delta_XF/(forcing.nx()-1)).round(6)) + ' '+str((delta_YF/(forcing.ny()-1)).round(6)) + ' NONSTATIONARY ' + STR_START + f" {forcing.dt():.0f} HR " + STR_END + '\n')
+=======
+                    (delta_Xf/(forcing.nx()-1)).round(6)) + ' '+str((delta_Yf/(forcing.ny()-1)).round(6)) + ' NONSTATIONARY ' + STR_START + f" {forcing.dt():.0f} HR " + STR_END + '\n')
+>>>>>>> d23d13de5f8e264962de7f45e914b90158abef35
                 file_out.write('READINP WIND '+str(factor_wind)+'  \''+forcing_path.split('/')[-1]+'\' 3 0 0 1 FREE \n')
                 file_out.write('$ \n')
             else:
