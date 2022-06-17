@@ -17,6 +17,93 @@ import pandas as pd
 from .defaults import default
 #%%
 
+def plot_spectra(freq, spec, mdir, spr, title_str, fig_dict, ymax):
+    if fig_dict is None:
+        fig_dict = {}
+
+    fig = fig_dict.get('fig')
+    ax = fig_dict.get('ax')
+    ax2 = fig_dict.get('ax2')
+    if fig is None:
+        fig, ax = plt.subplots()
+        fig_dict['fig']=fig
+        fig_dict['ax']=ax
+    else:
+        fig.delaxes(ax)
+        if ax2 is not None:
+            fig.delaxes(ax2)
+        ax = fig.add_subplot()
+        fig_dict['ax']=ax
+
+    if ymax is None:
+        ymax = np.max(spec)
+
+    ax.plot(freq, spec, color='black')
+    ax.set_ylim([0,ymax])
+    ax.set_title(title_str)
+    ax.set_xlabel('f (Hz)')
+    ax.set_ylabel('E(f) (m**2/Hz)')
+
+    ax2 = ax.twinx()
+    fig_dict['ax2']=ax2
+    ax2.plot(freq, np.mod(mdir+180, 360), color='gray')
+    ax2.plot(freq, np.mod(mdir+180+spr, 360), color='gray', linestyle='--')
+    ax2.plot(freq, np.mod(mdir+180-spr, 360), color='gray', linestyle='--')
+    ax2.set_ylim([0, 360])
+    ax2.set_ylabel('Mean direction (deg)')
+
+    return fig_dict
+
+def plot_polar_spectra(freq, dirs, spec, title_str, fig_dict, vmax, vmin, cbar=True):
+
+    if fig_dict is None:
+        fig_dict = {}
+
+    fig = fig_dict.get('fig')
+    ax = fig_dict.get('ax')
+    if fig is None:
+        fig, ax = plt.subplots(polar=True)
+        fig_dict['fig']=fig
+        fig_dict['ax']=ax
+    else:
+        fig.delaxes(ax)
+        ax = fig.add_subplot(polar=True)
+        fig_dict['ax']=ax
+
+    if vmax is None:
+        vmax = np.max(spec)
+
+    if vmin is None:
+        vmin = np.min(spec)
+    #ds.isel(site=0,time=i).efth.spec.split(fmin=0.04).spec.plot
+    last_row = np.transpose([spec[:,0]])
+    spec_plot = np.hstack([spec, last_row])
+    dir_plot = np.hstack([dirs, dirs[0]+360])
+
+    # if vmax-vmin<20:
+    #     levels = np.linspace(vmin, vmax, np.floor(vmax-vmin+1).astype(int))
+    # # else:
+    levels = np.linspace(vmin, vmax, 20)
+    print(vmin)
+    cont = ax.contourf(np.deg2rad(dir_plot), freq, spec_plot, cmap="ocean_r",vmin=vmin, vmax=vmax, levels=levels)
+    fig_dict['cont'] = cont
+    ax.set_theta_zero_location("N")
+    ax.set_theta_direction(-1)
+    ax.set_xticklabels(['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'])
+    ax.set_ylabel('')
+    ax.set_xlabel('')
+    ax.set_title(title_str)
+
+    orientation = 'vertical'
+
+    if cbar:
+        cax = fig.add_axes([ax.get_position().x1+0.04,ax.get_position().y0,0.02,ax.get_position().height])
+        cbar = fig.colorbar(cont, orientation=orientation, cax=cax, label=f"E(f, theta) (m**2/Hz/rad)")
+        fig_dict['cbar'] = cbar
+        fig_dict['cax'] = cax
+    return fig_dict
+
+
 def plot_barbs(fig_dict, lon, lat, xdata, ydata, var, reduce_arrows: int=None):
     # from m/s to knots
     xdata = xdata*1.9438
@@ -62,8 +149,8 @@ def plot_arrows(fig_dict, lon, lat, xdata, ydata, var, scale=100, reduce_arrows:
         step_lat = reduce_arrows
         step_lon = reduce_arrows
     else:
-        step_lat = round(len(lat)/10)
-        step_lon = round(len(lon)/10)
+        step_lat = max(round(len(lat)/10),1)
+        step_lon = max(round(len(lon)/10),1)
 
     ax = fig_dict.get('ax')
     for m in range(0,len(lon), step_lon):
@@ -71,6 +158,7 @@ def plot_arrows(fig_dict, lon, lat, xdata, ydata, var, scale=100, reduce_arrows:
             ax.arrow(lon[m], lat[n], xdata[n][m]/scale, ydata[n][m]/scale, color='white',
                      linewidth=0.15, head_width=2/scale, head_length=2/scale, overhang=1) #linewidth=.02, head_width=.01, head_length=.01
     return fig_dict
+
 
 def plot_magnitude(fig_dict, lon, lat, data, var, vmin=None, vmax=None, cbar=True):
     """

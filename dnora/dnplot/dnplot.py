@@ -43,6 +43,22 @@ class GridPlotter(ABC):
         msg.warning('Plotting of xyz data not implemented!')
         return None
 
+class SpectralPlotter(ABC):
+    """Plots spectral data"""
+
+    @abstractmethod
+    def _extension(self) -> str:
+        pass
+
+    def spectra(self, dict_of_objects: dict, plain: bool) -> dict:
+        msg.warning('Plotting of omnidirection spectra not implemented!')
+        return None
+
+    def boundary(self, dict_of_objects: dict, plain: bool) -> dict:
+        msg.warning('Plotting of 2D spectra not implemented!')
+        return None
+
+
 class TopoPlotter(GridPlotter):
     def _extension(self):
         return 'pdf'
@@ -177,6 +193,97 @@ class ForcingPlotter(GridPlotter):
         plt.show(block=True)
 
         return self.fig_dict
+
+class SpecPlotter(SpectralPlotter):
+    def _extension(self):
+        return 'pdf'
+
+    def spectra(self, dict_of_objects: dict, plain: bool=True):
+        def update(val=None):
+            for param in ['time', 'station']:
+                setattr(self, f'{param}_val', sliders[param].val)
+            update_plot()
+
+
+
+        def update_plot() -> None:
+            title_str = f"{spectra.name()}: {str(spectra.time()[self.time_val])} lon={spectra.lon()[self.station_val]:.4f}, lat={spectra.lat()[self.station_val]:.4f} (x={self.station_val})"
+            ymax = np.max(spectra.spec())
+            self.fig_dict = basic_funcs.plot_spectra(spectra.freq(), spectra.spec()[self.time_val,self.station_val,:],
+                            spectra.mdir()[self.time_val,self.station_val,:],
+                            spectra.spr()[self.time_val,self.station_val,:],
+                            title_str=title_str, fig_dict=self.fig_dict, ymax=ymax)
+            # self.fig = fig_dict.get('fig')
+            # self.ax = fig_dict.get('ax')
+            #self._init_plot = False
+
+        spectra = dict_of_objects['Spectra']
+        fig, ax = plt.subplots()
+        self.fig_dict = {'fig': fig, 'ax': ax}
+        sliders = {}
+        if len(spectra.time()) > 1:
+            ax_slider1 = plt.axes([0.17, 0.05, 0.65, 0.03])
+            sliders['time'] = Slider(ax_slider1, 'time_index', 0, len(spectra.time())-1, valinit=0, valstep=1)
+            sliders['time'].on_changed(update)
+
+
+        if len(spectra.x()) > 1:
+            ax_slider2 = plt.axes([0.17, 0.01, 0.65, 0.03])
+            sliders['station'] = Slider(ax_slider2, 'station_index', 0, len(spectra.x())-1, valinit=0, valstep=1)
+            sliders['station'].on_changed(update)
+        # self._init_plot = True
+
+        update()
+        #axnodenr = plt.axes([0.02,0.9,0.2,0.03])
+        #giver    = Button(axnodenr,'Next')
+        #giver.on_clicked(update_plot)
+        plt.show(block=True)
+
+        return self.fig_dict
+
+    def boundary(self, dict_of_objects: dict, plain: bool=True):
+        def update(val=None):
+            for param in ['time', 'station']:
+                setattr(self, f'{param}_val', sliders[param].val)
+            update_plot()
+
+
+
+        def update_plot() -> None:
+            title_str = f"{boundary.name()}: {str(boundary.time()[self.time_val])} lon={boundary.lon()[self.station_val]:.4f}, lat={boundary.lat()[self.station_val]:.4f} (x={self.station_val})"
+            vmax = np.max(boundary.spec())
+            #vmin = 10*np.min(boundary.spec()[boundary.spec()>0])
+            vmin = 0.1
+            self.fig_dict = basic_funcs.plot_polar_spectra(boundary.freq(), boundary.dirs(),
+                            boundary.spec()[self.time_val,self.station_val,:],
+                            title_str=title_str, fig_dict=self.fig_dict, vmax=vmax, vmin=vmin, cbar=self._init_plot)
+            # self.fig = fig_dict.get('fig')
+            # self.ax = fig_dict.get('ax')
+            self._init_plot = False
+
+        boundary = dict_of_objects['Boundary']
+        fig, ax = plt.subplots()
+        self.fig_dict = {'fig': fig, 'ax': ax}
+        sliders = {}
+        if len(boundary.time()) > 1:
+            ax_slider1 = plt.axes([0.17, 0.05, 0.65, 0.03])
+            sliders['time'] = Slider(ax_slider1, 'time_index', 0, len(boundary.time())-1, valinit=0, valstep=1)
+            sliders['time'].on_changed(update)
+
+
+        if len(boundary.x()) > 1:
+            ax_slider2 = plt.axes([0.17, 0.01, 0.65, 0.03])
+            sliders['station'] = Slider(ax_slider2, 'station_index', 0, len(boundary.x())-1, valinit=0, valstep=1)
+            sliders['station'].on_changed(update)
+        self._init_plot = True
+        update()
+        #axnodenr = plt.axes([0.02,0.9,0.2,0.03])
+        #giver    = Button(axnodenr,'Next')
+        #giver.on_clicked(update_plot)
+        plt.show(block=True)
+
+        return self.fig_dict
+
 
 class OldTopoPlotter(GridPlotter):
 
