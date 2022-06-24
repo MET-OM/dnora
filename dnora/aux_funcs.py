@@ -552,6 +552,9 @@ def create_ordered_boundary_list(edge_list):
             full_list[ind] = ''
     full_array = np.array(full_list)
 
+    if len(np.where(full_array == '')[0]) == 0:
+        return full_array.tolist()
+
     ct = 0
     while (np.where(full_array == '')[0][-1] != len(np.where(full_array == '')[0])-1) and ct < 5:
         full_array = np.roll(full_array,1)
