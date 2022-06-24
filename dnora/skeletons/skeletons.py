@@ -94,10 +94,15 @@ def check_input_consistency(x, y, lon, lat):
     if not xy and not lonlat:
         raise Exception('Have to set either lon/lat or x/y!')
 
-    return native_x, native_y, xvec, yvec
+
+
+    return native_x, native_y, np.array(xvec), np.array(yvec)
 
 class PointSkeleton(Skeleton):
     def __init__(self, x=None, y=None, lon=None, lat=None, time=None):
+        self._create_structure(x, y, lon, lat, time)
+
+    def _create_structure(self, x=None, y=None, lon=None, lat=None, time=None):
         native_x, native_y, xvec, yvec = check_input_consistency(x, y, lon, lat)
         if len(xvec) != len(yvec):
             raise Exception('x and y vector has to be equally long!')
@@ -127,6 +132,19 @@ class PointSkeleton(Skeleton):
             return None
 
 class GriddedSkeleton(Skeleton):
+    def __init__(self, x=None, y=None, lon=None, lat=None, time=None):
+        self._create_structure(x, y, lon, lat, time)
+
+    def _create_structure(self, x=None, y=None, lon=None, lat=None, time=None):
+        native_x, native_y, xvec, yvec = check_input_consistency(x, y, lon, lat)
+
+        self._native_x_var = native_x
+        self._native_y_var = native_y
+
+        self.data = self._create_xr(x=xvec,
+                                    y=yvec,
+                                    time=time)
+
     def _create_xr(self, x: np.ndarray, y: np.ndarray, time=None) -> xr.Dataset:
         coords_dict = {self._native_x_var: x, self._native_y_var: y}
         if time is not None:
