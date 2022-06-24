@@ -16,7 +16,7 @@ class SWAN(ModelRun):
         return wnd.write.SWAN()
 
     def _get_point_picker(self):
-        return bnd.pick.NearestGridPoint()
+        return bnd.pick.Area()
 
     def _get_grid_writer(self):
         return grd.write.SWAN()
