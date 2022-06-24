@@ -527,7 +527,7 @@ class ModelRun:
             fig = None
         if fig is not None:
             if save_fig:
-                fig.savefig(file_object.filepath(), dpi=300)
+                fig.savefig(file_object.filepath(),bbox_inches='tight', dpi=300)
                 msg.to_file(file_object.filepath())
             if show_fig:
                 fig.show()
