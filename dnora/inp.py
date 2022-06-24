@@ -8,7 +8,7 @@ import pandas as pd
 from .wnd.wnd_mod import Forcing
 from .grd.grd_mod import Grid
 from .bnd.bnd_mod import Boundary
-
+from .aux_funcs import create_swan_segment_coords
 from . import msg
 from . import file_module
 class InputFileWriter(ABC):
@@ -90,7 +90,16 @@ class SWAN(InputFileWriter):
                 grid.ny()-1)+' ' + str((delta_X/(grid.nx()-1)).round(6)) + ' ' + str((delta_Y/(grid.ny()-1)).round(6)) + '\n')
             file_out.write('READINP BOTTOM 1 \''+ grid_path.split('/')[-1] +'\' 3 0 FREE \n')
             file_out.write('$ \n')
-            file_out.write('BOU NEST \''+boundary_path.split('/')[-1]+'\' OPEN \n')
+
+            lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.lon_edges(), grid.lat_edges())
+            bound_string = "BOUNDSPEC SEGMENT XY"
+            for lon, lat in zip(lons, lats):
+                bound_string += f" {lon:.2f} {lat:.2f}"
+            bound_string += " VARIABLE FILE 0 "
+            bound string += f"'{filename}'\n"
+            file_out.write(bound_string)
+            #VARIABLE FILE 0 'specNORA3Fedje5002015010720150107.asc'
+            #file_out.write('BOU NEST \''+boundary_path.split('/')[-1]+'\' OPEN \n')
             file_out.write('$ \n')
 
             if self.wind:
