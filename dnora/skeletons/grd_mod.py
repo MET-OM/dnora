@@ -81,7 +81,7 @@ class Grid(GriddedSkeleton):
             mask = mask.astype(bool)
         return mask
 
-    def boundary_mask(self, logical=True) -> np.ndarray:
+    def boundary_mask(self, logical: bool=True) -> np.ndarray:
         """Returns bool array of the boundary mask.
         Set logical=False to get 1 for boundary points """
 
