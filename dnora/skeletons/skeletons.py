@@ -94,8 +94,6 @@ def check_input_consistency(x, y, lon, lat):
     if not xy and not lonlat:
         raise Exception('Have to set either lon/lat or x/y!')
 
-
-
     return native_x, native_y, np.array(xvec), np.array(yvec)
 
 class PointSkeleton(Skeleton):
