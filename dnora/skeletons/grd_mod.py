@@ -1,10 +1,21 @@
-from skeletons import GriddedSkeleton
+from gridded_skeleton import GriddedSkeleton
+from unstr_grd_mod import UnstrGrid
+from topography import Topography
 import numpy as np
 import xarray as xr
+from dnora.grd.read import TopoReader
+from dnora import msg
+from dnora.grd.mesh import Mesher, Interpolate
+def is_gridded(lon: np.ndarray, lat: np.ndarray, data: np.ndarray) -> bool:
+    if data.shape == (len(lat), len(lon)):
+        return True
 
+    if len(data.shape) == 1 and len(lat) == data.shape[0] and len(lon) == data.shape[0]:
+        return False
 
+    raise Exception(f"Size of data is {data.shape} but len(lat) = {len(lat)} and len(lon) = {len(lon)}. I don't know what is going on!")
 
-class Grid(GriddedSkeleton):
+class Grid(GriddedSkeleton, Topography):
     def __init__(self, x=None, y=None, lon=None, lat=None, name='AnonymousGrid'):
         self.name = name
         self.data = self._create_structure(x, y, lon, lat)
@@ -59,46 +70,32 @@ class Grid(GriddedSkeleton):
         self.data = self._init_ds(x=x, y=y)
         self._reset_vars()
 
-    def _reset_vars(self):
-        self.merge_in_ds(self._list_of_empty_ds())
+    def import_topo(self, topo_reader: TopoReader) -> None:
+        """Reads the raw bathymetrical data."""
 
-    def _list_of_empty_ds(self) -> list[xr.Dataset]:
-        ds_topo = self.compile_to_ds(999*np.ones(self.size()),'topo')
-        ds_sea = self.compile_to_ds(np.ones(self.size()),'sea_mask')
-        ds_bnd = self.compile_to_ds(np.zeros(self.size()),'boundary_mask')
-        return [ds_topo, ds_sea, ds_bnd]
+        msg.header(topo_reader, "Importing topography...")
+        print(topo_reader)
+        topo, lon, lat = topo_reader(self.lon()[0], self.lon()[-1], self.lat()[0], self.lat()[-1])
 
-    def sea_mask(self, logical=True) -> np.ndarray:
-        """Returns bool array of the sea mask.
-        Set logical=False to get 0 for land and 1 for sea. """
-
-        if hasattr(self.data, 'sea_mask'):
-            mask = self.data.sea_mask.values
+        if is_gridded(lon, lat, topo):
+            self.raw = Grid(lon=lon, lat=lat)
         else:
-            mask = np.full(self.size(), 1.)
+            self.raw = UnstrGrid(lon=lon, lat=lat)
+        topo[topo<=0]=np.nan
 
-        if logical:
-            mask = mask.astype(bool)
-        return mask
+        self.raw._set_topo(topo)
+        self.raw._update_sea_mask()
 
-    def boundary_mask(self, logical: bool=True) -> np.ndarray:
-        """Returns bool array of the boundary mask.
-        Set logical=False to get 1 for boundary points """
+    def mesh_grid(self, mesher: Mesher=Interpolate(method = 'linear')) -> None:
+        """Meshes the raw data down to the grid definitions."""
 
-        if hasattr(self.data, 'boundary_mask'):
-            mask = self.data.boundary_mask.values
-        else:
-            mask = np.full(self.size(), 1.)
+        msg.header(mesher, "Meshing grid bathymetry...")
+        print(mesher)
+        lonQ, latQ = np.meshgrid(self.lon(), self.lat())
+        lon, lat = self.raw.lonlat()
 
-        if logical:
-            mask = mask.astype(bool)
-        return mask
-
-
-    def topo(self, land: float=-999) -> np.ndarray:
-        if hasattr(self.data, 'topo'):
-            topo = self.data.topo.values
-            topo[np.logical_not(self.sea_mask())] = land
-            return topo
-        else:
-            return np.array([])
+        topo = mesher(self.raw.topo().ravel(), lon, lat, lonQ, latQ)
+        topo[topo<=0]=np.nan
+        self._set_topo(topo)
+        self._update_sea_mask()
+#            print(self)

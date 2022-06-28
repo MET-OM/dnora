@@ -1,4 +1,4 @@
-from skeletons import PointSkeleton
+from point_skeleton import PointSkeleton
 import numpy as np
 
 class Spectra(PointSkeleton):

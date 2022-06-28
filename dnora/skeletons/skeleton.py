@@ -2,15 +2,23 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import utm
+from copy import copy
 
 class Skeleton:
     _x_str = 'x'
     _y_str = 'y'
     _name = 'LonelySkeleton'
+    _zone_number = 33
+    _zone_letter = 'W'
+
+    def set_utm(self, zone_number: int=33, zone_letter: str='W'):
+        self._zone_number = copy(zone_number)
+        self._zone_letter = copy(zone_letter)
 
     def x(self) -> np.ndarray:
         if self.x_str == 'lon':
-            x, __, __, __ = utm.from_latlon(self.lat(), self.lon(), force_zone_number=33, force_zone_letter='W')
+            lat = np.median(self.lat())
+            x, __, __, __ = utm.from_latlon(lat, self.lon(), force_zone_number=self._zone_number, force_zone_letter=self._zone_letter)
             return x
 
         if hasattr(self, 'data') and hasattr(self.data, 'x'):
@@ -20,7 +28,8 @@ class Skeleton:
 
     def y(self) -> np.ndarray:
         if self.y_str == 'lat':
-            __, y, __, __ = utm.from_latlon(self.lat(), self.lon(), force_zone_number=33, force_zone_letter='W')
+            lon = np.median(self.lon())
+            __, y, __, __ = utm.from_latlon(self.lat(), lon, force_zone_number=self._zone_number, force_zone_letter=self._zone_letter)
             return y
 
         if hasattr(self, 'data') and hasattr(self.data, 'y') :
@@ -30,7 +39,8 @@ class Skeleton:
 
     def lon(self) -> np.ndarray:
         if self.x_str == 'x':
-            __, lon = utm.to_latlon(self.x(), self.y(), 33, zone_letter = 'W', strict = False)
+            y = np.median(self.y())
+            __, lon = utm.to_latlon(self.x(), y, self._zone_number, zone_letter=self._zone_letter, strict = False)
             return lon
 
         if hasattr(self, 'data') and hasattr(self.data, 'lon'):
@@ -40,7 +50,8 @@ class Skeleton:
 
     def lat(self) -> np.ndarray:
         if self.y_str == 'y':
-            lat, __ = utm.to_latlon(self.x(), self.y(), 33, zone_letter = 'W', strict = False)
+            x = np.median(self.x())
+            lat, __ = utm.to_latlon(x, self.y(), self._zone_number, zone_letter=self._zone_letter, strict = False)
             return lat
 
         if hasattr(self, 'data') and hasattr(self.data, 'lat') :
@@ -48,23 +59,57 @@ class Skeleton:
         else:
             return None
 
+    def native_x(self) -> np.ndarray:
+        if self.x_str == 'x':
+            return self.x()
+        elif self.x_str == 'lon':
+            return self.lon()
+        else:
+            return None
+
+    def native_y(self) -> np.ndarray:
+        if self.y_str == 'y':
+            return self.y()
+        elif self.y_str == 'lat':
+            return self.lat()
+        else:
+            return None
+
+    def _lonlat(self, lon: np.ndarray=None, lat: np.ndarray=None):
+        """Converts list of points to longitude and latitude if necessary.
+
+        Input is assumed to be in the native format.
+        """
+        if self.x_str == 'x':
+            lat, lon = utm.to_latlon(lon, lat, self._zone_number, zone_letter=self._zone_letter, strict = False)
+        return lon, lat
+
+    def _xy(self, x: np.ndarray=None, y: np.ndarray=None):
+        """Converts list of points to x and y (UTM) if necessary.
+
+        Input is assumed to be in the native format.
+        """
+        if self.x_str == 'lon':
+            x, y, __, __ = utm.from_latlon(y, x, force_zone_number=self._zone_number, force_zone_letter=self._zone_letter)
+        return x, y
+
     def lon_edges(self) -> tuple:
-        return (np.min(self.lon()), np.max(self.lon()))
+        return np.min(self.lon()), np.max(self.lon())
 
     def lat_edges(self) -> tuple:
-        return (np.min(self.lat()), np.max(self.lat()))
+        return np.min(self.lat()), np.max(self.lat())
 
     def x_edges(self) -> tuple:
-        return (np.min(self.x()), np.max(self.x()))
+        return np.min(self.x()), np.max(self.x())
 
     def y_edges(self) -> tuple:
-        return (np.min(self.y()), np.max(self.y()))
+        return np.min(self.y()), np.max(self.y())
 
     def native_x_edges(self) -> tuple:
-        return (np.min(self.native_x()), np.max(self.native_x()))
+        return np.min(self.native_x()), np.max(self.native_x())
 
     def native_y_edges(self) -> tuple:
-        return (np.min(self.native_y()), np.max(self.native_y()))
+        return np.min(self.native_y()), np.max(self.native_y())
 
     def nx(self):
         return len(self.native_x())
@@ -135,22 +180,6 @@ class Skeleton:
         else:
             raise ValueError("name needs to be a string")
 
-    def native_x(self) -> np.ndarray:
-        if self.x_str == 'x':
-            return self.x()
-        elif self.x_str == 'lon':
-            return self.lon()
-        else:
-            return None
-
-    def native_y(self) -> np.ndarray:
-        if self.y_str == 'y':
-            return self.y()
-        elif self.y_str == 'lat':
-            return self.lat()
-        else:
-            return None
-
     def time(self):
         if hasattr(self, 'data') and hasattr(self.data, 'time'):
             return self.data.time.values
@@ -179,6 +208,7 @@ class Skeleton:
             for key, value in additional_coords.items():
                 coords_dict[key] = value
 
+
         # Data variables
         vars_dict = self._ds_vars_dict()
         vars_dict[data_name] = (list(coords_dict.keys()),data)
@@ -187,80 +217,20 @@ class Skeleton:
 
         return xr.Dataset(data_vars=vars_dict, coords=coords_dict)
 
-    def merge_in_ds(self, ds_list: list[xr.Dataset]):
-        if not isinstance(ds_list, list):
-            ds_list = [ds_list]
-        for ds in ds_list:
-            self.data = self.data.merge(ds)
-
-class PointSkeleton(Skeleton):
-    def __init__(self, x=None, y=None, lon=None, lat=None, time=None, name='PointyData'):
-        self.data = self._create_structure(x, y, lon, lat, time)
-        self.data.attrs['name'] = name
-
     def _create_structure(self, x=None, y=None, lon=None, lat=None, time=None):
         native_x, native_y, xvec, yvec = check_input_consistency(x, y, lon, lat)
-        if len(xvec) != len(yvec):
-            raise Exception('x and y vector has to be equally long!')
+
         self.x_str = native_x
         self.y_str = native_y
 
         return self._init_ds(x=xvec,y=yvec, time=time)
 
-    def _init_ds(self, x: np.ndarray, y: np.ndarray, time=None) -> xr.Dataset:
-        coords_dict = {'inds': np.arange(len(x))}
-        vars_dict = {self.x_str: (['inds'], x), self.y_str: (['inds'], y)}
-        if time is not None:
-            vars_dict['time'] = (['station'], time)
-        return xr.Dataset(coords=coords_dict, data_vars=vars_dict, attrs={'name': self.name})
+    def merge_in_ds(self, ds_list: list[xr.Dataset]):
+        if not isinstance(ds_list, list):
+            ds_list = [ds_list]
+        for ds in ds_list:
+            self.data = ds.merge(self.data, compat='override')
 
-    def _ds_coords_dict(self):
-        """Return coordinate dictionary for creating xarray Dataset"""
-        coords_dict = {'inds': self.inds()}
-        if self.time() is not None:
-            coords_dict['time'] = self.time()
-        return coords_dict
-
-    def _ds_vars_dict(self):
-        """Return variable dictionary for creating xarray Dataset"""
-        vars_dict = {self.x_str: (['inds'], self.native_x()), self.y_str: (['inds'], self.native_y())}
-        return vars_dict
-
-    def inds(self) -> np.ndarray:
-        if hasattr(self.data, 'inds') :
-            return self.data.inds.values
-        else:
-            return None
-
-class GriddedSkeleton(Skeleton):
-    def __init__(self, x=None, y=None, lon=None, lat=None, time=None, name='GriddedData'):
-        self.data = self._create_structure(x, y, lon, lat, time)
-        self.data.attrs['name'] = name
-
-    def _create_structure(self, x=None, y=None, lon=None, lat=None, time=None):
-        native_x, native_y, xvec, yvec = check_input_consistency(x, y, lon, lat)
-
-        self.x_str = native_x
-        self.y_str = native_y
-
-        return self._init_ds(x=xvec, y=yvec, time=time)
-
-    def _init_ds(self, x: np.ndarray, y: np.ndarray, time=None) -> xr.Dataset:
-        coords_dict = {self.y_str: y, self.x_str: x}
-        if time is not None:
-            coords_dict['time'] = time
-        return xr.Dataset(coords=coords_dict, attrs={'name': self.name})
-
-    def _ds_coords_dict(self):
-        """Return coordinate dictionary for creating xarray Dataset"""
-        coords_dict = {self.y_str: self.native_y(), self.x_str: self.native_x()}
-        if self.time() is not None:
-            coords_dict['time'] = self.time()
-        return coords_dict
-
-    def size(self) -> tuple[int, int]:
-        """Returns the size (nx, ny) of the grid."""
-        return (self.ny(), self.nx())
 
 def check_input_consistency(x, y, lon, lat):
     xy = False
