@@ -88,20 +88,26 @@ class Skeleton:
         else:
             return None
 
-    def _lonlat(self, lon: np.ndarray=None, lat: np.ndarray=None):
+    def _lonlat(self, lon: np.ndarray=None, lat: np.ndarray=None, strict=False):
         """Converts list of points to longitude and latitude if necessary.
 
         Input is assumed to be in the native format.
         """
+        if self.x_str == 'x' and (strict or self.strict):
+            return None, None
+
         if self.x_str == 'x':
             lat, lon = utm.to_latlon(lon, lat, self._zone_number, zone_letter=self._zone_letter, strict = False)
         return lon, lat
 
-    def _xy(self, x: np.ndarray=None, y: np.ndarray=None):
+    def _xy(self, x: np.ndarray=None, y: np.ndarray=None, strict=False):
         """Converts list of points to x and y (UTM) if necessary.
 
         Input is assumed to be in the native format.
         """
+        if self.x_str == 'lon' and (strict or self.strict):
+            return None, None
+
         if self.x_str == 'lon':
             x, y, __, __ = utm.from_latlon(y, x, force_zone_number=self._zone_number, force_zone_letter=self._zone_letter)
         return x, y
@@ -253,13 +259,7 @@ class Skeleton:
     def _set_data(self, data: np.ndarray, data_name: str) -> None:
         self.merge_in_ds(self.compile_to_ds(data, data_name))
 
-    def _create_structure(self, grid=None, x=None, y=None, lon=None, lat=None, time=None, **kwargs):
-        if grid is not None:
-            x = grid.x(strict=True)
-            y = grid.y(strict=True)
-            lon = grid.lon(strict=True)
-            lat = grid.lat(strict=True)
-            
+    def _create_structure(self, x=None, y=None, lon=None, lat=None, time=None, **kwargs):
         native_x, native_y, xvec, yvec = check_input_consistency(x, y, lon, lat)
 
         self.x_str = native_x

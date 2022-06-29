@@ -19,8 +19,7 @@ def is_gridded(data: np.ndarray, lon: np.ndarray, lat: np.ndarray) -> bool:
 class Grid(GriddedSkeleton, Topography):
     def __init__(self, x=None, y=None, lon=None, lat=None, name='AnonymousGrid'):
         self.name = name
-        grid = None
-        self.data = self._create_structure(grid, x, y, lon, lat)
+        self.data = self._create_structure(x, y, lon, lat)
         self._reset_vars()
 
     def set_spacing(self, dlon: float=0., dlat: float=0.,

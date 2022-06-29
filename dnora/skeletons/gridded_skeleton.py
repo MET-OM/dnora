@@ -44,7 +44,7 @@ class GriddedSkeleton(Skeleton):
 
         return tuple(list)
 
-    def lonlat(self, mask: np.array=None, order_by: str='lat') -> tuple[np.ndarray, np.ndarray]:
+    def lonlat(self, mask: np.array=None, order_by: str='lat', strict=False) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of longitude and latitude of all points.
 
         mask is a boolean array (default True for all points)
@@ -57,11 +57,13 @@ class GriddedSkeleton(Skeleton):
         lon, lat = self.native_xy(mask, order_by)
 
         # Transforms lon/lat to x/y if necessary
-        lon, lat = super()._lonlat(lon, lat)
+        lon, lat = super()._lonlat(lon, lat, strict=strict)
+        if lon is None:
+            return None, None
 
         return lon[mask], lat[mask]
 
-    def xy(self, mask: np.array=None, order_by: str='y') -> tuple[np.ndarray, np.ndarray]:
+    def xy(self, mask: np.array=None, order_by: str='y', strict=False) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of x and y of all points.
 
         mask is a boolean array (default True for all points)
@@ -74,7 +76,10 @@ class GriddedSkeleton(Skeleton):
         x, y = self.native_xy(mask, order_by)
 
         # Transforms lon/lat to x/y if necessary
-        x, y = super()._xy(x, y)
+        x, y = super()._xy(x, y, strict=strict)
+
+        if x is None:
+            return None, None
 
         return x[mask], y[mask]
 

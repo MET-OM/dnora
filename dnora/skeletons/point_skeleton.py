@@ -54,7 +54,7 @@ class PointSkeleton(Skeleton):
                 list.append(len(self._additional_coord_val(coord)))
         return tuple(list)
 
-    def lonlat(self, mask: np.array=None) -> tuple[np.ndarray, np.ndarray]:
+    def lonlat(self, mask: np.array=None, strict=False) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of longitude and latitude of all points.
         Identical to (.lon(), .lat()) (with no mask)
 
@@ -63,9 +63,14 @@ class PointSkeleton(Skeleton):
         if mask is None:
             mask = np.full((self.nx(),), True)
 
-        return super().lon()[mask], super().lat()[mask]
+        lon, lat = super().lon(strict=strict)[mask], super().lat(strict=strict)[mask]
 
-    def xy(self, mask: np.array=None) -> tuple[np.ndarray, np.ndarray]:
+        if lon is None:
+            return None, None
+
+        return lon[mask], lat[mask]
+
+    def xy(self, mask: np.array=None, strict=False) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of x and y of all points.
         Identical to (.x(), .y()) (with no mask)
 
@@ -74,7 +79,12 @@ class PointSkeleton(Skeleton):
         if mask is None:
             mask = np.full((super().nx(),), True)
 
-        return super().x()[mask], super().y()[mask]
+        x, y = super().x(strict=strict)[mask], super().y(strict=strict)[mask]
+
+        if x is None:
+            return None, None
+
+        return x[mask], y[mask]
 
     def native_xy(self, mask: np.array=None, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of native x and y of all points.
