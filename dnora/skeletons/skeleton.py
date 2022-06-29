@@ -256,8 +256,26 @@ class Skeleton:
 
         return xr.Dataset(data_vars=vars_dict, coords=coords_dict)
 
+    def ds(self):
+        if not hasattr(self, 'data'):
+            return None
+        return self.data
+
     def _set_data(self, data: np.ndarray, data_name: str) -> None:
         self.merge_in_ds(self.compile_to_ds(data, data_name))
+
+    def get(self, data_name: str):
+        """Gets data from Dataset"""
+        ds = self.ds()
+        if ds is None:
+            return None
+
+        data = ds.get(data_name)
+
+        if data is None:
+            return None
+
+        return data.values.copy()
 
     def _create_structure(self, x=None, y=None, lon=None, lat=None, time=None, **kwargs):
         native_x, native_y, xvec, yvec = check_input_consistency(x, y, lon, lat)

@@ -4,47 +4,65 @@ from copy import copy
 
 class Topography:
     def _reset_vars(self):
-        self._set_data(999*np.ones(self.size()),'topo')
-        self._set_data(np.zeros(self.size()),'boundary_mask')
+        self._set_data(self.topo(empty=True),'topo')
+        self._set_data(self.boundary_mask(empty=True),'boundary_mask')
         self._update_sea_mask()
 
     def _update_sea_mask(self) -> None:
         sea_mask = np.logical_not(np.isnan(self.topo())).astype(int)
         self._set_data(sea_mask,'sea_mask')
 
-    def sea_mask(self, logical=True) -> np.ndarray:
+    def sea_mask(self, boolean: bool=True, empty: bool=False) -> np.ndarray:
         """Returns bool array of the sea mask.
-        Set logical=False to get 0 for land and 1 for sea. """
 
-        if hasattr(self.data, 'sea_mask'):
-            mask = self.data.sea_mask.values
-        else:
-            mask = np.full(self.size(), 1.)
+        Set boolean=False to get 0 for land and 1 for sea.
+        Set empty=True to get an empty mask (even if it doesn't exist)"""
 
-        if logical:
-            mask = mask.astype(bool)
-        return mask
+        data_type = 'bool'*boolean or 'float'
 
-    def boundary_mask(self, logical: bool=True) -> np.ndarray:
+        if empty:
+            return np.full(self.size()[0:2], 1.).astype(data_type)
+
+        mask = self.get('sea_mask')
+
+        if mask is None:
+            return None
+
+        return mask.astype(data_type)
+
+    def boundary_mask(self, boolean: bool=True, empty: bool=False) -> np.ndarray:
         """Returns bool array of the boundary mask.
-        Set logical=False to get 1 for boundary points """
 
-        if hasattr(self.data, 'boundary_mask'):
-            mask = self.data.boundary_mask.values
-        else:
-            mask = np.full(self.size(), 1.)
+        Set boolean=False to get 1 for boundary points
+        Set empty=True to get an empty mask (even if it doesn't exist)."""
 
-        if logical:
-            mask = mask.astype(bool)
-        return mask
+        data_type = 'bool'*boolean or 'float'
 
+        if empty:
+            return np.full(self.size()[0:2], 1.).astype(data_type)
 
-    def topo(self, land: float=-999) -> np.ndarray:
-        if hasattr(self.data, 'topo'):
-            topo = copy(self.data.topo.values)
-            topo[np.logical_not(self.sea_mask())] = land
-            return topo
-        return None
+        mask = self.get('boundary_mask')
+
+        if mask is None:
+            return None
+
+        return mask.astype(data_type)
+
+    def topo(self, land: float=0., empty: bool=False) -> np.ndarray:
+        """Get the topography, with land set to a given value (default land=0.)
+
+        Set empty=True to get an empty topo (even if it doesn't exist)."""
+        if empty:
+            return np.full(self.size()[0:2], 999.)
+
+        topo = self.get('topo')
+
+        if topo is None:
+            return None
+
+        topo[np.logical_not(self.sea_mask())] = land
+
+        return topo
 
     def boundary_points(self, order_by: str='lat'):
         return self.native_xy(mask=self.boundary_mask(), order_by=order_by)
