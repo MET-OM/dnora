@@ -6,7 +6,7 @@ import xarray as xr
 from dnora.grd.read import TopoReader
 from dnora import msg
 from dnora.grd.mesh import Mesher, Interpolate
-def is_gridded(lon: np.ndarray, lat: np.ndarray, data: np.ndarray) -> bool:
+def is_gridded(data: np.ndarray, lon: np.ndarray, lat: np.ndarray) -> bool:
     if data.shape == (len(lat), len(lon)):
         return True
 
@@ -78,7 +78,7 @@ class Grid(GriddedSkeleton, Topography):
         print(topo_reader)
         topo, lon, lat = topo_reader(self.lon()[0], self.lon()[-1], self.lat()[0], self.lat()[-1])
 
-        if is_gridded(lon, lat, topo):
+        if is_gridded(topo, lon, lat):
             self.raw = Grid(lon=lon, lat=lat)
         else:
             self.raw = UnstrGrid(lon=lon, lat=lat)
