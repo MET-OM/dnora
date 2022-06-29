@@ -1,19 +1,14 @@
 from point_skeleton import PointSkeleton
 import numpy as np
+from wave_spectrum import WaveSpectrum, WaveSpectrum2D
+from coordinate_decorators import frequency, direction
 
-class Spectra(PointSkeleton):
-    def __init__(self, grid, name: str="AnonymousSpectra"):
-        self.grid = copy(grid)
-        self._name = copy(name)
-        self._convention = None
-        self._history = []
+class Spectra(PointSkeleton, WaveSpectrum):
+    def __init__(self, x=None, y=None, lon=None, lat=None, name: str="AnonymousSpectra"):
+        self._name = name
+        self.data = self._create_structure(x, y, lon, lat, freq=np.array([0.1,0.2,0.3]))
 
-    def freq(self, angular=False):
-        constant = 1.
-        if angular:
-            constant = 2*np.pi
-
-        if hasattr(self, 'data') and hasattr(self.data, 'freq'):
-            return self.data.freq.values*constant
-        else:
-            return None
+class Boundary(PointSkeleton, WaveSpectrum2D):
+    def __init__(self, x=None, y=None, lon=None, lat=None, name: str="AnonymousSpectra"):
+        self._name = name
+        self.data = self._create_structure(x, y, lon, lat, freq=np.array([0.1,0.2,0.3]), dirs=np.linspace(0,350,36))

@@ -15,6 +15,7 @@ def is_gridded(lon: np.ndarray, lat: np.ndarray, data: np.ndarray) -> bool:
 
     raise Exception(f"Size of data is {data.shape} but len(lat) = {len(lat)} and len(lon) = {len(lon)}. I don't know what is going on!")
 
+
 class Grid(GriddedSkeleton, Topography):
     def __init__(self, x=None, y=None, lon=None, lat=None, name='AnonymousGrid'):
         self.name = name
@@ -67,7 +68,7 @@ class Grid(GriddedSkeleton, Topography):
 
         x = np.linspace(self.native_x_edges()[0], self.native_x_edges()[1], nx)
         y = np.linspace(self.native_y_edges()[0], self.native_y_edges()[1], ny)
-        self.data = self._init_ds(x=x, y=y)
+        self.data = self._init_ds(x, y)
         self._reset_vars()
 
     def import_topo(self, topo_reader: TopoReader) -> None:
@@ -83,7 +84,7 @@ class Grid(GriddedSkeleton, Topography):
             self.raw = UnstrGrid(lon=lon, lat=lat)
         topo[topo<=0]=np.nan
 
-        self.raw._set_topo(topo)
+        self.raw._set_data(topo, 'topo')
         self.raw._update_sea_mask()
 
     def mesh_grid(self, mesher: Mesher=Interpolate(method = 'linear')) -> None:
@@ -96,6 +97,6 @@ class Grid(GriddedSkeleton, Topography):
 
         topo = mesher(self.raw.topo().ravel(), lon, lat, lonQ, latQ)
         topo[topo<=0]=np.nan
-        self._set_topo(topo)
+        self._set_data(topo, 'topo')
         self._update_sea_mask()
 #            print(self)

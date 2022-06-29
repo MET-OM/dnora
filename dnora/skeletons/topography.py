@@ -3,18 +3,14 @@ import xarray as xr
 from copy import copy
 
 class Topography:
-    def _set_topo(self, topo: np.ndarray) -> None:
-        self.merge_in_ds(self.compile_to_ds(topo,'topo'))
-
     def _reset_vars(self):
-        ds_topo = self.compile_to_ds(999*np.ones(self.size()),'topo')
-        ds_bnd = self.compile_to_ds(np.zeros(self.size()),'boundary_mask')
-        self.merge_in_ds([ds_topo, ds_bnd])
+        self._set_data(999*np.ones(self.size()),'topo')
+        self._set_data(np.zeros(self.size()),'boundary_mask')
         self._update_sea_mask()
 
     def _update_sea_mask(self) -> None:
         sea_mask = np.logical_not(np.isnan(self.topo())).astype(int)
-        self.merge_in_ds(self.compile_to_ds(sea_mask,'sea_mask'))
+        self._set_data(sea_mask,'sea_mask')
 
     def sea_mask(self, logical=True) -> np.ndarray:
         """Returns bool array of the sea mask.

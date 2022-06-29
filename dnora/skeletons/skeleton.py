@@ -93,6 +93,14 @@ class Skeleton:
             x, y, __, __ = utm.from_latlon(y, x, force_zone_number=self._zone_number, force_zone_letter=self._zone_letter)
         return x, y
 
+    def _additional_coords(self):
+        if hasattr(self, 'data'):
+            return list(set(self.data.coords)-{'x','y','inds','lon','lat','time'})
+        return None
+
+    def  _additional_coord_val(self, coord):
+        return eval(f"self.{coord}()")
+
     def lon_edges(self) -> tuple:
         return np.min(self.lon()), np.max(self.lon())
 
@@ -116,6 +124,11 @@ class Skeleton:
 
     def ny(self):
         return len(self.native_y())
+
+    def nt(self):
+        if self.time() is not None:
+            return len(self.time())
+        return None
 
     def dlon(self):
         if self.nx() == 1:
@@ -187,14 +200,21 @@ class Skeleton:
             return None
 
     def _ds_vars_dict(self):
-        """Return variable dictionary for creating xarray Dataset"""
-        return {}
+        """Return variable dictionary for creating xarray Dataset.
+        """
+        raise NotImplementedError("This method depends on the specific gridding and needs to be defined in the subclass (e.g. GriddedSkeleton or PointSkeleton)")
 
     def _ds_coords_dict(self):
-        """Return variable dictionary for creating xarray Dataset"""
-        return {}
+        """Return variable dictionary for creating xarray Dataset.
+        """
+        raise NotImplementedError("This method depends on the specific gridding and needs to be defined in the subclass (e.g. GriddedSkeleton or PointSkeleton)")
 
-    def compile_to_ds(self, data, data_name:str, additional_coords: dict=None):
+    def _init_ds(self) -> xr.Dataset:
+        """Return a Dataset with only the grid coordinates and time.
+        """
+        raise NotImplementedError("This method depends on the specific gridding and needs to be defined in the subclass (e.g. GriddedSkeleton or PointSkeleton)")
+
+    def compile_to_ds(self, data: np.ndarray, data_name:str):#, additional_coords: dict=None):
         def check_consistency():
             for i, key in enumerate(coords_dict.keys()):
                 if i > len(data.shape)-1:
@@ -204,9 +224,9 @@ class Skeleton:
 
         # Coordinates
         coords_dict = self._ds_coords_dict()
-        if additional_coords is not None:
-            for key, value in additional_coords.items():
-                coords_dict[key] = value
+        #if additional_coords is not None:
+        for coord in self._additional_coords():
+            coords_dict[coord] = self._additional_coord_val(coord)
 
 
         # Data variables
@@ -217,13 +237,16 @@ class Skeleton:
 
         return xr.Dataset(data_vars=vars_dict, coords=coords_dict)
 
-    def _create_structure(self, x=None, y=None, lon=None, lat=None, time=None):
+    def _set_data(self, data: np.ndarray, data_name: str) -> None:
+        self.merge_in_ds(self.compile_to_ds(data, data_name))
+
+    def _create_structure(self, x=None, y=None, lon=None, lat=None, time=None, **kwargs):
         native_x, native_y, xvec, yvec = check_input_consistency(x, y, lon, lat)
 
         self.x_str = native_x
         self.y_str = native_y
 
-        return self._init_ds(x=xvec,y=yvec, time=time)
+        return self._init_ds(x=xvec,y=yvec, time=time, **kwargs)
 
     def merge_in_ds(self, ds_list: list[xr.Dataset]):
         if not isinstance(ds_list, list):
@@ -251,9 +274,9 @@ def check_input_consistency(x, y, lon, lat):
         yvec = lat
 
     if xy and lonlat:
-        raise Exception("Can't set both lon/lat and x/y!")
+        raise ValueError("Can't set both lon/lat and x/y!")
 
     if not xy and not lonlat:
-        raise Exception('Have to set either lon/lat or x/y!')
+        raise ValueError('Have to set either lon/lat or x/y!')
 
     return native_x, native_y, np.array(xvec), np.array(yvec)

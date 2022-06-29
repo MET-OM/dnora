@@ -10,10 +10,14 @@ class GriddedSkeleton(Skeleton):
         self.data = super()._create_structure(x, y, lon, lat, time)
         self.data.attrs['name'] = name
 
-    def _init_ds(self, x: np.ndarray, y: np.ndarray, time=None) -> xr.Dataset:
+    def _init_ds(self, x: np.ndarray, y: np.ndarray, time=None, **kwargs) -> xr.Dataset:
         coords_dict = {self.y_str: y, self.x_str: x}
         if time is not None:
             coords_dict['time'] = time
+
+        for key, value in kwargs.items():
+            coords_dict[key] = value
+
         return xr.Dataset(coords=coords_dict, attrs={'name': self.name})
 
     def _ds_coords_dict(self):
@@ -23,9 +27,22 @@ class GriddedSkeleton(Skeleton):
             coords_dict['time'] = super().time()
         return coords_dict
 
+    def _ds_vars_dict(self):
+        return {}
+
     def size(self) -> tuple[int, int]:
-        """Returns the size (nx, ny) of the grid."""
-        return (super().ny(), super().nx())
+        """Returns the size of the object.
+
+        Spatial, temporal and possible added dimensions."""
+        list = [super().ny(), super().nx()]
+        if self.nt() is not None:
+            list.append(super().nt())
+
+        for coord in self._additional_coords():
+            if self._additional_coord_val(coord) is not None:
+                list.append(len(self._additional_coord_val(coord)))
+
+        return tuple(list)
 
     def lonlat(self, mask: np.array=None, order_by: str='lat') -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of longitude and latitude of all points.
