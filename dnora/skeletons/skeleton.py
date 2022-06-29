@@ -10,12 +10,16 @@ class Skeleton:
     _name = 'LonelySkeleton'
     _zone_number = 33
     _zone_letter = 'W'
+    strict = False # If this is True, no coordinate conversions will be done (return None instead)
 
     def set_utm(self, zone_number: int=33, zone_letter: str='W'):
         self._zone_number = copy(zone_number)
         self._zone_letter = copy(zone_letter)
 
-    def x(self) -> np.ndarray:
+    def x(self, strict=False) -> np.ndarray:
+        if self.x_str == 'lon' and (strict or self.strict):
+            return None
+
         if self.x_str == 'lon':
             lat = np.median(self.lat())
             x, __, __, __ = utm.from_latlon(lat, self.lon(), force_zone_number=self._zone_number, force_zone_letter=self._zone_letter)
@@ -26,7 +30,10 @@ class Skeleton:
         else:
             return None
 
-    def y(self) -> np.ndarray:
+    def y(self, strict=False) -> np.ndarray:
+        if self.y_str == 'lat' and (strict or self.strict):
+            return None
+
         if self.y_str == 'lat':
             lon = np.median(self.lon())
             __, y, __, __ = utm.from_latlon(self.lat(), lon, force_zone_number=self._zone_number, force_zone_letter=self._zone_letter)
@@ -37,7 +44,10 @@ class Skeleton:
         else:
             return None
 
-    def lon(self) -> np.ndarray:
+    def lon(self, strict=False) -> np.ndarray:
+        if self.x_str == 'x' and (strict or self.strict):
+            return None
+
         if self.x_str == 'x':
             y = np.median(self.y())
             __, lon = utm.to_latlon(self.x(), y, self._zone_number, zone_letter=self._zone_letter, strict = False)
@@ -48,7 +58,10 @@ class Skeleton:
         else:
             return None
 
-    def lat(self) -> np.ndarray:
+    def lat(self, strict=False) -> np.ndarray:
+        if self.y_str == 'y' and (strict or self.strict):
+            return None
+
         if self.y_str == 'y':
             x = np.median(self.x())
             lat, __ = utm.to_latlon(x, self.y(), self._zone_number, zone_letter=self._zone_letter, strict = False)
@@ -240,7 +253,13 @@ class Skeleton:
     def _set_data(self, data: np.ndarray, data_name: str) -> None:
         self.merge_in_ds(self.compile_to_ds(data, data_name))
 
-    def _create_structure(self, x=None, y=None, lon=None, lat=None, time=None, **kwargs):
+    def _create_structure(self, grid=None, x=None, y=None, lon=None, lat=None, time=None, **kwargs):
+        if grid is not None:
+            x = grid.x(strict=True)
+            y = grid.y(strict=True)
+            lon = grid.lon(strict=True)
+            lat = grid.lat(strict=True)
+            
         native_x, native_y, xvec, yvec = check_input_consistency(x, y, lon, lat)
 
         self.x_str = native_x

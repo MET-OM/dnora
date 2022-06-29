@@ -1,4 +1,4 @@
-from spc_mod import Spectra, Boundary
+from spc_mod import Spectra, Boundary, GriddedSpectra
 from grd_mod import Grid
 import numpy as np
 import xarray as xr
@@ -17,10 +17,12 @@ from dnora import grd
 #
 # ds2=spec.compile_to_xr(np.zeros((10,2,6)),'test_spec', additional_coords={'freq': np.array([0,1,2,3,4,5])})
 
-# grid = Grid(lon=(4.00, 5.73), lat=(60.53, 61.25), name='Skjerjehamn')
-# grid.set_spacing(dm=10000)
-# grid.import_topo(topo_reader=grd.read.EMODNET2020(tile='*'))
-# grid.mesh_grid()
+grid = Grid(lon=(4.00, 5.73), lat=(60.53, 61.25), name='Skjerjehamn')
+grid.set_spacing(dm=10000)
+grid.import_topo(topo_reader=grd.read.EMODNET2020(tile='*'))
+grid.mesh_grid()
 
 spec = Spectra(lon=(4.00, 5.73), lat=(60.53, 61.25), name='Skjerjehamn')
 bnd = Boundary(lon=(4.00, 5.73), lat=(60.53, 61.25), name='Skjerjehamn')
+
+gspec = GriddedSpectra(lon=(4.00, 5.73), lat=(60.53, 61.25), name='Skjerjehamn')
