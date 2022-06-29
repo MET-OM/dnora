@@ -30,17 +30,11 @@ class GriddedSkeleton(Skeleton):
     def _ds_vars_dict(self):
         return {}
 
-    def size(self) -> tuple[int, int]:
-        """Returns the size of the object.
-
-        Spatial, temporal and possible added dimensions."""
+    def core_size(self) -> tuple[int, int]:
+        """Returns the size of the object along spatial and temporal dimensions."""
         list = [super().ny(), super().nx()]
         if self.nt() is not None:
             list.append(super().nt())
-
-        for coord in self._additional_coords():
-            if self._additional_coord_val(coord) is not None:
-                list.append(len(self._additional_coord_val(coord)))
 
         return tuple(list)
 

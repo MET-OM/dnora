@@ -21,7 +21,7 @@ class Topography:
         data_type = 'bool'*boolean or 'float'
 
         if empty:
-            return np.full(self.size()[0:2], 1.).astype(data_type)
+            return np.full(self.core_size(), 1.).astype(data_type)
 
         mask = self.get('sea_mask')
 
@@ -39,7 +39,7 @@ class Topography:
         data_type = 'bool'*boolean or 'float'
 
         if empty:
-            return np.full(self.size()[0:2], 1.).astype(data_type)
+            return np.full(self.core_size(), 1.).astype(data_type)
 
         mask = self.get('boundary_mask')
 
@@ -53,7 +53,7 @@ class Topography:
 
         Set empty=True to get an empty topo (even if it doesn't exist)."""
         if empty:
-            return np.full(self.size()[0:2], 999.)
+            return np.full(self.core_size(), 999.)
 
         topo = self.get('topo')
 

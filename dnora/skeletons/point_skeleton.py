@@ -41,17 +41,11 @@ class PointSkeleton(Skeleton):
         else:
             return None
 
-    def size(self) -> tuple[int]:
-        """Returns the size of the object.
-
-        Spatial, temporal and possible added dimensions."""
+    def core_size(self) -> tuple[int]:
+        """Returns the size of the object along spatial and temporal dimensions."""
         list = [super().nx()]
         if self.nt() is not None:
             list.append(super().nt())
-
-        for coord in self._additional_coords():
-            if self._additional_coord_val(coord) is not None:
-                list.append(len(self._additional_coord_val(coord)))
         return tuple(list)
 
     def lonlat(self, mask: np.array=None, strict=False) -> tuple[np.ndarray, np.ndarray]:

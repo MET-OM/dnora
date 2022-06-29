@@ -12,91 +12,81 @@ class Skeleton:
     _zone_letter = 'W'
     strict = False # If this is True, no coordinate conversions will be done (return None instead)
 
+    def is_cartesian(self):
+        if self.x_str == 'x' and self.y_str == 'y':
+            return True
+        elif self.x_str == 'lon' and self.y_str == 'lat':
+            return False
+        raise Exception(f"Expected x- and y string to be either 'x' and 'y' or 'lon' and 'lat', but they were {x_str} and {y_str}")
+
     def set_utm(self, zone_number: int=33, zone_letter: str='W'):
         self._zone_number = copy(zone_number)
         self._zone_letter = copy(zone_letter)
 
     def x(self, strict=False) -> np.ndarray:
-        if self.x_str == 'lon' and (strict or self.strict):
+        if not self.is_cartesian() and (strict or self.strict):
             return None
 
-        if self.x_str == 'lon':
+        if not self.is_cartesian():
             lat = np.median(self.lat())
             x, __, __, __ = utm.from_latlon(lat, self.lon(), force_zone_number=self._zone_number, force_zone_letter=self._zone_letter)
             return x
 
-        if hasattr(self, 'data') and hasattr(self.data, 'x'):
-            return self.data.x.values
-        else:
-            return None
+        return self.get('x')
 
     def y(self, strict=False) -> np.ndarray:
-        if self.y_str == 'lat' and (strict or self.strict):
+        if not self.is_cartesian() and (strict or self.strict):
             return None
 
-        if self.y_str == 'lat':
+        if not self.is_cartesian():
             lon = np.median(self.lon())
             __, y, __, __ = utm.from_latlon(self.lat(), lon, force_zone_number=self._zone_number, force_zone_letter=self._zone_letter)
             return y
 
-        if hasattr(self, 'data') and hasattr(self.data, 'y') :
-            return self.data.y.values
-        else:
-            return None
+        return self.get('y')
 
     def lon(self, strict=False) -> np.ndarray:
-        if self.x_str == 'x' and (strict or self.strict):
+        if self.is_cartesian() and (strict or self.strict):
             return None
 
-        if self.x_str == 'x':
+        if self.is_cartesian():
             y = np.median(self.y())
             __, lon = utm.to_latlon(self.x(), y, self._zone_number, zone_letter=self._zone_letter, strict = False)
             return lon
 
-        if hasattr(self, 'data') and hasattr(self.data, 'lon'):
-            return self.data.lon.values
-        else:
-            return None
+        return self.get('lon')
 
     def lat(self, strict=False) -> np.ndarray:
-        if self.y_str == 'y' and (strict or self.strict):
+        if self.is_cartesian() and (strict or self.strict):
             return None
 
-        if self.y_str == 'y':
+        if self.is_cartesian():
             x = np.median(self.x())
             lat, __ = utm.to_latlon(x, self.y(), self._zone_number, zone_letter=self._zone_letter, strict = False)
             return lat
 
-        if hasattr(self, 'data') and hasattr(self.data, 'lat') :
-            return self.data.lat.values
-        else:
-            return None
+        return self.get('lat')
 
     def native_x(self) -> np.ndarray:
-        if self.x_str == 'x':
+        if self.is_cartesian():
             return self.x()
-        elif self.x_str == 'lon':
-            return self.lon()
-        else:
-            return None
+        return self.lon()
+
 
     def native_y(self) -> np.ndarray:
-        if self.y_str == 'y':
+        if self.is_cartesian():
             return self.y()
-        elif self.y_str == 'lat':
-            return self.lat()
-        else:
-            return None
+        return self.lat()
 
     def _lonlat(self, lon: np.ndarray=None, lat: np.ndarray=None, strict=False):
         """Converts list of points to longitude and latitude if necessary.
 
         Input is assumed to be in the native format.
         """
-        if self.x_str == 'x' and (strict or self.strict):
+        if self.is_cartesian() and (strict or self.strict):
             return None, None
 
-        if self.x_str == 'x':
+        if self.is_cartesian():
             lat, lon = utm.to_latlon(lon, lat, self._zone_number, zone_letter=self._zone_letter, strict = False)
         return lon, lat
 
@@ -105,10 +95,10 @@ class Skeleton:
 
         Input is assumed to be in the native format.
         """
-        if self.x_str == 'lon' and (strict or self.strict):
+        if not self.is_cartesian() and (strict or self.strict):
             return None, None
 
-        if self.x_str == 'lon':
+        if not self.is_cartesian():
             x, y, __, __ = utm.from_latlon(y, x, force_zone_number=self._zone_number, force_zone_letter=self._zone_letter)
         return x, y
 
@@ -213,10 +203,7 @@ class Skeleton:
             raise ValueError("name needs to be a string")
 
     def time(self):
-        if hasattr(self, 'data') and hasattr(self.data, 'time'):
-            return self.data.time.values
-        else:
-            return None
+        return self.get('time')
 
     def _ds_vars_dict(self):
         """Return variable dictionary for creating xarray Dataset.
@@ -277,7 +264,22 @@ class Skeleton:
 
         return data.values.copy()
 
+
+    def size(self) -> tuple[int]:
+        """Returns the size of the object alon spatial, temporal and possible
+        added dimensions."""
+
+        list = list(self.core_size())
+
+        for coord in self._additional_coords():
+            if self._additional_coord_val(coord) is not None:
+                list.append(len(self._additional_coord_val(coord)))
+        return tuple(list)
+
     def _create_structure(self, x=None, y=None, lon=None, lat=None, time=None, **kwargs):
+        """Create the first Dataset with either x,y (Cartesian) or lon, lat (Spherical)
+        depending on which variables are provided."""
+        
         native_x, native_y, xvec, yvec = check_input_consistency(x, y, lon, lat)
 
         self.x_str = native_x
