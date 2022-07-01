@@ -6,6 +6,7 @@ import xarray as xr
 from dnora.grd.read import TopoReader
 from dnora import msg
 from dnora.grd.mesh import Mesher, Interpolate
+from coordinates import include_time
 def is_gridded(data: np.ndarray, lon: np.ndarray, lat: np.ndarray) -> bool:
     if data.shape == (len(lat), len(lon)):
         return True
@@ -15,7 +16,7 @@ def is_gridded(data: np.ndarray, lon: np.ndarray, lat: np.ndarray) -> bool:
 
     raise Exception(f"Size of data is {data.shape} but len(lat) = {len(lat)} and len(lon) = {len(lon)}. I don't know what is going on!")
 
-
+#@include_time(grid_coord=True)
 class Grid(GriddedSkeleton, Topography):
     def __init__(self, x=None, y=None, lon=None, lat=None, name='AnonymousGrid'):
         self.name = name
@@ -84,7 +85,7 @@ class Grid(GriddedSkeleton, Topography):
             self.raw = UnstrGrid(lon=lon, lat=lat)
         topo[topo<=0]=np.nan
 
-        self.raw._set_data(topo, 'topo')
+        self.raw._set(topo, 'topo')
         self.raw._update_sea_mask()
 
     def mesh_grid(self, mesher: Mesher=Interpolate(method = 'linear')) -> None:
@@ -97,6 +98,6 @@ class Grid(GriddedSkeleton, Topography):
 
         topo = mesher(self.raw.topo().ravel(), lon, lat, lonQ, latQ)
         topo[topo<=0]=np.nan
-        self._set_data(topo, 'topo')
+        self._set(topo, 'topo')
         self._update_sea_mask()
 #            print(self)

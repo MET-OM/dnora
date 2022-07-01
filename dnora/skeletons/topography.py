@@ -4,13 +4,13 @@ from copy import copy
 
 class Topography:
     def _reset_vars(self):
-        self._set_data(self.topo(empty=True),'topo')
-        self._set_data(self.boundary_mask(empty=True),'boundary_mask')
+        self._set(self.topo(empty=True),'topo', only_grid_coords=True)
+        self._set(self.boundary_mask(empty=True),'boundary_mask', only_grid_coords=True)
         self._update_sea_mask()
 
     def _update_sea_mask(self) -> None:
         sea_mask = np.logical_not(np.isnan(self.topo())).astype(int)
-        self._set_data(sea_mask,'sea_mask')
+        self._set(sea_mask,'sea_mask', only_grid_coords=True)
 
     def sea_mask(self, boolean: bool=True, empty: bool=False) -> np.ndarray:
         """Returns bool array of the sea mask.
@@ -21,9 +21,9 @@ class Topography:
         data_type = 'bool'*boolean or 'float'
 
         if empty:
-            return np.full(self.core_size(), 1.).astype(data_type)
+            return np.full(self.grid_size(), 1.).astype(data_type)
 
-        mask = self.get('sea_mask')
+        mask = self._get('sea_mask')
 
         if mask is None:
             return None
@@ -39,9 +39,9 @@ class Topography:
         data_type = 'bool'*boolean or 'float'
 
         if empty:
-            return np.full(self.core_size(), 1.).astype(data_type)
+            return np.full(self.grid_size(), 1.).astype(data_type)
 
-        mask = self.get('boundary_mask')
+        mask = self._get('boundary_mask')
 
         if mask is None:
             return None
@@ -53,9 +53,9 @@ class Topography:
 
         Set empty=True to get an empty topo (even if it doesn't exist)."""
         if empty:
-            return np.full(self.core_size(), 999.)
+            return np.full(self.size(), 999.)
 
-        topo = self.get('topo')
+        topo = self._get('topo')
 
         if topo is None:
             return None

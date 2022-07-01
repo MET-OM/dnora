@@ -4,16 +4,29 @@ import xarray as xr
 import utm
 from copy import copy
 from skeleton import Skeleton
+from skeleton_dataset import SkeletonDataset
 
-class GriddedSkeleton(Skeleton):
-    def __init__(self, x=None, y=None, lon=None, lat=None, time=None, name='GriddedData'):
-        self.data = super()._create_structure(x, y, lon, lat, time)
-        self.data.attrs['name'] = name
+class GriddedSkeleton(Skeleton, SkeletonDataset):
+    """Gives a gridded structure to the Skeleton.
 
-    def _init_ds(self, x: np.ndarray, y: np.ndarray, time=None, **kwargs) -> xr.Dataset:
+    In practise this means that:
+
+    1) Grid coordinates are defined as x,y / lon,lat.
+    2) Methods x(), y() / lon(), lat() will return the vectors defining the grid.
+    3) Methods xy() / lonlat() will return a list of all points of the grid
+    (i.e. raveled meshgrid).
+    """
+
+    # def __init__(self, x=None, y=None, lon=None, lat=None, name='GriddedData'):
+    #     self.data = super()._create_structure(x, y, lon, lat)
+    #     self.data.attrs['name'] = name
+
+    def _init_ds(self, x: np.ndarray, y: np.ndarray, **kwargs) -> xr.Dataset:
+        """Creates a Dataset containing the spatial variables as coordinates.
+
+        Any additional keyword arguments are also added to the coordinate list.
+        """
         coords_dict = {self.y_str: y, self.x_str: x}
-        if time is not None:
-            coords_dict['time'] = time
 
         for key, value in kwargs.items():
             coords_dict[key] = value
@@ -21,22 +34,16 @@ class GriddedSkeleton(Skeleton):
         return xr.Dataset(coords=coords_dict, attrs={'name': self.name})
 
     def _ds_coords_dict(self):
-        """Return coordinate dictionary for creating xarray Dataset"""
+        """Return coordinate dictionary for creating xarray Dataset.
+
+        This can be used to add data after the coordinates have been created
+        by _init_ds."""
         coords_dict = {self.y_str: super().native_y(), self.x_str: super().native_x()}
-        if super().time() is not None:
-            coords_dict['time'] = super().time()
+
         return coords_dict
 
     def _ds_vars_dict(self):
         return {}
-
-    def core_size(self) -> tuple[int, int]:
-        """Returns the size of the object along spatial and temporal dimensions."""
-        list = [super().ny(), super().nx()]
-        if self.nt() is not None:
-            list.append(super().nt())
-
-        return tuple(list)
 
     def lonlat(self, mask: np.array=None, order_by: str='lat', strict=False) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of longitude and latitude of all points.

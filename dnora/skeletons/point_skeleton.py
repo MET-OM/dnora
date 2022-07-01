@@ -4,17 +4,30 @@ import xarray as xr
 import utm
 from copy import copy
 from skeleton import Skeleton
+from skeleton_dataset import SkeletonDataset
 
-class PointSkeleton(Skeleton):
-    def __init__(self, x=None, y=None, lon=None, lat=None, time=None, name='PointyData'):
-        self.data = super()._create_structure(x, y, lon, lat, time)
-        self.data.attrs['name'] = name
+class PointSkeleton(Skeleton, SkeletonDataset):
+    """Gives a unstructured structure to the Skeleton.
 
-    def _init_ds(self, x: np.ndarray, y: np.ndarray, time=None, **kwargs) -> xr.Dataset:
+    In practise this means that:
+
+    1) Grid coordinates are defined with and index (inds),
+    2) x,y / lon/lat values are data variables of the index.
+    3) Methods x(), y() / lon(), lat() will returns all points.
+    4) Methods xy() / lonlat() are identical to e.g. (x(), y()).
+    """
+
+    # def __init__(self, x=None, y=None, lon=None, lat=None, time=None, name='PointyData'):
+    #     self.data = super()._create_structure(x, y, lon, lat, time)
+    #     self.data.attrs['name'] = name
+
+    def _init_ds(self, x: np.ndarray, y: np.ndarray, **kwargs) -> xr.Dataset:
+        """Creates a Dataset containing the index variable as a coordinate and
+        spatial coordinates as data variables on this index.
+
+        Any additional keyword arguments are also added to the coordinate list.
+        """
         coords_dict = {'inds': np.arange(len(x))}
-
-        if time is not None:
-            coords_dict['time'] = (['inds'], time)
 
         for key, value in kwargs.items():
             coords_dict[key] = value
@@ -23,30 +36,8 @@ class PointSkeleton(Skeleton):
 
         return xr.Dataset(coords=coords_dict, data_vars=vars_dict, attrs={'name': self.name})
 
-    def _ds_coords_dict(self):
-        """Return coordinate dictionary for creating xarray Dataset"""
-        coords_dict = {'inds': self.inds()}
-        if super().time() is not None:
-            coords_dict['time'] = super().time()
-        return coords_dict
-
-    def _ds_vars_dict(self):
-        """Return variable dictionary for creating xarray Dataset"""
-        vars_dict = {self.x_str: (['inds'], super().native_x()), self.y_str: (['inds'], super().native_y())}
-        return vars_dict
-
     def inds(self) -> np.ndarray:
-        if hasattr(self.data, 'inds') :
-            return self.data.inds.values
-        else:
-            return None
-
-    def core_size(self) -> tuple[int]:
-        """Returns the size of the object along spatial and temporal dimensions."""
-        list = [super().nx()]
-        if self.nt() is not None:
-            list.append(super().nt())
-        return tuple(list)
+        return super()._get('inds')
 
     def lonlat(self, mask: np.array=None, strict=False) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of longitude and latitude of all points.
