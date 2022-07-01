@@ -91,6 +91,7 @@ class SkeletonDataset:
                 if i > len(data.shape)-1:
                     raise Exception(f'{item[0]} coordinate is {len(item[1])} long, but that dimension doesnt exist in the data!!!')
                 if len(item[1]) != data.shape[i]:
+                    breakpoint()
                     raise Exception(f'{item[0]} coordinate is {len(item[1])} long, but size of data in that dimension (dim {i}) is {data.shape[i]}!!!')
 
             if i < len(data.shape)-1:
@@ -260,5 +261,11 @@ def will_grid_be_spherical_or_cartesian(x, y, lon, lat):
 
     if not xy and not lonlat:
         raise ValueError('Have to set either lon/lat or x/y!')
+
+    if isinstance(xvec, float) or isinstance(xvec, int):
+        xvec = [xvec]
+
+    if isinstance(yvec, float) or isinstance(yvec, int):
+        yvec = [yvec]
 
     return native_x, native_y, np.array(xvec), np.array(yvec)
