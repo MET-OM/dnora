@@ -20,7 +20,7 @@ def coord_decorator(coord_name, grid_coord, c):
     exec(f'c.{coord_name} = get_coord')
     return c
 
-def include_time(grid_coord: bool=False, coord_name: str='time'):
+def add_time(grid_coord: bool=False, coord_name: str='time'):
     def wrapper(c):
         def days(self):
             """Determins a Pandas data range of all the days in the time span."""
@@ -50,8 +50,8 @@ def include_time(grid_coord: bool=False, coord_name: str='time'):
 
     return wrapper
 
-def include_frequency(grid_coord: bool=False, coord_name: str='freq'):
+def add_frequency(grid_coord: bool=False, coord_name: str='freq'):
     return partial(coord_decorator, coord_name, grid_coord)
 
-def include_direction(grid_coord: bool=False, coord_name: str='dirs'):
+def add_direction(grid_coord: bool=False, coord_name: str='dirs'):
     return partial(coord_decorator, coord_name, grid_coord)

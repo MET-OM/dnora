@@ -6,7 +6,7 @@ import xarray as xr
 from dnora.grd.read import TopoReader
 from dnora import msg
 from dnora.grd.mesh import Mesher, Interpolate
-from coordinates import include_time
+from coordinates import add_time
 from mask_generator import add_mask
 
 def is_gridded(data: np.ndarray, lon: np.ndarray, lat: np.ndarray) -> bool:
