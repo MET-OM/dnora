@@ -43,6 +43,7 @@ class SkeletonDataset:
         check_consistency()
         self.data = ds
         self._reset_masks()
+        self._reset_datavars()
 
 
     def _init_ds(self, x: np.ndarray, y: np.ndarray, **kwargs) -> xr.Dataset:
@@ -91,10 +92,37 @@ class SkeletonDataset:
 
     def _reset_masks(self) -> None:
         """Resets the mask to default values."""
-        masks = getattr(self, '_mask_dict', {})
+        for name in getattr(self, '_mask_dict', {}):
+            # update-method sets empty mask when no is provided
+            self._update_mask(name)
 
-        for name, mask_tuple in masks.items():
-            eval(f'self._update_{name}_mask()')
+    def _reset_datavars(self) -> None:
+        """Resets the data variables to default values."""
+        for name in getattr(self, '_datavar_dict', {}):
+            # update-method sets empty mask when no is provided
+            self._update_datavar(name)
+
+    def _update_mask(self, name: str, updated_mask=None) -> None:
+        masks = getattr(self, '_mask_dict', {})
+        if name not in masks.keys():
+            raise ValueError(f'A mask named {name} has not been defines ({list(masks.keys())})')
+        coords, default_value = masks[name]
+
+        if updated_mask is None:
+            # E.g. .boundary_mask(empty=True) works even if mask not set
+            updated_mask = getattr(self, f'{name}_mask')(empty=True)
+        self._set(data=updated_mask, data_name=f'{name}_mask', coords=coords)
+
+    def _update_datavar(self, name: str, updated_var=None) -> None:
+        vars = getattr(self, '_datavar_dict', {})
+        if name not in vars.keys():
+            raise ValueError(f'A data variable named {name} has not been defines ({list(vars.keys())})')
+        coords, default_values = vars[name]
+
+        if updated_var is None:
+            # E.g. .topo(empty=True) works even if mask not set
+            updated_var = getattr(self, name)(empty=True)
+        self._set(data=updated_var, data_name=name, coords=coords)
 
     def ds(self):
         """Resturns the Dataset (None if doesn't exist)."""

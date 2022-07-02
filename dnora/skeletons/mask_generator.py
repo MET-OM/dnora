@@ -2,11 +2,15 @@ import numpy as np
 
 def add_mask(name, coords, default_value):
     def mask_decorator(c):
-        def get_mask(self, boolean: bool=True, empty: bool=False) -> np.ndarray:
+        def get_mask(self, boolean: bool=None, empty: bool=False) -> np.ndarray:
             """Returns bool array of the mask.
 
             Set boolean=False to get 0 for land and 1 for sea.
             Set empty=True to get an empty mask (even if it doesn't exist)"""
+
+            if boolean is None:
+                # If not specified take it from the default value
+                boolean = isinstance(default_value, bool)
 
             data_type = 'bool'*boolean or 'float'
 
@@ -19,17 +23,6 @@ def add_mask(name, coords, default_value):
                 return None
 
             return mask.astype(data_type)
-
-        def update_mask(self, updated_mask: np.ndarray=None) -> None:
-            """Returns bool array of the mask.
-
-            Set boolean=False to get 0 for land and 1 for sea.
-            Set empty=True to get an empty mask (even if it doesn't exist)"""
-
-            mask_name = f'{name}_mask'
-            if updated_mask is None:
-                updated_mask = getattr(self, mask_name)(boolean=isinstance(default_value, bool),empty=True)
-            self._set(data=updated_mask, data_name=mask_name, coords=coords)
 
         def get_masked_points(self, type: str='native', order_by: str='lat', strict=False):
             mask = getattr(self, f'{name}_mask')(boolean=True)
@@ -47,7 +40,7 @@ def add_mask(name, coords, default_value):
         c._mask_dict[name] = (coords, default_value)
         exec(f'c.{name}_mask = get_mask')
         exec(f'c.{name}_points = get_masked_points')
-        exec(f'c._update_{name}_mask = update_mask')
+        #exec(f'c._update_{name}_mask = update_mask')
 
         return c
 

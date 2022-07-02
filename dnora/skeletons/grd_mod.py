@@ -8,6 +8,8 @@ from dnora import msg
 from dnora.grd.mesh import Mesher, Interpolate
 from coordinates import add_time
 from mask_generator import add_mask
+from datavar_generator import add_datavar
+
 
 def is_gridded(data: np.ndarray, lon: np.ndarray, lat: np.ndarray) -> bool:
     if data.shape == (len(lat), len(lon)):
@@ -18,14 +20,14 @@ def is_gridded(data: np.ndarray, lon: np.ndarray, lat: np.ndarray) -> bool:
 
     raise Exception(f"Size of data is {data.shape} but len(lat) = {len(lat)} and len(lon) = {len(lon)}. I don't know what is going on!")
 
+@add_datavar(name='topo', coords='grid', default_value=999.)
 @add_mask(name='boundary', coords='grid', default_value=0)
 @add_mask(name='land', coords='grid', default_value=0)
 @add_mask(name='sea', coords='grid', default_value=1)
-class Grid(GriddedSkeleton, Topography):
+class Grid(GriddedSkeleton):
     def __init__(self, x=None, y=None, lon=None, lat=None, name='AnonymousGrid'):
         self.name = name
         self._create_structure(x, y, lon, lat)
-        self._reset_vars()
 
     def set_spacing(self, dlon: float=0., dlat: float=0.,
                     dx: float=0., dy: float=0., dm: float=0,
