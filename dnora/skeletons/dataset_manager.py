@@ -96,7 +96,7 @@ class DatasetManager:
         coords, get_empty = masks[name]
 
         if updated_mask is None:
-            updated_mask = get_empty(self)
+            updated_mask = get_empty(self, boolean=None)
         self.set(data=updated_mask, data_name=f'{name}_mask', coords=coords)
 
     def update_datavar(self, name: str, updated_var=None) -> None:

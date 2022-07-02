@@ -21,8 +21,8 @@ from dnora import grd
 grid = Grid(lon=(22.00, 22.73), lat=(60.00, 60.53), name='Skjerjehamn')
 #ugrid = UnstrGrid(lon=(4.00, 5.73), lat=(60.53), name='Skjerjehamn')
 grid.set_spacing(dlon=0.1, dlat=0.1)
-#grid.import_topo(topo_reader=grd.read.EMODNET2020(tile='*', folder='~/Documents/EMODNET2020'))
-grid.import_topo(grid)
+grid.import_topo(topo_reader=grd.read.EMODNET2020(tile='*', folder='~/Documents/EMODNET2020'))
+#grid.import_topo(grid)
 grid.mesh_grid()
 #
 #spec = Spectra(lon=(4.00, 5.73), lat=(60.53, 61.25), name='Skjerjehamn')

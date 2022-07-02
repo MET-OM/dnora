@@ -3,7 +3,7 @@ from coordinate_manager import CoordinateManager
 from functools import partial
 def add_mask(name, coords, default_value):
     def mask_decorator(c):
-        def get_mask(self, boolean: bool=None, empty: bool=False) -> np.ndarray:
+        def get_mask(self, boolean: bool=True, empty: bool=False) -> np.ndarray:
             """Returns bool array of the mask.
 
             Set boolean=False to get 0 for land and 1 for sea.

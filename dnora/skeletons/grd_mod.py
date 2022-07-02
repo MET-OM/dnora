@@ -149,13 +149,6 @@ class Grid(GriddedSkeleton):
     def __str__(self) -> str:
         """Prints status of the grid."""
 
-        # if self.topo().shape==(0,):
-        #     empty_topo = True
-        # elif np.mean(self.topo()[self.land_sea_mask()]) == 9999:
-        #     empty_topo = True
-        # else:
-        #     empty_topo = False
-
         msg.header(self, f"Status of grid {self.name}")
         msg.plain(f'lon: {self.lon()[0]} - {self.lon()[-1]}, lat: {self.lat()[0]} - {self.lat()[-1]}')
 
@@ -170,19 +163,17 @@ class Grid(GriddedSkeleton):
         if self.nx() is not None:
             msg.plain(f'nx, ny = {self.nx()} x {self.ny()} grid points')
 
-        # if self.topo().size > 0 and (not empty_topo):
-        #     msg.plain(f"Mean depth: {np.mean(self.topo()[self.land_sea_mask()]):.1f} m")
-        #     msg.plain(f"Max depth: {np.max(self.topo()[self.land_sea_mask()]):.1f} m")
-        #     msg.plain(f"Min depth: {np.min(self.topo()[self.land_sea_mask()]):.1f} m")
-        #
-        # if self.land_sea_mask().size > 0:
-        #     msg.print_line()
-        #     msg.plain('Grid contains:')
-        #     msg.plain(f'{sum(sum(self.land_sea_mask())):d} sea points')
-        #     msg.plain(f'{sum(sum(np.logical_not(self.land_sea_mask()))):d} land points')
-        #
-        # if self.boundary_mask().size > 0:
-        #     msg.plain(f'{sum(sum(np.logical_and(self.boundary_mask(), self.land_sea_mask()))):d} boundary points')
+        if not self.ds_manager.is_empty('topo'):
+            msg.plain(f"Mean depth: {np.mean(self.topo()[self.sea_mask()]):.1f} m")
+            msg.plain(f"Max depth: {np.max(self.topo()[self.sea_mask()]):.1f} m")
+            msg.plain(f"Min depth: {np.min(self.topo()[self.sea_mask()]):.1f} m")
+
+        if not self.ds_manager.is_empty('topo'):
+            msg.print_line()
+            msg.plain('Grid contains:')
+            msg.plain(f'{sum(sum(self.sea_mask())):d} sea points')
+            msg.plain(f'{sum(sum(np.logical_not(self.sea_mask()))):d} land points')
+            msg.plain(f'{sum(sum(np.logical_and(self.boundary_mask(), self.sea_mask()))):d} boundary points')
 
         msg.print_line()
 
