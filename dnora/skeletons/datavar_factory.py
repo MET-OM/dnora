@@ -16,7 +16,7 @@ def add_datavar(name, coords='grid', default_value=0.):
         if not hasattr(c, '_coord_manager'):
             c._coord_manager =  CoordinateManager()
 
-        c._coord_manager.add_var(name, coords, partial(get_var, empty=True))
+        c._coord_manager.add_var(name, coords)
         exec(f'c.{name} = get_var')
 
         return c

@@ -127,10 +127,10 @@ class Grid(GriddedSkeleton):
         else:
             self.raw = UnstrGrid(lon=lon, lat=lat)
 
-        self.raw.ds_manager.update_datavar('topo', topo)
+        self.raw._update_datavar('topo', topo)
         self.raw._update_sea_mask()
 
-    def mesh_grid(self, mesher: Mesher=Interpolate(method = 'linear')) -> None:
+    def mesh_grid(self, mesher: Mesher=Interpolate(method = 'nearest')) -> None:
         """Meshes the raw data down to the grid definitions."""
 
         msg.header(mesher, "Meshing grid bathymetry...")
@@ -139,12 +139,12 @@ class Grid(GriddedSkeleton):
         lon, lat = self.raw.lonlat()
 
         topo = mesher(self.raw.topo().ravel(), lon, lat, lonQ, latQ)
-        self.ds_manager.update_datavar('topo', topo)
+        self._update_datavar('topo', topo)
         self._update_sea_mask()
 #            print(self)
 
     def _update_sea_mask(self):
-        self.ds_manager.update_mask('sea', (self.topo()>0).astype(int))
+        self._update_mask('sea', (self.topo()>0).astype(int))
 
     def __str__(self) -> str:
         """Prints status of the grid."""
@@ -163,12 +163,12 @@ class Grid(GriddedSkeleton):
         if self.nx() is not None:
             msg.plain(f'nx, ny = {self.nx()} x {self.ny()} grid points')
 
-        if not self.ds_manager.is_empty('topo'):
+        if not self.is_empty('topo'):
             msg.plain(f"Mean depth: {np.mean(self.topo()[self.sea_mask()]):.1f} m")
             msg.plain(f"Max depth: {np.max(self.topo()[self.sea_mask()]):.1f} m")
             msg.plain(f"Min depth: {np.min(self.topo()[self.sea_mask()]):.1f} m")
 
-        if not self.ds_manager.is_empty('topo'):
+        if not self.is_empty('topo'):
             msg.print_line()
             msg.plain('Grid contains:')
             msg.plain(f'{sum(sum(self.sea_mask())):d} sea points')

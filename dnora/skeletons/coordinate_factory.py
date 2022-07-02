@@ -3,16 +3,6 @@ from dnora import aux_funcs
 from datetime import datetime
 import pandas as pd
 from coordinate_manager import CoordinateManager
-# def add_coord_name_to_list(c, coord_name, grid_coord):
-#     if grid_coord:
-#         if not hasattr(c, '_grid_coord_list'):
-#             c._grid_coord_list = []
-#         c._grid_coord_list.append(coord_name)
-#     else:
-#         if not hasattr(c, '_gridpoint_coord_list'):
-#             c._gridpoint_coord_list = []
-#         c._gridpoint_coord_list.append(coord_name)
-#     return c
 
 def coord_decorator(coord_name, grid_coord, c):
     def get_coord(self):
@@ -22,7 +12,6 @@ def coord_decorator(coord_name, grid_coord, c):
         c._coord_manager =  CoordinateManager()
 
     c._coord_manager.add_coord(coord_name, grid_coord)
-    #c = add_coord_name_to_list(o, coord_name, grid_coord)
     exec(f'c.{coord_name} = get_coord')
     return c
 

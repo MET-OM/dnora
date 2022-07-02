@@ -73,40 +73,7 @@ class DatasetManager:
         #ds = self.init_ds(x=x,y=y,)
         check_consistency()
         self.data = ds
-        self.reset_masks()
-        self.reset_datavars()
 
-
-    def reset_masks(self) -> None:
-        """Resets the mask to default values."""
-        for name in self.coord_manager.added_masks():
-            # update-method sets empty mask when no is provided
-            self.update_mask(name)
-
-    def reset_datavars(self) -> None:
-        """Resets the data variables to default values."""
-        for name in self.coord_manager.added_vars():
-            # update-method sets empty mask when no is provided
-            self.update_datavar(name)
-
-    def update_mask(self, name: str, updated_mask=None) -> None:
-        masks = self.coord_manager.added_masks()
-        if name not in masks.keys():
-            raise ValueError(f'A mask named {name} has not been defines ({list(masks.keys())})')
-        coords, get_empty = masks[name]
-
-        if updated_mask is None:
-            updated_mask = get_empty(self, boolean=None)
-        self.set(data=updated_mask, data_name=f'{name}_mask', coords=coords)
-
-    def update_datavar(self, name: str, updated_var=None) -> None:
-        vars = self.coord_manager.added_vars()
-        if name not in vars.keys():
-            raise ValueError(f'A data variable named {name} has not been defines ({list(vars.keys())})')
-        coords, get_empty = vars[name]
-        if updated_var is None:
-            updated_var = get_empty(self)
-        self.set(data=updated_var, data_name=name, coords=coords)
 
     def ds(self):
         """Resturns the Dataset (None if doesn't exist)."""
@@ -118,17 +85,8 @@ class DatasetManager:
     def set(self, data: np.ndarray, data_name: str, coords: str='all') -> None:
         self.merge_in_ds(self.compile_to_ds(data, data_name, coords))
 
-    def get(self, data_name: str, default_data=None, empty=False):
+    def get(self, data_name: str, default_data=None):
         """Gets data from Dataset"""
-        if empty:
-            ## For 'sea_mask' check both 'sea' in the mask dict
-            data_tuple = self.coord_manager.added_vars().get(data_name) or self.coord_manager.added_masks().get(data_name[0:-5])
-            if data_tuple is None:
-                return None
-            __, get_empty = data_tuple
-
-            return get_empty(self)
-
         ds = self.ds()
         if ds is None:
             return None
@@ -139,14 +97,6 @@ class DatasetManager:
             data = data.values.copy()
 
         return data
-
-    def is_empty(self, data_name):
-        """Checks if a Dataset variable is empty."""
-        data = self.get(data_name)
-        empty_data = self.get(data_name, empty=True)
-        if data is None:
-            return False
-        return np.allclose(data.astype(float), empty_data.astype(float))
 
     def merge_in_ds(self, ds_list: list[xr.Dataset]):
         """Merge in Datasets with some data into the existing Dataset of the
@@ -267,13 +217,3 @@ class DatasetManager:
             if coord in coords:
                 list.append(val)
         return tuple(list)
-
-    def size(self, type: str='all') -> tuple[int]:
-        """Returns the size of the Dataset.
-
-        'all': size of entire Dataset
-        'spatial': size over coordinates from the Skeleton (x, y, lon, lat, inds)
-        'grid': size over coordinates for the grid (e.g. z, time)
-        'gridpoint': size over coordinates for a grid point (e.g. frequency, direcion or time)
-        """
-        return self.coords_to_size(self.coords(type))

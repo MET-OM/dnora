@@ -44,6 +44,64 @@ class Skeleton:
 
         # The manager contains the Xarray Dataset
         self.ds_manager.create_structure(xvec,yvec,self.x_str,self.y_str,**kwargs)
+        self._reset_masks()
+        self._reset_datavars()
+
+
+    def _reset_masks(self) -> None:
+        """Resets the mask to default values."""
+        for name in self._coord_manager.added_masks():
+            # update-method sets empty mask when no is provided
+            self._update_mask(name)
+
+    def _reset_datavars(self) -> None:
+        """Resets the data variables to default values."""
+        for name in self._coord_manager.added_vars():
+            # update-method sets empty mask when no is provided
+            self._update_datavar(name)
+
+    def _update_mask(self, name: str, updated_mask=None) -> None:
+        coords = self._coord_manager.added_masks().get(name)
+        if name is None:
+            raise ValueError(f'A mask named {name} has not been defines ({list(masks.keys())})')
+
+        if updated_mask is None:
+            updated_mask = self.get(f'{name}_mask',empty=True)
+        self.ds_manager.set(data=updated_mask.astype(int), data_name=f'{name}_mask', coords=coords)
+
+    def _update_datavar(self, name: str, updated_var=None) -> None:
+        coords = self._coord_manager.added_vars().get(name)
+        if name is None:
+            raise ValueError(f'A data variable named {name} has not been defines ({list(vars.keys())})')
+
+        if updated_var is None:
+            updated_var = self.get(name, empty=True)
+        self.ds_manager.set(data=updated_var, data_name=name, coords=coords)
+
+    def get(self, name, empty=False):
+        """Gets a mask or data variable.
+
+        The ds_manager always gets what is in the Dataset (integers for masks).
+        The Skeletons get-method gives boolen masks, and you can also
+        request empty masks that willb e return even if data doesn't exist."""
+        if empty:
+            return eval(f'self.{name}(empty=True)')
+
+        data = self.ds_manager.get(name)
+        if data is None:
+            return None
+
+        data = eval(f'self.{name}()')
+        return data
+
+    def is_empty(self, name):
+        """Checks if a Dataset variable is empty."""
+        data = self.get(name)
+        if data is None:
+            return False
+        empty_data = self.get(name, empty=True)
+        return np.allclose(data.astype(float), empty_data.astype(float))
+
 
     def is_initialized(self) -> bool:
         return hasattr(self, 'x_str') and hasattr(self, 'y_str')
@@ -322,6 +380,7 @@ class Skeleton:
         else:
             raise ValueError("name needs to be a string")
 
+
     def size(self, type: str='all') -> tuple[int]:
         """Returns the size of the Dataset.
 
@@ -330,7 +389,7 @@ class Skeleton:
         'grid': size over coordinates for the grid (e.g. z, time)
         'gridpoint': size over coordinates for a grid point (e.g. frequency, direcion or time)
         """
-        return self.ds_manager.size(type)
+        return self.ds_manager.coords_to_size(self.ds_manager.coords(type))
 
 def will_grid_be_spherical_or_cartesian(x, y, lon, lat):
     """Determines if the grid will be spherical or cartesian based on which

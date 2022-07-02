@@ -26,11 +26,11 @@ class CoordinateManager:
         self.masks['added'] = {}
 
 
-    def add_var(self, name: str, coords: str, get_empty: Callable) -> None:
-        self.vars['added'][name] = (coords, get_empty)
+    def add_var(self, name: str, coords: str) -> None:
+        self.vars['added'][name] = coords
 
-    def add_mask(self, name: str, coords: str, get_empty: Callable) -> None:
-        self.masks['added'][name] = (coords, get_empty)
+    def add_mask(self, name: str, coords: str) -> None:
+        self.masks['added'][name] = coords
 
     def add_coord(self, name: str, grid_coord: bool) -> None:
         if grid_coord:
