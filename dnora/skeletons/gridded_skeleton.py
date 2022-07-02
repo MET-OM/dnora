@@ -4,9 +4,9 @@ import xarray as xr
 import utm
 from copy import copy
 from skeleton import Skeleton
-from skeleton_dataset import SkeletonDataset
+from dataset_manager import DatasetManager
 
-class GriddedSkeleton(Skeleton, SkeletonDataset):
+class GriddedSkeleton(Skeleton):
     """Gives a gridded structure to the Skeleton.
 
     In practise this means that:
@@ -23,7 +23,7 @@ class GriddedSkeleton(Skeleton, SkeletonDataset):
 
 
     def _initial_coords(self) -> list[str]:
-        return ['x', 'y']
+        return ['y', 'x']
 
     def _initial_vars(self) -> dict:
         return {}

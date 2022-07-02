@@ -4,9 +4,9 @@ import xarray as xr
 import utm
 from copy import copy
 from skeleton import Skeleton
-from skeleton_dataset import SkeletonDataset
+from dataset_manager import DatasetManager
 
-class PointSkeleton(Skeleton, SkeletonDataset):
+class PointSkeleton(Skeleton):
     """Gives a unstructured structure to the Skeleton.
 
     In practise this means that:

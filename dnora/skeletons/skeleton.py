@@ -3,6 +3,7 @@ import pandas as pd
 import xarray as xr
 import utm
 from copy import copy
+from dataset_manager import DatasetManager
 
 class Skeleton:
     """Contains methods and data of the spatial x,y / lon, lat coordinates and
@@ -10,16 +11,42 @@ class Skeleton:
 
     Keeps track of the native structure of the grid (cartesian UTM / sperical).
     """
-    _x_str = 'x'
-    _y_str = 'y'
     _name = 'LonelySkeleton'
     _zone_number = 33
     _zone_letter = 'W'
     strict = False # If this is True, no coordinate conversions will be done (return None instead)
 
     _xy_dict = {'x': 'x', 'lon': 'x', 'y': 'y', 'lat': 'y'}
-    _cartesian_strings = ['x','y','xy']
-    _spherical_strings = ['lon','lat','lonlat']
+
+
+    def _init_structure(self, x=None, y=None, lon=None, lat=None, **kwargs):
+        """Determines grid type (Cartesian/Spherical), generates a DatasetManager
+        and initializes the Xarray dataset within the DatasetManager."""
+        # Migth have been already created by decorators
+        if not hasattr(self, '_coord_manager'):
+            self._coord_manager =  CoordinateManager()
+
+        if not self.is_initialized():
+            x_str, y_str, xvec, yvec = will_grid_be_spherical_or_cartesian(x, y, lon, lat)
+
+            self.x_str = x_str
+            self.y_str = y_str
+
+            # Initial values defined in subclass (e.g. GriddedSkeleton)
+            self._coord_manager.add_initial_coords(self._initial_coords())
+            self._coord_manager.add_initial_vars(self._initial_vars())
+        else:
+            xvec = x
+            yvec = y
+
+        if not hasattr(self, 'ds_manager'):
+            self.ds_manager = DatasetManager(self._coord_manager)
+
+        # The manager contains the Xarray Dataset
+        self.ds_manager.create_structure(xvec,yvec,self.x_str,self.y_str,**kwargs)
+
+    def is_initialized(self) -> bool:
+        return hasattr(self, 'x_str') and hasattr(self, 'y_str')
 
     def is_cartesian(self) -> bool:
         """Checks if the grid is cartesian (True) or spherical (False)."""
@@ -34,8 +61,21 @@ class Skeleton:
         self._zone_number = copy(zone_number)
         self._zone_letter = copy(zone_letter)
 
+    def ds(self):
+        return self.ds_manager.ds()
+
+    def size(self, type: str='all') -> tuple[int]:
+        """Returns the size of the Dataset.
+
+        'all': size of entire Dataset
+        'spatial': size over coordinates from the Skeleton (x, y, lon, lat, inds)
+        'grid': size over coordinates for the grid (e.g. z, time)
+        'gridpoint': size over coordinates for a grid point (e.g. frequency, direcion or time)
+        """
+        return self.ds_manager.size(type)
+
     def inds(self) -> np.ndarray:
-        return self._get('inds')
+        return self.ds_manager.get('inds')
 
     def native_x(self) -> np.ndarray:
         """Returns x-vector for cartesian grids and lon-vector for sperical
@@ -68,7 +108,7 @@ class Skeleton:
             x, __, __, __ = utm.from_latlon(lat, self.lon(), force_zone_number=self._zone_number, force_zone_letter=self._zone_letter)
             return x
 
-        return self._get('x')
+        return self.ds_manager.get('x')
 
     def y(self, strict=False) -> np.ndarray:
         """Returns the cartesian y-coordinate. If the grid is spherical a
@@ -84,7 +124,7 @@ class Skeleton:
             __, y, __, __ = utm.from_latlon(self.lat(), lon, force_zone_number=self._zone_number, force_zone_letter=self._zone_letter)
             return y
 
-        return self._get('y')
+        return self.ds_manager.get('y')
 
     def lon(self, strict=False) -> np.ndarray:
         """Returns the spherical lon-coordinate. If the grid is cartesian (UTM)
@@ -101,7 +141,7 @@ class Skeleton:
             __, lon = utm.to_latlon(self.x(), y, self._zone_number, zone_letter=self._zone_letter, strict = False)
             return lon
 
-        return self._get('lon')
+        return self.ds_manager.get('lon')
 
     def lat(self, strict=False) -> np.ndarray:
         """Returns the spherical at-coordinate. If the grid is cartesian (UTM)
@@ -118,7 +158,7 @@ class Skeleton:
             lat, __ = utm.to_latlon(x, self.y(), self._zone_number, zone_letter=self._zone_letter, strict = False)
             return lat
 
-        return self._get('lat')
+        return self.ds_manager.get('lat')
 
     def _xy(self, x: np.ndarray=None, y: np.ndarray=None, strict=False) -> tuple[np.ndarray, np.ndarray]:
         """Converts list of points to x and y (UTM) if necessary.
@@ -281,3 +321,52 @@ class Skeleton:
             self._name = new_name
         else:
             raise ValueError("name needs to be a string")
+
+    def size(self, type: str='all') -> tuple[int]:
+        """Returns the size of the Dataset.
+
+        'all': size of entire Dataset
+        'spatial': size over coordinates from the Skeleton (x, y, lon, lat, inds)
+        'grid': size over coordinates for the grid (e.g. z, time)
+        'gridpoint': size over coordinates for a grid point (e.g. frequency, direcion or time)
+        """
+        return self.ds_manager.size(type)
+
+def will_grid_be_spherical_or_cartesian(x, y, lon, lat):
+    """Determines if the grid will be spherical or cartesian based on which
+    inputs are given and which are None.
+
+    Returns the ringth vector and string to identify the native values.
+    """
+    xy = False
+    lonlat = False
+
+    none_tuple = (None, None)
+
+    if (x is not None and x != none_tuple) and (y is not None and y != none_tuple):
+        xy = True
+        native_x = 'x'
+        native_y = 'y'
+        xvec = x
+        yvec = y
+
+    if (lon is not None and lon != none_tuple) and (lat is not None and lat != none_tuple):
+        lonlat = True
+        native_x = 'lon'
+        native_y = 'lat'
+        xvec = lon
+        yvec = lat
+
+    if xy and lonlat:
+        raise ValueError("Can't set both lon/lat and x/y!")
+
+    if not xy and not lonlat:
+        raise ValueError('Have to set either lon/lat or x/y!')
+
+    if isinstance(xvec, float) or isinstance(xvec, int):
+        xvec = [xvec]
+
+    if isinstance(yvec, float) or isinstance(yvec, int):
+        yvec = [yvec]
+
+    return native_x, native_y, np.array(xvec), np.array(yvec)

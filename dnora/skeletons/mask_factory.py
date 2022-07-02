@@ -1,5 +1,6 @@
 import numpy as np
-
+from coordinate_manager import CoordinateManager
+from functools import partial
 def add_mask(name, coords, default_value):
     def mask_decorator(c):
         def get_mask(self, boolean: bool=None, empty: bool=False) -> np.ndarray:
@@ -17,7 +18,7 @@ def add_mask(name, coords, default_value):
             if empty:
                 return np.full(self.size(coords), default_value).astype(data_type)
 
-            mask = self._get(f'{name}_mask')
+            mask = self.ds_manager.get(f'{name}_mask')
 
             if mask is None:
                 return None
@@ -29,18 +30,16 @@ def add_mask(name, coords, default_value):
 
             if type == 'native':
                 return self.native_xy(mask=mask, order_by=order_by)
-            elif type in self._cartesian_strings:
+            elif type in skeleton_strings['cartesian_strings']:
                 return self.xy(mask=mask, order_by=order_by, strict=strict)
-            elif type in self._spherical_strings:
+            elif type in skeleton_strings['spherical_strings']:
                 return self.lonlat(mask=mask, order_by=order_by, strict=strict)
 
-        if not hasattr(c, '_mask_dict'):
-            c._mask_dict = {}
-
-        c._mask_dict[name] = (coords, default_value)
+        if not hasattr(c, '_coord_manager'):
+            c._coord_manager =  CoordinateManager()
+        c._coord_manager.add_mask(name, coords, partial(get_mask,empty=True))
         exec(f'c.{name}_mask = get_mask')
         exec(f'c.{name}_points = get_masked_points')
-        #exec(f'c._update_{name}_mask = update_mask')
 
         return c
 

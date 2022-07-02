@@ -18,11 +18,11 @@ from dnora import grd
 #
 # ds2=spec.compile_to_xr(np.zeros((10,2,6)),'test_spec', additional_coords={'freq': np.array([0,1,2,3,4,5])})
 
-grid = Grid(lon=(4.00, 5.73), lat=(60.53, 61.25), name='Skjerjehamn')
+grid = Grid(lon=(22.00, 22.73), lat=(60.00, 60.53), name='Skjerjehamn')
 #ugrid = UnstrGrid(lon=(4.00, 5.73), lat=(60.53), name='Skjerjehamn')
-# grid.set_spacing(dm=10000)
-# grid.import_topo(topo_reader=grd.read.EMODNET2020(tile='*'))
-# grid.mesh_grid()
+grid.set_spacing(dm=10000)
+grid.import_topo(topo_reader=grd.read.EMODNET2020(tile='*', folder='~/Documents/EMODNET2020'))
+grid.mesh_grid()
 #
 #spec = Spectra(lon=(4.00, 5.73), lat=(60.53, 61.25), name='Skjerjehamn')
 #bnd = Boundary(lon=(4.00), lat=(60.53), name='Skjerjehamn')

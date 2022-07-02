@@ -2,10 +2,13 @@ from point_skeleton import PointSkeleton
 from gridded_skeleton import GriddedSkeleton
 import numpy as np
 from power_spectrum import PowerSpectrum
-from coordinates import add_time, add_frequency, add_direction
+from coordinate_factory import add_time, add_frequency, add_direction
 from datetime import datetime, timedelta
-from mask_generator import add_mask
+from mask_factory import add_mask
+from datavar_factory import add_datavar
 
+@add_mask(name='bad', coords='spatial', default_value=0)
+@add_datavar(name='spec', default_value=0.)
 @add_frequency(grid_coord=False)
 @add_time(grid_coord=True)
 class Spectra(PointSkeleton, PowerSpectrum):
@@ -14,8 +17,7 @@ class Spectra(PointSkeleton, PowerSpectrum):
         if grid is not None:
             x, y = grid.xy(strict=True)
             lon, lat = grid.lonlat(strict=True)
-        self.data = self._create_structure(x, y, lon, lat, freq=np.array([0.1,0.2,0.3]))
-        self._reset_vars()
+        self._init_structure(x, y, lon, lat, time=[0,1,2,3], freq=np.array([0.1,0.2,0.3]))
 
 @add_direction(grid_coord=False, coord_name='dirs')
 @add_frequency(grid_coord=False)
