@@ -18,11 +18,17 @@ class DatasetManager:
         format (specified by x_str = 'x'/'lon' and y_str='y'/'lat')"""
 
         def check_consistency() -> None:
-            ds_coords = list(ds.coords)
+            #ds_coords = list(ds.coords)
+            ds_coords = list(coord_dict.keys())
             # Check spatial coordinates
-            xy_set = 'x' in ds_coords and 'y' in ds_coordsx_str
+            xy_set = 'x' in ds_coords and 'y' in ds_coords
             lonlat_set = 'lon' in ds_coords and 'lat' in ds_coords
             inds_set = 'inds' in ds_coords
+            if inds_set:
+                ind_len = len(coord_dict['inds'])
+                for key, value in var_dict.items():
+                    if len(value[1]) != ind_len:
+                        raise ValueError(f"Variable {key} is {len(value[1])} long but the index variable is {ind_len} long!")
             if not (xy_set or lonlat_set or inds_set):
                 raise ValueError("A proper spatial grid is not set: Requires 'x' and 'y', 'lon' and 'lat' or 'inds'!")
             if sum([xy_set, lonlat_set, inds_set]) > 1:
@@ -69,9 +75,10 @@ class DatasetManager:
 
         coord_dict = determine_coords()
         var_dict = determine_vars()
+        check_consistency()
         ds = xr.Dataset(coords=coord_dict, data_vars=var_dict)
         #ds = self.init_ds(x=x,y=y,)
-        check_consistency()
+
         self.data = ds
 
 

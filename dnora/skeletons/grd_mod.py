@@ -1,26 +1,18 @@
 from gridded_skeleton import GriddedSkeleton
-from unstr_grd_mod import UnstrGrid
-from topography import Topography
+from point_skeleton import PointSkeleton
+from topography import topography_methods
 import numpy as np
 import xarray as xr
-from dnora.grd.read import TopoReader
 from dnora import msg
 from dnora.grd.mesh import Mesher, Interpolate
 from coordinate_factory import add_time
 from mask_factory import add_mask
 from datavar_factory import add_datavar
+import aux_funcs
+from dnora.grd.read import TopoReader
 
-
-def is_gridded(data: np.ndarray, lon: np.ndarray, lat: np.ndarray) -> bool:
-    if data.shape == (len(lat), len(lon)):
-        return True
-
-    if len(data.shape) == 1 and len(lat) == data.shape[0] and len(lon) == data.shape[0]:
-        return False
-
-    raise Exception(f"Size of data is {data.shape} but len(lat) = {len(lat)} and len(lon) = {len(lon)}. I don't know what is going on!")
-
-@add_datavar(name='topo', default_value=999.)
+@topography_methods
+@add_datavar(name='topo', default_value=999., stash_get=True)
 @add_mask(name='boundary', coords='grid', default_value=0)
 @add_mask(name='sea', coords='grid', default_value=1)
 class Grid(GriddedSkeleton):
@@ -90,45 +82,27 @@ class Grid(GriddedSkeleton):
         y = np.linspace(self.native_y()[0], native_y_end, ny)
         self._init_structure(x, y)
         print(self)
-    # def set_boundary(self, boundary_setter: BoundarySetter) -> None:
-    #     """Marks the points that should be treated as boundary points in the
-    #     grid.
-    #
-    #     The boundary points are stored in a boolean array where True values
-    #     mark a boundary point.
-    #
-    #     NB! No check for land points are done, so it is possible that a land
-    #     point is marked as a boundary point. Possibly accounting for this is
-    #     the responsibility of the GridWriter.
-    #     """
-    #
-    #     msg.header(boundary_setter, "Setting boundary points...")
-    #     print(boundary_setter)
-    #
-    #     boundary_mask = boundary_setter(self.sea_mask()).astype(int)
-    #
-    #     self.ds_manager.update_mask('boundary', boundary_mask)
-
 
     def import_topo(self, topo_reader: TopoReader) -> None:
         """Reads the raw bathymetrical data."""
 
-        if isinstance(topo_reader, Grid) or isinstance(topo_reader, UnstrGrid):
-            msg.header(topo_reader, "Getting topography from Grid-object...")
-            lon, lat = topo_reader.lon(), topo_reader.lat()
-            topo = topo_reader.topo()
-        else:
-            msg.header(topo_reader, "Importing topography...")
-            print(topo_reader)
-            topo, lon, lat = topo_reader(self.lon()[0], self.lon()[-1], self.lat()[0], self.lat()[-1])
+        # if isinstance(topo_reader, Grid) or isinstance(topo_reader, UnstrGrid):
+        #     msg.header(topo_reader, "Getting topography from Grid-object...")
+        #     lon, lat = topo_reader.lon(), topo_reader.lat()
+        #     topo = topo_reader.topo()
+        # else:
+        msg.header(topo_reader, "Importing topography...")
+        print(topo_reader)
+        topo, lon, lat = topo_reader(self.lon()[0], self.lon()[-1], self.lat()[0], self.lat()[-1])
 
-        if is_gridded(topo, lon, lat):
+        if aux_funcs.is_gridded(topo, lon, lat):
             self.raw = Grid(lon=lon, lat=lat)
         else:
             self.raw = UnstrGrid(lon=lon, lat=lat)
 
         self.raw._update_datavar('topo', topo)
         self.raw._update_sea_mask()
+
 
     def mesh_grid(self, mesher: Mesher=Interpolate(method = 'nearest')) -> None:
         """Meshes the raw data down to the grid definitions."""
@@ -141,10 +115,13 @@ class Grid(GriddedSkeleton):
         topo = mesher(self.raw.topo().ravel(), lon, lat, lonQ, latQ)
         self._update_datavar('topo', topo)
         self._update_sea_mask()
-#            print(self)
+        print(self)
 
-    def _update_sea_mask(self):
-        self._update_mask('sea', (self.topo()>0).astype(int))
+
+
+
+
+
 
     def __str__(self) -> str:
         """Prints status of the grid."""
@@ -178,3 +155,36 @@ class Grid(GriddedSkeleton):
         msg.print_line()
 
         return ''
+
+
+@topography_methods
+@add_datavar(name='topo', default_value=999., stash_get=True)
+@add_mask(name='boundary', coords='grid', default_value=0)
+@add_mask(name='sea', coords='grid', default_value=1)
+class UnstrGrid(PointSkeleton):
+    def __init__(self, grid=None, x=None, y=None, lon=None, lat=None, name='AnonymousGrid'):
+        self.name = name
+        if grid is not None:
+            x, y = grid.xy(strict=True)
+            lon, lat = grid.lonlat(strict=True)
+        self._init_structure(x, y, lon, lat)
+
+    def import_topo(self, topo_reader: TopoReader) -> None:
+        """Reads the raw bathymetrical data."""
+
+        # if isinstance(topo_reader, Grid) or isinstance(topo_reader, UnstrGrid):
+        #     msg.header(topo_reader, "Getting topography from Grid-object...")
+        #     lon, lat = topo_reader.lon(), topo_reader.lat()
+        #     topo = topo_reader.topo()
+        # else:
+        msg.header(topo_reader, "Importing topography...")
+        print(topo_reader)
+        topo, lon, lat = topo_reader(self.lon()[0], self.lon()[-1], self.lat()[0], self.lat()[-1])
+
+        if aux_funcs.is_gridded(topo, lon, lat):
+            self.raw = Grid(lon=lon, lat=lat)
+        else:
+            self.raw = UnstrGrid(lon=lon, lat=lat)
+
+        self.raw._update_datavar('topo', topo)
+        self.raw._update_sea_mask()

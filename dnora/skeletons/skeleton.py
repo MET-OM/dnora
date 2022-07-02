@@ -4,6 +4,7 @@ import xarray as xr
 import utm
 from copy import copy
 from dataset_manager import DatasetManager
+import aux_funcs
 
 class Skeleton:
     """Contains methods and data of the spatial x,y / lon, lat coordinates and
@@ -113,6 +114,9 @@ class Skeleton:
         elif self.x_str == 'lon' and self.y_str == 'lat':
             return False
         raise Exception(f"Expected x- and y string to be either 'x' and 'y' or 'lon' and 'lat', but they were {x_str} and {y_str}")
+
+    def is_gridded(self) -> bool:
+        return aux_funcs.is_gridded(self.topo(), self.lon(), self.lat())
 
     def set_utm(self, zone_number: int=33, zone_letter: str='W'):
         """Set UTM zone and number to be used for cartesian coordinates."""

@@ -1,6 +1,5 @@
 from spc_mod import Spectra, Boundary #, GriddedSpectra
-from grd_mod import Grid
-from unstr_grd_mod import UnstrGrid
+from grd_mod import Grid, UnstrGrid
 import numpy as np
 import xarray as xr
 from dnora import grd
@@ -19,8 +18,11 @@ from dnora import grd
 # ds2=spec.compile_to_xr(np.zeros((10,2,6)),'test_spec', additional_coords={'freq': np.array([0,1,2,3,4,5])})
 
 grid = Grid(lon=(22.00, 22.73), lat=(60.00, 60.53), name='Skjerjehamn')
-#ugrid = UnstrGrid(lon=(4.00, 5.73), lat=(60.53), name='Skjerjehamn')
+#ugrid = UnstrGrid(lon=(22.00, 22.73), lat=(60.00, 60.53), name='Skjerjehamn')
+#ugrid.import_topo(topo_reader=grd.read.EMODNET2020(tile='*', folder='~/Documents/EMODNET2020'))
 grid.set_spacing(dlon=0.1, dlat=0.1)
+#bnd_set = grd.boundary.EdgesAsBoundary(edges=['N', 'W', 'S'])
+#grid.set_boundary(boundary_setter=bnd_set)
 grid.import_topo(topo_reader=grd.read.EMODNET2020(tile='*', folder='~/Documents/EMODNET2020'))
 #grid.import_topo(grid)
 grid.mesh_grid()
