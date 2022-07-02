@@ -21,38 +21,22 @@ class GriddedSkeleton(Skeleton, SkeletonDataset):
     #     self.data = super()._create_structure(x, y, lon, lat)
     #     self.data.attrs['name'] = name
 
-    def _init_ds(self, x: np.ndarray, y: np.ndarray, **kwargs) -> xr.Dataset:
-        """Creates a Dataset containing the spatial variables as coordinates.
 
-        Any additional keyword arguments are also added to the coordinate list.
-        """
-        coords_dict = {self.y_str: y, self.x_str: x}
+    def _initial_coords(self) -> list[str]:
+        return ['x', 'y']
 
-        for key, value in kwargs.items():
-            coords_dict[key] = value
-
-        return xr.Dataset(coords=coords_dict, attrs={'name': self.name})
-
-    def _ds_coords_dict(self):
-        """Return coordinate dictionary for creating xarray Dataset.
-
-        This can be used to add data after the coordinates have been created
-        by _init_ds."""
-        coords_dict = {self.y_str: super().native_y(), self.x_str: super().native_x()}
-
-        return coords_dict
-
-    def _ds_vars_dict(self):
+    def _initial_vars(self) -> dict:
         return {}
 
     def lonlat(self, mask: np.array=None, order_by: str='lat', strict=False) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of longitude and latitude of all points.
+        If strict=True, then None is returned if grid is cartesian.
 
         mask is a boolean array (default True for all points)
         order_by = 'lat' (default) or 'lon'
         """
         if mask is None:
-            mask = np.full((super().nx(), super().ny()), True)
+            mask = np.full(super().size('spatial'), True)
         mask = mask.ravel()
 
         lon, lat = self.native_xy(mask, order_by)
@@ -66,12 +50,13 @@ class GriddedSkeleton(Skeleton, SkeletonDataset):
 
     def xy(self, mask: np.array=None, order_by: str='y', strict=False) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of x and y of all points.
+        If strict=True, then None is returned if grid is sperical.
 
         mask is a boolean array (default True for all points)
         order_by = 'y' (default) or 'x'
         """
         if mask is None:
-            mask = np.full((super().nx(), super().ny()), True)
+            mask = np.full(super().size('spatial'), True)
         mask = mask.ravel()
 
         x, y = self.native_xy(mask, order_by)
@@ -99,7 +84,7 @@ class GriddedSkeleton(Skeleton, SkeletonDataset):
             raise ValueError("order_by should be 'y' (/'lat') or 'x' (/'lon')")
 
         if mask is None:
-            mask = np.full((super().nx(), super().ny()), True)
+            mask = np.full(super().size('spatial'), True)
         mask = mask.ravel()
 
         return x.ravel()[mask], y.ravel()[mask]

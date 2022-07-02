@@ -21,28 +21,17 @@ class PointSkeleton(Skeleton, SkeletonDataset):
     #     self.data = super()._create_structure(x, y, lon, lat, time)
     #     self.data.attrs['name'] = name
 
-    def _init_ds(self, x: np.ndarray, y: np.ndarray, **kwargs) -> xr.Dataset:
-        """Creates a Dataset containing the index variable as a coordinate and
-        spatial coordinates as data variables on this index.
+    def _initial_coords(self) -> list[str]:
+        return ['inds']
 
-        Any additional keyword arguments are also added to the coordinate list.
-        """
-        coords_dict = {'inds': np.arange(len(x))}
-
-        for key, value in kwargs.items():
-            coords_dict[key] = value
-
-        vars_dict = {self.x_str: (['inds'], x), self.y_str: (['inds'], y)}
-
-        return xr.Dataset(coords=coords_dict, data_vars=vars_dict, attrs={'name': self.name})
-
-    def inds(self) -> np.ndarray:
-        return super()._get('inds')
+    def _initial_vars(self) -> dict:
+        return {'x': 'inds', 'y': 'inds'}
 
     def lonlat(self, mask: np.array=None, strict=False) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of longitude and latitude of all points.
-        Identical to (.lon(), .lat()) (with no mask)
+        If strict=True, then None is returned if grid is cartesian.
 
+        Identical to (.lon(), .lat()) (with no mask)
         mask is a boolean array (default True for all points)
         """
         if mask is None:
@@ -57,12 +46,13 @@ class PointSkeleton(Skeleton, SkeletonDataset):
 
     def xy(self, mask: np.array=None, strict=False) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of x and y of all points.
-        Identical to (.x(), .y()) (with no mask)
+        If strict=True, then None is returned if grid is sperical.
 
+        Identical to (.x(), .y()) (with no mask)
         mask is a boolean array (default True for all points)
         """
         if mask is None:
-            mask = np.full((super().nx(),), True)
+            mask = np.full(super().size('spatial'), True)
 
         x, y = super().x(strict=strict)[mask], super().y(strict=strict)[mask]
 
@@ -78,6 +68,6 @@ class PointSkeleton(Skeleton, SkeletonDataset):
         mask is a boolean array (default True for all points)
         """
         if mask is None:
-            mask = np.full((super().nx(),), True)
+            mask = np.full(super().size('spatial'), True)
 
         return super().native_x()[mask], super().native_y()[mask]

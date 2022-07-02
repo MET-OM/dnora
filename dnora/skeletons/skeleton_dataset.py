@@ -10,7 +10,7 @@ class SkeletonDataset:
 
     _spatial_coord_list = ['x', 'y', 'lon', 'lat', 'inds']
 
-    def _create_structure(self, x=None, y=None, lon=None, lat=None, **kwargs):
+    def _create_structure(self, x=None, y=None, lon=None, lat=None, **kwargs) -> None:
         """Create the first Dataset with either x,y (Cartesian) or lon, lat (Spherical)
         depending on which variables are provided."""
         def check_consistency():
@@ -25,14 +25,14 @@ class SkeletonDataset:
                 raise ValueError("A well defined spatial grid is not set: Requires 'x' and 'y', 'lon' and 'lat' or 'inds'!")
 
             # Check that all added coordinates are porvided
-            for coord in self._added_coords():
+            for coord in self._added_coords('all'):
                 if coord not in ds_coords:
                     raise ValueError(f"Coordinate '{coord}' has been added (by a decorator?) but it was not provided when the Dataset ({ds_coords}) was created!")
 
             # Check that all provided coordinates have been added
-            for coord in set(ds_coords)-set(self._spatial_coords(strict=False)):
-                if coord not in self._added_coords():
-                    raise Warning(f"Coordinate '{coord}' has been provided, but has not been added ({self._added_coords()})! Missing a decorator?")
+            for coord in set(ds_coords)-set(self._spatial_coord_list):
+                if coord not in self._added_coords('all'):
+                    raise Warning(f"Coordinate '{coord}' has been provided, but has not been added ({self._added_coords('all')})! Missing a decorator?")
 
 
         native_x, native_y, xvec, yvec = will_grid_be_spherical_or_cartesian(x, y, lon, lat)
@@ -41,23 +41,70 @@ class SkeletonDataset:
 
         ds = self._init_ds(x=xvec,y=yvec, **kwargs)
         check_consistency()
+        self.data = ds
+        self._reset_masks()
 
-        return ds
 
-    def _init_ds(self) -> xr.Dataset:
-        """Return a Dataset with only the grid coordinates and time.
+    def _init_ds(self, x: np.ndarray, y: np.ndarray, **kwargs) -> xr.Dataset:
+        """Creates a Dataset containing the spatial variables as coordinates.
+        x, y are assumed to be in native_format.
+
+        Any additional keyword arguments are also added to the coordinate list.
         """
-        raise NotImplementedError("This method depends on the specific gridding and needs to be defined in the subclass (e.g. GriddedSkeleton or PointSkeleton)")
+
+        def determine_coords(x, y):
+            coords = self._initial_coords() # Get list of coords from subclass
+
+            coord_dict = {}
+            if 'y' in coords:
+                coord_dict[self.y_str] = y
+            if 'x' in coords:
+                coord_dict[self.x_str] = x
+            if 'inds' in coords:
+                coord_dict['inds'] = np.arange(len(x))
+
+            # Add in other possible coordinates that are set at initialization
+            for key, value in kwargs.items():
+                coord_dict[key] = value
+
+            return coord_dict
+
+        def determine_vars(x, y, set_coords):
+            vars = self._initial_vars() # Get dict of variables from subclass
+            var_dict = {}
+
+            if 'y' in vars.keys():
+                if vars['y'] not in set_coords:
+                    raise ValueError(f"Trying to make variable 'y' depend on {vars['y']}, but {vars['y']} is not set as a coordinate!")
+                var_dict[self.y_str] = ([vars['y']], y)
+            if 'x' in vars.keys():
+                if vars['x'] not in set_coords:
+                    raise ValueError(f"Trying to make variable 'x' depend on {vars['x']}, but {vars['x']} is not set as a coordinate!")
+                var_dict[self.x_str] = ([vars['x']], x)
+
+            return var_dict
+
+        coord_dict = determine_coords(x, y)
+        var_dict = determine_vars(x, y, coord_dict.keys())
+
+        return xr.Dataset(coords=coord_dict, data_vars=var_dict)
+
+    def _reset_masks(self) -> None:
+        """Resets the mask to default values."""
+        masks = getattr(self, '_mask_dict', {})
+
+        for name, mask_tuple in masks.items():
+            eval(f'self._update_{name}_mask()')
 
     def ds(self):
         """Resturns the Dataset (None if doesn't exist)."""
         if not hasattr(self, 'data'):
-            raise Warnign('No Dataset found. Returning None.')
+            raise Warning('No Dataset found. Returning None.')
             return None
         return self.data
 
-    def _set(self, data: np.ndarray, data_name: str, only_grid_coords=False) -> None:
-        self._merge_in_ds(self._compile_to_ds(data, data_name, only_grid_coords))
+    def _set(self, data: np.ndarray, data_name: str, coords: str='all') -> None:
+        self._merge_in_ds(self._compile_to_ds(data, data_name, coords))
 
     def _get(self, data_name: str, default_data=None):
         """Gets data from Dataset"""
@@ -82,9 +129,16 @@ class SkeletonDataset:
             self.data = ds.merge(self.data, compat='override')
 
 
-    def _compile_to_ds(self, data: np.ndarray, data_name:str, only_grid_coords):
+    def _compile_to_ds(self, data: np.ndarray, data_name:str, type: str):
         """This is used to compile a Dataset containing the given data using the
         coordinates of the Skeleton.
+
+        'type' determines over which coordinates to set the mask:
+
+        'all': all coordinates in the Dataset
+        'spatial': Dataset coordinates from the Skeleton (x, y, lon, lat, inds)
+        'grid': coordinates for the grid (e.g. z, time)
+        'gridpoint': coordinates for a grid point (e.g. frequency, direcion or time)
         """
         def check_coord_consistency():
             for i, item in enumerate(coords_dict.items()):
@@ -98,10 +152,8 @@ class SkeletonDataset:
                 raise Warning(f'The data had {len(data.shape)} dimensions but only {i} dimensions have been defined. Missing a decorator?')
 
 
-        if only_grid_coords:
-            coords_dict = self._grid_coords_dict()
-        else:
-            coords_dict = self._coords_dict()
+        coords_dict = self._coords_dict(type)
+
         check_coord_consistency()
 
         # Data variables
@@ -120,65 +172,51 @@ class SkeletonDataset:
         """Returns a dict of the variables in the Dataset."""
         return self._keys_to_dict(self._vars())
 
-    def _all_coords(self) -> list[str]:
-        """Returns a list of the coordinates in the Dataset."""
-        if hasattr(self, 'data'):
-            return list(self.data.coords)
-        return []
+    def _added_coords(self, type: str='all') -> list[str]:
+        """Returns list of coordinates that have been added to the fixed
+        Skeleton coords.
 
-    def _spatial_coords(self, strict: bool):
-        """Returns a list of all spatial coords explicitly known to the
-        Skeleton.
-
-        If strict = True, then only coordinates that are found in the
-        Dataset are returned.
+        'all': All added coordinates
+        'grid': coordinates for the grid (e.g. z, time)
+        'gridpoint': coordinates for a grid point (e.g. frequency, direcion or time)
         """
 
-        if not strict:
-            return self._spatial_coord_list
-
-        if len(self._all_coords())>0:
-            return list(set(self._all_coords()).intersection(set(self._spatial_coord_list)))
-
-        return []
-
-    def _added_grid_coords(self):
-        """Returns a list of the grid coordinates that have been set in addition
-        to the 1D-2D spatial coordinates (i.e. the skeleton coords)."""
-        if hasattr(self, '_grid_coord_list'):
-            added_grid_coords = self._grid_coord_list
+        if type == 'all':
+            return self._added_coords('grid') + self._added_coords('gridpoint')
+        elif type == 'grid':
+            return getattr(self, '_grid_coord_list', [])
+        elif type == 'gridpoint':
+            return getattr(self, '_gridpoint_coord_list', [])
         else:
-            added_grid_coords = []
-        return added_grid_coords
+            print("Type needs to be 'all', 'grid' or 'gridpoint'.")
+            return None
 
-    def _added_gridpoint_coords(self):
-        """Returns a list of the grid coordinates that have been set in addition
-        to the 1D-2D spatial coordinates (i.e. the skeleton coords)."""
-        if hasattr(self, '_gridpoint_coord_list'):
-            added_gridpoint_coords = self._gridpoint_coord_list
+
+    def coords(self, type: str='all') -> list[str]:
+        """Returns a list of the coordinates from the Dataset.
+
+        'all': all coordinates in the Dataset
+        'spatial': Dataset coordinates from the Skeleton (x, y, lon, lat, inds)
+        'grid': coordinates for the grid (e.g. z, time)
+        'gridpoint': coordinates for a grid point (e.g. frequency, direcion or time)
+        """
+        if not hasattr(self, 'data'):
+            return []
+
+        all_coords = list(self.data.coords)
+        spatial_coords = self._spatial_coord_list
+
+        if type == 'all':
+            return all_coords
+        elif type == 'spatial':
+            return list(set(all_coords).intersection(set(spatial_coords)))
+        elif type == 'grid':
+            return self.coords('spatial') + self._added_coords('grid')
+        elif type == 'gridpoint':
+            return self._added_coords('gridpoint')
         else:
-            added_gridpoint_coords = []
-        return added_gridpoint_coords
-
-    def _added_coords(self):
-        """Returns a list of the coordinates that have been set in addition to
-        the 1D-2D spatial coordinates (i.e. the skeleton coords)."""
-        return self._added_grid_coords() + self._added_gridpoint_coords()
-
-    def  _grid_coords(self):
-        """Return a list of coordinates that are in use in the Dataset to
-        describe the 'outer' structure of the data (typically spatial and
-        temporal dimensions).
-        """
-
-        return self._spatial_coords(strict=True) + self._added_grid_coords()
-
-    def _gridpoint_coords(self):
-        """Return a list of coordinates that are in use in the Dataset to
-        describe the 'inner' structure of the data, i.e. dimensions of singe
-        'grid point' (typically frequency and directions).
-        """
-        return self._added_gridpoint_coords()
+            print("Type needs to be 'full', 'spatial', 'grid' or 'gridpoint'.")
+            return None
 
     def _keys_to_dict(self, coords: list[str]) -> dict:
         """Takes a list of coordinates and returns a dictionary."""
@@ -187,25 +225,15 @@ class SkeletonDataset:
             coords_dict[coord] = self._get(coord)
         return coords_dict
 
-    def _coords_dict(self):
+    def _coords_dict(self, type: str='all') -> dict:
         """Return variable dictionary of the Dataset.
-        """
-        return self._keys_to_dict(self._all_coords())
 
-    def _grid_coords_dict(self):
-        """Return variable dictionary of the grid coordinates of the Dataset.
+        'all': all coordinates in the Dataset
+        'spatial': Dataset coordinates from the Skeleton (x, y, lon, lat, inds)
+        'grid': coordinates for the grid (e.g. z, time)
+        'gridpoint': coordinates for a grid point (e.g. frequency, direcion or time)
         """
-        return self._keys_to_dict(self._grid_coords())
-
-    def _gridpoint_coords_dict(self):
-        """Return variable dictionary of the gridpoint coordinates of the Dataset.
-        """
-        return self._keys_to_dict(self._gridpoint_coords())
-
-    def _added_coords_dict(self):
-        """Return variable dictionary of the added coordinates of the Dataset.
-        """
-        return self._keys_to_dict(self._added_coords())
+        return self._keys_to_dict(self.coords(type))
 
     def _coords_to_size(self, coords: list[str]) -> tuple[int]:
         list = []
@@ -215,23 +243,16 @@ class SkeletonDataset:
                 list.append(val)
         return tuple(list)
 
-    def size(self) -> tuple[int]:
-        """Returns the size of the Dataset."""
-        return self._coords_to_size(self._all_coords())
+    def size(self, type: str='all') -> tuple[int]:
+        """Returns the size of the Dataset.
 
-    def spatial_size(self) -> tuple[int]:
-        """Returns the size of the skeleton grid."""
-        return self._coords_to_size(self._skeleton_coords(strict=True))
+        'all': size of entire Dataset
+        'spatial': size over coordinates from the Skeleton (x, y, lon, lat, inds)
+        'grid': size over coordinates for the grid (e.g. z, time)
+        'gridpoint': size over coordinates for a grid point (e.g. frequency, direcion or time)
+        """
+        return self._coords_to_size(self.coords(type))
 
-    def grid_size(self) -> tuple[int, int]:
-        """Returns the size of the grid."""
-
-        return self._coords_to_size(self._grid_coords())
-
-    def gridpoint_size(self) -> tuple[int, int]:
-        """Returns the inner size of one grid point."""
-
-        return self._coords_to_size(self._gridpoint_coords())
 
 def will_grid_be_spherical_or_cartesian(x, y, lon, lat):
     """Determines if the grid will be spherical or cartesian based on which
