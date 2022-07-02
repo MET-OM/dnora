@@ -224,7 +224,7 @@ class Skeleton:
         if self.nx() == 1:
             return 0.
 
-        edges = self.edges(coord='x')
+        edges = self.edges('x')
         return (edges[1]-edges[0])/(self.nx()-1)
 
     def dy(self, strict=False):
@@ -236,7 +236,7 @@ class Skeleton:
         if self.ny() == 1:
             return 0.
 
-        edges = self.edges(coord='y')
+        edges = self.edges('y')
         return (edges[1]-edges[0])/(self.ny()-1)
 
     def dlon(self, strict=False):
@@ -247,7 +247,7 @@ class Skeleton:
         if self.nx() == 1:
             return 0.
 
-        edges = self.edges(coord='dlon')
+        edges = self.edges('lon')
         return (edges[1]-edges[0])/(self.nx()-1)
 
     def dlat(self):
@@ -258,7 +258,7 @@ class Skeleton:
         if self.ny() == 1:
             return 0.
 
-        edges = self.edges(coord='dlat')
+        edges = self.edges('lat')
         return (edges[1]-edges[0])/(self.ny()-1)
 
     def native_dx(self):
@@ -267,7 +267,7 @@ class Skeleton:
         if self.nx() == 1:
             return 0.
 
-        edges = self.edges(coord='x', native=True)
+        edges = self.edges('x', native=True)
         return (edges[1]-edges[0])/(self.nx()-1)
 
     def native_dy(self):
@@ -276,7 +276,7 @@ class Skeleton:
         if self.ny() == 1:
             return 0.
 
-        edges = self.edges(coord='y', native=True)
+        edges = self.edges('y', native=True)
         return (edges[1]-edges[0])/(self.ny()-1)
 
     @property
