@@ -41,9 +41,9 @@ def topography_methods(c):
                 return
         else:
             topo = grid_processor.topo(self.raw.topo(), self.raw.lon(), self.raw.lat(), self.raw.sea_mask())
-                if topo is None:
-                    msg.warning('Filtering of unstructured topography is not implemented in this GridProcessor.')
-                    return
+            if topo is None:
+                msg.warning('Filtering of unstructured topography is not implemented in this GridProcessor.')
+                return
 
         self.raw._update_datavar('topo', topo)
 
