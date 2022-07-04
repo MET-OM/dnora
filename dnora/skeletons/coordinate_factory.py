@@ -6,8 +6,8 @@ import numpy as np
 from coordinate_manager import CoordinateManager
 
 def coord_decorator(coord_name, grid_coord, c, stash_get=False):
-    def get_coord(self):
-        return self.ds_manager.get(coord_name)
+    def get_coord(self, **kwargs):
+        return self.ds_manager.get(coord_name, **kwargs).values.copy()
 
     if not hasattr(c, '_coord_manager'):
         c._coord_manager =  CoordinateManager()
@@ -27,7 +27,7 @@ def add_time(grid_coord: bool=False, coord_name: str='time'):
 
         def hours(self, datetime=True):
             """Determins a Pandas data range of all the days in the time span."""
-            times = self.ds_manager.get(coord_name)
+            times = self.ds_manager.get(coord_name).values.copy()
             if datetime:
                 return pd.to_datetime(unique_times(times, '%Y-%m-%d %H'))
             else:
@@ -35,7 +35,7 @@ def add_time(grid_coord: bool=False, coord_name: str='time'):
 
         def days(self, datetime=True):
             """Determins a Pandas data range of all the days in the time span."""
-            times = self.ds_manager.get(coord_name)
+            times = self.ds_manager.get(coord_name).values.copy()
             if datetime:
                 return pd.to_datetime(unique_times(times, '%Y-%m-%d'))
             else:
@@ -43,7 +43,7 @@ def add_time(grid_coord: bool=False, coord_name: str='time'):
 
         def months(self, datetime=True):
             """Determins a Pandas data range of all the months in the time span."""
-            times = self.ds_manager.get(coord_name)
+            times = self.ds_manager.get(coord_name).values.copy()
             if datetime:
                 return pd.to_datetime(unique_times(times, '%Y-%m'))
             else:
@@ -51,14 +51,14 @@ def add_time(grid_coord: bool=False, coord_name: str='time'):
 
         def years(self, datetime=True):
             """Determins a Pandas data range of all the months in the time span."""
-            times = self.ds_manager.get(coord_name)
+            times = self.ds_manager.get(coord_name).values.copy()
             if datetime:
                 return pd.to_datetime(unique_times(times, '%Y'))
             else:
                 return list(unique_times(times, '%Y'))
 
         def get_time(self):
-            return pd.to_datetime(self.ds_manager.get(coord_name))
+            return pd.to_datetime(self.ds_manager.get(coord_name).values.copy())
 
         if not hasattr(c, '_coord_manager'):
             c._coord_manager =  CoordinateManager()
@@ -76,13 +76,13 @@ def add_time(grid_coord: bool=False, coord_name: str='time'):
 def add_frequency(grid_coord: bool=False, coord_name: str='freq'):
     def wrapper(c):
         def get_freq(self, angular=False):
-            freq = self.ds_manager.get(coord_name)
+            freq = self.ds_manager.get(coord_name).values.copy()
             if angular:
                 freq = 2*np.pi*freq
             return freq
 
         def df(self, angular=False):
-            freq = get_freq(self, angular=angular)
+            freq = get_freq(self, angular=angular).values.copy()
             return (freq[-1]-freq[0])/(len(freq)-1)
 
         if not hasattr(c, '_coord_manager'):
@@ -100,13 +100,13 @@ def add_frequency(grid_coord: bool=False, coord_name: str='freq'):
 def add_direction(grid_coord: bool=False, coord_name: str='dirs'):
     def wrapper(c):
         def get_dirs(self, radians=False):
-            dirs = self.ds_manager.get(coord_name)
+            dirs = self.ds_manager.get(coord_name).values.copy()
             if radians:
                 dirs = dirs*np.pi/180
             return dirs
 
         def ddir(self, radians=False):
-            dirs = get_dirs(self, radians=False)
+            dirs = get_dirs(self, radians=False).values.copy()
             dmax = 2*np.pi if radians else 360
             return dmax/len(dirs)
 

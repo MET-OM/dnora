@@ -104,7 +104,6 @@ class Grid(GriddedSkeleton):
         self.raw._update_datavar('topo', topo)
         self.raw._update_sea_mask()
 
-
     def mesh_grid(self, mesher: Mesher=Interpolate(method = 'nearest')) -> None:
         """Meshes the raw data down to the grid definitions."""
 
@@ -117,12 +116,6 @@ class Grid(GriddedSkeleton):
         self._update_datavar('topo', topo)
         self._update_sea_mask()
         print(self)
-
-
-
-
-
-
 
     def __str__(self) -> str:
         """Prints status of the grid."""

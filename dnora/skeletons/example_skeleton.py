@@ -1,4 +1,4 @@
-from spc_mod import Spectra, Boundary, GriddedSpectra #, GriddedSpectra
+from spc_mod import Spectra, Boundary
 from grd_mod import Grid, UnstrGrid
 import numpy as np
 import xarray as xr

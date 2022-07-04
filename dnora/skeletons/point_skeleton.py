@@ -27,7 +27,7 @@ class PointSkeleton(Skeleton):
     def _initial_vars(self) -> dict:
         return {'x': 'inds', 'y': 'inds'}
 
-    def lonlat(self, mask: np.array=None, strict=False) -> tuple[np.ndarray, np.ndarray]:
+    def lonlat(self, mask: np.array=None, strict=False, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of longitude and latitude of all points.
         If strict=True, then None is returned if grid is cartesian.
 
@@ -35,16 +35,16 @@ class PointSkeleton(Skeleton):
         mask is a boolean array (default True for all points)
         """
         if mask is None:
-            mask = np.full((self.nx(),), True)
+            mask = np.full(super().size('spatial', **kwargs), True)
 
-        lon, lat = super().lon(strict=strict)[mask], super().lat(strict=strict)[mask]
+        lon, lat = super().lon(strict=strict, **kwargs)[mask], super().lat(strict=strict, **kwargs)[mask]
 
         if lon is None:
             return None, None
 
         return lon[mask], lat[mask]
 
-    def xy(self, mask: np.array=None, strict=False) -> tuple[np.ndarray, np.ndarray]:
+    def xy(self, mask: np.array=None, strict=False, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of x and y of all points.
         If strict=True, then None is returned if grid is sperical.
 
@@ -52,9 +52,9 @@ class PointSkeleton(Skeleton):
         mask is a boolean array (default True for all points)
         """
         if mask is None:
-            mask = np.full(super().size('spatial'), True)
+            mask = np.full(super().size('spatial', **kwargs), True)
 
-        x, y = super().x(strict=strict)[mask], super().y(strict=strict)[mask]
+        x, y = super().x(strict=strict, **kwargs)[mask], super().y(strict=strict, **kwargs)[mask]
 
         if x is None:
             return None, None
@@ -68,6 +68,6 @@ class PointSkeleton(Skeleton):
         mask is a boolean array (default True for all points)
         """
         if mask is None:
-            mask = np.full(super().size('spatial'), True)
+            mask = np.full(super().size('spatial', **kwargs), True)
 
-        return super().native_x()[mask], super().native_y()[mask]
+        return super().native_x(**kwargs)[mask], super().native_y(**kwargs)[mask]

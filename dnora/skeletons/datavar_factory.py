@@ -3,15 +3,15 @@ from coordinate_manager import CoordinateManager
 from functools import partial
 def add_datavar(name, coords='grid', default_value=0., stash_get=False):
     def datavar_decorator(c):
-        def get_var(self, empty: bool=False) -> np.ndarray:
+        def get_var(self, empty: bool=False, **kwargs) -> np.ndarray:
             """Returns the data variable.
 
             Set empty=True to get an empty data variable (even if it doesn't exist)"""
 
             if empty:
-                return np.full(self.size(coords), default_value)
+                return np.full(self.size(coords, **kwargs), default_value)
 
-            return self.ds_manager.get(name)
+            return self.ds_manager.get(name, **kwargs).values.copy()
 
         if not hasattr(c, '_coord_manager'):
             c._coord_manager =  CoordinateManager()

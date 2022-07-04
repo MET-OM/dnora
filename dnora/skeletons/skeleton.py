@@ -136,27 +136,27 @@ class Skeleton:
         """
         return self.ds_manager.size(type)
 
-    def inds(self) -> np.ndarray:
-        return self.ds_manager.get('inds')
+    def inds(self, **kwargs) -> np.ndarray:
+        return self.ds_manager.get('inds', **kwargs).values.copy()
 
-    def native_x(self) -> np.ndarray:
+    def native_x(self, **kwargs) -> np.ndarray:
         """Returns x-vector for cartesian grids and lon-vector for sperical
         grids.
         """
         if self.is_cartesian():
-            return self.x()
-        return self.lon()
+            return self.x(**kwargs)
+        return self.lon(**kwargs)
 
-    def native_y(self) -> np.ndarray:
+    def native_y(self, **kwargs) -> np.ndarray:
         """Returns y-vector for cartesian grids and lat-vector for sperical
         grids.
         """
         if self.is_cartesian():
-            return self.y()
-        return self.lat()
+            return self.y(**kwargs)
+        return self.lat(**kwargs)
 
 
-    def x(self, strict=False) -> np.ndarray:
+    def x(self, strict=False, **kwargs) -> np.ndarray:
         """Returns the cartesian x-coordinate. If the grid is spherical a
         conversion to UTM coordinates is made based on the medain latitude.
 
@@ -166,13 +166,13 @@ class Skeleton:
             return None
 
         if not self.is_cartesian():
-            lat = np.median(self.lat())
-            x, __, __, __ = utm.from_latlon(lat, self.lon(), force_zone_number=self._zone_number, force_zone_letter=self._zone_letter)
+            lat = np.median(self.lat(**kwargs))
+            x, __, __, __ = utm.from_latlon(lat, self.lon(**kwargs), force_zone_number=self._zone_number, force_zone_letter=self._zone_letter)
             return x
 
-        return self.ds_manager.get('x')
+        return self.ds_manager.get('x', **kwargs).values.copy()
 
-    def y(self, strict=False) -> np.ndarray:
+    def y(self, strict=False, **kwargs) -> np.ndarray:
         """Returns the cartesian y-coordinate. If the grid is spherical a
         conversion to UTM coordinates is made based on the medain longitude.
 
@@ -182,13 +182,13 @@ class Skeleton:
             return None
 
         if not self.is_cartesian():
-            lon = np.median(self.lon())
-            __, y, __, __ = utm.from_latlon(self.lat(), lon, force_zone_number=self._zone_number, force_zone_letter=self._zone_letter)
+            lon = np.median(self.lon(**kwargs))
+            __, y, __, __ = utm.from_latlon(self.lat(**kwargs), lon, force_zone_number=self._zone_number, force_zone_letter=self._zone_letter)
             return y
 
-        return self.ds_manager.get('y')
+        return self.ds_manager.get('y', **kwargs).values.copy()
 
-    def lon(self, strict=False) -> np.ndarray:
+    def lon(self, strict=False, **kwargs) -> np.ndarray:
         """Returns the spherical lon-coordinate. If the grid is cartesian (UTM)
         a conversion to spherical coordinates is made based on the medain
         y-values.
@@ -199,13 +199,12 @@ class Skeleton:
             return None
 
         if self.is_cartesian():
-            y = np.median(self.y())
-            __, lon = utm.to_latlon(self.x(), y, self._zone_number, zone_letter=self._zone_letter, strict = False)
+            y = np.median(self.y(**kwargs))
+            __, lon = utm.to_latlon(self.x(**kwargs), y, self._zone_number, zone_letter=self._zone_letter, strict = False)
             return lon
+        return self.ds_manager.get('lon', **kwargs).values.copy()
 
-        return self.ds_manager.get('lon')
-
-    def lat(self, strict=False) -> np.ndarray:
+    def lat(self, strict=False, **kwargs) -> np.ndarray:
         """Returns the spherical at-coordinate. If the grid is cartesian (UTM)
         a conversion to spherical coordinates is made based on the medain
         x-values.
@@ -216,11 +215,11 @@ class Skeleton:
             return None
 
         if self.is_cartesian():
-            x = np.median(self.x())
-            lat, __ = utm.to_latlon(x, self.y(), self._zone_number, zone_letter=self._zone_letter, strict = False)
+            x = np.median(self.x(**kwargs))
+            lat, __ = utm.to_latlon(x, self.y(**kwargs), self._zone_number, zone_letter=self._zone_letter, strict = False)
             return lat
 
-        return self.ds_manager.get('lat')
+        return self.ds_manager.get('lat', **kwargs).values.copy()
 
     def _xy(self, x: np.ndarray=None, y: np.ndarray=None, strict=False) -> tuple[np.ndarray, np.ndarray]:
         """Converts list of points to x and y (UTM) if necessary.
@@ -385,7 +384,7 @@ class Skeleton:
             raise ValueError("name needs to be a string")
 
 
-    def size(self, type: str='all') -> tuple[int]:
+    def size(self, type: str='all', **kwargs) -> tuple[int]:
         """Returns the size of the Dataset.
 
         'all': size of entire Dataset
@@ -393,7 +392,7 @@ class Skeleton:
         'grid': size over coordinates for the grid (e.g. z, time)
         'gridpoint': size over coordinates for a grid point (e.g. frequency, direcion or time)
         """
-        return self.ds_manager.coords_to_size(self.ds_manager.coords(type))
+        return self.ds_manager.coords_to_size(self.ds_manager.coords(type), **kwargs)
 
 def will_grid_be_spherical_or_cartesian(x, y, lon, lat):
     """Determines if the grid will be spherical or cartesian based on which

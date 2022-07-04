@@ -28,7 +28,7 @@ class GriddedSkeleton(Skeleton):
     def _initial_vars(self) -> dict:
         return {}
 
-    def lonlat(self, mask: np.array=None, order_by: str='lat', strict=False) -> tuple[np.ndarray, np.ndarray]:
+    def lonlat(self, mask: np.array=None, order_by: str='lat', strict=False, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of longitude and latitude of all points.
         If strict=True, then None is returned if grid is cartesian.
 
@@ -36,10 +36,9 @@ class GriddedSkeleton(Skeleton):
         order_by = 'lat' (default) or 'lon'
         """
         if mask is None:
-            mask = np.full(super().size('spatial'), True)
+            mask = np.full(super().size('spatial', **kwargs), True)
         mask = mask.ravel()
-
-        lon, lat = self.native_xy(mask, order_by)
+        lon, lat = self.native_xy(mask, order_by,**kwargs)
 
         # Transforms lon/lat to x/y if necessary
         lon, lat = super()._lonlat(lon, lat, strict=strict)
@@ -48,7 +47,7 @@ class GriddedSkeleton(Skeleton):
 
         return lon[mask], lat[mask]
 
-    def xy(self, mask: np.array=None, order_by: str='y', strict=False) -> tuple[np.ndarray, np.ndarray]:
+    def xy(self, mask: np.array=None, order_by: str='y', strict=False, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of x and y of all points.
         If strict=True, then None is returned if grid is sperical.
 
@@ -59,7 +58,7 @@ class GriddedSkeleton(Skeleton):
             mask = np.full(super().size('spatial'), True)
         mask = mask.ravel()
 
-        x, y = self.native_xy(mask, order_by)
+        x, y = self.native_xy(mask, order_by, **kwargs)
 
         # Transforms lon/lat to x/y if necessary
         x, y = super()._xy(x, y, strict=strict)
@@ -70,21 +69,21 @@ class GriddedSkeleton(Skeleton):
         return x[mask], y[mask]
 
 
-    def native_xy(self, mask: np.array=None, order_by: str='y') -> tuple[np.ndarray, np.ndarray]:
+    def native_xy(self, mask: np.array=None, order_by: str='y', **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of native x and y of all points.
 
         mask is a boolean array (default True for all points)
         order_by = 'y' (default) or 'x'
         """
         if order_by == 'y' or order_by == 'lat':
-            x, y = np.meshgrid(super().native_x(), super().native_y())
+            x, y = np.meshgrid(super().native_x(**kwargs), super().native_y(**kwargs))
         elif order_by == 'x' or order_by == 'lon':
-            y, x = np.meshgrid(super().native_y(), super().native_x())
+            y, x = np.meshgrid(super().native_y(**kwargs), super().native_x(**kwargs))
         else:
             raise ValueError("order_by should be 'y' (/'lat') or 'x' (/'lon')")
 
         if mask is None:
-            mask = np.full(super().size('spatial'), True)
+            mask = np.full(super().size('spatial', **kwargs), True)
         mask = mask.ravel()
 
         return x.ravel()[mask], y.ravel()[mask]

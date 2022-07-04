@@ -92,19 +92,25 @@ class DatasetManager:
     def set(self, data: np.ndarray, data_name: str, coords: str='all') -> None:
         self.merge_in_ds(self.compile_to_ds(data, data_name, coords))
 
-    def get(self, data_name: str, default_data=None):
+    def get(self, data_name: str, default_data=None, **kwargs):
         """Gets data from Dataset"""
         ds = self.ds()
         if ds is None:
             return None
 
+
         data = ds.get(data_name, default_data)
 
         if isinstance(data, xr.DataArray):
-            data = data.values.copy()
+            data = self._slice_data(data, **kwargs)
 
         return data
 
+    def _slice_data(self, ds, **kwargs):
+        for key, value in kwargs.items():
+            if key in list(ds.coords):
+                ds = eval(f'ds.sel({key}=slice({value[0]}, {value[1]}))')
+        return ds
     def merge_in_ds(self, ds_list: list[xr.Dataset]):
         """Merge in Datasets with some data into the existing Dataset of the
         Skeleton.
@@ -217,10 +223,10 @@ class DatasetManager:
         """
         return self.keys_to_dict(self.coords(type))
 
-    def coords_to_size(self, coords: list[str]) -> tuple[int]:
+    def coords_to_size(self, coords: list[str], **kwargs) -> tuple[int]:
         list = []
-
-        for coord, val in self.ds().dims.items():
+        data = self._slice_data(self.ds(), **kwargs)
+        for coord, val in data.dims.items():
             if coord in coords:
                 list.append(val)
         return tuple(list)

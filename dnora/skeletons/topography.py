@@ -70,12 +70,12 @@ def topography_methods(c):
     def update_sea_mask(self):
         self._update_mask('sea', (self.topo()>0).astype(int))
 
-    def topo(self, land: float=0., empty=False) -> np.ndarray:
+    def topo(self, land: float=0., empty=False, **kwargs) -> np.ndarray:
         """Returns an array containing the meshed topography of the grid."""
-        topo = self._topo(empty=empty)
+        topo = self._topo(empty=empty, **kwargs)
         if topo is None or empty:
             return topo
-        topo[np.logical_not(self.sea_mask())] = land
+        topo[np.logical_not(self.sea_mask(**kwargs))] = land
         return topo
 
     c.set_boundary = set_boundary
