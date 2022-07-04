@@ -13,6 +13,7 @@ from dnora.grd.read import TopoReader
 
 @topography_methods
 @add_datavar(name='topo', default_value=999., stash_get=True)
+@add_mask(name='spec', coords='grid', default_value=1)
 @add_mask(name='boundary', coords='grid', default_value=0)
 @add_mask(name='sea', coords='grid', default_value=1)
 class Grid(GriddedSkeleton):
@@ -48,7 +49,7 @@ class Grid(GriddedSkeleton):
             y_end = self.edges('y', native=True)[1]
 
             if nx and ny:
-                return int(nx), int(ny),
+                return int(nx), int(ny), x_end, y_end
 
             if dlon and dlat:
                 nx = np.round((self.edges('lon')[1]-self.edges('lon')[0])/dlon) + 1

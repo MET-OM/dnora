@@ -24,9 +24,9 @@ def add_mask(name, coords, default_value):
 
             if type == 'native':
                 return self.native_xy(mask=mask, order_by=order_by)
-            elif type in skeleton_strings['cartesian_strings']:
+            elif type in self._coord_manager.cartesian_strings:
                 return self.xy(mask=mask, order_by=order_by, strict=strict)
-            elif type in skeleton_strings['spherical_strings']:
+            elif type in self._coord_manager.spherical_strings:
                 return self.lonlat(mask=mask, order_by=order_by, strict=strict)
 
         if not hasattr(c, '_coord_manager'):
