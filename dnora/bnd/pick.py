@@ -56,7 +56,7 @@ class NearestGridPoint(PointPicker):
 
 class Area(PointPicker):
     """Choose all the points within a certain area around the grid."""
-    def __init__(self, expansion_factor=1.5):
+    def __init__(self, expansion_factor=2.0):
         self.expansion_factor = expansion_factor
         return
 
