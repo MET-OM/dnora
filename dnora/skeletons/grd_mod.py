@@ -15,7 +15,7 @@ from dnora.grd.read import TopoReader
 @add_datavar(name='topo', default_value=999., stash_get=True)
 @add_mask(name='spec', coords='grid', default_value=1)
 @add_mask(name='boundary', coords='grid', default_value=0)
-@add_mask(name='sea', coords='grid', default_value=1)
+@add_mask(name='sea', coords='grid', default_value=1, opposite_name='land')
 class Grid(GriddedSkeleton):
     def __init__(self, x=None, y=None, lon=None, lat=None, name='AnonymousGrid'):
         self.name = name
