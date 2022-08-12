@@ -1,5 +1,5 @@
 import numpy as np
-from coordinate_manager import CoordinateManager
+from .coordinate_manager import CoordinateManager
 from functools import partial
 def add_mask(name: str, coords: str, default_value: int, opposite_name: str=None):
     def mask_decorator(c):

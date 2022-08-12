@@ -1,5 +1,5 @@
 import numpy as np
-from coordinate_manager import CoordinateManager
+from .coordinate_manager import CoordinateManager
 from functools import partial
 def add_datavar(name, coords='grid', default_value=0., stash_get=False):
     """stash_get = True means that the coordinate data can be accessed

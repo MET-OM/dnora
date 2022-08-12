@@ -3,8 +3,8 @@ import pandas as pd
 import xarray as xr
 import utm
 from copy import copy
-from skeleton import Skeleton
-from dataset_manager import DatasetManager
+from .skeleton import Skeleton
+from .dataset_manager import DatasetManager
 
 class PointSkeleton(Skeleton):
     """Gives a unstructured structure to the Skeleton.

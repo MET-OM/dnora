@@ -149,6 +149,37 @@ def set_spacing_dx_dy(dx: float, dy:float, lon: Tuple[float, float], lat: Tuple[
 
     return dlon, dlat, dx, dy, lon_array, lat_array
 
+def is_gridded(data: np.ndarray, lon: np.ndarray, lat: np.ndarray) -> bool:
+    if data.shape == (len(lat), len(lon)):
+        return True
+
+    if len(data.shape) == 1 and len(lat) == data.shape[0] and len(lon) == data.shape[0]:
+        return False
+
+    raise Exception(f"Size of data is {data.shape} but len(lat) = {len(lat)} and len(lon) = {len(lon)}. I don't know what is going on!")
+
+def day_list(start_time, end_time):
+    """Determins a Pandas data range of all the days in the time span"""
+    t0 = pd.Timestamp(start_time).strftime('%Y-%m-%d')
+    t1 = pd.Timestamp(end_time).strftime('%Y-%m-%d')
+    days = pd.date_range(start=t0, end=t1, freq='D')
+    return days.strftime('%Y-%m-%d').to_list()
+
+def month_list(start_time, end_time):
+    """Determins a Pandas data range of all the months in the time span"""
+    t0 = pd.Timestamp(start_time).strftime('%Y-%m')
+    t1 = pd.Timestamp(end_time).strftime('%Y-%m')
+    months = pd.date_range(start=t0, end=t1, freq='MS')
+    return months.strftime('%Y-%m').to_list()
+
+def year_list(start_time, end_time):
+    """Determins a Pandas data range of all the years in the time span"""
+    t0 = pd.Timestamp(start_time).strftime('%Y-%m-%d')
+    t1 = pd.Timestamp(end_time).strftime('%Y-%m-%d')
+    years = pd.date_range(start=t0, end=t1, freq='YS')
+    return years.strftime('%Y').to_list()
+
+
 def set_spacing_nx_ny(nx: float, ny:float, lon: Tuple[float, float], lat: Tuple[float, float]) -> Tuple[float, float, float, float, np.ndarray, np.ndarray]:
     # Define longitudes and latitudes
     lon_array = np.linspace(lon[0], lon[1], nx)
@@ -169,27 +200,6 @@ def set_spacing_nx_ny(nx: float, ny:float, lon: Tuple[float, float], lat: Tuple[
     dy = km_y*1000/ny
 
     return dlon, dlat, dx, dy, lon_array, lat_array
-
-def day_list(start_time, end_time):
-    """Determins a Pandas data range of all the days in the time span"""
-    t0 = pd.Timestamp(start_time).strftime('%Y-%m-%d')
-    t1 = pd.Timestamp(end_time).strftime('%Y-%m-%d')
-    days = pd.date_range(start=t0, end=t1, freq='D')
-    return days
-
-def month_list(start_time, end_time):
-    """Determins a Pandas data range of all the months in the time span"""
-    t0 = pd.Timestamp(start_time).strftime('%Y-%m')
-    t1 = pd.Timestamp(end_time).strftime('%Y-%m')
-    days = pd.date_range(start=t0, end=t1, freq='MS')
-    return days
-
-def year_list(start_time, end_time):
-    """Determins a Pandas data range of all the years in the time span"""
-    t0 = pd.Timestamp(start_time).strftime('%Y-%m-%d')
-    t1 = pd.Timestamp(end_time).strftime('%Y-%m-%d')
-    days = pd.date_range(start=t0, end=t1, freq='YS')
-    return days
 
 def last_day_in_month(time_stamp):
     year = int(pd.Timestamp(timp_stamp).strftime('%Y'))

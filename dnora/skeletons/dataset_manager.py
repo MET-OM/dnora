@@ -3,7 +3,7 @@ import pandas as pd
 import xarray as xr
 import utm
 from copy import copy
-from coordinate_manager import CoordinateManager
+from .coordinate_manager import CoordinateManager
 class DatasetManager:
     """Contains methods related to the creataon and handling of the Xarray
     Dataset that will be used in any object that inherits from Skeleton."""

@@ -3,8 +3,8 @@ import pandas as pd
 import xarray as xr
 import utm
 from copy import copy
-from dataset_manager import DatasetManager
-import aux_funcs
+from .dataset_manager import DatasetManager
+from .. import aux_funcs
 
 class Skeleton:
     """Contains methods and data of the spatial x,y / lon, lat coordinates and

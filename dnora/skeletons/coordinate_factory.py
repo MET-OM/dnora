@@ -1,9 +1,9 @@
 from functools import partial
-import aux_funcs
+from .. import aux_funcs
 from datetime import datetime
 import pandas as pd
 import numpy as np
-from coordinate_manager import CoordinateManager
+from .coordinate_manager import CoordinateManager
 
 def coord_decorator(coord_name, grid_coord, c, stash_get=False):
     """stash_get = True means that the coordinate data can be accessed

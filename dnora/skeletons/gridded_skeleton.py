@@ -3,8 +3,8 @@ import pandas as pd
 import xarray as xr
 import utm
 from copy import copy
-from skeleton import Skeleton
-from dataset_manager import DatasetManager
+from .skeleton import Skeleton
+from .dataset_manager import DatasetManager
 
 class GriddedSkeleton(Skeleton):
     """Gives a gridded structure to the Skeleton.

@@ -1,11 +1,11 @@
 import numpy as np
 import xarray as xr
 from copy import copy
-import aux_funcs
+from .. import aux_funcs
 
-from dnora.grd.boundary import BoundarySetter
-from dnora.grd.process import GridProcessor
-from dnora import msg
+from ..grd.boundary import BoundarySetter
+from ..grd.process import GridProcessor
+from .. import msg
 def topography_methods(c):
     def set_boundary(self, boundary_setter: BoundarySetter) -> None:
         """Marks the points that should be treated as boundary points in the
