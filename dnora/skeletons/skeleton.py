@@ -22,7 +22,12 @@ class Skeleton:
 
     def _init_structure(self, x=None, y=None, lon=None, lat=None, **kwargs):
         """Determines grid type (Cartesian/Spherical), generates a DatasetManager
-        and initializes the Xarray dataset within the DatasetManager."""
+        and initializes the Xarray dataset within the DatasetManager.
+
+        The initial coordinates and variables are read from the method of the
+        subclass (e.g. PointSkeleton)
+        """
+
         # Migth have been already created by decorators
         if not hasattr(self, '_coord_manager'):
             self._coord_manager =  CoordinateManager()
@@ -34,8 +39,8 @@ class Skeleton:
             self.y_str = y_str
 
             # Initial values defined in subclass (e.g. GriddedSkeleton)
-            self._coord_manager.add_initial_coords(self._initial_coords())
-            self._coord_manager.add_initial_vars(self._initial_vars())
+            self._coord_manager.set_initial_coords(self._initial_coords())
+            self._coord_manager.set_initial_vars(self._initial_vars())
         else:
             xvec = x
             yvec = y
@@ -68,7 +73,7 @@ class Skeleton:
 
         if updated_mask is None:
             updated_mask = self.get(f'{name}_mask',empty=True)
-        self.ds_manager.set(data=updated_mask.astype(int), data_name=f'{name}_mask', coords=coords)
+        self.ds_manager.set(data=updated_mask.astype(int), data_name=f'{name}_mask', coord_type=coords)
 
     def _update_datavar(self, name: str, updated_var=None) -> None:
         coords = self._coord_manager.added_vars().get(name)
@@ -77,7 +82,7 @@ class Skeleton:
 
         if updated_var is None:
             updated_var = self.get(name, empty=True)
-        self.ds_manager.set(data=updated_var, data_name=name, coords=coords)
+        self.ds_manager.set(data=updated_var, data_name=name, coord_type=coords)
 
     def get(self, name, empty=False):
         """Gets a mask or data variable.

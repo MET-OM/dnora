@@ -2,11 +2,19 @@ import numpy as np
 from coordinate_manager import CoordinateManager
 from functools import partial
 def add_datavar(name, coords='grid', default_value=0., stash_get=False):
+    """stash_get = True means that the coordinate data can be accessed
+    by method ._{name}() instead of .{name}()
+
+    This allows for alternative definitions of the get-method elsewere."""
+
     def datavar_decorator(c):
         def get_var(self, empty: bool=False, **kwargs) -> np.ndarray:
             """Returns the data variable.
 
-            Set empty=True to get an empty data variable (even if it doesn't exist)"""
+            Set empty=True to get an empty data variable (even if it doesn't exist).
+
+            **kwargs can be used for slicing data.
+            """
 
             if empty:
                 return np.full(self.size(coords, **kwargs), default_value)

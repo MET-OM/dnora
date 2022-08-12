@@ -6,6 +6,10 @@ import numpy as np
 from coordinate_manager import CoordinateManager
 
 def coord_decorator(coord_name, grid_coord, c, stash_get=False):
+    """stash_get = True means that the coordinate data can be accessed
+    by method ._{coord_name}() instead of .{coord_name}()
+
+    This allows for alternative definitions of the get-method elsewere."""
     def get_coord(self, **kwargs):
         return self.ds_manager.get(coord_name, **kwargs).values.copy()
 

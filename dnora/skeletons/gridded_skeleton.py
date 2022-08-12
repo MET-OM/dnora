@@ -23,9 +23,15 @@ class GriddedSkeleton(Skeleton):
 
 
     def _initial_coords(self) -> list[str]:
+        """Initial coordinates used with GriddedSkeletons. Additional coordinates
+        can be added by decorators (e.g. @add_time).
+        """
         return ['y', 'x']
 
     def _initial_vars(self) -> dict:
+        """Initial coordinates used with GriddedSkeletons. Additional variables
+        can be added by decorator @add_datavar.
+        """
         return {}
 
     def lonlat(self, mask: np.array=None, order_by: str='lat', strict=False, **kwargs) -> tuple[np.ndarray, np.ndarray]:

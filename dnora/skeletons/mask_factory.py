@@ -7,7 +7,10 @@ def add_mask(name, coords, default_value):
             """Returns bool array of the mask.
 
             Set boolean=False to get 0 for land and 1 for sea.
-            Set empty=True to get an empty mask (even if it doesn't exist)"""
+            Set empty=True to get an empty mask (even if it doesn't exist)
+
+            **kwargs can be used for slicing data.
+            """
 
             if empty:
                 return np.full(self.size(coords, **kwargs), default_value).astype(bool)

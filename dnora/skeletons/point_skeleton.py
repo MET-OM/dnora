@@ -22,9 +22,15 @@ class PointSkeleton(Skeleton):
     #     self.data.attrs['name'] = name
 
     def _initial_coords(self) -> list[str]:
+        """Initial coordinates used with PointSkeletons. Additional coordinates
+        can be added by decorators (e.g. @add_time).
+        """
         return ['inds']
 
     def _initial_vars(self) -> dict:
+        """Initial variables used with PointSkeletons. Additional variables
+        can be added by decorators @add_datavar.
+        """
         return {'x': 'inds', 'y': 'inds'}
 
     def lonlat(self, mask: np.array=None, strict=False, **kwargs) -> tuple[np.ndarray, np.ndarray]:
