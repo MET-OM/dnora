@@ -345,6 +345,9 @@ class Skeleton:
         edges = self.edges('y', native=True)
         return (edges[1]-edges[0])/(self.ny()-1)
 
+    def utm(self) -> tuple[int, str]:
+        return self._zone_number, self._zone_letter
+
     @property
     def x_str(self) -> str:
         """Return string compatible with the type of spacing used:
