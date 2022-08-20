@@ -258,6 +258,7 @@ class REEF3D(InputFileWriter):
                 file_out.write(' \n')
 
                 file_out.write('G 10 1 // turn geodat on/off' '\n')
+                file_out.write('G 13 0 // rotation angle of geo coordinates around vertical axis' '\n')
                 file_out.write('G 15 2 // local inverse distance interpolation' '\n')
                 file_out.write('G 20 0 // use automatic grid size off' '\n')
                 file_out.write('G 31 14 // number of smoothing iterations' '\n')
