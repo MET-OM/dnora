@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from cmath import nan
 from copy import copy
 import os
 import numpy as np
@@ -201,10 +202,15 @@ class SWASH(InputFileWriter):
         return filename
 
 class REEF3D(InputFileWriter):
-    def __init__(self, option = 'REEF3D', edges = ['W'], nproc = 1):
+    def __init__(self, option = 'REEF3D', edges = ['W'], nproc = 1,rot_angle=0, wave_input='SPEC1D', Hs = nan, Tp = nan , Sprm = nan):
         self.option = option
         self.nproc = nproc # number of processors
         self.edges = edges
+        self.rot_angle = rot_angle # anlge for domain rotation
+        self.wave_input = wave_input # 'SPEC1D' for NORA3 frequency spectrum or 'JONSWAP' providing Hs and Tp
+        self.Hs = Hs # valid only for wave_input = 'JONSWAP'
+        self.Tp = Tp # valid only for wave_input = 'JONSWAP'
+        self.Sprm = Sprm # valid only for wave_input = 'JONSWAP'
         return
 
     def _extension(self):
@@ -258,7 +264,7 @@ class REEF3D(InputFileWriter):
                 file_out.write(' \n')
 
                 file_out.write('G 10 1 // turn geodat on/off' '\n')
-                file_out.write('G 13 0 // rotation angle of geo coordinates around vertical axis' '\n')
+                file_out.write('G 13 '+str(self.rot_angle)+' // rotation angle of geo coordinates around vertical axis' '\n')
                 file_out.write('G 15 2 // local inverse distance interpolation' '\n')
                 file_out.write('G 20 0 // use automatic grid size off' '\n')
                 file_out.write('G 31 14 // number of smoothing iterations' '\n')
@@ -288,12 +294,20 @@ class REEF3D(InputFileWriter):
                 file_out.write('A 362 2 // filtering inner iterations' '\n')
                 file_out.write('A 365 1.86 // artificial viscosity for breaking wave energy dissipation' '\n')
                 file_out.write(' \n')
+                if self.wave_input =='SPEC1D':
+                    file_out.write('B 85 10 // spectrum file' '\n')
+                    file_out.write('B 90 1 // wave input' '\n')
+                    file_out.write('B 92 31 // 1st-order irregular wave' '\n')
 
-                file_out.write('B 85 10 // spectrum file' '\n')
-                file_out.write('B 90 1 // wave input' '\n')
-                file_out.write('B 92 31 // 1st-order irregular wave' '\n')
+                elif self.wave_input =='JONSWAP':
+                    file_out.write('B 85 2 // jonswap' '\n')
+                    file_out.write('B 90 1 // wave input' '\n')                    
+                    file_out.write('B 92 31 // 1st-order irregular wave' '\n')
+                    file_out.write('B 93 '+str(self.Hs)+' '+ str(self.Tp)+' // wave height, wave period' '\n')
+                    file_out.write('B 134 '+str(self.Sprm)+' // spreading parameter for the directional spreading functions' '\n')
+
+                
                 file_out.write(' \n')
-
                 file_out.write('B 96 200.0 400.0 // wave generation zone length and numerical beach length' '\n')
                 #file_out.write('B 107 0.0 '+str(int(geodat.x.max()))+' 0.0 0.0 200.0 // wave generation zone length and numerical beach length' '\n')
                 #file_out.write('B 107 0.0 '+str(int(geodat.x.max()))+' '+str(int(geodat.y.max()))+' '+str(int(geodat.x.max()))+' 200.0 // customised numerical beach at the side walls' '\n')
