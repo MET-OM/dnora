@@ -12,7 +12,7 @@ import cdsapi
 # Import aux_funcsiliry functions
 from .. import msg
 from ..aux_funcs import create_time_stamps, expand_area, int_list_of_days, int_list_of_months, int_list_of_years
-
+from .conventions import SpectralConvention
 
 def renormalize_era5_spec(bnd_spec):
     bnd_spec = bnd_spec.assign_coords(direction=np.arange(7.5, 352.5 + 15, 15))
@@ -67,7 +67,7 @@ def download_era5_from_cds(start_time, end_time, lon, lat, dlon, dlat, folder='d
     return filename
 class ERA5(BoundaryReader):
     def convention(self) -> str:
-        return 'Ocean'
+        return SpectralConvention.OCEAN
 
     def get_coordinates(self, start_time) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
@@ -117,8 +117,8 @@ class ERA5(BoundaryReader):
 
         # This is time, freq, dir, station
         spec = np.reshape(spec, (len(bnd_spec.time),len(bnd_spec.frequency),len(bnd_spec.direction),len(lon)))
-        # This is time, station, freq, dir (as we want it)
-        spec = np.moveaxis(spec,3,1)
+        # This is station, time, freq, dir (as we want it)
+        spec = np.moveaxis(spec,3,0)
 
         freq = bnd_spec.frequency.values
         dirs = bnd_spec.direction.values
@@ -131,4 +131,4 @@ class ERA5(BoundaryReader):
         lat = lat[inds]
         spec = spec[:,inds,:,:]
 
-        return  time, freq, dirs, spec, lon, lat, source
+        return  time, freq, dirs, spec, lon, lat, None, None, source

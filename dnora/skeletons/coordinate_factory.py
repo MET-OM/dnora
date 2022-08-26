@@ -10,8 +10,11 @@ def coord_decorator(coord_name, grid_coord, c, stash_get=False):
     by method ._{coord_name}() instead of .{coord_name}()
 
     This allows for alternative definitions of the get-method elsewere."""
-    def get_coord(self, **kwargs):
-        return self.ds_manager.get(coord_name, **kwargs).values.copy()
+    def get_coord(self, data_array=False, **kwargs):
+        data = self.ds_manager.get(coord_name, **kwargs)
+        if data_array:
+            return data
+        return data.values.copy()
 
     if not hasattr(c, '_coord_manager'):
         c._coord_manager =  CoordinateManager()
@@ -61,8 +64,11 @@ def add_time(grid_coord: bool=False, coord_name: str='time'):
             else:
                 return list(unique_times(times, '%Y'))
 
-        def get_time(self):
-            return pd.to_datetime(self.ds_manager.get(coord_name).values.copy())
+        def get_time(self, data_array=False, **kwargs):
+            data = self.ds_manager.get(coord_name, **kwargs)
+            if data_array:
+                return data
+            return pd.to_datetime(data.values.copy())
 
         if not hasattr(c, '_coord_manager'):
             c._coord_manager =  CoordinateManager()

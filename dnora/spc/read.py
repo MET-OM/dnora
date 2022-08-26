@@ -3,6 +3,11 @@ from typing import Tuple
 from copy import copy
 from ..bnd.bnd_mod import Boundary
 import numpy as np
+
+from ..bnd.conventions import SpectralConvention
+from ..bnd.conventions import convert_2d_to_1d
+
+
 class SpectralReader(ABC):
     """Reads boundary spectra from some source and provide it to the object."""
     def __init__(self):
@@ -20,16 +25,19 @@ class SpectralReader(ABC):
         return lon, lat
 
     @abstractmethod
-    def convention(self) -> str:
+    def convention(self) -> SpectralConvention:
         """Return the convention of the spectra returned to the object.
 
         The conventions to choose from are predetermined:
 
-        'Ocean':    Oceanic convention
-                    Direction to
+        OCEAN:    Oceanic convention
+                    Direction to. North = 0, East = 90.
 
-        'Met':      Meteorological convention
-                    Direction from
+        MET:      Meteorological convention
+                    Direction from. North = 0, East = 90.
+
+        MATH:     Mathematical convention
+                    Direction to. North = 90, East = 0.
         """
         return convention
 
@@ -49,7 +57,7 @@ class SpectralReader(ABC):
         source: Source of the data as String
         """
 
-        return time, freq, spec, mdir, spr, lon, lat, source
+        return time, freq, spec, mdir, spr, lon, lat, x, y, source
 
 class BoundaryToSpectra(SpectralReader):
     """Integrates boundary spectra to omnidairectional spectra"""
@@ -57,27 +65,28 @@ class BoundaryToSpectra(SpectralReader):
         self._boundary = copy(boundary)
 
     def convention(self):
-        if self._boundary._convention == 'Met':
-            return 'Met'
-        else:
-            return 'Ocean'
+        return convert_2d_to_1d(self._boundary._convention)
 
     def get_coordinates(self, start_time: str) -> Tuple[np.ndarray, np.ndarray]:
-        return self._boundary.data.lon.values, self._boundary.data.lat.values
+        return self._boundary.lon(), self._boundary.lat()
+        #return self._boundary.data.lon.values, self._boundary.data.lat.values
 
     def __call__(self, start_time, end_time, inds) -> Tuple:
-        self.name = self._boundary.data.name
-        source = self._boundary.data.source
+        self.name = self._boundary.name
+        #source = self._boundary.data.source
+        source = ''
+        time = self._boundary.time(data_array=True).sel(time=slice(start_time, end_time)).values
+        lon = self._boundary.lon(strict=True)
+        lat = self._boundary.lat(strict=True)
+        x = self._boundary.x(strict=True)
+        y = self._boundary.y(strict=True)
 
-        time = self._boundary.data.sel(time=slice(start_time, end_time)).time.values
-        lon = self._boundary.data.lon.values
-        lat = self._boundary.data.lat.values
-
-        freq = self._boundary.data.freq.values
-        theta = np.deg2rad(self._boundary.data.dirs)
-        dD = 360/len(self._boundary.data.dirs)
+        freq = self._boundary.freq()
+        theta = np.deg2rad(self._boundary.dirs())
+        dD = 360/len(self._boundary.dirs())
         # Normalizing here so that integration over direction becomes summing
-        efth = self._boundary.data.sel(time=slice(start_time, end_time), x=inds).spec*dD*np.pi/180
+        #efth = self._boundary.data.sel(time=slice(start_time, end_time), x=inds).spec*dD*np.pi/180
+        efth = self._boundary.spec(data_array=True).sel(time=slice(start_time, end_time), inds=inds)*dD*np.pi/180
         ef = efth.sum(dim='dirs')
         eth = efth.integrate(coord='freq')
         # m0 = ef.integrate(coord='freq')
@@ -96,4 +105,4 @@ class BoundaryToSpectra(SpectralReader):
         mdir = np.mod(thetam.values*180/np.pi, 360)
         spec = ef.values
 
-        return time, freq, spec, mdir, spr, lon, lat, source
+        return time, freq, spec, mdir, spr, lon, lat, x, y, source

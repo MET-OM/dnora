@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 # Import aux_funcsiliry functions
 from .. import msg
 
-class BoundarySetter(ABC):
+class MaskSetter(ABC):
     """Set boundary points in the grid.
 
     The dimensions and orientation of the boolean array [True = boundary point]
@@ -31,6 +31,9 @@ class BoundarySetter(ABC):
         """
         pass
 
+class BoundarySetter(MaskSetter):
+    def _mask_type(self) -> str:
+        return 'boundary'
 
 class ClearBoundary(BoundarySetter):
     """Clears all boundary points by setting a mask with False values."""

@@ -25,14 +25,28 @@ if TYPE_CHECKING:
 from .. import msg
 from .. import aux_funcs
 from .. import file_module
+from ..skeletons.point_skeleton import PointSkeleton
+from ..skeletons.coordinate_factory import add_time, add_frequency, add_direction
+from ..skeletons.mask_factory import add_mask
+from ..skeletons.datavar_factory import add_datavar
 
-class Boundary:
+@add_mask(name='bad', coords='all', default_value=0)
+@add_datavar(name='spec', coords='all', default_value=0.)
+@add_direction(grid_coord=False)
+@add_frequency(grid_coord=False)
+@add_time(grid_coord=True)
+class Boundary(PointSkeleton):
     def __init__(self, grid: Grid, name: str="AnonymousBoundary"):
         self.grid = copy(grid)
         self._name = copy(name)
         self._convention = None
         self._history = []
-        return
+        #if grid is not None:
+        #    x, y = grid.xy(strict=True)
+        #    lon, lat = grid.lonlat(strict=True)
+        #t = np.arange(datetime(2020,1,1), datetime(2021,2,2), timedelta(hours=1)).astype(datetime)
+
+
 
     def import_boundary(self, start_time: str, end_time: str,
                         boundary_reader: BoundaryReader,
@@ -51,8 +65,8 @@ class Boundary:
         ### reading the database. This is set to make that possible.
         ### The regular grid doesn't necessarily match the boundary points
         ### exactly.
-        boundary_point_grid = Grid(lon=self.grid.lon_edges(),
-                                    lat=self.grid.lat_edges(),
+        boundary_point_grid = Grid(lon=self.grid.edges('lon'),
+                                    lat=self.grid.edges('lat'),
                                     name='boundary_points')
         boundary_point_grid.set_spacing(nx=self.grid.boundary_nx(),
                                         ny=self.grid.boundary_ny())
@@ -80,9 +94,10 @@ class Boundary:
 
         ### Main reading happens here
         msg.header(boundary_reader, "Loading boundary spectra...")
-        time, freq, dirs, spec, lon, lat, source = boundary_reader(start_time, end_time, inds)
-        self.data = self.compile_to_xr(time, freq, dirs, spec, lon, lat, source)
-
+        time, freq, dirs, spec, lon, lat, x, y, source = boundary_reader(start_time, end_time, inds)
+        self._init_structure(x, y, lon, lat, time=time, freq=freq, dirs=dirs)
+        self.ds_manager.set(spec, 'spec', coord_type='all')
+        #self.data = self.compile_to_xr(time, freq, dirs, spec, lon, lat, source)
 
         ### Patch data if read from cache and all data not found
         if read_cache and not cache_empty:
@@ -90,14 +105,16 @@ class Boundary:
             if patch_start:
                 msg.info('Not all data found in cache. Patching from original source...')
 
-                lon_all, lat_all = original_boundary_reader.get_coordinates(start_time)
-                inds = point_picker(self.grid, lon_all, lat_all)
-                bnd_list = [self.data]
+                #lon_all, lat_all = original_boundary_reader.get_coordinates(start_time)
+                #inds = point_picker(self.grid, lon_all, lat_all)
                 for t0, t1 in zip(patch_start, patch_end):
-                    time, freq, dirs, spec, lon, lat, source = original_boundary_reader(t0, t1, inds)
-                    bnd_list.append(self.compile_to_xr(time, freq, dirs, spec, lon, lat, source))
-
-                self.data = xr.concat(bnd_list, dim="time").sortby('time')
+                    boundary_temp = bnd.Boundary(self.grid)
+                    boundary_temp.import_boundary(start_time=t0, end_time=t1,
+                                    boundary_reader=original_boundary_reader,
+                                    point_picker=point_picker)
+                    self._absorb_object(boundary_temp, 'time')
+                    #time, freq, dirs, spec, lon, lat, source = original_boundary_reader(t0, t1, inds)
+                    #self._init_structure(x, y, lon, lat, time=time, freq=freq, dirs=dirs, spec=spec, append=True)
 
 
         if write_cache:
@@ -110,7 +127,7 @@ class Boundary:
                 outfile = f'{cache_folder}/{cache_file}'
                 if os.path.exists(outfile):
                     os.remove(outfile)
-                self.data.sel(time=slice(t0, t1)).to_netcdf(outfile)
+                self.ds().sel(time=slice(t0, t1)).to_netcdf(outfile)
                 msg.to_file(outfile)
 
         #self.mask = [True]*len(self.x())
@@ -145,11 +162,14 @@ class Boundary:
 
 
             new_spec, new_dirs, new_freq = processor(self.spec(), self.dirs(), self.freq())
+            self._init_structure(x=self.x(strict=True), y=self.y(strict=True),
+                            lon=self.lon(strict=True), lat=self.lat(strict=True),
+                            time=self.time(), freq=new_freq, dirs=new_dirs)
+            self.ds_manager.set(new_spec, 'spec', coord_type='all')
 
-
-            self.data.spec.values = new_spec
-            self.data = self.data.assign_coords(dirs=new_dirs)
-            self.data = self.data.assign_coords(freq=new_freq)
+            # self.data.spec.values = new_spec
+            # self.data = self.data.assign_coords(dirs=new_dirs)
+            # self.data = self.data.assign_coords(freq=new_freq)
 
             # Set new convention if the processor changed it
             new_convention = processor._convention_out()
@@ -163,139 +183,6 @@ class Boundary:
             print(processor)
             msg.blank()
         return
-
-
-    def compile_to_xr(self, time, freq, dirs, spec, lon, lat, source):
-        """Data from .import_boundary() is stored as an xarray Dataset."""
-
-        x = np.array(range(spec.shape[1]))
-        data = xr.Dataset(
-            data_vars=dict(
-                spec=(["time", "x", "freq", "dirs"], spec),
-            ),
-            coords=dict(
-                freq=freq,
-                dirs=dirs,
-                x=x,
-                lon=(["x"], lon),
-                lat=(["x"], lat),
-                time=time,
-            ),
-            attrs=dict(source=source,
-                name=self.name()
-            ),
-            )
-        return data
-
-    def slice_data(self, start_time: str='', end_time: str='', x: List[int]=None) -> xr.Dataset:
-        """Slice data in space (x) and time."""
-        if not hasattr(self, 'data'):
-            return None
-
-        if x is None:
-            x=self.x()
-        if not start_time:
-            # This is not a string, but slicing works also with this input
-            start_time = self.time()[0]
-        if not end_time:
-            # This is not a string, but slicing works also with this input
-            end_time = self.time()[-1]
-        sliced_data = self.data.sel(time=slice(start_time, end_time), x = x)
-        return sliced_data
-
-    def spec(self, start_time: str='', end_time: str='', x: List[int]=None) -> np.ndarray:
-        """Slice spectra in space (x) and time."""
-        spec = self.slice_data(start_time, end_time, x)
-        if spec is None:
-            return None
-        return spec.spec.values
-
-    def time(self):
-        if not hasattr(self, 'data'):
-            return pd.to_datetime([])
-        return pd.to_datetime(self.data.time.values)
-
-    def start_time(self) -> str:
-        if len(self.time()) == 0:
-            return ''
-        return self.time()[0].strftime('%Y-%m-%d %H:%M')
-
-    def end_time(self) -> str:
-        if len(self.time()) == 0:
-            return ''
-        return self.time()[-1].strftime('%Y-%m-%d %H:%M')
-
-    def dt(self) -> float:
-        """ Returns time step of boundary spectra in hours."""
-        if len(self.time()) == 0:
-            return 0
-        return self.time().to_series().diff().dt.total_seconds().values[-1]/3600
-
-    def freq(self) -> np.ndarray:
-        if not hasattr(self, 'data'):
-            return np.array([])
-        return copy(self.data.freq.values)
-
-    def dirs(self) -> np.ndarray:
-        if not hasattr(self, 'data'):
-            return np.array([])
-        return copy(self.data.dirs.values)
-
-    def lon(self) -> np.ndarray:
-        if not hasattr(self, 'data'):
-            return np.array([])
-        return copy(self.data.lon.values)
-
-    def lat(self) -> np.ndarray:
-        if not hasattr(self, 'data'):
-            return np.array([])
-        return copy(self.data.lat.values)
-
-    def x(self) -> np.ndarray:
-        if not hasattr(self, 'data'):
-            return np.array([])
-        return copy(self.data.x.values)
-
-    def days(self):
-        """Determins a Pandas data range of all the days in the time span."""
-        if len(self.time()) == 0:
-            return []
-        return pd.date_range(start=str(self.time()[0]).split(' ')[0],
-                end=str(self.time()[-1]).split(' ')[0], freq='D')
-
-    def months(self):
-        """Determins a Pandas data range of all the months in the time span."""
-        if len(self.time()) == 0:
-            return []
-        t0 = self.time()[0].strftime('%Y-%m') + '-01'
-        t1 = self.time()[-1].strftime('%Y-%m') + '-01'
-
-        return pd.date_range(start=t0, end=t1, freq='MS')
-
-    def size(self):
-        return (len(self.time()), len(self.x()))
-
-
-    def name(self) -> str:
-        """Return the name of the grid (set at initialization)."""
-        return copy(self._name)
-
-    def convention(self) -> str:
-        """Returns the convention (WW3/Ocean/Met/Math) of the spectra"""
-        if not hasattr(self, '_convention'):
-            return None
-        return copy(self._convention)
-
-    def times_in_day(self, day):
-        """Determines time stamps of one given day."""
-        t0 = day.strftime('%Y-%m-%d') + "T00:00:00"
-        t1 = day.strftime('%Y-%m-%d') + "T23:59:59"
-
-        times = self.slice_data(start_time=t0, end_time=t1, x=[0])
-        if times is None:
-            return []
-
-        return times.time.values
 
     def __str__(self) -> str:
         """Prints status of boundary."""

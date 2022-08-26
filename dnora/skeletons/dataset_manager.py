@@ -13,8 +13,8 @@ class DatasetManager:
 
     def create_structure(self, x: np.ndarray, y: np.ndarray,
                         x_str: str, y_str: str,
-                        **kwargs) -> None:
-        """Create the first Dataset.
+                        **kwargs) -> xr.Dataset:
+        """Create a Dataset containing only the relevant coordinates.
 
         x_str, y_str = 'x', 'y' means x, y are cartesiant coordinates
         x_str, y_str = 'lon', 'lat' means x, y are spherical coordinates
@@ -85,14 +85,15 @@ class DatasetManager:
         var_dict = determine_vars()
         check_consistency()
 
-        ds = xr.Dataset(coords=coord_dict, data_vars=var_dict)
-        self.data = ds
+        self.data = xr.Dataset(coords=coord_dict, data_vars=var_dict)
 
+    def set_new_ds(self, ds: xr.Dataset) -> None:
+        self.data = ds
 
     def ds(self):
         """Resturns the Dataset (None if doesn't exist)."""
         if not hasattr(self, 'data'):
-            raise Warning('No Dataset found. Returning None.')
+            #raise Warning('No Dataset found. Returning None.')
             return None
         return self.data
 
@@ -121,6 +122,8 @@ class DatasetManager:
     def _slice_data(self, data, **kwargs) -> xr.DataArray:
         for key, value in kwargs.items():
             if key in list(data.coords):
+                if key == 'time':
+                    breakpoint()
                 data = eval(f'data.sel({key}=slice({value[0]}, {value[1]}))')
         return data
 

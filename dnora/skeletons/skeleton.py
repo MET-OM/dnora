@@ -20,7 +20,7 @@ class Skeleton:
     _xy_dict = {'x': 'x', 'lon': 'x', 'y': 'y', 'lat': 'y'}
 
 
-    def _init_structure(self, x=None, y=None, lon=None, lat=None, **kwargs):
+    def _init_structure(self, x=None, y=None, lon=None, lat=None, **kwargs) -> None:
         """Determines grid type (Cartesian/Spherical), generates a DatasetManager
         and initializes the Xarray dataset within the DatasetManager.
 
@@ -50,9 +50,18 @@ class Skeleton:
 
         # The manager contains the Xarray Dataset
         self.ds_manager.create_structure(xvec,yvec,self.x_str,self.y_str,**kwargs)
+        # if self.ds() is None or not append:
+        #     self.ds_manager.set_new_ds(ds)
+        # else:
+        #     self.ds_manager.set_new_ds(xr.concat([self.ds(), ds], dim="time").sortby('time'))
         self._reset_masks()
         self._reset_datavars()
 
+    def _absorb_object(self, obj, dimension: str) -> None:
+        """Absorb another object of same type. This is used e.g. when pathcing
+        cached data and joining different Boundary etc. over time.
+        """
+        self.ds_manager.set_new_ds(xr.concat([self.ds(), obj.ds()], dim=dimension).sortby(dimension))
 
     def _reset_masks(self) -> None:
         """Resets the mask to default values."""

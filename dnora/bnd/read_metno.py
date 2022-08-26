@@ -8,6 +8,7 @@ from typing import Tuple
 import pandas as pd
 # Import abstract classes and needed instances of them
 from .read import BoundaryReader
+from .conventions import SpectralConvention
 
 # Import aux_funcsiliry functions
 from .. import msg
@@ -28,7 +29,7 @@ class WAM4km(BoundaryReader):
         return
 
     def convention(self) -> str:
-        return 'Ocean'
+        return SpectralConvention.OCEAN
 
 
     def get_coordinates(self, start_time) -> Tuple:
@@ -133,12 +134,13 @@ class WAM4km(BoundaryReader):
         freq = bnd.freq.values
         dirs = bnd.direction.values
         spec = bnd.SPEC.values
+        spec = np.moveaxis(spec,1,0) # time, inds ... -> inds, time, ...
         lon = bnd.longitude.values
         lat = bnd.latitude.values
 
         source = f"{bnd.title}, {bnd.institution}"
 
-        return  time, freq, dirs, spec, lon, lat, source
+        return  time, freq, dirs, spec, lon, lat, None, None, source
 
     def file_is_consistent(self, this_ds, bnd_list, url) -> bool:
         if this_ds is None:
@@ -206,7 +208,7 @@ class NORA3(BoundaryReader):
         return
 
     def convention(self) -> str:
-        return 'Ocean'
+        return SpectralConvention.OCEAN
 
     def get_coordinates(self, start_time) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
@@ -244,12 +246,13 @@ class NORA3(BoundaryReader):
         freq = bnd.freq.values
         dirs = bnd.direction.values
         spec = bnd.SPEC.values
+        spec = np.moveaxis(spec,1,0) # time, inds ... -> inds, time, ...
         lon = bnd.longitude.values[0,:]
         lat = bnd.latitude.values[0,:]
 
         source = f"{bnd.title}, {bnd.institution}"
 
-        return  time, freq, dirs, spec, lon, lat, source
+        return  time, freq, dirs, spec, lon, lat, None, None, source
 
 
     def get_url(self, day, source) -> str:

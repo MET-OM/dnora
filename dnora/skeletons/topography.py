@@ -3,27 +3,22 @@ import xarray as xr
 from copy import copy
 from .. import aux_funcs
 
-from ..grd.boundary import BoundarySetter
+from ..grd.boundary import MaskSetter
 from ..grd.process import GridProcessor
 from .. import msg
 def topography_methods(c):
-    def set_boundary(self, boundary_setter: BoundarySetter) -> None:
-        """Marks the points that should be treated as boundary points in the
-        grid.
+    def set_mask(self, mask_setter: MaskSetter, mask_type: str) -> None:
+        """Set a mask that represents e.g. Boundary points or spectral output
+        point.
 
-        The boundary points are stored in a boolean array where True values
-        mark a boundary point.
-
-        NB! No check for land points are done, so it is possible that a land
-        point is marked as a boundary point. Possibly accounting for this is
-        the responsibility of the GridWriter.
+        NB! Points can overlap with land!
         """
 
-        msg.header(boundary_setter, "Setting boundary points...")
-        print(boundary_setter)
+        msg.header(mask_setter, f"Setting {mask_type} points...")
+        print(mask_setter)
 
-        boundary_mask = boundary_setter(self.sea_mask())
-        self._update_mask('boundary', boundary_mask)
+        mask = mask_setter(self.sea_mask())
+        self._update_mask(mask_type, mask)
 
     def process_topo(self, grid_processor: GridProcessor=None) -> None:
         """Processes the raw bathymetrical data, e.g. with a filter."""
@@ -78,7 +73,7 @@ def topography_methods(c):
         topo[np.logical_not(self.sea_mask(**kwargs))] = land
         return topo
 
-    c.set_boundary = set_boundary
+    c.set_mask = set_mask
     c.process_topo = process_topo
     c.process_grid = process_grid
     c._update_sea_mask = update_sea_mask

@@ -8,7 +8,7 @@ def add_datavar(name, coords='grid', default_value=0., stash_get=False):
     This allows for alternative definitions of the get-method elsewere."""
 
     def datavar_decorator(c):
-        def get_var(self, empty: bool=False, **kwargs) -> np.ndarray:
+        def get_var(self, empty: bool=False, data_array: bool=False, **kwargs) -> np.ndarray:
             """Returns the data variable.
 
             Set empty=True to get an empty data variable (even if it doesn't exist).
@@ -19,7 +19,10 @@ def add_datavar(name, coords='grid', default_value=0., stash_get=False):
             if empty:
                 return np.full(self.size(coords, **kwargs), default_value)
 
-            return self.ds_manager.get(name, **kwargs).values.copy()
+            data = self.ds_manager.get(name, **kwargs)
+            if data_array:
+                return data
+            return data.values.copy()
 
         if not hasattr(c, '_coord_manager'):
             c._coord_manager =  CoordinateManager()

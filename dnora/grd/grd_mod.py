@@ -117,6 +117,26 @@ class Grid(GriddedSkeleton):
         self._update_sea_mask()
         print(self)
 
+    def boundary_nx(self) -> int:
+        """Return approximate number of grid points in the longitude direction
+        """
+        abs_diff = np.abs(np.diff(np.where(self.boundary_mask())))
+        if abs_diff.size == 0:
+            return 0
+        abs_diff=np.median(abs_diff[abs_diff>0]).astype(int)
+
+        return np.ceil(self.nx()/abs_diff+1).astype(int)
+
+    def boundary_ny(self) -> int:
+        """Return approximate number of grid points in the longitude direction
+        """
+        abs_diff = np.abs(np.diff(np.where(self.boundary_mask())))
+        if abs_diff.size == 0:
+            return 0
+        abs_diff=np.median(abs_diff[abs_diff>0]).astype(int)
+
+        return np.ceil(self.ny()/abs_diff+1).astype(int)
+
     def __str__(self) -> str:
         """Prints status of the grid."""
 

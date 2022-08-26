@@ -8,6 +8,7 @@ from ..grd.grd_mod import Grid
 from .. import file_module
 from .. import msg
 from .. import aux_funcs
+from .conventions import SpectralConvention
 
 class BoundaryReader(ABC):
     """Reads boundary spectra from some source and provide it to the object."""
@@ -41,24 +42,28 @@ class BoundaryReader(ABC):
         return lon, lat
 
     @abstractmethod
-    def convention(self) -> str:
+    def convention(self) -> SpectralConvention:
         """Return the convention of the spectra returned to the object.
 
         The conventions to choose from are predetermined:
 
-        'Ocean':    Oceanic convention
+        OCEAN:    Oceanic convention
                     Directional vector monotonically increasing.
                     Direction to. North = 0, East = 90.
 
-        'Met':      Meteorological convention
+        MET:      Meteorological convention
                     Directional vector monotonically increasing.
                     Direction from. North = 0, East = 90.
 
-        'Math':     Mathematical convention
+        MATH:     Mathematical convention
                     Directional vector of type: [90 80 ... 10 0 350 ... 100]
                     Direction to. North = 90, East = 0.
 
-        'WW3':      WAVEWATCH III output convention
+        MATHVEC:  Mathematical convention in vector
+                    Directional vector of type: [90 80 ... 10 0 350 ... 100]
+                    Direction to. North = 90, East = 0.
+
+        WW3:      WAVEWATCH III output convention
                     Directional vector of type: [90 80 ... 10 0 350 ... 100]
                     Direction to. North = 0, East = 90.
         """
@@ -73,13 +78,15 @@ class BoundaryReader(ABC):
         time:   Time stamps as numpy.datetime64 array
         freq:   Frequency vector as numpy array
         dirs:   Directional vector as numpy array
-        spec:   Boundary spectra [time, station, freq, dirs] as numpy array
-        lon:    Longitude vector as numpy array
-        lat:    Latitude vector as numpy array
+        spec:   Boundary spectra [station, time, freq, dirs] as numpy array
+        lon:    Longitude vector as numpy array (None if Cartesian)
+        lat:    Latitude vector as numpy array (None if Cartesian)
+        x:    Longitude vector as numpy array (None if Spherical)
+        y:    Latitude vector as numpy array (None if Spherical)
         source: Source of the data as String
         """
 
-        return time, freq, dirs, spec, lon, lat, source
+        return time, freq, dirs, spec, lon, lat, x, y, source
 
     def name(self) -> str:
         return type(self).__name__
@@ -89,12 +96,12 @@ class BoundaryReader(ABC):
 
 
 class DnoraNc(BoundaryReader):
-    def __init__(self, files: str, convention: str) -> None:
+    def __init__(self, files: str, convention: SpectralConvention) -> None:
         self._convention = convention
         self.files = files
 
 
-    def convention(self) -> str:
+    def convention(self) -> SpectralConvention:
         return copy(self._convention)
 
     def get_coordinates(self, start_time) -> Tuple:
@@ -109,10 +116,10 @@ class DnoraNc(BoundaryReader):
         msg.info(f"Getting boundary spectra from cached netcdf (e.g. {self.files[0]}) from {start_time} to {end_time}")
         ds = xr.open_mfdataset(self.files, preprocess=_crop)
         ds = ds.sel(x=inds)
-        return ds.time.values, ds.freq.values, ds.dirs.values, ds.spec.values, ds.lon.values, ds.lat.values, ds.source
+        return ds.time.values, ds.freq.values, ds.dirs.values, ds.spec.values, ds.lon.values, ds.lat.values, None, None, ds.source
 
 class ForceFeed(BoundaryReader):
-    def __init__(self, time, freq, dirs, spec, lon, lat, convention) -> None:
+    def __init__(self, time, freq, dirs, spec, lon, lat, convention: SpectralConvention) -> None:
         self.time = copy(time)
         self.freq = copy(freq)
         self.dirs = copy(dirs)
@@ -122,7 +129,7 @@ class ForceFeed(BoundaryReader):
         self._convention = copy(convention)
         return
 
-    def convention(self) -> str:
+    def convention(self) -> SpectralConvention:
         return copy(self._convention)
 
     def get_coordinates(self, start_time) -> Tuple:
@@ -130,7 +137,7 @@ class ForceFeed(BoundaryReader):
 
     def __call__(self, start_time, end_time, inds) -> Tuple:
         #return  copy(self.time), copy(self.freq), copy(self.dirs), np.reshape(self.spec, (len(self.time), len(self.lon), self.spec.shape[0], self.spec.shape[1])), copy(self.lon), copy(self.lat), ''
-        return  copy(self.time), copy(self.freq), copy(self.dirs), copy(self.spec), copy(self.lon), copy(self.lat), ''
+        return  copy(self.time), copy(self.freq), copy(self.dirs), copy(self.spec), copy(self.lon), copy(self.lat), None, None, ''
 
 class File_WW3Nc(BoundaryReader):
     def __init__(self, folder: str='', filename: str='ww3_T0', dateftm: str='%Y%m%dT%H%M', stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0) -> None:
@@ -149,8 +156,8 @@ class File_WW3Nc(BoundaryReader):
 
         return
 
-    def convention(self) -> str:
-        return 'WW3'
+    def convention(self) -> SpectralConvention:
+        return SpectralConvention.WW3
 
     def get_coordinates(self, start_time) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
@@ -198,7 +205,7 @@ class File_WW3Nc(BoundaryReader):
 
         source = f"ww3_ouput_spectra"
 
-        return  time, freq, dirs, spec, lon, lat, source
+        return  time, freq, dirs, spec, lon, lat, None, None, source
 
 
     def get_filename(self, time) -> str:
