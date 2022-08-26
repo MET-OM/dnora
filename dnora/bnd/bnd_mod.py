@@ -186,6 +186,13 @@ class Boundary(PointSkeleton):
             msg.blank()
         return
 
+    def convention(self):
+        """Returns the convention (WW3/OCEAN/MET/MATH/MATHVEC) of the spectra"""
+        if not hasattr(self, '_convention'):
+            return None
+        return copy(self._convention)
+
+
     def __str__(self) -> str:
         """Prints status of boundary."""
 

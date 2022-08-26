@@ -23,7 +23,6 @@ grid.set_boundary(boundary_setter=grd.boundary.MidPointAsBoundary(edges=edges))
 model = mdl.REEF3D(grid, start_time='2007-11-09T00:00', end_time='2007-11-09T01:00')
 model.import_boundary(bnd.read_metno.NORA3())
 model.boundary_to_spectra()
-
 model.plot_grid(save_fig=True)
 model.export_spectra()
 model.export_grid(grd.write.REEF3D(use_raw=True))  # Use when not meshed

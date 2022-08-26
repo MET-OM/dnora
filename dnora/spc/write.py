@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .spc_mod import Spectra
 
+from ..bnd.conventions import SpectralConvention
+
 class SpectralWriter(ABC):
     """Writes omnidirectional spectra spectra to a certain file format.
 
@@ -38,9 +40,14 @@ class SpectralWriter(ABC):
 
         The conventions to choose from are predetermined:
 
-        'Ocean':    Oceanic convention (direction to)
+        OCEAN:    Oceanic convention
+                    Direction to. North = 0, East = 90.
 
-        'Met':      Meteorological convention (direction from)
+        MET:      Meteorological convention
+                    Direction from. North = 0, East = 90.
+
+        MATH:     Mathematical convention
+                    Direction to. North = 90, East = 0.
         """
 
     @abstractmethod
@@ -49,7 +56,7 @@ class SpectralWriter(ABC):
         folder where data were written."""
 
 class DumpToNc(SpectralWriter):
-    def __init__(self, convention: str='Met') -> None:
+    def __init__(self, convention=SpectralConvention.MET) -> None:
         self._convention_in = convention
         return
 
@@ -67,7 +74,7 @@ class DumpToNc(SpectralWriter):
         return filename
 
 class REEF3D(SpectralWriter):
-    def __init__(self, convention: str='Met') -> None:
+    def __init__(self, convention=SpectralConvention.MET) -> None:
         self._convention_in = convention
         return
 

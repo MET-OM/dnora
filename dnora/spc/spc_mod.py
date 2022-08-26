@@ -62,6 +62,14 @@ class Spectra(PointSkeleton):
         # E.g. are the spectra oceanic convention etc.
         self._convention = spectral_reader.convention()
 
+
+    def convention(self):
+        """Returns the convention (OCEAN/MET/MATH) of the spectra"""
+        if not hasattr(self, '_convention'):
+            return None
+        return copy(self._convention)
+
+
     def __str__(self) -> str:
         """Prints status of spectra."""
 

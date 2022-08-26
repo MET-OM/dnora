@@ -119,12 +119,13 @@ class DatasetManager:
 
         return data
 
+    def set_attrs(self, attributes: dict) -> None:
+        self.data.attrs = attributes
+
     def _slice_data(self, data, **kwargs) -> xr.DataArray:
         for key, value in kwargs.items():
             if key in list(data.coords):
-                if key == 'time':
-                    breakpoint()
-                data = eval(f'data.sel({key}=slice({value[0]}, {value[1]}))')
+                data = eval(f'data.sel({key}={value})')
         return data
 
     def _merge_in_ds(self, ds_list: list[xr.Dataset]) -> None:

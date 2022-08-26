@@ -32,7 +32,8 @@ from ..file_module import FileNames
 from typing import Union
 # Import default values and aux_funcsiliry functions
 from .. import msg
-from ..bnd.process import processor_for_convention_change
+from ..bnd.process import boundary_processor_for_convention_change
+from ..spc.process import spectral_processor_for_convention_change
 
 from .. import file_module
 from ..converters import convert_swash_mat_to_netcdf
@@ -195,12 +196,12 @@ class ModelRun:
         if self.dry_run():
             boundary_processor = None
         else:
-            boundary_processor = processor_for_convention_change(
+            boundary_processor = boundary_processor_for_convention_change(
                                 current_convention = self.boundary().convention(),
-                                wanted_convention = self._boundary_writer._convention())
+                                wanted_convention = self._boundary_writer.convention())
 
         if boundary_processor is None:
-            msg.info(f"Convention ({self.boundary().convention()}) already equals wanted convention ({self._boundary_writer._convention()}).")
+            msg.info(f"Convention ({self.boundary().convention()}) already equals wanted convention ({self._boundary_writer.convention()}).")
         else:
             self.boundary().process_boundary(boundary_processor)
 
@@ -226,12 +227,17 @@ class ModelRun:
         else:
             msg.header(self._spectral_writer, f"Writing omnidirectional spectra from {self.spectra().name}")
 
-        # NOT IMPPELMENTED YET
-        # spectral_processor = processor_for_convention_change(current_convention = self.spectra().convention(), wanted_convention = self._spectral_writer._convention_in())
-        # if spectral_processor is None:
-        #     msg.info(f"Convention ({self.spectra().convention()}) already equals wanted convention ({self._spectral_writer._convention_in()}).")
-        # else:
-        #     self.spectra().process_spectra(spectral_processor)
+        if self.dry_run():
+            spectral_processor = None
+        else:
+            spectral_processor = spectral_processor_for_convention_change(
+                                current_convention = self.spectra().convention(),
+                                wanted_convention = self._spectral_writer.convention())
+
+        if spectral_processor is None:
+            msg.info(f"Convention ({self.spectra().convention()}) already equals wanted convention ({self._spectral_writer.convention()}).")
+        else:
+            self.spectra().process_spectra(spectral_processor)
 
         # Replace #Spectra etc and add file extension
         __ = self._export_object(filename, folder, dateformat,

@@ -32,18 +32,18 @@ class Skeleton:
         if not hasattr(self, '_coord_manager'):
             self._coord_manager =  CoordinateManager()
 
-        if not self.is_initialized():
-            x_str, y_str, xvec, yvec = will_grid_be_spherical_or_cartesian(x, y, lon, lat)
+        #if not self.is_initialized():
+        x_str, y_str, xvec, yvec = will_grid_be_spherical_or_cartesian(x, y, lon, lat)
 
-            self.x_str = x_str
-            self.y_str = y_str
+        self.x_str = x_str
+        self.y_str = y_str
 
-            # Initial values defined in subclass (e.g. GriddedSkeleton)
-            self._coord_manager.set_initial_coords(self._initial_coords())
-            self._coord_manager.set_initial_vars(self._initial_vars())
-        else:
-            xvec = x
-            yvec = y
+        # Initial values defined in subclass (e.g. GriddedSkeleton)
+        self._coord_manager.set_initial_coords(self._initial_coords())
+        self._coord_manager.set_initial_vars(self._initial_vars())
+        # else:
+        #     xvec = x
+        #     yvec = y
 
         if not hasattr(self, 'ds_manager'):
             self.ds_manager = DatasetManager(self._coord_manager)
@@ -325,7 +325,7 @@ class Skeleton:
         edges = self.edges('lon')
         return (edges[1]-edges[0])/(self.nx()-1)
 
-    def dlat(self):
+    def dlat(self, strict=False):
         """Mean grid spacing of the latitude vector. Conversion made for
         cartesian grids."""
         if self.is_cartesian() and (strict or self.strict):

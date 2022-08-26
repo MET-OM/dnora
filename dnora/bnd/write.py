@@ -15,6 +15,8 @@ if TYPE_CHECKING:
 from .. import msg
 from .. import file_module
 
+from .conventions import SpectralConvention
+
 class BoundaryWriter(ABC):
     """Writes the boundary spectra to a certain file format.
 
@@ -37,28 +39,28 @@ class BoundaryWriter(ABC):
         return True
 
     @abstractmethod
-    def _convention(self) -> str:
+    def convention(self) -> str:
         """Defines in which format the incoming spectra should be.
 
         The conventions to choose from are predetermined:
 
-        'Ocean':    Oceanic convention
+        OCEAN:    Oceanic convention
                     Directional vector monotonically increasing.
                     Direction to. North = 0, East = 90.
 
-        'Met':      Meteorological convention
+        MET:      Meteorological convention
                     Directional vector monotonically increasing.
                     Direction from. North = 0, East = 90.
 
-        'Math':     Mathematical convention
-                    Directional vector monotonically increasing.
-                    Direction to. North = 90, East = 0.
-
-        'MathVec':  Mathematical convention in vector
+        MATH:     Mathematical convention
                     Directional vector of type: [90 80 ... 10 0 350 ... 100]
                     Direction to. North = 90, East = 0.
 
-        'WW3':      WAVEWATCH III output convention
+        MATHVEC:  Mathematical convention in vector
+                    Directional vector of type: [90 80 ... 10 0 350 ... 100]
+                    Direction to. North = 90, East = 0.
+
+        WW3:      WAVEWATCH III output convention
                     Directional vector of type: [90 80 ... 10 0 350 ... 100]
                     Direction to. North = 0, East = 90.
         """
@@ -72,11 +74,11 @@ class BoundaryWriter(ABC):
         return output_files
 
 class DumpToNc(BoundaryWriter):
-    def __init__(self, convention: str='Ocean') -> None:
+    def __init__(self, convention=SpectralConvention.OCEAN) -> None:
         self._convention_in = convention
         return
 
-    def _convention(self) -> str:
+    def convention(self) -> str:
         """Convention of spectra"""
         return self._convention_in
 
@@ -86,14 +88,14 @@ class DumpToNc(BoundaryWriter):
 
 
 class NcFiles(BoundaryWriter):
-    def __init__(self, convention: str='Ocean') -> None:
+    def __init__(self, convention=SpectralConvention.OCEAN) -> None:
         self._convention_in = convention
         return
 
     def _extension(self):
         return 'nc'
 
-    def _convention(self) -> str:
+    def convention(self) -> str:
         """Convention of spectra"""
         return self._convention_in
 
@@ -117,7 +119,7 @@ class NcFiles(BoundaryWriter):
 
 
 class WW3(BoundaryWriter):
-    def __init__(self, one_file: bool=True, convention='WW3') -> None:
+    def __init__(self, one_file: bool=True, convention=SpectralConvention.WW3) -> None:
         self.one_file = one_file
         self._convention_in = convention
         return
@@ -125,7 +127,7 @@ class WW3(BoundaryWriter):
     def _extension(self):
         return 'nc'
 
-    def _convention(self) -> str:
+    def convention(self) -> str:
         """Convention of spectra"""
         return self._convention_in
 
@@ -287,9 +289,9 @@ class SWAN(BoundaryWriter):
         self.factor = factor
         return
 
-    def _convention(self) -> str:
+    def convention(self) -> str:
         """Convention of spectra"""
-        return 'Met'
+        return SpectralConvention.MET
 
     def _extension(self):
         return 'asc'
