@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 from abc import ABC, abstractmethod
 import numpy as np
-from ..grd.grd_mod import Grid, GridProcessor
-from ..grd.process import TrivialFilter
+from ..grd.grd_mod import Grid
+from ..grd.process import TrivialFilter, GridProcessor
 from ..bnd.bnd_mod import Boundary
 from ..wnd.wnd_mod import Forcing
 from .. import file_module

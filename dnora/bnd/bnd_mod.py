@@ -94,9 +94,11 @@ class Boundary(PointSkeleton):
 
         ### Main reading happens here
         msg.header(boundary_reader, "Loading boundary spectra...")
-        time, freq, dirs, spec, lon, lat, x, y, source = boundary_reader(start_time, end_time, inds)
+        time, freq, dirs, spec, lon, lat, x, y, attributes = boundary_reader(start_time, end_time, inds)
         self._init_structure(x, y, lon, lat, time=time, freq=freq, dirs=dirs)
         self.ds_manager.set(spec, 'spec', coord_type='all')
+
+        self.ds_manager.set_attrs(attributes)
         #self.data = self.compile_to_xr(time, freq, dirs, spec, lon, lat, source)
 
         ### Patch data if read from cache and all data not found

@@ -138,9 +138,9 @@ class WAM4km(BoundaryReader):
         lon = bnd.longitude.values
         lat = bnd.latitude.values
 
-        source = f"{bnd.title}, {bnd.institution}"
+        #source = f"{bnd.title}, {bnd.institution}"
 
-        return  time, freq, dirs, spec, lon, lat, None, None, source
+        return  time, freq, dirs, spec, lon, lat, None, None, bnd.attrs
 
     def file_is_consistent(self, this_ds, bnd_list, url) -> bool:
         if this_ds is None:
@@ -250,9 +250,9 @@ class NORA3(BoundaryReader):
         lon = bnd.longitude.values[0,:]
         lat = bnd.latitude.values[0,:]
 
-        source = f"{bnd.title}, {bnd.institution}"
+        #source = f"{bnd.title}, {bnd.institution}"
 
-        return  time, freq, dirs, spec, lon, lat, None, None, source
+        return  time, freq, dirs, spec, lon, lat, None, None, bnd.attrs
 
 
     def get_url(self, day, source) -> str:

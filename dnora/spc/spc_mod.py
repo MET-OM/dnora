@@ -46,7 +46,7 @@ class Spectra(PointSkeleton):
         inds = point_picker(self.grid, lon_all, lat_all)
 
         msg.header(spectral_reader, "Loading omnidirectional spectra...")
-        time, freq, spec, mdir, spr, lon, lat, x, y, source = spectral_reader(self.start_time, self.end_time, inds)
+        time, freq, spec, mdir, spr, lon, lat, x, y, attributes = spectral_reader(self.start_time, self.end_time, inds)
 
         self._init_structure(x, y, lon, lat, time=time, freq=freq)
 
@@ -54,8 +54,29 @@ class Spectra(PointSkeleton):
         self.ds_manager.set(mdir, 'mdir', coord_type='all')
         self.ds_manager.set(spr, 'spr', coord_type='all')
 
+        self.ds_manager.set_attrs(attributes)
+
         # self.data = self.compile_to_xr(time, freq, spec, mdir, spr, lon, lat, source)
         # self.mask = [True]*len(self.x())
 
         # E.g. are the spectra oceanic convention etc.
         self._convention = spectral_reader.convention()
+
+    def __str__(self) -> str:
+        """Prints status of spectra."""
+
+        msg.header(self, f"Status of spectra {self.name()}")
+        msg.plain(f"Contains data ({len(self.x())} points) for {self.start_time} - {self.end_time}")
+        msg.plain(f"Data covers: lon: {min(self.lon())} - {max(self.lon())}, lat: {min(self.lat())} - {max(self.lat())}")
+        if len(self._history) > 0:
+            msg.blank()
+            msg.plain("Object has the following history:")
+            for obj in self._history:
+                msg.process(f"{obj.__class__.__bases__[0].__name__}: {type(obj).__name__}")
+        #msg.print_line()
+        #msg.plain("The Boundary is for the following Grid:")
+        #print(self.grid)
+
+        msg.print_line()
+
+        return ''

@@ -118,21 +118,25 @@ class NORA3(ForcingReader):
         wind_forcing = xr.concat(wnd_list, dim="time")
 
         # Fimex has already rotated the longitudes and latitudes, so calling them rlon/rlat is now incorrect
-        wind_forcing = wind_forcing.rename_dims({'y': 'lat', 'x': 'lon'})
-        wind_forcing = wind_forcing.rename_vars({'y': 'lat', 'x': 'lon'})
+#        wind_forcing = wind_forcing.rename_dims({'y': 'lat', 'x': 'lon'})
+        #wind_forcing = wind_forcing.rename_vars({'y': 'lat', 'x': 'lon'})
 
         # Go to u and v components
         u, v = u_v_from_dir(wind_forcing.wind_speed,
                             wind_forcing.wind_direction)
+
         u = u.fillna(0)
         v = v.fillna(0)
+        u = np.moveaxis(u.values,0,2)
+        v = np.moveaxis(v.values,0,2)
 
-        # Remove speed and dir and add components to dataset
-        wind_forcing = wind_forcing.drop_vars(['wind_speed', 'wind_direction'])
-        wind_forcing['u'] = (['time', 'lat', 'lon'],  u.data)
-        wind_forcing['v'] = (['time', 'lat', 'lon'],  v.data)
+        time = wind_forcing.time.values
+        lon = wind_forcing.x.values
+        lat = wind_forcing.y.values
+        x = None
+        y = None
 
-        return wind_forcing
+        return time, u, v, lon, lat, x, y, wind_forcing.attrs
 
     def get_url(self, time_stamp_file, time_stamp, first_ind, source='thredds') -> str:
         h0 = int(time_stamp_file.hour) % 6
@@ -224,21 +228,22 @@ class MyWave3km(ForcingReader):
 
         wind_forcing = xr.concat(wnd_list, dim="time")
 
-        # Fimex has already rotated the longitudes and latitudes, so calling them rlon/rlat is now incorrect
-        wind_forcing = wind_forcing.rename_dims({'rlat': 'lat', 'rlon': 'lon'})
-        wind_forcing = wind_forcing.rename_vars({'rlat': 'lat', 'rlon': 'lon'})
 
         # Go to u and v components
         u, v = u_v_from_dir(wind_forcing.ff, wind_forcing.dd)  # factor 1000
+
         u = u.fillna(0)
         v = v.fillna(0)
+        u = np.moveaxis(u.values,0,2)
+        v = np.moveaxis(v.values,0,2)
 
-        # Remove speed and dir and add components to dataset
-        wind_forcing = wind_forcing.drop_vars(['ff', 'dd'])
-        wind_forcing["u"] = (['time', 'lat', 'lon'],  u.data)
-        wind_forcing["v"] = (['time', 'lat', 'lon'],  v.data)
+        time = wind_forcing.time.values
+        lon = wind_forcing.rlon.values
+        lat = wind_forcing.rlat.values
+        x = None
+        y = None
 
-        return wind_forcing
+        return time, u, v, lon, lat, x, y, wind_forcing.attrs
 
     def get_url(self, time_stamp):
         filename = time_stamp.strftime(
@@ -292,7 +297,6 @@ class MEPS(ForcingReader):
             xr.open_dataset(url)
             prefix = 'det'
         except:
-            print('No')
             prefix = 'subset'
 
         # Set resolution to about 2.5 km
@@ -344,15 +348,19 @@ class MEPS(ForcingReader):
 
         wind_forcing = xr.concat(wnd_list, dim="time")
 
-        # Fimex has already rotated the longitudes and latitudes, so calling them rlon/rlat is now incorrect
-        wind_forcing = wind_forcing.rename_dims({'y': 'lat', 'x': 'lon'})
-        wind_forcing = wind_forcing.rename_vars({'y': 'lat', 'x': 'lon'})
+        u = wind_forcing.x_wind_10m.values
+        v = wind_forcing.y_wind_10m.values
+        u = np.moveaxis(u,0,2)
+        v = np.moveaxis(v,0,2)
 
-        wind_forcing = wind_forcing.rename_vars(
-            {'x_wind_10m': 'u', 'y_wind_10m': 'v'})
+        time = wind_forcing.time.values
+        lon = wind_forcing.x.values
+        lat = wind_forcing.y.values
+        x = None
+        y = None
 
-        #wind_forcing.to_netcdf('test.nc')
-        return wind_forcing
+        return time, u, v, lon, lat, x, y, wind_forcing.attrs
+
 
     def get_url(self, time_stamp, prefix):
         filename = 'meps_'+prefix+'_2_5km_'+time_stamp.strftime('%Y')+time_stamp.strftime('%m')+time_stamp.strftime('%d')+'T'+time_stamp.strftime('%H')+'Z.nc'

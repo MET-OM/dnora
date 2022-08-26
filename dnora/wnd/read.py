@@ -13,7 +13,21 @@ class ForcingReader(ABC):
     """
     @abstractmethod
     def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float):
-        pass
+        """Reads in the forcing witih grid and between start_time and end_time.
+
+        The variables needed to be returned are:
+
+        time:   Time stamps as numpy.datetime64 array
+        u:      west-to-east velocity [lon, lat, time] as numpy array
+        v:      south-to-north velocity [lon, lat, time] as numpy array
+        lon:    Longitude vector as numpy array (None if Cartesian)
+        lat:    Latitude vector as numpy array (None if Cartesian)
+        x:      Longitude vector as numpy array (None if Spherical)
+        y:      Latitude vector as numpy array (None if Spherical)
+        metadata: dict{key, value} will be set as attributes of the xr.Dataset
+        """
+
+        return time, u, v, lon, lat, x, y, source
 
     def name(self) -> str:
         return type(self).__name__

@@ -22,7 +22,7 @@ from ..spc.write import SpectralWriter
 
 from ..grd.write import GridWriter
 from ..grd.process import GridProcessor, TrivialFilter
-from ..trg.write import TrGridWriter
+#from ..trg.write import TrGridWriter
 
 from ..dnplot.dnplot import GridPlotter, TopoPlotter, ForcingPlotter
 from ..inp import InputFileWriter
@@ -43,7 +43,7 @@ class ModelRun:
     def __init__(self, grid: Grid, start_time: str='1970-01-01T00:00',
     end_time: str='2030-12-31T23:59', name: str='AnonymousModelRun',
     dry_run: bool=False):
-        self._name = copy(name)
+        self.name = copy(name)
         self._grid = copy(grid)
         self.start_time = copy(start_time)
         self.end_time = copy(end_time)
@@ -143,13 +143,13 @@ class ModelRun:
 
         spectral_reader = BoundaryToSpectra(self.boundary())
         msg.header(spectral_reader, 'Converting the boundary spectra to omnidirectional spectra...')
-        name = self.boundary().name()
+        name = self.boundary().name
         if not self.dry_run():
             self.import_spectra(spectral_reader, name)
         else:
             msg.info('Dry run! No boundary will not be converted to spectra.')
 
-    def export_grid(self, grid_writer: Union[GridWriter, TrGridWriter]=None,
+    def export_grid(self, grid_writer: GridWriter=None,
                     filename: str=None, folder: str=None, dateformat: str=None,
                     dry_run=False) -> None:
         """Writes the grid data in the Grid-object to an external source,
@@ -164,7 +164,7 @@ class ModelRun:
         if self._grid_writer is None:
             raise Exception('Define a GridWriter!')
 
-        msg.header(self._grid_writer, f"Writing grid topography from {self.grid().name()}")
+        msg.header(self._grid_writer, f"Writing grid topography from {self.grid().name}")
 
         output_files = self._export_object(filename, folder, dateformat,
                             writer_function=self._grid_writer,
@@ -190,7 +190,7 @@ class ModelRun:
         if self.boundary() is None:
             msg.header(self._boundary_writer, f"Writing boundary spectra from DryRunBoundary")
         else:
-            msg.header(self._boundary_writer, f"Writing boundary spectra from {self.boundary().name()}")
+            msg.header(self._boundary_writer, f"Writing boundary spectra from {self.boundary().name}")
 
         if self.dry_run():
             boundary_processor = None
@@ -224,7 +224,7 @@ class ModelRun:
         if self.spectra() is None:
             msg.header(self._spectral_writer, f"Writing omnidirectional spectra from DryRunSpectra")
         else:
-            msg.header(self._spectral_writer, f"Writing omnidirectional spectra from {self.spectra().name()}")
+            msg.header(self._spectral_writer, f"Writing omnidirectional spectra from {self.spectra().name}")
 
         # NOT IMPPELMENTED YET
         # spectral_processor = processor_for_convention_change(current_convention = self.spectra().convention(), wanted_convention = self._spectral_writer._convention_in())
@@ -253,7 +253,7 @@ class ModelRun:
             raise Exception('Define a ForcingWriter!')
 
         if self.forcing() is not None:
-            msg.header(self._forcing_writer, f"Writing wind forcing from {self.forcing().name()}")
+            msg.header(self._forcing_writer, f"Writing wind forcing from {self.forcing().name}")
         else:
             msg.header(self._forcing_writer, f"Writing wind forcing from DryRunForcing")
 
@@ -371,8 +371,8 @@ class ModelRun:
         else:
             msg.info('Dry run! Model will not run.')
         if mat_to_nc:
-            input_file = f'{file_object.folder()}/{self.grid().name()}.mat'
-            output_file = f'{file_object.folder()}/{self.grid().name()}.nc'
+            input_file = f'{file_object.folder()}/{self.grid().name}.mat'
+            output_file = f'{file_object.folder()}/{self.grid().name}.nc'
             convert_swash_mat_to_netcdf(input_file=input_file,output_file=output_file, lon=self.grid().lon_edges(), lat=self.grid().lat_edges(), dt=1)
 
     def dry_run(self):
@@ -533,9 +533,6 @@ class ModelRun:
                 fig.show()
         return figure_dict
 
-    def name(self) -> str:
-        return self._name
-
     def grid(self) -> str:
         """Returns the grid object."""
         return self._grid
@@ -584,7 +581,7 @@ class ModelRun:
             if b is None:
                 d[a] = None
             else:
-                d[a] = b.name()
+                d[a] = b.name
         return d
 
     def exported_to(self, object: str) -> str:
@@ -646,7 +643,7 @@ class ModelRun:
         return ForcingPlotter()
 
     def __repr__(self):
-        lines = [f"<dnora ModelRun object> ({type(self).__name__})", f"  Name: {self.name()}"]
+        lines = [f"<dnora ModelRun object> ({type(self).__name__})", f"  Name: {self.name}"]
 
         lines.append(f'  Covering time: {self.start_time} - {self.end_time}')
 
@@ -656,13 +653,13 @@ class ModelRun:
         else:
             gridtype = 'unstructured'
 
-        lines.append(f'\tgrid object ({gridtype}): {self.grid().name()} {self.grid().size()}')
+        lines.append(f'\tgrid object ({gridtype}): {self.grid().name} {self.grid().size()}')
         if self.forcing() is not None:
-            lines.append(f'\tforcing object: {self.forcing().name()} {self.forcing().size()}')
+            lines.append(f'\tforcing object: {self.forcing().name} {self.forcing().size()}')
         else:
             lines.append(f'\tforcing: use .import_forcing()')
         if self.boundary() is not None:
-            lines.append(f'\tboundary object: {self.boundary().name()} {self.boundary().size()}')
+            lines.append(f'\tboundary object: {self.boundary().name} {self.boundary().size()}')
         else:
             lines.append(f'\tboundary: use .import_boundary()')
 

@@ -83,7 +83,7 @@ class BoundaryReader(ABC):
         lat:    Latitude vector as numpy array (None if Cartesian)
         x:    Longitude vector as numpy array (None if Spherical)
         y:    Latitude vector as numpy array (None if Spherical)
-        source: Source of the data as String
+        source: metadata: dict{key, value} will be set as attributes of the xr.Dataset
         """
 
         return time, freq, dirs, spec, lon, lat, x, y, source
@@ -116,7 +116,7 @@ class DnoraNc(BoundaryReader):
         msg.info(f"Getting boundary spectra from cached netcdf (e.g. {self.files[0]}) from {start_time} to {end_time}")
         ds = xr.open_mfdataset(self.files, preprocess=_crop)
         ds = ds.sel(x=inds)
-        return ds.time.values, ds.freq.values, ds.dirs.values, ds.spec.values, ds.lon.values, ds.lat.values, None, None, ds.source
+        return ds.time.values, ds.freq.values, ds.dirs.values, ds.spec.values, ds.lon.values, ds.lat.values, None, None, ds.attrs
 
 class ForceFeed(BoundaryReader):
     def __init__(self, time, freq, dirs, spec, lon, lat, convention: SpectralConvention) -> None:
@@ -137,7 +137,7 @@ class ForceFeed(BoundaryReader):
 
     def __call__(self, start_time, end_time, inds) -> Tuple:
         #return  copy(self.time), copy(self.freq), copy(self.dirs), np.reshape(self.spec, (len(self.time), len(self.lon), self.spec.shape[0], self.spec.shape[1])), copy(self.lon), copy(self.lat), ''
-        return  copy(self.time), copy(self.freq), copy(self.dirs), copy(self.spec), copy(self.lon), copy(self.lat), None, None, ''
+        return  copy(self.time), copy(self.freq), copy(self.dirs), copy(self.spec), copy(self.lon), copy(self.lat), None, None, {}
 
 class File_WW3Nc(BoundaryReader):
     def __init__(self, folder: str='', filename: str='ww3_T0', dateftm: str='%Y%m%dT%H%M', stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0) -> None:
@@ -205,7 +205,7 @@ class File_WW3Nc(BoundaryReader):
 
         source = f"ww3_ouput_spectra"
 
-        return  time, freq, dirs, spec, lon, lat, None, None, source
+        return  time, freq, dirs, spec, lon, lat, None, None, bnd.attrs
 
 
     def get_filename(self, time) -> str:

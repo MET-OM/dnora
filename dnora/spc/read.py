@@ -74,7 +74,6 @@ class BoundaryToSpectra(SpectralReader):
     def __call__(self, start_time, end_time, inds) -> Tuple:
         self.name = self._boundary.name
         #source = self._boundary.data.source
-        source = ''
         time = self._boundary.time(data_array=True).sel(time=slice(start_time, end_time)).values
         lon = self._boundary.lon(strict=True)
         lat = self._boundary.lat(strict=True)
@@ -105,4 +104,4 @@ class BoundaryToSpectra(SpectralReader):
         mdir = np.mod(thetam.values*180/np.pi, 360)
         spec = ef.values
 
-        return time, freq, spec, mdir, spr, lon, lat, x, y, source
+        return time, freq, spec, mdir, spr, lon, lat, x, y, self._boundary.ds().attrs
