@@ -65,9 +65,6 @@ class SWAN(InputFileWriter):
         delta_X = np.round(np.abs(grid.lon()[-1] - grid.lon()[0]), 5)
         delta_Y = np.round(np.abs(grid.lat()[-1] - grid.lat()[0]), 5)
 
-        delta_Xf = np.round(np.abs(forcing.lon()[-1] - forcing.lon()[0]), 5)
-        delta_Yf = np.round(np.abs(forcing.lat()[-1] - forcing.lat()[0]), 5)
-
         factor_wind = self.calib_wind*0.001
 
         with open(filename, 'w') as file_out:
@@ -103,13 +100,16 @@ class SWAN(InputFileWriter):
             file_out.write('$ \n')
 
             if self.wind:
+                delta_Xf = np.round(np.abs(forcing.lon()[-1] - forcing.lon()[0]), 5)
+                delta_Yf = np.round(np.abs(forcing.lat()[-1] - forcing.lat()[0]), 5)
 
                 file_out.write('INPGRID WIND '+str(forcing.lon()[0])+' '+str(forcing.lat()[0])+' 0. '+str(forcing.nx()-1)+' '+str(forcing.ny()-1)+' '+str(
                     (delta_Xf/(forcing.nx()-1)).round(6)) + ' '+str((delta_Yf/(forcing.ny()-1)).round(6)) + ' NONSTATIONARY ' + STR_START + f" {forcing.dt():.0f} HR " + STR_END + '\n')
                 file_out.write('READINP WIND '+str(factor_wind)+'  \''+forcing_path.split('/')[-1]+'\' 3 0 0 1 FREE \n')
                 file_out.write('$ \n')
             else:
-                file_out.write('OFF QUAD \n')
+                file_out.write('WIND 0 0 \n') # no wind forcing
+                
             file_out.write('GEN3 WESTH cds2='+str(self.calib_wcap) + '\n')
             file_out.write('FRICTION JON 0.067 \n')
             file_out.write('PROP BSBT \n')
