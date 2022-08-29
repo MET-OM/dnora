@@ -297,7 +297,7 @@ class SWAN(BoundaryWriter):
     def __call__(self, boundary: Boundary, filename: str) -> Tuple[str, str]:
 
 
-        swan_bnd_points = boundary.grid.boundary_points()
+        swan_bnd_points = boundary.grid.boundary_points() 
         days = boundary.days()
 
         with open(filename, 'w') as file_out:
@@ -308,7 +308,7 @@ class SWAN(BoundaryWriter):
             file_out.write('LONLAT\n')
             file_out.write('          '+format(len(boundary.x()))+'\n')
             for k in range(len(boundary.x())):
-                file_out.write('   '+format(swan_bnd_points[k,0],'.4f')+'  '+format(swan_bnd_points[k,1],'.4f')+'\n')
+                file_out.write('   '+format(boundary.lon()[k],'.4f')+'  '+format(boundary.lat()[k],'.4f')+'\n')
             file_out.write('AFREQ\n')
             file_out.write('          '+str(len(boundary.freq()))+'\n')
             for l in range(len(boundary.freq())):
