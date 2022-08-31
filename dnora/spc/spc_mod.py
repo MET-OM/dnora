@@ -16,8 +16,12 @@ from ..skeletons.coordinate_factory import add_time, add_frequency
 from ..skeletons.mask_factory import add_mask
 from ..skeletons.datavar_factory import add_datavar
 
+from .process import SpectralProcessor
+
 @add_mask(name='bad', coords='all', default_value=0)
 @add_datavar(name='spec', coords='all', default_value=0.)
+@add_datavar(name='mdir', coords='all', default_value=0.)
+@add_datavar(name='spr', coords='all', default_value=0.)
 @add_frequency(grid_coord=False)
 @add_time(grid_coord=True)
 class Spectra(PointSkeleton):
@@ -31,7 +35,7 @@ class Spectra(PointSkeleton):
         """Imports omnidirectional spectra from a certain source.
 
         Spectra are import between start_time and end_time from the source
-        defined in the boundary_reader. Which spectra to choose spatially
+        defined in the spectral_reader. Which spectra to choose spatially
         are determined by the point_picker.
         """
 
@@ -61,6 +65,56 @@ class Spectra(PointSkeleton):
 
         # E.g. are the spectra oceanic convention etc.
         self._convention = spectral_reader.convention()
+
+    def process_spectra(self, spectral_processors: List[SpectralProcessor]=None):
+        """Process all the individual spectra of the spectra object.
+
+        E.g. change convention form WW3 to Oceanic, interpolate spectra to
+        new frequency grid, or multiply everything with a constant.
+        """
+
+        if spectral_processors is None:
+            msg.info("No SpectralProcessor provided. Doing Nothing.")
+            return
+
+        if not isinstance(spectral_processors, list):
+            spectral_processors = [spectral_processors]
+
+        convention_warning = False
+
+        for processor in spectral_processors:
+
+            msg.process(f"Processing spectra with {type(processor).__name__}")
+            self._history.append(copy(processor))
+            old_convention = processor._convention_in()
+            if old_convention is not None:
+                if old_convention != self.convention():
+                    msg.warning(f"Spectral convention ({self.convention()}) doesn't match that expected by the processor ({old_convention})!")
+                    convention_warning=True
+
+
+            new_spec, new_dirs, new_freq = processor(self.spec(), self.mdir(), self.freq())
+            self._init_structure(x=self.x(strict=True), y=self.y(strict=True),
+                            lon=self.lon(strict=True), lat=self.lat(strict=True),
+                            time=self.time(), freq=new_freq)
+            self.ds_manager.set(new_spec, 'spec', coord_type='all')
+
+            # self.data.spec.values = new_spec
+            # self.data = self.data.assign_coords(dirs=new_dirs)
+            # self.data = self.data.assign_coords(freq=new_freq)
+
+            # Set new convention if the processor changed it
+            new_convention = processor._convention_out()
+            if new_convention is not None:
+                self._convention = new_convention
+                if convention_warning:
+                    msg.warning(f"Convention variable set to {new_convention}, but this might be wrong...")
+                else:
+                    msg.info(f"Changing convention from {old_convention} >>> {new_convention}")
+
+            print(processor)
+            msg.blank()
+        return
 
 
     def convention(self):

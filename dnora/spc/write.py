@@ -7,17 +7,20 @@ import netCDF4
 import re
 
 # Import abstract classes and needed instances of them
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 if TYPE_CHECKING:
     from .spc_mod import Spectra
 
-from ..bnd.conventions import SpectralConvention
+from ..bnd.conventions import SpectralConvention, convention_from_string
 
 class SpectralWriter(ABC):
     """Writes omnidirectional spectra spectra to a certain file format.
 
     This object is provided to the .export_spectra() method.
     """
+
+    _convention_in = None
+
     def _clean_filename(self):
         """If this is set to False, then the ModelRun object does not clean
         the filename, and possible placeholders (e.g. #T0) can still be
@@ -34,8 +37,7 @@ class SpectralWriter(ABC):
         file names."""
         return True
 
-    @abstractmethod
-    def _convention(self) -> str:
+    def convention(self) -> str:
         """Defines in which format the incoming spectra should be.
 
         The conventions to choose from are predetermined:
@@ -49,6 +51,7 @@ class SpectralWriter(ABC):
         MATH:     Mathematical convention
                     Direction to. North = 90, East = 0.
         """
+        return convention_from_string(self._convention_in)
 
     @abstractmethod
     def __call__(self, spectra: Spectra, filename: str) -> tuple[str, str]:
@@ -56,31 +59,23 @@ class SpectralWriter(ABC):
         folder where data were written."""
 
 class DumpToNc(SpectralWriter):
-    def __init__(self, convention=SpectralConvention.MET) -> None:
+    def __init__(self, convention: Union[SpectralConvention, str]=SpectralConvention.MET) -> None:
         self._convention_in = convention
         return
 
     def _extension(self) -> str:
         return 'nc'
 
-    def _convention(self) -> str:
-        """Convention of spectra"""
-        return self._convention_in
-
     def __call__(self, spectra: Spectra, filename: str) -> tuple[str, str]:
 
-        spectra.data.to_netcdf(filename)
+        spectra.ds().to_netcdf(filename)
 
         return filename
 
 class REEF3D(SpectralWriter):
-    def __init__(self, convention=SpectralConvention.MET) -> None:
+    def __init__(self, convention: Union[SpectralConvention, str]=SpectralConvention.MET) -> None:
         self._convention_in = convention
         return
-
-    def _convention(self) -> str:
-        """Convention of spectra"""
-        return self._convention_in
 
     def _extension(self) -> str:
         return 'dat'
@@ -91,8 +86,8 @@ class REEF3D(SpectralWriter):
         x = 0
         t = 0
         with open(filename, 'w') as f:
-            spec = spectra.data.spec.values[x,t,:]
-            freq = spectra.data.freq.values
+            spec = spectra.spec()[x,t,:]
+            freq = spectra.freq()
             freq = freq*2*np.pi
             spec = spec/2/np.pi
             for i, w in enumerate(freq):

@@ -473,7 +473,7 @@ def setup_cache(obj_type: str, reader_name: str, cache_name: str, grid):
     check_if_folder(main_folder)
     cache_folder = f'{main_folder}/{reader_name}'
     check_if_folder(cache_folder)
-    cache_name = file_module.replace_objects(cache_name, {'Grid': grid.name()})
+    cache_name = file_module.replace_objects(cache_name, {'Grid': grid.name})
     cache_name = file_module.replace_objects(cache_name, {'Lon0': f'{min(grid.lon()):.2f}',
                                                         'Lon1': f'{max(grid.lon()):.2f}',
                                                         'Lat0': f'{min(grid.lat()):.2f}',
@@ -482,6 +482,22 @@ def setup_cache(obj_type: str, reader_name: str, cache_name: str, grid):
 
     return cache_folder, cache_name, cache_empty
 
+def check_that_spectra_are_consistent(spec, dirs, freq, expected_dim: int=None) -> int:
+    if spec.shape[-1] == len(dirs) and spec.shape[-2] == len(freq):
+        spec_dim = 2
+    elif spec.shape[-1] == len(freq) and spec.shape[-1] == len(dirs):
+        spec_dim = 1
+    else:
+        spec_dim = -1
+
+    if expected_dim is None:
+        return spec_dim
+
+    if spec_dim != expected_dim:
+        if spec_dim not in [1, 2]:
+            ValueError('Provided array does not contain valid 1D or 2D spectra!')
+        else:
+            ValueError(f'Expected {expected_dim} dimensional spectra, but they seem to be {spec_dim} dimensional!')
 
 def determine_patch_periods(times, start_time, end_time):
     """Determines if there is some periods that we need to patch from thredds

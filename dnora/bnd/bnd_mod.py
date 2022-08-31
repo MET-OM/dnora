@@ -140,12 +140,16 @@ class Boundary(PointSkeleton):
         return
 
 
-    def process_boundary(self, boundary_processors: List[BoundaryProcessor]=[Multiply(calib_spec = 1)]):
+    def process_boundary(self, boundary_processors: List[BoundaryProcessor]=None):
         """Process all the individual spectra of the boundary object.
 
         E.g. change convention form WW3 to Oceanic, interpolate spectra to
         new directional grid, or multiply everything with a constant.
         """
+
+        if boundary_processors is None:
+            msg.info("No BoundaryProcessor provided. Doing Nothing.")
+            return
 
         if not isinstance(boundary_processors, list):
             boundary_processors = [boundary_processors]

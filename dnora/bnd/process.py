@@ -5,7 +5,7 @@ from typing import Tuple
 
 # Import aux_funcsiliry functions
 from .. import msg
-from ..aux_funcs import interp_spec, shift_spec, flip_spec
+from ..aux_funcs import interp_spec, shift_spec, flip_spec, check_that_spectra_are_consistent
 
 from .conventions import SpectralConvention
 
@@ -98,7 +98,9 @@ class Multiply(BoundaryProcessor):
         return
 
     def __call__(self, spec, dirs, freq) -> Tuple:
+        check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
         new_spec = copy(spec)*self.calib_spec
+        check_that_spectra_are_consistent(new_spec, dirs, freq, expected_dim=2)
         return new_spec, dirs, freq
 
     def __str__(self):
@@ -113,7 +115,7 @@ class ReGridDirs(BoundaryProcessor):
         return
 
     def __call__(self, spec, dirs, freq) -> Tuple:
-
+        check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
         if dirs[0] > 0:
             nbins = len(dirs)
             dD=int(360/nbins)
@@ -137,7 +139,7 @@ class ReGridDirs(BoundaryProcessor):
                     for n2 in range(N2):
                         temp_spec = interp_spec(freq, dirs, spec[n1,n2,:], freq, new_dirs)
                         new_spec[n1,n2,:,:] = temp_spec
-
+        check_that_spectra_are_consistent(new_spec, new_dirs, freq, expected_dim=2)
         return new_spec, new_dirs, freq
 
     def __str__(self):
@@ -180,7 +182,8 @@ class OceanToWW3(BoundaryProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.WW3
 
-    def __call__(self, spec, dirs, freq = None) -> Tuple:
+    def __call__(self, spec, dirs, freq) -> Tuple:
+        check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
         # Flip direction of the both spectra and directional vector
         spec_flip = flip_spec(spec, dirs)
         D_flip = flip_spec(dirs, dirs)
@@ -190,10 +193,8 @@ class OceanToWW3(BoundaryProcessor):
         # Also shift direction
         new_dirs = shift_spec(D_flip, D_flip, -90)
 
-        if freq is not None:
-            return new_spec, new_dirs, freq
-        else:
-            return new_spec, new_dirs
+        check_that_spectra_are_consistent(new_spec, new_dirs, freq, expected_dim=2)
+        return new_spec, new_dirs, freq
 
     def __str__(self):
         return("Flipping both spectra and direction to mathematical notation.")
@@ -219,7 +220,8 @@ class WW3ToOcean(BoundaryProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.OCEAN
 
-    def __call__(self, spec, dirs, freq = None) -> Tuple:
+    def __call__(self, spec, dirs, freq) -> Tuple:
+        check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
         # Flip direction of the both spectra and directional vector
         spec_flip = flip_spec(spec, dirs)
         D_flip = flip_spec(dirs, dirs)
@@ -229,10 +231,9 @@ class WW3ToOcean(BoundaryProcessor):
         # Also shift direction
         new_dirs = shift_spec(D_flip, D_flip, 90)
 
-        if freq is not None:
-            return new_spec, new_dirs, freq
-        else:
-            return new_spec, new_dirs
+        check_that_spectra_are_consistent(new_spec, new_dirs, freq, expected_dim=2)
+
+        return new_spec, new_dirs, freq
 
     def __str__(self):
         return("Flipping both spectra and direction to oceanic notation.")
@@ -257,7 +258,8 @@ class MathToOcean(BoundaryProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.OCEAN
 
-    def __call__(self, spec, dirs, freq = None) -> Tuple:
+    def __call__(self, spec, dirs, freq) -> Tuple:
+        check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
         # Flip direction of the both spectra and directional vector
         spec_flip = flip_spec(spec, dirs)
         D_flip = flip_spec(dirs, dirs)
@@ -267,10 +269,8 @@ class MathToOcean(BoundaryProcessor):
         # Also shift direction
         #new_dirs = shift_spec(D_flip, D_flip, -270)
 
-        if freq is not None:
-            return new_spec, dirs, freq
-        else:
-            return new_spec, dirs
+        check_that_spectra_are_consistent(new_spec, dirs, freq, expected_dim=2)
+        return new_spec, dirs, freq
 
     def __str__(self):
         return("Flipping spectra to oceanic notation.")

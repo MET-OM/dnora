@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 # Import default values and aux_funcsiliry functions
 from .. import msg
 
+
 class ForcingWriter(ABC):
     """Writes the forcing data to a certain file format.
 

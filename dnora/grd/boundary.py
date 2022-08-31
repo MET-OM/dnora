@@ -23,6 +23,9 @@ class MaskSetter(ABC):
         """This method is called from within the Grid-object."""
         return boundary_mask
 
+    def _mask_type(self) -> str:
+        return None
+
     @abstractmethod
     def __str__(self):
         """Describes how the boundary points are set.

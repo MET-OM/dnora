@@ -230,6 +230,7 @@ class ModelRun:
         if self.dry_run():
             spectral_processor = None
         else:
+            breakpoint()
             spectral_processor = spectral_processor_for_convention_change(
                                 current_convention = self.spectra().convention(),
                                 wanted_convention = self._spectral_writer.convention())

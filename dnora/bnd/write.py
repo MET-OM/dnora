@@ -190,7 +190,7 @@ class WW3(BoundaryWriter):
         station = root_grp.createVariable('station', np.int32, ('station',))
         frequency = root_grp.createVariable('frequency',np.float32 , ('frequency',))
         direction = root_grp.createVariable('direction', np.float32, ('direction',))
-        efth = root_grp.createVariable('efth', np.float32, ('time','station','frequency','direction',))
+        efth = root_grp.createVariable('efth', np.float32, ('station', 'time', 'frequency','direction',))
         latitude = root_grp.createVariable('latitude',np.float32 , ('time','station',))
         longitude = root_grp.createVariable('longitude',np.float32 , ('time','station',))
         station_name = root_grp.createVariable('station_name', 'S1', ('station','string16',))
