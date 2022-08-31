@@ -7,12 +7,18 @@ from ..grd.boundary import MaskSetter
 from ..grd.process import GridProcessor
 from .. import msg
 def topography_methods(c):
-    def set_mask(self, mask_setter: MaskSetter, mask_type: str) -> None:
+    def set_mask(self, mask_setter: MaskSetter, mask_type: str=None) -> None:
         """Set a mask that represents e.g. Boundary points or spectral output
         point.
 
         NB! Points can overlap with land!
         """
+
+        if mask_type is None:
+            mask_type = mask_setter._mask_type()
+
+        if mask_type is None:
+            msg.advice(f"Either provide mask_type variable or provide a MaskSetter with a _mask_type method.")
 
         msg.header(mask_setter, f"Setting {mask_type} points...")
         print(mask_setter)
