@@ -12,7 +12,8 @@ from calendar import monthrange
 import glob, os
 # Import objects
 from ..grd.grd_mod import Grid
-
+from .conventions import SpectralConvention, convention_from_string
+from .process import boundary_processor_for_convention_change
 # Import abstract classes and needed instances of them
 from .process import BoundaryProcessor, Multiply
 from .pick import PointPicker, TrivialPicker
@@ -189,6 +190,16 @@ class Boundary(PointSkeleton):
             print(processor)
             msg.blank()
         return
+
+    def _set_convention(self, convention: SpectralConvention) -> None:
+        boundary_processor = boundary_processor_for_convention_change(
+                            current_convention = self.convention(),
+                            wanted_convention = convention)
+
+        if boundary_processor is None:
+            msg.info(f"Convention ({self.convention()}) already equals wanted convention ({convention}).")
+        else:
+            self.process_boundary(boundary_processor)
 
     def convention(self):
         """Returns the convention (WW3/OCEAN/MET/MATH/MATHVEC) of the spectra"""

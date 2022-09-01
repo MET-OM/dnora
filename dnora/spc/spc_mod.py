@@ -6,7 +6,8 @@ from typing import List
 import pandas as pd
 # Import objects
 from ..grd.grd_mod import Grid
-
+from .process import spectral_processor_for_convention_change
+from ..bnd.conventions import SpectralConvention, convention_from_string, convert_2d_to_1d
 # Import abstract classes and needed instances of them
 from ..bnd.pick import PointPicker, TrivialPicker
 from .read import SpectralReader
@@ -60,9 +61,6 @@ class Spectra(PointSkeleton):
 
         self.ds_manager.set_attrs(attributes)
 
-        # self.data = self.compile_to_xr(time, freq, spec, mdir, spr, lon, lat, source)
-        # self.mask = [True]*len(self.x())
-
         # E.g. are the spectra oceanic convention etc.
         self._convention = spectral_reader.convention()
 
@@ -93,12 +91,13 @@ class Spectra(PointSkeleton):
                     convention_warning=True
 
 
-            new_spec, new_dirs, new_freq = processor(self.spec(), self.mdir(), self.freq())
+            new_spec, new_dirs, new_freq, new_spr = processor(self.spec(), self.mdir(), self.freq(), self.spr())
             self._init_structure(x=self.x(strict=True), y=self.y(strict=True),
                             lon=self.lon(strict=True), lat=self.lat(strict=True),
                             time=self.time(), freq=new_freq)
             self.ds_manager.set(new_spec, 'spec', coord_type='all')
-
+            self.ds_manager.set(new_dirs, 'mdir', coord_type='all')
+            self.ds_manager.set(new_spr, 'spr', coord_type='all')
             # self.data.spec.values = new_spec
             # self.data = self.data.assign_coords(dirs=new_dirs)
             # self.data = self.data.assign_coords(freq=new_freq)
@@ -116,6 +115,15 @@ class Spectra(PointSkeleton):
             msg.blank()
         return
 
+    def _set_convention(self, convention: SpectralConvention) -> None:
+        spectral_processor = spectral_processor_for_convention_change(
+                            current_convention = self.convention(),
+                            wanted_convention = convert_2d_to_1d(convention))
+
+        if spectral_processor is None:
+            msg.info(f"Convention ({self.convention()}) already equals wanted convention ({convention}).")
+        else:
+            self.process_spectra(spectral_processor)
 
     def convention(self):
         """Returns the convention (OCEAN/MET/MATH) of the spectra"""

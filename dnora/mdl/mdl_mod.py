@@ -8,7 +8,7 @@ from ..grd.grd_mod import Grid
 from ..bnd.bnd_mod import Boundary
 from ..wnd.wnd_mod import Forcing
 from ..spc.spc_mod import Spectra
-
+from ..wsr.wsr_mod import WaveSeries
 # Import abstract classes and needed instances of them
 from ..bnd.read import BoundaryReader
 from ..bnd.write import BoundaryWriter
@@ -19,6 +19,8 @@ from ..wnd.write import ForcingWriter
 
 from ..spc.read import SpectralReader, BoundaryToSpectra
 from ..spc.write import SpectralWriter
+
+from ..wsr.read import WaveSeriesReader, SpectraToWaveSeries
 
 from ..grd.write import GridWriter
 from ..grd.process import GridProcessor, TrivialFilter
@@ -136,6 +138,26 @@ class ModelRun:
         else:
             msg.info('Dry run! No omnidirectional spectra will be imported.')
 
+    def import_waveseries(self, waveseries_reader: WavesSeriesReader=None,
+                        name: str=None, dry_run: bool=False) -> None:
+        """Creates a WaveSeries-object and import wave data."""
+        self._dry_run = dry_run
+        self._waveseries_reader = waveseries_reader or self._get_waveseries_reader()
+
+        if self._waveseries_reader is None:
+            raise Exception('Define a WaveSeriesReader!')
+
+        # Create forcing object
+        name = name or type(self._waveseries_reader).__name__
+        self._waveseries = WaveSeries(grid=self.grid(), name=name)
+
+        # Import the forcing data into the Forcing-object
+        if not self.dry_run():
+            self.waveseries().import_waveseries(start_time=self.start_time,
+                                        end_time=self.end_time,
+                                        waveseries_reader=self._waveseries_reader)
+        else:
+            msg.info('Dry run! No wave data will be imported.')
 
     def boundary_to_spectra(self, dry_run: bool=False):
         self._dry_run = dry_run
@@ -149,6 +171,24 @@ class ModelRun:
             self.import_spectra(spectral_reader, name)
         else:
             msg.info('Dry run! No boundary will not be converted to spectra.')
+
+    def spectra_to_waveseries(self, dry_run: bool=False):
+        self._dry_run = dry_run
+        if self.spectra() is None:
+            msg.warning('No Spectra to convert to WaveSeries!')
+
+        waveseries_reader = SpectraToWaveSeries(self.spectra())
+        msg.header(waveseries_reader, 'Converting the spectra to wave series data...')
+        name = self.spectra().name
+        if not self.dry_run():
+            self.import_waveseries(waveseries_reader, name)
+        else:
+            msg.info('Dry run! No boundary will not be converted to spectra.')
+
+    def boundary_to_waveseries(self, dry_run: bool=False):
+        self.boundary_to_spectra(dry_run=dry_run)
+        self.spectra_to_waveseries(dry_run=dry_run)
+
 
     def export_grid(self, grid_writer: GridWriter=None,
                     filename: str=None, folder: str=None, dateformat: str=None,
@@ -193,17 +233,8 @@ class ModelRun:
         else:
             msg.header(self._boundary_writer, f"Writing boundary spectra from {self.boundary().name}")
 
-        if self.dry_run():
-            boundary_processor = None
-        else:
-            boundary_processor = boundary_processor_for_convention_change(
-                                current_convention = self.boundary().convention(),
-                                wanted_convention = self._boundary_writer.convention())
-
-        if boundary_processor is None:
-            msg.info(f"Convention ({self.boundary().convention()}) already equals wanted convention ({self._boundary_writer.convention()}).")
-        else:
-            self.boundary().process_boundary(boundary_processor)
+        if not self.dry_run():
+            self.boundary()._set_convention(self._boundary_writer.convention())
 
         __ = self._export_object(filename, folder, dateformat,
                             writer_function=self._boundary_writer,
@@ -227,18 +258,8 @@ class ModelRun:
         else:
             msg.header(self._spectral_writer, f"Writing omnidirectional spectra from {self.spectra().name}")
 
-        if self.dry_run():
-            spectral_processor = None
-        else:
-            breakpoint()
-            spectral_processor = spectral_processor_for_convention_change(
-                                current_convention = self.spectra().convention(),
-                                wanted_convention = self._spectral_writer.convention())
-
-        if spectral_processor is None:
-            msg.info(f"Convention ({self.spectra().convention()}) already equals wanted convention ({self._spectral_writer.convention()}).")
-        else:
-            self.spectra().process_spectra(spectral_processor)
+        if not self.dry_run():
+            self.spectra()._set_convention(self._spectral_writer.convention())
 
         # Replace #Spectra etc and add file extension
         __ = self._export_object(filename, folder, dateformat,
@@ -565,6 +586,13 @@ class ModelRun:
         else:
             return None
 
+    def waveseries(self) -> WaveSeries:
+        """Returns the wave series object if exists."""
+        if hasattr(self, '_waveseries'):
+            return self._waveseries
+        else:
+            return None
+
     def input_file(self) -> None:
         """Only defined to have method for all objects"""
         return None
@@ -623,6 +651,9 @@ class ModelRun:
         return None
 
     def _get_spectral_reader(self) -> SpectralReader:
+        return None
+
+    def _get_waveseries_reader(self) -> WaveSeriesReader:
         return None
 
     def _get_spectral_writer(self) -> SpectralWriter:

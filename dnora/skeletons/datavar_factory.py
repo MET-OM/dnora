@@ -1,7 +1,7 @@
 import numpy as np
 from .coordinate_manager import CoordinateManager
 from functools import partial
-def add_datavar(name, coords='grid', default_value=0., stash_get=False):
+def add_datavar(name, coords='grid', default_value=0., stash_get=False, aftermath=False):
     """stash_get = True means that the coordinate data can be accessed
     by method ._{name}() instead of .{name}()
 
@@ -32,7 +32,10 @@ def add_datavar(name, coords='grid', default_value=0., stash_get=False):
         if stash_get:
             exec(f'c._{name} = get_var')
         else:
-            exec(f'c.{name} = get_var')
+            if aftermath:
+                exec(f'c.{name} = partial(get_var, c)')
+            else:
+                exec(f'c.{name} = get_var')
 
         return c
 
