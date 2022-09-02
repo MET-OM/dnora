@@ -296,8 +296,6 @@ class SWAN(BoundaryWriter):
 
     def __call__(self, boundary: Boundary, filename: str) -> Tuple[str, str]:
 
-
-        swan_bnd_points = boundary.grid.boundary_points() 
         days = boundary.days()
 
         with open(filename, 'w') as file_out:
