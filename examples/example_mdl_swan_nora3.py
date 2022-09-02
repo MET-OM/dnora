@@ -1,13 +1,12 @@
 # =============================================================================
 # IMPORT dnora
 # =============================================================================
-from dnora import grd, mdl, wnd, bnd
+from dnora import grd, mdl, wnd, bnd, spc
 # =============================================================================
 # DEFINE GRID OBJECT
 # =============================================================================
 # Set grid definitions
 grid = grd.Grid(lon=(4.00, 5.73), lat=(60.53, 61.25), name='Skjerjehamn250')
-
 # Set spacing and boundary points
 #grid.set_spacing(dm=250)
 
@@ -22,20 +21,22 @@ grid = grd.Grid(lon=(4.00, 5.73), lat=(60.53, 61.25), name='Skjerjehamn250')
 #
 # Set the boundaries
 bnd_set = grd.boundary.EdgesAsBoundary(edges=['N', 'W', 'S'], step=20)
-grid.set_boundary(boundary_setter=bnd_set)
+grid.set_mask(bnd_set)
 #
 #
 # =============================================================================
 # DEFINE MODEL OBJECT
 # =============================================================================
-model = mdl.SWAN_NORA3(grid, start_time='2018-08-25T00:00',
+model = mdl.WW3_NORA3(grid, start_time='2018-08-25T00:00',
                               end_time='2018-08-25T03:00')
 # =============================================================================
 # IMPORT BOUNDARIES AND FORCING
 # =============================================================================
 model.import_boundary(bnd.read_metno.NORA3(source='lustre'), write_cache=True, read_cache=False)
-model.import_forcing(wnd.read_metno.NORA3(source='thredds'), write_cache=True, read_cache=False)
+#model.import_forcing(wnd.read_metno.NORA3(source='thredds'), write_cache=True, read_cache=False)
+model.boundary_to_spectra()
 breakpoint()
+model.export_spectra(spc.write.DumpToNc())
 # =============================================================================
 # PLOT GRID, FORCING AND BOUNDARIES
 # =============================================================================
