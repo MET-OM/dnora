@@ -122,6 +122,8 @@ class SWAN(InputFileWriter):
             forcing_folder = '/'.join(temp_list[0:-1])
             file_out.write('BLOCK \'COMPGRID\' HEAD \''+grid.name()+'_'+STR_START.split('.')[0]+'.nc'
                            + '\' & \n')
+            file_out.write('BLOCK \'COMPGRID\' HEAD \'' + grid.name() + '_' + STR_START.split('.')[0] + '.vtk'
+                           + '\' & \n')
             file_out.write(
                 'LAY 1 HSIGN RTP TPS PDIR TM01 DIR DSPR WIND DEP OUTPUT ' + STR_START + ' 1 HR \n')
             file_out.write('$ \n')
