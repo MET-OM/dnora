@@ -13,53 +13,52 @@ from .write import ForcingWriter
 # Import default values and aux_funcsiliry functions
 from .. import msg
 from .. import aux_funcs
-class Forcing:
-    def __init__(self, grid, name='AnonymousForcing'):
+class WaterLevel:
+    def __init__(self, grid, name='AnonymousWaterLevel'):
         self.grid = copy(grid)
         self._name = copy(name)
         self._history = []
         return
 
-    def import_forcing(self, start_time: str, end_time: str,
-                    forcing_reader: ForcingReader,
+    def import_waterlevel(self, start_time: str, end_time: str,
+                    waterlevel_reader: WaterLevelReader,
                     expansion_factor: float=1.2,
                     write_cache: bool=False,
                     read_cache: bool=False,
                     cache_name: str='#Grid_#Lon0_#Lon1_#Lat0_#Lat1'):
-        """Imports forcing data from a certain source.
+        """Imports water level data from a certain source.
 
         Data are import between start_time and end_time from the source
-        defined in the forcing_reader. Data are read around an area defined
+        defined in the waterlevel_reader. Data are read around an area defined
         by the Grid object passed at initialization of this object.
         """
 
         self.start_time = copy(start_time)
         self.end_time = copy(end_time)
-        self._history.append(copy(forcing_reader))
+        self._history.append(copy(waterlevel_reader))
 
         if write_cache or read_cache:
-            cache_folder, cache_name, cache_empty = aux_funcs.setup_cache('wnd', forcing_reader.name(), cache_name, self.grid)
+            cache_folder, cache_name, cache_empty = aux_funcs.setup_cache('wlv', waterlevel_reader.name(), cache_name, self.grid)
 
         if read_cache and not cache_empty:
-            msg.info('Reading wind forcing data from cache!!!')
-            original_forcing_reader = copy(forcing_reader)
-            forcing_reader = DnoraNc(files=glob.glob(f'{cache_folder}/{cache_name}*'))
+            msg.info('Reading water level data from cache!!!')
+            original_waterlevel_reader = copy(waterlevel_reader)
+            waterlevel_reader = DnoraNc(files=glob.glob(f'{cache_folder}/{cache_name}*'))
 
-        msg.header(forcing_reader, "Loading wind forcing...")
-        self.data = forcing_reader(
-            self.grid, start_time, end_time, expansion_factor)
+        msg.header(forcing_reader, "Loading water level data...")
+        self.data = waterlevel_reader(self.grid, start_time, end_time, expansion_factor)
 
         ### Patch data if read from cache and all data not found
         if read_cache and not cache_empty:
             patch_start, patch_end = aux_funcs.determine_patch_periods(self.time(), start_time, end_time)
             if patch_start:
                 msg.info('Not all data found in cache. Patching from original source...')
-                wnd_list = [self.data]
+                wlv_list = [self.data]
                 for t0, t1 in zip(patch_start, patch_end):
-                    wnd_ds = original_forcing_reader(self.grid, t0, t1, expansion_factor)
-                    wnd_list.append(wnd_ds)
+                    wlv_ds = original_waterlevel_reader(self.grid, t0, t1, expansion_factor)
+                    wlv_list.append(wnd_ds)
 
-                self.data = xr.concat(wnd_list, dim="time").sortby('time')
+                self.data = xr.concat(wlv_list, dim="time").sortby('time')
 
         if write_cache:
             msg.info('Caching data:')
@@ -208,9 +207,9 @@ class Forcing:
         return times
 
     def __str__(self) -> str:
-        """Prints status of forcing."""
+        """Prints status of waterlevel."""
 
-        msg.header(self, f"Status of forcing {self.name()}")
+        msg.header(self, f"Status of waterlevel {self.name()}")
         if self.time() is not None:
             msg.plain(f"Contains data for {self.time()[0]} - {self.time()[-1]}")
             msg.plain(f"\t dt={self.dt()} hours, i.e. ({self.nt()} time steps)")
