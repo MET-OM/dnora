@@ -61,6 +61,14 @@ class SWAN(InputFileWriter):
         DATE_END = end_time
         STR_START = pd.Timestamp(DATE_START).strftime('%Y%m%d.%H%M%S')
         STR_END = pd.Timestamp(DATE_END).strftime('%Y%m%d.%H%M%S')
+        STR_FORCING_START = STR_START
+        STR_FORCING_END = STR_END
+
+        # For wind forcing, range of all time steps in .asc file needs to be specified
+        if forcing is not None:
+            if (forcing.name() == "ERA5"):  # bugfix: for era5 complete 24 hour timesteps are written to asc file.
+                STR_FORCING_START = pd.Timestamp(DATE_START).strftime('%Y%m%d') + '.000000'
+                STR_FORCING_END = pd.Timestamp(DATE_END).strftime('%Y%m%d') + '.230000'
 
         delta_X = np.round(np.abs(grid.lon()[-1] - grid.lon()[0]), 5)
         delta_Y = np.round(np.abs(grid.lat()[-1] - grid.lat()[0]), 5)
@@ -106,8 +114,11 @@ class SWAN(InputFileWriter):
                 delta_Xf = np.round(np.abs(forcing.lon()[-1] - forcing.lon()[0]), 5)
                 delta_Yf = np.round(np.abs(forcing.lat()[-1] - forcing.lat()[0]), 5)
 
-                file_out.write('INPGRID WIND '+str(forcing.lon()[0])+' '+str(forcing.lat()[0])+' 0. '+str(forcing.nx()-1)+' '+str(forcing.ny()-1)+' '+str(
-                    (delta_Xf/(forcing.nx()-1)).round(6)) + ' '+str((delta_Yf/(forcing.ny()-1)).round(6)) + ' NONSTATIONARY ' + STR_START + f" {forcing.dt():.0f} HR " + STR_END + '\n')
+                file_out.write('INPGRID WIND ' + str(forcing.lon()[0]) + ' ' + str(forcing.lat()[0]) + ' 0. ' + str(
+                    forcing.nx() - 1) + ' ' + str(forcing.ny() - 1) + ' ' + str(
+                    (delta_Xf / (forcing.nx() - 1)).round(6)) + ' ' + str((delta_Yf / (forcing.ny() - 1)).round(
+                    6)) + ' NONSTATIONARY ' + STR_FORCING_START + f" {forcing.dt():.0f} HR " + STR_FORCING_END + '\n')
+
                 file_out.write('READINP WIND '+str(factor_wind)+'  \''+forcing_path.split('/')[-1]+'\' 3 0 0 1 FREE \n')
                 file_out.write('$ \n')
             else:
@@ -123,8 +134,8 @@ class SWAN(InputFileWriter):
             file_out.write('$ Generate block-output \n')
             temp_list = forcing_path.split('/')
             forcing_folder = '/'.join(temp_list[0:-1])
-            file_out.write('BLOCK \'COMPGRID\' HEAD \''+grid.name()+'_'+STR_START.split('.')[0]+'.nc'
-                           + '\' & \n')
+            #file_out.write('BLOCK \'COMPGRID\' HEAD \''+grid.name()+'_'+STR_START.split('.')[0]+'.nc'
+            #               + '\' & \n')
             file_out.write('BLOCK \'COMPGRID\' HEAD \'' + grid.name() + '_' + STR_START.split('.')[0] + '.vtk'
                            + '\' & \n')
             file_out.write(
