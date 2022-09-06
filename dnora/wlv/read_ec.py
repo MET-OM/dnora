@@ -127,12 +127,5 @@ class GTSM_ERA5(WaterLevelReader):
         waterlevel = waterlevel.sel(stations=waterlevel.lat >= lat_min)
         waterlevel = waterlevel.sel(stations=waterlevel.lat <= lat_max)
 
-        print(waterlevel)
-
-
-        # todo: add a function which
-        #
-        # wind_forcing = wind_forcing.isel(lat=slice(None,None,-1)) # ERA5 gives lat as descending
-
         return waterlevel
 
