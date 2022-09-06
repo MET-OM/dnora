@@ -1,6 +1,7 @@
 list_of_placeholders:
   - '#Grid'
   - '#Forcing'
+  - '#WaterLevel'
   - '#Boundary'
   - '#Spectra'
   - '#T0'
@@ -18,6 +19,10 @@ ModelRun:
   forcing:
     folder: output
     filename: 'wind_#Forcing_#Grid_#T0-#T1'
+    dateformat: '%Y%m%dT%H%M'
+  waterlevel:
+    folder: output
+    filename: 'waterlevel_#Grid_#T0-#T1'
     dateformat: '%Y%m%dT%H%M'
   boundary:
     folder: output
@@ -51,6 +56,8 @@ SWAN:
     filename: '#Grid_SWAN'
   forcing:
     filename: 'wind#Forcing#Grid#T0_#T1'
+  waterlevel:
+    filename: 'waterlevel#Grid#T0_#T1'
   boundary:
     filename: 'spec#Boundary#Grid#T0#T1'
   input_file:

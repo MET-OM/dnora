@@ -141,7 +141,7 @@ class GTSM_ERA5(WaterLevelReader):
         grid_z = np.zeros([len(time),len(lon_local), len(lat_local)])
         for i_t, t in enumerate(time):
             values = waterlevel.waterlevel[i_t, :]
-            grid_z[i_t,:,:] = griddata(points, values, (grid_x, grid_y), method='cubic')
+            grid_z[i_t,:,:] = griddata(points, values, (grid_x, grid_y), method='cubic', fill_value=0.)
             # plt.imshow(grid_z[i_t,:,:], extent=(lon_min, lon_max, lat_min, lat_max), origin='lower')
             # plt.scatter(waterlevel.lon, waterlevel.lat)
             # plt.colorbar()
@@ -150,7 +150,7 @@ class GTSM_ERA5(WaterLevelReader):
         # Finally we put the new gridded data into a dataset
         waterlevel_gridded = xr.Dataset(
             data_vars=dict(
-                variable=(["time", "lon", "lat"], grid_z)
+                waterlevel=(["time", "lon", "lat"], grid_z)
             ),
             coords=dict(
                 time=(["time"], time.data),
@@ -160,6 +160,6 @@ class GTSM_ERA5(WaterLevelReader):
             attrs=dict(description="waterlevel"),
         )
 
-        print(waterlevel_gridded)
+        #print(waterlevel_gridded)
         return waterlevel_gridded
 

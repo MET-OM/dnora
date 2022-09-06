@@ -302,8 +302,8 @@ class ModelRun:
         """Writes the forcing data in the Forcing-object to an external source,
         e.g. a file."""
         self._dry_run = dry_run
-        if self.forcing() is None and not self.dry_run():
-            raise Exception('Import forcing before exporting!')
+        if self.waterlevel() is None and not self.dry_run():
+            raise Exception('Import waterlevel before exporting!')
 
         self._waterlevel_writer = waterlevel_writer or self._get_waterlevel_writer()
 
@@ -681,6 +681,12 @@ class ModelRun:
         return None
 
     def _get_forcing_writer(self) -> ForcingWriter:
+        return None
+
+    def _get_waterlevel_reader(self) -> WaterLevelReader:
+        return None
+
+    def _get_waterlevel_writer(self) -> WaterLevelWriter:
         return None
 
     def _get_spectral_reader(self) -> SpectralReader:

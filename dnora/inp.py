@@ -128,15 +128,15 @@ class SWAN(InputFileWriter):
                 file_out.write('WIND 0 0 \n') # no wind forcing
 
             if self.waterlevel:
-                delta_Xf = np.round(np.abs(forcing.lon()[-1] - forcing.lon()[0]), 5)
-                delta_Yf = np.round(np.abs(forcing.lat()[-1] - forcing.lat()[0]), 5)
+                delta_Xf = np.round(np.abs(waterlevel.lon()[-1] - waterlevel.lon()[0]), 5)
+                delta_Yf = np.round(np.abs(waterlevel.lat()[-1] - waterlevel.lat()[0]), 5)
 
-                file_out.write('INPGRID WIND ' + str(forcing.lon()[0]) + ' ' + str(forcing.lat()[0]) + ' 0. ' + str(
-                    forcing.nx() - 1) + ' ' + str(forcing.ny() - 1) + ' ' + str(
-                    (delta_Xf / (forcing.nx() - 1)).round(6)) + ' ' + str((delta_Yf / (forcing.ny() - 1)).round(
-                    6)) + ' NONSTATIONARY ' + STR_START + f" {forcing.dt():.0f} HR " + STR_END + '\n')
+                file_out.write('INPGRID WLEV ' + str(waterlevel.lon()[0]) + ' ' + str(waterlevel.lat()[0]) + ' 0. ' + str(
+                    waterlevel.nx() - 1) + ' ' + str(waterlevel.ny() - 1) + ' ' + str(
+                    (delta_Xf / (waterlevel.nx() - 1)).round(6)) + ' ' + str((delta_Yf / (waterlevel.ny() - 1)).round(
+                    6)) + ' NONSTATIONARY ' + STR_START + f" {waterlevel.dt():.0f} HR " + STR_END + '\n')
 
-                file_out.write('READINP WIND '+str(factor_wind)+'  \''+forcing_path.split('/')[-1]+'\' 3 0 0 1 FREE \n')
+                file_out.write('READINP WIND '+str(factor_waterlevel)+'  \''+forcing_path.split('/')[-1]+'\' 3 0 0 1 FREE \n')
                 file_out.write('$ \n')
 
             file_out.write('GEN3 WESTH cds2='+str(self.calib_wcap) + '\n')
