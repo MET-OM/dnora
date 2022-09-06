@@ -138,7 +138,7 @@ class SWAN(InputFileWriter):
                     (delta_Xf / (waterlevel.nx() - 1)).round(6)) + ' ' + str((delta_Yf / (waterlevel.ny() - 1)).round(
                     6)) + ' NONSTATIONARY ' + STR_START + f" {waterlevel.dt():.0f} HR " + STR_END + '\n')
 
-                file_out.write('READINP WLEV '+str(factor_waterlevel)+'  \''+waterlevel_path.split('/')[-1]+'\' 3 0 0 1 FREE \n')
+                file_out.write('READINP WLEV '+str(factor_waterlevel)+'  \''+waterlevel_path.split('/')[-1]+'\' 3 0 1 FREE \n')
                 file_out.write('$ \n')
 
             file_out.write('GEN3 WESTH cds2='+str(self.calib_wcap) + '\n')
