@@ -21,7 +21,7 @@ from subprocess import Popen
 
 
 
-def download_GTSM_from_cds(start_time, end_time, lon, lat, folder='dnora_wlv_temp') -> str:
+def download_GTSM_from_cds(start_time, end_time, folder='dnora_wlv_temp') -> str:
     """Downloads GTSM model water level data from the Copernicus Climate Data Store for a
     given area and time period"""
     start_time = pd.Timestamp(start_time)
@@ -111,18 +111,23 @@ class GTSM_ERA5(WaterLevelReader):
         #     msg.plain(f"Reading wind forcing data: {t0}-{t1}")
         #     # Creates file dnora_wnd_tmp/EC_ERA5_YYYY_MM.nc
 
-        out_file = download_GTSM_from_cds(start_time, end_time, lon=(lon_min, lon_max), lat=(lat_min, lat_max), folder='dnora_wlv_temp')
+        out_file = download_GTSM_from_cds(start_time, end_time, folder='dnora_wlv_temp')
 
         temppath = os.path.dirname(out_file)
         # first unpack the tar.gz file.
         nc_file = subprocess.run(['tar', '-ztf', out_file], stdout=subprocess.PIPE).stdout.decode('utf-8')
-        print(nc_file)
+        #print(nc_file)
         subprocess.run(['tar', '-xzvf', out_file,'--directory',temppath], stdout=subprocess.PIPE) # Extract tar file
 
-        print(os.path.join(temppath,nc_file))
-        waterlevel = xr.open_dataset(os.path.join(temppath,nc_file).strip("\n"),engine="netcdf4")
+        #print(os.path.join(temppath,nc_file))
+        waterlevel = xr.open_dataset(os.path.join(temppath,nc_file).strip("\n").strip("\r"),engine="netcdf4")
         waterlevel = waterlevel.rename_vars({'station_x_coordinate': 'lon', 'station_y_coordinate': 'lat'})
-        df = waterlevel.to_dataframe()
+        waterlevel = waterlevel.sel(stations=waterlevel.lon >= lon_min)
+        waterlevel = waterlevel.sel(stations=waterlevel.lon <= lon_max)
+        waterlevel = waterlevel.sel(stations=waterlevel.lat >= lat_min)
+        waterlevel = waterlevel.sel(stations=waterlevel.lat <= lat_max)
+
+        print(waterlevel)
 
 
         # todo: add a function which
@@ -131,4 +136,3 @@ class GTSM_ERA5(WaterLevelReader):
 
         return waterlevel
 
-    def strip away
