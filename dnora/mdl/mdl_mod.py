@@ -8,6 +8,7 @@ from ..grd.grd_mod import Grid
 from ..bnd.bnd_mod import Boundary
 from ..wnd.wnd_mod import Forcing
 from ..spc.spc_mod import Spectra
+from ..wlv.wlv_mod import WaterLevel
 
 # Import abstract classes and needed instances of them
 from ..bnd.read import BoundaryReader
@@ -16,6 +17,8 @@ from ..bnd.pick import PointPicker
 
 from ..wnd.read import ForcingReader
 from ..wnd.write import ForcingWriter
+
+from ..wlv.read import WaterLevelReader
 
 from ..spc.read import SpectralReader, BoundaryToSpectra
 from ..spc.write import SpectralWriter
@@ -113,6 +116,36 @@ class ModelRun:
                                         cache_name=cache_name)
         else:
             msg.info('Dry run! No forcing will be imported.')
+
+    def import_waterlevel(self, waterlevel_reader: WaterLevelReader=None,
+                        name: str=None, dry_run: bool=False,
+                        expansion_factor: float=1.2,
+                        write_cache: bool=False,
+                        read_cache: bool=False,
+                        cache_name: str='#Grid_#Lon0_#Lon1_#Lat0_#Lat1') -> None:
+        """Creates a Forcing-objects and imports forcing data."""
+        self._dry_run = dry_run
+
+        self._waterlevel_reader = waterlevel_reader or self._get_waterlevel_reader()
+
+        if self._waterlevel_reader is None:
+            raise Exception('Define a WaterLevelReader!')
+
+        # Create waterlevel object
+        name = name or type(self._waterlevel_reader).__name__
+        self._waterlevel = WaterLevel(grid=self.grid(), name=name)
+
+        # Import the forcing data into the Forcing-object
+        if not self.dry_run():
+            self.waterlevel().import_waterlevel(start_time=self.start_time,
+                                        end_time=self.end_time,
+                                        waterlevel_reader=self._waterlevel_reader,
+                                        expansion_factor=expansion_factor,
+                                        read_cache=read_cache,
+                                        write_cache=write_cache,
+                                        cache_name=cache_name)
+        else:
+            msg.info('Constant water level! No time dependent water level data specified.')
 
     def import_spectra(self, spectral_reader: SpectralReader=None,
                         name: str=None, dry_run: bool=False) -> None:
@@ -544,6 +577,13 @@ class ModelRun:
         """Returns the forcing object if exists."""
         if hasattr(self, '_forcing'):
             return self._forcing
+        else:
+            return None
+
+    def waterlevel(self) -> WaterLevel:
+        """Returns the waterlevel object if exists."""
+        if hasattr(self, '_waterlevel'):
+            return self._waterlevel
         else:
             return None
 

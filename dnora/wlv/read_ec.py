@@ -2,7 +2,8 @@ from abc import ABC,  abstractmethod
 from copy import copy
 import numpy as np
 import xarray as xr
-from subprocess import call
+import subprocess
+#from subprocess import call, run
 import os, glob
 import time
 import cdsapi
@@ -68,9 +69,7 @@ def download_GTSM_from_cds(start_time, end_time, lon, lat, folder='dnora_wlv_tem
 
     cds_command = {
         'format': 'tgz',
-        'variable': [
-            'storm_surge_residual', 'total_water_level',
-        ],
+        'variable': ['total_water_level'],
         'experiment': 'reanalysis',
         'temporal_aggregation': 'hourly',
         'year': years,
@@ -114,15 +113,22 @@ class GTSM_ERA5(WaterLevelReader):
 
         out_file = download_GTSM_from_cds(start_time, end_time, lon=(lon_min, lon_max), lat=(lat_min, lat_max), folder='dnora_wlv_temp')
 
+        temppath = os.path.dirname(out_file)
         # first unpack the tar.gz file.
         nc_file = subprocess.run(['tar', '-ztf', out_file], stdout=subprocess.PIPE).stdout.decode('utf-8')
-        subprocess.run(['tar', '-xzvf', out_file], stdout=subprocess.PIPE) # Extract tar file
+        print(nc_file)
+        subprocess.run(['tar', '-xzvf', out_file,'--directory',temppath], stdout=subprocess.PIPE) # Extract tar file
 
-        waterlevel = xr.open_dataset(nc_file)
+        print(os.path.join(temppath,nc_file))
+        waterlevel = xr.open_dataset(os.path.join(temppath,nc_file).strip("\n"),engine="netcdf4")
         waterlevel = waterlevel.rename_vars({'station_x_coordinate': 'lon', 'station_y_coordinate': 'lat'})
+        df = waterlevel.to_dataframe()
+
 
         # todo: add a function which
         #
         # wind_forcing = wind_forcing.isel(lat=slice(None,None,-1)) # ERA5 gives lat as descending
 
-        return wind_forcing
+        return waterlevel
+
+    def strip away
