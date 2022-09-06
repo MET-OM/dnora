@@ -7,7 +7,7 @@ import re
 import glob, os
 from calendar import monthrange
 # Import abstract classes and needed instances of them
-from .read import ForcingReader, DnoraNc
+from .read import WaterLevelReader, DnoraNc
 from .write import ForcingWriter
 
 # Import default values and aux_funcsiliry functions
@@ -45,7 +45,7 @@ class WaterLevel:
             original_waterlevel_reader = copy(waterlevel_reader)
             waterlevel_reader = DnoraNc(files=glob.glob(f'{cache_folder}/{cache_name}*'))
 
-        msg.header(forcing_reader, "Loading water level data...")
+        msg.header(waterlevel_reader, "Loading water level data...")
         self.data = waterlevel_reader(self.grid, start_time, end_time, expansion_factor)
 
         ### Patch data if read from cache and all data not found
