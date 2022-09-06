@@ -167,7 +167,7 @@ class WaterLevel:
     def size(self) -> tuple:
         """Returns the size (nt, ny, nx) of the grid."""
 
-        return self.u().shape
+        return self.waterlevel().shape
 
     def _point_list(self, mask):
         """Provides a list on longitudes and latitudes with a given mask.

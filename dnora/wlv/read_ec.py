@@ -133,12 +133,12 @@ class GTSM_ERA5(WaterLevelReader):
 
         lon_local = np.arange(lon_min,lon_max,0.1)
         lat_local = np.arange(lat_min,lat_max,0.1)
-        grid_x, grid_y = np.meshgrid(lon_local, lat_local,indexing='ij')
+        grid_x, grid_y = np.meshgrid(lon_local, lat_local,indexing='xy')
         #grid_x, grid_y = np.mgrid[lon_min:lon_max:100j, lat_min:lat_max:110j]
 
         points = np.array([waterlevel.lon, waterlevel.lat]).T
         time = waterlevel.time
-        grid_z = np.zeros([len(time),len(lon_local), len(lat_local)])
+        grid_z = np.zeros([len(time),len(lat_local), len(lon_local)])
         for i_t, t in enumerate(time):
             values = waterlevel.waterlevel[i_t, :]
             grid_z[i_t,:,:] = griddata(points, values, (grid_x, grid_y), method='cubic', fill_value=0.)
@@ -150,12 +150,12 @@ class GTSM_ERA5(WaterLevelReader):
         # Finally we put the new gridded data into a dataset
         waterlevel_gridded = xr.Dataset(
             data_vars=dict(
-                waterlevel=(["time", "lon", "lat"], grid_z)
+                waterlevel=(["time", "lat", "lon"], grid_z)
             ),
             coords=dict(
                 time=(["time"], time.data),
-                lon=(["lon"], lon_local),
                 lat=(["lat"], lat_local),
+                lon=(["lon"], lon_local),
             ),
             attrs=dict(description="waterlevel"),
         )
