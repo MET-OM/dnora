@@ -8,7 +8,7 @@ import glob, os
 from calendar import monthrange
 # Import abstract classes and needed instances of them
 from .read import WaterLevelReader, DnoraNc
-from .write import ForcingWriter
+from .write import WaterLevelWriter
 
 # Import default values and aux_funcsiliry functions
 from .. import msg
@@ -22,7 +22,7 @@ class WaterLevel:
 
     def import_waterlevel(self, start_time: str, end_time: str,
                     waterlevel_reader: WaterLevelReader,
-                    expansion_factor: float=1.2,
+                    expansion_factor: float=1.0,
                     write_cache: bool=False,
                     read_cache: bool=False,
                     cache_name: str='#Grid_#Lon0_#Lon1_#Lat0_#Lat1'):
@@ -108,25 +108,25 @@ class WaterLevel:
         else:
             return 0
 
-    def u(self):
+    def waterlevel(self):
         if hasattr(self, 'data'):
-            return copy(self.data.u.values)
+            return copy(self.data.waterlevel.values)
         else:
             return np.array([[[]]])
 
-    def v(self):
-        if hasattr(self, 'data'):
-            return copy(self.data.v.values)
-        else:
-            return np.array([[[]]])
-
-    def magnitude(self):
-        if np.min(self.u()).shape == 0:
-            return np.array([[[]]])
-        if np.min(self.v()).shape == 0:
-            return self.u()
-
-        return (self.u()**2 + self.v()**2)**0.5
+    # def v(self):
+    #     if hasattr(self, 'data'):
+    #         return copy(self.data.v.values)
+    #     else:
+    #         return np.array([[[]]])
+    #
+    # def magnitude(self):
+    #     if np.min(self.u()).shape == 0:
+    #         return np.array([[[]]])
+    #     if np.min(self.v()).shape == 0:
+    #         return self.u()
+    #
+    #     return (self.u()**2 + self.v()**2)**0.5
 
     def nx(self):
         if min(self.size()) > 0:
