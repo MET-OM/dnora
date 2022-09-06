@@ -10,6 +10,7 @@ import cdsapi
 # Import objects
 from ..grd.grd_mod import Grid
 
+from scipy.interpolate import griddata
 # Import abstract classes
 from .read import WaterLevelReader
 
@@ -17,6 +18,7 @@ from .read import WaterLevelReader
 from .. import msg
 from ..aux_funcs import create_time_stamps, u_v_from_dir, expand_area, lon_in_km, create_monthly_time_stamps, int_list_of_days, int_list_of_months, int_list_of_years
 import pandas as pd
+import matplotlib.pyplot as plt
 from subprocess import Popen
 
 
@@ -122,10 +124,42 @@ class GTSM_ERA5(WaterLevelReader):
         #print(os.path.join(temppath,nc_file))
         waterlevel = xr.open_dataset(os.path.join(temppath,nc_file).strip("\n").strip("\r"),engine="netcdf4")
         waterlevel = waterlevel.rename_vars({'station_x_coordinate': 'lon', 'station_y_coordinate': 'lat'})
-        waterlevel = waterlevel.sel(stations=waterlevel.lon >= lon_min)
-        waterlevel = waterlevel.sel(stations=waterlevel.lon <= lon_max)
-        waterlevel = waterlevel.sel(stations=waterlevel.lat >= lat_min)
-        waterlevel = waterlevel.sel(stations=waterlevel.lat <= lat_max)
+        waterlevel = waterlevel.sel(stations=waterlevel.lon >= lon_min-expansion_factor)
+        waterlevel = waterlevel.sel(stations=waterlevel.lon <= lon_max+expansion_factor)
+        waterlevel = waterlevel.sel(stations=waterlevel.lat >= lat_min-expansion_factor)
+        waterlevel = waterlevel.sel(stations=waterlevel.lat <= lat_max+expansion_factor)
 
-        return waterlevel
+        waterlevel = waterlevel.sel(time=slice(start_time,end_time))
+
+        lon_local = np.arange(lon_min,lon_max,0.1)
+        lat_local = np.arange(lat_min,lat_max,0.1)
+        grid_x, grid_y = np.meshgrid(lon_local, lat_local,indexing='ij')
+        #grid_x, grid_y = np.mgrid[lon_min:lon_max:100j, lat_min:lat_max:110j]
+
+        points = np.array([waterlevel.lon, waterlevel.lat]).T
+        time = waterlevel.time
+        grid_z = np.zeros([len(time),len(lon_local), len(lat_local)])
+        for i_t, t in enumerate(time):
+            values = waterlevel.waterlevel[i_t, :]
+            grid_z[i_t,:,:] = griddata(points, values, (grid_x, grid_y), method='cubic')
+            # plt.imshow(grid_z[i_t,:,:], extent=(lon_min, lon_max, lat_min, lat_max), origin='lower')
+            # plt.scatter(waterlevel.lon, waterlevel.lat)
+            # plt.colorbar()
+            # plt.show()
+
+        # Finally we put the new gridded data into a dataset
+        waterlevel_gridded = xr.Dataset(
+            data_vars=dict(
+                variable=(["time", "lon", "lat"], grid_z)
+            ),
+            coords=dict(
+                time=(["time"], time.data),
+                lon=(["lon"], lon_local),
+                lat=(["lat"], lat_local),
+            ),
+            attrs=dict(description="waterlevel"),
+        )
+
+        print(waterlevel_gridded)
+        return waterlevel_gridded
 
