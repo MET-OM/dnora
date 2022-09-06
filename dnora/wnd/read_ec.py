@@ -133,4 +133,7 @@ class ERA5(ForcingReader):
 
         wind_forcing = wind_forcing.isel(lat=slice(None,None,-1)) # ERA5 gives lat as descending
 
+        # Extract relevant timestamps
+        wind_forcing = wind_forcing.sel(time=slice(start_time, end_time))
+
         return wind_forcing
