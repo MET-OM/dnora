@@ -37,10 +37,11 @@ class InputFileWriter(ABC):
         return output_file
 
 class SWAN(InputFileWriter):
-    def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, wind=True, waterlevel=False, spec_points=None, extension='swn'):
+    def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, calib_wlev = 1, wind=True, waterlevel=False, spec_points=None, extension='swn'):
 
         self.calib_wind = calib_wind
         self.calib_wcap = calib_wcap
+        self.calib_wlev = calib_wlev
         self.wind = wind
         self.waterlevel = waterlevel
         self.spec_points = spec_points # list of (lon, lat) points, e.g.,[(4.4, 60.6),(4.4, 60.8)]
@@ -52,7 +53,7 @@ class SWAN(InputFileWriter):
 
     def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, waterlevel: WaterLevel,
                 start_time: str, end_time: str, filename: str,
-                grid_path: str, forcing_path: str, boundary_path: str):
+                grid_path: str, forcing_path: str, boundary_path: str, waterlevel_path: str):
 
         if forcing is None and self.wind == True:
             msg.info('No forcing object provided. Wind information will NOT be written to SWAN input file!')
@@ -80,6 +81,7 @@ class SWAN(InputFileWriter):
         delta_Y = np.round(np.abs(grid.lat()[-1] - grid.lat()[0]), 5)
 
         factor_wind = self.calib_wind*0.001
+        factor_waterlevel = self.calib_wlev*0.001
 
         with open(filename, 'w') as file_out:
             file_out.write(
@@ -136,7 +138,7 @@ class SWAN(InputFileWriter):
                     (delta_Xf / (waterlevel.nx() - 1)).round(6)) + ' ' + str((delta_Yf / (waterlevel.ny() - 1)).round(
                     6)) + ' NONSTATIONARY ' + STR_START + f" {waterlevel.dt():.0f} HR " + STR_END + '\n')
 
-                file_out.write('READINP WIND '+str(factor_waterlevel)+'  \''+forcing_path.split('/')[-1]+'\' 3 0 0 1 FREE \n')
+                file_out.write('READINP WLEV '+str(factor_waterlevel)+'  \''+waterlevel_path.split('/')[-1]+'\' 3 0 0 1 FREE \n')
                 file_out.write('$ \n')
 
             file_out.write('GEN3 WESTH cds2='+str(self.calib_wcap) + '\n')

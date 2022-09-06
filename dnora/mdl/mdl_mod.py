@@ -323,8 +323,9 @@ class ModelRun:
     def write_input_file(self, input_file_writer: InputFileWriter=None,
                         filename=None, folder=None, dateformat=None,
                         grid_path: str=None, forcing_path: str=None,
-                        boundary_path: str=None, start_time: str=None,
-                        end_time: str=None, dry_run=False) -> None:
+                        boundary_path: str=None, waterlevel_path: str=None,
+                        start_time: str=None, end_time: str=None,
+                        dry_run=False) -> None:
         """Writes the grid data in the Grid-object to an external source,
         e.g. a file."""
         self._dry_run = dry_run
@@ -354,6 +355,7 @@ class ModelRun:
         grid_path = grid_path or self.exported_to('grid')[-1]
         forcing_path = forcing_path or self.exported_to('forcing')[-1]
         boundary_path = boundary_path or self.exported_to('boundary')[-1]
+        waterlevel_path = waterlevel_path or self.exported_to('waterlevel')[-1]
 
         start_time = start_time or self.start_time
         end_time = end_time or self.end_time
@@ -365,11 +367,11 @@ class ModelRun:
         else:
             # Write the grid using the InputFileWriter object
             output_files = self._input_file_writer(grid=self.grid(),
-                            forcing=self.forcing(), boundary=self.boundary(),
+                            forcing=self.forcing(), boundary=self.boundary(), waterlevel=self.waterlevel(),
                             start_time=start_time, end_time=end_time,
                             filename=file_object.filepath(),
                             grid_path=grid_path, forcing_path=forcing_path,
-                            boundary_path=boundary_path)
+                            boundary_path=boundary_path, waterlevel_path=waterlevel_path)
             if type(output_files) is not list:
                 output_files = [output_files]
 
