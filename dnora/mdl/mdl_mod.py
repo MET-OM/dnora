@@ -19,6 +19,7 @@ from ..wnd.read import ForcingReader
 from ..wnd.write import ForcingWriter
 
 from ..wlv.read import WaterLevelReader
+from ..wlv.write import WaterLevelWriter
 
 from ..spc.read import SpectralReader, BoundaryToSpectra
 from ..spc.write import SpectralWriter
@@ -294,6 +295,30 @@ class ModelRun:
         __ = self._export_object(filename, folder, dateformat,
                             writer_function=self._forcing_writer,
                             dnora_obj='forcing')
+
+    def export_waterlevel(self, waterlevel_writer: WaterLevelWriter=None,
+                        filename: str=None, folder: str=None,
+                         dateformat: str=None, dry_run=False) -> None:
+        """Writes the forcing data in the Forcing-object to an external source,
+        e.g. a file."""
+        self._dry_run = dry_run
+        if self.forcing() is None and not self.dry_run():
+            raise Exception('Import forcing before exporting!')
+
+        self._waterlevel_writer = waterlevel_writer or self._get_waterlevel_writer()
+
+        if self._waterlevel_writer is None:
+            raise Exception('Define a WaterLevelWriter!')
+
+        if self.waterlevel() is not None:
+            msg.header(self._waterlevel_writer, f"Writing water level from {self.waterlevel().name()}")
+        else:
+            msg.header(self._waterlevel_writer, f"Static water level.")
+
+
+        __ = self._export_object(filename, folder, dateformat,
+                            writer_function=self._waterlevel_writer,
+                            dnora_obj='waterlevel')
 
     def write_input_file(self, input_file_writer: InputFileWriter=None,
                         filename=None, folder=None, dateformat=None,

@@ -15,6 +15,9 @@ class SWAN(ModelRun):
     def _get_forcing_writer(self):
         return wnd.write.SWAN()
 
+    def _get_waterlevel_writer(self):
+        return wlv.write.SWAN()
+
     def _get_point_picker(self):
         return bnd.pick.Area()
 

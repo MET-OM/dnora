@@ -9,6 +9,7 @@ import pandas as pd
 from .wnd.wnd_mod import Forcing
 from .grd.grd_mod import Grid
 from .bnd.bnd_mod import Boundary
+from .wlv.wlv_mod import WaterLevel
 from .aux_funcs import create_swan_segment_coords
 from . import msg
 from . import file_module
@@ -36,11 +37,12 @@ class InputFileWriter(ABC):
         return output_file
 
 class SWAN(InputFileWriter):
-    def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, wind=True, spec_points=None, extension='swn'):
+    def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, wind=True, waterlevel=False, spec_points=None, extension='swn'):
 
         self.calib_wind = calib_wind
         self.calib_wcap = calib_wcap
         self.wind = wind
+        self.waterlevel = waterlevel
         self.spec_points = spec_points # list of (lon, lat) points, e.g.,[(4.4, 60.6),(4.4, 60.8)]
         self._extension_in = extension
         return
@@ -48,13 +50,17 @@ class SWAN(InputFileWriter):
     def _extension(self):
         return self._extension_in
 
-    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary,
+    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, waterlevel: WaterLevel,
                 start_time: str, end_time: str, filename: str,
                 grid_path: str, forcing_path: str, boundary_path: str):
 
         if forcing is None and self.wind == True:
             msg.info('No forcing object provided. Wind information will NOT be written to SWAN input file!')
             self.wind = False
+
+        if waterlevel is None and self.waterlevel == True:
+            msg.info('No waterlevel object provided. Waterlevel information will NOT be written to SWAN input file!')
+            self.waterlevel = False
 
         # Define start and end times of model run
         DATE_START = start_time
@@ -123,6 +129,19 @@ class SWAN(InputFileWriter):
                 file_out.write('$ \n')
             else:
                 file_out.write('WIND 0 0 \n') # no wind forcing
+
+            if self.waterlevel:
+                delta_Xf = np.round(np.abs(forcing.lon()[-1] - forcing.lon()[0]), 5)
+                delta_Yf = np.round(np.abs(forcing.lat()[-1] - forcing.lat()[0]), 5)
+
+                file_out.write('INPGRID WIND ' + str(forcing.lon()[0]) + ' ' + str(forcing.lat()[0]) + ' 0. ' + str(
+                    forcing.nx() - 1) + ' ' + str(forcing.ny() - 1) + ' ' + str(
+                    (delta_Xf / (forcing.nx() - 1)).round(6)) + ' ' + str((delta_Yf / (forcing.ny() - 1)).round(
+                    6)) + ' NONSTATIONARY ' + STR_START + f" {forcing.dt():.0f} HR " + STR_END + '\n')
+
+                file_out.write('READINP WIND '+str(factor_wind)+'  \''+forcing_path.split('/')[-1]+'\' 3 0 0 1 FREE \n')
+                file_out.write('$ \n')
+
 
             file_out.write('GEN3 WESTH cds2='+str(self.calib_wcap) + '\n')
             file_out.write('FRICTION JON 0.067 \n')
