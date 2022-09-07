@@ -64,9 +64,6 @@ def download_GTSM_from_cds(start_time, end_time, folder='dnora_wlv_temp') -> str
     months = [f'{m:02.0f}' for m in int_list_of_months(start_time, end_time)]
     if len(months) == 1:
         months = months[0]
-    days = [f'{d:02.0f}' for d in int_list_of_days(start_time, end_time)]
-    if len(days) == 1:
-        days = days[0]
 
 
     cds_command = {
