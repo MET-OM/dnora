@@ -114,43 +114,51 @@ class GTSM_ERA5(WaterLevelReader):
 
         temppath = os.path.dirname(out_file)
         # first unpack the tar.gz file.
-        nc_file = subprocess.run(['tar', '-ztf', out_file], stdout=subprocess.PIPE).stdout.decode('utf-8')
+        nc_file = subprocess.run(['tar', '-ztf', out_file], stdout=subprocess.PIPE).stdout.decode('utf-8').split('\r\n')[0:-1]
         #print(nc_file)
         subprocess.run(['tar', '-xzvf', out_file,'--directory',temppath], stdout=subprocess.PIPE) # Extract tar file
 
-        #print(os.path.join(temppath,nc_file))
-        waterlevel = xr.open_dataset(os.path.join(temppath,nc_file).strip("\n").strip("\r"),engine="netcdf4")
-        waterlevel = waterlevel.rename_vars({'station_x_coordinate': 'lon', 'station_y_coordinate': 'lat'})
-        waterlevel = waterlevel.sel(stations=waterlevel.lon >= lon_min-expansion_factor)
-        waterlevel = waterlevel.sel(stations=waterlevel.lon <= lon_max+expansion_factor)
-        waterlevel = waterlevel.sel(stations=waterlevel.lat >= lat_min-expansion_factor)
-        waterlevel = waterlevel.sel(stations=waterlevel.lat <= lat_max+expansion_factor)
+        lon_local = np.arange(lon_min, lon_max, 0.1)
+        lat_local = np.arange(lat_min, lat_max, 0.1)
+        grid_x, grid_y = np.meshgrid(lon_local, lat_local, indexing='xy')
 
-        waterlevel = waterlevel.sel(time=slice(start_time,end_time))
+        grid_tot = []
+        time_tot = []
+        for ncfile in nc_file:
+            #print(os.path.join(temppath,nc_file))
+            waterlevel = xr.open_dataset(os.path.join(temppath,ncfile),engine="netcdf4")
+            waterlevel = waterlevel.rename_vars({'station_x_coordinate': 'lon', 'station_y_coordinate': 'lat'})
+            waterlevel = waterlevel.sel(stations=waterlevel.lon >= lon_min-expansion_factor)
+            waterlevel = waterlevel.sel(stations=waterlevel.lon <= lon_max+expansion_factor)
+            waterlevel = waterlevel.sel(stations=waterlevel.lat >= lat_min-expansion_factor)
+            waterlevel = waterlevel.sel(stations=waterlevel.lat <= lat_max+expansion_factor)
 
-        lon_local = np.arange(lon_min,lon_max,0.1)
-        lat_local = np.arange(lat_min,lat_max,0.1)
-        grid_x, grid_y = np.meshgrid(lon_local, lat_local,indexing='xy')
-        #grid_x, grid_y = np.mgrid[lon_min:lon_max:100j, lat_min:lat_max:110j]
+            waterlevel = waterlevel.sel(time=slice(start_time,end_time))
+            #grid_x, grid_y = np.mgrid[lon_min:lon_max:100j, lat_min:lat_max:110j]
 
-        points = np.array([waterlevel.lon, waterlevel.lat]).T
-        time = waterlevel.time
-        grid_z = np.zeros([len(time),len(lat_local), len(lon_local)])
-        for i_t, t in enumerate(time):
-            values = waterlevel.waterlevel[i_t, :]
-            grid_z[i_t,:,:] = griddata(points, values, (grid_x, grid_y), method='cubic', fill_value=0.)
-            # plt.imshow(grid_z[i_t,:,:], extent=(lon_min, lon_max, lat_min, lat_max), origin='lower')
-            # plt.scatter(waterlevel.lon, waterlevel.lat)
-            # plt.colorbar()
-            # plt.show()
+            points = np.array([waterlevel.lon, waterlevel.lat]).T
+            time = waterlevel.time
+            grid_z = np.zeros([len(time),len(lat_local), len(lon_local)])
+            for i_t, t in enumerate(time):
+                values = waterlevel.waterlevel[i_t, :]
+                grid_z[i_t,:,:] = griddata(points, values, (grid_x, grid_y), method='cubic', fill_value=0.)
+                # plt.imshow(grid_z[i_t,:,:], extent=(lon_min, lon_max, lat_min, lat_max), origin='lower')
+                # plt.scatter(waterlevel.lon, waterlevel.lat)
+                # plt.colorbar()
+                # plt.show()
+            grid_tot.append(grid_z)
+            time_tot.append(time)
+
+        grid_tot = np.concatenate(grid_tot,axis=0)
+        time_tot = np.concatenate(time_tot,axis=0)
 
         # Finally we put the new gridded data into a dataset
         waterlevel_gridded = xr.Dataset(
             data_vars=dict(
-                waterlevel=(["time", "lat", "lon"], grid_z)
+                waterlevel=(["time", "lat", "lon"], grid_tot)
             ),
             coords=dict(
-                time=(["time"], time.data),
+                time=(["time"], time_tot),
                 lat=(["lat"], lat_local),
                 lon=(["lon"], lon_local),
             ),
