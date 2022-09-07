@@ -38,9 +38,7 @@ def download_era5_from_cds(start_time, end_time, lon, lat, dlon, dlat, folder='d
     filename = f'{folder}/EC_ERA5.nc'
 
     # Create string for dates
-    dates = []
-    for dd in days:
-            dates.append(dd.strftime('%Y-%m-%d'))
+    dates = [dd.strftime('%Y-%m-%d') for dd in days]
     dates = '/'.join(dates)
 
 

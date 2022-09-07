@@ -14,7 +14,7 @@ from .read import ForcingReader
 
 # Import aux_funcsiliry functions
 from .. import msg
-from ..aux_funcs import create_time_stamps, u_v_from_dir, expand_area, lon_in_km, create_monthly_time_stamps, int_list_of_days, int_list_of_months, int_list_of_years
+from ..aux_funcs import create_time_stamps, u_v_from_dir, expand_area, lon_in_km, create_monthly_time_stamps, day_list
 import pandas as pd
 
 
@@ -54,15 +54,20 @@ def download_era5_from_cds(start_time, end_time, lon, lat, folder='dnora_wnd_tem
     #     ],
     # }
 
-    years = [f'{y:4.0f}' for y in int_list_of_years(start_time, end_time)]
-    if len(years) == 1:
-        years = years[0]
-    months = [f'{m:02.0f}' for m in int_list_of_months(start_time, end_time)]
-    if len(months) == 1:
-        months = months[0]
-    days = [f'{d:02.0f}' for d in int_list_of_days(start_time, end_time)]
-    if len(days) == 1:
-        days = days[0]
+    # years = [f'{y:4.0f}' for y in int_list_of_years(start_time, end_time)]
+    # if len(years) == 1:
+    #     years = years[0]
+    # months = [f'{m:02.0f}' for m in int_list_of_months(start_time, end_time)]
+    # if len(months) == 1:
+    #     months = months[0]
+    # days = [f'{d:02.0f}' for d in int_list_of_days(start_time, end_time)]
+    # if len(days) == 1:
+    #     days = days[0]
+
+    days = day_list(start_time, end_time)
+    # Create string for dates
+    dates = [dd.strftime('%Y-%m-%d') for dd in days]
+    dates = '/'.join(dates)
 
     cds_command = {
         'product_type': 'reanalysis',
@@ -70,9 +75,7 @@ def download_era5_from_cds(start_time, end_time, lon, lat, folder='dnora_wnd_tem
         'variable': [
             '10m_u_component_of_wind', '10m_v_component_of_wind',
         ],
-        'year': years,
-        'month': months,
-        'day': days,
+        'date': dates,
         'time': [
             '00:00', '01:00', '02:00',
             '03:00', '04:00', '05:00',
