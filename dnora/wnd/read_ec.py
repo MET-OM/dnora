@@ -66,7 +66,7 @@ def download_era5_from_cds(start_time, end_time, lon, lat, folder='dnora_wnd_tem
 
     days = day_list(start_time, end_time)
     # Create string for dates
-    dates = [dd.strftime('%Y-%m-%d') for dd in days]
+    dates = [days[0].strftime('%Y-%m-%d'), days[-1].strftime('%Y-%m-%d')]
     dates = '/'.join(dates)
 
     cds_command = {
