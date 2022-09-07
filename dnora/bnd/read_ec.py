@@ -11,7 +11,7 @@ from .read import BoundaryReader
 import cdsapi
 # Import aux_funcsiliry functions
 from .. import msg
-from ..aux_funcs import create_time_stamps, expand_area, int_list_of_days, int_list_of_months, int_list_of_years
+from ..aux_funcs import create_time_stamps, expand_area, day_list
 
 
 def renormalize_era5_spec(bnd_spec):
@@ -32,18 +32,15 @@ def download_era5_from_cds(start_time, end_time, lon, lat, dlon, dlat, folder='d
     end_time = pd.Timestamp(end_time)
     c = cdsapi.Client()
 
-    filename = f'{folder}/EC_ERA5.nc'
+    days = day_list(start_time, end_time)
+    #tt = pd.date_range(start=start_time,end=end_time)
 
-    years = [f'{y:4.0f}' for y in int_list_of_years(start_time, end_time)]
-    months = [f'{m:02.0f}' for m in int_list_of_months(start_time, end_time)]
-    days = [f'{d:02.0f}' for d in int_list_of_days(start_time, end_time)]
+    filename = f'{folder}/EC_ERA5.nc'
 
     # Create string for dates
     dates = []
-    for y in years:
-        for m in months:
-            for d in days:
-                dates.append(f'{y}-{m}-{d}')
+    for dd in days:
+            dates.append(dd.strftime('%Y-%m-%d'))
     dates = '/'.join(dates)
 
 
