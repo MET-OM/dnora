@@ -42,7 +42,7 @@ class Grid:
         topo, lon, lat = force_to_xyz(topo, lon, lat)
 
         # Depth is positive, so set everything that is not positive to nan
-        topo[topo<=0]=np.nan
+        #topo[topo<=0]=np.nan
 
         points = [x for x in range(len(lon))]
         coords_dict = {'points': points}
