@@ -114,7 +114,8 @@ class GTSM_ERA5(WaterLevelReader):
 
         temppath = os.path.dirname(out_file)
         # first unpack the tar.gz file.
-        nc_file = subprocess.run(['tar', '-ztf', out_file], stdout=subprocess.PIPE).stdout.decode('utf-8').strip('\r').split('\n')[0:-1]
+        nc_file = subprocess.run(['tar', '-ztf', out_file], stdout=subprocess.PIPE).stdout.decode('utf-8').split('\n')[0:-1]
+        nc_file = sorted([ff.strip('\r') for ff in nc_file])
         #print(nc_file)
         subprocess.run(['tar', '-xzvf', out_file,'--directory',temppath], stdout=subprocess.PIPE) # Extract tar file
 

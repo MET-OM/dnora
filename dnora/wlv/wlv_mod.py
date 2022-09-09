@@ -43,7 +43,7 @@ class WaterLevel:
         if read_cache and not cache_empty:
             msg.info('Reading water level data from cache!!!')
             original_waterlevel_reader = copy(waterlevel_reader)
-            waterlevel_reader = DnoraNc(files=glob.glob(f'{cache_folder}/{cache_name}*'))
+            waterlevel_reader = DnoraNc(files=glob.glob(f'{cache_folder}/{cache_name}_wlv.nc'))
 
         msg.header(waterlevel_reader, "Loading water level data...")
         self.data = waterlevel_reader(self.grid, start_time, end_time, expansion_factor)
@@ -52,27 +52,17 @@ class WaterLevel:
         if read_cache and not cache_empty:
             patch_start, patch_end = aux_funcs.determine_patch_periods(self.time(), start_time, end_time)
             if patch_start:
-                msg.info('Not all data found in cache. Patching from original source...')
-                wlv_list = [self.data]
-                for t0, t1 in zip(patch_start, patch_end):
-                    wlv_ds = original_waterlevel_reader(self.grid, t0, t1, expansion_factor)
-                    wlv_list.append(wnd_ds)
-
-                self.data = xr.concat(wlv_list, dim="time").sortby('time')
+                msg.info(f'Timesteps stored in {cache_name}_wlv.nc does not cover the entire range. set read_cache to false and rerun.' )
+                exit(-1)
 
         if write_cache:
             msg.info('Caching data:')
-            for month in self.months():
-                cache_file = f"{cache_name}_{month.strftime('%Y-%m')}.nc"
-                t0 = f"{month.strftime('%Y-%m-01')}"
-                d1 = monthrange(int(month.strftime('%Y')), int(month.strftime('%m')))[1]
-                t1 = f"{month.strftime(f'%Y-%m-{d1}')}"
-                outfile = f'{cache_folder}/{cache_file}'
-                if os.path.exists(outfile):
-                    os.remove(outfile)
-                self.data.sel(time=slice(t0, t1)).to_netcdf(outfile)
-                msg.to_file(outfile)
-
+            cache_file = f"{cache_name}_wlv.nc"
+            outfile = f'{cache_folder}/{cache_file}'
+            if os.path.exists(outfile):
+                os.remove(outfile)
+            self.data.to_netcdf(outfile)
+            msg.to_file(outfile)
         return
 
     def days(self):
