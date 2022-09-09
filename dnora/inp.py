@@ -37,7 +37,8 @@ class InputFileWriter(ABC):
         return output_file
 
 class SWAN(InputFileWriter):
-    def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, calib_wlev = 1, wind=True, waterlevel=False, spec_points=None, extension='swn'):
+    def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, calib_wlev = 1, wind=True, waterlevel=False, timestep=10,
+                 f_low = 0.04, f_high=1., n_freq=31, n_dir=36, spec_points=None, extension='swn'):
 
         self.calib_wind = calib_wind
         self.calib_wcap = calib_wcap
@@ -46,6 +47,11 @@ class SWAN(InputFileWriter):
         self.waterlevel = waterlevel
         self.spec_points = spec_points # list of (lon, lat) points, e.g.,[(4.4, 60.6),(4.4, 60.8)]
         self._extension_in = extension
+        self.swan_timestep = timestep
+        self.f_low = f_low
+        self.f_high = f_high
+        self.n_freq = n_freq
+        self.n_dir = n_dir
         return
 
     def _extension(self):
@@ -97,7 +103,8 @@ class SWAN(InputFileWriter):
             file_out.write('MODE NONSTATIONARY TWOD \n')
             file_out.write('COORD SPHE CCM \n')
             file_out.write('CGRID '+str(grid.lon()[0])+' '+str(grid.lat()[0])+' 0. '+str(delta_X)+' '+str(
-                delta_Y)+' '+str(grid.nx()-1)+' '+str(grid.ny()-1)+' CIRCLE 36 0.04 1.0 31 \n')
+                delta_Y)+' '+str(grid.nx()-1)+' '+str(grid.ny()-1)+' CIRCLE %d %f %f %d \n' %(self.n_dir, self.f_low,
+                                                                                              self.f_high, self.n_freq))
             file_out.write('$ \n')
 
             file_out.write('INPGRID BOTTOM ' + str(grid.lon()[0])+' '+str(grid.lat()[0])+' 0. '+str(grid.nx()-1)+' '+str(
@@ -170,7 +177,7 @@ class SWAN(InputFileWriter):
                 file_out.write('OUTPUT ' + STR_START + ' 1 HR \n')
             else:
                 pass
-            file_out.write('COMPUTE '+STR_START+' 10 MIN ' + STR_END + '\n')
+            file_out.write('COMPUTE '+STR_START+ ' %d MIN ' % self.swan_timestep + STR_END + '\n')
             file_out.write('STOP \n')
 
         return filename
