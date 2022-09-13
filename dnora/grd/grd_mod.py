@@ -361,7 +361,7 @@ class Grid:
         is processed in order to make sure that everything is consistent.
         """
 
-        self._set_land_sea_mask(land_sea_mask = self.data.topo.values > 0) # Only positive values
+        self._set_land_sea_mask(land_sea_mask = self.data.topo.values > -20) # Only positive values
 
         # Create empty (no boundary points) if doesn't exist
         if self.boundary_mask().size == 0:
