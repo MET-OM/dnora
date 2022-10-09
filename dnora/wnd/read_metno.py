@@ -305,6 +305,7 @@ class MEPS(ForcingReader):
         except:
             print('No')
             prefix = 'subset'
+            ensemble_member = True
 
         # Set resolution to about 2.5 km
         dlat = 2.5/111
@@ -326,23 +327,14 @@ class MEPS(ForcingReader):
 
             # Apply pyfimex or fimex
             if self.program == 'pyfimex':
-                if prefix == 'det':
-                    pyfimex(input_file=url,output_file=nc_fimex,
-                        projString="+proj=latlong +ellps=sphere +a=6371000 +e=0",
-                        xAxisValues=np.arange(lon_min,lon_max+dlon,dlon),
-                        yAxisValues=np.arange(lat_min,lat_max+dlat,dlat),
-                        selectVariables=['x_wind_10m', 'y_wind_10m','latitude','longitude'],
-                        reduceTime_start = start_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
-                        reduceTime_end   = end_times[n].strftime('%Y-%m-%dT%H:%M:%S'))
-                elif prefix == 'subset':
-                    pyfimex(input_file=url,output_file=nc_fimex,
-                        projString="+proj=latlong +ellps=sphere +a=6371000 +e=0",
-                        xAxisValues=np.arange(lon_min,lon_max+dlon,dlon),
-                        yAxisValues=np.arange(lat_min,lat_max+dlat,dlat),
-                        selectVariables=['x_wind_10m', 'y_wind_10m','latitude','longitude'],
-                        reduceTime_start = start_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
-                        reduceTime_end   = end_times[n].strftime('%Y-%m-%dT%H:%M:%S'))
-                        # need to add  reduceDimension.name=ensemble_member
+                pyfimex(input_file=url,output_file=nc_fimex,
+                    projString="+proj=latlong +ellps=sphere +a=6371000 +e=0",
+                    xAxisValues=np.arange(lon_min,lon_max+dlon,dlon),
+                    yAxisValues=np.arange(lat_min,lat_max+dlat,dlat),
+                    selectVariables=['x_wind_10m', 'y_wind_10m'],
+                    reduceTime_start = start_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
+                    reduceTime_end   = end_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
+                    ensemble_member=ensemble_member)
             elif self.program == 'fimex':
                 fimex_command = ['fimex', '--input.file='+url,
                                  '--interpolate.method=bilinear',
@@ -364,13 +356,13 @@ class MEPS(ForcingReader):
                                  '--process.rotateVector.direction=latlon',
                                  '--output.file='+nc_fimex]
 
-                if prefix == 'subset':
+                if ensemble_member == True: #or prefix == 'subset':
                     fimex_command.insert(-2,
                                          '--extract.reduceDimension.name=ensemble_member')
                     fimex_command.insert(-2, '--extract.reduceDimension.start=1')
                     fimex_command.insert(-2, '--extract.reduceDimension.end=1')
-
                 call(fimex_command)
+
             wnd_list.append(xr.open_dataset(nc_fimex).squeeze())
 
         wind_forcing = xr.concat(wnd_list, dim="time")

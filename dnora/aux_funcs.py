@@ -629,7 +629,7 @@ def create_swan_segment_coords(boundary_mask, lon_edges, lat_edges):
 
 
 def pyfimex(input_file, output_file, projString, xAxisValues, yAxisValues,
-          selectVariables, reduceTime_start, reduceTime_end):
+          selectVariables, reduceTime_start, reduceTime_end,ensemble_member=False):
     r = pyfi.createFileReader('netcdf', input_file)
     inter_ll = pyfi.createInterpolator(r)
     inter_ll.changeProjection(pyfi.InterpolationMethod.BILINEAR,
@@ -641,4 +641,6 @@ def pyfimex(input_file, output_file, projString, xAxisValues, yAxisValues,
     extra = pyfi.createExtractor(inter_ll)
     extra.selectVariables(selectVariables)
     extra.reduceTimeStartEnd(reduceTime_start, reduceTime_end)
+    if ensemble_member == True:
+        extra.reduceDimensionStartEnd('ensemble_member', 1, 1)
     pyfi.createFileWriter(extra, 'netcdf', output_file)
