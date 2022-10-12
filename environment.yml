@@ -17,7 +17,5 @@ dependencies:
   - cmocean
   - cartopy
   - cdsapi
-  - fimex
+  - fimex=1.8.1
   - ipython
-  
-
