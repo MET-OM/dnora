@@ -6,14 +6,14 @@ from dnora import grd, mdl, wnd, bnd, inp
 # DEFINE GRID OBJECT
 # =============================================================================
 # Set grid definitions
-grid = grd.Grid(lon=(4.00, 5.73), lat=(60.53, 61.25), name='Skjerjehamn250')
+grid = grd.Grid(lon=(5.35, 5.6), lat=(59.00, 59.17), name='Boknafjorden')
 
 # Set spacing and boundary points
-grid.set_spacing(dm=250)
+grid.set_spacing(dm=150)
 
 # Import topography and mesh it down to the grid definitions
 topo_reader = grd.read.EMODNET2020(
-    tile='*', folder='/home/konstantinosc/bathy')
+    tile='*', folder='/home/konstac/bathy')
 grid.import_topo(topo_reader=topo_reader)
 
 # This can be used to get an empty topography for testing
@@ -22,20 +22,20 @@ grid.import_topo(topo_reader=topo_reader)
 grid.mesh_grid()
 #
 # Set the boundaries
-bnd_set = grd.boundary.EdgesAsBoundary(edges=['N', 'W', 'S'])
+bnd_set = grd.boundary.EdgesAsBoundary(edges=[ 'W', 'S'])
 grid.set_boundary(boundary_setter=bnd_set)
 #
 #
 # =============================================================================
 # DEFINE MODEL OBJECT
 # =============================================================================
-model = mdl.SWAN_NORA3(grid, start_time='2018-08-25T00:00',
-                       end_time='2018-08-25T03:00')
+model = mdl.SWAN_NORA3(grid, start_time='2020-01-14T12:00',
+                             end_time='2020-01-14T18:00')
 # =============================================================================
 # IMPORT BOUNDARIES AND FORCING
 # =============================================================================
-model.import_boundary(bnd.read_metno.NORA3(
-    source='thredds'), write_cache=True, read_cache=False)
+model.import_boundary(bnd.read_metno.NORA3(source='thredds'),
+                      write_cache=True, read_cache=False)
 model.import_forcing(wnd.read_metno.NORA3(source='thredds'),
                      write_cache=True, read_cache=False)
 # =============================================================================
@@ -49,7 +49,7 @@ model.export_grid()
 model.export_boundary()
 model.export_forcing()
 model.write_input_file(input_file_writer=inp.SWAN(
-    spec_points=[(4.4, 60.6), (4.4, 60.8)]))
+    spec_points=[(5.50, 59.16), (5.55, 59.15)]))
 # =============================================================================
 # SWAN RUN
 # =============================================================================
