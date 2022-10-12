@@ -12,6 +12,7 @@ grid = grd.Grid(lon=(5.35, 5.6), lat=(59.00, 59.17), name='Boknafjorden')
 grid.set_spacing(dm=150)
 
 # Import topography and mesh it down to the grid definitions
+# Options for grd.readers: EMODNET2018, EMODNET2020, KartverketNo50m, GEBCO2021
 topo_reader = grd.read.EMODNET2020(
     tile='*', folder='/home/konstac/bathy')
 grid.import_topo(topo_reader=topo_reader)
@@ -27,17 +28,16 @@ grid.set_boundary(boundary_setter=bnd_set)
 #
 #
 # =============================================================================
-# DEFINE MODEL OBJECT
+# DEFINE MODEL OBJECT (mdl.)
 # =============================================================================
+# Options for mdl: SWAN_NORA3, SWAN_ERA5
 model = mdl.SWAN_NORA3(grid, start_time='2020-01-14T12:00',
-                             end_time='2020-01-14T18:00')
+                               end_time='2020-01-14T18:00')
 # =============================================================================
-# IMPORT BOUNDARIES AND FORCING
+# IMPORT BOUNDARIES AND FORCING ()
 # =============================================================================
-model.import_boundary(bnd.read_metno.NORA3(source='thredds'),
-                      write_cache=True, read_cache=False)
-model.import_forcing(wnd.read_metno.NORA3(source='thredds'),
-                     write_cache=True, read_cache=False)
+model.import_boundary(write_cache=True, read_cache=False)
+model.import_forcing(write_cache=True, read_cache=False)
 # =============================================================================
 # PLOT GRID, FORCING AND BOUNDARIES
 # =============================================================================
