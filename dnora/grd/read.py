@@ -22,17 +22,21 @@ class TopoReader(ABC):
         pass
 
     @abstractmethod
-    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
+    def __call__(self, lon: tuple, lat: tuple, x: tuple, y: tuple):
         """Reads the bathymetrical information from a source and returns the data.
 
         !!!! DEPTH VALUES ARE POSITIVE AND EVERYTHING ELSE (including 0)
-        IS INTERPRETED AS LAND. LON, LAT IN WGS84 !!!
+        IS INTERPRETED AS LAND.
+
+        LON, LAT IN WGS84
+
+        X, Y IN UTM !!!
 
 
 
         Two format options are available:
 
-        1) Matrix, where topo_lon, topo_lat are vectors and topo is the
+        1) Matrix, where lon, lat or x, y are vectors and topo is the
         corresponding matrix.
 
         The dimensions and orientation of the bathymetry array that is returned to
@@ -45,13 +49,16 @@ class TopoReader(ABC):
         East = [:,-1]
         West = [:,0]
 
-        2) Xyz, where topo, topo_lon, topo_lat are all vectors with the same length.
+        2) Xyz, where topo, lon, lat, x, y are all vectors with the same length.
+
+        topo_x, topo_y, zone_number, zone_letter None in spherical data
+        topo_lon, topo_lat None in cartesian data
 
         ----
 
         This method is called from within the Grid-object
         """
-        return topo, topo_lon, topo_lat
+        return topo, topo_lon, topo_lat, topo_x, topo_y, zone_number, zone_letter
 
     @abstractmethod
     def __str__(self):
@@ -62,24 +69,29 @@ class TopoReader(ABC):
         pass
 
 
-class EmptyTopo(TopoReader):
+class ConstantTopo(TopoReader):
     """Creates an empty topography. Called when setting initial spacing."""
-    def __init__(self, grid: Grid=None, nx=0, ny=0):
+    def __init__(self, grid: Grid=None, nx=0, ny=0, depth=999.):
         if grid is not None:
             self.size = (grid.ny(),grid.nx())
         else:
             self.size = (ny, nx)
-        pass
+        self.depth = depth
 
-    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
+    def __call__(self, lon: tuple, lat: tuple, x: tuple, y: tuple) -> tuple:
         """Creates a trivial topography with all water points."""
-        topo = np.ones(self.size)*9999
-        topo_lon = np.linspace(lon_min, lon_max, self.size[1])
-        topo_lat = np.linspace(lat_min, lat_max, self.size[0])
-        return topo, topo_lon, topo_lat
+        topo = np.ones(self.size)*self.depth
+        if lon[0] is not None:
+            topo_lon = np.linspace(lon[0], lon[1], self.size[1])
+            topo_lat = np.linspace(lat[0], lat[1], self.size[0])
+        if x[0] is not None:
+            topo_x = np.linspace(x[0], x[1], self.size[1])
+            topo_y = np.linspace(y[0], y[1], self.size[0])
+            zone_number, zone_letter = 33, 'W'
+        return topo, topo_lon, topo_lat, topo_x, topo_y, zone_number, zone_letter
 
     def __str__(self):
-        return("Creating an empty topography with depth values 9999.")
+        return(f"Creating an constant topography with depth values {self.depth}.")
 
 class EMODNET2018(TopoReader):
     """Reads data from EMODNET bathymetry.
@@ -93,12 +105,12 @@ class EMODNET2018(TopoReader):
         self.expansion_factor = expansion_factor
         return
 
-    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float) -> Tuple:
+    def __call__(self, lon: tuple, lat: tuple, x: tuple, y: tuple) -> tuple:
         # Area is expanded a bit to not get in trouble in the meshing stage
         # when we interpoolate or filter
-        lon0, lon1, lat0, lat1 = expand_area(lon_min, lon_max, lat_min, lat_max, self.expansion_factor)
+        lon, lat = expand_area(lon, lat, self.expansion_factor)
 
-        ds = xr.open_dataset(self.source).sel(COLUMNS=slice(lon0, lon1), LINES=slice(lat0, lat1))
+        ds = xr.open_dataset(self.source).sel(COLUMNS=slice(lon[0], lon[1]), LINES=slice(lat[0], lat[1]))
 
         topo = ds.DEPTH.values
 
@@ -108,7 +120,7 @@ class EMODNET2018(TopoReader):
         topo_lon = ds.COLUMNS.values
         topo_lat = ds.LINES.values
 
-        return topo, topo_lon, topo_lat
+        return topo, topo_lon, topo_lat, None, None, None
 
     def __str__(self):
         return(f"Reading EMODNET topography from {self.source}.")
@@ -125,73 +137,75 @@ class KartverketNo50m(TopoReader):
         Contributed by: https://github.com/emiliebyer
         """
 
-    def __init__(self, expansion_factor: float=1.2, utmzone: int=33,
+    def __init__(self, expansion_factor: float=1.2, zone_number: int=33,
                  tile: str='B1008', folder: str='/lustre/storeB/project/fou/om/WW3/bathy/kartverket_50m_x_50m') -> Tuple:
-        self.source=f'{folder}/{tile}_grid50_utm33.xyz'
+        self.source=f'{folder}/{tile}_grid50_utm{zone_number}.xyz'
         self.expansion_factor = expansion_factor
-        self.utmzone = utmzone
+        self.zone_number = zone_number
 
         return
 
-    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
+    def __call__(self, lon: tuple, lat: tuple, x: tuple, y: tuple) -> tuple:
         # Area is expanded a bit to not get in trouble in the meshing stage
         # when we interpoolate or filter
-        lon0, lon1, lat0, lat1 = expand_area(lon_min, lon_max, lat_min, lat_max, self.expansion_factor)
+        lon, lat = expand_area(lon, lat, self.expansion_factor)
 
         print(f'Expansion factor: {self.expansion_factor}')
 
         import dask.dataframe as dd
         df = dd.read_csv(self.source, sep= ' ', header=None)
         df.columns = ['x','y','z']
-        x = np.array(df['x'].astype(float))
-        y = np.array(df['y'].astype(float))
+        topo_x = np.array(df['x'].astype(float))
+        topo_y = np.array(df['y'].astype(float))
         z = np.array(df['z'].astype(float))
 
         # Converting from utm to latitude and longitude
-        lat, lon = utm.to_latlon(x, y, self.utmzone, northern=True, strict=False)
+        #lat, lon = utm.to_latlon(x, y, self.zone_number, northern=True, strict=False)
 
         # Applying given max and min values for lat and lon
-        mask_lat = np.logical_and(lat0 <= lat, lat <= lat1)
-        mask_lon = np.logical_and(lon0 <= lon, lon <= lon1)
-        mask = np.logical_and(mask_lat, mask_lon)
-
+        #mask_lat = np.logical_and(lat0 <= lat, lat <= lat1)
+        #mask_lon = np.logical_and(lon0 <= lon, lon <= lon1)
+        #mask = np.logical_and(mask_lat, mask_lon)
+        mask_x = np.logical_and(x[0] <= topo_x, topo_x <= x[1])
+        mask_y = np.logical_and(y[0] <= topo_y, topo_y <= y[1])
+        mask = np.logical_and(mask_x, mask_y)
         #topo_lon = lon[mask]
-        x = x[mask]
-        y = y[mask]
+        topo_x = topo_x[mask]
+        topo_y = topo_y[mask]
         topo = z[mask]
 
-        # Adding NaN values for land area
-        x_grid = np.unique(x) #np.arange(min(x), max(x), 50)
-        y_grid = np.unique(y) #np.arange(min(y), max(y), 50)
-        grid = np.empty((len(y_grid),len(x_grid)))
-        grid[:] = np.nan
+        # # Adding NaN values for land area
+        # x_grid = np.unique(x) #np.arange(min(x), max(x), 50)
+        # y_grid = np.unique(y) #np.arange(min(y), max(y), 50)
+        # grid = np.empty((len(y_grid),len(x_grid)))
+        # grid[:] = np.nan
+        #
+        # # Adding depth values for all defined points, leaving the rest as NaN
+        # for i in range(len(topo)):
+        #     xpos = np.where(x_grid==x[i])[0][0]
+        #     ypos = np.where(y_grid==y[i])[0][0]
+        #     grid[ypos][xpos] = topo[i]
+        #
+        # # Converting grid back to list of points usind Pandas
+        # df = pd.DataFrame(grid)
+        # df = df.unstack().reset_index()
+        # df['x'] = [x_grid[i] for i in df['level_0']]
+        # df['y'] = [y_grid[i] for i in df['level_1']]
+        #
+        # topo_lat, topo_lon = utm.to_latlon(df['x'], df['y'], 33, northern=True, strict = False)
+        # topo = df[0]
+        #
+        # # Masking again to get rid of additional values
+        # mask_lat = np.logical_and(lat0 < topo_lat, topo_lat < lat1)
+        # mask_lon = np.logical_and(lon0 < topo_lon, topo_lon < lon1)
+        # mask = np.logical_and(mask_lat, mask_lon)
+        #
+        # topo_lat = topo_lat[mask]
+        # topo_lon = topo_lon[mask]
+        # topo = topo[mask]
 
-        # Adding depth values for all defined points, leaving the rest as NaN
-        for i in range(len(topo)):
-            xpos = np.where(x_grid==x[i])[0][0]
-            ypos = np.where(y_grid==y[i])[0][0]
-            grid[ypos][xpos] = topo[i]
 
-        # Converting grid back to list of points usind Pandas
-        df = pd.DataFrame(grid)
-        df = df.unstack().reset_index()
-        df['x'] = [x_grid[i] for i in df['level_0']]
-        df['y'] = [y_grid[i] for i in df['level_1']]
-
-        topo_lat, topo_lon = utm.to_latlon(df['x'], df['y'], 33, northern=True, strict = False)
-        topo = df[0]
-
-        # Masking again to get rid of additional values
-        mask_lat = np.logical_and(lat0 < topo_lat, topo_lat < lat1)
-        mask_lon = np.logical_and(lon0 < topo_lon, topo_lon < lon1)
-        mask = np.logical_and(mask_lat, mask_lon)
-
-        topo_lat = topo_lat[mask]
-        topo_lon = topo_lon[mask]
-        topo = topo[mask]
-
-
-        return topo, topo_lon, topo_lat
+        return topo, None, None, topo_x, topo_y, self.zone_number, 'W'
 
     def __str__(self):
         return(f"Reading Kartverket topography from {self.source}.")
@@ -210,12 +224,12 @@ class GEBCO2021(TopoReader):
         self.expansion_factor = expansion_factor
         return
 
-    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
+    def __call__(self, lon: tuple, lat: tuple, x: tuple, y: tuple) -> tuple:
         # Area is expanded a bit to not get in trouble in the meshing stage
         # when we interpoolate or filter
-        lon0, lon1, lat0, lat1 = expand_area(lon_min, lon_max, lat_min, lat_max, self.expansion_factor)
+        lon, lat = expand_area(lon, lat, self.expansion_factor)
 
-        ds = xr.open_dataset(self.source).sel(lon=slice(lon0, lon1), lat=slice(lat0, lat1))
+        ds = xr.open_dataset(self.source).sel(lon=slice(lon[0],lon[1]), lat=slice(lat[0],lat[1]))
 
         elevation = ds.elevation.values.astype(float)
 
@@ -225,33 +239,33 @@ class GEBCO2021(TopoReader):
         topo_lon = ds.lon.values.astype(float)
         topo_lat = ds.lat.values.astype(float)
 
-        return topo, topo_lon, topo_lat
+        return topo, topo_lon, topo_lat, None, None, None, None
 
     def __str__(self):
         return(f"Reading GEBCO2021 topography from {self.source}.")
 
 
 
-class Merge(TopoReader):
-    """Merges raw topography from several grids"""
-
-    def __init__(self, list_of_grids=None):
-        self.list_of_grids = copy(list_of_grids)
-        return
-    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float) -> Tuple:
-
-        topo = np.array([])
-        topo_lon = np.array([])
-        topo_lat = np.array([])
-        for grid in self.list_of_grids:
-            topo = np.append(topo,grid.raw_topo())
-            topo_lon = np.append(topo_lon,grid.raw_lon())
-            topo_lat = np.append(topo_lat,grid.raw_lat())
-
-        return topo, topo_lon, topo_lat
-
-    def __str__(self):
-        return("Merging data from several grids.")
+# class Merge(TopoReader):
+#     """Merges raw topography from several grids"""
+#
+#     def __init__(self, list_of_grids=None):
+#         self.list_of_grids = copy(list_of_grids)
+#         return
+#     def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float) -> Tuple:
+#
+#         topo = np.array([])
+#         topo_lon = np.array([])
+#         topo_lat = np.array([])
+#         for grid in self.list_of_grids:
+#             topo = np.append(topo,grid.raw_topo())
+#             topo_lon = np.append(topo_lon,grid.raw_lon())
+#             topo_lat = np.append(topo_lat,grid.raw_lat())
+#
+#         return topo, topo_lon, topo_lat
+#
+#     def __str__(self):
+#         return("Merging data from several grids.")
 
 class EMODNET2020(TopoReader):
     """Reads bathymetry from multiple EMODNET tiles in netcdf format.
@@ -266,10 +280,10 @@ class EMODNET2020(TopoReader):
         self.expansion_factor = expansion_factor
         return
 
-    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
+    def __call__(self, lon: tuple, lat: tuple, x: tuple, y: tuple) -> tuple:
         # Area is expanded a bit to not get in trouble in the meshing stage
         # when we interpoolate or filter
-        lon0, lon1, lat0, lat1 = expand_area(lon_min, lon_max, lat_min, lat_max, self.expansion_factor)
+        lon, lat = expand_area(lon, lat, self.expansion_factor)
 
         def _crop(ds):
             """
@@ -280,11 +294,11 @@ class EMODNET2020(TopoReader):
         import dask
         with dask.config.set(**{'array.slicing.split_large_chunks': True}):
             with xr.open_mfdataset(self.source, preprocess=_crop) as ds:
-                ds = ds.sel(lon=slice(lon0, lon1), lat=slice(lat0, lat1))
+                ds = ds.sel(lon=slice(lon[0], lon[1]), lat=slice(lat[0], lat[1]))
                 topo = -1 * ds.elevation.values
                 topo_lon = ds.lon.values
                 topo_lat = ds.lat.values
-                return topo, topo_lon, topo_lat
+                return topo, topo_lon, topo_lat, None, None, None, None
 
     def __str__(self):
         return(f"Reading EMODNET topography from {self.source}.")
@@ -299,13 +313,13 @@ class ForceFeed(TopoReader):
         self.topo_lat = copy(topo_lat)
         return
 
-    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float) -> Tuple:
+    def __call__(self, lon: tuple, lat: tuple, x: tuple, y: tuple) -> tuple:
         # Just use the values it was forcefed on initialization
         topo = copy(self.topo)
         topo_lon = copy(self.topo_lon)
         topo_lat = copy(self.topo_lat)
 
-        return topo, topo_lon, topo_lat
+        return topo, topo_lon, topo_lat, None, None, None, None
 
     def __str__(self):
         return("Passing on the topography I was initialized with.")
@@ -313,29 +327,38 @@ class ForceFeed(TopoReader):
 class MshFile(TopoReader):
     """Reads topography data from msh-file"""
 
-    def __init__(self, filename: str, expansion_factor: float=1.2):
-        self.filename = copy(filename)
+    def __init__(self, filename: str, expansion_factor: float=1.2,
+                zone_number: int=None, zone_letter: str='W'):
+        self.filename = filename
         self.expansion_factor = expansion_factor
+        self.zone_number = zone_number
+        self.zone_letter = zone_letter
         return
 
-    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float) -> Tuple:
+    def __call__(self, lon: tuple, lat: tuple, x: tuple, y: tuple) -> tuple:
         import meshio
 
         mesh = meshio.read(self.filename)
 
-        topo_lon = mesh.points[:,0]
-        topo_lat = mesh.points[:,1]
+        topo_x = mesh.points[:,0]
+        topo_y = mesh.points[:,1]
         topo = mesh.points[:,2]
 
-        lon0, lon1, lat0, lat1 = expand_area(lon_min, lon_max, lat_min, lat_max, self.expansion_factor)
-        mask1=np.logical_and(topo_lon>=lon0, topo_lon<=lon1)
-        mask2=np.logical_and(topo_lat>=lat0, topo_lat<=lat1)
-        mask = np.logical_and(mask1, mask2)
-        topo_lon = topo_lon[mask]
-        topo_lat = topo_lat[mask]
-        topo=topo[mask]
+        if self.zone_number is None:
+            xedges, yedges  = expand_area(lon, lat, self.expansion_factor)
+        else:
+            xedges, yedges  = expand_area(x, y, self.expansion_factor)
 
-        return topo, topo_lon, topo_lat
+        mask1=np.logical_and(topo_x>=xedges[0], topo_x<=xedges[1])
+        mask2=np.logical_and(topo_y>=yedges[0], topo_y<=yedges[1])
+        mask = np.logical_and(mask1, mask2)
+        topo_x = topo_x[mask]
+        topo_y = topo_y[mask]
+        topo=topo[mask]
+        if self.zone_number is None:
+            return topo, topo_x, topo_y, None, None, None, None
+        else:
+            return topo, None, None, topo_x, topo_y, self.zone_number, self.zone_letter
 
     def __str__(self):
         return(f"Reading topography from {self.filename}.")

@@ -17,5 +17,5 @@ dependencies:
   - cmocean
   - cartopy
   - cdsapi
-  
+  - pynco
 

@@ -27,6 +27,10 @@ ModelRun:
     folder: output
     filename: 'spec1d_#Spectra_#Grid_#T0-#T1'
     dateformat: '%Y%m%dT%H%M'
+  waveseries:
+    folder: output
+    filename: 'waveseries_#WaveSeries_#Grid_#T0-#T1'
+    dateformat: '%Y%m%dT%H%M'
   input_file:
     folder: output
     filename: 'inputfile_#Grid_#Forcing_#Boundary_#Spectra_#T0_#T1_#Lon_#Lat'

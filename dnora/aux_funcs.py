@@ -150,6 +150,9 @@ def set_spacing_dx_dy(dx: float, dy:float, lon: Tuple[float, float], lat: Tuple[
     return dlon, dlat, dx, dy, lon_array, lat_array
 
 def is_gridded(data: np.ndarray, lon: np.ndarray, lat: np.ndarray) -> bool:
+    if lon is None or lat is None:
+        return False
+        
     if data.shape == (len(lat), len(lon)):
         return True
 
@@ -320,22 +323,19 @@ def create_time_stamps(start_time: str, end_time: str, stride: int, hours_per_fi
     return start_times, end_times, file_times
 
 
-def expand_area(lon_min: float, lon_max:float , lat_min:float , lat_max:float, expansion_factor: float) -> Tuple[float, float, float, float]:
+def expand_area(lon: tuple[float, float] , lat: tuple[float, float], expansion_factor: float) -> tuple[float, float, float, float]:
     """
     Expands a lon-lat bounding box with an expansion factor.
     expansion_factor = 1 does nothing, and 1.5 expands 50% both directions.
     """
 
-    expand_lon = (lon_max - lon_min)*(expansion_factor-1)*0.5
-    expand_lat = (lat_max - lat_min)*(expansion_factor-1)*0.5
+    expand_lon = (lon[1] - lon[0])*(expansion_factor-1)*0.5
+    expand_lat = (lat[1] - lat[0])*(expansion_factor-1)*0.5
 
-    new_lon_min = lon_min - expand_lon
-    new_lon_max = lon_max + expand_lon
+    new_lon = lon[0] - expand_lon, lon[1] + expand_lon
+    new_lat = lat[0] - expand_lat, lat[1] + expand_lat
 
-    new_lat_min = lat_min - expand_lat
-    new_lat_max = lat_max + expand_lat
-
-    return new_lon_min, new_lon_max, new_lat_min, new_lat_max
+    return new_lon, new_lat
 
 
 

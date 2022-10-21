@@ -43,11 +43,10 @@ class TxtReader(TriangReader):
         with open(self.filename, 'r') as f:
             nr_of_nodes=int(f.readline())
             nodes = np.array(range(nr_of_nodes)).astype(int)
-            x = np.full(nodes.shape,0)
-            y = np.full(nodes.shape,0)
+            x = np.full(nodes.shape,0).astype(float)
+            y = np.full(nodes.shape,0).astype(float)
             for n in nodes:
                 x[n], y[n] = np.array(f.readline().split(' ')).astype(float)
-
             nr_of_triangs=int(f.readline())
             tri = np.full((nr_of_triangs, 3),0)
 
@@ -56,16 +55,16 @@ class TxtReader(TriangReader):
                 #tri[n,:] = np.array([f.readline().split(' ')]).astype(int)[0]
 
         #tri, nodes, x, y, Z, types, nodeStrings = read_sms_mesh(self.filename, nodestrings=True)
-        lat, lon = utm.to_latlon(x, y, 33, zone_letter = 'W', strict = False)
+        #lat, lon = utm.to_latlon(x, y, 33, zone_letter = 'W', strict = False)
         nodeStrings = np.array(self.boundary_points)
         types = None
         #if nodestring_subset is not None:
         #    nodeStrings = [nodeStrings[i] for i in nodestring_subset]
         #nodeStrings = reduce(lambda x, y: x+y, nodeStrings)
-        return tri, nodes, lon, lat, types, nodeStrings
+        return tri, nodes, None, None, x, y, types, nodeStrings, 33, 'W'
 
     def __str__(self):
-        return "Reading triangular grid from SMS-file."
+        return "Reading triangular grid from Txt-file."
 
 class SmsReader(TriangReader):
     def __init__(self, filename: str):
@@ -97,8 +96,10 @@ class SmsReader(TriangReader):
         return "Reading triangular grid from SMS-file."
 
 class MshReader(TriangReader):
-    def __init__(self, filename: str):
+    def __init__(self, filename: str, zone_number: int=None, zone_letter: str='W'):
         self.filename = copy(filename)
+        self.zone_number = zone_number
+        self.zone_letter = zone_letter
         return
 
     def __call__(self) -> Tuple:
@@ -112,14 +113,21 @@ class MshReader(TriangReader):
             elif cell.type == 'triangle':
                 tri = cell.data
 
-        lon = mesh.points[:,0]
-        lat = mesh.points[:,1]
+        x = mesh.points[:,0]
+        y = mesh.points[:,1]
         #Z = mesh.points[:,2]
 
         types = None # This is not used in DNORA and I have no idea what it is
         nodes = np.array((range(len(mesh.points[:,0]))))
 
-        return tri, nodes, lon, lat, types, nodeStrings
+        if self.zone_number is None:
+            return tri, nodes, x, y, None, None, types, nodeStrings, None, None
+        else:
+            return tri, nodes, None, None, x, y, types, nodeStrings, self.zone_number, self.zone_letter
+
+
+
+        #return tri, nodes, lon, lat, types, nodeStrings
 
     def __str__(self):
         return "Reading triangular grid from Msh-file."

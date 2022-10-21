@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 # Import default values and aux_funcsiliry functions
 from .. import msg
 from .. import file_module
-
+from nco import Nco
 from .conventions import SpectralConvention
 
 class BoundaryWriter(ABC):
@@ -78,12 +78,15 @@ class DumpToNc(BoundaryWriter):
         self._convention_in = convention
         return
 
+    def _extension(self):
+        return 'nc'
+
     def convention(self) -> str:
         """Convention of spectra"""
         return self._convention_in
 
     def __call__(self, boundary: Boundary, filename: str) -> Tuple[str, str]:
-        boundary.data.to_netcdf(filename)
+        boundary.ds().to_netcdf(filename)
         return filename
 
 
@@ -148,7 +151,9 @@ class WW3(BoundaryWriter):
             output_files = file_module.clean(filename)
             msg.plain(f"All points >> {output_files}")
             self.write_netcdf(boundary, output_files)
-
+            # WW3 need time to be first
+            nco = Nco()
+            nco.ncpdq(input=output_files, output=output_files, options=['-a', 'time,station,frequency,direction'])
         else:
             output_files = []
             for n in boundary.x():

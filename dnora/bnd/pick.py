@@ -36,9 +36,7 @@ class NearestGridPoint(PointPicker):
         pass
 
     def __call__(self, grid, bnd_lon, bnd_lat):
-        bnd_points = grid.boundary_points()
-        lon = bnd_points[:,0]
-        lat = bnd_points[:,1]
+        lon, lat = grid.boundary_points()
 
         # Go through all points where we want output and find the nearest available point
         inds = []
@@ -64,14 +62,14 @@ class Area(PointPicker):
         msg.info(f"Using expansion_factor = {self.expansion_factor:.2f}")
 
         # Define area to search in
-        lon_min, lon_max, lat_min, lat_max = expand_area(min(grid.lon()), max(grid.lon()), min(grid.lat()), max(grid.lat()), self.expansion_factor)
+        lon, lat = expand_area(grid.edges('lon'), grid.edges('lat'), self.expansion_factor)
 
-        masklon = np.logical_and(bnd_lon > lon_min, bnd_lon < lon_max)
-        masklat = np.logical_and(bnd_lat > lat_min, bnd_lat < lat_max)
+        masklon = np.logical_and(bnd_lon > lon[0], bnd_lon < lon[1])
+        masklat = np.logical_and(bnd_lat > lat[0], bnd_lat < lat[1])
         mask=np.logical_and(masklon, masklat)
 
         inds = np.where(mask)[0]
 
-        msg.info(f"Found {len(inds)} points inside {lon_min:10.7f}-{lon_max:10.7f}, {lat_min:10.7f}-{lat_max:10.7f}.")
+        msg.info(f"Found {len(inds)} points inside {lon[0]:10.7f}-{lon[1]:10.7f}, {lat[0]:10.7f}-{lat[1]:10.7f}.")
 
         return inds

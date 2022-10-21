@@ -66,11 +66,11 @@ class NORA3(ForcingReader):
             os.remove(f)
 
         # Define area to search in
-        lon_min, lon_max, lat_min, lat_max = expand_area(min(grid.lon()), max(grid.lon()), min(grid.lat()), max(grid.lat()), expansion_factor)
+        lon, lat = expand_area(grid.edges('lon'), grid.edges('lat'), expansion_factor)
 
         # Set resolution to about 3 km
         dlat = 3/111
-        mean_lon_in_km = (lon_in_km(grid.lat()[0])+lon_in_km(grid.lat()[-1]))*0.5
+        mean_lon_in_km = (lon_in_km(grid.edges('lat')[0])+lon_in_km(grid.edges('lat')[1]))*0.5
         dlon = 3/mean_lon_in_km
 
         wnd_list = []
@@ -87,11 +87,11 @@ class NORA3(ForcingReader):
                              '--interpolate.method=bilinear',
                              '--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0',
                              '--interpolate.xAxisValues='
-                             + str(lon_min)+','+str(lon_min+dlon)
-                             + ',...,'+str(lon_max)+'',
+                             + str(lon[0])+','+str(lon[0]+dlon)
+                             + ',...,'+str(lon[1])+'',
                              '--interpolate.yAxisValues='
-                             + str(lat_min)+','+str(lat_min+dlat)
-                             + ',...,'+str(lat_max)+'',
+                             + str(lat[0])+','+str(lat[0]+dlat)
+                             + ',...,'+str(lat[1])+'',
                              '--interpolate.xAxisUnit=degree', '--interpolate.yAxisUnit=degree',
                              '--process.rotateVector.all',
                              '--extract.selectVariables=wind_speed', '--extract.selectVariables=wind_direction',
@@ -191,11 +191,11 @@ class MyWave3km(ForcingReader):
 
 
         # Define area to search in
-        lon_min, lon_max, lat_min, lat_max = expand_area(min(grid.lon()), max(grid.lon()), min(grid.lat()), max(grid.lat()), expansion_factor)
+        lon, lat = expand_area(grid.edges('lon'), grid.edges('lat'), expansion_factor)
 
         # Setting resolution to roughly 3 km
         dlat = 3/111
-        mean_lon_in_km = (lon_in_km(grid.lat()[0])+lon_in_km(grid.lat()[-1]))*0.5
+        mean_lon_in_km = (lon_in_km(grid.edges('lat')[0])+lon_in_km(grid.edges('lat')[-1]))*0.5
         dlon = 3/mean_lon_in_km
 
         wnd_list = []
@@ -211,8 +211,8 @@ class MyWave3km(ForcingReader):
             fimex_command = ['fimex', '--input.file='+url,
                              '--interpolate.method=bilinear',
                              '--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0',
-                             '--interpolate.xAxisValues='+ str(lon_min)+','+str(lon_min+dlon)+ ',...,'+str(lon_max)+'',
-                             '--interpolate.yAxisValues='           + str(lat_min)+','+str(lat_min+dlat)+ ',...,'+str(lat_max)+'',
+                             '--interpolate.xAxisValues='+ str(lon[0])+','+str(lon[0]+dlon)+ ',...,'+str(lon[1])+'',
+                             '--interpolate.yAxisValues='           + str(lat[0])+','+str(lat[0]+dlat)+ ',...,'+str(lat[1])+'',
                              '--interpolate.xAxisUnit=degree', '--interpolate.yAxisUnit=degree',
                              '--process.rotateVector.all',
                              '--extract.selectVariables=ff', '--extract.selectVariables=dd',
@@ -301,11 +301,11 @@ class MEPS(ForcingReader):
 
         # Set resolution to about 2.5 km
         dlat = 2.5/111
-        mean_lon_in_km = (lon_in_km(grid.lat()[0])+lon_in_km(grid.lat()[-1]))*0.5
+        mean_lon_in_km = (lon_in_km(grid.edges('lat')[0])+lon_in_km(grid.edges('lat')[-1]))*0.5
         dlon = 2.5/mean_lon_in_km
 
         # Define area to search in
-        lon_min, lon_max, lat_min, lat_max = expand_area(min(grid.lon()), max(grid.lon()), min(grid.lat()), max(grid.lat()), expansion_factor)
+        lon, lat = expand_area(grid.edges('lon'), grid.edges('lat'), expansion_factor)
 
         wnd_list = []
         for n in range(len(file_times)):
@@ -320,11 +320,11 @@ class MEPS(ForcingReader):
                              '--interpolate.method=bilinear',
                              '--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0',
                              '--interpolate.xAxisValues='
-                             + str(lon_min)+','+str(lon_min+dlon)
-                             + ',...,'+str(lon_max)+'',
+                             + str(lon[0])+','+str(lon[0]+dlon)
+                             + ',...,'+str(lon[1])+'',
                              '--interpolate.yAxisValues='
-                             + str(lat_min)+','+str(lat_min+dlat)
-                             + ',...,'+str(lat_max)+'',
+                             + str(lat[0])+','+str(lat[0]+dlat)
+                             + ',...,'+str(lat[1])+'',
                              '--interpolate.xAxisUnit=degree', '--interpolate.yAxisUnit=degree',
                              '--process.rotateVector.all',
                              '--extract.selectVariables=x_wind_10m', '--extract.selectVariables=y_wind_10m',

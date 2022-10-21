@@ -66,12 +66,14 @@ class Boundary(PointSkeleton):
         ### reading the database. This is set to make that possible.
         ### The regular grid doesn't necessarily match the boundary points
         ### exactly.
-        boundary_point_grid = Grid(lon=self.grid.edges('lon'),
-                                    lat=self.grid.edges('lat'),
-                                    name='boundary_points')
-        boundary_point_grid.set_spacing(nx=self.grid.boundary_nx(),
-                                        ny=self.grid.boundary_ny())
-        boundary_reader.set_restricted_area(boundary_point_grid)
+        if not np.all(np.logical_not(self.grid.boundary_mask())): # Boundary mask empty?
+            boundary_point_grid = Grid(lon=self.grid.edges('lon'),
+                                        lat=self.grid.edges('lat'),
+                                        name='boundary_points')
+            if len(boundary_point_grid.lon()) > 1 and len(boundary_point_grid.lat()) > 1:
+                boundary_point_grid.set_spacing(nx=self.grid.boundary_nx(),
+                                                ny=self.grid.boundary_ny())
+            boundary_reader.set_restricted_area(boundary_point_grid)
 
         if write_cache or read_cache:
             cache_folder, cache_name, cache_empty = aux_funcs.setup_cache('bnd', boundary_reader.name(), cache_name, self.grid)

@@ -15,6 +15,7 @@ from cartopy import crs as ccrs
 from cartopy import feature as cfeature
 import pandas as pd
 from .defaults import default
+import matplotlib.tri as mtri
 #%%
 
 def plot_spectra(freq, spec, mdir, spr, title_str, fig_dict, ymax):
@@ -160,7 +161,7 @@ def plot_arrows(fig_dict, lon, lat, xdata, ydata, var, scale=100, reduce_arrows:
     return fig_dict
 
 
-def plot_magnitude(fig_dict, lon, lat, data, var, vmin=None, vmax=None, cbar=True):
+def plot_magnitude(fig_dict, lon, lat, data, var, tri=None, vmin=None, vmax=None, cbar=True, gridded=True):
     """
     Takes lon and lat positions, and data points. Plots countourplot on given ax.
     """
@@ -180,24 +181,32 @@ def plot_magnitude(fig_dict, lon, lat, data, var, vmin=None, vmax=None, cbar=Tru
         levels = np.linspace(vmin, vmax, np.floor(vmax-vmin+1).astype(int))
     else:
         levels = np.linspace(vmin, vmax, 11)
+    if gridded:
+        xx, yy = np.meshgrid(lon, lat)
+    else:
+        xx, yy = lon, lat
 
-    xx, yy = np.meshgrid(lon, lat)
+    if tri is not None:
+        tri = mtri.Triangulation(xx, yy, triangles = tri)
+
     if len(levels) > 1:
-        cont = ax.contourf(xx, yy, data, cmap=cmap, levels=levels)
+        cont = ax.tricontourf(tri, data, cmap=cmap, levels=levels)
     else:
         cont = ax.pcolor(lon, lat, data, cmap=cmap)
     fig_dict['levels']=levels
-
+    fig_dict['cont'] = cont
     if cbar:
         if var != 'mask':
             # creating axes for the colorbar
             if ax.get_position().height >= ax.get_position().width:
                 orientation = 'vertical'
-                cax = fig.add_axes([ax.get_position().x1+0.04,ax.get_position().y0,0.02,ax.get_position().height])
+                #cax = fig.add_axes([ax.get_position().x1+0.04,ax.get_position().y0,0.02,ax.get_position().height])
             elif ax.get_position().height < ax.get_position().width:
                 orientation= 'horizontal'
-                cax = fig.add_axes([ax.get_position().x0, ax.get_position().y0-0.1,ax.get_position().width,0.03])
-            cbar = fig.colorbar(cont, orientation=orientation, cax=cax, label=f"[{unit}]")
+                #cax = fig.add_axes([ax.get_position().x0, ax.get_position().y0-0.1,ax.get_position().width,0.03])
+
+            #cbar = fig.colorbar(cont, orientation=orientation, cax=cax, label=f"[{unit}]")
+            cbar = fig.colorbar(cont, orientation=orientation, label=f"[{unit}]")
             fig_dict['cbar'] = cbar
     else:
         cbar = None
@@ -225,9 +234,10 @@ def mask_land_from_topo(fig_dict, lon, lat, topo):
 
 
 def plot_field(lon, lat, xdata, ydata=None, fig_dict=None, position=111,
-               var: str='ff', title_str=' ', boundary=None, scale=100,
+               var: str='ff', tri=None, title_str=' ', boundary=None, scale=100,
                vmin=None, vmax=None, cbar=True, barbs=False,
-               obs_lon: float=None, obs_lat: float=None, obs_value: float=None):
+               obs_lon: float=None, obs_lat: float=None, obs_value: float=None,
+               gridded=True):
     """
     Parameters
     ----------
@@ -261,7 +271,6 @@ def plot_field(lon, lat, xdata, ydata=None, fig_dict=None, position=111,
     fig = fig_dict.get('fig')
     ax = fig_dict.get('ax')
 
-
     # Slicing lat, lon and data with the boundary conditions if given
     if boundary is not None:
         lon_min, lon_max, lat_min, lat_max = boundary
@@ -276,17 +285,17 @@ def plot_field(lon, lat, xdata, ydata=None, fig_dict=None, position=111,
             ydata = ydata[lat_min_inx:lat_max_inx,lon_min_inx:lon_max_inx]
 
     if fig is None:
-        fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()})
+        fig, ax = plt.subplots()#(subplot_kw={'projection': ccrs.PlateCarree()})
         fig_dict['fig']=fig
         fig_dict['ax']=ax
     else:
         fig.delaxes(ax)
-        ax = fig.add_subplot(position, projection=ccrs.PlateCarree())
+        ax = fig.add_subplot()#(position, projection=ccrs.PlateCarree())
         fig_dict['ax']=ax
     ax.set(title=f"{default[var]['name']} {title_str}")
-    gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True, color='gray', alpha=0.5, linestyle='--')
-    gl.top_labels = None
-    gl.right_labels = None
+    #gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True, color='gray', alpha=0.5, linestyle='--')
+    #gl.top_labels = None
+    #gl.right_labels = None
 
     if ydata is not None and var == 'ff': #interpretes the data as wind in x- and y-direction
         windMagnitude = (xdata**2 + ydata**2)**0.5
@@ -299,7 +308,7 @@ def plot_field(lon, lat, xdata, ydata=None, fig_dict=None, position=111,
             fig_dict = plot_arrows(fig_dict, lon, lat, xdata, ydata, var, scale)
 
     else:
-        fig_dict = plot_magnitude(fig_dict, lon, lat, xdata, var, vmin=vmin, vmax=vmax, cbar=cbar)
+        fig_dict = plot_magnitude(fig_dict, lon, lat, xdata, var, tri=tri, vmin=vmin, vmax=vmax, cbar=cbar, gridded=gridded)
         if var =='hs':
             #xdata = pd.DataFrame(xdata)
             #xdata[xdata>=0]=np.nan

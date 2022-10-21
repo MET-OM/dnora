@@ -51,7 +51,7 @@ class GriddedSkeleton(Skeleton):
         if lon is None:
             return None, None
 
-        return lon[mask], lat[mask]
+        return lon, lat
 
     def xy(self, mask: np.array=None, order_by: str='y', strict=False, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of x and y of all points.
@@ -72,7 +72,7 @@ class GriddedSkeleton(Skeleton):
         if x is None:
             return None, None
 
-        return x[mask], y[mask]
+        return x, y
 
 
     def native_xy(self, mask: np.array=None, order_by: str='y', **kwargs) -> tuple[np.ndarray, np.ndarray]:

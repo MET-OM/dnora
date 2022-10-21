@@ -4,13 +4,14 @@ from ..skeletons.topography import topography_methods
 import numpy as np
 import xarray as xr
 from .. import msg
-from .mesh import Mesher, Interpolate
 from ..skeletons.coordinate_factory import add_time
 from ..skeletons.mask_factory import add_mask
 from ..skeletons.datavar_factory import add_datavar
 from .. import aux_funcs
 from .read import TopoReader
-
+from .read_tr import TriangReader
+from .tri_arangers import TriAranger
+from copy import copy
 @topography_methods
 @add_datavar(name='topo', default_value=999., stash_get=True)
 @add_mask(name='spec', coords='grid', default_value=0)
@@ -78,44 +79,50 @@ class Grid(GriddedSkeleton):
             raise ValueError('Give a combination of nx/xy, dlon/dlat, dx/dy or dm')
 
         nx, ny, native_x_end, native_y_end = determine_nx_ny(nx,ny, dx, dy, dlon, dlat)
-
-        x = np.linspace(self.native_x()[0], native_x_end, nx)
-        y = np.linspace(self.native_y()[0], native_y_end, ny)
-        self._init_structure(x, y)
+        x_native = np.linspace(self.native_x()[0], native_x_end, nx)
+        y_native = np.linspace(self.native_y()[0], native_y_end, ny)
+        if self.is_cartesian():
+            x = x_native
+            y = y_native
+            lon = None
+            lat = None
+        else:
+            lon = x_native
+            lat = y_native
+            x = None
+            y = None
+        self._init_structure(x, y, lon, lat)
         print(self)
 
     def import_topo(self, topo_reader: TopoReader) -> None:
         """Reads the raw bathymetrical data."""
 
-        # if isinstance(topo_reader, Grid) or isinstance(topo_reader, UnstrGrid):
-        #     msg.header(topo_reader, "Getting topography from Grid-object...")
-        #     lon, lat = topo_reader.lon(), topo_reader.lat()
-        #     topo = topo_reader.topo()
-        # else:
         msg.header(topo_reader, "Importing topography...")
         print(topo_reader)
-        topo, lon, lat = topo_reader(self.lon()[0], self.lon()[-1], self.lat()[0], self.lat()[-1])
+        topo, lon, lat, x, y, zone_number, zone_letter = topo_reader(self.edges('lon'), self.edges('lat'), self.edges('x'), self.edges('y'))
 
-        if aux_funcs.is_gridded(topo, lon, lat):
-            self.raw = Grid(lon=lon, lat=lat)
+        if 0 in topo.shape:
+            msg.warning('Imported topography seems to be empty. Maybe using wrong tile?')
+            return
+
+        if aux_funcs.is_gridded(topo, lon, lat) or aux_funcs.is_gridded(topo, x, y):
+            self.raw = Grid(lon=lon, lat=lat, x=x, y=y)
         else:
-            self.raw = UnstrGrid(lon=lon, lat=lat)
+            self.raw = UnstrGrid(lon=lon, lat=lat, x=x, y=y)
+
+        if self.edges('lon', native=True)[0] < self.raw.edges(self.x_str)[0] or self.edges('lon', native=True)[1] > self.raw.edges(self.x_str)[1]:
+            msg.warning(f"The data gotten from the TopoReader doesn't cover the grid in the {self.x_str} direction. Grid: {self.edges('lon')}, imported topo: {self.raw.edges(self.x_str)}")
+
+        if self.edges('lat', native=True)[0] < self.raw.edges(self.y_str)[0] or self.edges('lat', native=True)[1] > self.raw.edges(self.y_str)[1]:
+            msg.warning(f"The data gotten from the TopoReader doesn't cover the grid in the {self.y_str} direction. Grid: {self.edges('lat')}, imported topo: {self.raw.edges(self.y_str)}")
+
+
+
+        if zone_number is not None:
+            self.raw.set_utm(zone_number, zone_letter)
 
         self.raw._update_datavar('topo', topo)
         self.raw._update_sea_mask()
-
-    def mesh_grid(self, mesher: Mesher=Interpolate(method = 'nearest')) -> None:
-        """Meshes the raw data down to the grid definitions."""
-
-        msg.header(mesher, "Meshing grid bathymetry...")
-        print(mesher)
-        lonQ, latQ = np.meshgrid(self.lon(), self.lat())
-        lon, lat = self.raw.lonlat()
-
-        topo = mesher(self.raw.topo().ravel(), lon, lat, lonQ, latQ)
-        self._update_datavar('topo', topo)
-        self._update_sea_mask()
-        print(self)
 
     def boundary_nx(self) -> int:
         """Return approximate number of grid points in the longitude direction
@@ -125,7 +132,7 @@ class Grid(GriddedSkeleton):
             return 0
         abs_diff=np.median(abs_diff[abs_diff>0]).astype(int)
 
-        return np.ceil(self.nx()/abs_diff+1).astype(int)
+        return np.ceil(self.nx()/abs_diff).astype(int)
 
     def boundary_ny(self) -> int:
         """Return approximate number of grid points in the longitude direction
@@ -135,7 +142,7 @@ class Grid(GriddedSkeleton):
             return 0
         abs_diff=np.median(abs_diff[abs_diff>0]).astype(int)
 
-        return np.ceil(self.ny()/abs_diff+1).astype(int)
+        return np.ceil(self.ny()/abs_diff).astype(int)
 
     def __str__(self) -> str:
         """Prints status of the grid."""
@@ -174,7 +181,7 @@ class Grid(GriddedSkeleton):
 @topography_methods
 @add_datavar(name='topo', default_value=999., stash_get=True)
 @add_mask(name='boundary', coords='grid', default_value=0)
-@add_mask(name='sea', coords='grid', default_value=1)
+@add_mask(name='sea', coords='grid', default_value=1, opposite_name='land')
 class UnstrGrid(PointSkeleton):
     def __init__(self, grid=None, x=None, y=None, lon=None, lat=None, name='AnonymousGrid'):
         self.name = name
@@ -186,19 +193,75 @@ class UnstrGrid(PointSkeleton):
     def import_topo(self, topo_reader: TopoReader) -> None:
         """Reads the raw bathymetrical data."""
 
-        # if isinstance(topo_reader, Grid) or isinstance(topo_reader, UnstrGrid):
-        #     msg.header(topo_reader, "Getting topography from Grid-object...")
-        #     lon, lat = topo_reader.lon(), topo_reader.lat()
-        #     topo = topo_reader.topo()
-        # else:
         msg.header(topo_reader, "Importing topography...")
         print(topo_reader)
-        topo, lon, lat = topo_reader(self.lon()[0], self.lon()[-1], self.lat()[0], self.lat()[-1])
+        topo, lon, lat, x, y, zone_number, zone_letter = topo_reader(self.edges('lon'), self.edges('lat'), self.edges('x'), self.edges('y'))
+        if 0 in topo.shape:
+            msg.warning('Imported topography seems to be empty. Maybe using wrong tile?')
 
-        if aux_funcs.is_gridded(topo, lon, lat):
-            self.raw = Grid(lon=lon, lat=lat)
+        if aux_funcs.is_gridded(topo, lon, lat) or aux_funcs.is_gridded(topo, x, y):
+            self.raw = Grid(lon=lon, lat=lat, x=x, y=y)
         else:
-            self.raw = UnstrGrid(lon=lon, lat=lat)
+            self.raw = UnstrGrid(lon=lon, lat=lat, x=x, y=y)
+
+        if self.edges('lon', native=True)[0] < self.raw.edges(self.x_str)[0] or self.edges('lon', native=True)[1] > self.raw.edges(self.x_str)[1]:
+            msg.warning(f"The data gotten from the TopoReader doesn't cover the grid in the {self.x_str} direction. Grid: {self.edges('lon')}, imported topo: {self.raw.edges(self.x_str)}")
+
+        if self.edges('lat', native=True)[0] < self.raw.edges(self.y_str)[0] or self.edges('lat', native=True)[1] > self.raw.edges(self.y_str)[1]:
+            msg.warning(f"The data gotten from the TopoReader doesn't cover the grid in the {self.y_str} direction. Grid: {self.edges('lat')}, imported topo: {self.raw.edges(self.y_str)}")
+
+
+        if zone_number is not None:
+            self.raw.set_utm(zone_number, zone_letter)
 
         self.raw._update_datavar('topo', topo)
         self.raw._update_sea_mask()
+
+    def tri(self):
+        return None
+
+    def boundary_nx(self) -> int:
+        """Return approximate number of grid points in the longitude direction
+        """
+        return np.round(len(self.inds())/len(self.boundary_points()[0])/2).astype(int)
+
+    def boundary_ny(self) -> int:
+        return np.round(len(self.inds())/len(self.boundary_points()[0])/2).astype(int)
+
+class TriGrid(UnstrGrid):
+    def __init__(self, name='AnonymousTriangGrid'):
+        self.name = name
+
+    def import_triang(self, triang_reader: TriangReader):
+        """Reads a triangular mesh."""
+        tri, nodes, lon, lat, x, y, types, edge_nodes, zone_number, zone_letter = triang_reader()
+
+        self._init_structure(x, y, lon, lat)
+
+        self.set_utm(zone_number, zone_letter)
+        edge_nodes = np.array(edge_nodes)
+        edge_nodes = edge_nodes.astype(int)
+        self._update_boundary(edge_nodes)
+        self._tri = tri
+        #self._nodes = nodes # These are now in self.inds()
+        self._types = types #???
+
+    def tri(self):
+        if hasattr(self, '_tri'):
+            return copy(self._tri)
+        else:
+            return None
+
+    def arange_triangulation(self, tri_aranger: TriAranger) -> None:
+        print(tri_aranger)
+        bnd_nodes, tri, nodes, x, y = tri_aranger(self.inds(),  np.where(self.boundary_mask())[0], self.tri(), self.native_x(), self.native_y())
+        if self.x_str == 'x':
+            self._init_structure(x=x, y=y, lon=None, lat=None)
+        else:
+            self._init_structure(x=None, y=None, lon=x, lat=y)
+        self._update_boundary(bnd_nodes)
+        self._tri = tri
+
+    def _update_boundary(self, boundary_inds):
+        mask = np.array([ind in boundary_inds for ind in self.inds()])
+        self._update_mask('boundary', mask)

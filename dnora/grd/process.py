@@ -11,14 +11,14 @@ class GridProcessor(ABC):
     def __init__(self):
         pass
 
-    def topo(self, data, lon, lat, land_sea_mask) -> np.ndarray:
+    def topo(self, data, lon, lat, sea_mask) -> np.ndarray:
         """Gets raw bathymetrical information in xyz-format and returns modified version.
 
         This method is called from within the Grid-object
         """
         return None
 
-    def grid(self, data, lon, lat, land_sea_mask, boundary_mask) -> np.ndarray:
+    def grid(self, data, lon, lat, sea_mask, boundary_mask) -> np.ndarray:
         """Gets meshed bathymetrical information and returns a modified version.
 
         This method is called from within the Grid-object
@@ -41,10 +41,10 @@ class TrivialFilter(GridProcessor):
     def __init__(self):
         pass
 
-    def topo(self, data, lon, lat, land_sea_mask):
+    def topo(self, data, lon, lat, sea_mask):
         return copy(data)
 
-    def grid(self, data, lon, lat, land_sea_mask, boundary_mask):
+    def grid(self, data, lon, lat, sea_mask, boundary_mask):
         return copy(data)
 
     def __str__(self):
@@ -57,24 +57,30 @@ class SetMinDepth(GridProcessor):
     are set to land. Otherwise the shallow points are set to min_depth.
     """
 
-    def __init__(self, depth: float, to_land: bool=False) -> None:
+    def __init__(self, depth: float, to_land: bool=False, ignore_land_mask: bool=False) -> None:
         self.to_land = to_land
         self.depth = depth
+        self.ignore_land_mask = ignore_land_mask
 
     def topo(self, data, lon, lat, sea_mask):
-        return self.grid(data, lon, lat, land_sea_mask)
+        return self.grid(data, lon, lat, sea_mask)
 
     def grid(self, data, lon, lat, sea_mask, boundary_mask=None):
         shallow_points = data < self.depth
-        if self.to_land:
-            new_data = copy(data)
-            new_data[np.logical_and(shallow_points,sea_mask)] = np.nan # Don't touch land points
-            msg.plain(f"Affected {np.count_nonzero(np.logical_and(shallow_points, sea_mask))} points")
+        if self.ignore_land_mask:
+            mask = shallow_points
         else:
-            # Set points to the limiter
-            new_data = copy(data)
-            new_data[np.logical_and(shallow_points, sea_mask)] = self.depth # Don't touch land points
-            msg.plain(f"Affected {np.count_nonzero(np.logical_and(shallow_points, sea_mask))} points")
+            mask = np.logical_and(shallow_points,sea_mask)
+
+        if self.to_land:
+            new_value = np.nan
+        else:
+            new_value = self.depth
+
+        new_data = copy(data)
+        new_data[mask] = new_value
+
+        msg.plain(f"Affected {np.count_nonzero(mask)} points")
         return new_data
 
     def __str__(self):
@@ -95,7 +101,7 @@ class SetMaxDepth(GridProcessor):
         self.depth = depth
 
     def topo(self, data, lon, lat, sea_mask):
-        return self.grid(data, lon, lat, land_sea_mask)
+        return self.grid(data, lon, lat, sea_mask)
 
     def grid(self, data, lon, lat, sea_mask, boundary_mask=None):
         deep_points = data > self.depth
@@ -121,6 +127,13 @@ class SetConstantDepth(GridProcessor):
 
     def __init__(self, depth: float) -> None:
         self.depth = depth
+
+    def topo(self, data, lon, lat, sea_mask):
+        land_mask = np.logical_not(sea_mask)
+        new_data = np.ones((len(lat), len(lon)))*self.depth
+        new_data[land_mask] = np.nan # Don't touch land points
+        msg.plain(f"Affected {np.count_nonzero(sea_mask)} points")
+        return new_data
 
     def grid(self, data, lon, lat, sea_mask, boundary_mask=None):
         land_mask = np.logical_not(sea_mask)

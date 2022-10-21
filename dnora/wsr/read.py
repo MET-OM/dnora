@@ -9,7 +9,7 @@ from .. import file_module
 from .. import msg
 from .. import aux_funcs
 #from .conventions import SpectralConvention
-from .wave_parameters import WaveParameter, Hs, Tm01, Tp, Dirm
+from .wave_parameters import WaveParameter, Hs, Tm01, Tp, Dirm, Sprm
 from ..spc import Spectra
 class WaveSeriesReader(ABC):
     """Reads boundary spectra from some source and provide it to the object."""
@@ -71,7 +71,7 @@ class SpectraToWaveSeries(WaveSeriesReader):
 
         efth = self._spectra.spec(data_array=True).sel(time=slice(start_time, end_time), inds=inds)
 
-        parameters = [Hs(), Dirm()]
+        parameters = [Hs(), Dirm(), Tp(), Sprm()]
         data = {}
         for wp in parameters:
             data[wp] = wp(self._spectra)

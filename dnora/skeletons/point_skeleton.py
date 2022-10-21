@@ -48,7 +48,7 @@ class PointSkeleton(Skeleton):
         if lon is None:
             return None, None
 
-        return lon[mask], lat[mask]
+        return lon, lat
 
     def xy(self, mask: np.array=None, strict=False, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of x and y of all points.
@@ -65,7 +65,7 @@ class PointSkeleton(Skeleton):
         if x is None:
             return None, None
 
-        return x[mask], y[mask]
+        return x, y
 
     def native_xy(self, mask: np.array=None, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of native x and y of all points.

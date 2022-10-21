@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 # Import default values and aux_funcsiliry functions
 from .. import msg
 
+from nco import Nco
 
 class ForcingWriter(ABC):
     """Writes the forcing data to a certain file format.
@@ -48,7 +49,10 @@ class WW3(ForcingWriter):
         return 'nc'
 
     def __call__(self, forcing: Forcing, filename: str) -> List[str]:
-        forcing.data.to_netcdf(filename)
+        forcing.ds().to_netcdf(filename)
+        # WW3 need time to be first
+        nco = Nco()
+        nco.ncpdq(input=filename, output=filename, options=['-a', f'time,{forcing.y_str},{forcing.y_str}'])
         return filename
 
 

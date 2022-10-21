@@ -8,6 +8,8 @@ import pandas as pd
 from .wnd.wnd_mod import Forcing
 from .grd.grd_mod import Grid
 from .bnd.bnd_mod import Boundary
+from .spc.spc_mod import Spectra
+from .wsr.wsr_mod import WaveSeries
 from .aux_funcs import create_swan_segment_coords
 from . import msg
 from . import file_module
@@ -30,6 +32,7 @@ class InputFileWriter(ABC):
 
     @abstractmethod
     def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary,
+                spectra: Spectra, waveseries: WaveSeries,
                 start_time: str, end_time: str, filename: str,
                 grid_path: str, forcing_path: str, boundary_path: str) -> str:
         return output_file
@@ -48,6 +51,7 @@ class SWAN(InputFileWriter):
         return self._extension_in
 
     def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary,
+                spectra: Spectra, waveseries: WaveSeries,
                 start_time: str, end_time: str, filename: str,
                 grid_path: str, forcing_path: str, boundary_path: str):
 
@@ -90,7 +94,7 @@ class SWAN(InputFileWriter):
                 grid.ny()-1)+' ' + str((delta_X/(grid.nx()-1)).round(6)) + ' ' + str((delta_Y/(grid.ny()-1)).round(6)) + '\n')
             file_out.write('READINP BOTTOM 1 \''+ grid_path.split('/')[-1] +'\' 3 0 FREE \n')
             file_out.write('$ \n')
-            
+
             lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.lon_edges(), grid.lat_edges())
             bound_string = "BOUNDSPEC SEGMENT XY"
             for lon, lat in zip(lons, lats):
@@ -149,6 +153,7 @@ class SWASH(InputFileWriter):
         return 'sws'
 
     def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary,
+                spectra: Spectra, waveseries: WaveSeries,
                 start_time: str, end_time: str, filename: str,
                 grid_path: str, forcing_path: str, boundary_path: str):
 
@@ -201,16 +206,18 @@ class SWASH(InputFileWriter):
         return filename
 
 class REEF3D(InputFileWriter):
-    def __init__(self, option = 'REEF3D', edges = ['W'], nproc = 1):
+    def __init__(self, option = 'REEF3D', edges = ['W'], nproc = 1,rot_angle=0, wave_input='SPEC1D'):
         self.option = option
         self.nproc = nproc # number of processors
         self.edges = edges
-        return
+        self.rot_angle = rot_angle # anlge for domain rotation
+        self.wave_input = wave_input # 'SPEC1D' for NORA3 frequency spectrum or 'JONSWAP' providing Hs and Tp
 
     def _extension(self):
         return 'txt'
 
     def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary,
+                spectra: Spectra, waveseries: WaveSeries,
                 start_time: str, end_time: str, filename: str, forcing_path: str,
                 grid_path: str, boundary_path: str):
 
@@ -258,6 +265,7 @@ class REEF3D(InputFileWriter):
                 file_out.write(' \n')
 
                 file_out.write('G 10 1 // turn geodat on/off' '\n')
+                file_out.write('G 13 '+str(self.rot_angle)+' // rotation angle of geo coordinates around vertical axis' '\n')
                 file_out.write('G 15 2 // local inverse distance interpolation' '\n')
                 file_out.write('G 20 0 // use automatic grid size off' '\n')
                 file_out.write('G 31 14 // number of smoothing iterations' '\n')
@@ -287,12 +295,20 @@ class REEF3D(InputFileWriter):
                 file_out.write('A 362 2 // filtering inner iterations' '\n')
                 file_out.write('A 365 1.86 // artificial viscosity for breaking wave energy dissipation' '\n')
                 file_out.write(' \n')
+                if self.wave_input =='SPEC1D':
+                    file_out.write('B 85 10 // spectrum file' '\n')
+                    file_out.write('B 90 1 // wave input' '\n')
+                    file_out.write('B 92 31 // 1st-order irregular wave' '\n')
 
-                file_out.write('B 85 10 // spectrum file' '\n')
-                file_out.write('B 90 1 // wave input' '\n')
-                file_out.write('B 92 31 // 1st-order irregular wave' '\n')
+                elif self.wave_input =='JONSWAP':
+                    file_out.write('B 85 2 // jonswap' '\n')
+                    file_out.write('B 90 1 // wave input' '\n')
+                    file_out.write('B 92 31 // 1st-order irregular wave' '\n')
+                    file_out.write('B 93 '+str(waveseries.hs()[0])+' '+ str(waveseries.tp()[0])+' // wave height, wave period' '\n')
+                    file_out.write('B 134 '+str(waveseries.sprm()[0])+' // spreading parameter for the directional spreading functions' '\n')
+
+
                 file_out.write(' \n')
-
                 file_out.write('B 96 200.0 400.0 // wave generation zone length and numerical beach length' '\n')
                 #file_out.write('B 107 0.0 '+str(int(geodat.x.max()))+' 0.0 0.0 200.0 // wave generation zone length and numerical beach length' '\n')
                 #file_out.write('B 107 0.0 '+str(int(geodat.x.max()))+' '+str(int(geodat.y.max()))+' '+str(int(geodat.x.max()))+' 200.0 // customised numerical beach at the side walls' '\n')
@@ -303,7 +319,7 @@ class REEF3D(InputFileWriter):
                 file_out.write('B 99 2 // relaxation method 2 for numerical beach' '\n')
                 file_out.write(' \n')
 
-                file_out.write('F 60 '+str(grid.data.topo.max().round(1).values)+' // still water depth' '\n')
+                file_out.write('F 60 '+str(grid.topo().max().round(1))+' // still water depth' '\n')
                 file_out.write(' \n')
 
                 file_out.write('G 50 1 // read in geo bathymetry' '\n')
@@ -367,6 +383,7 @@ class HOS_ocean(InputFileWriter):
         return 'dat'
 
     def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary,
+                spectra: Spectra, waveseries: WaveSeries,
                 start_time: str, end_time: str, filename: str,
                 grid_path: str, forcing_path: str, boundary_path: str):
 
@@ -441,6 +458,7 @@ class WW3_grid(InputFileWriter):
         return 'nml'
 
     def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary,
+                spectra: Spectra, waveseries: WaveSeries,
                 start_time: str, end_time: str, filename: str,
                 grid_path: str, forcing_path: str, boundary_path: str):
 #         &RECT_NML

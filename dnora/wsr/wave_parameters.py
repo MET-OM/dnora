@@ -46,8 +46,8 @@ class WaveParameter(ABC):
     def standard_name(self) -> str:
         ''
 
-    def _is_boundary(self, spec: xr.Dataset) -> bool:
-        return 'dirs' in list(spec.coords)
+    #def _is_boundary(self, spec: xr.Dataset) -> bool:
+    #    return 'dirs' in list(spec.coords)
 
     # def _format_dataset(self, wave_parameter: xr.Dataset, spec: xr.Dataset, data_var=None) -> xr.Dataset:
     #     if data_var is None:
@@ -107,16 +107,18 @@ class PowerMoment(WaveParameter):
         self._power = power
 
     def __call__(self, spec: Union[Spectra, Boundary]) -> np.ndarray:
-        moment = spec
-        if self._is_boundary(moment):
-            dD = 360/len(moment.dirs)
-            moment = dD*np.pi/180*moment.sum(dim='dirs')
+        #moment = spec
+        if isinstance(spec, Boundary):
+            dD = 360/len(spec.dirs())
+            ds = dD*np.pi/180*spec.ds().sum(dim='dirs')
+        else:
+            ds = spec.ds()
 
-        moment = (moment.spec**self._power*(moment.freq**self._moment)).integrate(coord='freq')
+        ds = (ds.spec**self._power*(ds.freq**self._moment)).integrate(coord='freq')
         #breakpoint()
         #moment = self._format_dataset(moment, spec)
 
-        return moment.values
+        return ds.values
 
     def unit(self):
         ''
@@ -336,11 +338,11 @@ class Sprm(WaveParameter):
     def __call__(self, spec: Union[Spectra, Boundary]):
         m0 =Moment(0)(spec)
 
-        if self._is_boundary(spec):
-            theta = np.deg2rad(spec.dirs.values)
-            dD = 360/len(spec.dirs)
+        if isinstance(spec, Boundary):
+            theta = np.deg2rad(spec.dirs())
+            dD = 360/len(spec.dirs())
             # Normalizing here so that integration over direction becomes summing
-            efth = dD*np.pi/180*spec
+            efth = dD*np.pi/180*spec.ds()
 
             c1 = ((np.cos(theta)*efth).sum(dim='dirs'))  # Function of frequency
             s1 = ((np.sin(theta)*efth).sum(dim='dirs'))
@@ -352,7 +354,7 @@ class Sprm(WaveParameter):
             sprm = np.sqrt(2-2*(m1))*180/np.pi
 
         else:
-            sprm = ((spec.spr.values**2*spec).integrate(coord='freq')/m0)**0.5
+            sprm = ((spec.spr()**2*spec.spec(data_array=True)).integrate(coord='freq')/m0)**0.5
 
 
         #sprm = self._format_dataset(sprm, spec)

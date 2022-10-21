@@ -110,12 +110,16 @@ class Skeleton:
         return data
 
     def is_empty(self, name):
-        """Checks if a Dataset variable is empty."""
+        """Checks if a Dataset variable is empty.
+
+        Empty means all initial values OR all 0 values."""
         data = self.get(name)
         if data is None:
             return False
         empty_data = self.get(name, empty=True)
-        return np.allclose(data.astype(float), empty_data.astype(float))
+        land_data = data*0
+        is_empty = np.allclose(data.astype(float), empty_data.astype(float)) or np.allclose(data.astype(float), land_data.astype(float))
+        return is_empty
 
 
     def is_initialized(self) -> bool:
@@ -130,7 +134,7 @@ class Skeleton:
         raise Exception(f"Expected x- and y string to be either 'x' and 'y' or 'lon' and 'lat', but they were {x_str} and {y_str}")
 
     def is_gridded(self) -> bool:
-        return aux_funcs.is_gridded(self.topo(), self.lon(), self.lat())
+        return aux_funcs.is_gridded(self.topo(), self.native_x(), self.native_y())
 
     def set_utm(self, zone_number: int=33, zone_letter: str='W'):
         """Set UTM zone and number to be used for cartesian coordinates."""
@@ -213,8 +217,13 @@ class Skeleton:
             return None
 
         if self.is_cartesian():
-            y = np.median(self.y(**kwargs))
+            if self.is_gridded(): # This will rotate the grid, but is best estimate to keep it strucutred
+                y = np.median(self.y(**kwargs))
+            else:
+                y = self.y(**kwargs)
+
             __, lon = utm.to_latlon(self.x(**kwargs), y, self._zone_number, zone_letter=self._zone_letter, strict = False)
+
             return lon
         return self.ds_manager.get('lon', **kwargs).values.copy()
 
@@ -229,7 +238,10 @@ class Skeleton:
             return None
 
         if self.is_cartesian():
-            x = np.median(self.x(**kwargs))
+            if self.is_gridded(): # This will rotate the grid, but is best estimate to keep it strucutred
+                x = np.median(self.x(**kwargs))
+            else:
+                x = self.x(**kwargs)
             lat, __ = utm.to_latlon(x, self.y(**kwargs), self._zone_number, zone_letter=self._zone_letter, strict = False)
             return lat
 
@@ -420,21 +432,24 @@ def will_grid_be_spherical_or_cartesian(x, y, lon, lat):
     xy = False
     lonlat = False
 
-    none_tuple = (None, None)
-
-    if (x is not None and x != none_tuple) and (y is not None and y != none_tuple):
+#    none_tuple = (None, None)
+#    if (x is not None and x != none_tuple) and (y is not None and y != none_tuple):
+    if (x is not None) and (y is not None):
         xy = True
         native_x = 'x'
         native_y = 'y'
         xvec = x
         yvec = y
+        xvec = np.array(x)
+        yvec = np.array(y)
 
-    if (lon is not None and lon != none_tuple) and (lat is not None and lat != none_tuple):
+    #if (lon is not None and lon != none_tuple) and (lat is not None and lat != none_tuple):
+    if (lon is not None) and (lat is not None):
         lonlat = True
         native_x = 'lon'
         native_y = 'lat'
-        xvec = lon
-        yvec = lat
+        xvec = np.array(lon)
+        yvec = np.array(lat)
 
     if xy and lonlat:
         raise ValueError("Can't set both lon/lat and x/y!")
@@ -442,10 +457,16 @@ def will_grid_be_spherical_or_cartesian(x, y, lon, lat):
     if not xy and not lonlat:
         raise ValueError('Have to set either lon/lat or x/y!')
 
-    if isinstance(xvec, float) or isinstance(xvec, int):
-        xvec = [xvec]
+    if not xvec.shape:
+        xvec = np.array([xvec])
 
-    if isinstance(yvec, float) or isinstance(yvec, int):
-        yvec = [yvec]
+    if not yvec.shape:
+        yvec = np.array([yvec])
 
-    return native_x, native_y, np.array(xvec), np.array(yvec)
+    if len(np.unique(xvec)) == 1 and len(xvec) == 2: # e.g. lon=(4.0, 4.0) should behave like lon=4.0
+        xvec = np.unique(xvec)
+
+    if len(np.unique(yvec)) == 1 and len(yvec) == 2:
+        yvec = np.unique(yvec)
+
+    return native_x, native_y, xvec, yvec

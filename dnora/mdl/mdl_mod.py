@@ -176,6 +176,7 @@ class ModelRun:
         self._dry_run = dry_run
         if self.spectra() is None:
             msg.warning('No Spectra to convert to WaveSeries!')
+            return
 
         waveseries_reader = SpectraToWaveSeries(self.spectra())
         msg.header(waveseries_reader, 'Converting the spectra to wave series data...')
@@ -212,8 +213,8 @@ class ModelRun:
                             dnora_obj='grid')
 
         # Write status file
-        infofilename = str(Path(output_files[0]).with_suffix('')) + '_dnora_info.txt'
-        self.grid().write_status(filename=infofilename)
+        #infofilename = str(Path(output_files[0]).with_suffix('')) + '_dnora_info.txt'
+        #self.grid().write_status(filename=infofilename)
 
     def export_boundary(self, boundary_writer: BoundaryWriter=None,
                         filename: str=None, folder: str=None,
@@ -265,6 +266,29 @@ class ModelRun:
         __ = self._export_object(filename, folder, dateformat,
                             writer_function=self._spectral_writer,
                             dnora_obj='spectra')
+
+    def export_waveseries(self, waveseries_writer: WaveSeriesWriter=None,
+                        filename: str=None, folder: str=None,
+                        dateformat: str=None, dry_run=False) -> None:
+        """Writes the data of the WaveSeries-object to an external source, e.g.
+        a file."""
+        self._dry_run = dry_run
+        if self.waveseries() is None and not self.dry_run():
+            raise Exception('Import waveseries data before exporting!')
+
+        self._waveseries_writer = waveseries_writer or self._get_waveseries_writer()
+        if self._waveseries_writer is None:
+            raise Exception('Define a WaveSeriesWriter!')
+
+        if self.waveseries() is None:
+            msg.header(self._waveseries_writer, f"Writing wave series data from DryRunSpectra")
+        else:
+            msg.header(self._waveseries_writer, f"Writing wave series data from {self.spectra().name}")
+
+        # Replace #Spectra etc and add file extension
+        __ = self._export_object(filename, folder, dateformat,
+                            writer_function=self._waveseries_writer,
+                            dnora_obj='waveseries')
 
     def export_forcing(self, forcing_writer: ForcingWriter=None,
                         filename: str=None, folder: str=None,
@@ -336,6 +360,7 @@ class ModelRun:
             # Write the grid using the InputFileWriter object
             output_files = self._input_file_writer(grid=self.grid(),
                             forcing=self.forcing(), boundary=self.boundary(),
+                            spectra=self.spectra(), waveseries=self.waveseries(),
                             start_time=start_time, end_time=end_time,
                             filename=file_object.filepath(),
                             grid_path=grid_path, forcing_path=forcing_path,
@@ -473,7 +498,7 @@ class ModelRun:
                             dateformat=dateformat,
                             plotting_function=self._grid_plotter,
                             plain=plain, save_fig=save_fig,
-                            show_fig=show_fig, dnora_obj='dnplot_grid')
+                            show_fig=show_fig, dnora_obj='Grid')
 
         return figure_dict
 
@@ -497,7 +522,7 @@ class ModelRun:
                             dateformat=dateformat,
                             plotting_function=self._grid_plotter,
                             plain=plain, save_fig=save_fig,
-                            show_fig=show_fig, dnora_obj='dnplot_topo')
+                            show_fig=show_fig, dnora_obj='Topo')
         return figure_dict
 
     def plot_forcing(self, forcing_plotter: GridPlotter=None, filename: str=None,
@@ -518,7 +543,7 @@ class ModelRun:
                             dateformat=dateformat,
                             plotting_function=self._forcing_plotter,
                             plain=plain, save_fig=save_fig,
-                            show_fig=show_fig, dnora_obj='dnplot_forcing')
+                            show_fig=show_fig, dnora_obj='Forcing')
 
         return figure_dict
 
@@ -540,14 +565,14 @@ class ModelRun:
                                 _folder=folder,
                                 _dateformat=dateformat,
                                 extension=plotting_function._extension(),
-                                dnora_obj=dnora_obj)
+                                dnora_obj=f'dnplot_{dnora_obj}')
 
         file_object.create_folder()
 
-        if dnora_obj in ['dnplot_grid', 'dnplot_forcing']:
-            figure_dict = plotting_function.grid(dict_of_objects=self.dict_of_objects(), plain=plain)
-        elif dnora_obj == 'dnplot_topo':
-            figure_dict = plotting_function.topo(dict_of_objects=self.dict_of_objects(), plain=plain)
+        if self.dict_of_objects()[dnora_obj].is_gridded():
+            figure_dict = plotting_function.gridded(dict_of_objects=self.dict_of_objects(), plain=plain)
+        else:
+            figure_dict = plotting_function.ungridded(dict_of_objects=self.dict_of_objects(), plain=plain)
 
         if figure_dict is not None:
             fig = figure_dict.get('fig')
@@ -599,7 +624,7 @@ class ModelRun:
 
 
     def dict_of_objects(self) -> dict[str: ModelRun, str: Grid, str: Forcing, str: Boundary, str: Spectra]:
-        return {'ModelRun': self, 'Grid': self.grid(), 'Forcing': self.forcing(), 'Boundary': self.boundary(), 'Spectra': self.spectra()}
+        return {'ModelRun': self, 'Grid': self.grid(), 'Forcing': self.forcing(), 'Boundary': self.boundary(), 'Spectra': self.spectra(), 'WaveSeries': self.waveseries()}
 
     def list_of_objects(self) -> list[ModelRun, Grid, Forcing, Boundary, Spectra]:
         """[ModelRun, Boundary] etc."""
@@ -659,6 +684,9 @@ class ModelRun:
     def _get_spectral_writer(self) -> SpectralWriter:
         return None
 
+    def _get_waveseries_writer(self) -> WaveSeriesWriter:
+        return None
+
     def _get_grid_writer(self) -> GridWriter:
         return None
 
@@ -680,26 +708,26 @@ class ModelRun:
     def _get_forcing_plotter(self) -> GridPlotter:
         return ForcingPlotter()
 
-    def __repr__(self):
-        lines = [f"<dnora ModelRun object> ({type(self).__name__})", f"  Name: {self.name}"]
-
-        lines.append(f'  Covering time: {self.start_time} - {self.end_time}')
-
-        lines.append(f"  Contains:")
-        if self.grid().structured():
-            gridtype = 'structured'
-        else:
-            gridtype = 'unstructured'
-
-        lines.append(f'\tgrid object ({gridtype}): {self.grid().name} {self.grid().size()}')
-        if self.forcing() is not None:
-            lines.append(f'\tforcing object: {self.forcing().name} {self.forcing().size()}')
-        else:
-            lines.append(f'\tforcing: use .import_forcing()')
-        if self.boundary() is not None:
-            lines.append(f'\tboundary object: {self.boundary().name} {self.boundary().size()}')
-        else:
-            lines.append(f'\tboundary: use .import_boundary()')
-
-
-        return "\n".join(lines)
+    # def __repr__(self):
+    #     lines = [f"<dnora ModelRun object> ({type(self).__name__})", f"  Name: {self.name}"]
+    #
+    #     lines.append(f'  Covering time: {self.start_time} - {self.end_time}')
+    #
+    #     # lines.append(f"  Contains:")
+    #     # if self.grid().structured():
+    #     #     gridtype = 'structured'
+    #     # else:
+    #     #     gridtype = 'unstructured'
+    #
+    #     lines.append(f'\tgrid object ({gridtype}): {self.grid().name} {self.grid().size()}')
+    #     if self.forcing() is not None:
+    #         lines.append(f'\tforcing object: {self.forcing().name} {self.forcing().size()}')
+    #     else:
+    #         lines.append(f'\tforcing: use .import_forcing()')
+    #     if self.boundary() is not None:
+    #         lines.append(f'\tboundary object: {self.boundary().name} {self.boundary().size()}')
+    #     else:
+    #         lines.append(f'\tboundary: use .import_boundary()')
+    #
+    #
+    #     return "\n".join(lines)

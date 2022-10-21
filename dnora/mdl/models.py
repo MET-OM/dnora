@@ -1,6 +1,6 @@
 from .mdl_mod import ModelRun
 
-from .. import bnd, wnd, grd, inp, run, spc
+from .. import bnd, wnd, grd, inp, run, spc, wsr
 
 class SWAN(ModelRun):
     def _get_default_format(self):
@@ -57,6 +57,12 @@ class WW3(ModelRun):
     def _get_boundary_writer(self):
         return bnd.write.WW3()
 
+    def _get_spectral_writer(self):
+        return spc.write.DumpToNc()
+
+    def _get_waveseries_writer(self):
+        return wsr.write.DumpToNc()
+
     def _get_forcing_writer(self):
         return wnd.write.WW3()
 
@@ -65,6 +71,33 @@ class WW3(ModelRun):
 
     def _get_grid_writer(self):
         return grd.write.WW3()
+
+class OnePoint(ModelRun):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.grid().set_mask(grd.boundary.SetAll())
+
+    def _get_default_format(self):
+        return 'WW3'
+
+    def _get_boundary_writer(self):
+        return bnd.write.DumpToNc()
+
+    def _get_spectral_writer(self):
+        return spc.write.DumpToNc()
+
+    def _get_waveseries_writer(self):
+        return wsr.write.DumpToNc()
+
+    def _get_forcing_writer(self):
+        return wnd.write.DumpToNc()
+
+    def _get_point_picker(self):
+        return bnd.pick.NearestGridPoint()
+
+    def _get_grid_writer(self):
+        return grd.write.DumpToNc()
+
 
 class HOS_ocean(ModelRun):
     def _get_default_format(self):
@@ -126,3 +159,17 @@ class WW3_NORA3(WW3):
 
     def _get_forcing_reader(self):
         return wnd.read_metno.NORA3()
+
+class OnePoint_NORA3(OnePoint):
+    def _get_boundary_reader(self):
+        return bnd.read_metno.NORA3()
+
+    def _get_forcing_reader(self):
+        return wnd.read_metno.NORA3()
+
+class OnePoint_ERA5(OnePoint):
+    def _get_boundary_reader(self):
+        return bnd.read_ec.ERA5()
+
+    def _get_forcing_reader(self):
+        return wnd.read_ec.ERA5()

@@ -25,7 +25,7 @@ def bounds_of_objects(list_of_objects) -> Tuple:
             y0 = min(y0, np.min(dnora_obj.lat()))
             y1 = max(y1, np.max(dnora_obj.lat()))
 
-    return x0, x1, y0, y1
+    return (x0, x1), (y0, y1)
 
 
 class GridPlotter(ABC):
@@ -35,11 +35,11 @@ class GridPlotter(ABC):
     def _extension(self) -> str:
         pass
 
-    def grid(self, dict_of_objects: dict, plain: bool) -> dict:
+    def gridded(self, dict_of_objects: dict, plain: bool) -> dict:
         msg.warning('Plotting of meshed data not implemented!')
         return None
 
-    def topo(self, dict_of_objects: dict, plain: bool) -> dict:
+    def ungridded(self, dict_of_objects: dict, plain: bool) -> dict:
         msg.warning('Plotting of xyz data not implemented!')
         return None
 
@@ -63,39 +63,40 @@ class TopoPlotter(GridPlotter):
     def _extension(self):
         return 'pdf'
 
-    def grid(self, dict_of_objects: dict, plain: bool=True):
+    def gridded(self, dict_of_objects: dict, plain: bool=True):
+
         grid = dict_of_objects['Grid']
         boundary = dict_of_objects['Boundary']
         forcing = dict_of_objects['Forcing']
         #
-        figure_dict = basic_funcs.plot_field(grid.lon(), grid.lat(), grid.topo(land=np.nan), var='topo', title_str=f"{grid.name()}", cbar=True)
+        figure_dict = basic_funcs.plot_field(grid.lon(), grid.lat(), grid.topo(land=np.nan), var='topo', title_str=f"{grid.name}", cbar=True)
         fig = figure_dict.get('fig')
         ax = figure_dict.get('ax')
         cbar = figure_dict.get('cbar')
-        lonlat=grid.boundary_points()
-        if lonlat.shape[0] > 0:
-            ax.plot(lonlat[:,0], lonlat[:,1],'k*', label='Set boundary points')
+        lonlat=grid.boundary_points(type='lonlat')
+        if len(lonlat[0]) > 0:
+            ax.plot(lonlat[0], lonlat[1],'k*', label='Set boundary points')
 
         # Plot locations of boundary spectra
         if not plain and boundary is not None:
-            ax.plot(boundary.lon(), boundary.lat(),'kx', label=f"Available spectra from {boundary.name()}")
+            ax.plot(boundary.lon(), boundary.lat(),'kx', label=f"Available spectra from {boundary.name}")
 
-        # Plot locations of wind forcing data points
-        if not plain and forcing is not None:
-            lonlat=forcing._point_list(mask=np.full(forcing.size()[1:], True))
-            ax.plot(lonlat[:,0], lonlat[:,1],'r.', markersize=1.5, label=f"Forcing from {forcing.name()}")
+        # # Plot locations of wind forcing data points
+        # if not plain and forcing is not None:
+        #     lonlat=forcing._point_list(mask=np.full(forcing.size()[1:], True))
+        #     ax.plot(lonlat[:,0], lonlat[:,1],'r.', markersize=1.5, label=f"Forcing from {forcing.name}")
 
         #ax.legend(loc="upper right")
         ax.legend(bbox_to_anchor=(0.3, 1.2))
-        x0, x1, y0, y1 = bounds_of_objects([grid, forcing, boundary])
-        x0, x1, y0, y1 = aux_funcs.expand_area(x0, x1, y0, y1, 1.2)
+        xbounds, ybounds = bounds_of_objects([grid, forcing, boundary])
+        xbounds, ybounds = aux_funcs.expand_area(xbounds, ybounds, 1.2)
 
-        ax.set_xlim([x0,x1])
-        ax.set_ylim([y0,y1])
+        ax.set_xlim(xbounds)
+        ax.set_ylim(ybounds)
         return {'fig': fig, 'ax': ax, 'cbar': cbar}
 
 
-    def topo(self, dict_of_objects: dict, plain: bool=True):
+    def ungridded(self, dict_of_objects: dict, plain: bool=True):
         """Creates a plot of the topography when a Grid-object is provided.
 
         Options
@@ -110,13 +111,18 @@ class TopoPlotter(GridPlotter):
 
         # Create basic plot
         fig, ax = plt.subplots()
-        levels = np.linspace(0, max(grid.raw_topo()), 20, endpoint=True)
-        mask = ~np.isnan(grid.raw_topo())
+        levels = np.linspace(0, max(grid.topo()), 20, endpoint=True)
+        mask = ~np.isnan(grid.topo())
         #plt.tricontourf(grid.raw_lon()[mask],grid.raw_lat()[mask],grid.raw_topo()[mask],levels)
         msg.plain('Might take some time to create irregular plot...')
         #plt.tripcolor(grid.raw_lon()[mask],grid.raw_lat()[mask],grid.raw_topo()[mask])
-        cont = ax.tricontourf(grid.raw_lon()[mask],grid.raw_lat()[mask],grid.raw_topo()[mask], levels=levels)
-        ax.plot(grid.raw_lon()[~mask],grid.raw_lat()[~mask], 'w.', markersize=0.5)
+        figure_dict = basic_funcs.plot_field(grid.lon(), grid.lat(), grid.topo(land=np.nan), tri=grid.tri(), var='topo', title_str=f"{grid.name}", cbar=True, gridded=False)
+        fig = figure_dict.get('fig')
+        ax = figure_dict.get('ax')
+        cbar = figure_dict.get('cbar')
+        cont = figure_dict.get('cont')
+        #cont = ax.tricontourf(grid.lon()[mask],grid.lat()[mask],grid.topo()[mask], levels=levels)
+        ax.plot(grid.lon()[~mask],grid.lat()[~mask], 'w.', markersize=0.5)
 
         # Plot grid edges
 
@@ -129,50 +135,45 @@ class TopoPlotter(GridPlotter):
         x=[x0,x0,x1,x1,x0]
         y=[y0,y1,y1,y0,y0]
 
-        plt.plot(x,y,'k', label='Grid')
-
+        #plt.plot(x,y,'k', label='Grid')
         if len(grid.lon())>2:
-            if grid.structured():
-                lonQ, latQ = np.meshgrid(grid.lon(), grid.lat())
-                lonQ=lonQ.ravel()
-                latQ=latQ.ravel()
-            elif grid.tri() is None: # Unstruct without triangulation
+            if grid.tri() is None: # Unstruct without triangulation
                 ax.scatter(grid.lon(), grid.lat(),2,'k', label='Grid points')
             else:
-                ax.triplot(grid.lon(), grid.lat(), triangles=grid.tri(), linewidth=0.2, color='black')
+                tri = ax.triplot(grid.lon(), grid.lat(), triangles=grid.tri(), linewidth=0.2, color='black')
 
         # Plot boundary points if they exist
-        lonlat=grid.boundary_points()
-        if lonlat.shape[0] > 0:
-            ax.plot(lonlat[:,0], lonlat[:,1],'k*', label='Set boundary points')
+        lonlat=grid.boundary_points(type='lonlat')
+        if len(lonlat[0]) > 0:
+            ax.plot(lonlat[0], lonlat[1],'k*', label='Set boundary points')
 
         # Plot locations of boundary spectra
         if not plain and boundary is not None:
-            ax.plot(boundary.lon(), boundary.lat(),'kx', label=f"Available spectra from {boundary.name()}")
+            ax.plot(boundary.lon(), boundary.lat(),'kx', label=f"Available spectra from {boundary.name}")
 
-        # Plot locations of wind forcing data points
-        if not plain and forcing is not None:
-            lonlat=forcing._point_list(mask=np.full(forcing.size()[1:], True))
-            ax.plot(lonlat[:,0], lonlat[:,1],'r.', markersize=1.5, label=f"Forcing from {forcing.name()}")
+        # # Plot locations of wind forcing data points
+        # if not plain and forcing is not None:
+        #     lonlat=forcing._point_list(mask=np.full(forcing.size()[1:], True))
+        #     ax.plot(lonlat[:,0], lonlat[:,1],'r.', markersize=1.5, label=f"Forcing from {forcing.name}")
 
         ax.legend(loc="upper right")
-        cbar = fig.colorbar(cont)
+        #cbar = fig.colorbar(cont)
         #cbar.set_clim(0, 1500)
-        cbar.set_label('Depth (m)', rotation=90)
-        ax.set(title=f"{grid.name()} topography")
+        #cbar.set_label('Depth (m)', rotation=90)
+        ax.set(title=f"{grid.name} topography")
 
-        return {'fig': fig, 'ax': ax, 'cont': cont, 'cbar': cbar}
+        return {'fig': fig, 'ax': ax, 'cont': cont, 'cbar': cbar, 'tri': tri }
 
 
 class ForcingPlotter(GridPlotter):
     def _extension(self):
         return 'pdf'
 
-    def grid(self, dict_of_objects: dict, plain: bool=True):
+    def gridded(self, dict_of_objects: dict, plain: bool=True):
         def update_plot(val):
-            title_str = f"{forcing.name()}: {str(forcing.time()[val])}"
+            title_str = f"{forcing.name}: {str(forcing.time()[val])}"
             vmax = np.max(forcing.magnitude())
-            self.fig_dict = basic_funcs.plot_field(forcing.lon(), forcing.lat(), forcing.u()[val,:,:], forcing.v()[val,:,:],
+            self.fig_dict = basic_funcs.plot_field(forcing.lon(), forcing.lat(), forcing.u()[:,:,val], forcing.v()[:,:,val],
                             var='ff', title_str=title_str, fig_dict=self.fig_dict, cbar=self._init_plot, vmin=0, vmax=vmax, barbs=False)
             # self.fig = fig_dict.get('fig')
             # self.ax = fig_dict.get('ax')
@@ -200,18 +201,23 @@ class SpecPlotter(SpectralPlotter):
 
     def spectra(self, dict_of_objects: dict, plain: bool=True):
         def update(val=None):
-            for param in ['time', 'station']:
+            for param in sliders.keys():
                 setattr(self, f'{param}_val', sliders[param].val)
             update_plot()
 
 
 
         def update_plot() -> None:
-            title_str = f"{spectra.name()}: {str(spectra.time()[self.time_val])} lon={spectra.lon()[self.station_val]:.4f}, lat={spectra.lat()[self.station_val]:.4f} (x={self.station_val})"
+            if hasattr(self, 'inds_val'):
+                ind = self.inds_val
+            else:
+                ind = 0
+            title_str = f"{spectra.name}: {str(spectra.time()[self.time_val])} lon={spectra.lon()[ind]:.4f}, lat={spectra.lat()[ind]:.4f} (x={ind})"
+
             ymax = np.max(spectra.spec())
-            self.fig_dict = basic_funcs.plot_spectra(spectra.freq(), spectra.spec()[self.time_val,self.station_val,:],
-                            spectra.mdir()[self.time_val,self.station_val,:],
-                            spectra.spr()[self.time_val,self.station_val,:],
+            self.fig_dict = basic_funcs.plot_spectra(spectra.freq(), spectra.spec()[ind,self.time_val,:],
+                            spectra.mdir()[ind,self.time_val,:],
+                            spectra.spr()[ind,self.time_val,:],
                             title_str=title_str, fig_dict=self.fig_dict, ymax=ymax)
             # self.fig = fig_dict.get('fig')
             # self.ax = fig_dict.get('ax')
@@ -229,8 +235,8 @@ class SpecPlotter(SpectralPlotter):
 
         if len(spectra.x()) > 1:
             ax_slider2 = plt.axes([0.17, 0.01, 0.65, 0.03])
-            sliders['station'] = Slider(ax_slider2, 'station_index', 0, len(spectra.x())-1, valinit=0, valstep=1)
-            sliders['station'].on_changed(update)
+            sliders['inds'] = Slider(ax_slider2, 'inds_index', 0, len(spectra.x())-1, valinit=0, valstep=1)
+            sliders['inds'].on_changed(update)
         # self._init_plot = True
 
         update()
@@ -243,19 +249,22 @@ class SpecPlotter(SpectralPlotter):
 
     def boundary(self, dict_of_objects: dict, plain: bool=True):
         def update(val=None):
-            for param in ['time', 'station']:
+            for param in sliders.keys():
                 setattr(self, f'{param}_val', sliders[param].val)
             update_plot()
 
 
-
         def update_plot() -> None:
-            title_str = f"{boundary.name()}: {str(boundary.time()[self.time_val])} lon={boundary.lon()[self.station_val]:.4f}, lat={boundary.lat()[self.station_val]:.4f} (x={self.station_val})"
+            if hasattr(self, 'inds_val'):
+                ind = self.inds_val
+            else:
+                ind = 0
+            title_str = f"{boundary.name}: {str(boundary.time()[self.time_val])} lon={boundary.lon()[ind]:.4f}, lat={boundary.lat()[ind]:.4f} (x={ind})"
             vmax = np.max(boundary.spec())
             #vmin = 10*np.min(boundary.spec()[boundary.spec()>0])
             vmin = 0.1
             self.fig_dict = basic_funcs.plot_polar_spectra(boundary.freq(), boundary.dirs(),
-                            boundary.spec()[self.time_val,self.station_val,:],
+                            boundary.spec()[ind,self.time_val,:],
                             title_str=title_str, fig_dict=self.fig_dict, vmax=vmax, vmin=vmin, cbar=self._init_plot)
             # self.fig = fig_dict.get('fig')
             # self.ax = fig_dict.get('ax')
@@ -273,8 +282,8 @@ class SpecPlotter(SpectralPlotter):
 
         if len(boundary.x()) > 1:
             ax_slider2 = plt.axes([0.17, 0.01, 0.65, 0.03])
-            sliders['station'] = Slider(ax_slider2, 'station_index', 0, len(boundary.x())-1, valinit=0, valstep=1)
-            sliders['station'].on_changed(update)
+            sliders['inds'] = Slider(ax_slider2, 'inds_index', 0, len(boundary.x())-1, valinit=0, valstep=1)
+            sliders['inds'].on_changed(update)
         self._init_plot = True
         update()
         #axnodenr = plt.axes([0.02,0.9,0.2,0.03])
@@ -324,22 +333,22 @@ class OldTopoPlotter(GridPlotter):
 
         # Plot boundary points if they exist
         lonlat=grid.boundary_points()
-        if lonlat.shape[0] > 0:
+        if len(lonlat[0]) > 0:
             ax.plot(lonlat[:,0], lonlat[:,1],'k*', label='Set boundary points')
 
         # Plot locations of boundary spectra
         if not plain and boundary is not None:
-            ax.plot(boundary.lon(), boundary.lat(),'kx', label=f"Available spectra from {boundary.name()}")
+            ax.plot(boundary.lon(), boundary.lat(),'kx', label=f"Available spectra from {boundary.name}")
 
         # Plot locations of wind forcing data points
         if not plain and forcing is not None:
             lonlat=forcing._point_list(mask=np.full(forcing.size()[1:], True))
-            ax.plot(lonlat[:,0], lonlat[:,1],'r.', markersize=1.5, label=f"Forcing from {forcing.name()}")
+            ax.plot(lonlat[:,0], lonlat[:,1],'r.', markersize=1.5, label=f"Forcing from {forcing.name}")
 
         ax.legend(loc="upper left")
         cbar = fig.colorbar(cont)
         cbar.set_label('Depth (m)', rotation=90)
-        #ax.title(f"{grid.name()} topography")
+        #ax.title(f"{grid.name} topography")
 
 
 
@@ -393,23 +402,23 @@ class OldTopoPlotter(GridPlotter):
 
         # Plot boundary points if they exist
         lonlat=grid.boundary_points()
-        if lonlat.shape[0] > 0:
+        if len(lonlat[0]) > 0:
             plt.plot(lonlat[:,0], lonlat[:,1],'k*', label='Set boundary points')
 
         # Plot locations of boundary spectra
         if not plain and boundary is not None:
-            plt.plot(boundary.lon(), boundary.lat(),'kx', label=f"Available spectra from {boundary.name()}")
+            plt.plot(boundary.lon(), boundary.lat(),'kx', label=f"Available spectra from {boundary.name}")
 
         # Plot locations of wind forcing data points
         if not plain and forcing is not None:
             lonlat=forcing._point_list(mask=np.full(forcing.size()[1:], True))
-            plt.plot(lonlat[:,0], lonlat[:,1],'r.', markersize=1.5, label=f"Forcing from {forcing.name()}")
+            plt.plot(lonlat[:,0], lonlat[:,1],'r.', markersize=1.5, label=f"Forcing from {forcing.name}")
 
         plt.legend(loc="upper right")
         cbar = plt.colorbar()
         #cbar.set_clim(0, 1500)
         cbar.set_label('Depth (m)', rotation=90)
-        plt.title(f"{grid.name()} topography")
+        plt.title(f"{grid.name} topography")
 
 
 
@@ -442,22 +451,22 @@ class MaskPlotter(GridPlotter):
 
         # Plot boundary points if they exist
         lonlat=grid.boundary_points()
-        if lonlat.shape[0] > 0:
+        if len(lonlat[0]) > 0:
             plt.plot(lonlat[:,0], lonlat[:,1],'k*', label='Set boundary points')
 
         # Plot locations of boundary spectra
         if not plain and boundary is not None:
-            plt.plot(boundary.lon(), boundary.lat(),'kx', label=f"Available spectra from {boundary.name()}")
+            plt.plot(boundary.lon(), boundary.lat(),'kx', label=f"Available spectra from {boundary.name}")
 
         # Plot locations of wind forcing data points
         if not plain and forcing is not None:
             lonlat=forcing._point_list(mask=np.full(forcing.size()[1:], True))
-            plt.plot(lonlat[:,0], lonlat[:,1],'r.', markersize=1.5, label=f"Forcing from {forcing.name()}")
+            plt.plot(lonlat[:,0], lonlat[:,1],'r.', markersize=1.5, label=f"Forcing from {forcing.name}")
 
 
         plt.legend(loc="upper right")
         cbar = plt.colorbar()
         cbar.set_label('0=Land, 1=Sea', rotation=90)
-        plt.title(f"{grid.name()} land-sea mask")
+        plt.title(f"{grid.name} land-sea mask")
 
         return fig, file_module.add_suffix(filename, 'mask')

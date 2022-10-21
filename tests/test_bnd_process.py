@@ -1,9 +1,8 @@
 import unittest
-import sys
-sys.path.insert(0, "../../")
 from dnora import bnd
 import numpy as np
 from copy import copy
+from dnora.bnd.conventions import SpectralConvention
 
 def load_test_spec(shifted=False, math=False):
 	f = np.loadtxt('data/freq.test')
@@ -32,12 +31,12 @@ def loop_conventions(list_of_conventions, S, D):
 	for n in range(len(list_of_conventions)-1):
 		cur_c = list_of_conventions[n]
 		wan_c = list_of_conventions[n+1]
-		bnd_processor = bnd.process.processor_for_convention_change(current_convention=cur_c, wanted_convention=wan_c)
+		bnd_processor = bnd.process.boundary_processor_for_convention_change(current_convention=cur_c, wanted_convention=wan_c)
 		if not isinstance(bnd_processor, list):
 			bnd_processor = [bnd_processor]
 
 		for processor in bnd_processor:
-			Snew, Dnew=processor(spec=Snew,dirs=Dnew)
+			Snew, Dnew, _=processor(spec=Snew,dirs=Dnew,freq=np.array([[0.1]]))
 	return Snew, Dnew
 
 class BoundarySpectralConventionsOcean(unittest.TestCase):
@@ -46,8 +45,8 @@ class BoundarySpectralConventionsOcean(unittest.TestCase):
 			D=np.arange(0,360,dD)
 			S=np.array([np.arange(0,36,dD/10), np.arange(0,36,dD/10)])
 
-			bnd_processor = bnd.process.processor_for_convention_change(current_convention='Ocean', wanted_convention='Met')
-			Snew, Dnew=bnd_processor(spec=S,dirs=D)
+			bnd_processor = bnd.process.boundary_processor_for_convention_change(current_convention=SpectralConvention.OCEAN, wanted_convention=SpectralConvention.MET)
+			Snew, Dnew, _=bnd_processor(spec=S,dirs=D,freq=np.array([[0.1]]))
 
 			self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
 			stemp = np.mod(np.arange(0,36,dD/10)+18,36)
@@ -58,8 +57,8 @@ class BoundarySpectralConventionsOcean(unittest.TestCase):
 			D=np.arange(0,360,dD)
 			S=np.array([np.arange(0,36,dD/10), np.arange(0,36,dD/10)])
 
-			bnd_processor = bnd.process.processor_for_convention_change(current_convention='Ocean', wanted_convention='WW3')
-			Snew, Dnew=bnd_processor(spec=S,dirs=D)
+			bnd_processor = bnd.process.boundary_processor_for_convention_change(current_convention=SpectralConvention.OCEAN, wanted_convention=SpectralConvention.WW3)
+			Snew, Dnew, _=bnd_processor(spec=S,dirs=D,freq=np.array([[0.1]]))
 
 			self.assertIsNone(np.testing.assert_almost_equal(Dnew,np.mod(np.arange(0,-360,-dD)+90,360)))
 			stemp = np.mod(np.arange(0,-36,-dD/10)+9,36)
@@ -70,8 +69,8 @@ class BoundarySpectralConventionsOcean(unittest.TestCase):
 			D=np.arange(0,360,dD)
 			S=np.array([np.arange(0,36,dD/10), np.arange(0,36,dD/10)])
 
-			bnd_processor = bnd.process.processor_for_convention_change(current_convention='Ocean', wanted_convention='Math')
-			Snew, Dnew=bnd_processor(spec=S,dirs=D)
+			bnd_processor = bnd.process.boundary_processor_for_convention_change(current_convention=SpectralConvention.OCEAN, wanted_convention=SpectralConvention.MATH)
+			Snew, Dnew, _=bnd_processor(spec=S,dirs=D,freq=np.array([[0.1]]))
 
 			self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
 			stemp = np.mod(np.arange(0,-36,-dD/10)+9,36)
@@ -82,8 +81,8 @@ class BoundarySpectralConventionsOcean(unittest.TestCase):
 			D=np.arange(0,360,dD)
 			S=np.array([np.arange(0,36,dD/10), np.arange(0,36,dD/10)])
 
-			bnd_processor = bnd.process.processor_for_convention_change(current_convention='Ocean', wanted_convention='MathVec')
-			Snew, Dnew=bnd_processor(spec=S,dirs=D)
+			bnd_processor = bnd.process.boundary_processor_for_convention_change(current_convention=SpectralConvention.OCEAN, wanted_convention=SpectralConvention.MATHVEC)
+			Snew, Dnew, _=bnd_processor(spec=S,dirs=D,freq=np.array([[0.1]]))
 
 			self.assertIsNone(np.testing.assert_almost_equal(Dnew,np.mod(np.arange(0,-360,-dD)+90,360)))
 			self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
@@ -94,8 +93,8 @@ class BoundarySpectralConventionsWW3(unittest.TestCase):
 			D=np.mod(np.arange(0,-360,-dD)+90,360)
 			S=np.array([np.mod(np.arange(0,-36,-dD/10)+9,36), np.mod(np.arange(0,-36,-dD/10)+9,36)])
 
-			bnd_processor = bnd.process.processor_for_convention_change(current_convention='WW3', wanted_convention='Ocean')
-			Snew, Dnew=bnd_processor(spec=S,dirs=D)
+			bnd_processor = bnd.process.boundary_processor_for_convention_change(current_convention=SpectralConvention.WW3, wanted_convention=SpectralConvention.OCEAN)
+			Snew, Dnew, _=bnd_processor(spec=S,dirs=D,freq=np.array([[0.1]]))
 
 			self.assertIsNone(np.testing.assert_almost_equal(Dnew,np.arange(0,360,dD)))
 			self.assertIsNone(np.testing.assert_almost_equal(Snew,np.array([np.arange(0,36,dD/10), np.arange(0,36,dD/10)])))
@@ -105,11 +104,11 @@ class BoundarySpectralConventionsWW3(unittest.TestCase):
 			D=np.mod(np.arange(0,-360,-dD)+90,360)
 			S=np.array([np.mod(np.arange(0,-36,-dD/10)+9,36), np.mod(np.arange(0,-36,-dD/10)+9,36)])
 
-			bnd_processor = bnd.process.processor_for_convention_change(current_convention='WW3', wanted_convention='Met')
+			bnd_processor = bnd.process.boundary_processor_for_convention_change(current_convention=SpectralConvention.WW3, wanted_convention=SpectralConvention.MET)
 			Snew = copy(S)
 			Dnew = copy(D)
 			for processor in bnd_processor:
-				Snew, Dnew=processor(spec=Snew,dirs=Dnew)
+				Snew, Dnew, _=processor(spec=Snew,dirs=Dnew,freq=np.array([[0.1]]))
 
 			self.assertIsNone(np.testing.assert_almost_equal(Dnew,np.arange(0,360,dD)))
 			stemp = np.mod(np.arange(0,36,dD/10)+18,36)
@@ -121,14 +120,14 @@ class BoundarySpectralConventionsWW3(unittest.TestCase):
 			D=np.mod(np.arange(0,-360,-dD)+90,360)
 			S=np.array([np.mod(np.arange(0,-36,-dD/10)+9,36), np.mod(np.arange(0,-36,-dD/10)+9,36)])
 
-			bnd_processor = bnd.process.processor_for_convention_change(current_convention='WW3', wanted_convention='Math')
+			bnd_processor = bnd.process.boundary_processor_for_convention_change(current_convention=SpectralConvention.WW3, wanted_convention=SpectralConvention.MATH)
 			if not isinstance(bnd_processor, list):
 				bnd_processor = [bnd_processor]
 
 			Snew = copy(S)
 			Dnew = copy(D)
 			for processor in bnd_processor:
-				Snew, Dnew=processor(spec=Snew,dirs=Dnew)
+				Snew, Dnew, _=processor(spec=Snew,dirs=Dnew,freq=np.array([[0.1]]))
 
 			self.assertIsNone(np.testing.assert_almost_equal(Dnew,np.arange(0,360,dD)))
 			stemp = np.mod(np.arange(0,-36,-dD/10)+9,36)
@@ -139,7 +138,7 @@ class BoundarySpectralConventionsWW3(unittest.TestCase):
 			D=np.mod(np.arange(0,-360,-dD)+90,360)
 			S=np.array([np.mod(np.arange(0,-36,-dD/10)+9,36), np.mod(np.arange(0,-36,-dD/10)+9,36)])
 
-			bnd_processor = bnd.process.processor_for_convention_change(current_convention='WW3', wanted_convention='MathVec')
+			bnd_processor = bnd.process.boundary_processor_for_convention_change(current_convention=SpectralConvention.WW3, wanted_convention=SpectralConvention.MATHVEC)
 			if not isinstance(bnd_processor, list):
 				bnd_processor = [bnd_processor]
 
@@ -147,7 +146,7 @@ class BoundarySpectralConventionsWW3(unittest.TestCase):
 			Dnew = copy(D)
 
 			for processor in bnd_processor:
-				Snew, Dnew=processor(spec=Snew,dirs=Dnew)
+				Snew, Dnew, _=processor(spec=Snew,dirs=Dnew,freq=np.array([[0.1]]))
 
 			self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
 			self.assertIsNone(np.testing.assert_almost_equal(Snew,np.array([np.arange(0,36,dD/10), np.arange(0,36,dD/10)])))
@@ -159,8 +158,8 @@ class BoundarySpectralConventionsMet(unittest.TestCase):
 			D=np.arange(0,360,dD)
 			S=np.array([ np.mod(np.arange(0,36,dD/10)+18,36),  np.mod(np.arange(0,36,dD/10)+18,36)])
 
-			bnd_processor = bnd.process.processor_for_convention_change(current_convention='Met', wanted_convention='Ocean')
-			Snew, Dnew=bnd_processor(spec=S,dirs=D)
+			bnd_processor = bnd.process.boundary_processor_for_convention_change(current_convention=SpectralConvention.MET, wanted_convention=SpectralConvention.OCEAN)
+			Snew, Dnew, _=bnd_processor(spec=S,dirs=D,freq=np.array([[0.1]]))
 
 			self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
 			stemp = np.arange(0,36,dD/10)
@@ -171,12 +170,12 @@ class BoundarySpectralConventionsMet(unittest.TestCase):
 			D=np.arange(0,360,dD)
 			S=np.array([np.mod(np.arange(0,36,dD/10)+18,36), np.mod(np.arange(0,36,dD/10)+18,36)])
 
-			bnd_processor = bnd.process.processor_for_convention_change(current_convention='Met', wanted_convention='WW3')
+			bnd_processor = bnd.process.boundary_processor_for_convention_change(current_convention=SpectralConvention.MET, wanted_convention=SpectralConvention.WW3)
 			Snew = copy(S)
 			Dnew = copy(D)
 
 			for processor in bnd_processor:
-				Snew, Dnew=processor(spec=Snew,dirs=Dnew)
+				Snew, Dnew, _=processor(spec=Snew,dirs=Dnew,freq=np.array([[0.1]]))
 
 			self.assertIsNone(np.testing.assert_almost_equal(Dnew,np.mod(np.arange(0,-360,-dD)+90,360)))
 			stemp = np.mod(np.arange(0,-36,-dD/10)+9,36)
@@ -187,12 +186,12 @@ class BoundarySpectralConventionsMet(unittest.TestCase):
 			D=np.arange(0,360,dD)
 			S=np.array([np.mod(np.arange(0,36,dD/10)+18,36), np.mod(np.arange(0,36,dD/10)+18,36)])
 
-			bnd_processor = bnd.process.processor_for_convention_change(current_convention='Met', wanted_convention='Math')
+			bnd_processor = bnd.process.boundary_processor_for_convention_change(current_convention=SpectralConvention.MET, wanted_convention=SpectralConvention.MATH)
 			Snew = copy(S)
 			Dnew = copy(D)
 
 			for processor in bnd_processor:
-				Snew, Dnew=processor(spec=Snew,dirs=Dnew)
+				Snew, Dnew, _=processor(spec=Snew,dirs=Dnew,freq=np.array([[0.1]]))
 
 			self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
 			stemp = np.mod(np.arange(0,-36,-dD/10)+9,36)
@@ -203,12 +202,12 @@ class BoundarySpectralConventionsMet(unittest.TestCase):
 			D=np.arange(0,360,dD)
 			S=np.array([np.mod(np.arange(0,36,dD/10)+18,36), np.mod(np.arange(0,36,dD/10)+18,36)])
 
-			bnd_processor = bnd.process.processor_for_convention_change(current_convention='Met', wanted_convention='MathVec')
+			bnd_processor = bnd.process.boundary_processor_for_convention_change(current_convention=SpectralConvention.MET, wanted_convention=SpectralConvention.MATHVEC)
 			Snew = copy(S)
 			Dnew = copy(D)
 
 			for processor in bnd_processor:
-				Snew, Dnew=processor(spec=Snew,dirs=Dnew)
+				Snew, Dnew, _=processor(spec=Snew,dirs=Dnew,freq=np.array([[0.1]]))
 
 			self.assertIsNone(np.testing.assert_almost_equal(Dnew,np.mod(np.arange(0,-360,-dD)+90,360)))
 			self.assertIsNone(np.testing.assert_almost_equal(Snew,np.array([np.arange(0,36,dD/10), np.arange(0,36,dD/10)])))
@@ -219,9 +218,9 @@ class BoundarySpectralConventionsMath(unittest.TestCase):
 			D=np.arange(0,360,dD)
 			S=np.array([np.mod(np.arange(0,-36,-dD/10)+9,36), np.mod(np.arange(0,-36,-dD/10)+9,36)])
 
-			bnd_processor = bnd.process.processor_for_convention_change(current_convention='Math', wanted_convention='Ocean')
+			bnd_processor = bnd.process.boundary_processor_for_convention_change(current_convention=SpectralConvention.MATH, wanted_convention=SpectralConvention.OCEAN)
 
-			Snew, Dnew=bnd_processor(spec=S,dirs=D)
+			Snew, Dnew, _=bnd_processor(spec=S,dirs=D,freq=np.array([[0.1]]))
 
 			self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
 			stemp = np.arange(0,36,dD/10)
@@ -234,12 +233,12 @@ class BoundarySpectralConventionsMath(unittest.TestCase):
 			D=np.arange(0,360,dD)
 			S=np.array([np.mod(np.arange(0,-36,-dD/10)+9,36), np.mod(np.arange(0,-36,-dD/10)+9,36)])
 
-			bnd_processor = bnd.process.processor_for_convention_change(current_convention='Math', wanted_convention='WW3')
+			bnd_processor = bnd.process.boundary_processor_for_convention_change(current_convention=SpectralConvention.MATH, wanted_convention=SpectralConvention.WW3)
 
 			Snew = copy(S)
 			Dnew = copy(D)
 			for processor in bnd_processor:
-				Snew, Dnew=processor(spec=Snew,dirs=Dnew)
+				Snew, Dnew, _=processor(spec=Snew,dirs=Dnew,freq=np.array([[0.1]]))
 
 			self.assertIsNone(np.testing.assert_almost_equal(Dnew,np.mod(np.arange(0,-360,-dD)+90,360)))
 			self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
@@ -249,12 +248,12 @@ class BoundarySpectralConventionsMath(unittest.TestCase):
 			D=np.arange(0,360,dD)
 			S=np.array([np.mod(np.arange(0,-36,-dD/10)+9,36), np.mod(np.arange(0,-36,-dD/10)+9,36)])
 
-			bnd_processor = bnd.process.processor_for_convention_change(current_convention='Math', wanted_convention='Met')
+			bnd_processor = bnd.process.boundary_processor_for_convention_change(current_convention=SpectralConvention.MATH, wanted_convention=SpectralConvention.MET)
 
 			Snew = copy(S)
 			Dnew = copy(D)
 			for processor in bnd_processor:
-				Snew, Dnew=processor(spec=Snew,dirs=Dnew)
+				Snew, Dnew, _=processor(spec=Snew,dirs=Dnew,freq=np.array([[0.1]]))
 
 			self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
 			stemp = np.mod(np.arange(0,36,dD/10)+18,36)
@@ -265,12 +264,12 @@ class BoundarySpectralConventionsMath(unittest.TestCase):
 			D=np.arange(0,360,dD)
 			S=np.array([np.mod(np.arange(0,-36,-dD/10)+9,36), np.mod(np.arange(0,-36,-dD/10)+9,36)])
 
-			bnd_processor = bnd.process.processor_for_convention_change(current_convention='Math', wanted_convention='MathVec')
+			bnd_processor = bnd.process.boundary_processor_for_convention_change(current_convention=SpectralConvention.MATH, wanted_convention=SpectralConvention.MATHVEC)
 
 			Snew = copy(S)
 			Dnew = copy(D)
 			for processor in bnd_processor:
-				Snew, Dnew=processor(spec=Snew,dirs=Dnew)
+				Snew, Dnew, _=processor(spec=Snew,dirs=Dnew,freq=np.array([[0.1]]))
 
 			self.assertIsNone(np.testing.assert_almost_equal(Dnew,np.mod(np.arange(0,-360,-dD)+90,360)))
 			stemp = np.arange(0,36,dD/10)
@@ -284,8 +283,8 @@ class BoundarySpectralConventionsMathVec(unittest.TestCase):
 			D=np.mod(np.arange(0,-360,-dD)+90,360)
 			S=np.array([np.arange(0,36,dD/10), np.arange(0,36,dD/10)])
 
-			bnd_processor = bnd.process.processor_for_convention_change(current_convention='MathVec', wanted_convention='Ocean')
-			Snew, Dnew=bnd_processor(spec=S,dirs=D)
+			bnd_processor = bnd.process.boundary_processor_for_convention_change(current_convention=SpectralConvention.MATHVEC, wanted_convention=SpectralConvention.OCEAN)
+			Snew, Dnew, _=bnd_processor(spec=S,dirs=D,freq=np.array([[0.1]]))
 
 			self.assertIsNone(np.testing.assert_almost_equal(Dnew,np.arange(0,360,dD)))
 			self.assertIsNone(np.testing.assert_almost_equal(Snew,S))
@@ -295,12 +294,12 @@ class BoundarySpectralConventionsMathVec(unittest.TestCase):
 			D=np.mod(np.arange(0,-360,-dD)+90,360)
 			S=np.array([np.arange(0,36,dD/10), np.arange(0,36,dD/10)])
 
-			bnd_processor = bnd.process.processor_for_convention_change(current_convention='MathVec', wanted_convention='Met')
+			bnd_processor = bnd.process.boundary_processor_for_convention_change(current_convention=SpectralConvention.MATHVEC, wanted_convention=SpectralConvention.MET)
 
 			Snew = copy(S)
 			Dnew = copy(D)
 			for processor in bnd_processor:
-				Snew, Dnew=processor(spec=Snew,dirs=Dnew)
+				Snew, Dnew, _=processor(spec=Snew,dirs=Dnew,freq=np.array([[0.1]]))
 
 			self.assertIsNone(np.testing.assert_almost_equal(Dnew,np.arange(0,360,dD)))
 			stemp = np.mod(np.arange(0,36,dD/10)+18,36)
@@ -313,12 +312,12 @@ class BoundarySpectralConventionsMathVec(unittest.TestCase):
 			D=np.mod(np.arange(0,-360,-dD)+90,360)
 			S=np.array([np.arange(0,36,dD/10), np.arange(0,36,dD/10)])
 
-			bnd_processor = bnd.process.processor_for_convention_change(current_convention='MathVec', wanted_convention='WW3')
+			bnd_processor = bnd.process.boundary_processor_for_convention_change(current_convention=SpectralConvention.MATHVEC, wanted_convention=SpectralConvention.WW3)
 
 			Snew = copy(S)
 			Dnew = copy(D)
 			for processor in bnd_processor:
-				Snew, Dnew=processor(spec=Snew,dirs=Dnew)
+				Snew, Dnew, _=processor(spec=Snew,dirs=Dnew,freq=np.array([[0.1]]))
 
 			self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
 			stemp = np.mod(np.arange(0,-36,-dD/10)+9,36)
@@ -331,12 +330,12 @@ class BoundarySpectralConventionsMathVec(unittest.TestCase):
 			D=np.mod(np.arange(0,-360,-dD)+90,360)
 			S=np.array([np.arange(0,36,dD/10), np.arange(0,36,dD/10)])
 
-			bnd_processor = bnd.process.processor_for_convention_change(current_convention='MathVec', wanted_convention='Math')
+			bnd_processor = bnd.process.boundary_processor_for_convention_change(current_convention=SpectralConvention.MATHVEC, wanted_convention=SpectralConvention.MATH)
 
 			Snew = copy(S)
 			Dnew = copy(D)
 			for processor in bnd_processor:
-				Snew, Dnew=processor(spec=Snew,dirs=Dnew)
+				Snew, Dnew, _=processor(spec=Snew,dirs=Dnew,freq=np.array([[0.1]]))
 
 			self.assertIsNone(np.testing.assert_almost_equal(Dnew,np.arange(0,360,dD)))
 			stemp = np.mod(np.arange(0,-36,-dD/10)+9,36)
@@ -348,7 +347,7 @@ class BoundarySpectralConventionsCircular(unittest.TestCase):
 	def test_ocean_circular(self):
 		S, D = load_test_spec()
 
-		list_of_conventions = ['Ocean', 'Met', 'WW3', 'Math', 'MathVec', 'Ocean']
+		list_of_conventions = [SpectralConvention.OCEAN, SpectralConvention.MET, SpectralConvention.WW3, SpectralConvention.MATH, SpectralConvention.MATHVEC, SpectralConvention.OCEAN]
 
 		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
 		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
@@ -375,7 +374,7 @@ class BoundarySpectralConventionsCircular(unittest.TestCase):
 	def test_met_circular(self):
 		S, D = load_test_spec()
 
-		list_of_conventions = ['Met', 'WW3', 'MathVec', 'Ocean', 'Math', 'Met']
+		list_of_conventions = [SpectralConvention.MET, SpectralConvention.WW3, SpectralConvention.MATHVEC, SpectralConvention.OCEAN, SpectralConvention.MATH, SpectralConvention.MET]
 
 		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
 		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
@@ -402,7 +401,7 @@ class BoundarySpectralConventionsCircular(unittest.TestCase):
 	def test_ww3_circular(self):
 		S, D = load_test_spec(math=True)
 
-		list_of_conventions = ['WW3', 'Ocean', 'Math', 'MathVec', 'Met', 'WW3']
+		list_of_conventions = [SpectralConvention.WW3, SpectralConvention.OCEAN, SpectralConvention.MATH, SpectralConvention.MATHVEC, SpectralConvention.MET, SpectralConvention.WW3]
 
 		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
 		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
@@ -429,7 +428,7 @@ class BoundarySpectralConventionsCircular(unittest.TestCase):
 	def test_math_circular(self):
 		S, D = load_test_spec()
 
-		list_of_conventions = ['Math', 'MathVec', 'WW3', 'Ocean', 'Met', 'WW3', 'Math']
+		list_of_conventions = [SpectralConvention.MATH, SpectralConvention.MATHVEC, SpectralConvention.WW3, SpectralConvention.OCEAN, SpectralConvention.MET, SpectralConvention.WW3, SpectralConvention.MATH]
 
 		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
 		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))
@@ -456,7 +455,7 @@ class BoundarySpectralConventionsCircular(unittest.TestCase):
 	def test_mathvec_circular(self):
 		S, D = load_test_spec(math=True)
 
-		list_of_conventions = ['MathVec', 'WW3', 'Ocean', 'Met', 'Math',  'WW3', 'MathVec']
+		list_of_conventions = [SpectralConvention.MATHVEC, SpectralConvention.WW3, SpectralConvention.OCEAN, SpectralConvention.MET, SpectralConvention.MATH,  SpectralConvention.WW3, SpectralConvention.MATHVEC]
 
 		Snew, Dnew = loop_conventions(list_of_conventions, S, D)
 		self.assertIsNone(np.testing.assert_almost_equal(Dnew,D))

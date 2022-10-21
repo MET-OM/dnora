@@ -9,7 +9,7 @@ class IdentifyBnd(unittest.TestCase):
 	def test_all_edges(self):
 		grid = Grid(lon=(0,1), lat=(0,1))
 		grid.set_spacing(nx=4, ny =4)
-		grid.set_boundary(EdgesAsBoundary(edges=['N','W','S','E']))
+		grid.set_mask(EdgesAsBoundary(edges=['N','W','S','E']))
 
 		self.assertEqual(set(identify_boundary_edges(grid.boundary_mask())),set(['N','W','S','E']))
 
@@ -23,7 +23,7 @@ class IdentifyBnd(unittest.TestCase):
 			incomplete_list = copy(full_list)
 			incomplete_list.remove(not_this)
 
-			grid.set_boundary(EdgesAsBoundary(edges=incomplete_list))
+			grid.set_mask(EdgesAsBoundary(edges=incomplete_list))
 			self.assertEqual(set(identify_boundary_edges(grid.boundary_mask())),set(incomplete_list))
 
 class OrderBnd(unittest.TestCase):
@@ -50,22 +50,22 @@ class BoundaryCoordinates(unittest.TestCase):
 		grid.set_spacing(nx=4, ny =5)
 
 		edges = ['N']
-		lons, lats = get_coords_for_boundary_edges(edges, grid.lon_edges(), grid.lat_edges())
+		lons, lats = get_coords_for_boundary_edges(edges, grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([0,1])), True)
 		self.assertEqual(np.array_equal(lats,np.array([3,3])), True)
 
 		edges = ['S']
-		lons, lats = get_coords_for_boundary_edges(edges, grid.lon_edges(), grid.lat_edges())
+		lons, lats = get_coords_for_boundary_edges(edges, grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([1,0])), True)
 		self.assertEqual(np.array_equal(lats,np.array([2,2])), True)
 
 		edges = ['W']
-		lons, lats = get_coords_for_boundary_edges(edges, grid.lon_edges(), grid.lat_edges())
+		lons, lats = get_coords_for_boundary_edges(edges, grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([0,0])), True)
 		self.assertEqual(np.array_equal(lats,np.array([2,3])), True)
 
 		edges = ['E']
-		lons, lats = get_coords_for_boundary_edges(edges, grid.lon_edges(), grid.lat_edges())
+		lons, lats = get_coords_for_boundary_edges(edges, grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([1,1])), True)
 		self.assertEqual(np.array_equal(lats,np.array([3,2])), True)
 
@@ -75,22 +75,22 @@ class BoundaryCoordinates(unittest.TestCase):
 		grid.set_spacing(nx=4, ny =5)
 
 		edges = ['N','E']
-		lons, lats = get_coords_for_boundary_edges(edges, grid.lon_edges(), grid.lat_edges())
+		lons, lats = get_coords_for_boundary_edges(edges, grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([0,1,1])), True)
 		self.assertEqual(np.array_equal(lats,np.array([3,3,2])), True)
 
 		edges = ['S','W']
-		lons, lats = get_coords_for_boundary_edges(edges, grid.lon_edges(), grid.lat_edges())
+		lons, lats = get_coords_for_boundary_edges(edges, grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([1,0,0])), True)
 		self.assertEqual(np.array_equal(lats,np.array([2,2,3])), True)
 
 		edges = ['W','N']
-		lons, lats = get_coords_for_boundary_edges(edges, grid.lon_edges(), grid.lat_edges())
+		lons, lats = get_coords_for_boundary_edges(edges, grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([0,0,1])), True)
 		self.assertEqual(np.array_equal(lats,np.array([2,3,3])), True)
 
 		edges = ['E','S']
-		lons, lats = get_coords_for_boundary_edges(edges, grid.lon_edges(), grid.lat_edges())
+		lons, lats = get_coords_for_boundary_edges(edges, grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([1,1,0])), True)
 		self.assertEqual(np.array_equal(lats,np.array([3,2,2])), True)
 
@@ -99,22 +99,22 @@ class BoundaryCoordinates(unittest.TestCase):
 		grid.set_spacing(nx=4, ny =5)
 
 		edges = ['N','E','S']
-		lons, lats = get_coords_for_boundary_edges(edges, grid.lon_edges(), grid.lat_edges())
+		lons, lats = get_coords_for_boundary_edges(edges, grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([0,1,1,0])), True)
 		self.assertEqual(np.array_equal(lats,np.array([3,3,2,2])), True)
 
 		edges = ['S','W','N']
-		lons, lats = get_coords_for_boundary_edges(edges, grid.lon_edges(), grid.lat_edges())
+		lons, lats = get_coords_for_boundary_edges(edges, grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([1,0,0,1])), True)
 		self.assertEqual(np.array_equal(lats,np.array([2,2,3,3])), True)
 
 		edges = ['W','N','E']
-		lons, lats = get_coords_for_boundary_edges(edges, grid.lon_edges(), grid.lat_edges())
+		lons, lats = get_coords_for_boundary_edges(edges, grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([0,0,1,1])), True)
 		self.assertEqual(np.array_equal(lats,np.array([2,3,3,2])), True)
 
 		edges = ['E','S','W']
-		lons, lats = get_coords_for_boundary_edges(edges, grid.lon_edges(), grid.lat_edges())
+		lons, lats = get_coords_for_boundary_edges(edges, grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([1,1,0,0])), True)
 		self.assertEqual(np.array_equal(lats,np.array([3,2,2,3])), True)
 
@@ -124,7 +124,7 @@ class BoundaryCoordinates(unittest.TestCase):
 		grid.set_spacing(nx=4, ny =5)
 
 		edges = ['N','E','S','W']
-		lons, lats = get_coords_for_boundary_edges(edges, grid.lon_edges(), grid.lat_edges())
+		lons, lats = get_coords_for_boundary_edges(edges, grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([0,1,1,0,0])), True)
 		self.assertEqual(np.array_equal(lats,np.array([3,3,2,2,3])), True)
 
@@ -133,7 +133,7 @@ class BoundaryCoordinates(unittest.TestCase):
 		grid.set_spacing(nx=4, ny =5)
 
 		edges = []
-		lons, lats = get_coords_for_boundary_edges(edges, grid.lon_edges(), grid.lat_edges())
+		lons, lats = get_coords_for_boundary_edges(edges, grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([])), True)
 		self.assertEqual(np.array_equal(lats,np.array([])), True)
 
@@ -142,8 +142,8 @@ class FullPipeline(unittest.TestCase):
 		grid = Grid(lon=(0,1), lat=(2,3))
 		grid.set_spacing(nx=4, ny =5)
 
-		grid.set_boundary(EdgesAsBoundary(edges=['N']))
-		lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.lon_edges(), grid.lat_edges())
+		grid.set_mask(EdgesAsBoundary(edges=['N']))
+		lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([0,1])), True)
 		self.assertEqual(np.array_equal(lats,np.array([3,3])), True)
 
@@ -151,8 +151,8 @@ class FullPipeline(unittest.TestCase):
 		grid = Grid(lon=(0,1), lat=(2,3))
 		grid.set_spacing(nx=4, ny =5)
 
-		grid.set_boundary(EdgesAsBoundary(edges=['N','W']))
-		lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.lon_edges(), grid.lat_edges())
+		grid.set_mask(EdgesAsBoundary(edges=['N','W']))
+		lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([0,0,1])), True)
 		self.assertEqual(np.array_equal(lats,np.array([2,3,3])), True)
 
@@ -160,8 +160,8 @@ class FullPipeline(unittest.TestCase):
 		grid = Grid(lon=(0,1), lat=(2,3))
 		grid.set_spacing(nx=4, ny =5)
 
-		grid.set_boundary(EdgesAsBoundary(edges=['N','W','E']))
-		lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.lon_edges(), grid.lat_edges())
+		grid.set_mask(EdgesAsBoundary(edges=['N','W','E']))
+		lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([0,0,1,1])), True)
 		self.assertEqual(np.array_equal(lats,np.array([2,3,3,2])), True)
 
@@ -169,16 +169,16 @@ class FullPipeline(unittest.TestCase):
 		grid = Grid(lon=(0,1), lat=(2,3))
 		grid.set_spacing(nx=4, ny =5)
 
-		lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.lon_edges(), grid.lat_edges())
+		lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([])), True)
 		self.assertEqual(np.array_equal(lats,np.array([])), True)
 
 	def test_invalid_edges(self):
 		grid = Grid(lon=(0,1), lat=(2,3))
 		grid.set_spacing(nx=4, ny =5)
-		grid.set_boundary(EdgesAsBoundary(edges=['W','E']))
+		grid.set_mask(EdgesAsBoundary(edges=['W','E']))
 
-		lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.lon_edges(), grid.lat_edges())
+		lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([])), True)
 		self.assertEqual(np.array_equal(lats,np.array([])), True)
 
