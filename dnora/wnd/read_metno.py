@@ -302,6 +302,7 @@ class MEPS(ForcingReader):
         try:
             xr.open_dataset(url)
             prefix = 'det'
+            ensemble_member = False
         except:
             print('No')
             prefix = 'subset'
