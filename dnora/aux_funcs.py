@@ -5,6 +5,7 @@ import pandas as pd
 from scipy.interpolate import griddata
 from scipy import interpolate
 import os, re, glob
+import pyfimex0 as pyfi
 from typing import TYPE_CHECKING, Tuple, List, Union
 from . import file_module
 if TYPE_CHECKING:
@@ -625,3 +626,21 @@ def create_swan_segment_coords(boundary_mask, lon_edges, lat_edges):
     clean_edge_list = create_ordered_boundary_list(edge_list)
     lon, lat = get_coords_for_boundary_edges(clean_edge_list, lon_edges, lat_edges)
     return lon, lat
+
+
+def pyfimex(input_file, output_file, projString, xAxisValues, yAxisValues,
+          selectVariables, reduceTime_start, reduceTime_end,ensemble_member=False):
+    r = pyfi.createFileReader('netcdf', input_file)
+    inter_ll = pyfi.createInterpolator(r)
+    inter_ll.changeProjection(pyfi.InterpolationMethod.BILINEAR,
+                                  projString,
+                                  xAxisValues,
+                                  yAxisValues,
+                                  "degree",
+                                  "degree")
+    extra = pyfi.createExtractor(inter_ll)
+    extra.selectVariables(selectVariables)
+    extra.reduceTimeStartEnd(reduceTime_start, reduceTime_end)
+    if ensemble_member == True:
+        extra.reduceDimensionStartEnd('ensemble_member', 1, 1)
+    pyfi.createFileWriter(extra, 'netcdf', output_file)

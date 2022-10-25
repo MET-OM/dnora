@@ -13,7 +13,7 @@ from .read import ForcingReader
 
 # Import aux_funcsiliry functions
 from .. import msg
-from ..aux_funcs import create_time_stamps, u_v_from_dir, expand_area, lon_in_km
+from ..aux_funcs import create_time_stamps, u_v_from_dir, expand_area, lon_in_km, pyfimex
 
 
 class NORA3(ForcingReader):
@@ -30,7 +30,7 @@ class NORA3(ForcingReader):
     """
 
     def __init__(self, stride: int=1, hours_per_file: int=1, last_file: str='',
-                lead_time: int=4, source: str='thredds'):
+                lead_time: int=4, source: str='thredds', program: str='pyfimex'):
         """The data is currently in hourly files. Do not change the default
         setting unless you have a good reason to do so.
         """
@@ -40,6 +40,7 @@ class NORA3(ForcingReader):
         self.lead_time = copy(lead_time)
         self.last_file = copy(last_file)
         self.source = source
+        self.program = program
         return
 
     def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float):
@@ -74,6 +75,7 @@ class NORA3(ForcingReader):
         dlon = 3/mean_lon_in_km
 
         wnd_list = []
+        print('Apply >>> '+ self.program)
         for n in range(len(file_times)):
 
             url = self.get_url(file_times[n], start_times[n], first_ind=self.lead_time, source=self.source)
@@ -82,37 +84,35 @@ class NORA3(ForcingReader):
             msg.plain(f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
 
             nc_fimex = f'dnora_wnd_temp/wind_{n:04.0f}_MetNo_NORA3.nc'
-
-            fimex_command = ['fimex', '--input.file='+url,
-                             '--interpolate.method=bilinear',
-                             '--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0',
-                             '--interpolate.xAxisValues='
-                             + str(lon_min)+','+str(lon_min+dlon)
-                             + ',...,'+str(lon_max)+'',
-                             '--interpolate.yAxisValues='
-                             + str(lat_min)+','+str(lat_min+dlat)
-                             + ',...,'+str(lat_max)+'',
-                             '--interpolate.xAxisUnit=degree', '--interpolate.yAxisUnit=degree',
-                             '--process.rotateVector.all',
-                             '--extract.selectVariables=wind_speed', '--extract.selectVariables=wind_direction',
-                             '--extract.reduceTime.start=' + \
-                             start_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
-                             '--extract.reduceTime.end=' + \
-                             end_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
-                             '--process.rotateVector.direction=latlon',
-                             '--output.file='+nc_fimex]
-            # read_success = False
-            # for ct in range(5):  # try 6 times
-            #     try:
-            #         call(fimex_command)
-            #         read_success = True
-            #     except:
-            #         print(f'......Retry {ct}.....')
-            #         time.sleep(10)  # wait for 10 seconds before re-trying
-            #
-            # # Don't want to catch the last execption
-            # if not read_success:
-            call(fimex_command)
+            # Apply pyfimex or fimex
+            if self.program == 'pyfimex':
+                pyfimex(input_file=url,output_file=nc_fimex,
+                    projString="+proj=latlong +ellps=sphere +a=6371000 +e=0",
+                    xAxisValues=np.arange(lon_min,lon_max+dlon,dlon),
+                    yAxisValues=np.arange(lat_min,lat_max+dlat,dlat),
+                    selectVariables=['wind_speed', 'wind_direction'],
+                    reduceTime_start = start_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
+                    reduceTime_end   = end_times[n].strftime('%Y-%m-%dT%H:%M:%S'))
+            elif self.program == 'fimex':
+                fimex_command = ['fimex', '--input.file='+url,
+                                 '--interpolate.method=bilinear',
+                                 '--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0',
+                                 '--interpolate.xAxisValues='
+                                 + str(lon_min)+','+str(lon_min+dlon)
+                                 + ',...,'+str(lon_max)+'',
+                                 '--interpolate.yAxisValues='
+                                 + str(lat_min)+','+str(lat_min+dlat)
+                                 + ',...,'+str(lat_max)+'',
+                                 '--interpolate.xAxisUnit=degree', '--interpolate.yAxisUnit=degree',
+                                 '--process.rotateVector.all',
+                                 '--extract.selectVariables=wind_speed', '--extract.selectVariables=wind_direction',
+                                 '--extract.reduceTime.start=' + \
+                                 start_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
+                                 '--extract.reduceTime.end=' + \
+                                 end_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
+                                 '--process.rotateVector.direction=latlon',
+                                 '--output.file='+nc_fimex]
+                call(fimex_command)
             wnd_list.append(xr.open_dataset(nc_fimex).squeeze())
 
         wind_forcing = xr.concat(wnd_list, dim="time")
@@ -154,7 +154,7 @@ class MyWave3km(ForcingReader):
     from the wave model output. This means that model land points have no data.
     """
 
-    def __init__(self, stride: int=24, hours_per_file: int=24, last_file: str='', lead_time: int=0):
+    def __init__(self, stride: int=24, hours_per_file: int=24, last_file: str='', lead_time: int=0, program: str='pyfimex'):
         """The data is currently in daily files. Do not change the default
         setting unless you have a good reason to do so.
         """
@@ -163,6 +163,7 @@ class MyWave3km(ForcingReader):
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
         self.last_file = copy(last_file)
+        self.program = program
         return
 
     def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float):
@@ -195,6 +196,7 @@ class MyWave3km(ForcingReader):
         dlon = 3/mean_lon_in_km
 
         wnd_list = []
+        print('Apply >>> '+ self.program)
         for n in range(len(file_times)):
             url = self.get_url(file_times[n])
 
@@ -203,23 +205,31 @@ class MyWave3km(ForcingReader):
                 f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
 
             nc_fimex = f'dnora_wnd_temp/wind_{n:04.0f}_MetNo_MyWave3km.nc'
-
-            fimex_command = ['fimex', '--input.file='+url,
-                             '--interpolate.method=bilinear',
-                             '--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0',
-                             '--interpolate.xAxisValues='+ str(lon_min)+','+str(lon_min+dlon)+ ',...,'+str(lon_max)+'',
-                             '--interpolate.yAxisValues='           + str(lat_min)+','+str(lat_min+dlat)+ ',...,'+str(lat_max)+'',
-                             '--interpolate.xAxisUnit=degree', '--interpolate.yAxisUnit=degree',
-                             '--process.rotateVector.all',
-                             '--extract.selectVariables=ff', '--extract.selectVariables=dd',
-                             '--extract.reduceTime.start=' + \
-                             start_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
-                             '--extract.reduceTime.end=' + \
-                             end_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
-                             '--process.rotateVector.direction=latlon',
-                             '--output.file='+nc_fimex]
-
-            call(fimex_command)
+            # Apply pyfimex or fimex
+            if self.program == 'pyfimex':
+                pyfimex(input_file=url,output_file=nc_fimex,
+                    projString="+proj=latlong +ellps=sphere +a=6371000 +e=0",
+                    xAxisValues=np.arange(lon_min,lon_max+dlon,dlon),
+                    yAxisValues=np.arange(lat_min,lat_max+dlat,dlat),
+                    selectVariables=['ff', 'dd'],
+                    reduceTime_start = start_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
+                    reduceTime_end   = end_times[n].strftime('%Y-%m-%dT%H:%M:%S'))
+            elif self.program == 'fimex':
+                fimex_command = ['fimex', '--input.file='+url,
+                                 '--interpolate.method=bilinear',
+                                 '--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0',
+                                 '--interpolate.xAxisValues='+ str(lon_min)+','+str(lon_min+dlon)+ ',...,'+str(lon_max)+'',
+                                 '--interpolate.yAxisValues='           + str(lat_min)+','+str(lat_min+dlat)+ ',...,'+str(lat_max)+'',
+                                 '--interpolate.xAxisUnit=degree', '--interpolate.yAxisUnit=degree',
+                                 '--process.rotateVector.all',
+                                 '--extract.selectVariables=ff', '--extract.selectVariables=dd',
+                                 '--extract.reduceTime.start=' + \
+                                 start_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
+                                 '--extract.reduceTime.end=' + \
+                                 end_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
+                                 '--process.rotateVector.direction=latlon',
+                                 '--output.file='+nc_fimex]
+                call(fimex_command)
             wnd_list.append(xr.open_dataset(nc_fimex).squeeze())
 
         wind_forcing = xr.concat(wnd_list, dim="time")
@@ -228,10 +238,10 @@ class MyWave3km(ForcingReader):
         wind_forcing = wind_forcing.rename_dims({'rlat': 'lat', 'rlon': 'lon'})
         wind_forcing = wind_forcing.rename_vars({'rlat': 'lat', 'rlon': 'lon'})
 
-        # Go to u and v components
-        u, v = u_v_from_dir(wind_forcing.ff, wind_forcing.dd)  # factor 1000
-        u = u.fillna(0)
-        v = v.fillna(0)
+        # Go to u and v component
+        u, v = u_v_from_dir(wind_forcing.ff, wind_forcing.dd)  #  factor 1000
+        u = -1*u.fillna(0) #*-1 due to ocean convection in WAM!!!
+        v = -1*v.fillna(0) #*-1 due to ocean convection in WAM!!!
 
         # Remove speed and dir and add components to dataset
         wind_forcing = wind_forcing.drop_vars(['ff', 'dd'])
@@ -255,7 +265,7 @@ class MEPS(ForcingReader):
     The data is from a 2.5 km AROME model.
     """
 
-    def __init__(self, stride: int = 6, hours_per_file: int = 67, last_file: str = '', lead_time: int = 0):
+    def __init__(self, stride: int = 6, hours_per_file: int = 67, last_file: str = '', lead_time: int = 0, program: str='pyfimex'):
         """The data is currently in 6 hourly files. Do not change the default
         setting unless you have a good reason to do so.
         """
@@ -264,6 +274,7 @@ class MEPS(ForcingReader):
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
         self.last_file = copy(last_file)
+        self.program = program
         return
 
     def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float):
@@ -291,9 +302,11 @@ class MEPS(ForcingReader):
         try:
             xr.open_dataset(url)
             prefix = 'det'
+            ensemble_member = False
         except:
             print('No')
             prefix = 'subset'
+            ensemble_member = True
 
         # Set resolution to about 2.5 km
         dlat = 2.5/111
@@ -304,6 +317,7 @@ class MEPS(ForcingReader):
         lon_min, lon_max, lat_min, lat_max = expand_area(min(grid.lon()), max(grid.lon()), min(grid.lat()), max(grid.lat()), expansion_factor)
 
         wnd_list = []
+        print('Apply >>> '+ self.program)
         for n in range(len(file_times)):
             msg.plain(
                 f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
@@ -312,33 +326,43 @@ class MEPS(ForcingReader):
             url = self.get_url(file_times[n], prefix)
             msg.from_file(url)
 
-            fimex_command = ['fimex', '--input.file='+url,
-                             '--interpolate.method=bilinear',
-                             '--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0',
-                             '--interpolate.xAxisValues='
-                             + str(lon_min)+','+str(lon_min+dlon)
-                             + ',...,'+str(lon_max)+'',
-                             '--interpolate.yAxisValues='
-                             + str(lat_min)+','+str(lat_min+dlat)
-                             + ',...,'+str(lat_max)+'',
-                             '--interpolate.xAxisUnit=degree', '--interpolate.yAxisUnit=degree',
-                             '--process.rotateVector.all',
-                             '--extract.selectVariables=x_wind_10m', '--extract.selectVariables=y_wind_10m',
-                             '--extract.selectVariables=latitude', '--extract.selectVariables=longitude',
-                             '--extract.reduceTime.start=' + \
-                             start_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
-                             '--extract.reduceTime.end=' + \
-                             end_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
-                             '--process.rotateVector.direction=latlon',
-                             '--output.file='+nc_fimex]
+            # Apply pyfimex or fimex
+            if self.program == 'pyfimex':
+                pyfimex(input_file=url,output_file=nc_fimex,
+                    projString="+proj=latlong +ellps=sphere +a=6371000 +e=0",
+                    xAxisValues=np.arange(lon_min,lon_max+dlon,dlon),
+                    yAxisValues=np.arange(lat_min,lat_max+dlat,dlat),
+                    selectVariables=['x_wind_10m', 'y_wind_10m'],
+                    reduceTime_start = start_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
+                    reduceTime_end   = end_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
+                    ensemble_member=ensemble_member)
+            elif self.program == 'fimex':
+                fimex_command = ['fimex', '--input.file='+url,
+                                 '--interpolate.method=bilinear',
+                                 '--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0',
+                                 '--interpolate.xAxisValues='
+                                 + str(lon_min)+','+str(lon_min+dlon)
+                                 + ',...,'+str(lon_max)+'',
+                                 '--interpolate.yAxisValues='
+                                 + str(lat_min)+','+str(lat_min+dlat)
+                                 + ',...,'+str(lat_max)+'',
+                                 '--interpolate.xAxisUnit=degree', '--interpolate.yAxisUnit=degree',
+                                 '--process.rotateVector.all',
+                                 '--extract.selectVariables=x_wind_10m', '--extract.selectVariables=y_wind_10m',
+                                 '--extract.selectVariables=latitude', '--extract.selectVariables=longitude',
+                                 '--extract.reduceTime.start=' + \
+                                 start_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
+                                 '--extract.reduceTime.end=' + \
+                                 end_times[n].strftime('%Y-%m-%dT%H:%M:%S'),
+                                 '--process.rotateVector.direction=latlon',
+                                 '--output.file='+nc_fimex]
 
-            if prefix == 'subset':
-                fimex_command.insert(-2,
-                                     '--extract.reduceDimension.name=ensemble_member')
-                fimex_command.insert(-2, '--extract.reduceDimension.start=1')
-                fimex_command.insert(-2, '--extract.reduceDimension.end=1')
-
-            call(fimex_command)
+                if ensemble_member == True: #or prefix == 'subset':
+                    fimex_command.insert(-2,
+                                         '--extract.reduceDimension.name=ensemble_member')
+                    fimex_command.insert(-2, '--extract.reduceDimension.start=1')
+                    fimex_command.insert(-2, '--extract.reduceDimension.end=1')
+                call(fimex_command)
 
             wnd_list.append(xr.open_dataset(nc_fimex).squeeze())
 
