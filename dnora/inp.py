@@ -90,6 +90,7 @@ class SWAN(InputFileWriter):
             file_out.write('$ \n')
 
             lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.lon_edges(), grid.lat_edges())
+            
             bound_string = "BOUNDSPEC SEGMENT XY"
             for lon, lat in zip(lons, lats):
                 bound_string += f" {lon:.6f} {lat:.6f}"
