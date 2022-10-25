@@ -112,6 +112,12 @@ class SWAN_ERA5(SWAN):
     def _get_forcing_reader(self):
         return wnd.read_ec.ERA5()
 
+class SWAN_WAM4km(SWAN):
+    def _get_boundary_reader(self):
+        return bnd.read_metno.WAM4km()
+
+    def _get_forcing_reader(self):
+        return wnd.read_metno.MEPS()
 
 class SWASH_NORA3(SWASH):
     def _get_boundary_reader(self):
