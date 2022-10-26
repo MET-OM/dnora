@@ -85,15 +85,15 @@ class SWAN(InputFileWriter):
             file_out.write('$ \n')
 
             file_out.write('INPGRID BOTTOM ' + str(grid.lon()[0])+' '+str(grid.lat()[0])+' 0. '+str(grid.nx()-1)+' '+str(
-                grid.ny()-1)+' ' + str((delta_X/(grid.nx()-1)).round(6)) + ' ' + str((delta_Y/(grid.ny()-1)).round(6)) + '\n')
+                grid.ny()-1)+' ' + str((delta_X/(grid.nx()-1)).round(8)) + ' ' + str((delta_Y/(grid.ny()-1)).round(8)) + '\n')
             file_out.write('READINP BOTTOM 1 \''+ grid_path.split('/')[-1] +'\' 3 0 FREE \n')
             file_out.write('$ \n')
 
             lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.lon_edges(), grid.lat_edges())
-            
+
             bound_string = "BOUNDSPEC SEGMENT XY"
             for lon, lat in zip(lons, lats):
-                bound_string += f" {lon:.6f} {lat:.6f}"
+                bound_string += f" {lon:.8f} {lat:.8f}"
             bound_string += " VARIABLE FILE 0 "
             bound_string += f"'{boundary_path.split('/')[-1]}'\n"
             file_out.write(bound_string)
@@ -105,7 +105,7 @@ class SWAN(InputFileWriter):
                 delta_Yf = np.round(np.abs(forcing.lat()[-1] - forcing.lat()[0]), 5)
 
                 file_out.write('INPGRID WIND '+str(forcing.lon()[0])+' '+str(forcing.lat()[0])+' 0. '+str(forcing.nx()-1)+' '+str(forcing.ny()-1)+' '+str(
-                    (delta_Xf/(forcing.nx()-1)).round(6)) + ' '+str((delta_Yf/(forcing.ny()-1)).round(6)) + ' NONSTATIONARY ' + STR_START + f" {forcing.dt():.0f} HR " + STR_END + '\n')
+                    (delta_Xf/(forcing.nx()-1)).round(8)) + ' '+str((delta_Yf/(forcing.ny()-1)).round(8)) + ' NONSTATIONARY ' + STR_START + f" {forcing.dt():.0f} HR " + STR_END + '\n')
                 file_out.write('READINP WIND '+str(factor_wind)+'  \''+forcing_path.split('/')[-1]+'\' 3 0 0 1 FREE \n')
                 file_out.write('$ \n')
             else:
