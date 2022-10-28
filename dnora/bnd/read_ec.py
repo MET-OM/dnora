@@ -92,7 +92,7 @@ class ERA5(BoundaryReader):
             os.remove(f)
 
         restricted_area = self.get_restricted_area()
-        breakpoint()
+
         nc_file = download_era5_from_cds(start_time, end_time,
                                         lon=restricted_area.lon_edges(),
                                         lat=restricted_area.lat_edges(),
