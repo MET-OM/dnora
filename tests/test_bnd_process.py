@@ -5,17 +5,17 @@ from copy import copy
 from dnora.bnd.conventions import SpectralConvention
 
 def load_test_spec(shifted=False, math=False):
-	f = np.loadtxt('data/freq.test')
+	f = np.linspace(0.0345,0.5476,30) #np.loadtxt('data/freq.test')
 	if shifted:
 		if math:
-			D = np.loadtxt('data/dir_math_shifted.test')
+			D = np.mod(np.linspace(82.5,-262.5,24),360) #np.loadtxt('data/dir_math_shifted.test')
 		else:
-			D = np.loadtxt('data/dir_shifted.test')
+			D = np.linspace(7.5,352.5,24) #np.loadtxt('data/dir_shifted.test')
 	else:
 		if math:
-			D = np.loadtxt('data/dir_math.test')
+			D = np.mod(np.linspace(90.,-255.,24),360) #np.loadtxt('data/dir_math.test')
 		else:
-			D = np.loadtxt('data/dir.test')
+			D = np.linspace(0.,345.,24) #np.loadtxt('data/dir.test')
 
 	S=np.ones((2,2,len(f),len(D)), float)
 	S[0,0,:,:]=np.loadtxt('data/spec1.test')
