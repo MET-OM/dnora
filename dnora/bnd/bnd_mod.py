@@ -42,11 +42,7 @@ class Boundary(PointSkeleton):
         self._name = copy(name)
         self._convention = None
         self._history = []
-        #if grid is not None:
-        #    x, y = grid.xy(strict=True)
-        #    lon, lat = grid.lonlat(strict=True)
-        #t = np.arange(datetime(2020,1,1), datetime(2021,2,2), timedelta(hours=1)).astype(datetime)
-
+        self._structure_initialized = False
 
 
     def import_boundary(self, start_time: str, end_time: str,
@@ -213,9 +209,10 @@ class Boundary(PointSkeleton):
     def __str__(self) -> str:
         """Prints status of boundary."""
 
-        msg.header(self, f"Status of boundary {self.name()}")
-        msg.plain(f"Contains data ({len(self.x())} points) for {self.start_time()} - {self.end_time()}")
-        msg.plain(f"Data covers: lon: {min(self.lon())} - {max(self.lon())}, lat: {min(self.lat())} - {max(self.lat())}")
+        msg.header(self, f"Status of boundary {self.name}")
+        if self._structure_initialized:
+            msg.plain(f"Contains data ({len(self.x())} points) for {self.start_time()} - {self.end_time()}")
+            msg.plain(f"Data covers: lon: {min(self.lon())} - {max(self.lon())}, lat: {min(self.lat())} - {max(self.lat())}")
         if len(self._history) > 0:
             msg.blank()
             msg.plain("Object has the following history:")

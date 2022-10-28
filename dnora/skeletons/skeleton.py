@@ -56,6 +56,7 @@ class Skeleton:
         #     self.ds_manager.set_new_ds(xr.concat([self.ds(), ds], dim="time").sortby('time'))
         self._reset_masks()
         self._reset_datavars()
+        self._structure_initialized = True
 
     def _absorb_object(self, obj, dimension: str) -> None:
         """Absorb another object of same type. This is used e.g. when pathcing
