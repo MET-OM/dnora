@@ -81,14 +81,16 @@ class ConstantTopo(TopoReader):
     def __call__(self, lon: tuple, lat: tuple, x: tuple, y: tuple) -> tuple:
         """Creates a trivial topography with all water points."""
         topo = np.ones(self.size)*self.depth
-        if lon[0] is not None:
-            topo_lon = np.linspace(lon[0], lon[1], self.size[1])
-            topo_lat = np.linspace(lat[0], lat[1], self.size[0])
-        if x[0] is not None:
-            topo_x = np.linspace(x[0], x[1], self.size[1])
-            topo_y = np.linspace(y[0], y[1], self.size[0])
-            zone_number, zone_letter = 33, 'W'
-        return topo, topo_lon, topo_lat, topo_x, topo_y, zone_number, zone_letter
+        # if cartesian:
+        #     topo_x = np.linspace(x[0], x[1], self.size[1])
+        #     topo_y = np.linspace(y[0], y[1], self.size[0])
+        #     zone_number, zone_letter = 33, 'W'
+        # else:
+        lon, lat = expand_area(lon, lat, 1.5)
+        topo_lon = np.linspace(lon[0], lon[1], self.size[1])
+        topo_lat = np.linspace(lat[0], lat[1], self.size[0])
+
+        return topo, topo_lon, topo_lat, None, None, None, None
 
     def __str__(self):
         return(f"Creating an constant topography with depth values {self.depth}.")
