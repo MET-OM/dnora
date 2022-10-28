@@ -14,8 +14,10 @@ dependencies:
   - utm
   - dask
   - pytest
+  - pytest-cov
   - cmocean
   - cartopy
   - cdsapi
   - pynco
+  - geopy
 
