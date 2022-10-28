@@ -431,7 +431,14 @@ def will_grid_be_spherical_or_cartesian(x, y, lon, lat):
     """
     xy = False
     lonlat = False
-
+    if isinstance(x,tuple) and np.all(x==(None, None)):
+        x = None
+    if isinstance(y,tuple) and np.all(y==(None, None)):
+        y = None
+    if isinstance(lon,tuple) and np.all(lon==(None, None)):
+        lon = None
+    if isinstance(lat,tuple) and np.all(lat==(None, None)):
+        lat = None
 #    none_tuple = (None, None)
 #    if (x is not None and x != none_tuple) and (y is not None and y != none_tuple):
     if (x is not None) and (y is not None):
