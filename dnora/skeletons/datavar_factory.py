@@ -15,7 +15,8 @@ def add_datavar(name, coords='grid', default_value=0., stash_get=False, aftermat
 
             **kwargs can be used for slicing data.
             """
-
+            if not self._structure_initialized():
+                return None
             if empty:
                 return np.full(self.size(coords, **kwargs), default_value)
 

@@ -54,7 +54,9 @@ class Skeleton:
         #     self.ds_manager.set_new_ds(xr.concat([self.ds(), ds], dim="time").sortby('time'))
         self._reset_masks()
         self._reset_datavars()
-        self._structure_initialized = True
+
+    def _structure_initialized(self) -> bool:
+        return hasattr(self, 'ds_manager')
 
     def _absorb_object(self, obj, dimension: str) -> None:
         """Absorb another object of same type. This is used e.g. when pathcing
@@ -98,6 +100,9 @@ class Skeleton:
         The ds_manager always gets what is in the Dataset (integers for masks).
         The Skeletons get-method gives boolen masks, and you can also
         request empty masks that willb e return even if data doesn't exist."""
+        if not self._structure_initialized():
+            return None
+
         if empty:
             return eval(f'self.{name}(empty=True)')
 
@@ -126,6 +131,8 @@ class Skeleton:
 
     def is_cartesian(self) -> bool:
         """Checks if the grid is cartesian (True) or spherical (False)."""
+        if not self._structure_initialized():
+            return False
         if self.x_str == 'x' and self.y_str == 'y':
             return True
         elif self.x_str == 'lon' and self.y_str == 'lat':
@@ -133,6 +140,8 @@ class Skeleton:
         raise Exception(f"Expected x- and y string to be either 'x' and 'y' or 'lon' and 'lat', but they were {x_str} and {y_str}")
 
     def is_gridded(self) -> bool:
+        if not self._structure_initialized():
+            return False
         return aux_funcs.is_gridded(self.topo(), self.native_x(), self.native_y())
 
     def set_utm(self, zone_number: int=33, zone_letter: str='W'):
@@ -149,6 +158,8 @@ class Skeleton:
             raise ValueError("zone_number needs to be an integer")
 
     def ds(self):
+        if not self._structure_initialized():
+            return None
         return self.ds_manager.ds()
 
     def size(self, type: str='all') -> tuple[int]:
@@ -159,15 +170,21 @@ class Skeleton:
         'grid': size over coordinates for the grid (e.g. z, time)
         'gridpoint': size over coordinates for a grid point (e.g. frequency, direcion or time)
         """
+        if not self._structure_initialized():
+            return None
         return self.ds_manager.size(type)
 
     def inds(self, **kwargs) -> np.ndarray:
+        if not self._structure_initialized():
+            return None
         return self.ds_manager.get('inds', **kwargs).values.copy()
 
     def native_x(self, **kwargs) -> np.ndarray:
         """Returns x-vector for cartesian grids and lon-vector for sperical
         grids.
         """
+        if not self._structure_initialized():
+            return None
         if self.is_cartesian():
             return self.x(**kwargs)
         return self.lon(**kwargs)
@@ -176,6 +193,8 @@ class Skeleton:
         """Returns y-vector for cartesian grids and lat-vector for sperical
         grids.
         """
+        if not self._structure_initialized():
+            return None
         if self.is_cartesian():
             return self.y(**kwargs)
         return self.lat(**kwargs)
@@ -187,6 +206,8 @@ class Skeleton:
 
         If strict=True, then None is returned if grid is sperical.
         """
+        if not self._structure_initialized():
+            return None
         if not self.is_cartesian() and (strict or self.strict):
             return None
 
@@ -204,6 +225,8 @@ class Skeleton:
 
         If strict=True, then None is returned if grid is sperical.
         """
+        if not self._structure_initialized():
+            return None
         if not self.is_cartesian() and (strict or self.strict):
             return None
 
@@ -222,6 +245,9 @@ class Skeleton:
 
         If strict=True, then None is returned if grid is cartesian.
         """
+        if not self._structure_initialized():
+            return None
+
         if self.is_cartesian() and (strict or self.strict):
             return None
 
@@ -243,6 +269,9 @@ class Skeleton:
 
         If strict=True, then None is returned if grid is cartesian.
         """
+        if not self._structure_initialized():
+            return None
+
         if self.is_cartesian() and (strict or self.strict):
             return None
 
@@ -265,6 +294,9 @@ class Skeleton:
 
         If strict=True, then (None, None) is returned if grid is sperical.
         """
+        if not self._structure_initialized():
+            return None
+
         if not self.is_cartesian() and (strict or self.strict):
             return None, None
 
@@ -281,6 +313,9 @@ class Skeleton:
 
         If strict=True, then (None, None) is returned if grid is cartesian.
         """
+        if not self._structure_initialized():
+            return None
+
         if self.is_cartesian() and (strict or self.strict):
             return None, None
 
@@ -291,6 +326,9 @@ class Skeleton:
 
     def edges(self, coord: str, native: bool=False, strict=False) -> tuple[float, float]:
         """Min and max values of x. Conversion made for sperical grids."""
+        if not self._structure_initialized():
+            return (None, None)
+
         if self._xy_dict.get(coord) is None:
             print("coord need to be 'x', 'y', 'lon' or 'lat'.")
             return
@@ -308,15 +346,22 @@ class Skeleton:
 
     def nx(self) -> int:
         """Length of x/lon-vector."""
+        if not self._structure_initialized():
+            return 0
         return len(self.native_x())
 
     def ny(self):
         """Length of y/lat-vector."""
+        if not self._structure_initialized():
+            return 0
         return len(self.native_y())
 
     def dx(self, strict=False):
         """Mean grid spacing of the x vector. Conversion made for
         spherical grids."""
+        if not self._structure_initialized():
+            return None
+
         if not self.is_cartesian() and (strict or self.strict):
             return None
 
@@ -329,6 +374,9 @@ class Skeleton:
     def dy(self, strict=False):
         """Mean grid spacing of the y vector. Conversion made for
         spherical grids."""
+        if not self._structure_initialized():
+            return None
+
         if not self.is_cartesian() and (strict or self.strict):
             return None
 
@@ -341,6 +389,9 @@ class Skeleton:
     def dlon(self, strict=False):
         """Mean grid spacing of the longitude vector. Conversion made for
         cartesian grids."""
+        if not self._structure_initialized():
+            return None
+
         if self.is_cartesian() and (strict or self.strict):
             return None
         if self.nx() == 1:
@@ -352,6 +403,9 @@ class Skeleton:
     def dlat(self, strict=False):
         """Mean grid spacing of the latitude vector. Conversion made for
         cartesian grids."""
+        if not self._structure_initialized():
+            return None
+
         if self.is_cartesian() and (strict or self.strict):
             return None
         if self.ny() == 1:
@@ -363,6 +417,9 @@ class Skeleton:
     def native_dx(self):
         """Mean grid spacing of x vector for cartesian grids.
         Mean grid spacing of lon vector for spherical grids."""
+        if not self._structure_initialized():
+            return None
+
         if self.nx() == 1:
             return 0.
 
@@ -372,6 +429,9 @@ class Skeleton:
     def native_dy(self):
         """Mean grid spacing of y vector for cartesian grids.
         Mean grid spacing of lat vector for spherical grids."""
+        if not self._structure_initialized():
+            return None
+
         if self.ny() == 1:
             return 0.
 
@@ -395,6 +455,8 @@ class Skeleton:
         'x' for cartesian grid.
         'lon' for spherical grid.
         """
+        if not self._structure_initialized():
+            return None
         return self._x_str
 
     @x_str.setter
@@ -411,6 +473,8 @@ class Skeleton:
         'y' for cartesian grid.
         'lat' for spherical grid.
         """
+        if not self._structure_initialized():
+            return None
         return self._y_str
 
     @y_str.setter
@@ -457,6 +521,8 @@ class Skeleton:
         'grid': size over coordinates for the grid (e.g. z, time)
         'gridpoint': size over coordinates for a grid point (e.g. frequency, direcion or time)
         """
+        if not self._structure_initialized():
+            return None
         return self.ds_manager.coords_to_size(self.ds_manager.coords(type), **kwargs)
 
 def will_grid_be_spherical_or_cartesian(x, y, lon, lat):

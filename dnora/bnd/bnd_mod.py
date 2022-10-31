@@ -42,8 +42,6 @@ class Boundary(PointSkeleton):
         self._name = copy(name)
         self._convention = None
         self._history = []
-        self._structure_initialized = False
-
 
     def import_boundary(self, start_time: str, end_time: str,
                         boundary_reader: BoundaryReader,
@@ -210,7 +208,7 @@ class Boundary(PointSkeleton):
         """Prints status of boundary."""
 
         msg.header(self, f"Status of boundary {self.name}")
-        if self._structure_initialized:
+        if self.x() is not None:
             msg.plain(f"Contains data ({len(self.x())} points) for {self.start_time()} - {self.end_time()}")
             msg.plain(f"Data covers: lon: {min(self.lon())} - {max(self.lon())}, lat: {min(self.lat())} - {max(self.lat())}")
         if len(self._history) > 0:

@@ -11,6 +11,8 @@ def coord_decorator(coord_name, grid_coord, c, stash_get=False):
 
     This allows for alternative definitions of the get-method elsewere."""
     def get_coord(self, data_array=False, **kwargs):
+        if not self._structure_initialized():
+            return None
         data = self.ds_manager.get(coord_name, **kwargs)
         if data_array:
             return data
@@ -29,11 +31,15 @@ def coord_decorator(coord_name, grid_coord, c, stash_get=False):
 def add_time(grid_coord: bool=False, coord_name: str='time'):
     def wrapper(c):
         def unique_times(times, strf: str):
+            if not self._structure_initialized():
+                return None
             return np.unique(np.array(pd.to_datetime(times).strftime(strf).to_list()))
 
 
         def hours(self, datetime=True):
             """Determins a Pandas data range of all the days in the time span."""
+            if not self._structure_initialized():
+                return None
             times = self.ds_manager.get(coord_name).values.copy()
             if datetime:
                 return pd.to_datetime(unique_times(times, '%Y-%m-%d %H'))
@@ -42,6 +48,8 @@ def add_time(grid_coord: bool=False, coord_name: str='time'):
 
         def days(self, datetime=True):
             """Determins a Pandas data range of all the days in the time span."""
+            if not self._structure_initialized():
+                return None
             times = self.ds_manager.get(coord_name).values.copy()
             if datetime:
                 return pd.to_datetime(unique_times(times, '%Y-%m-%d'))
@@ -50,6 +58,8 @@ def add_time(grid_coord: bool=False, coord_name: str='time'):
 
         def months(self, datetime=True):
             """Determins a Pandas data range of all the months in the time span."""
+            if not self._structure_initialized():
+                return None
             times = self.ds_manager.get(coord_name).values.copy()
             if datetime:
                 return pd.to_datetime(unique_times(times, '%Y-%m'))
@@ -58,6 +68,8 @@ def add_time(grid_coord: bool=False, coord_name: str='time'):
 
         def years(self, datetime=True):
             """Determins a Pandas data range of all the months in the time span."""
+            if not self._structure_initialized():
+                return None
             times = self.ds_manager.get(coord_name).values.copy()
             if datetime:
                 return pd.to_datetime(unique_times(times, '%Y'))
@@ -65,6 +77,8 @@ def add_time(grid_coord: bool=False, coord_name: str='time'):
                 return list(unique_times(times, '%Y'))
 
         def get_time(self, data_array=False, **kwargs):
+            if not self._structure_initialized():
+                return None
             data = self.ds_manager.get(coord_name, **kwargs)
             if data_array:
                 return data
@@ -86,12 +100,16 @@ def add_time(grid_coord: bool=False, coord_name: str='time'):
 def add_frequency(grid_coord: bool=False, coord_name: str='freq'):
     def wrapper(c):
         def get_freq(self, angular=False):
+            if not self._structure_initialized():
+                return None
             freq = self.ds_manager.get(coord_name).values.copy()
             if angular:
                 freq = 2*np.pi*freq
             return freq
 
         def df(self, angular=False):
+            if not self._structure_initialized():
+                return None
             freq = get_freq(self, angular=angular).values.copy()
             return (freq[-1]-freq[0])/(len(freq)-1)
 
@@ -110,12 +128,16 @@ def add_frequency(grid_coord: bool=False, coord_name: str='freq'):
 def add_direction(grid_coord: bool=False, coord_name: str='dirs'):
     def wrapper(c):
         def get_dirs(self, radians=False):
+            if not self._structure_initialized():
+                return None
             dirs = self.ds_manager.get(coord_name).values.copy()
             if radians:
                 dirs = dirs*np.pi/180
             return dirs
 
         def ddir(self, radians=False):
+            if not self._structure_initialized():
+                return None
             dirs = get_dirs(self, radians=False).values.copy()
             dmax = 2*np.pi if radians else 360
             return dmax/len(dirs)

@@ -14,7 +14,7 @@ from .read import ForcingReader
 
 # Import aux_funcsiliry functions
 from .. import msg
-from ..aux_funcs import create_time_stamps, u_v_from_dir, expand_area, lon_in_km, create_monthly_time_stamps, int_list_of_days, int_list_of_months, int_list_of_years
+from ..aux_funcs import u_v_from_dir, expand_area, int_list_of_days, int_list_of_months, int_list_of_years
 import pandas as pd
 
 
@@ -117,13 +117,6 @@ class ERA5(ForcingReader):
 
         # Define area to search in
         lon_min, lon_max, lat_min, lat_max = expand_area(min(grid.lon()), max(grid.lon()), min(grid.lat()), max(grid.lat()), expansion_factor)
-
-
-        # start_times, end_times = create_monthly_time_stamps(start_time, end_time)
-        # wnd_list = []
-        # for t0, t1 in zip(start_times, end_times):
-        #     msg.plain(f"Reading wind forcing data: {t0}-{t1}")
-        #     # Creates file dnora_wnd_tmp/EC_ERA5_YYYY_MM.nc
 
         nc_file = download_era5_from_cds(start_time, end_time, lon=(lon_min, lon_max), lat=(lat_min, lat_max), folder='dnora_wnd_temp')
         wind_forcing = xr.open_dataset(nc_file)

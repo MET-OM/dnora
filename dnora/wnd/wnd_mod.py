@@ -90,7 +90,7 @@ class Forcing(GriddedSkeleton):
     def __str__(self) -> str:
         """Prints status of forcing."""
 
-        msg.header(self, f"Status of forcing {self.name()}")
+        msg.header(self, f"Status of forcing {self.name}")
         if self.time() is not None:
             msg.plain(f"Contains data for {self.time()[0]} - {self.time()[-1]}")
             msg.plain(f"\t dt={self.dt()} hours, i.e. ({self.nt()} time steps)")
