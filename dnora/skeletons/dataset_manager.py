@@ -81,6 +81,9 @@ class DatasetManager:
 
             return var_dict
 
+
+        indexed = 'inds' in self.coord_manager.initial_coords()
+        x, y = clean_coordinate_vectors(x, y, indexed)
         coord_dict = determine_coords()
         var_dict = determine_vars()
         check_consistency()
@@ -252,3 +255,25 @@ class DatasetManager:
             if coord in coords:
                 list.append(val)
         return tuple(list)
+
+def clean_coordinate_vectors(x, y, indexed):
+    """Cleans up the coordinate vectors to make sure they are numpy arrays and
+    have the right dimensions in case of single points etc.
+    """
+    x = np.array(x)
+    y = np.array(y)
+
+    if not x.shape:
+        x = np.array([x])
+
+    if not y.shape:
+        y = np.array([y])
+
+    if not indexed:
+        if len(np.unique(x)) == 1 and len(x) == 2: # e.g. lon=(4.0, 4.0) should behave like lon=4.0
+            x = np.unique(x)
+
+        if len(np.unique(y)) == 1 and len(y) == 2:
+            y = np.unique(y)
+
+    return x, y

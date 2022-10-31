@@ -135,9 +135,10 @@ class Spectra(PointSkeleton):
     def __str__(self) -> str:
         """Prints status of spectra."""
 
-        msg.header(self, f"Status of spectra {self.name()}")
-        msg.plain(f"Contains data ({len(self.x())} points) for {self.start_time} - {self.end_time}")
-        msg.plain(f"Data covers: lon: {min(self.lon())} - {max(self.lon())}, lat: {min(self.lat())} - {max(self.lat())}")
+        msg.header(self, f"Status of spectra {self.name}")
+        if self.x() is not None:
+            msg.plain(f"Contains data ({len(self.x())} points) for {self.start_time()} - {self.end_time()}")
+            msg.plain(f"Data covers: lon: {min(self.lon())} - {max(self.lon())}, lat: {min(self.lat())} - {max(self.lat())}")
         if len(self._history) > 0:
             msg.blank()
             msg.plain("Object has the following history:")

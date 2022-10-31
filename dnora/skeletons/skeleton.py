@@ -541,41 +541,26 @@ def will_grid_be_spherical_or_cartesian(x, y, lon, lat):
         lon = None
     if isinstance(lat,tuple) and np.all(lat==(None, None)):
         lat = None
-#    none_tuple = (None, None)
-#    if (x is not None and x != none_tuple) and (y is not None and y != none_tuple):
+
     if (x is not None) and (y is not None):
         xy = True
         native_x = 'x'
         native_y = 'y'
         xvec = x
         yvec = y
-        xvec = np.array(x)
-        yvec = np.array(y)
 
     #if (lon is not None and lon != none_tuple) and (lat is not None and lat != none_tuple):
     if (lon is not None) and (lat is not None):
         lonlat = True
         native_x = 'lon'
         native_y = 'lat'
-        xvec = np.array(lon)
-        yvec = np.array(lat)
+        xvec = lon
+        yvec = lat
 
     if xy and lonlat:
         raise ValueError("Can't set both lon/lat and x/y!")
 
     if not xy and not lonlat:
         raise ValueError('Have to set either lon/lat or x/y!')
-
-    if not xvec.shape:
-        xvec = np.array([xvec])
-
-    if not yvec.shape:
-        yvec = np.array([yvec])
-
-    if len(np.unique(xvec)) == 1 and len(xvec) == 2: # e.g. lon=(4.0, 4.0) should behave like lon=4.0
-        xvec = np.unique(xvec)
-
-    if len(np.unique(yvec)) == 1 and len(yvec) == 2:
-        yvec = np.unique(yvec)
 
     return native_x, native_y, xvec, yvec
