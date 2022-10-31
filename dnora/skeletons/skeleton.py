@@ -137,8 +137,16 @@ class Skeleton:
 
     def set_utm(self, zone_number: int=33, zone_letter: str='W'):
         """Set UTM zone and number to be used for cartesian coordinates."""
-        self._zone_number = copy(zone_number)
-        self._zone_letter = copy(zone_letter)
+
+        if isintance(zone_number, int) or isintance(zone_number, float):
+            self._zone_number = copy(int(zone_number))
+        else:
+            raise ValueError("zone_number needs to be an integer")
+
+        if isintance(zone_letter, str):
+            self._zone_letter = copy(zone_letter)
+        else:
+            raise ValueError("zone_number needs to be an integer")
 
     def ds(self):
         return self.ds_manager.ds()
