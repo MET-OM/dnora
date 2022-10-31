@@ -12,10 +12,8 @@ class Skeleton:
 
     Keeps track of the native structure of the grid (cartesian UTM / sperical).
     """
-    _name = 'LonelySkeleton'
-    _zone_number = 33
-    _zone_letter = 'W'
-    strict = False # If this is True, no coordinate conversions will be done (return None instead)
+    #_name = 'LonelySkeleton'
+    #strict = False # If this is True, no coordinate conversions will be done (return None instead)
 
     _xy_dict = {'x': 'x', 'lon': 'x', 'y': 'y', 'lat': 'y'}
 
@@ -186,7 +184,8 @@ class Skeleton:
 
         if not self.is_cartesian():
             lat = np.median(self.lat(**kwargs))
-            x, __, __, __ = utm.from_latlon(lat, self.lon(**kwargs), force_zone_number=self._zone_number, force_zone_letter=self._zone_letter)
+            number, letter = self.utm()
+            x, __, __, __ = utm.from_latlon(lat, self.lon(**kwargs), force_zone_number=number, force_zone_letter=letter)
             return x
 
         return self.ds_manager.get('x', **kwargs).values.copy()
@@ -202,7 +201,8 @@ class Skeleton:
 
         if not self.is_cartesian():
             lon = np.median(self.lon(**kwargs))
-            __, y, __, __ = utm.from_latlon(self.lat(**kwargs), lon, force_zone_number=self._zone_number, force_zone_letter=self._zone_letter)
+            number, letter = self.utm()
+            __, y, __, __ = utm.from_latlon(self.lat(**kwargs), lon, force_zone_number=number, force_zone_letter=letter)
             return y
 
         return self.ds_manager.get('y', **kwargs).values.copy()
@@ -222,8 +222,8 @@ class Skeleton:
                 y = np.median(self.y(**kwargs))
             else:
                 y = self.y(**kwargs)
-
-            __, lon = utm.to_latlon(self.x(**kwargs), y, self._zone_number, zone_letter=self._zone_letter, strict = False)
+            number, letter = self.utm()
+            __, lon = utm.to_latlon(self.x(**kwargs), y, zone_number=number, zone_letter=letter, strict = False)
 
             return lon
         return self.ds_manager.get('lon', **kwargs).values.copy()
@@ -243,7 +243,8 @@ class Skeleton:
                 x = np.median(self.x(**kwargs))
             else:
                 x = self.x(**kwargs)
-            lat, __ = utm.to_latlon(x, self.y(**kwargs), self._zone_number, zone_letter=self._zone_letter, strict = False)
+            number, letter = self.utm()
+            lat, __ = utm.to_latlon(x, self.y(**kwargs), zone_number=number, zone_letter=letter, strict = False)
             return lat
 
         return self.ds_manager.get('lat', **kwargs).values.copy()
@@ -260,7 +261,8 @@ class Skeleton:
             return None, None
 
         if not self.is_cartesian():
-            x, y, __, __ = utm.from_latlon(y, x, force_zone_number=self._zone_number, force_zone_letter=self._zone_letter)
+            number, letter = self.utm()
+            x, y, __, __ = utm.from_latlon(y, x, force_zone_number=number, force_zone_letter=letter)
         return x, y
 
     def _lonlat(self, lon: np.ndarray=None, lat: np.ndarray=None, strict=False) -> tuple[np.ndarray, np.ndarray]:
@@ -275,7 +277,8 @@ class Skeleton:
             return None, None
 
         if self.is_cartesian():
-            lat, lon = utm.to_latlon(lon, lat, self._zone_number, zone_letter=self._zone_letter, strict = False)
+            number, letter = self.utm()
+            lat, lon = utm.to_latlon(lon, lat, zone_number=number, zone_letter=letter, strict = False)
         return lon, lat
 
     def edges(self, coord: str, native: bool=False, strict=False) -> tuple[float, float]:
@@ -368,7 +371,14 @@ class Skeleton:
         return (edges[1]-edges[0])/(self.ny()-1)
 
     def utm(self) -> tuple[int, str]:
-        return self._zone_number, self._zone_letter
+        """Returns UTM zone number and letter. Returns 33, 'W' as default
+        value if it hasn't been set by the user."""
+        number, letter = 33, 'W'
+        if hasattr(self, '_zone_number'):
+            number = self._zone_number
+        if hasattr(self, '_zone_letter'):
+            letter = self._zone_letter
+        return number, letter
 
     @property
     def x_str(self) -> str:
@@ -403,7 +413,24 @@ class Skeleton:
             raise ValueError("y_str need to be 'y' or 'lat'")
 
     @property
+    def strict(self) -> bool:
+        """If this is set to true, then no coordinate conversion will ever be
+        made when requesting lon, lat, x, y etc."""
+        if not hasattr(self, '_strict'):
+            return False
+        return self._strict
+
+    @strict.setter
+    def name(self, strict: bool) -> None:
+        if isinstance(strict, bool):
+            self._strict = strict
+        else:
+            raise ValueError("strict needs to be a bool")
+
+    @property
     def name(self) -> str:
+        if not hasattr(self,'_name'):
+            return 'LonelySkeleton'
         return self._name
 
     @name.setter
