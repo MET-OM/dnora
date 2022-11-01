@@ -4,6 +4,8 @@ sys.path.insert(0, "../../")
 from dnora.aux_funcs import create_time_stamps, u_v_from_dir
 import numpy as np
 
+
+
 class TimeStamps(unittest.TestCase):
 	def test_stride(self):
 		"""Test that stride works"""

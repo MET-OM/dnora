@@ -25,6 +25,7 @@ def load_test_spec(shifted=False, math=False):
 
 	return S, D
 
+
 def loop_conventions(list_of_conventions, S, D):
 	Snew = copy(S)
 	Dnew = copy(D)
