@@ -9,7 +9,7 @@ from .. import file_module
 from .. import msg
 from .. import aux_funcs
 from .conventions import SpectralConvention
-
+import pandas as pd
 class BoundaryReader(ABC):
     """Reads boundary spectra from some source and provide it to the object."""
     def __init__(self):
@@ -39,7 +39,7 @@ class BoundaryReader(ABC):
 
         Provide the result as two equally long nump arrays.
         """
-        return lon, lat
+        return lon, lat, x, y
 
     @abstractmethod
     def convention(self) -> SpectralConvention:
@@ -93,6 +93,47 @@ class BoundaryReader(ABC):
 
     #def __str__(self):
         #return (f"{self.start_time} - {self.end_time}")
+
+class ConstantBoundary(BoundaryReader):
+    def __init__(self, grid: Grid, spec: float=1, cartesian: bool=False, metadata: dict=None, spectral_convention: SpectralConvention=SpectralConvention.OCEAN):
+        self.spec = spec
+        self.metadata = metadata
+        self.cartesian = cartesian
+        self.spectral_convention = spectral_convention
+        self.grid = grid
+
+    def convention(self):
+        return self.spectral_convention
+
+    def get_coordinates(self, start_time):
+        lon, lat, x, y = aux_funcs.get_coordinates_from_grid(self.grid, self.cartesian, list=True)
+
+        return lon, lat, x, y
+
+    def __call__(self, start_time, end_time, inds):
+        time = pd.date_range(start=start_time, end=end_time, freq='H').values
+        lon, lat, x, y = aux_funcs.get_coordinates_from_grid(self.grid, self.cartesian, list=True)
+        freq = np.array(range(1,11))/10.
+
+        if self.spectral_convention in [SpectralConvention.WW3, SpectralConvention.MATHVEC]:
+            dirs = np.mod(np.linspace(90.,-255.,24),360)
+        else:
+            dirs = np.linspace(0.,345.,24)
+
+        if self.spectral_convention in [SpectralConvention.MATH, SpectralConvention.MATHVEC]:
+            north = 90
+        elif self.spectral_convention in [SpectralConvention.MET]:
+            north = 180
+        else:
+            north = 0
+        #dirs = np.array(range(0,360,15))
+
+        spec = np.full((len(inds), len(time), len(freq), len(dirs)), 0)
+        north_ind = np.where(dirs==north)[0][0]
+        spec[:,:,:,north_ind] = np.full((len(inds), len(time), len(freq)), self.spec)
+        metadata = {'metadata': 'this is a constant boundary'}
+
+        return time, freq, dirs, spec, lon, lat, x, y, metadata
 
 
 class DnoraNc(BoundaryReader):

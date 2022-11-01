@@ -58,6 +58,16 @@ class SpectralWriter(ABC):
         """Write the data from the Spectra object and returns the file and
         folder where data were written."""
 
+class Null(SpectralWriter):
+    def convention(self):
+        return SpectralConvention.OCEAN
+
+    def _extension(self):
+        return 'junk'
+
+    def __call__(self, spectra, filename):
+        return ''
+
 class DumpToNc(SpectralWriter):
     def __init__(self, convention: Union[SpectralConvention, str]=SpectralConvention.MET) -> None:
         self._convention_in = convention

@@ -5,6 +5,7 @@ import utm
 from copy import copy
 from .dataset_manager import DatasetManager
 from .. import aux_funcs
+from .. import msg
 
 class Skeleton:
     """Contains methods and data of the spatial x,y / lon, lat coordinates and
@@ -147,13 +148,15 @@ class Skeleton:
     def set_utm(self, zone_number: int=33, zone_letter: str='W'):
         """Set UTM zone and number to be used for cartesian coordinates."""
 
-        if isintance(zone_number, int) or isintance(zone_number, float):
+        if isinstance(zone_number, int) or isintance(zone_number, float):
             self._zone_number = copy(int(zone_number))
+            msg.info(f'Setting UTM zone_number to {zone_number}')
         else:
             raise ValueError("zone_number needs to be an integer")
 
-        if isintance(zone_letter, str):
+        if isinstance(zone_letter, str):
             self._zone_letter = copy(zone_letter)
+            msg.info(f'Setting UTM zone_letter to {zone_letter}')
         else:
             raise ValueError("zone_number needs to be an integer")
 
@@ -177,7 +180,10 @@ class Skeleton:
     def inds(self, **kwargs) -> np.ndarray:
         if not self._structure_initialized():
             return None
-        return self.ds_manager.get('inds', **kwargs).values.copy()
+        inds = self.ds_manager.get('inds', **kwargs)
+        if inds is None:
+            return None
+        return inds.values.copy()
 
     def native_x(self, **kwargs) -> np.ndarray:
         """Returns x-vector for cartesian grids and lon-vector for sperical
@@ -212,7 +218,12 @@ class Skeleton:
             return None
 
         if not self.is_cartesian():
-            lat = np.median(self.lat(**kwargs))
+            if self.is_gridded(): # This will rotate the grid, but is best estimate to keep it strucutred
+                lat = np.median(self.lat(**kwargs))
+                msg.warning('Regridding spherical grid to cartesian coordinates. This will cause a rotation!')
+            else:
+                lat = self.lat(**kwargs)
+
             number, letter = self.utm()
             x, __, __, __ = utm.from_latlon(lat, self.lon(**kwargs), force_zone_number=number, force_zone_letter=letter)
             return x
@@ -231,7 +242,11 @@ class Skeleton:
             return None
 
         if not self.is_cartesian():
-            lon = np.median(self.lon(**kwargs))
+            if self.is_gridded(): # This will rotate the grid, but is best estimate to keep it strucutred
+                lon = np.median(self.lon(**kwargs))
+                msg.warning('Regridding spherical grid to cartesian coordinates. This will cause a rotation!')
+            else:
+                lon = self.lon(**kwargs)
             number, letter = self.utm()
             __, y, __, __ = utm.from_latlon(self.lat(**kwargs), lon, force_zone_number=number, force_zone_letter=letter)
             return y
@@ -254,6 +269,7 @@ class Skeleton:
         if self.is_cartesian():
             if self.is_gridded(): # This will rotate the grid, but is best estimate to keep it strucutred
                 y = np.median(self.y(**kwargs))
+                msg.warning('Regridding cartesian grid to spherical coordinates. This will cause a rotation!')
             else:
                 y = self.y(**kwargs)
             number, letter = self.utm()
@@ -278,6 +294,7 @@ class Skeleton:
         if self.is_cartesian():
             if self.is_gridded(): # This will rotate the grid, but is best estimate to keep it strucutred
                 x = np.median(self.x(**kwargs))
+                msg.warning('Regridding cartesian grid to spherical coordinates. This will cause a rotation!')
             else:
                 x = self.x(**kwargs)
             number, letter = self.utm()

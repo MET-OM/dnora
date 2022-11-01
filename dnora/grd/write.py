@@ -39,6 +39,13 @@ class GridWriter(ABC):
     def __call__(self, grid: Grid, filename: str, folder: str) -> List:
         return output_files
 
+class Null(GridWriter):
+    def _extension(self):
+        return 'junk'
+
+    def __call__(self, grid: Grid, filename: str):
+        return ''
+
 class BoundaryPoints(GridWriter):
     """Writes boundary points from unsutructured grid."""
     def __init__(self, include_index = False):
@@ -48,7 +55,7 @@ class BoundaryPoints(GridWriter):
     def _extension(self):
         return 'txt'
 
-    def __call__(self, grid: Grid, filename: str) -> Tuple:
+    def __call__(self, grid: Grid, filename: str):
         output_file = file_module.clean(filename, list_of_placeholders)
 
         with open(output_file,'w') as f:

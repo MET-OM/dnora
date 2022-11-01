@@ -72,6 +72,16 @@ class BoundaryWriter(ABC):
         folder where data were written."""
 
         return output_files
+        
+class Null(BoundaryWriter):
+    def convention(self):
+        return SpectralConvention.OCEAN
+
+    def _extension(self):
+        return 'junk'
+
+    def __call__(self, forcing, filename):
+        return ''
 
 class DumpToNc(BoundaryWriter):
     def __init__(self, convention=SpectralConvention.OCEAN) -> None:

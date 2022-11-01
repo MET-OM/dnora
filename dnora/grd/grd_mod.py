@@ -229,8 +229,6 @@ class UnstrGrid(PointSkeleton):
         return np.round(len(self.inds())/len(self.boundary_points()[0])/2).astype(int)
 
 class TriGrid(UnstrGrid):
-    def __init__(self, name='AnonymousTriangGrid'):
-        self.name = name
 
     def import_triang(self, triang_reader: TriangReader):
         """Reads a triangular mesh."""

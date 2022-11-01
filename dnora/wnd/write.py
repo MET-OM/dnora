@@ -43,6 +43,14 @@ class ForcingWriter(ABC):
 
         return output_file
 
+class Null(ForcingWriter):
+    def _extension(self):
+        return 'junk'
+
+    def __call__(self, forcing, filename):
+        return ''
+
+
 class WW3(ForcingWriter):
     """Writes wind forcing data to WAVEWATH III netcdf format."""
     def _extension(self):

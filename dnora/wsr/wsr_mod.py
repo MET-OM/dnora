@@ -15,7 +15,7 @@ from ..skeletons.coordinate_factory import add_time, add_frequency, add_directio
 from ..bnd.pick import PointPicker, TrivialPicker
 #from ..skeletons.mask_factory import add_mask
 #from ..skeletons.datavar_factory import add_datavar
-
+from copy import deepcopy
 #@add_mask(name='bad', coords='all', default_value=0)
 #@add_datavar(name='spec', coords='all', default_value=0.)
 @add_time(grid_coord=True)
@@ -27,6 +27,7 @@ class WaveSeries(PointSkeleton):
         self._name = copy(name)
         self._convention = None
         self._history = []
+        self._coord_manager = deepcopy(WaveSeries._coord_manager) # We are dynamically adding data variables to the instance
 
     def import_waveseries(self, start_time, end_time, waveseries_reader: WaveSeriesReader,  point_picker: PointPicker = TrivialPicker()) -> None:
         self.start_time = copy(start_time)
@@ -41,9 +42,11 @@ class WaveSeries(PointSkeleton):
 
         msg.header(waveseries_reader, "Loading wave series data...")
         time, data_dict, lon, lat, x, y, attributes = waveseries_reader(start_time, end_time, inds)
+
         self._init_structure(x, y, lon, lat, time=time)
+
         for wp, data in data_dict.items():
             self.ds_manager.set(data, wp.name(), coord_type='all')
             self.ds_manager.set_attrs({'name': wp.name(), 'unit': wp.unit(), 'standard_name': wp.standard_name()}, wp.name())
-            self = add_datavar(wp.name(), aftermath=True)(self) # Creater .hs() etc. methods
+            self = add_datavar(wp.name(), aftermath=True)(self) # Creates .hs() etc. methods
         self.ds_manager.set_attrs(attributes) # Global attributes

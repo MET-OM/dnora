@@ -43,12 +43,12 @@ class PointSkeleton(Skeleton):
         if mask is None:
             mask = np.full(super().size('spatial', **kwargs), True)
 
-        lon, lat = super().lon(strict=strict, **kwargs)[mask], super().lat(strict=strict, **kwargs)[mask]
+        lon, lat = super().lon(strict=strict, **kwargs), super().lat(strict=strict, **kwargs)
 
         if lon is None:
             return None, None
 
-        return lon, lat
+        return lon[mask], lat[mask]
 
     def xy(self, mask: np.array=None, strict=False, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of x and y of all points.
@@ -60,12 +60,12 @@ class PointSkeleton(Skeleton):
         if mask is None:
             mask = np.full(super().size('spatial', **kwargs), True)
 
-        x, y = super().x(strict=strict, **kwargs)[mask], super().y(strict=strict, **kwargs)[mask]
+        x, y = super().x(strict=strict, **kwargs), super().y(strict=strict, **kwargs)
 
         if x is None:
             return None, None
 
-        return x, y
+        return x[mask], y[mask]
 
     def native_xy(self, mask: np.array=None, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of native x and y of all points.

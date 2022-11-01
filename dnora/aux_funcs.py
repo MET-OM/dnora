@@ -55,6 +55,24 @@ def domain_size_in_km(lon: Tuple(float, float), lat: Tuple(float, float)) -> Tup
     km_y = distance_2points(lat[0], lon[0], lat[1], lon[0])
 
     return km_x, km_y
+
+def get_coordinates_from_grid(grid: Grid, cartesian: bool=False, list: bool=False):
+    """Gets lon, lat, x, y coordinates from grid.
+    x, y None if cartesian=False, and lon, lat None if cartesian=True"""
+    if cartesian:
+        lon, lat = None, None
+        if list:
+            x, y = grid.xy()
+        else:
+            x, y = grid.x(), grid.y()
+    else:
+        x, y = None, None
+        if list:
+            lon, lat = grid.lonlat()
+        else:
+            lon, lat = grid.lon(), grid.lat()
+    return lon, lat, x, y
+
 #
 # def force_to_xyz(data: np.ndarray, lon: np.ndarray, lat: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
 #     '''If the data is given in a matrix, convert it to xyz vectors.
@@ -164,26 +182,26 @@ def is_gridded(data: np.ndarray, lon: np.ndarray, lat: np.ndarray) -> bool:
 
     raise Exception(f"Size of data is {data.shape} but len(lat) = {len(lat)} and len(lon) = {len(lon)}. I don't know what is going on!")
 #
-# def day_list(start_time, end_time):
-#     """Determins a Pandas data range of all the days in the time span"""
-#     t0 = pd.Timestamp(start_time).strftime('%Y-%m-%d')
-#     t1 = pd.Timestamp(end_time).strftime('%Y-%m-%d')
-#     days = pd.date_range(start=t0, end=t1, freq='D')
-#     return days.strftime('%Y-%m-%d').to_list()
+def day_list(start_time, end_time):
+    """Determins a Pandas data range of all the days in the time span"""
+    t0 = pd.Timestamp(start_time).strftime('%Y-%m-%d')
+    t1 = pd.Timestamp(end_time).strftime('%Y-%m-%d')
+    days = pd.date_range(start=t0, end=t1, freq='D')
+    return days.strftime('%Y-%m-%d').to_list()
 #
-# def month_list(start_time, end_time):
-#     """Determins a Pandas data range of all the months in the time span"""
-#     t0 = pd.Timestamp(start_time).strftime('%Y-%m')
-#     t1 = pd.Timestamp(end_time).strftime('%Y-%m')
-#     months = pd.date_range(start=t0, end=t1, freq='MS')
-#     return months.strftime('%Y-%m').to_list()
+def month_list(start_time, end_time):
+    """Determins a Pandas data range of all the months in the time span"""
+    t0 = pd.Timestamp(start_time).strftime('%Y-%m')
+    t1 = pd.Timestamp(end_time).strftime('%Y-%m')
+    months = pd.date_range(start=t0, end=t1, freq='MS')
+    return months.strftime('%Y-%m').to_list()
 #
-# def year_list(start_time, end_time):
-#     """Determins a Pandas data range of all the years in the time span"""
-#     t0 = pd.Timestamp(start_time).strftime('%Y-%m-%d')
-#     t1 = pd.Timestamp(end_time).strftime('%Y-%m-%d')
-#     years = pd.date_range(start=t0, end=t1, freq='YS')
-#     return years.strftime('%Y').to_list()
+def year_list(start_time, end_time):
+    """Determins a Pandas data range of all the years in the time span"""
+    t0 = pd.Timestamp(start_time).strftime('%Y-%m-%d')
+    t1 = pd.Timestamp(end_time).strftime('%Y-%m-%d')
+    years = pd.date_range(start=t0, end=t1, freq='YS')
+    return years.strftime('%Y').to_list()
 #
 #
 # def set_spacing_nx_ny(nx: float, ny:float, lon: Tuple[float, float], lat: Tuple[float, float]) -> Tuple[float, float, float, float, np.ndarray, np.ndarray]:

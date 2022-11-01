@@ -31,8 +31,6 @@ def coord_decorator(coord_name, grid_coord, c, stash_get=False):
 def add_time(grid_coord: bool=False, coord_name: str='time'):
     def wrapper(c):
         def unique_times(times, strf: str):
-            if not self._structure_initialized():
-                return None
             return np.unique(np.array(pd.to_datetime(times).strftime(strf).to_list()))
 
 

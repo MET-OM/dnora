@@ -80,7 +80,7 @@ class Boundary(PointSkeleton):
         self._history.append(copy(boundary_reader))
 
         msg.header(boundary_reader, "Reading coordinates of spectra...")
-        lon_all, lat_all = boundary_reader.get_coordinates(start_time)
+        lon_all, lat_all, x_all, y_all = boundary_reader.get_coordinates(start_time)
 
         msg.header(point_picker, "Choosing spectra...")
         inds = point_picker(self.grid, lon_all, lat_all)

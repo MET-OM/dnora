@@ -33,6 +33,14 @@ class WaveSeriesWriter(ABC):
         """Write the data from the Spectra object and returns the file and
         folder where data were written."""
 
+class Null(WaveSeriesWriter):
+    def _extension(self):
+        return 'junk'
+
+    def __call__(self, waveseries, filename):
+        return ''
+
+
 class DumpToNc(WaveSeriesWriter):
     def _extension(self) -> str:
         return 'nc'
