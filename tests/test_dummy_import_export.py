@@ -47,6 +47,7 @@ def test_boundary_processing():
     end_time = '2020-02-01 00:00:00'
     model = mdl.ModelRun(grid=grid, start_time=start_time, end_time=end_time)
     model.import_boundary(bnd.read.ConstantBoundary(grid, spectral_convention=SpectralConvention.OCEAN), point_picker=bnd.pick.TrivialPicker())
+    assert model.boundary().convention() == SpectralConvention.OCEAN
     model.boundary_to_spectra()
     model.spectra_to_waveseries()
 
@@ -57,11 +58,13 @@ def test_boundary_processing():
     np.testing.assert_array_almost_equal(find_north_from_dirs(D,0), find_north_from_spec(model.boundary().spec()))
 
     model.boundary()._set_convention(SpectralConvention.MET)
+    assert model.boundary().convention() == SpectralConvention.MET
     np.testing.assert_array_almost_equal(model.boundary().dirs(),D)
     np.testing.assert_array_almost_equal(model.boundary().freq(),f)
     np.testing.assert_array_almost_equal(find_north_from_dirs(D,180), find_north_from_spec(model.boundary().spec()))
 
     model.boundary()._set_convention(SpectralConvention.MATH)
+    assert model.boundary().convention() == SpectralConvention.MATH
     np.testing.assert_array_almost_equal(model.boundary().dirs(),D)
     np.testing.assert_array_almost_equal(model.boundary().freq(),f)
     np.testing.assert_array_almost_equal(find_north_from_dirs(D,90), find_north_from_spec(model.boundary().spec()))
@@ -69,11 +72,13 @@ def test_boundary_processing():
     f, D = get_freq_and_dir_vector(math=True)
 
     model.boundary()._set_convention(SpectralConvention.WW3)
+    assert model.boundary().convention() == SpectralConvention.WW3
     np.testing.assert_array_almost_equal(model.boundary().dirs(),D)
     np.testing.assert_array_almost_equal(model.boundary().freq(),f)
     np.testing.assert_array_almost_equal(find_north_from_dirs(D,0), find_north_from_spec(model.boundary().spec()))
 
     model.boundary()._set_convention(SpectralConvention.MATHVEC)
+    assert model.boundary().convention() == SpectralConvention.MATHVEC
     np.testing.assert_array_almost_equal(model.boundary().dirs(),D)
     np.testing.assert_array_almost_equal(model.boundary().freq(),f)
     np.testing.assert_array_almost_equal(find_north_from_dirs(D,90), find_north_from_spec(model.boundary().spec()))
