@@ -20,6 +20,8 @@ class PointSkeleton(Skeleton):
     # def __init__(self, x=None, y=None, lon=None, lat=None, time=None, name='PointyData'):
     #     self.data = super()._create_structure(x, y, lon, lat, time)
     #     self.data.attrs['name'] = name
+    def is_gridded(self) -> bool:
+        return False
 
     def _initial_coords(self) -> list[str]:
         """Initial coordinates used with PointSkeletons. Additional coordinates

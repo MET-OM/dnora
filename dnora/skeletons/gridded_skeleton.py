@@ -20,7 +20,8 @@ class GriddedSkeleton(Skeleton):
     # def __init__(self, x=None, y=None, lon=None, lat=None, name='GriddedData'):
     #     self.data = super()._create_structure(x, y, lon, lat)
     #     self.data.attrs['name'] = name
-
+    def is_gridded(self) -> bool:
+        return True
 
     def _initial_coords(self) -> list[str]:
         """Initial coordinates used with GriddedSkeletons. Additional coordinates

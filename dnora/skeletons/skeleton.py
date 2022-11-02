@@ -63,7 +63,7 @@ class Skeleton:
         """Absorb another object of same type. This is used e.g. when pathcing
         cached data and joining different Boundary etc. over time.
         """
-        self.ds_manager.set_new_ds(xr.concat([self.ds(), obj.ds()], dim=dimension).sortby(dimension))
+        self.ds_manager.set_new_ds(xr.concat([self.ds(), obj.ds()], dim=dimension, data_vars='minimal').sortby(dimension))
 
     def _reset_masks(self) -> None:
         """Resets the mask to default values."""
@@ -140,10 +140,10 @@ class Skeleton:
             return False
         raise Exception(f"Expected x- and y string to be either 'x' and 'y' or 'lon' and 'lat', but they were {x_str} and {y_str}")
 
-    def is_gridded(self) -> bool:
-        if not self._structure_initialized():
-            return False
-        return aux_funcs.is_gridded(self.topo(), self.native_x(), self.native_y())
+    # def is_gridded(self) -> bool:
+    #     if not self._structure_initialized():
+    #         return False
+    #     return aux_funcs.is_gridded(self.topo(), self.native_x(), self.native_y())
 
     def set_utm(self, zone_number: int=33, zone_letter: str='W'):
         """Set UTM zone and number to be used for cartesian coordinates."""

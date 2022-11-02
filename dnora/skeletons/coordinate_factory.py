@@ -76,7 +76,7 @@ def add_time(grid_coord: bool=False, coord_name: str='time'):
 
         def get_time(self, data_array=False, **kwargs):
             if not self._structure_initialized():
-                return None
+                return (None, None)
             data = self.ds_manager.get(coord_name, **kwargs)
             if data_array:
                 return data
