@@ -56,6 +56,7 @@ class ModelRun:
 
     def import_boundary(self, boundary_reader: BoundaryReader=None,
                         point_picker: PointPicker=None, name: str=None,
+                        expansion_factor: float=1.5,
                         dry_run: bool=False,
                         write_cache: bool=False,
                         read_cache: bool=False,

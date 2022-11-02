@@ -23,7 +23,7 @@ class TrivialPicker(PointPicker):
     def __init__(self):
         pass
 
-    def __call__(self, grid: Grid, bnd_lon, bnd_lat):
+    def __call__(self, grid: Grid, bnd_lon, bnd_lat, expansion_factor):
         inds = np.array(range(len(bnd_lon)))
         return inds
 
@@ -35,7 +35,7 @@ class NearestGridPoint(PointPicker):
         self.max_dist = max_dist
         pass
 
-    def __call__(self, grid, bnd_lon, bnd_lat):
+    def __call__(self, grid, bnd_lon, bnd_lat, expansion_factor):
         lon, lat = grid.boundary_points()
 
         # Go through all points where we want output and find the nearest available point
@@ -54,15 +54,11 @@ class NearestGridPoint(PointPicker):
 
 class Area(PointPicker):
     """Choose all the points within a certain area around the grid."""
-    def __init__(self, expansion_factor=1.5):
-        self.expansion_factor = expansion_factor
-        return
-
-    def __call__(self, grid: Grid, bnd_lon, bnd_lat):
-        msg.info(f"Using expansion_factor = {self.expansion_factor:.2f}")
+    def __call__(self, grid: Grid, bnd_lon, bnd_lat, expansion_factor):
+        msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
 
         # Define area to search in
-        lon, lat = expand_area(grid.edges('lon'), grid.edges('lat'), self.expansion_factor)
+        lon, lat = expand_area(grid.edges('lon'), grid.edges('lat'), expansion_factor)
 
         masklon = np.logical_and(bnd_lon > lon[0], bnd_lon < lon[1])
         masklat = np.logical_and(bnd_lat > lat[0], bnd_lat < lat[1])

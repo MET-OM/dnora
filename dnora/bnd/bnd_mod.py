@@ -45,6 +45,7 @@ class Boundary(PointSkeleton):
     def import_boundary(self, start_time: str, end_time: str,
                         boundary_reader: BoundaryReader,
                         point_picker: PointPicker = TrivialPicker(),
+                        expansion_factor: float=1.5,
                         write_cache: bool=False,
                         read_cache: bool=False,
                         cache_name: str=None):
@@ -84,7 +85,7 @@ class Boundary(PointSkeleton):
         lon_all, lat_all, x_all, y_all = boundary_reader.get_coordinates(start_time)
 
         msg.header(point_picker, "Choosing spectra...")
-        inds = point_picker(self.grid, lon_all, lat_all)
+        inds = point_picker(self.grid, lon_all, lat_all, expansion_factor)
 
         if len(inds) < 1:
             msg.warning("PointPicker didn't find any points. Aborting import of boundary.")
