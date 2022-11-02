@@ -13,6 +13,7 @@ from ..wsr.wsr_mod import WaveSeries
 from ..bnd.read import BoundaryReader
 from ..bnd.write import BoundaryWriter
 from ..bnd.pick import PointPicker
+from ..bnd.conventions import SpectralConvention
 
 from ..wnd.read import ForcingReader
 from ..wnd.write import ForcingWriter
@@ -34,8 +35,7 @@ from ..file_module import FileNames
 from typing import Union
 # Import default values and aux_funcsiliry functions
 from .. import msg
-from ..bnd.process import boundary_processor_for_convention_change
-from ..spc.process import spectral_processor_for_convention_change
+
 
 from .. import file_module
 from ..converters import convert_swash_mat_to_netcdf
@@ -178,6 +178,7 @@ class ModelRun:
             msg.warning('No Spectra to convert to WaveSeries!')
             return
 
+        self.spectra()._set_convention(SpectralConvention.MET)
         waveseries_reader = SpectraToWaveSeries(self.spectra())
         msg.header(waveseries_reader, 'Converting the spectra to wave series data...')
         name = self.spectra().name
