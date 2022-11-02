@@ -6,6 +6,7 @@ import sys
 import re
 import glob, os
 from calendar import monthrange
+from ..cacher import Cacher
 # Import abstract classes and needed instances of them
 from .read import ForcingReader, DnoraNc
 from .write import ForcingWriter
@@ -31,7 +32,7 @@ class Forcing(GriddedSkeleton):
                     expansion_factor: float=1.2,
                     write_cache: bool=False,
                     read_cache: bool=False,
-                    cache_name: str='#Grid_#Lon0_#Lon1_#Lat0_#Lat1'):
+                    cache_name: str=None):
         """Imports forcing data from a certain source.
 
         Data are import between start_time and end_time from the source
@@ -39,17 +40,19 @@ class Forcing(GriddedSkeleton):
         by the Grid object passed at initialization of this object.
         """
 
-        self.start_time = copy(start_time)
-        self.end_time = copy(end_time)
-        self._history.append(copy(forcing_reader))
+        #self.start_time = copy(start_time)
+        #self.end_time = copy(end_time)
+        #self._history.append(copy(forcing_reader))
 
         if write_cache or read_cache:
-            cache_folder, cache_name, cache_empty = aux_funcs.setup_cache('wnd', forcing_reader.name(), cache_name, self.grid)
+            cacher = Cacher(self, forcing_reader.name(), cache_name)
 
-        if read_cache and not cache_empty:
+        if read_cache and not cacher.empty():
             msg.info('Reading wind forcing data from cache!!!')
             original_forcing_reader = copy(forcing_reader)
-            forcing_reader = DnoraNc(files=glob.glob(f'{cache_folder}/{cache_name}*'))
+            forcing_reader = DnoraNc(files=glob.glob(f'{cacher.filepath(extension=False)}*'))
+
+        self._history.append(copy(forcing_reader))
 
         msg.header(forcing_reader, "Loading wind forcing...")
         time, u, v, lon, lat, x, y, attributes = forcing_reader(
@@ -61,30 +64,20 @@ class Forcing(GriddedSkeleton):
 
         self.ds_manager.set_attrs(attributes)
         ### Patch data if read from cache and all data not found
-        if read_cache and not cache_empty:
-            patch_start, patch_end = aux_funcs.determine_patch_periods(self.time(), start_time, end_time)
+        if read_cache and not cacher.empty():
+            patch_start, patch_end = cacher.determine_patch_periods(start_time, end_time)
             if patch_start:
                 msg.info('Not all data found in cache. Patching from original source...')
-                wnd_list = [self.data]
                 for t0, t1 in zip(patch_start, patch_end):
-                    wnd_ds = original_forcing_reader(self.grid, t0, t1, expansion_factor)
-                    wnd_list.append(wnd_ds)
-
-                self.data = xr.concat(wnd_list, dim="time").sortby('time')
+                    forcing_temp = Forcing(self.grid)
+                    forcing_temp.import_forcing(start_time=t0, end_time=t1,
+                                forcing_reader=original_forcing_reader,
+                                expansion_factor=expansion_factor)
+                    self._absorb_object(forcing_temp, 'time')
 
         if write_cache:
             msg.info('Caching data:')
-            for month in self.months():
-                cache_file = f"{cache_name}_{month.strftime('%Y-%m')}.nc"
-                t0 = f"{month.strftime('%Y-%m-01')}"
-                d1 = monthrange(int(month.strftime('%Y')), int(month.strftime('%m')))[1]
-                t1 = f"{month.strftime(f'%Y-%m-{d1}')}"
-                outfile = f'{cache_folder}/{cache_file}'
-                if os.path.exists(outfile):
-                    os.remove(outfile)
-                self.data.sel(time=slice(t0, t1)).to_netcdf(outfile)
-                msg.to_file(outfile)
-
+            cacher.write_cache()
         return
 
     def __str__(self) -> str:

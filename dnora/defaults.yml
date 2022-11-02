@@ -115,3 +115,7 @@ Cache:
     filename: "bnd_cache_#Grid_#Lon0_#Lon1_#Lat0_#Lat1_#T0"
     folder: "bnd_cache/#Boundary"
     dateformat: '%Y%m'
+  forcing:
+    filename: "wnd_cache_#Grid_#Lon0_#Lon1_#Lat0_#Lat1_#T0"
+    folder: "wnd_cache/#Forcing"
+    dateformat: '%Y%m'

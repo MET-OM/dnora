@@ -92,7 +92,7 @@ class ModelRun:
                         expansion_factor: float=1.2,
                         write_cache: bool=False,
                         read_cache: bool=False,
-                        cache_name: str='#Grid_#Lon0_#Lon1_#Lat0_#Lat1') -> None:
+                        cache_name: str=None) -> None:
         """Creates a Forcing-objects and imports forcing data."""
         self._dry_run = dry_run
 

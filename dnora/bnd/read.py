@@ -156,7 +156,8 @@ class DnoraNc(BoundaryReader):
         msg.info(f"Getting boundary spectra from cached netcdf (e.g. {self.files[0]}) from {start_time} to {end_time}")
         ds = xr.open_mfdataset(self.files, preprocess=_crop, data_vars='minimal')
         ds = ds.sel(inds=inds)
-        return ds.time.values, ds.freq.values, ds.dirs.values, ds.spec.values, ds.lon.values, ds.lat.values, None, None, ds.attrs
+        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(data)
+        return ds.time.values, ds.freq.values, ds.dirs.values, ds.spec.values, lon, lat, x, y, ds.attrs
 
 class ForceFeed(BoundaryReader):
     def __init__(self, time, freq, dirs, spec, lon, lat, convention: SpectralConvention) -> None:

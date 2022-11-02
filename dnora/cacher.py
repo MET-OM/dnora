@@ -14,15 +14,15 @@ class Cacher:
     cache_name: str
 
     def __post_init__(self):
-        obj_type = type(self.dnora_obj).__name__.lower()
-        folder = f'{obj_type}_cache/{self.reader_name}'
+        #obj_type = type(self.dnora_obj).__name__.lower()
+        # folder = f'{obj_type}_cache/{self.reader_name}' # Taken from defaults instead
         self.file_object = FileNames(format='Cache',
                                 dnora_obj=self.dnora_obj,
                                 edges_from_grid=True,
                                 extension='nc',
-                                _filename=self.cache_name,
-                                _folder=folder
+                                _filename=self.cache_name
                                 )
+
         self.file_object.create_folder()
 
     def empty(self):

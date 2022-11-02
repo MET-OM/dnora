@@ -2,7 +2,6 @@ from abc import ABC,  abstractmethod
 import xarray as xr
 # Import objects
 from ..grd.grd_mod import Grid
-from .. import file_module
 from .. import aux_funcs
 from .. import msg
 import pandas as pd
@@ -57,13 +56,25 @@ class DnoraNc(ForcingReader):
 
     def __call__(self, grid, start_time, end_time, expansion_factor):
         def _crop(ds):
-            return ds.sel(time=slice(start_time, end_time), lon=slice(lon_min, lon_max), lat=slice(lat_min, lat_max))
-        lon_min, lon_max, lat_min, lat_max = aux_funcs.expand_area(min(grid.lon()), max(grid.lon()), min(grid.lat()), max(grid.lat()), expansion_factor)
+            if lon is not None:
+                return ds.sel(time=slice(start_time, end_time), lon=slice(lon[0], lon[1]), lat=slice(lat[0], lat[1]))
+            else:
+                return ds.sel(time=slice(start_time, end_time), x=slice(x[0], x[1]), y=slice(y[0], y[1]))
+
+        ds0 = xr.open_dataset(self.files[0])
+        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds0)
+
+        if lon is not None:
+            lon, lat = aux_funcs.expand_area(grid.edges('lon'), grid.edges('lat'), expansion_factor)
+        else:
+            x, y = aux_funcs.expand_area(grid.edges('x'), grid.edges('y'), expansion_factor)
         msg.info(f"Getting wind forcing from cached netcdf (e.g. {self.files[0]}) from {start_time} to {end_time}")
 
         # These files might get deleted, so we don't want to use dask for a lazy load
-        ds = xr.open_mfdataset(self.files, preprocess=_crop)
-        return ds
+        ds = xr.open_mfdataset(self.files, preprocess=_crop, data_vars='minimal')
+        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
+
+        return ds.time.values, ds.u.values, ds.v.values, lon, lat, x, y, ds.attrs
 #
 #
 # class File_WW3Nc(ForcingReader):

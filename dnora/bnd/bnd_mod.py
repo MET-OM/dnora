@@ -25,7 +25,6 @@ if TYPE_CHECKING:
 from .. import msg
 from .. import aux_funcs
 from ..cacher import Cacher
-from .. import file_module
 from ..skeletons.point_skeleton import PointSkeleton
 from ..skeletons.coordinate_factory import add_time, add_frequency, add_direction
 from ..skeletons.mask_factory import add_mask
