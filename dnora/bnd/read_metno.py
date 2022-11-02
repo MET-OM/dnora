@@ -56,7 +56,7 @@ class WAM4km(BoundaryReader):
             lat_all = lat_all[mask]
             self.pointers = np.where(mask) # These are used to map back the indeces from the PointPicker to indeces in the original data
 
-        return lon_all, lat_all
+        return lon_all, lat_all, None, None
 
     def __call__(self, start_time, end_time, inds) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
@@ -221,7 +221,7 @@ class NORA3(BoundaryReader):
         lon_all = data.longitude.values[0]
         lat_all = data.latitude.values[0]
 
-        return lon_all, lat_all
+        return lon_all, lat_all, None, None
 
     def __call__(self, start_time, end_time, inds) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""

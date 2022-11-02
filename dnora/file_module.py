@@ -49,7 +49,8 @@ def replace_times(filename: str, dateformat: str, times: list) -> str:
     """
 
     for ct, t in enumerate(times):
-        filename = re.sub(f"#T{ct}", pd.Timestamp(t).strftime(dateformat), filename)
+        if t is not None:
+            filename = re.sub(f"#T{ct}", pd.Timestamp(t).strftime(dateformat), filename)
 
     return filename
 
@@ -59,9 +60,49 @@ def replace_lonlat(filename: str, lon: float, lat: float) -> str:
 
     e.g. #Lon_#Lat_file.txt, 8.0, 60.05 -> 08.0000000_60.05000000_file.txt
     """
+    if isinstance(lon, tuple):
+        if lon[0] is not None:
+            filename = re.sub("#Lon0", f"{lon[0]:010.7f}", filename)
+        if lon[1] is not None:
+            filename = re.sub("#Lon1", f"{lon[1]:010.7f}", filename)
+    else:
+        if lon is not None:
+            filename = re.sub("#Lon", f"{lon:010.7f}", filename)
 
-    filename = re.sub("#Lon", f"{lon:010.7f}", filename)
-    filename = re.sub("#Lat", f"{lat:010.7f}", filename)
+    if isinstance(lon, tuple):
+        if lat[0] is not None:
+            filename = re.sub("#Lat0", f"{lat[0]:010.7f}", filename)
+        if lat[1] is not None:
+            filename = re.sub("#Lat1", f"{lat[1]:010.7f}", filename)
+    else:
+        if lon is not None:
+            filename = re.sub("#Lat", f"{lat:010.7f}", filename)
+
+    return filename
+
+def replace_xy(filename: str, x: float, y: float) -> str:
+    """Substitutes the strings #X, #Y in filename with values of lon and
+    lat.
+
+    e.g. #Lon_#Lat_file.txt, 8.0, 60.05 -> 08.0000000_60.05000000_file.txt
+    """
+    if isinstance(x, tuple):
+        if x[0] is not None:
+            filename = re.sub("#X0", f"{x[0]:010.3f}", filename)
+        if x[1] is not None:
+            filename = re.sub("#Y1", f"{x[1]:010.3f}", filename)
+    else:
+        if x is not None:
+            filename = re.sub("#X", f"{x:010.3f}", filename)
+
+    if isinstance(y, tuple):
+        if y[0] is not None:
+            filename = re.sub("#Y0", f"{y[0]:010.3f}", filename)
+        if y[1] is not None:
+            filename = re.sub("#Y1", f"{y[1]:010.3f}", filename)
+    else:
+        if y is not None:
+            filename = re.sub("#Y", f"{y:010.3f}", filename)
 
     return filename
 
@@ -75,7 +116,7 @@ def replace_objects(filename: str, dict_of_object_names: dict[str: str]) -> str:
 
     for obj_type, obj_name in dict_of_object_names.items():
         if obj_name is not None:
-            filename = re.sub(f"#{obj_type}", obj_name, filename)
+            filename = re.sub(f"#{obj_type.title()}", obj_name, filename)
 
     return filename
 
@@ -105,7 +146,7 @@ def clean(filename: str, list_of_placeholders: list[str]=None) -> str:
 
     return filename
 
-def get_default_value(key: str, dnora_obj: str, primary: dict, fallback: dict):
+def get_default_value(key: str, obj_type: str, primary: dict, fallback: dict):
     """Get a key (e.g. folder) from the defaults list.
 
     1) Tries Model+dnora_obj specific value (e.g. SWAN-wnd-folder)
@@ -115,15 +156,14 @@ def get_default_value(key: str, dnora_obj: str, primary: dict, fallback: dict):
     3) Returns ModelRun defaults (e.g. ModulRun-wnd-folder)
     """
 
-    dnora_obj = dnora_obj.lower()
-    if dnora_obj not in fallback.keys():
-        raise ValueError(f'Default values not defined for {dnora_obj}!')
-    fallback_filename = fallback[dnora_obj].get(key)
+    if obj_type not in fallback.keys():
+        raise ValueError(f'Default values not defined for {obj_type}!')
+    fallback_filename = fallback[obj_type].get(key)
 
     # Try dnora_obj specific filename is dnora_obj settings defined
     dnora_obj_filename = None
-    if primary.get(dnora_obj) is not None:
-        dnora_obj_filename = primary[dnora_obj].get(key) or dnora_obj_filename
+    if primary.get(obj_type) is not None:
+        dnora_obj_filename = primary[obj_type].get(key) or dnora_obj_filename
 
     # If filename not defined for specific dnora_obj, try Model specific name
     dnora_obj_filename = dnora_obj_filename or primary.get(key)
@@ -142,14 +182,15 @@ def split_filepath(filepath: str) -> tuple[str, str]:
 class FileNames:
     format: str
     dnora_obj: str
-    clean_names: bool
-    dict_of_object_names: list
-    start_time: str
-    end_time: str
-    _filename: str
-    _folder: str
-    _dateformat: str
-    extension: str
+    dict_of_object_names: list=None
+    clean_names: bool=True
+    _filename: str=None
+    _folder: str=None
+    _dateformat: str=None
+    edges_from_grid: bool=False
+    extension: str=None
+    start_time: str = None
+    end_time: str = None
 
     def __post_init__(self):
         defaults_file = Path(__file__).parent.joinpath(Path('defaults.yml'))
@@ -157,34 +198,62 @@ class FileNames:
           self._defaults = yaml.safe_load(file)
         self.fallback = self._defaults['ModelRun']
         self.primary = self._defaults[self.format]
+        if self.dict_of_object_names is None:
+            self.dict_of_object_names = {}
+
+        self.obj_type = type(self.dnora_obj).__name__.lower()
+        dict_keys = [key.lower() for key in self.dict_of_object_names.keys()]
+        if not self.obj_type in dict_keys:
+            self.dict_of_object_names[self.obj_type] = self.dnora_obj.name
+        if self.start_time is not None:
+            self.start_time = pd.to_datetime(self.start_time)
+        if self.end_time is not None:
+            self.end_time = pd.to_datetime(self.end_time)
         #self.placeholders = self._defaults['list_of_placeholders']
 
     def dateformat(self) -> str:
-        return self._dateformat or get_default_value('dateformat', self.dnora_obj, self.primary, self.fallback)
+        return self._dateformat or get_default_value('dateformat', self.obj_type, self.primary, self.fallback)
 
-    def filename(self, extension: str=None) -> str:
-        filename = self._filename or get_default_value('filename', self.dnora_obj, self.primary, self.fallback)
-        filename = self.replace_placeholders(filename, self.dateformat())
+    def filename(self, extension: str=None, start_time: str=None, end_time: str=None) -> str:
+        filename = self._filename or get_default_value('filename', self.obj_type, self.primary, self.fallback)
+        filename = self.replace_placeholders(filename, start_time, end_time)
         extension = extension or self.extension
-        return Path(filename).with_suffix(f'.{extension}')
+        if extension is None:
+            return Path(filename)
+        return f'{Path(filename)}.{extension}'
 
     def folder(self) -> str:
-        folder = self._folder or get_default_value('folder', self.dnora_obj, self.primary, self.fallback)
-        return Path(self.replace_placeholders(folder, self.dateformat()))
+        folder = self._folder or get_default_value('folder', self.obj_type, self.primary, self.fallback)
+        return Path(self.replace_placeholders(folder))
 
-    def filepath(self) -> str:
-        return add_folder_to_filename(self.filename(), self.folder())
+    def filepath(self, extension: str=None, start_time: str=None, end_time: str=None) -> str:
+        return add_folder_to_filename(self.filename(extension, start_time, end_time), self.folder())
 
     def create_folder(self) -> None:
         folder = Path(self.folder())
         if not folder.is_dir():
             msg.plain(f"Creating folder {str(folder)}")
-            folder.mkdir()
+            folder.mkdir(parents=True)
 
-    def replace_placeholders(self, unclean_string: str, dateformat: str) -> str:
+    def replace_placeholders(self, unclean_string: str, start_time: str=None, end_time: str=None) -> str:
         unclean_string = replace_objects(unclean_string, self.dict_of_object_names)
+        if self.edges_from_grid:
+            lon = self.dnora_obj.grid.edges('lon', strict=True)
+            lat = self.dnora_obj.grid.edges('lat', strict=True)
+            x = self.dnora_obj.grid.edges('x', strict=True)
+            y = self.dnora_obj.grid.edges('y', strict=True)
+        else:
+            lon = self.dnora_obj.edges('lon', strict=True)
+            lat = self.dnora_obj.edges('lat', strict=True)
+            x = self.dnora_obj.edges('x', strict=True)
+            y = self.dnora_obj.edges('y', strict=True)
 
-        clean_string = replace_times(unclean_string, dateformat, [self.start_time, self.end_time])
+        unclean_string = replace_lonlat(unclean_string, lon, lat)
+        unclean_string = replace_xy(unclean_string, x, y)
+        start_time = start_time or self.dnora_obj.time()[0]
+        end_time = end_time or self.dnora_obj.time()[1]
+        clean_string = replace_times(unclean_string, self.dateformat(), [start_time, end_time])
+
 
         if self.clean_names:
             clean_string = clean(clean_string)

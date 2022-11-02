@@ -144,6 +144,9 @@ class Grid(GriddedSkeleton):
 
         return np.ceil(self.ny()/abs_diff).astype(int)
 
+    def time(self) -> tuple:
+        return (None, None)
+
     def __str__(self) -> str:
         """Prints status of the grid."""
 

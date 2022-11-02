@@ -59,7 +59,7 @@ class ModelRun:
                         dry_run: bool=False,
                         write_cache: bool=False,
                         read_cache: bool=False,
-                        cache_name: str='#Grid_#Lon0_#Lon1_#Lat0_#Lat1') -> None:
+                        cache_name: str=None) -> None:
         """Creates a Boundary-object and imports boundary spectra."""
 
         self._dry_run = dry_run

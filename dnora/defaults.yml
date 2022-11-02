@@ -7,8 +7,18 @@ list_of_placeholders:
   - '#T1'
   - 'E#Lon'
   - 'N#Lat'
+  - '#Lon0'
+  - '#Lat0'
+  - '#Lon1'
+  - '#Lat1'
   - '#Lon'
   - '#Lat'
+  - '#X0'
+  - '#Y0'
+  - '#X1'
+  - '#Y1'
+  - '#X'
+  - '#Y'
 
 ModelRun:
   grid:
@@ -99,3 +109,9 @@ REEF3D:
   input_file:
     filename: 'ctrl'
     folder: '#Grid_REEF3D'
+
+Cache:
+  boundary:
+    filename: "bnd_cache_#Grid_#Lon0_#Lon1_#Lat0_#Lat1_#T0"
+    folder: "bnd_cache/#Boundary"
+    dateformat: '%Y%m'
