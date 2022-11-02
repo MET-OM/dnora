@@ -84,7 +84,7 @@ class Forcing(GriddedSkeleton):
         """Prints status of forcing."""
 
         msg.header(self, f"Status of forcing {self.name}")
-        if self.time() is not None:
+        if not self.time() == (None, None):
             msg.plain(f"Contains data for {self.time()[0]} - {self.time()[-1]}")
             msg.plain(f"\t dt={self.dt()} hours, i.e. ({self.nt()} time steps)")
             msg.plain(f"Data covers: lon: {min(self.lon())} - {max(self.lon())}, lat: {min(self.lat())} - {max(self.lat())}")

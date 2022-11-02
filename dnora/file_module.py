@@ -116,6 +116,7 @@ def replace_objects(filename: str, dict_of_object_names: dict[str: str]) -> str:
 
     for obj_type, obj_name in dict_of_object_names.items():
         if obj_name is not None:
+            filename = re.sub(f"#{obj_type}", obj_name, filename)
             filename = re.sub(f"#{obj_type.title()}", obj_name, filename)
 
     return filename
@@ -201,10 +202,13 @@ class FileNames:
         if self.dict_of_object_names is None:
             self.dict_of_object_names = {}
 
-        self.obj_type = type(self.dnora_obj).__name__.lower()
         dict_keys = [key.lower() for key in self.dict_of_object_names.keys()]
-        if not self.obj_type in dict_keys:
-            self.dict_of_object_names[self.obj_type] = self.dnora_obj.name
+        if isinstance(self.dnora_obj, str):
+            self.obj_type = self.dnora_obj
+        else:        
+            self.obj_type = type(self.dnora_obj).__name__.lower()
+            if not self.obj_type in dict_keys:
+                self.dict_of_object_names[self.obj_type] = self.dnora_obj.name
         if self.start_time is not None:
             self.start_time = pd.to_datetime(self.start_time)
         if self.end_time is not None:
@@ -237,23 +241,25 @@ class FileNames:
 
     def replace_placeholders(self, unclean_string: str, start_time: str=None, end_time: str=None) -> str:
         unclean_string = replace_objects(unclean_string, self.dict_of_object_names)
-        if self.edges_from_grid:
-            lon = self.dnora_obj.grid.edges('lon', strict=True)
-            lat = self.dnora_obj.grid.edges('lat', strict=True)
-            x = self.dnora_obj.grid.edges('x', strict=True)
-            y = self.dnora_obj.grid.edges('y', strict=True)
+        if not isinstance(self.dnora_obj, str):
+            if self.edges_from_grid:
+                lon = self.dnora_obj.grid.edges('lon', strict=True)
+                lat = self.dnora_obj.grid.edges('lat', strict=True)
+                x = self.dnora_obj.grid.edges('x', strict=True)
+                y = self.dnora_obj.grid.edges('y', strict=True)
+            else:
+                lon = self.dnora_obj.edges('lon', strict=True)
+                lat = self.dnora_obj.edges('lat', strict=True)
+                x = self.dnora_obj.edges('x', strict=True)
+                y = self.dnora_obj.edges('y', strict=True)
+
+            unclean_string = replace_lonlat(unclean_string, lon, lat)
+            unclean_string = replace_xy(unclean_string, x, y)
+            start_time = start_time or self.dnora_obj.time()[0]
+            end_time = end_time or self.dnora_obj.time()[1]
+            clean_string = replace_times(unclean_string, self.dateformat(), [start_time, end_time])
         else:
-            lon = self.dnora_obj.edges('lon', strict=True)
-            lat = self.dnora_obj.edges('lat', strict=True)
-            x = self.dnora_obj.edges('x', strict=True)
-            y = self.dnora_obj.edges('y', strict=True)
-
-        unclean_string = replace_lonlat(unclean_string, lon, lat)
-        unclean_string = replace_xy(unclean_string, x, y)
-        start_time = start_time or self.dnora_obj.time()[0]
-        end_time = end_time or self.dnora_obj.time()[1]
-        clean_string = replace_times(unclean_string, self.dateformat(), [start_time, end_time])
-
+            clean_string = unclean_string
 
         if self.clean_names:
             clean_string = clean(clean_string)

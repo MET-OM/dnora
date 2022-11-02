@@ -29,7 +29,7 @@ class WaveSeries(PointSkeleton):
         self._history = []
         self._coord_manager = deepcopy(WaveSeries._coord_manager) # We are dynamically adding data variables to the instance
 
-    def import_waveseries(self, start_time, end_time, waveseries_reader: WaveSeriesReader,  point_picker: PointPicker = TrivialPicker()) -> None:
+    def import_waveseries(self, start_time: str, end_time: str, waveseries_reader: WaveSeriesReader,  point_picker: PointPicker, expansion_factor: float) -> None:
         self.start_time = copy(start_time)
         self.end_time = copy(end_time)
         self._history.append(copy(waveseries_reader))
@@ -38,7 +38,7 @@ class WaveSeries(PointSkeleton):
         lon_all, lat_all = waveseries_reader.get_coordinates(self.start_time)
 
         msg.header(point_picker, "Choosing waves series points...")
-        inds = point_picker(self.grid, lon_all, lat_all)
+        inds = point_picker(self.grid, lon_all, lat_all, expansion_factor)
 
         msg.header(waveseries_reader, "Loading wave series data...")
         time, data_dict, lon, lat, x, y, attributes = waveseries_reader(start_time, end_time, inds)

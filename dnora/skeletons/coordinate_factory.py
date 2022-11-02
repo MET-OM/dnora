@@ -80,7 +80,9 @@ def add_time(grid_coord: bool=False, coord_name: str='time'):
             data = self.ds_manager.get(coord_name, **kwargs)
             if data_array:
                 return data
-            return pd.to_datetime(data.values.copy())
+            if len(data.values) > 1:
+                return pd.to_datetime(data.values.copy())
+            return pd.to_datetime([data.values[0].copy(), data.values[0].copy()])
 
         if not hasattr(c, '_coord_manager'):
             c._coord_manager =  CoordinateManager()

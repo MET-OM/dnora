@@ -10,24 +10,24 @@ with open('data/defaults.yml', 'r') as file:
 
 class GetDefaultValues(unittest.TestCase):
 	def test_filename(self):
-		filename = file_module.get_default_value(key='filename', dnora_obj='boundary', primary=defaults['SWAN'], fallback=defaults['ModelRun'])
+		filename = file_module.get_default_value(key='filename', obj_type='boundary', primary=defaults['SWAN'], fallback=defaults['ModelRun'])
 		self.assertEqual(filename, 'spec#Boundary#Grid#T0#T1')
 
-		filename = file_module.get_default_value(key='filename', dnora_obj='spectra', primary=defaults['SWAN'], fallback=defaults['ModelRun'])
+		filename = file_module.get_default_value(key='filename', obj_type='spectra', primary=defaults['SWAN'], fallback=defaults['ModelRun'])
 		self.assertEqual(filename, 'spec1d_#Spectra_#Grid_#T0-#T1')
 
 	def test_folder(self):
-		filename = file_module.get_default_value(key='folder', dnora_obj='grid', primary=defaults['REEF3D'], fallback=defaults['ModelRun'])
+		filename = file_module.get_default_value(key='folder', obj_type='grid', primary=defaults['REEF3D'], fallback=defaults['ModelRun'])
 		self.assertEqual(filename, 'output')
 
-		filename = file_module.get_default_value(key='folder', dnora_obj='input_file', primary=defaults['REEF3D'], fallback=defaults['ModelRun'])
+		filename = file_module.get_default_value(key='folder', obj_type='input_file', primary=defaults['REEF3D'], fallback=defaults['ModelRun'])
 		self.assertEqual(filename, 'MyHOS_oceanFolder')
 
 	def test_dateformat(self):
-		filename = file_module.get_default_value(key='dateformat', dnora_obj='forcing', primary=defaults['SWAN'], fallback=defaults['ModelRun'])
+		filename = file_module.get_default_value(key='dateformat', obj_type='forcing', primary=defaults['SWAN'], fallback=defaults['ModelRun'])
 		self.assertEqual(filename, '%Y%m%d')
 
-		filename = file_module.get_default_value(key='dateformat', dnora_obj='forcing', primary=defaults['WW3'], fallback=defaults['ModelRun'])
+		filename = file_module.get_default_value(key='dateformat', obj_type='forcing', primary=defaults['WW3'], fallback=defaults['ModelRun'])
 		self.assertEqual(filename, '%Y%m%dT%H%M')
 
 class AddFolder(unittest.TestCase):

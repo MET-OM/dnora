@@ -69,7 +69,7 @@ SWAN:
     filename: 'spec#Boundary#Grid#T0#T1'
   input_file:
     filename: 'input_#T0_#Grid'
-  folder: '#Grid_SWAN'
+    folder: '#Grid_SWAN'
 
 SWASH:
   dateformat: '%Y%m%d'
@@ -81,7 +81,7 @@ SWASH:
     filename: 'spec#Boundary#Grid#T0#T1'
   input_file:
     filename: 'input_#T0_#T1_#Grid'
-  folder: '#Grid_SWASH'
+    folder: '#Grid_SWASH'
 
 WW3:
   grid:

@@ -11,7 +11,8 @@ def test_one_time():
     model.import_forcing(ConstantForcing())
     time = pd.date_range(start=start_time, end=end_time, freq='H')
 
-    pd.testing.assert_index_equal(time, model.forcing().time())
+    assert time[0] == model.forcing().time()[0]
+    assert time[0] == model.forcing().time()[1]
 
     assert model.forcing().years(datetime=False) == ['2020']
     assert model.forcing().months(datetime=False) == ['2020-01']

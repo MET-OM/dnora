@@ -32,7 +32,7 @@ class Spectra(PointSkeleton):
         self._convention = None
         self._history = []
 
-    def import_spectra(self, start_time: str, end_time: str, spectral_reader: SpectralReader,  point_picker: PointPicker = TrivialPicker()) -> None:
+    def import_spectra(self, start_time: str, end_time: str, spectral_reader: SpectralReader,  point_picker: PointPicker, expansion_factor: float) -> None:
         """Imports omnidirectional spectra from a certain source.
 
         Spectra are import between start_time and end_time from the source
@@ -48,7 +48,7 @@ class Spectra(PointSkeleton):
         lon_all, lat_all = spectral_reader.get_coordinates(self.start_time)
 
         msg.header(point_picker, "Choosing spectra...")
-        inds = point_picker(self.grid, lon_all, lat_all)
+        inds = point_picker(self.grid, lon_all, lat_all, expansion_factor)
 
         msg.header(spectral_reader, "Loading omnidirectional spectra...")
         time, freq, spec, mdir, spr, lon, lat, x, y, attributes = spectral_reader(self.start_time, self.end_time, inds)
