@@ -39,7 +39,7 @@ class BoundaryWriter(ABC):
         return True
 
     @abstractmethod
-    def convention(self) -> str:
+    def convention(self) -> SpectralConvention:
         """Defines in which format the incoming spectra should be.
 
         The conventions to choose from are predetermined:
@@ -72,12 +72,12 @@ class BoundaryWriter(ABC):
         folder where data were written."""
 
         return output_files
-        
+
 class Null(BoundaryWriter):
-    def convention(self):
+    def convention(self) -> SpectralConvention:
         return SpectralConvention.OCEAN
 
-    def _extension(self):
+    def _extension(self) -> str:
         return 'junk'
 
     def __call__(self, forcing, filename):
@@ -88,10 +88,10 @@ class DumpToNc(BoundaryWriter):
         self._convention_in = convention
         return
 
-    def _extension(self):
+    def _extension(self) -> str:
         return 'nc'
 
-    def convention(self) -> str:
+    def convention(self) -> SpectralConvention:
         """Convention of spectra"""
         return self._convention_in
 
@@ -105,10 +105,10 @@ class NcFiles(BoundaryWriter):
         self._convention_in = convention
         return
 
-    def _extension(self):
+    def _extension(self) -> str:
         return 'nc'
 
-    def convention(self) -> str:
+    def convention(self) -> SpectralConvention:
         """Convention of spectra"""
         return self._convention_in
 
@@ -137,10 +137,10 @@ class WW3(BoundaryWriter):
         self._convention_in = convention
         return
 
-    def _extension(self):
+    def _extension(self) -> str:
         return 'nc'
 
-    def convention(self) -> str:
+    def convention(self) -> SpectralConvention:
         """Convention of spectra"""
         return self._convention_in
 
@@ -304,11 +304,11 @@ class SWAN(BoundaryWriter):
         self.factor = factor
         return
 
-    def convention(self) -> str:
+    def convention(self) -> SpectralConvention:
         """Convention of spectra"""
         return SpectralConvention.MET
 
-    def _extension(self):
+    def _extension(self) -> str:
         return 'asc'
 
     def __call__(self, boundary: Boundary, filename: str) -> Tuple[str, str]:
