@@ -83,10 +83,10 @@ class BoundaryReader(ABC):
         lat:    Latitude vector as numpy array (None if Cartesian)
         x:    Longitude vector as numpy array (None if Spherical)
         y:    Latitude vector as numpy array (None if Spherical)
-        source: metadata: dict{key, value} will be set as attributes of the xr.Dataset
+        metadata: metadata: dict{key, value} will be set as attributes of the xr.Dataset
         """
 
-        return time, freq, dirs, spec, lon, lat, x, y, source
+        return time, freq, dirs, spec, lon, lat, x, y, metadata
 
     def name(self) -> str:
         return type(self).__name__
@@ -102,10 +102,10 @@ class ConstantBoundary(BoundaryReader):
         self.spectral_convention = spectral_convention
         self.grid = grid
 
-    def convention(self):
+    def convention(self) -> SpectralConvention:
         return self.spectral_convention
 
-    def get_coordinates(self, start_time):
+    def get_coordinates(self, start_time) -> tuple:
         lon, lat, x, y = aux_funcs.get_coordinates_from_grid(self.grid, self.cartesian, list=True)
 
         return lon, lat, x, y
