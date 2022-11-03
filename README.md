@@ -1,7 +1,7 @@
 # dnora
 # ![logo](https://user-images.githubusercontent.com/67804784/145466261-f50dbc27-f242-4db0-8d99-e23d0bd0dbbc.png)
 
-[Registration](https://docs.google.com/forms/d/1cvzUHjthx6YgLUhi5FU9MQSyKZEjVZA9UHSa5Kqs3nc/) for dnora workshop on 26.10.2022 in Bergen, Norway. 
+[Quick Dnora Installation Procedure](https://docs.google.com/document/d/1VzRDkQk5pqq2rkNKa_woC3ehJ9Dn2pcRNy4LtrcOQXY/edit?usp=sharing)
 
 What is dnora? 
 
