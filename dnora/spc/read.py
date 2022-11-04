@@ -59,6 +59,9 @@ class SpectralReader(ABC):
 
         return time, freq, spec, mdir, spr, lon, lat, x, y, source
 
+    def name(self) -> str:
+        return type(self).__name__
+
 class BoundaryToSpectra(SpectralReader):
     """Integrates boundary spectra to omnidairectional spectra"""
     def __init__(self, boundary: Boundary) -> None:
@@ -72,8 +75,7 @@ class BoundaryToSpectra(SpectralReader):
         #return self._boundary.data.lon.values, self._boundary.data.lat.values
 
     def __call__(self, grid, start_time, end_time, inds) -> Tuple:
-        self.name = self._boundary.name
-        #source = self._boundary.data.source
+
         time = self._boundary.time(data_array=True).sel(time=slice(start_time, end_time)).values
         lon = self._boundary.lon(strict=True)
         lat = self._boundary.lat(strict=True)
@@ -105,3 +107,6 @@ class BoundaryToSpectra(SpectralReader):
         spec = ef.values
 
         return time, freq, spec, mdir, spr, lon, lat, x, y, self._boundary.ds().attrs
+
+    def name(self):
+        return self._boundary.name

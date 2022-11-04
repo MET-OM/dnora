@@ -55,18 +55,6 @@ class Boundary(PointSkeleton):
         defined in the boundary_reader. Which spectra to choose spatically
         are determined by the point_picker.
         """
-        ### Some boundary readers may need to define an area and grid when
-        ### reading the database. This is set to make that possible.
-        ### The regular grid doesn't necessarily match the boundary points
-        ### exactly.
-        if not np.all(np.logical_not(self.grid().boundary_mask())): # Boundary mask empty?
-            boundary_point_grid = Grid(lon=self.grid().edges('lon'),
-                                        lat=self.grid().edges('lat'),
-                                        name='boundary_points')
-            if len(boundary_point_grid.lon()) > 1 and len(boundary_point_grid.lat()) > 1:
-                boundary_point_grid.set_spacing(nx=self.grid().boundary_nx(),
-                                                ny=self.grid().boundary_ny())
-            boundary_reader.set_restricted_area(boundary_point_grid)
 
         # Prepare for working with cahced data if we have to
         if write_cache or read_cache:
@@ -83,7 +71,6 @@ class Boundary(PointSkeleton):
 
         msg.header(boundary_reader, "Reading coordinates of spectra...")
         lon_all, lat_all, x_all, y_all = boundary_reader.get_coordinates(self.grid(), start_time)
-
         msg.header(point_picker, "Choosing spectra...")
         inds = point_picker(self.grid(), lon_all, lat_all, expansion_factor)
 
@@ -93,6 +80,7 @@ class Boundary(PointSkeleton):
 
         # Main reading happens here
         msg.header(boundary_reader, "Loading boundary spectra...")
+
         time, freq, dirs, spec, lon, lat, x, y, attributes = boundary_reader(self.grid(), start_time, end_time, inds)
         self._init_structure(x, y, lon, lat, time=time, freq=freq, dirs=dirs)
         self.ds_manager.set(spec, 'spec', coord_type='all')

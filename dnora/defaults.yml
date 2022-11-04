@@ -21,14 +21,18 @@ list_of_placeholders:
   - '#Y'
 
 ModelRun:
+  plotfolder: 'figures'
+  plotname: 'dnora_plot'
   grid:
     folder: output
     filename: 'grid_#Grid'
     dateformat: '%Y%m%dT%H%M'
+    plotname: 'grid_#Grid_#Forcing_#Boundary'
   forcing:
     folder: output
     filename: 'wind_#Forcing_#Grid_#T0-#T1'
     dateformat: '%Y%m%dT%H%M'
+    plotname: 'wind_#Grid_#Forcing'
   boundary:
     folder: output
     filename: 'spec2d_#Boundary_#Grid_#T0-#T1'
@@ -45,18 +49,8 @@ ModelRun:
     folder: output
     filename: 'inputfile_#Grid_#Forcing_#Boundary_#Spectra_#T0_#T1_#Lon_#Lat'
     dateformat: '%Y%m%dT%H%M'
-  dnplot_grid:
-    folder: figures
-    filename: 'grid_#Grid_#Forcing_#Boundary'
-    dateformat: ''
-  dnplot_topo:
-    folder: figures
-    filename: 'topo_#Grid_#Forcing_#Boundary'
-    dateformat: ''
-  dnplot_forcing:
-    folder: figures
-    filename: 'wind_#Grid_#Forcing'
-    dateformat: ''
+  topo:
+    plotname: 'topo_#Grid_#Forcing_#Boundary'
 
 SWAN:
   dateformat: '%Y%m%d'
@@ -118,4 +112,8 @@ Cache:
   forcing:
     filename: "wnd_cache_#Grid_#Lon0_#Lon1_#Lat0_#Lat1_#T0"
     folder: "wnd_cache/#Forcing"
+    dateformat: '%Y%m'
+  spectra:
+    filename: "spc_cache_#Grid_#Lon0_#Lon1_#Lat0_#Lat1_#T0"
+    folder: "spc_cache/#Spectra"
     dateformat: '%Y%m'

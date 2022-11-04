@@ -157,19 +157,28 @@ def get_default_value(key: str, obj_type: str, primary: dict, fallback: dict):
     3) Returns ModelRun defaults (e.g. ModulRun-wnd-folder)
     """
 
-    if obj_type not in fallback.keys():
-        raise ValueError(f'Default values not defined for {obj_type}!')
-    fallback_filename = fallback[obj_type].get(key)
+    # Try dnora_obj specific fallback name
+    fallback_name = None
+    if fallback.get(obj_type) is not None:
+        fallback_name = fallback[obj_type].get(key)
 
-    # Try dnora_obj specific filename is dnora_obj settings defined
-    dnora_obj_filename = None
+    # Try object non-specific fallback name
+    fallback_name = fallback_name or fallback.get(key)
+
+    # Try dnora_obj specific primary name
+    primary_name = None
     if primary.get(obj_type) is not None:
-        dnora_obj_filename = primary[obj_type].get(key) or dnora_obj_filename
+        primary_name = primary[obj_type].get(key)
 
-    # If filename not defined for specific dnora_obj, try Model specific name
-    dnora_obj_filename = dnora_obj_filename or primary.get(key)
+    # Try dnora_obj non-specific primary name
+    primary_name = primary_name or primary.get(key)
 
-    return dnora_obj_filename or fallback_filename
+    final_name = primary_name or fallback_name
+
+    if final_name is None:
+        raise ValueError("Could not find any default name!")
+
+    return final_name
 
 def add_folder_to_filename(filename: str, folder: str) -> str:
     return str(Path(folder).joinpath(filename))
@@ -205,7 +214,7 @@ class FileNames:
         dict_keys = [key.lower() for key in self.dict_of_object_names.keys()]
         if isinstance(self.dnora_obj, str):
             self.obj_type = self.dnora_obj
-        else:        
+        else:
             self.obj_type = type(self.dnora_obj).__name__.lower()
             if not self.obj_type in dict_keys:
                 self.dict_of_object_names[self.obj_type] = self.dnora_obj.name
@@ -218,23 +227,34 @@ class FileNames:
     def dateformat(self) -> str:
         return self._dateformat or get_default_value('dateformat', self.obj_type, self.primary, self.fallback)
 
-    def filename(self, extension: str=None, start_time: str=None, end_time: str=None) -> str:
-        filename = self._filename or get_default_value('filename', self.obj_type, self.primary, self.fallback)
+    def filename(self, extension: str=None, start_time: str=None, end_time: str=None, plot: bool=False) -> str:
+        if plot:
+            key = 'plotname'
+        else:
+            key = 'filename'
+        filename = self._filename or get_default_value(key, self.obj_type, self.primary, self.fallback)
         filename = self.replace_placeholders(filename, start_time, end_time)
         extension = extension or self.extension
         if extension is None:
             return Path(filename)
         return f'{Path(filename)}.{extension}'
 
-    def folder(self) -> str:
-        folder = self._folder or get_default_value('folder', self.obj_type, self.primary, self.fallback)
+    def folder(self, plot: bool=False) -> str:
+        if plot:
+            key = 'plotfolder'
+        else:
+            key = 'folder'
+        folder = self._folder or get_default_value(key, self.obj_type, self.primary, self.fallback)
+
         return Path(self.replace_placeholders(folder))
+
 
     def filepath(self, extension: str=None, start_time: str=None, end_time: str=None) -> str:
         return add_folder_to_filename(self.filename(extension, start_time, end_time), self.folder())
 
-    def create_folder(self) -> None:
-        folder = Path(self.folder())
+    def create_folder(self, plot: bool=False) -> None:
+        folder = Path(self.folder(plot=plot))
+
         if not folder.is_dir():
             msg.plain(f"Creating folder {str(folder)}")
             folder.mkdir(parents=True)
@@ -243,10 +263,10 @@ class FileNames:
         unclean_string = replace_objects(unclean_string, self.dict_of_object_names)
         if not isinstance(self.dnora_obj, str):
             if self.edges_from_grid:
-                lon = self.dnora_obj.grid.edges('lon', strict=True)
-                lat = self.dnora_obj.grid.edges('lat', strict=True)
-                x = self.dnora_obj.grid.edges('x', strict=True)
-                y = self.dnora_obj.grid.edges('y', strict=True)
+                lon = self.dnora_obj.grid().edges('lon', strict=True)
+                lat = self.dnora_obj.grid().edges('lat', strict=True)
+                x = self.dnora_obj.grid().edges('x', strict=True)
+                y = self.dnora_obj.grid().edges('y', strict=True)
             else:
                 lon = self.dnora_obj.edges('lon', strict=True)
                 lat = self.dnora_obj.edges('lat', strict=True)

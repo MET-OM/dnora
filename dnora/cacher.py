@@ -22,7 +22,6 @@ class Cacher:
                                 extension='nc',
                                 _filename=self.cache_name
                                 )
-
         self.file_object.create_folder()
 
     def empty(self):

@@ -33,7 +33,6 @@ def distance_2points(lat1, lon1, lat2, lon2) -> float:
 def min_distance(lon, lat, lon_vec , lat_vec) -> Tuple[float, int]:
     """Calculates minimum distance between a given point and a list of
     point.
-
     Also returns index of the found minimum.
     """
 
@@ -248,22 +247,22 @@ def year_list(start_time, end_time):
 # #     return months
 #
 def int_list_of_years(start_time, end_time):
-    year0 = min(pd.Series(day_list(start_time, end_time)).dt.year)
-    year1 = max(pd.Series(day_list(start_time, end_time)).dt.year)
+    year0 = min(pd.Series(pd.to_datetime(day_list(start_time, end_time))).dt.year)
+    year1 = max(pd.Series(pd.to_datetime(day_list(start_time, end_time))).dt.year)
     return np.linspace(year0,year1,year1-year0+1).astype(int)
 
 def int_list_of_months(start_time, end_time):
     if len(int_list_of_years(start_time, end_time))>1:
         raise Exception('Only use this function for times within a single year!')
-    month0 = min(pd.Series(day_list(start_time, end_time)).dt.month)
-    month1 = max(pd.Series(day_list(start_time, end_time)).dt.month)
+    month0 = min(pd.to_datetime(pd.Series(day_list(start_time, end_time))).dt.month)
+    month1 = max(pd.to_datetime(pd.Series(day_list(start_time, end_time))).dt.month)
     return np.linspace(month0,month1,month1-month0+1).astype(int)
 
 def int_list_of_days(start_time, end_time):
     if len(int_list_of_months(start_time, end_time))>1:
         raise Exception('Only use this function for times within a single month!')
-    day0 = min(pd.Series(day_list(start_time, end_time)).dt.day)
-    day1 = max(pd.Series(day_list(start_time, end_time)).dt.day)
+    day0 = min(pd.to_datetime(pd.Series(day_list(start_time, end_time))).dt.day)
+    day1 = max(pd.to_datetime(pd.Series(day_list(start_time, end_time))).dt.day)
     return np.linspace(day0,day1,day1-day0+1).astype(int)
 #
 # def crop_datetimeindex_to_year(times, year: int):
@@ -288,31 +287,21 @@ def int_list_of_days(start_time, end_time):
 
 def create_time_stamps(start_time: str, end_time: str, stride: int, hours_per_file: int=0, last_file: str='', lead_time: int=0) -> Tuple:
     """Create time stamps to read in blocks of wind forcing from files.
-
     Options
-
     start_time:     Wanted start times
-
     end_time:       Wanted end time
-
     stride:         Time between files (in hours). This many hours read from
                     each file.
-
     lead_time:      E.g. 12 means the time 12:00 is read from file 00:00, not
                     from time 12:00 (in hours; negative values accepted).
-
     last_file:      Don't try to read past a file with this time stamp.
-
     hours_per_file: Try to read this many hours from the last file. Only used
                     if last_file is given, and only meaningful if hours_per_file
                     is different from stride.
-
     Returns
-
     start_times:    Pandas DatetimeIndex with the start times.
     end_times:      Pandas DatetimeIndex with the end times.
     file_times:     Pandas DatetimeIndex with the time stamps for the files.
-
     I.e. loop through the objects and read data for the time
             start_times[n] - end_times[n]
     from a file with a time stamp
@@ -423,9 +412,7 @@ def u_v_from_dir(ws, wdir) -> Tuple[float, float]:
 
 def interp_spec(f, D, S, fi, Di):
     """Interpolates a spectrum to new frequncy and directions.
-
     Spectrum is two dimensional (len(f), len(D))
-
     """
     Sleft = S
     Sright = S
@@ -443,7 +430,6 @@ def interp_spec(f, D, S, fi, Di):
 
 def flip_spec(spec, D):
     """Flips the directionality of the spectrum (clock/anticlockwise).
-
     To flip the directional vector, use flip_spec(D,D)
     """
 
@@ -473,7 +459,6 @@ def flip_spec(spec, D):
 
 def shift_spec(spec, D, shift=0):
     """Shifts the spectrum D degree. To shift the directional vector, use
-
     shift_spec(D, D, shift)
     """
 
@@ -518,7 +503,6 @@ def check_that_spectra_are_consistent(spec, dirs, freq, expected_dim: int=None) 
 
 def identify_boundary_edges(boundary_mask: np.ndarray) -> list[str]:
     """Identifies which edges has some boundary points
-
         North = [-1,:]
         South = [0,:]
         East = [:,-1]
@@ -581,10 +565,8 @@ def create_ordered_boundary_list(edge_list):
 
 def get_coords_for_boundary_edges(edges: list, lon_edges: tuple[float, float], lat_edges: tuple[float, float]) -> tuple[np.ndarray, np.ndarray]:
     """Create coordinate vectors for clockwise running edges.
-
     Assumes that edges are clockwise and continuous, which is imposed by the
     function create_ordered_boundary_list.
-
     Empty list return empty arrays.
     """
     lon = []
@@ -625,10 +607,8 @@ def get_coords_for_boundary_edges(edges: list, lon_edges: tuple[float, float], l
 def create_swan_segment_coords(boundary_mask, lon_edges, lat_edges):
     """Createsa longitude and latitude arrays for the SWAN BOUND SEGEMENT
     command based on boundary mask.
-
     Identifies edges (north, south etc.) and sets all the points on the edges
     as boundary points.
-
     If no continuous boundary can be identified, it returns empty list.
     """
 
