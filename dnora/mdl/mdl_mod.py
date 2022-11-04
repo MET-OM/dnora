@@ -157,7 +157,10 @@ class ModelRun:
     def import_waveseries(self, waveseries_reader: WavesSeriesReader=None,
                         point_picker: PointPicker=None,
                         name: str=None, expansion_factor: float=1.5,
-                        dry_run: bool=False) -> None:
+                        dry_run: bool=False,
+                        write_cache: bool=False,
+                        read_cache: bool=False,
+                        cache_name: str=None) -> None:
         """Creates a WaveSeries-object and import wave data."""
         self._dry_run = dry_run
         self._waveseries_reader = waveseries_reader or self._get_waveseries_reader()
@@ -177,7 +180,10 @@ class ModelRun:
                                         end_time=self.end_time,
                                         waveseries_reader=self._waveseries_reader,
                                         point_picker=self._point_picker,
-                                        expansion_factor=expansion_factor)
+                                        expansion_factor=expansion_factor,
+                                        write_cache=write_cache,
+                                        read_cache=read_cache,
+                                        cache_name=cache_name)
         else:
             msg.info('Dry run! No wave data will be imported.')
 
@@ -196,7 +202,8 @@ class ModelRun:
         else:
             msg.info('Dry run! No boundary will not be converted to spectra.')
 
-    def spectra_to_waveseries(self, dry_run: bool=False):
+    def spectra_to_waveseries(self, dry_run: bool=False, write_cache=False,
+                            read_cache=False, cache_name=None):
         self._dry_run = dry_run
         if self.spectra() is None:
             msg.warning('No Spectra to convert to WaveSeries!')
@@ -207,13 +214,17 @@ class ModelRun:
         msg.header(waveseries_reader, 'Converting the spectra to wave series data...')
         name = self.spectra().name
         if not self.dry_run():
-            self.import_waveseries(waveseries_reader, name)
+            self.import_waveseries(waveseries_reader, name, write_cache=write_cache,
+                                read_cache=read_cache, cache_name=cache_name)
         else:
             msg.info('Dry run! No boundary will not be converted to spectra.')
 
-    def boundary_to_waveseries(self, dry_run: bool=False):
-        self.boundary_to_spectra(dry_run=dry_run)
-        self.spectra_to_waveseries(dry_run=dry_run)
+    def boundary_to_waveseries(self, dry_run: bool=False, write_cache=False,
+                            read_cache=False, cache_name=None):
+        self.boundary_to_spectra(dry_run=dry_run, write_cache=write_cache,
+                                read_cache=read_cache, cache_name=cache_name)
+        self.spectra_to_waveseries(dry_run=dry_run, write_cache=write_cache,
+                                read_cache=read_cache, cache_name=cache_name)
 
 
     def export_grid(self, grid_writer: GridWriter=None,

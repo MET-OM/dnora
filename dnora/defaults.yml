@@ -3,6 +3,7 @@ list_of_placeholders:
   - '#Forcing'
   - '#Boundary'
   - '#Spectra'
+  - '#WaveSeries'
   - '#T0'
   - '#T1'
   - 'E#Lon'
@@ -116,4 +117,8 @@ Cache:
   spectra:
     filename: "spc_cache_#Grid_#Lon0_#Lon1_#Lat0_#Lat1_#T0"
     folder: "spc_cache/#Spectra"
+    dateformat: '%Y%m'
+  waveseries:
+    filename: "wsr_cache_#Grid_#Lon0_#Lon1_#Lat0_#Lat1_#T0"
+    folder: "wsr_cache/#WaveSeries"
     dateformat: '%Y%m'

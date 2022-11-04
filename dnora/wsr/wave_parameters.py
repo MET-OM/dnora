@@ -203,7 +203,12 @@ class Tp(WaveParameter):
     """Peak period from spectra"""
 
     def __call__(self, spec: Union[Spectra, Boundary]):
-        return PowerMoment(0,10)(spec)/PowerMoment(-1,10)(spec)
+        m_1 = PowerMoment(-1,10)(spec)
+        mask = np.where(m_1 < 0.0000000001)
+        m_1[mask] = -999
+        tp = PowerMoment(0,10)(spec)/m_1
+        tp[mask] = 0
+        return tp
 
     def name(self):
         return 'tp'
@@ -218,7 +223,12 @@ class Fm(WaveParameter):
     """Mean freqeuncy from spectra"""
 
     def __call__(self, spec: Union[Spectra, Boundary]):
-        return Moment(1)(spec)/Moment(0)(spec)
+        m0 = Moment(0)(spec)
+        mask = np.where(m0 < 0.0000000001)
+        m0[mask] = -999
+        fm = Moment(1)(spec)/m0
+        fm[mask] = 0
+        return fm
 
     def name(self):
         return 'fm'
@@ -230,7 +240,7 @@ class Wm(WaveParameter):
     """Mean angular freqeuncy from spectra"""
 
     def __call__(self, spec: Union[Spectra, Boundary]):
-        return (Moment(1)(spec)/Moment(0)(spec).m0)*2*np.pi
+        return (Moment(1)(spec)/Moment(0)(spec))*2*np.pi
 
     def name(self):
         return 'wm'

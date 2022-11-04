@@ -85,7 +85,7 @@ class Spectra(PointSkeleton):
                 msg.info('Not all data found in cache. Patching from original source...')
 
                 for t0, t1 in zip(patch_start, patch_end):
-                    spectra_temp = Boundary(self.grid())
+                    spectra_temp = Spectra(self.grid())
                     spectra_temp.import_spectra(self.grid(), start_time=t0, end_time=t1,
                                     spectral_reader=original_spectral_reader,
                                     point_picker=point_picker)
