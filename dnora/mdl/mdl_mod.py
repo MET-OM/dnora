@@ -82,6 +82,7 @@ class ModelRun:
                                             end_time=self.end_time,
                                             boundary_reader=self._boundary_reader,
                                             point_picker=self._point_picker,
+                                            expansion_factor=expansion_factor,
                                             write_cache=write_cache,
                                             read_cache=read_cache,
                                             cache_name=cache_name)
@@ -102,6 +103,7 @@ class ModelRun:
         if self._forcing_reader is None:
             raise Exception('Define a ForcingReader!')
 
+
         # Create forcing object
         name = name or type(self._forcing_reader).__name__
         self._forcing = Forcing(grid=self.grid(), name=name)
@@ -119,13 +121,17 @@ class ModelRun:
             msg.info('Dry run! No forcing will be imported.')
 
     def import_spectra(self, spectral_reader: SpectralReader=None,
-                        name: str=None, dry_run: bool=False) -> None:
+                        point_picker: PointPicker=None,
+                        name: str=None, expansion_factor: float=1.5,
+                        dry_run: bool=False) -> None:
         """Creates a Spectra-object and import omnidirectional spectral data."""
         self._dry_run = dry_run
         self._spectral_reader = spectral_reader or self._get_spectral_reader()
 
         if self._spectral_reader is None:
             raise Exception('Define a SpectralReader!')
+        elif self._point_picker is None:
+            raise Exception('Define a PointPicker!')
 
         # Create forcing object
         name = name or type(self._spectral_reader).__name__
@@ -135,19 +141,25 @@ class ModelRun:
         if not self.dry_run():
             self.spectra().import_spectra(start_time=self.start_time,
                                         end_time=self.end_time,
-                                        spectral_reader=self._spectral_reader)
+                                        spectral_reader=self._spectral_reader,
+                                        point_picker=self._point_picker,
+                                        expansion_factor=expansion_factor,)
         else:
             msg.info('Dry run! No omnidirectional spectra will be imported.')
 
     def import_waveseries(self, waveseries_reader: WavesSeriesReader=None,
-                        name: str=None, dry_run: bool=False) -> None:
+                        point_picker: PointPicker=None,
+                        name: str=None, expansion_factor: float=1.5,
+                        dry_run: bool=False) -> None:
         """Creates a WaveSeries-object and import wave data."""
         self._dry_run = dry_run
         self._waveseries_reader = waveseries_reader or self._get_waveseries_reader()
 
         if self._waveseries_reader is None:
             raise Exception('Define a WaveSeriesReader!')
-
+        elif self._point_picker is None:
+            raise Exception('Define a PointPicker!')
+            
         # Create forcing object
         name = name or type(self._waveseries_reader).__name__
         self._waveseries = WaveSeries(grid=self.grid(), name=name)
@@ -156,7 +168,9 @@ class ModelRun:
         if not self.dry_run():
             self.waveseries().import_waveseries(start_time=self.start_time,
                                         end_time=self.end_time,
-                                        waveseries_reader=self._waveseries_reader)
+                                        waveseries_reader=self._waveseries_reader,
+                                        point_picker=self._point_picker,
+                                        expansion_factor=expansion_factor)
         else:
             msg.info('Dry run! No wave data will be imported.')
 

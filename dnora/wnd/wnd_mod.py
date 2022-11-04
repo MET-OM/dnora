@@ -10,7 +10,7 @@ from ..cacher import Cacher
 # Import abstract classes and needed instances of them
 from .read import ForcingReader, DnoraNc
 from .write import ForcingWriter
-
+from ..grd.grd_mod import Grid
 # Import default values and aux_funcsiliry functions
 from .. import msg
 from .. import aux_funcs
@@ -23,8 +23,8 @@ from ..skeletons.datavar_factory import add_datavar
 @add_time(grid_coord=True)
 class Forcing(GriddedSkeleton):
     def __init__(self, grid, name='AnonymousForcing'):
-        self.grid = copy(grid)
-        self._name = copy(name)
+        self._grid = grid
+        self._name = name
         self._history = []
 
     def import_forcing(self, start_time: str, end_time: str,
@@ -56,7 +56,7 @@ class Forcing(GriddedSkeleton):
 
         msg.header(forcing_reader, "Loading wind forcing...")
         time, u, v, lon, lat, x, y, attributes = forcing_reader(
-            self.grid, start_time, end_time, expansion_factor)
+            self.grid(), start_time, end_time, expansion_factor)
 
         self._init_structure(x, y, lon, lat, time=time)
         self.ds_manager.set(u, 'u', coord_type='all')
@@ -69,7 +69,7 @@ class Forcing(GriddedSkeleton):
             if patch_start:
                 msg.info('Not all data found in cache. Patching from original source...')
                 for t0, t1 in zip(patch_start, patch_end):
-                    forcing_temp = Forcing(self.grid)
+                    forcing_temp = Forcing(self.grid())
                     forcing_temp.import_forcing(start_time=t0, end_time=t1,
                                 forcing_reader=original_forcing_reader,
                                 expansion_factor=expansion_factor)
@@ -79,6 +79,11 @@ class Forcing(GriddedSkeleton):
             msg.info('Caching data:')
             cacher.write_cache()
         return
+
+    def grid(self) -> Grid:
+        if hasattr(self, '_grid'):
+            return self._grid
+        return None
 
     def __str__(self) -> str:
         """Prints status of forcing."""
@@ -96,7 +101,7 @@ class Forcing(GriddedSkeleton):
                 msg.process(f"{obj.__class__.__bases__[0].__name__}: {type(obj).__name__}")
         #msg.print_line()
         #msg.plain("The Forcing is for the following Grid:")
-        #print(self.grid)
+        #print(self.grid())
 
         msg.print_line()
 

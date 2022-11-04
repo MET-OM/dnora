@@ -31,7 +31,7 @@ class BoundaryReader(ABC):
         return self._restricted_area
 
     @abstractmethod
-    def get_coordinates(self, start_time):
+    def get_coordinates(self, grid, start_time):
         """Return a list of all the available coordinated in the source.
 
         These are needed fo the PointPicker object to choose the relevant
@@ -70,7 +70,7 @@ class BoundaryReader(ABC):
         return convention
 
     @abstractmethod
-    def __call__(self, start_time, end_time, inds) -> Tuple:
+    def __call__(self, grid, start_time, end_time, inds) -> Tuple:
         """Reads in the spectra from inds between start_time and end_time.
 
         The variables needed to be returned are:
@@ -105,12 +105,12 @@ class ConstantBoundary(BoundaryReader):
     def convention(self) -> SpectralConvention:
         return self.spectral_convention
 
-    def get_coordinates(self, start_time) -> tuple:
+    def get_coordinates(self, grid, start_time) -> tuple:
         lon, lat, x, y = aux_funcs.get_coordinates_from_grid(self.grid, self.cartesian, list=True)
 
         return lon, lat, x, y
 
-    def __call__(self, start_time, end_time, inds):
+    def __call__(self, grid, start_time, end_time, inds):
         time = pd.date_range(start=start_time, end=end_time, freq='H').values
         lon, lat, x, y = aux_funcs.get_coordinates_from_grid(self.grid, self.cartesian, list=True)
         freq = np.array(range(1,11))/10.
@@ -145,12 +145,12 @@ class DnoraNc(BoundaryReader):
     def convention(self) -> SpectralConvention:
         return copy(self._convention)
 
-    def get_coordinates(self, start_time) -> Tuple:
+    def get_coordinates(self, grid, start_time) -> Tuple:
         data = xr.open_dataset(self.files[0]).isel(time = [0])
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(data)
         return lon, lat, x, y
 
-    def __call__(self, start_time, end_time, inds) -> Tuple:
+    def __call__(self, grid, start_time, end_time, inds) -> Tuple:
         def _crop(ds):
             return ds.sel(time=slice(start_time, end_time))
         msg.info(f"Getting boundary spectra from cached netcdf (e.g. {self.files[0]}) from {start_time} to {end_time}")
@@ -173,10 +173,10 @@ class ForceFeed(BoundaryReader):
     def convention(self) -> SpectralConvention:
         return copy(self._convention)
 
-    def get_coordinates(self, start_time) -> Tuple:
+    def get_coordinates(self, grid, start_time) -> Tuple:
         return copy(self.lon), copy(self.lat)
 
-    def __call__(self, start_time, end_time, inds) -> Tuple:
+    def __call__(self, grid, start_time, end_time, inds) -> Tuple:
         #return  copy(self.time), copy(self.freq), copy(self.dirs), np.reshape(self.spec, (len(self.time), len(self.lon), self.spec.shape[0], self.spec.shape[1])), copy(self.lon), copy(self.lat), ''
         return  copy(self.time), copy(self.freq), copy(self.dirs), copy(self.spec), copy(self.lon), copy(self.lat), None, None, {}
 
@@ -200,7 +200,7 @@ class File_WW3Nc(BoundaryReader):
     def convention(self) -> SpectralConvention:
         return SpectralConvention.WW3
 
-    def get_coordinates(self, start_time) -> Tuple:
+    def get_coordinates(self, grid, start_time) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         #day = pd.date_range(start_time, start_time,freq='D')
         start_times, end_times, file_times = aux_funcs.create_time_stamps(start_time, start_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
@@ -213,7 +213,7 @@ class File_WW3Nc(BoundaryReader):
 
         return lon_all, lat_all
 
-    def __call__(self, start_time, end_time, inds) -> Tuple:
+    def __call__(self, grid, start_time, end_time, inds) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time

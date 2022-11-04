@@ -27,12 +27,15 @@ from .process import SpectralProcessor
 @add_time(grid_coord=True)
 class Spectra(PointSkeleton):
     def __init__(self, grid: Grid, name: str="AnonymousSpectra"):
-        self.grid = copy(grid)
-        self._name = copy(name)
+        self._grid = grid
+        self._name = name
         self._convention = None
         self._history = []
 
-    def import_spectra(self, start_time: str, end_time: str, spectral_reader: SpectralReader,  point_picker: PointPicker, expansion_factor: float) -> None:
+    def import_spectra(self, start_time: str, end_time: str,
+                        spectral_reader: SpectralReader,
+                        point_picker: PointPicker,
+                        expansion_factor: float=1.5) -> None:
         """Imports omnidirectional spectra from a certain source.
 
         Spectra are import between start_time and end_time from the source
@@ -45,13 +48,13 @@ class Spectra(PointSkeleton):
         self._history.append(copy(spectral_reader))
 
         msg.header(spectral_reader, "Reading coordinates of spectra...")
-        lon_all, lat_all = spectral_reader.get_coordinates(self.start_time)
+        lon_all, lat_all = spectral_reader.get_coordinates(self.grid(), self.start_time)
 
         msg.header(point_picker, "Choosing spectra...")
-        inds = point_picker(self.grid, lon_all, lat_all, expansion_factor)
+        inds = point_picker(self.grid(), lon_all, lat_all, expansion_factor)
 
         msg.header(spectral_reader, "Loading omnidirectional spectra...")
-        time, freq, spec, mdir, spr, lon, lat, x, y, attributes = spectral_reader(self.start_time, self.end_time, inds)
+        time, freq, spec, mdir, spr, lon, lat, x, y, attributes = spectral_reader(self.grid(), self.start_time, self.end_time, inds)
 
         self._init_structure(x, y, lon, lat, time=time, freq=freq)
 
@@ -131,6 +134,10 @@ class Spectra(PointSkeleton):
             return None
         return copy(self._convention)
 
+    def grid(self) -> Grid:
+        if hasattr(self, '_grid'):
+            return self._grid
+        return None
 
     def __str__(self) -> str:
         """Prints status of spectra."""
@@ -146,7 +153,7 @@ class Spectra(PointSkeleton):
                 msg.process(f"{obj.__class__.__bases__[0].__name__}: {type(obj).__name__}")
         #msg.print_line()
         #msg.plain("The Boundary is for the following Grid:")
-        #print(self.grid)
+        #print(self.grid())
 
         msg.print_line()
 

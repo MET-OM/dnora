@@ -69,7 +69,7 @@ class ERA5(BoundaryReader):
     def convention(self) -> str:
         return SpectralConvention.OCEAN
 
-    def get_coordinates(self, start_time) -> Tuple:
+    def get_coordinates(self, grid, start_time) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         point_list = self.get_restricted_area()._point_list()
         lon_all = point_list[:,0]
@@ -77,7 +77,7 @@ class ERA5(BoundaryReader):
 
         return lon_all, lat_all
 
-    def __call__(self, start_time, end_time, inds) -> Tuple:
+    def __call__(self, grid, start_time, end_time, inds) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         msg.info(
             f"Getting ERA5 boundary spectra from {start_time} to {end_time}")

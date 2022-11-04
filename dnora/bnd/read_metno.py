@@ -32,7 +32,7 @@ class WAM4km(BoundaryReader):
         return SpectralConvention.OCEAN
 
 
-    def get_coordinates(self, start_time) -> Tuple:
+    def get_coordinates(self, grid, start_time) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
 
         start_times, end_times, file_times = create_time_stamps(start_time, start_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
@@ -58,7 +58,7 @@ class WAM4km(BoundaryReader):
 
         return lon_all, lat_all, None, None
 
-    def __call__(self, start_time, end_time, inds) -> Tuple:
+    def __call__(self, grid, start_time, end_time, inds) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time
@@ -210,7 +210,7 @@ class NORA3(BoundaryReader):
     def convention(self) -> str:
         return SpectralConvention.OCEAN
 
-    def get_coordinates(self, start_time) -> Tuple:
+    def get_coordinates(self, grid, start_time) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         #day = pd.date_range(start_time, start_time,freq='D')
         start_times, end_times, file_times = create_time_stamps(start_time, start_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
@@ -223,7 +223,7 @@ class NORA3(BoundaryReader):
 
         return lon_all, lat_all, None, None
 
-    def __call__(self, start_time, end_time, inds) -> Tuple:
+    def __call__(self, grid, start_time, end_time, inds) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time

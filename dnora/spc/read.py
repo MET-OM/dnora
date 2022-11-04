@@ -14,7 +14,7 @@ class SpectralReader(ABC):
         pass
 
     @abstractmethod
-    def get_coordinates(self, start_time):
+    def get_coordinates(self, grid, start_time):
         """Return a list of all the available coordinated in the source.
 
         These are needed fo the PointPicker object to choose the relevant
@@ -42,7 +42,7 @@ class SpectralReader(ABC):
         return convention
 
     @abstractmethod
-    def __call__(self, start_time, end_time, inds) -> Tuple:
+    def __call__(self, grid, start_time, end_time, inds) -> Tuple:
         """Reads in the spectra from inds between start_time and end_time.
 
         The variables needed to be returned are:
@@ -67,11 +67,11 @@ class BoundaryToSpectra(SpectralReader):
     def convention(self):
         return convert_2d_to_1d(self._boundary._convention)
 
-    def get_coordinates(self, start_time: str) -> Tuple[np.ndarray, np.ndarray]:
+    def get_coordinates(self, grid, start_time: str) -> Tuple[np.ndarray, np.ndarray]:
         return self._boundary.lon(), self._boundary.lat()
         #return self._boundary.data.lon.values, self._boundary.data.lat.values
 
-    def __call__(self, start_time, end_time, inds) -> Tuple:
+    def __call__(self, grid, start_time, end_time, inds) -> Tuple:
         self.name = self._boundary.name
         #source = self._boundary.data.source
         time = self._boundary.time(data_array=True).sel(time=slice(start_time, end_time)).values

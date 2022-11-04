@@ -37,14 +37,14 @@ from ..skeletons.datavar_factory import add_datavar
 @add_time(grid_coord=True)
 class Boundary(PointSkeleton):
     def __init__(self, grid: Grid, name: str="AnonymousBoundary"):
-        self.grid = copy(grid)
-        self._name = copy(name)
+        self._grid = grid
+        self._name = name
         self._convention = None
         self._history = []
 
     def import_boundary(self, start_time: str, end_time: str,
                         boundary_reader: BoundaryReader,
-                        point_picker: PointPicker = TrivialPicker(),
+                        point_picker: PointPicker,
                         expansion_factor: float=1.5,
                         write_cache: bool=False,
                         read_cache: bool=False,
@@ -59,13 +59,13 @@ class Boundary(PointSkeleton):
         ### reading the database. This is set to make that possible.
         ### The regular grid doesn't necessarily match the boundary points
         ### exactly.
-        if not np.all(np.logical_not(self.grid.boundary_mask())): # Boundary mask empty?
-            boundary_point_grid = Grid(lon=self.grid.edges('lon'),
-                                        lat=self.grid.edges('lat'),
+        if not np.all(np.logical_not(self.grid().boundary_mask())): # Boundary mask empty?
+            boundary_point_grid = Grid(lon=self.grid().edges('lon'),
+                                        lat=self.grid().edges('lat'),
                                         name='boundary_points')
             if len(boundary_point_grid.lon()) > 1 and len(boundary_point_grid.lat()) > 1:
-                boundary_point_grid.set_spacing(nx=self.grid.boundary_nx(),
-                                                ny=self.grid.boundary_ny())
+                boundary_point_grid.set_spacing(nx=self.grid().boundary_nx(),
+                                                ny=self.grid().boundary_ny())
             boundary_reader.set_restricted_area(boundary_point_grid)
 
         # Prepare for working with cahced data if we have to
@@ -82,10 +82,10 @@ class Boundary(PointSkeleton):
         self._history.append(copy(boundary_reader))
 
         msg.header(boundary_reader, "Reading coordinates of spectra...")
-        lon_all, lat_all, x_all, y_all = boundary_reader.get_coordinates(start_time)
+        lon_all, lat_all, x_all, y_all = boundary_reader.get_coordinates(self.grid(), start_time)
 
         msg.header(point_picker, "Choosing spectra...")
-        inds = point_picker(self.grid, lon_all, lat_all, expansion_factor)
+        inds = point_picker(self.grid(), lon_all, lat_all, expansion_factor)
 
         if len(inds) < 1:
             msg.warning("PointPicker didn't find any points. Aborting import of boundary.")
@@ -93,7 +93,7 @@ class Boundary(PointSkeleton):
 
         # Main reading happens here
         msg.header(boundary_reader, "Loading boundary spectra...")
-        time, freq, dirs, spec, lon, lat, x, y, attributes = boundary_reader(start_time, end_time, inds)
+        time, freq, dirs, spec, lon, lat, x, y, attributes = boundary_reader(self.grid(), start_time, end_time, inds)
         self._init_structure(x, y, lon, lat, time=time, freq=freq, dirs=dirs)
         self.ds_manager.set(spec, 'spec', coord_type='all')
         self.ds_manager.set_attrs(attributes)
@@ -105,8 +105,8 @@ class Boundary(PointSkeleton):
                 msg.info('Not all data found in cache. Patching from original source...')
 
                 for t0, t1 in zip(patch_start, patch_end):
-                    boundary_temp = Boundary(self.grid)
-                    boundary_temp.import_boundary(start_time=t0, end_time=t1,
+                    boundary_temp = Boundary(self.grid())
+                    boundary_temp.import_boundary(self.grid(), start_time=t0, end_time=t1,
                                     boundary_reader=original_boundary_reader,
                                     point_picker=point_picker)
                     self._absorb_object(boundary_temp, 'time')
@@ -186,6 +186,10 @@ class Boundary(PointSkeleton):
             return None
         return copy(self._convention)
 
+    def grid(self) -> Grid:
+        if hasattr(self, '_grid'):
+            return self._grid
+        return None
 
     def __str__(self) -> str:
         """Prints status of boundary."""
