@@ -12,7 +12,7 @@ from ..wsr.wsr_mod import WaveSeries
 # Import abstract classes and needed instances of them
 from ..bnd.read import BoundaryReader
 from ..bnd.write import BoundaryWriter
-from ..bnd.pick import PointPicker
+from ..bnd.pick import PointPicker, TrivialPicker
 from ..bnd.conventions import SpectralConvention
 
 from ..wnd.read import ForcingReader
@@ -119,13 +119,20 @@ class ModelRun:
             msg.info('Dry run! No forcing will be imported.')
 
     def import_spectra(self, spectral_reader: SpectralReader=None,
-                        name: str=None, dry_run: bool=False) -> None:
+                        point_picker: PointPicker=None,
+                        name: str=None, dry_run: bool=False, 
+                        expansion_factor: float=1.2) -> None:
         """Creates a Spectra-object and import omnidirectional spectral data."""
         self._dry_run = dry_run
         self._spectral_reader = spectral_reader or self._get_spectral_reader()
+        self._point_picker = point_picker or self._get_point_picker()
 
         if self._spectral_reader is None:
             raise Exception('Define a SpectralReader!')
+        elif self._point_picker is None:
+            raise Exception('Define a PointPicker!')
+
+
 
         # Create forcing object
         name = name or type(self._spectral_reader).__name__
@@ -135,18 +142,25 @@ class ModelRun:
         if not self.dry_run():
             self.spectra().import_spectra(start_time=self.start_time,
                                         end_time=self.end_time,
-                                        spectral_reader=self._spectral_reader)
+                                        spectral_reader=self._spectral_reader,
+                                        point_picker=self._point_picker,
+                                        expansion_factor=expansion_factor)
         else:
             msg.info('Dry run! No omnidirectional spectra will be imported.')
 
     def import_waveseries(self, waveseries_reader: WavesSeriesReader=None,
-                        name: str=None, dry_run: bool=False) -> None:
+                        point_picker: PointPicker=None,
+                        name: str=None, dry_run: bool=False, 
+                        expansion_factor: float=1.2) -> None:
         """Creates a WaveSeries-object and import wave data."""
         self._dry_run = dry_run
         self._waveseries_reader = waveseries_reader or self._get_waveseries_reader()
+        self._point_picker = point_picker or self._get_point_picker()
 
         if self._waveseries_reader is None:
             raise Exception('Define a WaveSeriesReader!')
+        elif self._point_picker is None:
+            raise Exception('Define a PointPicker!')
 
         # Create forcing object
         name = name or type(self._waveseries_reader).__name__
@@ -156,7 +170,9 @@ class ModelRun:
         if not self.dry_run():
             self.waveseries().import_waveseries(start_time=self.start_time,
                                         end_time=self.end_time,
-                                        waveseries_reader=self._waveseries_reader)
+                                        waveseries_reader=self._waveseries_reader, 
+                                        point_picker=self._point_picker,
+                                        expansion_factor=expansion_factor)
         else:
             msg.info('Dry run! No wave data will be imported.')
 
@@ -169,7 +185,7 @@ class ModelRun:
         msg.header(spectral_reader, 'Converting the boundary spectra to omnidirectional spectra...')
         name = self.boundary().name
         if not self.dry_run():
-            self.import_spectra(spectral_reader, name)
+            self.import_spectra(spectral_reader, TrivialPicker(), name)
         else:
             msg.info('Dry run! No boundary will not be converted to spectra.')
 
@@ -184,7 +200,7 @@ class ModelRun:
         msg.header(waveseries_reader, 'Converting the spectra to wave series data...')
         name = self.spectra().name
         if not self.dry_run():
-            self.import_waveseries(waveseries_reader, name)
+            self.import_waveseries(waveseries_reader, TrivialPicker(), name)
         else:
             msg.info('Dry run! No boundary will not be converted to spectra.')
 
@@ -210,9 +226,8 @@ class ModelRun:
 
         msg.header(self._grid_writer, f"Writing grid topography from {self.grid().name}")
 
-        output_files = self._export_object(filename, folder, dateformat,
-                            writer_function=self._grid_writer,
-                            dnora_obj='grid')
+        output_files = self._export_object(self.grid(),filename, folder, dateformat,
+                            writer_function=self._grid_writer)
 
         # Write status file
         #infofilename = str(Path(output_files[0]).with_suffix('')) + '_dnora_info.txt'
@@ -239,9 +254,8 @@ class ModelRun:
         if not self.dry_run():
             self.boundary()._set_convention(self._boundary_writer.convention())
 
-        __ = self._export_object(filename, folder, dateformat,
-                            writer_function=self._boundary_writer,
-                            dnora_obj='boundary')
+        __ = self._export_object(self.boundary(), filename, folder, dateformat,
+                            writer_function=self._boundary_writer)
 
     def export_spectra(self, spectral_writer: SpectralWriter=None,
                         filename: str=None, folder: str=None,
@@ -265,9 +279,8 @@ class ModelRun:
             self.spectra()._set_convention(self._spectral_writer.convention())
 
         # Replace #Spectra etc and add file extension
-        __ = self._export_object(filename, folder, dateformat,
-                            writer_function=self._spectral_writer,
-                            dnora_obj='spectra')
+        __ = self._export_object(self.spectra(), filename, folder, dateformat,
+                            writer_function=self._spectral_writer)
 
     def export_waveseries(self, waveseries_writer: WaveSeriesWriter=None,
                         filename: str=None, folder: str=None,
@@ -288,9 +301,8 @@ class ModelRun:
             msg.header(self._waveseries_writer, f"Writing wave series data from {self.spectra().name}")
 
         # Replace #Spectra etc and add file extension
-        __ = self._export_object(filename, folder, dateformat,
-                            writer_function=self._waveseries_writer,
-                            dnora_obj='waveseries')
+        __ = self._export_object(self.waveseries(), filename, folder, dateformat,
+                            writer_function=self._waveseries_writer)
 
     def export_forcing(self, forcing_writer: ForcingWriter=None,
                         filename: str=None, folder: str=None,
@@ -312,9 +324,8 @@ class ModelRun:
             msg.header(self._forcing_writer, f"Writing wind forcing from DryRunForcing")
 
 
-        __ = self._export_object(filename, folder, dateformat,
-                            writer_function=self._forcing_writer,
-                            dnora_obj='forcing')
+        __ = self._export_object(self.forcing(), filename, folder, dateformat,
+                            writer_function=self._forcing_writer)
 
     def write_input_file(self, input_file_writer: InputFileWriter=None,
                         filename=None, folder=None, dateformat=None,
@@ -435,9 +446,8 @@ class ModelRun:
         """
         return self._dry_run or self._global_dry_run
 
-    def _export_object(self, filename: str, folder: str, dateformat: str,
-                    writer_function: WritingFunction,
-                    dnora_obj: str) -> list[str]:
+    def _export_object(self, dnora_obj, filename: str, folder: str, dateformat: str,
+                    writer_function: WritingFunction) -> list[str]:
 
         # Controls generation of file names using the proper defaults etc.
         file_object = FileNames(format=self._get_default_format(),
@@ -456,15 +466,15 @@ class ModelRun:
         else:
             # Write the object using the WriterFunction
             file_object.create_folder()
-            obj = eval(f'self.{dnora_obj}()')
-            output_files = writer_function(obj, file_object.filepath())
+            output_files = writer_function(dnora_obj, file_object.filepath())
             if type(output_files) is not list:
                 output_files = [output_files]
 
         # Store name and location where file was written
-        self._exported_to[dnora_obj] = []
+        obj_type = type(dnora_obj).__name__.lower()
+        self._exported_to[obj_type] = []
         for file in output_files:
-            self._exported_to[dnora_obj].append(file)
+            self._exported_to[obj_type].append(file)
 
         if writer_function._im_silent() or self.dry_run():
             for file in output_files:
