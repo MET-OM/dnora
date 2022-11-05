@@ -106,23 +106,23 @@ class Grid(GriddedSkeleton):
             return
 
         if aux_funcs.is_gridded(topo, lon, lat) or aux_funcs.is_gridded(topo, x, y):
-            self.raw = Grid(lon=lon, lat=lat, x=x, y=y)
+            self._raw = Grid(lon=lon, lat=lat, x=x, y=y)
         else:
-            self.raw = UnstrGrid(lon=lon, lat=lat, x=x, y=y)
+            self._raw = UnstrGrid(lon=lon, lat=lat, x=x, y=y)
 
-        if self.edges('lon', native=True)[0] < self.raw.edges(self.x_str)[0] or self.edges('lon', native=True)[1] > self.raw.edges(self.x_str)[1]:
-            msg.warning(f"The data gotten from the TopoReader doesn't cover the grid in the {self.x_str} direction. Grid: {self.edges('lon')}, imported topo: {self.raw.edges(self.x_str)}")
+        if self.edges('lon', native=True)[0] < self.raw().edges(self.x_str)[0] or self.edges('lon', native=True)[1] > self.raw().edges(self.x_str)[1]:
+            msg.warning(f"The data gotten from the TopoReader doesn't cover the grid in the {self.x_str} direction. Grid: {self.edges('lon')}, imported topo: {self.raw().edges(self.x_str)}")
 
-        if self.edges('lat', native=True)[0] < self.raw.edges(self.y_str)[0] or self.edges('lat', native=True)[1] > self.raw.edges(self.y_str)[1]:
-            msg.warning(f"The data gotten from the TopoReader doesn't cover the grid in the {self.y_str} direction. Grid: {self.edges('lat')}, imported topo: {self.raw.edges(self.y_str)}")
+        if self.edges('lat', native=True)[0] < self.raw().edges(self.y_str)[0] or self.edges('lat', native=True)[1] > self.raw().edges(self.y_str)[1]:
+            msg.warning(f"The data gotten from the TopoReader doesn't cover the grid in the {self.y_str} direction. Grid: {self.edges('lat')}, imported topo: {self.raw().edges(self.y_str)}")
 
 
 
         if zone_number is not None:
-            self.raw.set_utm(zone_number, zone_letter)
+            self._raw.set_utm(zone_number, zone_letter)
 
-        self.raw._update_datavar('topo', topo)
-        self.raw._update_sea_mask()
+        self._raw._update_datavar('topo', topo)
+        self._raw._update_sea_mask()
 
     def boundary_nx(self) -> int:
         """Return approximate number of grid points in the longitude direction
@@ -146,6 +146,11 @@ class Grid(GriddedSkeleton):
 
     def time(self) -> tuple:
         return (None, None)
+
+    def raw(self):
+        if hasattr(self, '_raw'):
+            return self._raw
+        return None
 
     def __str__(self) -> str:
         """Prints status of the grid."""
@@ -203,26 +208,31 @@ class UnstrGrid(PointSkeleton):
             msg.warning('Imported topography seems to be empty. Maybe using wrong tile?')
 
         if aux_funcs.is_gridded(topo, lon, lat) or aux_funcs.is_gridded(topo, x, y):
-            self.raw = Grid(lon=lon, lat=lat, x=x, y=y)
+            self._raw = Grid(lon=lon, lat=lat, x=x, y=y)
         else:
-            self.raw = UnstrGrid(lon=lon, lat=lat, x=x, y=y)
+            self._raw = UnstrGrid(lon=lon, lat=lat, x=x, y=y)
 
-        if self.edges('lon', native=True)[0] < self.raw.edges(self.x_str)[0] or self.edges('lon', native=True)[1] > self.raw.edges(self.x_str)[1]:
-            msg.warning(f"The data gotten from the TopoReader doesn't cover the grid in the {self.x_str} direction. Grid: {self.edges('lon')}, imported topo: {self.raw.edges(self.x_str)}")
+        if self.edges('lon', native=True)[0] < self.raw().edges(self.x_str)[0] or self.edges('lon', native=True)[1] > self.raw().edges(self.x_str)[1]:
+            msg.warning(f"The data gotten from the TopoReader doesn't cover the grid in the {self.x_str} direction. Grid: {self.edges('lon')}, imported topo: {self.raw().edges(self.x_str)}")
 
-        if self.edges('lat', native=True)[0] < self.raw.edges(self.y_str)[0] or self.edges('lat', native=True)[1] > self.raw.edges(self.y_str)[1]:
-            msg.warning(f"The data gotten from the TopoReader doesn't cover the grid in the {self.y_str} direction. Grid: {self.edges('lat')}, imported topo: {self.raw.edges(self.y_str)}")
+        if self.edges('lat', native=True)[0] < self.raw().edges(self.y_str)[0] or self.edges('lat', native=True)[1] > self.raw().edges(self.y_str)[1]:
+            msg.warning(f"The data gotten from the TopoReader doesn't cover the grid in the {self.y_str} direction. Grid: {self.edges('lat')}, imported topo: {self.raw().edges(self.y_str)}")
 
 
         if zone_number is not None:
-            self.raw.set_utm(zone_number, zone_letter)
+            self.raw().set_utm(zone_number, zone_letter)
 
-        self.raw._update_datavar('topo', topo)
-        self.raw._update_sea_mask()
+        self.raw()._update_datavar('topo', topo)
+        self.raw()._update_sea_mask()
 
     def tri(self):
         return None
 
+    def raw(self):
+        if hasattr(self, '_raw'):
+            return self._raw
+        return None
+        
     def boundary_nx(self) -> int:
         """Return approximate number of grid points in the longitude direction
         """

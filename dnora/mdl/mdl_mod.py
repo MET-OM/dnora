@@ -135,7 +135,7 @@ class ModelRun:
             raise Exception('Define a ForcingReader!')
 
         if forcing_reader is not None:
-            name = name or boundary_reader.name()
+            name = name or forcing_reader.name()
 
         if name is None:
             raise ValueError('Provide either a name or a ForcingReader that will then define the name!')
@@ -804,7 +804,7 @@ class ModelRun:
 
 
     def dict_of_objects(self) -> dict[str: ModelRun, str: Grid, str: Forcing, str: Boundary, str: Spectra]:
-        return {'ModelRun': self, 'Grid': self.grid(), 'Topo': self.grid().raw, 'Forcing': self.forcing(), 'Boundary': self.boundary(), 'Spectra': self.spectra(), 'WaveSeries': self.waveseries()}
+        return {'ModelRun': self, 'Grid': self.grid(), 'Topo': self.grid().raw(), 'Forcing': self.forcing(), 'Boundary': self.boundary(), 'Spectra': self.spectra(), 'WaveSeries': self.waveseries()}
 
     def list_of_objects(self) -> list[ModelRun, Grid, Forcing, Boundary, Spectra]:
         """[ModelRun, Boundary] etc."""
