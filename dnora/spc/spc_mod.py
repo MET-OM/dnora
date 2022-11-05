@@ -12,7 +12,7 @@ from ..bnd.conventions import SpectralConvention, convention_from_string, conver
 from ..bnd.pick import PointPicker, TrivialPicker
 from .read import SpectralReader
 from .. import msg
-from ..cacher import Cacher
+
 from ..skeletons.point_skeleton import PointSkeleton
 from ..skeletons.coordinate_factory import add_time, add_frequency
 from ..skeletons.mask_factory import add_mask
@@ -36,10 +36,7 @@ class Spectra(PointSkeleton):
     def import_spectra(self, start_time: str, end_time: str,
                         spectral_reader: SpectralReader,
                         point_picker: PointPicker,
-                        expansion_factor: float=1.5,
-                        write_cache: bool=False,
-                        read_cache: bool=False,
-                        cache_name: str=None) -> None:
+                        expansion_factor: float=1.5) -> None:
 
         """Imports omnidirectional spectra from a certain source.
 
@@ -47,22 +44,10 @@ class Spectra(PointSkeleton):
         defined in the spectral_reader. Which spectra to choose spatially
         are determined by the point_picker.
         """
-        # Prepare for working with cahced data if we have to
-        if write_cache or read_cache:
-            cacher = Cacher(self, spectral_reader.name(), cache_name)
-
-
-        # Read whatever we have in the chached data to start with
-        # Setting the reader to read standard DNORA netcdf-files
-        if read_cache and not cacher.empty():
-            msg.info('Reading spectral data from cache!!!')
-            original_spectral_reader = copy(spectral_reader)
-            spectral_reader = DnoraNc(files=glob.glob(f'{cacher.filepath(extension=False)}*'), convention = spectral_reader.convention())
-
         self._history.append(copy(spectral_reader))
 
         msg.header(spectral_reader, "Reading coordinates of spectra...")
-        lon_all, lat_all = spectral_reader.get_coordinates(self.grid(), start_time)
+        lon_all, lat_all, x_all, y_all = spectral_reader.get_coordinates(self.grid(), start_time)
 
         msg.header(point_picker, "Choosing spectra...")
         inds = point_picker(self.grid(), lon_all, lat_all, expansion_factor)
@@ -77,24 +62,6 @@ class Spectra(PointSkeleton):
         self.ds_manager.set(spr, 'spr', coord_type='all')
 
         self.ds_manager.set_attrs(attributes)
-
-        # Patch data if read from cache and all data not found
-        if read_cache and not cacher.empty():
-            patch_start, patch_end = cacher.determine_patch_periods(start_time, end_time)
-            if patch_start:
-                msg.info('Not all data found in cache. Patching from original source...')
-
-                for t0, t1 in zip(patch_start, patch_end):
-                    spectra_temp = Spectra(self.grid())
-                    spectra_temp.import_spectra(self.grid(), start_time=t0, end_time=t1,
-                                    spectral_reader=original_spectral_reader,
-                                    point_picker=point_picker)
-                    self._absorb_object(spectra_temp, 'time')
-
-        # Dump monthly netcdf-files that will now be in standard DNORA format
-        if write_cache:
-            msg.info('Caching data:')
-            cacher.write_cache()
 
         # E.g. are the spectra oceanic convention etc.
         self._convention = spectral_reader.convention()
@@ -150,15 +117,24 @@ class Spectra(PointSkeleton):
             msg.blank()
         return
 
-    def _set_convention(self, convention: SpectralConvention) -> None:
+    def _set_convention(self, convention: SpectralConvention, process: bool=True) -> None:
+        """Sets a new spectral directional convention. To not touch spectra, use process=False."""
+        if isinstance(convention, str):
+            convention = SpectralConvention[convention.upper()]
+
         spectral_processor = spectral_processor_for_convention_change(
                             current_convention = self.convention(),
                             wanted_convention = convert_2d_to_1d(convention))
 
         if spectral_processor is None:
             msg.info(f"Convention ({self.convention()}) already equals wanted convention ({convention}).")
-        else:
+            return
+
+        if process:
             self.process_spectra(spectral_processor)
+        else:
+            self._convention = convention
+            print(f'Spectral convention is now: {self.convention()}')
 
     def convention(self):
         """Returns the convention (OCEAN/MET/MATH) of the spectra"""

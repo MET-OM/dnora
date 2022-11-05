@@ -10,12 +10,9 @@ from .file_module import FileNames
 @dataclass
 class Cacher:
     dnora_obj: str
-    reader_name: str
     cache_name: str
 
     def __post_init__(self):
-        #obj_type = type(self.dnora_obj).__name__.lower()
-        # folder = f'{obj_type}_cache/{self.reader_name}' # Taken from defaults instead
         self.file_object = FileNames(format='Cache',
                                 dnora_obj=self.dnora_obj,
                                 edges_from_grid=True,
@@ -25,7 +22,6 @@ class Cacher:
         self.file_object.create_folder()
 
     def empty(self):
-        #return not glob.glob(f'{self.file_object.folder()}/{self.file_object.filename()[0:-3]}*')
         return not glob.glob(f'{self.filepath(extension=False)}*')
 
     def filename(self, start_time: str=None, end_time: str=None):
@@ -81,55 +77,3 @@ class Cacher:
                 os.remove(outfile)
             self.dnora_obj.ds().sel(time=slice(t0, t1)).to_netcdf(outfile)
             msg.to_file(outfile)
-
-#
-#
-#
-#
-# def setup_cache(obj_type: str, reader_name: str, cache_name: str, grid):
-#     main_folder = f'{obj_type}_cache'
-#     aux_funcs.check_if_folder(main_folder)
-#     cache_folder = f'{obj_type}_cache/{reader_name}'
-#     aux_funcs.check_if_folder(cache_folder)
-#     cache_name = file_module.replace_objects(cache_name, {'Grid': grid.name})
-#     cache_name = file_module.replace_objects(cache_name, {'Lon0': f'{min(grid.lon()):.2f}',
-#                                                         'Lon1': f'{max(grid.lon()):.2f}',
-#                                                         'Lat0': f'{min(grid.lat()):.2f}',
-#                                                         'Lat1': f'{max(grid.lat()):.2f}'})
-#     cache_empty = not glob.glob(f'{cache_folder}/{cache_name}*')
-#
-#     return cache_folder, cache_name, cache_empty
-#
-# def determine_patch_periods(times, start_time, end_time):
-#     """Determines if there is some periods that we need to patch from thredds
-#     adter reading cached data"""
-#
-#     # This is not optimal, but seems to work
-#     dt = times[1]-times[0]
-#     wanted_times = pd.date_range(start=start_time, end=end_time, freq=dt)
-#     wanted_times.isin(times)
-#
-#     if np.all(wanted_times.isin(times)):
-#         return [], []
-#     wt=wanted_times.isin(times)
-#
-#     was_found = ''.join([str((w*1)) for w in wt]) # string of '0001110111110000'
-#     #was_found = '000011111111111100011111111111111111111111100011111111111111011111111111110000' # Testing
-#     inds = list(range(len(was_found)))
-#     was_found = re.sub('01', '0.1', was_found)
-#     was_found = re.sub('10', '1.0', was_found)
-#
-#     list_of_blocks = was_found.split('.')
-#
-#     patch_start = []
-#     patch_end = []
-#     for block in list_of_blocks:
-#         if block[0] == '0': # These need to be patched
-#             ind_subset = inds[0:len(block)]
-#             patch_start.append(wanted_times[ind_subset[0]])
-#             patch_end.append(wanted_times[ind_subset[-1]])
-#         inds[0:len(block)] = []
-#
-#     return patch_start, patch_end
-#
-#

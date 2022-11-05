@@ -116,8 +116,7 @@ def replace_objects(filename: str, dict_of_object_names: dict[str: str]) -> str:
 
     for obj_type, obj_name in dict_of_object_names.items():
         if obj_name is not None:
-            filename = re.sub(f"#{obj_type}", obj_name, filename)
-            filename = re.sub(f"#{obj_type.title()}", obj_name, filename)
+            filename = re.sub(f"#{obj_type}", obj_name, filename, flags=re.IGNORECASE)
 
     return filename
 

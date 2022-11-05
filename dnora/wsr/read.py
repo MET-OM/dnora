@@ -11,6 +11,7 @@ from .. import aux_funcs
 #from .conventions import SpectralConvention
 from .wave_parameters import WaveParameter, Hs, Tm01, Tp, Dirm, Sprm
 from ..spc import Spectra
+from ..bnd.conventions import SpectralConvention
 class WaveSeriesReader(ABC):
     """Reads boundary spectra from some source and provide it to the object."""
     def __init__(self):

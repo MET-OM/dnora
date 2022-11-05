@@ -153,7 +153,7 @@ class DnoraNc(BoundaryReader):
     def __call__(self, grid, start_time, end_time, inds) -> Tuple:
         def _crop(ds):
             return ds.sel(time=slice(start_time, end_time))
-        msg.info(f"Getting boundary spectra from cached netcdf (e.g. {self.files[0]}) from {start_time} to {end_time}")
+        msg.info(f"Getting boundary spectra from DNORA type netcdf files (e.g. {self.files[0]}) from {start_time} to {end_time}")
         ds = xr.open_mfdataset(self.files, preprocess=_crop, data_vars='minimal')
         ds = ds.sel(inds=inds)
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)

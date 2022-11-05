@@ -8,7 +8,6 @@ import pandas as pd
 from typing import List
 import sys
 import re
-import glob, os
 # Import objects
 from ..grd.grd_mod import Grid
 from .conventions import SpectralConvention, convention_from_string
@@ -16,7 +15,7 @@ from .process import boundary_processor_for_convention_change
 # Import abstract classes and needed instances of them
 from .process import BoundaryProcessor, Multiply
 from .pick import PointPicker, TrivialPicker
-from .read import BoundaryReader, DnoraNc
+from .read import BoundaryReader
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .write import BoundaryWriter # Abstract class
@@ -24,7 +23,6 @@ if TYPE_CHECKING:
 # Import default values and aux_funcsiliry functions
 from .. import msg
 from .. import aux_funcs
-from ..cacher import Cacher
 from ..skeletons.point_skeleton import PointSkeleton
 from ..skeletons.coordinate_factory import add_time, add_frequency, add_direction
 from ..skeletons.mask_factory import add_mask
@@ -45,27 +43,13 @@ class Boundary(PointSkeleton):
     def import_boundary(self, start_time: str, end_time: str,
                         boundary_reader: BoundaryReader,
                         point_picker: PointPicker,
-                        expansion_factor: float=1.5,
-                        write_cache: bool=False,
-                        read_cache: bool=False,
-                        cache_name: str=None):
+                        expansion_factor: float=1.5):
         """Imports boundary spectra from a certain source.
 
         Spectra are import between start_time and end_time from the source
         defined in the boundary_reader. Which spectra to choose spatically
         are determined by the point_picker.
         """
-
-        # Prepare for working with cahced data if we have to
-        if write_cache or read_cache:
-            cacher = Cacher(self, boundary_reader.name(), cache_name)
-
-        # Read whatever we have in the chached data to start with
-        # Setting the reader to read standard DNORA netcdf-files
-        if read_cache and not cacher.empty():
-            msg.info('Reading boundary data from cache!!!')
-            original_boundary_reader = copy(boundary_reader)
-            boundary_reader = DnoraNc(files=glob.glob(f'{cacher.filepath(extension=False)}*'), convention = boundary_reader.convention())
 
         self._history.append(copy(boundary_reader))
 
@@ -85,24 +69,6 @@ class Boundary(PointSkeleton):
         self._init_structure(x, y, lon, lat, time=time, freq=freq, dirs=dirs)
         self.ds_manager.set(spec, 'spec', coord_type='all')
         self.ds_manager.set_attrs(attributes)
-
-        # Patch data if read from cache and all data not found
-        if read_cache and not cacher.empty():
-            patch_start, patch_end = cacher.determine_patch_periods(start_time, end_time)
-            if patch_start:
-                msg.info('Not all data found in cache. Patching from original source...')
-
-                for t0, t1 in zip(patch_start, patch_end):
-                    boundary_temp = Boundary(self.grid())
-                    boundary_temp.import_boundary(self.grid(), start_time=t0, end_time=t1,
-                                    boundary_reader=original_boundary_reader,
-                                    point_picker=point_picker)
-                    self._absorb_object(boundary_temp, 'time')
-
-        # Dump monthly netcdf-files that will now be in standard DNORA format
-        if write_cache:
-            msg.info('Caching data:')
-            cacher.write_cache()
 
         # E.g. are the spectra oceanic convention etc.
         self._convention = boundary_reader.convention()
@@ -158,15 +124,24 @@ class Boundary(PointSkeleton):
             msg.blank()
         return
 
-    def _set_convention(self, convention: SpectralConvention) -> None:
+    def _set_convention(self, convention: SpectralConvention, process: bool=True) -> None:
+        """Sets a new spectral directional convention. To not touch spectra, use process=False."""
+        if isinstance(convention, str):
+            convention = SpectralConvention[convention.upper()]
+
         boundary_processor = boundary_processor_for_convention_change(
                             current_convention = self.convention(),
                             wanted_convention = convention)
 
         if boundary_processor is None:
             msg.info(f"Convention ({self.convention()}) already equals wanted convention ({convention}).")
-        else:
+            return
+
+        if process:
             self.process_boundary(boundary_processor)
+        else:
+            self._convention = convention
+            print(f'Spectral convention is now: {self.convention()}')
 
     def convention(self):
         """Returns the convention (WW3/OCEAN/MET/MATH/MATHVEC) of the spectra"""

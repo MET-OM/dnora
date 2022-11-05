@@ -5,22 +5,13 @@ from pathlib import Path
 import yaml
 # Import objects
 from ..grd.grd_mod import Grid
-from ..bnd.bnd_mod import Boundary
-from ..wnd.wnd_mod import Forcing
+
 from ..spc.spc_mod import Spectra
 from ..wsr.wsr_mod import WaveSeries
 # Import abstract classes and needed instances of them
-from ..bnd.read import BoundaryReader
-from ..bnd.write import BoundaryWriter
-from ..bnd.pick import PointPicker
+from .. import bnd, wnd, spc
+
 from ..bnd.conventions import SpectralConvention
-
-from ..wnd.read import ForcingReader
-from ..wnd.write import ForcingWriter
-
-from ..spc.read import SpectralReader, BoundaryToSpectra
-from ..spc.write import SpectralWriter
-
 from ..wsr.read import WaveSeriesReader, SpectraToWaveSeries
 
 from ..grd.write import GridWriter
@@ -35,11 +26,11 @@ from ..file_module import FileNames
 from typing import Union
 # Import default values and aux_funcsiliry functions
 from .. import msg
-
-
+from ..cacher import Cacher
+import os, glob
 from .. import file_module
 from ..converters import convert_swash_mat_to_netcdf
-WritingFunction = Union[GridWriter, BoundaryWriter, SpectralWriter, ForcingWriter]
+WritingFunction = Union[GridWriter, bnd.write.BoundaryWriter, spc.write.SpectralWriter, wnd.write.ForcingWriter]
 PlottingFunction = Union[GridPlotter]
 
 class ModelRun:
@@ -54,7 +45,7 @@ class ModelRun:
         self._global_dry_run = dry_run
         self._dry_run = False  # Set by methods
 
-    def import_boundary(self, boundary_reader: BoundaryReader=None,
+    def import_boundary(self, boundary_reader: bnd.read.BoundaryReader=None,
                         point_picker: PointPicker=None, name: str=None,
                         expansion_factor: float=1.5,
                         dry_run: bool=False,
@@ -64,32 +55,71 @@ class ModelRun:
         """Creates a Boundary-object and imports boundary spectra."""
 
         self._dry_run = dry_run
-        self._boundary_reader = boundary_reader or self._get_boundary_reader()
-        self._point_picker = point_picker or self._get_point_picker()
+        boundary_reader = boundary_reader or self._get_boundary_reader()
+        point_picker = point_picker or self._get_point_picker()
 
-        if self._boundary_reader is None :
+        # This is to allow importing from cache using only a name
+        if boundary_reader is None and not read_cache:
             raise Exception('Define a BoundaryReader!')
-        elif self._point_picker is None:
+        if point_picker is None and not read_cache:
             raise Exception('Define a PointPicker!')
 
-        # Create boundary object
-        name = name or self._boundary_reader.name()
-        self._boundary = Boundary(grid=self.grid(), name=name)
+        if boundary_reader is not None:
+            name = name or boundary_reader.name()
+            convention = boundary_reader.convention()
+        else:
+            convention = SpectralConvention.OCEAN
+            msg.info('No BoundaryReader given, assuming Oceanic convention in spectra!')
+
+        if name is None:
+            raise ValueError('Provide either a name or a BoundaryReader that will then define the name!')
+
+        self._boundary = bnd.Boundary(grid=self.grid(), name=name)
+
+        # Prepare for working with cahced data if we have to
+        if write_cache or read_cache:
+            cacher = Cacher(self.boundary(), cache_name)
+
+        # Read whatever we have in the chached data to start with
+        # Setting the reader to read standard DNORA netcdf-files
+
+        if read_cache and not cacher.empty():
+            msg.info('Reading boundary data from cache!!!')
+            original_boundary_reader = copy(boundary_reader)
+            boundary_reader = bnd.read.DnoraNc(files=glob.glob(f'{cacher.filepath(extension=False)}*'), convention=convention)
+
 
         # Import the boundary spectra into the Boundary-object
         if not self.dry_run():
             self.boundary().import_boundary(start_time=self.start_time,
                                             end_time=self.end_time,
-                                            boundary_reader=self._boundary_reader,
-                                            point_picker=self._point_picker,
-                                            expansion_factor=expansion_factor,
-                                            write_cache=write_cache,
-                                            read_cache=read_cache,
-                                            cache_name=cache_name)
+                                            boundary_reader=boundary_reader,
+                                            point_picker=point_picker,
+                                            expansion_factor=expansion_factor)
         else:
             msg.info('Dry run! No boundary spectra will be imported.')
 
-    def import_forcing(self, forcing_reader: ForcingReader=None,
+        # Patch data if read from cache and all data not found
+        if read_cache and not cacher.empty():
+            patch_start, patch_end = cacher.determine_patch_periods(self.start_time, self.end_time)
+            if patch_start:
+                msg.info('Not all data found in cache. Patching from original source...')
+
+                for t0, t1 in zip(patch_start, patch_end):
+                    boundary_temp = bnd.Boundary(self.grid())
+                    boundary_temp.import_boundary(self.grid(), start_time=t0, end_time=t1,
+                                    boundary_reader=original_boundary_reader,
+                                    point_picker=point_picker,
+                                    expansion_factor=expansion_factor)
+                    self.boundary()._absorb_object(boundary_temp, 'time')
+
+        # Dump monthly netcdf-files that will now be in standard DNORA format
+        if write_cache:
+            msg.info('Caching data:')
+            cacher.write_cache()
+
+
+    def import_forcing(self, forcing_reader: wnd.read.ForcingReader=None,
                         name: str=None, dry_run: bool=False,
                         expansion_factor: float=1.2,
                         write_cache: bool=False,
@@ -98,27 +128,60 @@ class ModelRun:
         """Creates a Forcing-objects and imports forcing data."""
         self._dry_run = dry_run
 
-        self._forcing_reader = forcing_reader or self._get_forcing_reader()
+        forcing_reader = forcing_reader or self._get_forcing_reader()
 
-        if self._forcing_reader is None:
+        # This is to allow importing from cache using only a name
+        if forcing_reader is None and not read_cache:
             raise Exception('Define a ForcingReader!')
 
+        if forcing_reader is not None:
+            name = name or boundary_reader.name()
 
-        # Create forcing object
-        name = name or type(self._forcing_reader).__name__
-        self._forcing = Forcing(grid=self.grid(), name=name)
+        if name is None:
+            raise ValueError('Provide either a name or a ForcingReader that will then define the name!')
+
+        self._forcing = wnd.Forcing(grid=self.grid(), name=name)
+
+        # Prepare for working with cahced data if we have to
+        if write_cache or read_cache:
+            cacher = Cacher(self.forcing(), cache_name)
+
+        # Read whatever we have in the chached data to start with
+        # Setting the reader to read standard DNORA netcdf-files
+
+        if read_cache and not cacher.empty():
+            msg.info('Reading forcing data from cache!!!')
+            original_forcing_reader = copy(forcing_reader)
+            forcing_reader = wnd.read.DnoraNc(files=glob.glob(f'{cacher.filepath(extension=False)}*'))
 
         # Import the forcing data into the Forcing-object
         if not self.dry_run():
             self.forcing().import_forcing(start_time=self.start_time,
                                         end_time=self.end_time,
-                                        forcing_reader=self._forcing_reader,
-                                        expansion_factor=expansion_factor,
-                                        read_cache=read_cache,
-                                        write_cache=write_cache,
-                                        cache_name=cache_name)
+                                        forcing_reader=forcing_reader,
+                                        expansion_factor=expansion_factor)
         else:
             msg.info('Dry run! No forcing will be imported.')
+
+        # Patch data if read from cache and all data not found
+        if read_cache and not cacher.empty():
+            patch_start, patch_end = cacher.determine_patch_periods(self.start_time, self.end_time)
+            if patch_start:
+                msg.info('Not all data found in cache. Patching from original source...')
+
+                for t0, t1 in zip(patch_start, patch_end):
+                    forcing_temp = wnd.Forcing(self.grid())
+                    forcing_temp.import_forcing(self.grid(), start_time=t0, end_time=t1,
+                                    forcing_reader=original_forcing_reader,
+                                    expansion_factor=expansion_factor)
+                    self.forcing()._absorb_object(forcing_temp, 'time')
+
+        # Dump monthly netcdf-files that will now be in standard DNORA format
+        if write_cache:
+            msg.info('Caching data:')
+            cacher.write_cache()
+
+
 
     def import_spectra(self, spectral_reader: SpectralReader=None,
                         point_picker: PointPicker=None,
@@ -130,29 +193,69 @@ class ModelRun:
         """Creates a Spectra-object and import omnidirectional spectral data."""
 
         self._dry_run = dry_run
-        self._spectral_reader = spectral_reader or self._get_spectral_reader()
+        spectral_reader = spectral_reader or self._get_spectral_reader()
 
-        if self._spectral_reader is None:
+        # This is to allow importing from cache using only a name
+        if spectral_reader is None and not read_cache:
             raise Exception('Define a SpectralReader!')
-        elif self._point_picker is None:
+        if point_picker is None and not read_cache:
             raise Exception('Define a PointPicker!')
 
-        # Create forcing object
-        name = name or self._spectral_reader.name()
-        self._spectra = Spectra(grid=self.grid(), name=name)
+        if spectral_reader is not None:
+            name = name or spectral_reader.name()
+            convention = spectral_reader.convention()
+        else:
+            convention = SpectralConvention.OCEAN
+            msg.info('No SpectralReader given, assuming Oceanic convention in spectra!')
+
+        if name is None:
+            raise ValueError('Provide either a name or a SpectralReader that will then define the name!')
+
+        # Create spectral object
+        self._spectra = spc.Spectra(grid=self.grid(), name=name)
+
+        # Prepare for working with cahced data if we have to
+        if write_cache or read_cache:
+            cacher = Cacher(self.spectra(), cache_name)
+
+        # Read whatever we have in the chached data to start with
+        # Setting the reader to read standard DNORA netcdf-files
+        if read_cache and not cacher.empty():
+            msg.info('Reading spectral data from cache!!!')
+            original_spectral_reader = copy(spectral_reader)
+            spectral_reader = spc.read.DnoraNc(files=glob.glob(f'{cacher.filepath(extension=False)}*'),
+                                                convention=convention)
+            point_picker = point_picker or bnd.pick.TrivialPicker()
 
         # Import the forcing data into the Forcing-object
         if not self.dry_run():
             self.spectra().import_spectra(start_time=self.start_time,
                                         end_time=self.end_time,
-                                        spectral_reader=self._spectral_reader,
-                                        point_picker=self._point_picker,
-                                        expansion_factor=expansion_factor,
-                                        write_cache=write_cache,
-                                        read_cache=read_cache,
-                                        cache_name=cache_name)
+                                        spectral_reader=spectral_reader,
+                                        point_picker=point_picker,
+                                        expansion_factor=expansion_factor)
         else:
             msg.info('Dry run! No omnidirectional spectra will be imported.')
+
+        # Patch data if read from cache and all data not found
+        if read_cache and not cacher.empty() and original_spectral_reader is not None:
+            patch_start, patch_end = cacher.determine_patch_periods(self.start_time, self.end_time)
+            if patch_start:
+                msg.info('Not all data found in cache. Patching from original source...')
+
+                for t0, t1 in zip(patch_start, patch_end):
+                    spectra_temp = spc.Spectra(self.grid())
+                    spectra_temp.import_spectra(self.grid(), start_time=t0, end_time=t1,
+                                    spectral_reader=original_spectral_reader,
+                                    point_picker=point_picker,
+                                    expansion_factor=expansion_factor)
+                    self.spectra()._absorb_object(spectra_temp, 'time')
+
+        # Dump monthly netcdf-files that will now be in standard DNORA format
+        if write_cache:
+            msg.info('Caching data:')
+            cacher.write_cache()
+
 
     def import_waveseries(self, waveseries_reader: WavesSeriesReader=None,
                         point_picker: PointPicker=None,
@@ -161,43 +264,81 @@ class ModelRun:
                         write_cache: bool=False,
                         read_cache: bool=False,
                         cache_name: str=None) -> None:
+
         """Creates a WaveSeries-object and import wave data."""
         self._dry_run = dry_run
-        self._waveseries_reader = waveseries_reader or self._get_waveseries_reader()
+        waveseries_reader = waveseries_reader or self._get_waveseries_reader()
 
-        if self._waveseries_reader is None:
+        # This is to allow importing from cache using only a name
+        if waveseries_reader is None and not read_cache:
             raise Exception('Define a WaveSeriesReader!')
-        elif self._point_picker is None:
+        if point_picker is None and not read_cache:
             raise Exception('Define a PointPicker!')
 
-        # Create forcing object
-        name = name or type(self._waveseries_reader).__name__
+        if waveseries_reader is not None:
+            name = name or waveseries_reader.name()
+
+        if name is None:
+            raise ValueError('Provide either a name or a WaveSeriesReader that will then define the name!')
+
         self._waveseries = WaveSeries(grid=self.grid(), name=name)
+
+        # Prepare for working with cahced data if we have to
+        if write_cache or read_cache:
+            cacher = Cacher(self.waveseries(), cache_name)
+
+        # Read whatever we have in the chached data to start with
+        # Setting the reader to read standard DNORA netcdf-files
+        if read_cache and not cacher.empty():
+            msg.info('Readingwaveseries data from cache!!!')
+            original_waveseries_reader = copy(waveseries_reader)
+            waveseries_reader = wsr.read.DnoraNc(files=glob.glob(f'{cacher.filepath(extension=False)}*'))
+            point_picker = point_picker or bnd.pick.TrivialPicker()
 
         # Import the forcing data into the Forcing-object
         if not self.dry_run():
             self.waveseries().import_waveseries(start_time=self.start_time,
                                         end_time=self.end_time,
-                                        waveseries_reader=self._waveseries_reader,
-                                        point_picker=self._point_picker,
-                                        expansion_factor=expansion_factor,
-                                        write_cache=write_cache,
-                                        read_cache=read_cache,
-                                        cache_name=cache_name)
+                                        waveseries_reader=waveseries_reader,
+                                        point_picker=point_picker,
+                                        expansion_factor=expansion_factor)
         else:
             msg.info('Dry run! No wave data will be imported.')
 
-    def boundary_to_spectra(self, dry_run: bool=False, write_cache=False,
+        # Patch data if read from cache and all data not found
+        if read_cache and not cacher.empty() and original_waveseries_reader is not None:
+            patch_start, patch_end = cacher.determine_patch_periods(self.start_time, self.end_time)
+            if patch_start:
+                msg.info('Not all data found in cache. Patching from original source...')
+
+                for t0, t1 in zip(patch_start, patch_end):
+                    waveseries_temp = wsr.WaveSeries(self.grid())
+                    waveseries_temp.import_waveseries(self.grid(), start_time=t0, end_time=t1,
+                                    waveseries_reader=original_waveseries_reader,
+                                    point_picker=point_picker,
+                                    expansion_factor=expansion_factor)
+                    self.spectra()._absorb_object(waveseries_temp, 'time')
+
+        # Dump monthly netcdf-files that will now be in standard DNORA format
+        if write_cache:
+            msg.info('Caching data:')
+            cacher.write_cache()
+
+
+    def boundary_to_spectra(self, dry_run: bool=False, name :str=None, write_cache=False,
                             read_cache=False, cache_name=None):
         self._dry_run = dry_run
         if self.boundary() is None:
             msg.warning('No Boundary to convert to Spectra!')
 
-        spectral_reader = BoundaryToSpectra(self.boundary())
+        spectral_reader = spc.read.BoundaryToSpectra(self.boundary())
         msg.header(spectral_reader, 'Converting the boundary spectra to omnidirectional spectra...')
         name = self.boundary().name
         if not self.dry_run():
-            self.import_spectra(spectral_reader, name, write_cache=write_cache,
+            self.import_spectra(spectral_reader=spectral_reader,
+                                point_picker=bnd.pick.TrivialPicker(),
+                                name=name,
+                                write_cache=write_cache,
                                 read_cache=read_cache, cache_name=cache_name)
         else:
             msg.info('Dry run! No boundary will not be converted to spectra.')
@@ -209,13 +350,15 @@ class ModelRun:
             msg.warning('No Spectra to convert to WaveSeries!')
             return
 
-        self.spectra()._set_convention(SpectralConvention.MET)
         waveseries_reader = SpectraToWaveSeries(self.spectra())
         msg.header(waveseries_reader, 'Converting the spectra to wave series data...')
         name = self.spectra().name
         if not self.dry_run():
-            self.import_waveseries(waveseries_reader, name, write_cache=write_cache,
-                                read_cache=read_cache, cache_name=cache_name)
+            self.import_waveseries(waveseries_reader=waveseries_reader,
+                                    point_picker=bnd.pick.TrivialPicker(),
+                                    name=name,
+                                    write_cache=write_cache,
+                                    read_cache=read_cache, cache_name=cache_name)
         else:
             msg.info('Dry run! No boundary will not be converted to spectra.')
 

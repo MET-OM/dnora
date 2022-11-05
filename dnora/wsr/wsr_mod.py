@@ -33,21 +33,7 @@ class WaveSeries(PointSkeleton):
     def import_waveseries(self, start_time: str, end_time: str,
                         waveseries_reader: WaveSeriesReader,
                         point_picker: PointPicker,
-                        expansion_factor: float=1.5,
-                        write_cache: bool=False,
-                        read_cache: bool=False,
-                        cache_name: str=None) -> None:
-        # Prepare for working with cahced data if we have to
-        if write_cache or read_cache:
-            cacher = Cacher(self, waveseries_reader.name(), cache_name)
-
-
-        # Read whatever we have in the chached data to start with
-        # Setting the reader to read standard DNORA netcdf-files
-        if read_cache and not cacher.empty():
-            msg.info('Reading spectral data from cache!!!')
-            original_waveseries_reader = copy(waveseries_reader)
-            waveseries_reader = DnoraNc(files=glob.glob(f'{cacher.filepath(extension=False)}*'))
+                        expansion_factor: float=1.5) -> None:
 
         self._history.append(copy(waveseries_reader))
 
@@ -67,24 +53,6 @@ class WaveSeries(PointSkeleton):
             self.ds_manager.set_attrs({'name': wp.name(), 'unit': wp.unit(), 'standard_name': wp.standard_name()}, wp.name())
             self = add_datavar(wp.name(), aftermath=True)(self) # Creates .hs() etc. methods
         self.ds_manager.set_attrs(attributes) # Global attributes
-
-        # Patch data if read from cache and all data not found
-        if read_cache and not cacher.empty():
-            patch_start, patch_end = cacher.determine_patch_periods(start_time, end_time)
-            if patch_start:
-                msg.info('Not all data found in cache. Patching from original source...')
-
-                for t0, t1 in zip(patch_start, patch_end):
-                    ws_temp = WaveSeries(self.grid())
-                    ws_temp.import_waveseries(self.grid(), start_time=t0, end_time=t1,
-                                    waveseries_reader=original_waveseries_reader,
-                                    point_picker=point_picker)
-                    self._absorb_object(ws_temp, 'time')
-
-        # Dump monthly netcdf-files that will now be in standard DNORA format
-        if write_cache:
-            msg.info('Caching data:')
-            cacher.write_cache()
 
 
     def grid(self) -> Grid:
