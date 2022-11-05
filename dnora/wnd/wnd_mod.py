@@ -4,13 +4,11 @@ from copy import copy
 import pandas as pd
 import sys
 import re
-import glob, os
 from calendar import monthrange
-from ..cacher import Cacher
 # Import abstract classes and needed instances of them
 from .read import ForcingReader, DnoraNc
 from .write import ForcingWriter
-
+from ..grd.grd_mod import Grid
 # Import default values and aux_funcsiliry functions
 from .. import msg
 from .. import aux_funcs
@@ -23,16 +21,13 @@ from ..skeletons.datavar_factory import add_datavar
 @add_time(grid_coord=True)
 class Forcing(GriddedSkeleton):
     def __init__(self, grid, name='AnonymousForcing'):
-        self.grid = copy(grid)
-        self._name = copy(name)
+        self._grid = grid
+        self._name = name
         self._history = []
 
     def import_forcing(self, start_time: str, end_time: str,
                     forcing_reader: ForcingReader,
-                    expansion_factor: float=1.2,
-                    write_cache: bool=False,
-                    read_cache: bool=False,
-                    cache_name: str=None):
+                    expansion_factor: float=1.2):
         """Imports forcing data from a certain source.
 
         Data are import between start_time and end_time from the source
@@ -40,45 +35,24 @@ class Forcing(GriddedSkeleton):
         by the Grid object passed at initialization of this object.
         """
 
-        #self.start_time = copy(start_time)
-        #self.end_time = copy(end_time)
-        #self._history.append(copy(forcing_reader))
-
-        if write_cache or read_cache:
-            cacher = Cacher(self, forcing_reader.name(), cache_name)
-
-        if read_cache and not cacher.empty():
-            msg.info('Reading wind forcing data from cache!!!')
-            original_forcing_reader = copy(forcing_reader)
-            forcing_reader = DnoraNc(files=glob.glob(f'{cacher.filepath(extension=False)}*'))
-
         self._history.append(copy(forcing_reader))
 
         msg.header(forcing_reader, "Loading wind forcing...")
         time, u, v, lon, lat, x, y, attributes = forcing_reader(
-            self.grid, start_time, end_time, expansion_factor)
+            self.grid(), start_time, end_time, expansion_factor)
 
         self._init_structure(x, y, lon, lat, time=time)
         self.ds_manager.set(u, 'u', coord_type='all')
         self.ds_manager.set(v, 'v', coord_type='all')
 
         self.ds_manager.set_attrs(attributes)
-        ### Patch data if read from cache and all data not found
-        if read_cache and not cacher.empty():
-            patch_start, patch_end = cacher.determine_patch_periods(start_time, end_time)
-            if patch_start:
-                msg.info('Not all data found in cache. Patching from original source...')
-                for t0, t1 in zip(patch_start, patch_end):
-                    forcing_temp = Forcing(self.grid)
-                    forcing_temp.import_forcing(start_time=t0, end_time=t1,
-                                forcing_reader=original_forcing_reader,
-                                expansion_factor=expansion_factor)
-                    self._absorb_object(forcing_temp, 'time')
 
-        if write_cache:
-            msg.info('Caching data:')
-            cacher.write_cache()
         return
+
+    def grid(self) -> Grid:
+        if hasattr(self, '_grid'):
+            return self._grid
+        return None
 
     def __str__(self) -> str:
         """Prints status of forcing."""
@@ -96,7 +70,7 @@ class Forcing(GriddedSkeleton):
                 msg.process(f"{obj.__class__.__bases__[0].__name__}: {type(obj).__name__}")
         #msg.print_line()
         #msg.plain("The Forcing is for the following Grid:")
-        #print(self.grid)
+        #print(self.grid())
 
         msg.print_line()
 

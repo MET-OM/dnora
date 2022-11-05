@@ -12,6 +12,7 @@ from ..bnd.conventions import SpectralConvention, convention_from_string, conver
 from ..bnd.pick import PointPicker, TrivialPicker
 from .read import SpectralReader
 from .. import msg
+
 from ..skeletons.point_skeleton import PointSkeleton
 from ..skeletons.coordinate_factory import add_time, add_frequency
 from ..skeletons.mask_factory import add_mask
@@ -27,31 +28,32 @@ from .process import SpectralProcessor
 @add_time(grid_coord=True)
 class Spectra(PointSkeleton):
     def __init__(self, grid: Grid, name: str="AnonymousSpectra"):
-        self.grid = copy(grid)
-        self._name = copy(name)
+        self._grid = grid
+        self._name = name
         self._convention = None
         self._history = []
 
-    def import_spectra(self, start_time: str, end_time: str, spectral_reader: SpectralReader,  point_picker: PointPicker, expansion_factor: float) -> None:
+    def import_spectra(self, start_time: str, end_time: str,
+                        spectral_reader: SpectralReader,
+                        point_picker: PointPicker,
+                        expansion_factor: float=1.5) -> None:
+
         """Imports omnidirectional spectra from a certain source.
 
         Spectra are import between start_time and end_time from the source
         defined in the spectral_reader. Which spectra to choose spatially
         are determined by the point_picker.
         """
-
-        self.start_time = copy(start_time)
-        self.end_time = copy(end_time)
         self._history.append(copy(spectral_reader))
 
         msg.header(spectral_reader, "Reading coordinates of spectra...")
-        lon_all, lat_all = spectral_reader.get_coordinates(self.start_time)
+        lon_all, lat_all, x_all, y_all = spectral_reader.get_coordinates(self.grid(), start_time)
 
         msg.header(point_picker, "Choosing spectra...")
-        inds = point_picker(self.grid, lon_all, lat_all, expansion_factor)
+        inds = point_picker(self.grid(), lon_all, lat_all, expansion_factor)
 
         msg.header(spectral_reader, "Loading omnidirectional spectra...")
-        time, freq, spec, mdir, spr, lon, lat, x, y, attributes = spectral_reader(self.start_time, self.end_time, inds)
+        time, freq, spec, mdir, spr, lon, lat, x, y, attributes = spectral_reader(self.grid(), start_time, end_time, inds)
 
         self._init_structure(x, y, lon, lat, time=time, freq=freq)
 
@@ -115,15 +117,24 @@ class Spectra(PointSkeleton):
             msg.blank()
         return
 
-    def _set_convention(self, convention: SpectralConvention) -> None:
+    def _set_convention(self, convention: SpectralConvention, process: bool=True) -> None:
+        """Sets a new spectral directional convention. To not touch spectra, use process=False."""
+        if isinstance(convention, str):
+            convention = SpectralConvention[convention.upper()]
+
         spectral_processor = spectral_processor_for_convention_change(
                             current_convention = self.convention(),
                             wanted_convention = convert_2d_to_1d(convention))
 
         if spectral_processor is None:
             msg.info(f"Convention ({self.convention()}) already equals wanted convention ({convention}).")
-        else:
+            return
+
+        if process:
             self.process_spectra(spectral_processor)
+        else:
+            self._convention = convention
+            print(f'Spectral convention is now: {self.convention()}')
 
     def convention(self):
         """Returns the convention (OCEAN/MET/MATH) of the spectra"""
@@ -131,6 +142,10 @@ class Spectra(PointSkeleton):
             return None
         return copy(self._convention)
 
+    def grid(self) -> Grid:
+        if hasattr(self, '_grid'):
+            return self._grid
+        return None
 
     def __str__(self) -> str:
         """Prints status of spectra."""
@@ -146,7 +161,7 @@ class Spectra(PointSkeleton):
                 msg.process(f"{obj.__class__.__bases__[0].__name__}: {type(obj).__name__}")
         #msg.print_line()
         #msg.plain("The Boundary is for the following Grid:")
-        #print(self.grid)
+        #print(self.grid())
 
         msg.print_line()
 

@@ -8,6 +8,7 @@ from typing import Tuple
 import pandas as pd
 # Import abstract classes and needed instances of them
 from .read import BoundaryReader
+from ..grd import Grid
 import cdsapi
 # Import aux_funcsiliry functions
 from .. import msg
@@ -25,7 +26,7 @@ def reshape_bnd_spec(bnd_spec):
     pass
 
 
-def download_era5_from_cds(start_time, end_time, lon, lat, dlon, dlat, folder='dnora_wnd_temp') -> str:
+def download_era5_from_cds(start_time, end_time, lon, lat, folder='dnora_wnd_temp') -> str:
     """Downloads ERA5 10 m wind data from the Copernicus Climate Data Store for a
     given area and time period"""
     start_time = pd.Timestamp(start_time)
@@ -57,8 +58,8 @@ def download_era5_from_cds(start_time, end_time, lon, lat, dlon, dlat, folder='d
         'param': '251.140',
         'stream': 'wave',
         'time': '00:00:00/03:00:00/06:00:00/09:00:00/12:00:00/15:00:00/18:00:00/21:00:00',
-        'area': f'{lat[1]+0.0001}/{lon[0]}/{lat[0]}/{lon[1]+0.0001}', # north, west, south, east
-        'grid': f'{dlon}/{dlat}',
+        'area': f'{lat[1]}/{lon[0]}/{lat[0]}/{lon[1]}', # north, west, south, east
+        'grid': f'0.1/0.1',
         'type': 'an',
         'format': 'netcdf',
         }
@@ -69,15 +70,22 @@ class ERA5(BoundaryReader):
     def convention(self) -> str:
         return SpectralConvention.OCEAN
 
-    def get_coordinates(self, start_time) -> Tuple:
+    def get_coordinates(self, grid, start_time) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
-        point_list = self.get_restricted_area()._point_list()
-        lon_all = point_list[:,0]
-        lat_all = point_list[:,1]
+        # point_list = self.get_restricted_area()._point_list()
+        # lon_all = point_list[:,0]
+        # lat_all = point_list[:,1]
 
-        return lon_all, lat_all
+        # return lon_all, lat_all
+        lon = np.floor(np.array(grid.edges('lon'))*10)/10
+        lat = np.floor(np.array(grid.edges('lat'))*10)/10
 
-    def __call__(self, start_time, end_time, inds) -> Tuple:
+        self._given_grid = Grid(lon=(lon[0]-0.1, lon[-1]+0.1), lat=(lat[0]-0.1, lat[-1]+0.1))
+        self._given_grid.set_spacing(dlon=0.1, dlat=0.1)
+        lon_all, lat_all = self._given_grid.lonlat()
+        return lon_all, lat_all, None, None
+
+    def __call__(self, grid, start_time, end_time, inds) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         msg.info(
             f"Getting ERA5 boundary spectra from {start_time} to {end_time}")
@@ -91,13 +99,15 @@ class ERA5(BoundaryReader):
         for f in glob.glob(f"{temp_folder}/EC_ERA5.nc"):
             os.remove(f)
 
-        restricted_area = self.get_restricted_area()
+        #restricted_area = self.get_restricted_area()
+
+        # Round to 0.1 degrees that covers area
+        # lon = np.floor(grid.edges('lon')*10)/10
+        # lat = np.floor(grid.edges('lat')*10)/10
 
         nc_file = download_era5_from_cds(start_time, end_time,
-                                        lon=restricted_area.lon_edges(),
-                                        lat=restricted_area.lat_edges(),
-                                        dlon=restricted_area.dlon(),
-                                        dlat=restricted_area.dlat(),
+                                        lon=self._given_grid.edges('lon'),
+                                        lat=self._given_grid.edges('lat'),
                                         folder=temp_folder)
 
 
@@ -124,11 +134,11 @@ class ERA5(BoundaryReader):
         dirs = bnd_spec.direction.values
         time = bnd_spec.time.values
 
-        source = 'ECMWF-ERA5 from Copernicus Climate Data Store'
+        attributes = {'source': 'ECMWF-ERA5 from Copernicus Climate Data Store'}
 
         # Inds given by point picker
         lon = lon[inds]
         lat = lat[inds]
-        spec = spec[:,inds,:,:]
+        spec = spec[inds,:,:,:]
 
-        return  time, freq, dirs, spec, lon, lat, None, None, source
+        return  time, freq, dirs, spec, lon, lat, None, None, attributes

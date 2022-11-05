@@ -11,13 +11,14 @@ from .. import aux_funcs
 #from .conventions import SpectralConvention
 from .wave_parameters import WaveParameter, Hs, Tm01, Tp, Dirm, Sprm
 from ..spc import Spectra
+from ..bnd.conventions import SpectralConvention
 class WaveSeriesReader(ABC):
     """Reads boundary spectra from some source and provide it to the object."""
     def __init__(self):
         pass
 
     @abstractmethod
-    def get_coordinates(self, start_time):
+    def get_coordinates(self, grid, start_time):
         """Return a list of all the available coordinated in the source.
 
         These are needed fo the PointPicker object to choose the relevant
@@ -28,7 +29,7 @@ class WaveSeriesReader(ABC):
         return lon, lat
 
     @abstractmethod
-    def __call__(self, start_time, end_time, inds) -> Tuple:
+    def __call__(self, grid, start_time, end_time, inds) -> Tuple:
         """Reads in the spectra from inds between start_time and end_time.
 
         The variables needed to be returned are:
@@ -55,11 +56,11 @@ class SpectraToWaveSeries(WaveSeriesReader):
     def __init__(self, spectra: Spectra) -> None:
         self._spectra = copy(spectra)
 
-    def get_coordinates(self, start_time: str) -> Tuple[np.ndarray, np.ndarray]:
+    def get_coordinates(self, grid, start_time: str) -> Tuple[np.ndarray, np.ndarray]:
         return self._spectra.lon(), self._spectra.lat()
         #return self._boundary.data.lon.values, self._boundary.data.lat.values
 
-    def __call__(self, start_time, end_time, inds) -> Tuple:
+    def __call__(self, grid, start_time, end_time, inds) -> Tuple:
         self.name = self._spectra.name
         #source = self._boundary.data.source
         time = self._spectra.time(data_array=True).sel(time=slice(start_time, end_time)).values

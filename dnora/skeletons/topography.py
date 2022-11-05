@@ -43,11 +43,11 @@ def topography_methods(c):
             xQ, yQ = self.native_xy()
 
         if self.is_cartesian():
-            x, y = self.raw.xy()
+            x, y = self.raw().xy()
         else:
-            x, y = self.raw.lonlat()
+            x, y = self.raw().lonlat()
 
-        topo = mesher(self.raw.topo().ravel(), x, y, xQ, yQ)
+        topo = mesher(self.raw().topo().ravel(), x, y, xQ, yQ)
 
         self._update_datavar('topo', topo)
         self._update_sea_mask()
@@ -61,19 +61,19 @@ def topography_methods(c):
         msg.header(grid_processor, "Processing topography...")
 
         print(grid_processor)
-        if self.raw.is_gridded():
-            topo = grid_processor.grid(self.raw.topo(), self.raw.lon(), self.raw.lat(), self.raw.sea_mask(), self.raw.boundary_mask())
+        if self.raw().is_gridded():
+            topo = grid_processor.grid(self.raw().topo(), self.raw().lon(), self.raw().lat(), self.raw().sea_mask(), self.raw().boundary_mask())
             if topo is None:
                 msg.warning('Filtering of gridded topography is not implemented in this GridProcessor.')
                 return
         else:
-            topo = grid_processor.topo(self.raw.topo(), self.raw.lon(), self.raw.lat(), self.raw.sea_mask())
+            topo = grid_processor.topo(self.raw().topo(), self.raw().lon(), self.raw().lat(), self.raw().sea_mask())
             if topo is None:
                 msg.warning('Filtering of unstructured topography is not implemented in this GridProcessor.')
                 return
 
-        self.raw._update_datavar('topo', topo)
-        self.raw._update_sea_mask()
+        self.raw()._update_datavar('topo', topo)
+        self.raw()._update_sea_mask()
 
     def process_grid(self, grid_processor: GridProcessor=None) -> None:
         """Processes the gridded bathymetrical data, e.g. with a filter."""

@@ -1,20 +1,20 @@
 from abc import ABC, abstractmethod
-from typing import Tuple
 from copy import copy
 from ..bnd.bnd_mod import Boundary
 import numpy as np
 
 from ..bnd.conventions import SpectralConvention
 from ..bnd.conventions import convert_2d_to_1d
-
-
+import xarray as xr
+from .. import aux_funcs
+from .. import msg
 class SpectralReader(ABC):
     """Reads boundary spectra from some source and provide it to the object."""
     def __init__(self):
         pass
 
     @abstractmethod
-    def get_coordinates(self, start_time):
+    def get_coordinates(self, grid, start_time):
         """Return a list of all the available coordinated in the source.
 
         These are needed fo the PointPicker object to choose the relevant
@@ -22,7 +22,7 @@ class SpectralReader(ABC):
 
         Provide the result as two equally long nump arrays.
         """
-        return lon, lat
+        return lon, lat, x, y
 
     @abstractmethod
     def convention(self) -> SpectralConvention:
@@ -42,7 +42,7 @@ class SpectralReader(ABC):
         return convention
 
     @abstractmethod
-    def __call__(self, start_time, end_time, inds) -> Tuple:
+    def __call__(self, grid, start_time, end_time, inds) -> tuple:
         """Reads in the spectra from inds between start_time and end_time.
 
         The variables needed to be returned are:
@@ -59,6 +59,9 @@ class SpectralReader(ABC):
 
         return time, freq, spec, mdir, spr, lon, lat, x, y, source
 
+    def name(self) -> str:
+        return type(self).__name__
+
 class BoundaryToSpectra(SpectralReader):
     """Integrates boundary spectra to omnidairectional spectra"""
     def __init__(self, boundary: Boundary) -> None:
@@ -67,13 +70,12 @@ class BoundaryToSpectra(SpectralReader):
     def convention(self):
         return convert_2d_to_1d(self._boundary._convention)
 
-    def get_coordinates(self, start_time: str) -> Tuple[np.ndarray, np.ndarray]:
-        return self._boundary.lon(), self._boundary.lat()
+    def get_coordinates(self, grid, start_time: str) -> tuple[np.ndarray, np.ndarray]:
+        return self._boundary.lon(strict=True), self._boundary.lat(strict=True), self._boundary.x(strict=True), self._boundary.y(strict=True)
         #return self._boundary.data.lon.values, self._boundary.data.lat.values
 
-    def __call__(self, start_time, end_time, inds) -> Tuple:
-        self.name = self._boundary.name
-        #source = self._boundary.data.source
+    def __call__(self, grid, start_time, end_time, inds) -> tuple:
+
         time = self._boundary.time(data_array=True).sel(time=slice(start_time, end_time)).values
         lon = self._boundary.lon(strict=True)
         lat = self._boundary.lat(strict=True)
@@ -105,3 +107,36 @@ class BoundaryToSpectra(SpectralReader):
         spec = ef.values
 
         return time, freq, spec, mdir, spr, lon, lat, x, y, self._boundary.ds().attrs
+
+    def name(self):
+        return self._boundary.name
+
+
+class DnoraNc(SpectralReader):
+    def __init__(self, files: str, convention: SpectralConvention) -> None:
+        if not isinstance(convention, SpectralConvention):
+            raise ValueError(f'convention needs to be a SpectralConvention!')
+        if convention not in [SpectralConvention.OCEAN, SpectralConvention.MET, SpectralConvention.MATH]:
+            msg.info(f'2D convention {convention} given to 1D SpectralReader. Converting to {convert_2d_to_1d(convention)}')
+            convention = convert_2d_to_1d(convention)
+
+        self._convention = convention
+        self.files = files
+
+
+    def convention(self) -> SpectralConvention:
+        return copy(self._convention)
+
+    def get_coordinates(self, grid, start_time) -> tuple:
+        data = xr.open_dataset(self.files[0]).isel(time = [0])
+        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(data)
+        return lon, lat, x, y
+
+    def __call__(self, grid, start_time, end_time, inds) -> tuple:
+        def _crop(ds):
+            return ds.sel(time=slice(start_time, end_time))
+        msg.info(f"Getting boundary spectra from DNORA type netcdf files (e.g. {self.files[0]}) from {start_time} to {end_time}")
+        ds = xr.open_mfdataset(self.files, preprocess=_crop, data_vars='minimal')
+        ds = ds.sel(inds=inds)
+        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
+        return ds.time.values, ds.freq.values, ds.spec.values, ds.mdir.values, ds.spr.values, lon, lat, x, y, ds.attrs
