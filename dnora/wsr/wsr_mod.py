@@ -38,7 +38,7 @@ class WaveSeries(PointSkeleton):
         self._history.append(copy(waveseries_reader))
 
         msg.header(waveseries_reader, "Reading coordinates of WaveSeries...")
-        lon_all, lat_all = waveseries_reader.get_coordinates(self.grid(), start_time)
+        lon_all, lat_all, x_all, y_all = waveseries_reader.get_coordinates(self.grid(), start_time)
 
         msg.header(point_picker, "Choosing waves series points...")
         inds = point_picker(self.grid(), lon_all, lat_all, expansion_factor)

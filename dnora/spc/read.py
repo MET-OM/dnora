@@ -8,6 +8,7 @@ from ..bnd.conventions import convert_2d_to_1d
 import xarray as xr
 from .. import aux_funcs
 from .. import msg
+
 class SpectralReader(ABC):
     """Reads boundary spectra from some source and provide it to the object."""
     def __init__(self):

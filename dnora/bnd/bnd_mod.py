@@ -102,15 +102,14 @@ class Boundary(PointSkeleton):
 
 
             new_spec, new_dirs, new_freq = processor(self.spec(), self.dirs(), self.freq())
+            attributes = self.ds().attrs
+
             self._init_structure(x=self.x(strict=True), y=self.y(strict=True),
                             lon=self.lon(strict=True), lat=self.lat(strict=True),
                             time=self.time(), freq=new_freq, dirs=new_dirs)
             self.ds_manager.set(new_spec, 'spec', coord_type='all')
-
-            # self.data.spec.values = new_spec
-            # self.data = self.data.assign_coords(dirs=new_dirs)
-            # self.data = self.data.assign_coords(freq=new_freq)
-
+            self.ds_manager.set_attrs(attributes) # Global attributes
+            
             # Set new convention if the processor changed it
             new_convention = processor._convention_out()
             if new_convention is not None:

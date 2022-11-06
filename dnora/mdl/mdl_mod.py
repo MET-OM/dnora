@@ -9,7 +9,7 @@ from ..grd.grd_mod import Grid
 from ..spc.spc_mod import Spectra
 from ..wsr.wsr_mod import WaveSeries
 # Import abstract classes and needed instances of them
-from .. import bnd, wnd, spc
+from .. import bnd, wnd, spc, wsr
 
 from ..bnd.conventions import SpectralConvention
 from ..wsr.read import WaveSeriesReader, SpectraToWaveSeries
@@ -290,7 +290,7 @@ class ModelRun:
         # Read whatever we have in the chached data to start with
         # Setting the reader to read standard DNORA netcdf-files
         if read_cache and not cacher.empty():
-            msg.info('Readingwaveseries data from cache!!!')
+            msg.info('Reading WaveSeries data from cache!!!')
             original_waveseries_reader = copy(waveseries_reader)
             waveseries_reader = wsr.read.DnoraNc(files=glob.glob(f'{cacher.filepath(extension=False)}*'))
             point_picker = point_picker or bnd.pick.TrivialPicker()

@@ -60,7 +60,6 @@ class Spectra(PointSkeleton):
         self.ds_manager.set(spec, 'spec', coord_type='all')
         self.ds_manager.set(mdir, 'mdir', coord_type='all')
         self.ds_manager.set(spr, 'spr', coord_type='all')
-
         self.ds_manager.set_attrs(attributes)
 
         # E.g. are the spectra oceanic convention etc.
@@ -92,17 +91,17 @@ class Spectra(PointSkeleton):
                     msg.warning(f"Spectral convention ({self.convention()}) doesn't match that expected by the processor ({old_convention})!")
                     convention_warning=True
 
-
+            
             new_spec, new_dirs, new_freq, new_spr = processor(self.spec(), self.mdir(), self.freq(), self.spr())
+            attributes = self.ds().attrs
+
             self._init_structure(x=self.x(strict=True), y=self.y(strict=True),
                             lon=self.lon(strict=True), lat=self.lat(strict=True),
                             time=self.time(), freq=new_freq)
             self.ds_manager.set(new_spec, 'spec', coord_type='all')
             self.ds_manager.set(new_dirs, 'mdir', coord_type='all')
             self.ds_manager.set(new_spr, 'spr', coord_type='all')
-            # self.data.spec.values = new_spec
-            # self.data = self.data.assign_coords(dirs=new_dirs)
-            # self.data = self.data.assign_coords(freq=new_freq)
+            self.ds_manager.set_attrs(attributes) # Global attributes
 
             # Set new convention if the processor changed it
             new_convention = processor._convention_out()

@@ -12,6 +12,45 @@ from .. import aux_funcs
 from .wave_parameters import WaveParameter, Hs, Tm01, Tp, Dirm, Sprm
 from ..spc import Spectra
 from ..bnd.conventions import SpectralConvention
+
+
+
+from dnora.wsr import wave_parameters
+import inspect
+
+def dict_of_wave_parameters():
+    list_of_members = inspect.getmembers(wave_parameters)
+    dict_of_wps = {}
+    for member in list_of_members:
+        if inspect.isclass(member[1]):
+            try: 
+                wps = [member[1]()]
+            except:
+                wps = None
+
+            if wps is None:
+                try:
+                    wps = []
+                    for n in np.linspace(-10,10,41):
+                        wps.append(member[1](n))
+                except:
+                    wps = None
+
+            if wps is None:
+                try:
+                    wps = []
+                    for n in np.linspace(-10,10,41):
+                        for m in np.linspace(-10,10,41):
+                            wps.append(member[1](n,m))
+                except:
+                    wps = None 
+
+
+            if wps is not None and isinstance(wps[0], WaveParameter):
+                for wp in wps:
+                    dict_of_wps[wp.name()] = wp
+    return dict_of_wps
+
 class WaveSeriesReader(ABC):
     """Reads boundary spectra from some source and provide it to the object."""
     def __init__(self):
@@ -57,8 +96,8 @@ class SpectraToWaveSeries(WaveSeriesReader):
         self._spectra = copy(spectra)
 
     def get_coordinates(self, grid, start_time: str) -> Tuple[np.ndarray, np.ndarray]:
-        return self._spectra.lon(), self._spectra.lat()
-        #return self._boundary.data.lon.values, self._boundary.data.lat.values
+        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(self._spectra.ds())
+        return lon, lat, x, y
 
     def __call__(self, grid, start_time, end_time, inds) -> Tuple:
         self.name = self._spectra.name
@@ -77,3 +116,28 @@ class SpectraToWaveSeries(WaveSeriesReader):
         for wp in parameters:
             data[wp] = wp(self._spectra)
         return time, data, lon, lat, x, y, self._spectra.ds().attrs
+
+class DnoraNc(WaveSeriesReader):
+    def __init__(self, files: str) -> None:
+        self.files = files
+
+    def get_coordinates(self, grid, start_time) -> tuple:
+        data = xr.open_dataset(self.files[0]).isel(time = [0])
+        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(data)
+        return lon, lat, x, y
+
+    def __call__(self, grid, start_time, end_time, inds) -> tuple:
+        def _crop(ds):
+            return ds.sel(time=slice(start_time, end_time))
+        msg.info(f"Getting boundary spectra from DNORA type netcdf files (e.g. {self.files[0]}) from {start_time} to {end_time}")
+        ds = xr.open_mfdataset(self.files, preprocess=_crop, data_vars='minimal')
+        ds = ds.sel(inds=inds)
+        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
+        dict_of_wps = dict_of_wave_parameters()
+        data = {}
+
+        for var in ds.data_vars:
+            if var not in ['lon', 'lat', 'x', 'y']:
+                data[dict_of_wps[var]] = ds.get(var).values
+        breakpoint()   
+        return ds.get('time'), data, lon, lat, x, y, ds.attrs
