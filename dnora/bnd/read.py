@@ -12,23 +12,6 @@ from .conventions import SpectralConvention
 import pandas as pd
 class BoundaryReader(ABC):
     """Reads boundary spectra from some source and provide it to the object."""
-    def __init__(self):
-        pass
-
-    def set_restricted_area(self, area_grid: Grid) -> None:
-        """This is set automatically by the .import_boundary() method.
-        This can be used to restrict the database to just the area around the
-        grid if that is needed a priori (e.g. in ERA5).
-
-        The grid spacing is approximately set to match the spacing of the
-        boundary points
-        """
-        self._restricted_area = area_grid
-
-    def get_restricted_area(self) -> Grid:
-        if not hasattr(self, '_restricted_area'):
-            return None
-        return self._restricted_area
 
     @abstractmethod
     def get_coordinates(self, grid, start_time):
@@ -90,6 +73,14 @@ class BoundaryReader(ABC):
 
     def name(self) -> str:
         return type(self).__name__
+
+    def set_source(self, source: str) -> None:
+        self._source = source
+
+    def source(self) -> str:
+        if hasattr(self, '_source'):
+            return self._source
+        return 'remote'
 
     #def __str__(self):
         #return (f"{self.start_time} - {self.end_time}")

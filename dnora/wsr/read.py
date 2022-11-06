@@ -87,6 +87,14 @@ class WaveSeriesReader(ABC):
     def name(self) -> str:
         return type(self).__name__
 
+    def set_source(self, source: str) -> None:
+        self._source = source
+
+    def source(self) -> str:
+        if hasattr(self, '_source'):
+            return self._source
+        return 'remote'
+
     #def __str__(self):
         #return (f"{self.start_time} - {self.end_time}")
 

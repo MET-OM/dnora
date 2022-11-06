@@ -49,10 +49,19 @@ class ModelRun:
                         point_picker: PointPicker=None, name: str=None,
                         expansion_factor: float=1.5,
                         dry_run: bool=False,
+                        source: str='remote',
                         write_cache: bool=False,
                         read_cache: bool=False,
                         cache_name: str=None) -> None:
-        """Creates a Boundary-object and imports boundary spectra."""
+        """Imports boundary spectra.
+
+        source = 'remote' (default) / '<folder>' / 'met'
+        
+        The implementation of this is up to the BoundaryReader, and all options might not be functional.
+        'met' options will only work in MET Norway internal networks.
+
+        To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
+        """
 
         self._dry_run = dry_run
         boundary_reader = boundary_reader or self._get_boundary_reader()
@@ -67,6 +76,7 @@ class ModelRun:
         if boundary_reader is not None:
             name = name or boundary_reader.name()
             convention = boundary_reader.convention()
+            boundary_reader.set_source(source)
         else:
             convention = SpectralConvention.OCEAN
             msg.info('No BoundaryReader given, assuming Oceanic convention in spectra!')
@@ -121,11 +131,20 @@ class ModelRun:
 
     def import_forcing(self, forcing_reader: wnd.read.ForcingReader=None,
                         name: str=None, dry_run: bool=False,
+                        source: str='remote',
                         expansion_factor: float=1.2,
                         write_cache: bool=False,
                         read_cache: bool=False,
                         cache_name: str=None) -> None:
-        """Creates a Forcing-objects and imports forcing data."""
+        """Imports wind forcing.
+
+        source = 'remote' (default) / '<folder>' / 'met'
+        
+        The implementation of this is up to the ForcingReader, and all options might not be functional.
+        'met' options will only work in MET Norway internal networks.
+
+        To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
+        """
         self._dry_run = dry_run
 
         forcing_reader = forcing_reader or self._get_forcing_reader()
@@ -136,6 +155,7 @@ class ModelRun:
 
         if forcing_reader is not None:
             name = name or forcing_reader.name()
+            forcing_reader.set_source(source)
 
         if name is None:
             raise ValueError('Provide either a name or a ForcingReader that will then define the name!')
@@ -187,10 +207,19 @@ class ModelRun:
                         point_picker: PointPicker=None,
                         name: str=None, expansion_factor: float=1.5,
                         dry_run: bool=False,
+                        source: str='remote',
                         write_cache: bool=False,
                         read_cache: bool=False,
                         cache_name: str=None) -> None:
-        """Creates a Spectra-object and import omnidirectional spectral data."""
+        """Imports omnidirectional spectra.
+
+        source = 'remote' (default) / '<folder>' / 'met'
+        
+        The implementation of this is up to the SpectralReader, and all options might not be functional.
+        'met' options will only work in MET Norway internal networks.
+
+        To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
+        """
 
         self._dry_run = dry_run
         spectral_reader = spectral_reader or self._get_spectral_reader()
@@ -204,6 +233,7 @@ class ModelRun:
         if spectral_reader is not None:
             name = name or spectral_reader.name()
             convention = spectral_reader.convention()
+            spectral_reader.set_source(source)
         else:
             convention = SpectralConvention.OCEAN
             msg.info('No SpectralReader given, assuming Oceanic convention in spectra!')
@@ -261,11 +291,20 @@ class ModelRun:
                         point_picker: PointPicker=None,
                         name: str=None, expansion_factor: float=1.5,
                         dry_run: bool=False,
+                        source: str='remote',
                         write_cache: bool=False,
                         read_cache: bool=False,
                         cache_name: str=None) -> None:
 
-        """Creates a WaveSeries-object and import wave data."""
+        """Imports wave timeseries data.
+
+        source = 'remote' (default) / '<folder>' / 'met'
+        
+        The implementation of this is up to the WaveSeriesReader, and all options might not be functional.
+        'met' options will only work in MET Norway internal networks.
+
+        To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
+        """
         self._dry_run = dry_run
         waveseries_reader = waveseries_reader or self._get_waveseries_reader()
 
@@ -277,6 +316,7 @@ class ModelRun:
 
         if waveseries_reader is not None:
             name = name or waveseries_reader.name()
+            waveseries_reader.set_source(source)
 
         if name is None:
             raise ValueError('Provide either a name or a WaveSeriesReader that will then define the name!')

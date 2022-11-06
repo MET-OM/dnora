@@ -16,17 +16,12 @@ from ..aux_funcs import create_time_stamps
 
 class WAM4km(BoundaryReader):
     def __init__(self, ignore_nan: bool=True, stride: int=6,
-                 hours_per_file: int=73, last_file: str='', lead_time: int=0,
-                 cache: bool=True, clean_cache: bool=False) -> None:
+                 hours_per_file: int=73, last_file: str='', lead_time: int=0) -> None:
         self.ignore_nan = copy(ignore_nan)
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
         self.last_file = copy(last_file)
-        self.cache = copy(cache)
-        self.clean_cache = copy(clean_cache)
-        self.cache_folder = 'dnora_bnd_temp'
-        return
 
     def convention(self) -> str:
         return SpectralConvention.OCEAN
@@ -66,15 +61,6 @@ class WAM4km(BoundaryReader):
         # If we have removed some spectra (NaN's) we need to remap the indeces
         if hasattr(self, 'pointers'):
             inds = self.pointers[0][inds]
-
-        if self.clean_cache:
-            for f in glob.glob(os.path.join(self.cache_folder, '*')):
-                os.remove(f)
-
-        if self.cache:
-            if not os.path.isdir(self.cache_folder):
-                os.mkdir(self.cache_folder)
-                print("Creating cache folder %s..." % self.cache_folder)
 
         start_times, end_times, file_times = create_time_stamps(start_time, end_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
 
@@ -138,8 +124,6 @@ class WAM4km(BoundaryReader):
         lon = bnd.longitude.values
         lat = bnd.latitude.values
 
-        #source = f"{bnd.title}, {bnd.institution}"
-
         return  time, freq, dirs, spec, lon, lat, None, None, bnd.attrs
 
     def file_is_consistent(self, this_ds, bnd_list, url) -> bool:
@@ -169,53 +153,30 @@ class WAM4km(BoundaryReader):
         return True
 
     def get_url(self, day):
-        url = 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/'+day.strftime('%d')+'/MyWave_wam4_SPC_'+day.strftime('%Y%m%d')+'T'+day.strftime('%H')+'Z.nc'
-        return url
-
-    def get_filepath_if_cached(self, url: str) -> Tuple:
-        """
-        Returns the filepath if the file is cached locally, otherwise
-        hands back the URL.
-        """
-        maybe_cache = self._url_to_filename(url)
-        if os.path.exists(maybe_cache):
-            return maybe_cache, True
+        if self.source() == 'remote':        
+            return 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/'+day.strftime('%d')+'/MyWave_wam4_SPC_'+day.strftime('%Y%m%d')+'T'+day.strftime('%H')+'Z.nc'
+        if self.source() == 'met':
+            return '/lustre/storeB/project/fou/om/xxxxxxxxx/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/MyWave_wam4_SPC_'+day.strftime('%Y%m%d')
         else:
-            return url, False
+            return self.source()+'/MyWave_wam4_SPC_'+day.strftime('%Y%m%d')
 
-    def write_to_cache(self, ds, url):
-        cache = self._url_to_filename(url)
-        msg.plain(f'Caching {url} to {cache}')
-        ds.to_netcdf(cache)
-
-    def _url_to_filename(self, url):
-        """
-        Sanitizes a url to a valid file name.
-        """
-        fname = "".join(x for x in url if x.isalnum() or x == '.')
-        return os.path.join(self.cache_folder, fname)
-
+   
 
 class NORA3(BoundaryReader):
     def __init__(self, stride: int=24, hours_per_file: int=24,
-                last_file: str='', lead_time: int=0,
-                source: str='thredds') -> None:
+                last_file: str='', lead_time: int=0) -> None:
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
         self.last_file = copy(last_file)
-        self.source = source
-        return
 
     def convention(self) -> str:
         return SpectralConvention.OCEAN
 
     def get_coordinates(self, grid, start_time) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
-        #day = pd.date_range(start_time, start_time,freq='D')
         start_times, end_times, file_times = create_time_stamps(start_time, start_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
-        url = self.get_url(file_times[0], source=self.source)
-
+        url = self.get_url(file_times[0])
         data = xr.open_dataset(url).isel(time = [0])
 
         lon_all = data.longitude.values[0]
@@ -233,13 +194,12 @@ class NORA3(BoundaryReader):
         msg.info(f"Getting boundary spectra from NORA3 from {self.start_time} to {self.end_time}")
         bnd_list = []
         for n in range(len(file_times)):
-            url = self.get_url(file_times[n], source=self.source)
+            url = self.get_url(file_times[n])
             msg.from_file(url)
             msg.plain(f"Reading boundary spectra: {start_times[n]}-{end_times[n]}")
             with xr.open_dataset(url) as f:
                 this_ds = f.sel(time = slice(start_times[n], end_times[n]), x = (inds+1))[['SPEC', 'longitude', 'latitude', 'time', 'freq', 'direction']].copy()
             bnd_list.append(this_ds)
-            #bnd_list.append(xr.open_dataset(url).sel(time = slice(start_times[n], end_times[n]), x = (inds+1)))
         bnd=xr.concat(bnd_list, dim="time").squeeze('y')
 
         time = bnd.time.values
@@ -250,13 +210,13 @@ class NORA3(BoundaryReader):
         lon = bnd.longitude.values[0,:]
         lat = bnd.latitude.values[0,:]
 
-        #source = f"{bnd.title}, {bnd.institution}"
-
         return  time, freq, dirs, spec, lon, lat, None, None, bnd.attrs
 
 
-    def get_url(self, day, source) -> str:
-        if source == 'thredds':
+    def get_url(self, day) -> str:
+        if self.source() == 'remote':
             return 'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/SPC'+day.strftime('%Y%m%d')+'00.nc'
-        if source == 'lustre':
+        if self.source() == 'met':
             return '/lustre/storeB/project/fou/om/WINDSURFER/mw3hindcast/spectra/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/SPC'+day.strftime('%Y%m%d')+'00.nc'
+        else:
+            return self.source()+'/SPC'+day.strftime('%Y%m%d')+'00.nc'

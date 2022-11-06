@@ -60,6 +60,14 @@ class SpectralReader(ABC):
 
         return time, freq, spec, mdir, spr, lon, lat, x, y, source
 
+    def set_source(self, source: str) -> None:
+        self._source = source
+
+    def source(self) -> str:
+        if hasattr(self, '_source'):
+            return self._source
+        return 'remote'
+
     def name(self) -> str:
         return type(self).__name__
 
