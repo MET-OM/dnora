@@ -123,6 +123,7 @@ class WAM4km(BoundaryReader):
         spec = np.moveaxis(spec,1,0) # time, inds ... -> inds, time, ...
         lon = bnd.longitude.values
         lat = bnd.latitude.values
+        bnd.attrs.pop('direction_convention')
 
         return  time, freq, dirs, spec, lon, lat, None, None, bnd.attrs
 
