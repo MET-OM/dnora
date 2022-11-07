@@ -13,6 +13,8 @@ class Cacher:
     cache_name: str
 
     def __post_init__(self):
+        if self.cache_name is not None and '#T0' not in self.cache_name:
+            self.cache_name = self.cache_name + '_#T0'
         self.file_object = FileNames(format='Cache',
                                 dnora_obj=self.dnora_obj,
                                 edges_from_grid=True,

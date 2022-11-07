@@ -10,7 +10,7 @@ import sys
 import re
 # Import objects
 from ..grd.grd_mod import Grid
-from .conventions import SpectralConvention, convention_from_string
+from .conventions import SpectralConvention
 from .process import boundary_processor_for_convention_change
 # Import abstract classes and needed instances of them
 from .process import BoundaryProcessor, Multiply
@@ -65,13 +65,15 @@ class Boundary(PointSkeleton):
         # Main reading happens here
         msg.header(boundary_reader, "Loading boundary spectra...")
 
-        time, freq, dirs, spec, lon, lat, x, y, attributes = boundary_reader(self.grid(), start_time, end_time, inds)
+        time, freq, dirs, spec, lon, lat, x, y, metadata = boundary_reader(self.grid(), start_time, end_time, inds)
         self._init_structure(x, y, lon, lat, time=time, freq=freq, dirs=dirs)
         self.ds_manager.set(spec, 'spec', coord_type='all')
-        self.ds_manager.set_attrs(attributes)
-
+        self.set_metadata(metadata)
         # E.g. are the spectra oceanic convention etc.
         self._convention = boundary_reader.convention()
+
+        self.set_metadata({'spectral_convention': self.convention().value}, append=True)
+
         return
 
     def process_boundary(self, boundary_processors: List[BoundaryProcessor]=None):
@@ -102,24 +104,25 @@ class Boundary(PointSkeleton):
 
 
             new_spec, new_dirs, new_freq = processor(self.spec(), self.dirs(), self.freq())
-            attributes = self.ds().attrs
+            metadata = self.metadata()
 
             self._init_structure(x=self.x(strict=True), y=self.y(strict=True),
                             lon=self.lon(strict=True), lat=self.lat(strict=True),
                             time=self.time(), freq=new_freq, dirs=new_dirs)
             self.ds_manager.set(new_spec, 'spec', coord_type='all')
-            self.ds_manager.set_attrs(attributes) # Global attributes
-            
+            self.set_metadata(metadata) # Global attributes
+
             # Set new convention if the processor changed it
             new_convention = processor._convention_out()
             if new_convention is not None:
-                self._convention = new_convention
+                self._set_convention(new_convention, process=False)
                 if convention_warning:
                     msg.warning(f"Convention variable set to {new_convention}, but this might be wrong...")
                 else:
                     msg.info(f"Changing convention from {old_convention} >>> {new_convention}")
 
             print(processor)
+
             msg.blank()
         return
 
@@ -140,6 +143,7 @@ class Boundary(PointSkeleton):
             self.process_boundary(boundary_processor)
         else:
             self._convention = convention
+            self.set_metadata({'spectral_convention': self.convention().value}, append=True)
             print(f'Spectral convention is now: {self.convention()}')
 
     def convention(self):

@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Union
 if TYPE_CHECKING:
     from .spc_mod import Spectra
 
-from ..bnd.conventions import SpectralConvention, convention_from_string
+from ..bnd.conventions import SpectralConvention
 
 class SpectralWriter(ABC):
     """Writes omnidirectional spectra spectra to a certain file format.
@@ -19,7 +19,7 @@ class SpectralWriter(ABC):
     This object is provided to the .export_spectra() method.
     """
 
-    _convention_in = None
+    _convention = None
 
     def _clean_filename(self):
         """If this is set to False, then the ModelRun object does not clean
@@ -51,7 +51,9 @@ class SpectralWriter(ABC):
         MATH:     Mathematical convention
                     Direction to. North = 90, East = 0.
         """
-        return convention_from_string(self._convention_in)
+        if isinstance(self._convention, str):
+            self._convention = SpectralConvention[self._convention.upper()]
+        return self._convention
 
     @abstractmethod
     def __call__(self, spectra: Spectra, filename: str) -> tuple[str, str]:
@@ -70,7 +72,7 @@ class Null(SpectralWriter):
 
 class DumpToNc(SpectralWriter):
     def __init__(self, convention: Union[SpectralConvention, str]=SpectralConvention.MET) -> None:
-        self._convention_in = convention
+        self._convention = convention
         return
 
     def _extension(self) -> str:
@@ -84,7 +86,7 @@ class DumpToNc(SpectralWriter):
 
 class REEF3D(SpectralWriter):
     def __init__(self, convention: Union[SpectralConvention, str]=SpectralConvention.MET) -> None:
-        self._convention_in = convention
+        self._convention = convention
         return
 
     def _extension(self) -> str:

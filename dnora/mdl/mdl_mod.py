@@ -56,7 +56,7 @@ class ModelRun:
         """Imports boundary spectra.
 
         source = 'remote' (default) / '<folder>' / 'met'
-        
+
         The implementation of this is up to the BoundaryReader, and all options might not be functional.
         'met' options will only work in MET Norway internal networks.
 
@@ -75,7 +75,6 @@ class ModelRun:
 
         if boundary_reader is not None:
             name = name or boundary_reader.name()
-            convention = boundary_reader.convention()
             boundary_reader.set_source(source)
         else:
             convention = SpectralConvention.OCEAN
@@ -96,7 +95,7 @@ class ModelRun:
         if read_cache and not cacher.empty():
             msg.info('Reading boundary data from cache!!!')
             original_boundary_reader = copy(boundary_reader)
-            boundary_reader = bnd.read.DnoraNc(files=glob.glob(f'{cacher.filepath(extension=False)}*'), convention=convention)
+            boundary_reader = bnd.read.DnoraNc(files=glob.glob(f'{cacher.filepath(extension=False)}*'))
 
 
         # Import the boundary spectra into the Boundary-object
@@ -139,7 +138,7 @@ class ModelRun:
         """Imports wind forcing.
 
         source = 'remote' (default) / '<folder>' / 'met'
-        
+
         The implementation of this is up to the ForcingReader, and all options might not be functional.
         'met' options will only work in MET Norway internal networks.
 
@@ -214,7 +213,7 @@ class ModelRun:
         """Imports omnidirectional spectra.
 
         source = 'remote' (default) / '<folder>' / 'met'
-        
+
         The implementation of this is up to the SpectralReader, and all options might not be functional.
         'met' options will only work in MET Norway internal networks.
 
@@ -299,7 +298,7 @@ class ModelRun:
         """Imports wave timeseries data.
 
         source = 'remote' (default) / '<folder>' / 'met'
-        
+
         The implementation of this is up to the WaveSeriesReader, and all options might not be functional.
         'met' options will only work in MET Norway internal networks.
 
@@ -364,6 +363,64 @@ class ModelRun:
             msg.info('Caching data:')
             cacher.write_cache()
 
+    def cache_boundary(self, cache_name: str=None, name: str=None):
+        """Writes existing boundary data to cached files.
+
+        .cache_boundary(cache_name='bnd_cache_test', name='MyBoundary').nc
+
+        Default: <Boundary name>/bnd_cache_<grid area>_YYYYMM.nc
+        """
+
+        if name is not None:
+            self.boundary().name = name
+        cacher = Cacher(self.boundary(), cache_name)
+        msg.info('Caching data:')
+        cacher.write_cache()
+
+    def cache_forcing(self, cache_name: str=None, name: str=None):
+        """Writes existing forcing data to cached files.
+
+        .cache_forcing(cache_name='wnd_cache_test', name='MyForcing')
+
+        writes monthly files to MyForcing/wnd_cache_test_YYYYMM.nc
+
+        Default: <Forcing name>/wnd_cache_<grid area>_YYYYMM.nc
+        """
+        if name is not None:
+            self.spectra().name = name
+        cacher = Cacher(self.spectra(), cache_name)
+        msg.info('Caching data:')
+        cacher.write_cache()
+
+    def cache_spectra(self, cache_name: str=None, name: str=None):
+        """Writes existing spectral data to cached files.
+
+        .cache_spectra(cache_name='spc_cache_test', name='MySpectra')
+
+        writes monthly files to MySpectra/spc_cache_test_YYYYMM.nc
+
+        Default: <Spectra name>/spc_cache_<grid area>_YYYYMM.nc
+        """
+        if name is not None:
+            self.spectra().name = name
+        cacher = Cacher(self.spectra(), cache_name)
+        msg.info('Caching data:')
+        cacher.write_cache()
+
+    def cache_waveseries(self, cache_name: str=None, name: str=None):
+        """Writes existing waveseries data to cached files.
+
+        .cache_waveseries(cache_name='wsr_cache_test', name='MyWaveSeries')
+
+        writes monthly files to MyWaveSeries/wsr_cache_test_YYYYMM.nc
+
+        Default: <WaveSeries name>/wsr_cache_<grid area>_YYYYMM.nc
+        """
+        if name is not None:
+            self.spectra().name = name
+        cacher = Cacher(self.spectra(), cache_name)
+        msg.info('Caching data:')
+        cacher.write_cache()
 
     def boundary_to_spectra(self, dry_run: bool=False, name :str=None, write_cache=False,
                             read_cache=False, cache_name=None):

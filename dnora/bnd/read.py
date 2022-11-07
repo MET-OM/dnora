@@ -128,10 +128,8 @@ class ConstantBoundary(BoundaryReader):
 
 
 class DnoraNc(BoundaryReader):
-    def __init__(self, files: str, convention: SpectralConvention) -> None:
-        self._convention = convention
+    def __init__(self, files: str) -> None:
         self.files = files
-
 
     def convention(self) -> SpectralConvention:
         return copy(self._convention)
@@ -148,6 +146,8 @@ class DnoraNc(BoundaryReader):
         ds = xr.open_mfdataset(self.files, preprocess=_crop, data_vars='minimal')
         ds = ds.sel(inds=inds)
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
+        self._convention = SpectralConvention[ds.spectral_convention.upper()]
+        
         return ds.time.values, ds.freq.values, ds.dirs.values, ds.spec.values, lon, lat, x, y, ds.attrs
 
 class ForceFeed(BoundaryReader):

@@ -153,14 +153,14 @@ class WAM4km(BoundaryReader):
         return True
 
     def get_url(self, day):
-        if self.source() == 'remote':        
+        if self.source() == 'remote':
             return 'https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/'+day.strftime('%d')+'/MyWave_wam4_SPC_'+day.strftime('%Y%m%d')+'T'+day.strftime('%H')+'Z.nc'
         if self.source() == 'met':
             return '/lustre/storeB/project/fou/om/xxxxxxxxx/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/MyWave_wam4_SPC_'+day.strftime('%Y%m%d')
         else:
             return self.source()+'/MyWave_wam4_SPC_'+day.strftime('%Y%m%d')
 
-   
+
 
 class NORA3(BoundaryReader):
     def __init__(self, stride: int=24, hours_per_file: int=24,
@@ -209,6 +209,7 @@ class NORA3(BoundaryReader):
         spec = np.moveaxis(spec,1,0) # time, inds ... -> inds, time, ...
         lon = bnd.longitude.values[0,:]
         lat = bnd.latitude.values[0,:]
+        bnd.attrs.pop('direction_convention')
 
         return  time, freq, dirs, spec, lon, lat, None, None, bnd.attrs
 

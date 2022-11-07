@@ -465,6 +465,23 @@ class Skeleton:
             letter = self._zone_letter
         return number, letter
 
+    def metadata(self) -> dict:
+        """Return metadata of the dataset:
+
+        """
+        if not self._structure_initialized():
+            return None
+        return self.ds().attrs
+
+    def set_metadata(self, metadata: dict, append=False) -> None:
+        if not self._structure_initialized():
+            return None
+        if append:
+            old_metadata = self.metadata()
+            old_metadata.update(metadata)
+            metadata = old_metadata
+        self.ds_manager.set_attrs(metadata)
+
     @property
     def x_str(self) -> str:
         """Return string compatible with the type of spacing used:

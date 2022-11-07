@@ -7,7 +7,7 @@ import pandas as pd
 # Import objects
 from ..grd.grd_mod import Grid
 from .process import spectral_processor_for_convention_change
-from ..bnd.conventions import SpectralConvention, convention_from_string, convert_2d_to_1d
+from ..bnd.conventions import SpectralConvention, convert_2d_to_1d
 # Import abstract classes and needed instances of them
 from ..bnd.pick import PointPicker, TrivialPicker
 from .read import SpectralReader
@@ -53,17 +53,18 @@ class Spectra(PointSkeleton):
         inds = point_picker(self.grid(), lon_all, lat_all, expansion_factor)
 
         msg.header(spectral_reader, "Loading omnidirectional spectra...")
-        time, freq, spec, mdir, spr, lon, lat, x, y, attributes = spectral_reader(self.grid(), start_time, end_time, inds)
+        time, freq, spec, mdir, spr, lon, lat, x, y, metadata = spectral_reader(self.grid(), start_time, end_time, inds)
 
         self._init_structure(x, y, lon, lat, time=time, freq=freq)
 
         self.ds_manager.set(spec, 'spec', coord_type='all')
         self.ds_manager.set(mdir, 'mdir', coord_type='all')
         self.ds_manager.set(spr, 'spr', coord_type='all')
-        self.ds_manager.set_attrs(attributes)
+        self.set_metadata(metadata)
 
         # E.g. are the spectra oceanic convention etc.
         self._convention = spectral_reader.convention()
+        self.set_metadata({'spectral_convention': self.convention().value}, append=True)
 
     def process_spectra(self, spectral_processors: List[SpectralProcessor]=None):
         """Process all the individual spectra of the spectra object.
@@ -91,9 +92,9 @@ class Spectra(PointSkeleton):
                     msg.warning(f"Spectral convention ({self.convention()}) doesn't match that expected by the processor ({old_convention})!")
                     convention_warning=True
 
-            
+
             new_spec, new_dirs, new_freq, new_spr = processor(self.spec(), self.mdir(), self.freq(), self.spr())
-            attributes = self.ds().attrs
+            metadata = self.metadata()
 
             self._init_structure(x=self.x(strict=True), y=self.y(strict=True),
                             lon=self.lon(strict=True), lat=self.lat(strict=True),
@@ -101,18 +102,19 @@ class Spectra(PointSkeleton):
             self.ds_manager.set(new_spec, 'spec', coord_type='all')
             self.ds_manager.set(new_dirs, 'mdir', coord_type='all')
             self.ds_manager.set(new_spr, 'spr', coord_type='all')
-            self.ds_manager.set_attrs(attributes) # Global attributes
+            self.set_metadata(metadata) # Global attributes
 
             # Set new convention if the processor changed it
             new_convention = processor._convention_out()
             if new_convention is not None:
-                self._convention = new_convention
+                self._set_convention(new_convention, process=False)
                 if convention_warning:
                     msg.warning(f"Convention variable set to {new_convention}, but this might be wrong...")
                 else:
                     msg.info(f"Changing convention from {old_convention} >>> {new_convention}")
 
             print(processor)
+
             msg.blank()
         return
 
@@ -133,6 +135,7 @@ class Spectra(PointSkeleton):
             self.process_spectra(spectral_processor)
         else:
             self._convention = convention
+            self.set_metadata({'spectral_convention': self.convention().value}, append=True)
             print(f'Spectral convention is now: {self.convention()}')
 
     def convention(self):
