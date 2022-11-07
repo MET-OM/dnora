@@ -83,7 +83,7 @@ class DatasetManager:
 
 
         indexed = 'inds' in self.coord_manager.initial_coords()
-        x, y = clean_coordinate_vectors(x, y, indexed)
+        x, y = clean_coordinate_vectors(x, y, is_cartesian=(x_str=='x'), indexed=indexed)
         coord_dict = determine_coords()
         var_dict = determine_vars()
         check_consistency()
@@ -256,10 +256,22 @@ class DatasetManager:
                 list.append(val)
         return tuple(list)
 
-def clean_coordinate_vectors(x, y, indexed):
+
+
+def clean_coordinate_vectors(x, y, is_cartesian, indexed):
     """Cleans up the coordinate vectors to make sure they are numpy arrays and
     have the right dimensions in case of single points etc.
     """
+    def clean_lons(lon):
+        mask = lon<-180
+        lon[mask] = lon[mask] + 360
+        mask = lon>180
+        lon[mask] = lon[mask] - 360
+        return lon
+
+    # def utm_lat_mask(lat):
+    #     return np.logical_and(lat < 84, lat > -80)
+
     x = np.array(x)
     y = np.array(y)
 
@@ -268,6 +280,10 @@ def clean_coordinate_vectors(x, y, indexed):
 
     if not y.shape:
         y = np.array([y])
+
+    if not is_cartesian:
+        # force lon to be -180, 180
+        x = clean_lons(x)
 
     if not indexed:
         if len(np.unique(x)) == 1 and len(x) == 2: # e.g. lon=(4.0, 4.0) should behave like lon=4.0

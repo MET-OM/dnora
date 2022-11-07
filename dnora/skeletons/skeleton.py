@@ -7,6 +7,15 @@ from .dataset_manager import DatasetManager
 from .. import aux_funcs
 from .. import msg
 
+def cap_lat_for_utm(lat):
+    if max(lat) > 84:
+        msg.warning(f'Max latitude {max(lat)}>84. These points well be capped to 84 deg in UTM conversion!')
+        lat[lat>84.] = 84.
+    if min(lat) < -80:
+        lat[lat<-80.] = -80.
+        msg.warning(f'Min latitude {min(lat)}<-80. These points well be capped to -80 deg in UTM conversion!')
+    return lat
+
 class Skeleton:
     """Contains methods and data of the spatial x,y / lon, lat coordinates and
     makes possible conversions between them.
@@ -17,7 +26,7 @@ class Skeleton:
     #strict = False # If this is True, no coordinate conversions will be done (return None instead)
 
     _xy_dict = {'x': 'x', 'lon': 'x', 'y': 'y', 'lat': 'y'}
-
+    _x_to_xy_dict = {'x': 'xy', 'y': 'xy', 'lon': 'lonlat', 'lat': 'lonlat'}
 
     def _init_structure(self, x=None, y=None, lon=None, lat=None, **kwargs) -> None:
         """Determines grid type (Cartesian/Spherical), generates a DatasetManager
@@ -49,6 +58,7 @@ class Skeleton:
 
         # The manager contains the Xarray Dataset
         self.ds_manager.create_structure(xvec,yvec,self.x_str,self.y_str,**kwargs)
+        self.set_utm()
         # if self.ds() is None or not append:
         #     self.ds_manager.set_new_ds(ds)
         # else:
@@ -145,20 +155,46 @@ class Skeleton:
     #         return False
     #     return aux_funcs.is_gridded(self.topo(), self.native_x(), self.native_y())
 
-    def set_utm(self, zone_number: int=33, zone_letter: str='W'):
-        """Set UTM zone and number to be used for cartesian coordinates."""
+    def set_utm(self, zone_number: int=None, zone_letter: str=None):
+        """Set UTM zone and number to be used for cartesian coordinates.
+
+        If not given for a spherical grid, they will be deduced.
+
+        If not given for a cartesian grid, will be set to 33, 'W'
+        """
+
+        if zone_number is None or zone_letter is None:
+            if self.is_cartesian():
+                zone_number = 33
+                zone_letter = 'W'
+            else:
+                lon, lat = self.lonlat()
+                # *** utm.error.OutOfRangeError: latitude out of range (must be between 80 deg S and 84 deg N)
+                mask = np.logical_and(lat < 84, lat > -80)
+                # raise OutOfRangeError('longitude out of range (must be between 180 deg W and 180 deg E)')
+                __, __, zone_number, zone_letter = utm.from_latlon(lat[mask], lon[mask])
 
         if isinstance(zone_number, int) or isintance(zone_number, float):
             self._zone_number = copy(int(zone_number))
-            msg.info(f'Setting UTM zone_number to {zone_number}')
         else:
             raise ValueError("zone_number needs to be an integer")
 
         if isinstance(zone_letter, str):
             self._zone_letter = copy(zone_letter)
-            msg.info(f'Setting UTM zone_letter to {zone_letter}')
         else:
             raise ValueError("zone_number needs to be an integer")
+
+        msg.header(self, f'Setting UTM ({zone_number}, {zone_letter})')
+
+    def utm(self) -> tuple[int, str]:
+        """Returns UTM zone number and letter. Returns 33, 'W' as default
+        value if it hasn't been set by the user."""
+        number, letter = 33, 'W'
+        if hasattr(self, '_zone_number'):
+            number = self._zone_number
+        if hasattr(self, '_zone_letter'):
+            letter = self._zone_letter
+        return number, letter
 
     def ds(self):
         if not self._structure_initialized():
@@ -225,6 +261,7 @@ class Skeleton:
                 lat = self.lat(**kwargs)
 
             number, letter = self.utm()
+            lat = cap_lat_for_utm(lat)
             x, __, __, __ = utm.from_latlon(lat, self.lon(**kwargs), force_zone_number=number, force_zone_letter=letter)
             return x
 
@@ -248,7 +285,8 @@ class Skeleton:
             else:
                 lon = self.lon(**kwargs)
             number, letter = self.utm()
-            __, y, __, __ = utm.from_latlon(self.lat(**kwargs), lon, force_zone_number=number, force_zone_letter=letter)
+            lat = cap_lat_for_utm(self.lat(**kwargs))
+            __, y, __, __ = utm.from_latlon(lat, lon, force_zone_number=number, force_zone_letter=letter)
             return y
 
         return self.ds_manager.get('y', **kwargs).values.copy()
@@ -318,6 +356,7 @@ class Skeleton:
             return None, None
 
         if not self.is_cartesian():
+            y = cap_lat_for_utm(y)
             number, letter = self.utm()
             x, y, __, __ = utm.from_latlon(y, x, force_zone_number=number, force_zone_letter=letter)
         return x, y
@@ -351,10 +390,13 @@ class Skeleton:
             return
 
         if native:
-            method = f'native_{self._xy_dict[coord]}'
+            method = f'native_{self._xy_dict[coord]}' # e.g. self.native_x()
             val = getattr(self, method)()
         else:
-            val = getattr(self, coord)(strict=(strict or self.strict))
+            # Need to get full list (not gridded) to not rotate the coordinates
+            vals = {}
+            vals['x'], vals['y'] = getattr(self, self._x_to_xy_dict.get(coord))(strict=(strict or self.strict)) # e.g. coord = x -> self.xy()
+            val = vals[self._xy_dict[coord]]
 
         if val is None:
             return (None, None)
@@ -454,16 +496,6 @@ class Skeleton:
 
         edges = self.edges('y', native=True)
         return (edges[1]-edges[0])/(self.ny()-1)
-
-    def utm(self) -> tuple[int, str]:
-        """Returns UTM zone number and letter. Returns 33, 'W' as default
-        value if it hasn't been set by the user."""
-        number, letter = 33, 'W'
-        if hasattr(self, '_zone_number'):
-            number = self._zone_number
-        if hasattr(self, '_zone_letter'):
-            letter = self._zone_letter
-        return number, letter
 
     def metadata(self) -> dict:
         """Return metadata of the dataset:
