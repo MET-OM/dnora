@@ -9,7 +9,6 @@ import pandas as pd
 # Import abstract classes and needed instances of them
 from .read import BoundaryReader
 from .conventions import SpectralConvention
-
 # Import aux_funcsiliry functions
 from .. import msg
 from ..aux_funcs import create_time_stamps
@@ -37,7 +36,6 @@ class WAM4km(BoundaryReader):
 
         lon_all = data.longitude.values[0]
         lat_all = data.latitude.values[0]
-
 
         if self.ignore_nan:
             msg.info('ignore_nan = True. The following points are NOT provided to the point_picker')

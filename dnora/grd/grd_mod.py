@@ -232,7 +232,7 @@ class UnstrGrid(PointSkeleton):
         if hasattr(self, '_raw'):
             return self._raw
         return None
-        
+
     def boundary_nx(self) -> int:
         """Return approximate number of grid points in the longitude direction
         """

@@ -5,7 +5,7 @@ import xarray as xr
 from typing import List
 import pandas as pd
 # Import objects
-from ..grd.grd_mod import Grid
+from ..grd.grd_mod import Grid, UnstrGrid
 from .process import spectral_processor_for_convention_change
 from ..bnd.conventions import SpectralConvention, convert_2d_to_1d
 # Import abstract classes and needed instances of them
@@ -48,15 +48,16 @@ class Spectra(PointSkeleton):
 
         msg.header(spectral_reader, "Reading coordinates of spectra...")
         lon_all, lat_all, x_all, y_all = spectral_reader.get_coordinates(self.grid(), start_time)
+        all_points = UnstrGrid(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
 
-        msg.header(point_picker, "Choosing spectra...")
-        inds = point_picker(self.grid(), lon_all, lat_all, expansion_factor)
+        msg.header(point_picker, "Choosing boundary spectra...")
+        inds = point_picker(self.grid(), all_points, expansion_factor)
 
         msg.header(spectral_reader, "Loading omnidirectional spectra...")
         time, freq, spec, mdir, spr, lon, lat, x, y, metadata = spectral_reader(self.grid(), start_time, end_time, inds)
 
         self._init_structure(x, y, lon, lat, time=time, freq=freq)
-
+        
         self.ds_manager.set(spec, 'spec', coord_type='all')
         self.ds_manager.set(mdir, 'mdir', coord_type='all')
         self.ds_manager.set(spr, 'spr', coord_type='all')

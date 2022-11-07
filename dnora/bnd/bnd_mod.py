@@ -9,7 +9,7 @@ from typing import List
 import sys
 import re
 # Import objects
-from ..grd.grd_mod import Grid
+from ..grd.grd_mod import Grid, UnstrGrid
 from .conventions import SpectralConvention
 from .process import boundary_processor_for_convention_change
 # Import abstract classes and needed instances of them
@@ -55,8 +55,10 @@ class Boundary(PointSkeleton):
 
         msg.header(boundary_reader, "Reading coordinates of spectra...")
         lon_all, lat_all, x_all, y_all = boundary_reader.get_coordinates(self.grid(), start_time)
-        msg.header(point_picker, "Choosing spectra...")
-        inds = point_picker(self.grid(), lon_all, lat_all, expansion_factor)
+        all_points = UnstrGrid(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
+
+        msg.header(point_picker, "Choosing boundary spectra...")
+        inds = point_picker(self.grid(), all_points, expansion_factor)
 
         if len(inds) < 1:
             msg.warning("PointPicker didn't find any points. Aborting import of boundary.")
@@ -66,7 +68,9 @@ class Boundary(PointSkeleton):
         msg.header(boundary_reader, "Loading boundary spectra...")
 
         time, freq, dirs, spec, lon, lat, x, y, metadata = boundary_reader(self.grid(), start_time, end_time, inds)
+
         self._init_structure(x, y, lon, lat, time=time, freq=freq, dirs=dirs)
+
         self.ds_manager.set(spec, 'spec', coord_type='all')
         self.set_metadata(metadata)
         # E.g. are the spectra oceanic convention etc.

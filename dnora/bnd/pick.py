@@ -1,8 +1,8 @@
 import numpy as np
 from abc import ABC, abstractmethod
-
+from typing import Union
 # Import objects
-from ..grd.grd_mod import Grid
+from ..grd.grd_mod import Grid, UnstrGrid
 
 # Import aux_funcsiliry functions
 from .. import msg
@@ -15,17 +15,18 @@ class PointPicker(ABC):
         pass
 
     @abstractmethod
-    def __call__(self, grid: Grid, bnd_lon, bnd_lat):
-        return
+    def __call__(self, grid: Union[Grid, UnstrGrid], all_points: UnstrGrid, expansion_factor: float) -> np.ndarray:
+        return inds
 
 class TrivialPicker(PointPicker):
     """Choose all the points in the list."""
     def __init__(self):
         pass
 
-    def __call__(self, grid: Grid, bnd_lon, bnd_lat, expansion_factor):
-        inds = np.array(range(len(bnd_lon)))
-        return inds
+    def __call__(self, grid: Union[Grid, UnstrGrid],
+                    all_points: UnstrGrid,
+                    expansion_factor: float) -> np.ndarray:
+        return all_points.inds()
 
 class NearestGridPoint(PointPicker):
     """Choose the nearest grid point to each boundary point in the grid.
@@ -35,14 +36,17 @@ class NearestGridPoint(PointPicker):
         self.max_dist = max_dist
         pass
 
-    def __call__(self, grid, bnd_lon, bnd_lat, expansion_factor):
-        lon, lat = grid.boundary_points()
+    def __call__(self, grid: Union[Grid, UnstrGrid],
+                    all_points: UnstrGrid,
+                    expansion_factor: float) -> np.ndarray:
+
+        lon, lat = grid.boundary_points('lon')
 
         # Go through all points where we want output and find the nearest available point
         inds = []
         for n in range(len(lat)):
-            dx, ind = min_distance(lon[n], lat[n], bnd_lon, bnd_lat)
-            ms = f"Point {n}: lat: {lat[n]:10.7f}, lon: {lon[n]:10.7f} <<< ({bnd_lat[ind]: .7f}, {bnd_lon[ind]: .7f}). Distance: {dx:.1f} km"
+            dx, ind = min_distance(lon[n], lat[n], all_points.lon(), all_points.lat())
+            ms = f"Point {n}: lat: {lat[n]:10.7f}, lon: {lon[n]:10.7f} <<< ({all_points.lat()[ind]: .7f}, {all_points.lon()[ind]: .7f}). Distance: {dx:.1f} km"
             if self.max_dist is None or dx <= self.max_dist:
                 msg.plain(ms)
                 inds.append(ind)
@@ -54,18 +58,28 @@ class NearestGridPoint(PointPicker):
 
 class Area(PointPicker):
     """Choose all the points within a certain area around the grid."""
-    def __call__(self, grid: Grid, bnd_lon, bnd_lat, expansion_factor):
+    def __call__(self, grid: Union[Grid, UnstrGrid],
+                    all_points: UnstrGrid,
+                    expansion_factor: float) -> np.ndarray:
+
         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
 
         # Define area to search in
-        lon, lat = expand_area(grid.edges('lon'), grid.edges('lat'), expansion_factor)
+        if grid.is_cartesian():
+            number, zone = grid.utm()
+            all_points.set_utm(number, zone)
+            x, y = expand_area(grid.edges('x'), grid.edges('y'), expansion_factor)
+            x_all, y_all = all_points.xy()
+        else:
+            x, y = expand_area(grid.edges('lon'), grid.edges('lat'), expansion_factor)
+            x_all, y_all = all_points.lonlat()
 
-        masklon = np.logical_and(bnd_lon > lon[0], bnd_lon < lon[1])
-        masklat = np.logical_and(bnd_lat > lat[0], bnd_lat < lat[1])
-        mask=np.logical_and(masklon, masklat)
+        maskx = np.logical_and(x_all > x[0], x_all < x[1])
+        masky = np.logical_and(y_all > y[0], y_all < y[1])
+        mask = np.logical_and(maskx, masky)
 
         inds = np.where(mask)[0]
 
-        msg.info(f"Found {len(inds)} points inside {lon[0]:10.7f}-{lon[1]:10.7f}, {lat[0]:10.7f}-{lat[1]:10.7f}.")
+        msg.info(f"Found {len(inds)} points inside {x[0]:10.7f}-{x[1]:10.7f}, {y[0]:10.7f}-{y[1]:10.7f}.")
 
         return inds

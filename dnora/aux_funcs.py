@@ -264,6 +264,8 @@ def int_list_of_days(start_time, end_time):
     day0 = min(pd.to_datetime(pd.Series(day_list(start_time, end_time))).dt.day)
     day1 = max(pd.to_datetime(pd.Series(day_list(start_time, end_time))).dt.day)
     return np.linspace(day0,day1,day1-day0+1).astype(int)
+
+
 #
 # def crop_datetimeindex_to_year(times, year: int):
 #     mask = pd.Series(times).dt.year == year

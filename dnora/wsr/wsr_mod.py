@@ -7,7 +7,7 @@ from copy import copy
 import pandas as pd
 from .. import msg
 from .read import WaveSeriesReader
-from ..grd import Grid
+from ..grd import Grid, UnstrGrid
 from .wave_parameters import WaveParameter
 from ..skeletons.point_skeleton import PointSkeleton
 from ..skeletons.datavar_factory import add_datavar
@@ -40,8 +40,10 @@ class WaveSeries(PointSkeleton):
         msg.header(waveseries_reader, "Reading coordinates of WaveSeries...")
         lon_all, lat_all, x_all, y_all = waveseries_reader.get_coordinates(self.grid(), start_time)
 
-        msg.header(point_picker, "Choosing waves series points...")
-        inds = point_picker(self.grid(), lon_all, lat_all, expansion_factor)
+        all_points = UnstrGrid(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
+
+        msg.header(point_picker, "Choosing wave series points...")
+        inds = point_picker(self.grid(), all_points, expansion_factor)
 
         msg.header(waveseries_reader, "Loading wave series data...")
         time, data_dict, lon, lat, x, y, attributes = waveseries_reader(self.grid(), start_time, end_time, inds)
