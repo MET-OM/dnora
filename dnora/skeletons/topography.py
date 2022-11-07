@@ -30,7 +30,7 @@ def topography_methods(c):
     def mesh_grid(self, mesher: Mesher=Interpolate(method = 'nearest')) -> None:
         """Meshes the raw data down to the grid definitions."""
 
-        if not hasattr(self, 'raw'):
+        if self.raw() is None:
             msg.warning('Import topography using .import_topo() before meshing!')
             return
 
