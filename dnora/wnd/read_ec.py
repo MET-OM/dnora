@@ -116,9 +116,9 @@ class ERA5(ForcingReader):
             os.remove(f)
 
         # Define area to search in
-        lon_min, lon_max, lat_min, lat_max = expand_area(min(grid.lon()), max(grid.lon()), min(grid.lat()), max(grid.lat()), expansion_factor)
+        lon, lat = expand_area(grid.edges('lon'), grid.edges('lat'), expansion_factor)
 
-        nc_file = download_era5_from_cds(start_time, end_time, lon=(lon_min, lon_max), lat=(lat_min, lat_max), folder='dnora_wnd_temp')
+        nc_file = download_era5_from_cds(start_time, end_time, lon=lon, lat=lat, folder='dnora_wnd_temp')
         wind_forcing = xr.open_dataset(nc_file)
         wind_forcing = wind_forcing.rename_dims({'longitude': 'lon', 'latitude': 'lat'})
         wind_forcing = wind_forcing.rename_vars({'longitude': 'lon', 'latitude': 'lat'})

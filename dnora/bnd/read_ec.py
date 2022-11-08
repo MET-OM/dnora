@@ -26,7 +26,7 @@ def reshape_bnd_spec(bnd_spec):
     pass
 
 
-def download_era5_from_cds(start_time, end_time, lon, lat, folder='dnora_wnd_temp') -> str:
+def download_era5_from_cds(start_time, end_time, lon, lat, dlon, dlat, folder='dnora_wnd_temp') -> str:
     """Downloads ERA5 10 m wind data from the Copernicus Climate Data Store for a
     given area and time period"""
     start_time = pd.Timestamp(start_time)
@@ -59,7 +59,7 @@ def download_era5_from_cds(start_time, end_time, lon, lat, folder='dnora_wnd_tem
         'stream': 'wave',
         'time': '00:00:00/03:00:00/06:00:00/09:00:00/12:00:00/15:00:00/18:00:00/21:00:00',
         'area': f'{lat[1]}/{lon[0]}/{lat[0]}/{lon[1]}', # north, west, south, east
-        'grid': f'0.1/0.1',
+        'grid': f'{dlat}/{dlon}',
         'type': 'an',
         'format': 'netcdf',
         }
@@ -67,6 +67,21 @@ def download_era5_from_cds(start_time, end_time, lon, lat, folder='dnora_wnd_tem
     c.retrieve('reanalysis-era5-complete', cds_command, filename)
     return filename
 class ERA5(BoundaryReader):
+    def __init__(self, dlon: float=None, dlat: float=None):
+        """Default dlon=dlat=0.5. If only dlon given, dlon=dlat and vice versa."""
+        if dlon is None and dlat is None:
+            dlon = 0.5
+            dlat = 0.5
+
+        if dlon is None:
+            dlon = dlat
+
+        if dlat is None:
+            dlat = dlon
+
+        self.dlon = dlon
+        self.dlat = dlat
+
     def convention(self) -> str:
         return SpectralConvention.OCEAN
 
@@ -77,12 +92,13 @@ class ERA5(BoundaryReader):
         # lat_all = point_list[:,1]
 
         # return lon_all, lat_all
-        lon = np.floor(np.array(grid.edges('lon'))*10)/10
-        lat = np.floor(np.array(grid.edges('lat'))*10)/10
+        lon = np.floor(np.array(grid.edges('lon'))/self.dlon)*self.dlon
+        lat = np.floor(np.array(grid.edges('lat'))/self.dlat)*self.dlat
 
-        self._given_grid = Grid(lon=(lon[0]-0.1, lon[-1]+0.1), lat=(lat[0]-0.1, lat[-1]+0.1))
-        self._given_grid.set_spacing(dlon=0.1, dlat=0.1)
+        self._given_grid = Grid(lon=(lon[0]-self.dlon, lon[-1]+self.dlon), lat=(lat[0]-self.dlat, lat[-1]+self.dlat))
+        self._given_grid.set_spacing(dlon=self.dlon, dlat=self.dlat)
         lon_all, lat_all = self._given_grid.lonlat()
+
         return lon_all, lat_all, None, None
 
     def __call__(self, grid, start_time, end_time, inds) -> Tuple:
@@ -99,15 +115,11 @@ class ERA5(BoundaryReader):
         for f in glob.glob(f"{temp_folder}/EC_ERA5.nc"):
             os.remove(f)
 
-        #restricted_area = self.get_restricted_area()
-
-        # Round to 0.1 degrees that covers area
-        # lon = np.floor(grid.edges('lon')*10)/10
-        # lat = np.floor(grid.edges('lat')*10)/10
-
         nc_file = download_era5_from_cds(start_time, end_time,
                                         lon=self._given_grid.edges('lon'),
                                         lat=self._given_grid.edges('lat'),
+                                        dlon=self.dlon,
+                                        dlat=self.dlat,
                                         folder=temp_folder)
 
 
