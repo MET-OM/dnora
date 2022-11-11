@@ -234,6 +234,12 @@ class Grid:
 
         return
 
+    def lon_edges(self) -> tuple[float, float]:
+        return (np.min(self.lon()), np.max(self.lon()))
+
+    def lat_edges(self) -> tuple[float, float]:
+        return (np.min(self.lat()), np.max(self.lat()))
+
     def __str__(self) -> str:
         """Prints status of the grid."""
 
