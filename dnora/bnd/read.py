@@ -108,6 +108,7 @@ class DnoraNc(BoundaryReader):
             return ds.sel(time=slice(start_time, end_time))
         msg.info(f"Getting boundary spectra from cached netcdf (e.g. {self.files[0]}) from {start_time} to {end_time}")
         ds = xr.open_mfdataset(self.files, preprocess=_crop)
+        breakpoint()
         ds = ds.sel(x=inds)
         return ds.time.values, ds.freq.values, ds.dirs.values, ds.spec.values, ds.lon.values, ds.lat.values, ds.source
 

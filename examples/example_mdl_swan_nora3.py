@@ -14,7 +14,7 @@ grid.set_spacing(dm=150)
 # Import topography and mesh it down to the grid definitions
 # Options for grd.readers: EMODNET2018, EMODNET2020, KartverketNo50m, GEBCO2021
 topo_reader = grd.read.EMODNET2020(
-    tile='*', folder='/home/konstac/bathy')
+    tile='*5', folder='~/Documents/EMODNET2020')
 grid.import_topo(topo_reader=topo_reader)
 
 # This can be used to get an empty topography for testing

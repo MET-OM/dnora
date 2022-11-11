@@ -54,8 +54,8 @@ class Boundary:
         boundary_point_grid = Grid(lon=self.grid.lon_edges(),
                                     lat=self.grid.lat_edges(),
                                     name='boundary_points')
-        boundary_point_grid.set_spacing(nx=self.grid.boundary_nx(),
-                                        ny=self.grid.boundary_ny())
+        #boundary_point_grid.set_spacing(nx=self.grid.boundary_nx(),
+        #                                ny=self.grid.boundary_ny())
         boundary_reader.set_restricted_area(boundary_point_grid)
 
         if write_cache or read_cache:
@@ -82,7 +82,7 @@ class Boundary:
         msg.header(boundary_reader, "Loading boundary spectra...")
         time, freq, dirs, spec, lon, lat, source = boundary_reader(start_time, end_time, inds)
         self.data = self.compile_to_xr(time, freq, dirs, spec, lon, lat, source)
-
+        breakpoint()
 
         ### Patch data if read from cache and all data not found
         if read_cache and not cache_empty:
