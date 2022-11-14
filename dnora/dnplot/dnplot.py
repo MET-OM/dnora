@@ -74,16 +74,16 @@ class TopoPlotter(GridPlotter):
         cbar = figure_dict.get('cbar')
         lonlat=grid.boundary_points()
         if lonlat.shape[0] > 0:
-            ax.plot(lonlat[:,0], lonlat[:,1],'k*', label='Set boundary points')
+            ax.plot(lonlat[:,0], lonlat[:,1],'k*', label='Set boundary points',markersize=0.5)
 
         # Plot locations of boundary spectra
         if not plain and boundary is not None:
-            ax.plot(boundary.lon(), boundary.lat(),'kx', label=f"Available spectra from {boundary.name()}")
+            ax.plot(boundary.lon(), boundary.lat(),'k.', markersize=1.5, label=f"Available spectra from {boundary.name()}")
 
         # Plot locations of wind forcing data points
         if not plain and forcing is not None:
             lonlat=forcing._point_list(mask=np.full(forcing.size()[1:], True))
-            ax.plot(lonlat[:,0], lonlat[:,1],'r.', markersize=1.5, label=f"Forcing from {forcing.name()}")
+            ax.plot(lonlat[:,0], lonlat[:,1],'r.', markersize=1.0, label=f"Forcing from {forcing.name()}")
 
         #ax.legend(loc="upper right")
         ax.legend(bbox_to_anchor=(0.3, 1.2))
