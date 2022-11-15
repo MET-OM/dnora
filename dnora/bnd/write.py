@@ -335,8 +335,6 @@ class SWAN(BoundaryWriter):
                         file_out.write('FACTOR\n')
                         file_out.write(format(self.factor,'1.0E')+'\n')
                         S = boundary.spec(start_time=tim, end_time=tim, x=[n]).squeeze()
-                        if time_stamp == '20131109.110000\n' and n == 98:
-                            breakpoint()
 
 			# SWAN uses m*m/Hz/deg normalization
                         np.savetxt(file_out,S*np.pi/(180*self.factor), fmt='%-10.0f')
