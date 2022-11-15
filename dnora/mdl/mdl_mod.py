@@ -180,7 +180,7 @@ class ModelRun:
         """Writes the spectra in the Boundary-object to an external source, e.g.
         a file."""
         self._dry_run = dry_run
-        if self.boundary() is None and not self.dry_run(dry_run):
+        if self.boundary() is None and not self.dry_run():
             raise Exception('Import boundary before exporting!')
 
         self._boundary_writer = boundary_writer or self._get_boundary_writer()
