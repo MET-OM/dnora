@@ -1,6 +1,7 @@
 # dnora
 # ![logo](https://user-images.githubusercontent.com/67804784/145466261-f50dbc27-f242-4db0-8d99-e23d0bd0dbbc.png)
 
+[Quick Dnora Installation Procedure](https://docs.google.com/document/d/1VzRDkQk5pqq2rkNKa_woC3ehJ9Dn2pcRNy4LtrcOQXY/edit?usp=sharing)
 
 What is dnora? 
 

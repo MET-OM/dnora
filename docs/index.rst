@@ -5,6 +5,12 @@
 
 Welcome to dnora's documentation!
 =====================================
+
+`Register`_ for dnora workshop on 26.10.2022 in Bergen, Norway. 
+
+.. _Register: https://docs.google.com/forms/d/1cvzUHjthx6YgLUhi5FU9MQSyKZEjVZA9UHSa5Kqs3nc/
+
+
 **dnora** is a Python package for dynamical downscaling of NORA wave hindcast using the spectral wave models SWAN or WAVEWATCH III and wave-flow model SWASH.
 
 The package contains functions that:
