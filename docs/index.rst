@@ -6,11 +6,6 @@
 Welcome to dnora's documentation!
 =====================================
 
-`Register`_ for dnora workshop on 26.10.2022 in Bergen, Norway. 
-
-.. _Register: https://docs.google.com/forms/d/1cvzUHjthx6YgLUhi5FU9MQSyKZEjVZA9UHSa5Kqs3nc/
-
-
 **dnora** is a Python package for dynamical downscaling of NORA wave hindcast using the spectral wave models SWAN or WAVEWATCH III and wave-flow model SWASH.
 
 The package contains functions that:
@@ -72,14 +67,6 @@ To run the models within dnora, the paths, where the models are installed, need 
 
    source ~/.bashrc
 
-
-.. code-block:: rst
-
-3. Fimex is a the File Interpolation, Manipulation and EXtraction library for gridded geospatial data (more info in \url{httpshttps://wiki.met.no/fimex/start}). Fimex is used in DNORA for the preparation of forcing fields (wind). **In case of running the spectral model without wind forcing, the fimex installation can be neglected**.  A detailed installation procedure can be find in https://wiki.met.no/fimex/install. For a quick installation in Linux-Ubuntu, you can follow the steps: open the Synaptic Package Manager (to install it: sudo apt-get install synaptic
-) --> Settings --> Repositories --> Other Software --> Add:  **ppa:met-norway/fimex** to your system's Software Sources (see https://launchpad.net/~met-norway/+archive/ubuntu/fimex). Then, search and mark for installation a latest version of fimex, and press apply installation. Check the installation (usually it is installed in /usr/bin/) by typing in command line: fimex or fimex-xxx where xxx is the version number. In case that only fimex-xxx works then add a symbolic link::
-
-      cd /usr/bin
-      sudo ln -s fimex-xxx fimex
 
 .. code-block:: rst
 
