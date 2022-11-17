@@ -184,22 +184,22 @@ The grid data can now be exported in a certain format using a ``GridWriter``. To
 
 .. code-block:: rst
 
-Boundary and Forcing data can be read using ``BoundaryReaders`` and ``ForcingReaders``. To read in boundary spectra and wind forcing from the MET Norway NORA3 hindcast, use::
+Boundary and Forcing data can be read using ``BoundaryReaders`` and ``ForcingReaders``. 
+To read in boundary spectra and wind forcing from the MET Norway NORA3 hindcast::
 
-   model.import_boundary(bnd.read_metno.NORA3(), point_picker=bnd.pick.Area())
+   model.import_boundary(bnd.read_metno.NORA3())
    model.import_forcing(wnd.read_metno.NORA3())
+   
+.. code-block:: rst   
+   
+For forecasting it is possible to use boundaries from WAM4km and wind forcing from MEPS providing the time of the available ``last_file`` at thredds.met.no (usually -6 or -12 hours from the current time), e.g.,::
+
+   model.import_boundary(bnd.read_metno.WAM4km(last_file='2022-11-17T00:00'))
+   model.import_forcing(wnd.read_metno.MEPS(last_file='2022-11-17T00:00'))
 
 .. code-block:: rst
 
-Here, the ``PointPicker`` object defines how spectra are chosen from the database. In WW3, we take all spectra around the grid area, and let WW3 interpolate. For SWAN, we would want to use::
-
-   model.import_boundary(bnd.read_metno.NORA3(), point_picker=bnd.pick.NearestGridPoint())
-
-.. code-block:: rst
-
-to connect each defined boundary point to a certain spectra (even though we can get duplicates).
-
-to write the boundary spectra in WAVEWATCH III format and wind forcing in SWAN format, use::
+To write the boundary spectra in WAVEWATCH III format and wind forcing in SWAN format, use::
 
    model.export_boundary(bnd.write.WW3())
    model.export_forcing(wnd.write.SWAN())
