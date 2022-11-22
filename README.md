@@ -3,7 +3,7 @@
 
 [Quick Dnora Installation Procedure](https://docs.google.com/document/d/1VzRDkQk5pqq2rkNKa_woC3ehJ9Dn2pcRNy4LtrcOQXY/edit?usp=sharing)
 
-[Examples/Excercises](https://docs.google.com/document/d/1FlIE6ByyXRF7QOSXOdjFaLnX4q3P6YzZq_4YdVEjATw/edit?usp=sharing)
+[Excercises using DNORA/SWAN](https://docs.google.com/document/d/1FlIE6ByyXRF7QOSXOdjFaLnX4q3P6YzZq_4YdVEjATw/edit?usp=sharing)
 
 What is dnora? 
 
