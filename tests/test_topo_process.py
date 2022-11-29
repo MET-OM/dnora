@@ -3,8 +3,8 @@ from dnora.grd.read import ConstantTopo
 from dnora.grd.process import SetConstantDepth, SetMinDepth, SetMaxDepth
 import numpy as np
 def test_import_empty():
-    grid = Grid(lon=(1,2), lat=(0,3))
-    grid.set_spacing(nx=10, ny=10)
+    grid = Grid(lon=(1,2), lat=(-1,3))
+    grid.set_spacing(nx=5, ny=5)
     topo_reader = ConstantTopo(grid=grid)
     grid.import_topo(topo_reader)
     np.testing.assert_array_almost_equal(grid.raw().topo().mean(),999)
@@ -13,6 +13,8 @@ def test_import_empty():
     assert np.all(grid.sea_mask())
     assert np.all(np.logical_not(grid.land_mask()))
     assert grid.is_empty('topo')
+    grid.x()
+    grid.y()
 
 def test_import_constant():
     grid = Grid(lon=(1,2), lat=(0,3))

@@ -48,23 +48,22 @@ def test_dlon_dlat_spherical():
 def test_dx_dy_spherical():
     grid = Grid(lon=(4,5), lat=(60,61))
     grid.set_spacing(dx=1110, dy=1110)
-    breakpoint()
-    np.testing.assert_array_almost_equal(grid.dlat(),0.01,decimal=3)
-    np.testing.assert_array_almost_equal(grid.dlon(),0.02,decimal=3)
-    np.testing.assert_array_almost_equal(grid.dy(),1115,decimal=0)
-    np.testing.assert_array_almost_equal(grid.dx(),1110,decimal=0)
-    assert grid.nx() == 1/0.02
-    assert grid.ny() == 1/0.01
+    np.testing.assert_array_almost_equal(grid.dlat(),0.009,decimal=3)
+    np.testing.assert_array_almost_equal(grid.dlon(),0.017,decimal=3)
+    np.testing.assert_array_almost_equal(grid.dy(),1105,decimal=0)
+    np.testing.assert_array_almost_equal(grid.dx(),1115,decimal=0)
+    assert grid.nx() == 1/grid.dlon()+1
+    assert grid.ny() == 1/grid.dlat()+1
 
 def test_dlon_dlat_cartesian():
     grid = Grid(x=(0,150_000),y=(6_700_000,6_800_000))
     grid.set_spacing(dlon=0.02, dlat=0.01)
     np.testing.assert_array_almost_equal(grid.dlat(),0.01,decimal=3)
     np.testing.assert_array_almost_equal(grid.dlon(),0.02,decimal=3)
-    np.testing.assert_array_almost_equal(grid.dy(),1123,decimal=0)
-    np.testing.assert_array_almost_equal(grid.dx(),1103,decimal=0)
-    assert grid.nx() == 137
-    assert grid.ny() == 90
+    np.testing.assert_array_almost_equal(grid.dy(),952,decimal=0)
+    np.testing.assert_array_almost_equal(grid.dx(),1020,decimal=0)
+    assert grid.nx() == 150_000/grid.dx()+1
+    assert grid.ny() == 100_000/grid.dy()+1
 
 def test_dlon_dlat_spherical_floating():
     grid = Grid(lon=(-1,0.999), lat=(0,2.999))
