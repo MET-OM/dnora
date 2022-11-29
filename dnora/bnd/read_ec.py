@@ -85,6 +85,9 @@ class ERA5(BoundaryReader):
     def convention(self) -> str:
         return SpectralConvention.OCEAN
 
+    def post_processing(self):
+        return RemoveEmpty()
+
     def get_coordinates(self, grid, start_time) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         # point_list = self.get_restricted_area()._point_list()

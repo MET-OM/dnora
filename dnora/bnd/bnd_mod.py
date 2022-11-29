@@ -78,6 +78,8 @@ class Boundary(PointSkeleton):
 
         self.set_metadata({'spectral_convention': self.convention().value}, append=True)
 
+        if boundary_reader.post_processing() is not None:
+            self.process_boundary(boundary_reader.post_processing())
         return
 
     def process_boundary(self, boundary_processors: List[BoundaryProcessor]=None):
@@ -99,6 +101,7 @@ class Boundary(PointSkeleton):
         for processor in boundary_processors:
 
             msg.process(f"Processing spectra with {type(processor).__name__}")
+            print(processor)
             self._history.append(copy(processor))
             old_convention = processor._convention_in()
             if old_convention is not None:
@@ -109,24 +112,27 @@ class Boundary(PointSkeleton):
 
             new_spec, new_dirs, new_freq, new_inds = processor(self.spec(), self.dirs(), self.freq(), self.inds())
             new_inds = list(new_inds)
-            metadata = self.metadata()
 
-            self._init_structure(x=self.x(strict=True, inds=new_inds), y=self.y(strict=True, inds=new_inds),
-                            lon=self.lon(strict=True, inds=new_inds), lat=self.lat(strict=True, inds=new_inds),
-                            time=self.time(), freq=new_freq, dirs=new_dirs)
-            self.ds_manager.set(new_spec, 'spec', coord_type='all')
-            self.set_metadata(metadata) # Global attributes
+            if new_inds:
+                metadata = self.metadata()
 
-            # Set new convention if the processor changed it
-            new_convention = processor._convention_out()
-            if new_convention is not None:
-                self._set_convention(new_convention, process=False)
-                if convention_warning:
-                    msg.warning(f"Convention variable set to {new_convention}, but this might be wrong...")
-                else:
-                    msg.info(f"Changing convention from {old_convention} >>> {new_convention}")
+                self._init_structure(x=self.x(strict=True, inds=new_inds), y=self.y(strict=True, inds=new_inds),
+                                lon=self.lon(strict=True, inds=new_inds), lat=self.lat(strict=True, inds=new_inds),
+                                time=self.time(), freq=new_freq, dirs=new_dirs)
+                self.ds_manager.set(new_spec, 'spec', coord_type='all')
+                self.set_metadata(metadata) # Global attributes
 
-            print(processor)
+                # Set new convention if the processor changed it
+                new_convention = processor._convention_out()
+                if new_convention is not None:
+                    self._set_convention(new_convention, process=False)
+                    if convention_warning:
+                        msg.warning(f"Convention variable set to {new_convention}, but this might be wrong...")
+                    else:
+                        msg.info(f"Changing convention from {old_convention} >>> {new_convention}")
+            else:
+                self.ds_manager.set_new_ds(None)
+                msg.warning(f"No boundary spectra left after processing. Removing all data.")
 
             msg.blank()
         return

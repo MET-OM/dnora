@@ -1,7 +1,7 @@
 # =============================================================================
 # IMPORT dnora
 # =============================================================================
-from dnora import grd, mdl
+from dnora import grd, mdl, bnd
 # =============================================================================
 # DEFINE GRID OBJECT
 # =============================================================================
@@ -18,6 +18,8 @@ grid.mesh_grid()
 model = mdl.WW3_NORA3(grid, start_time='2018-08-25T00:00',
                        end_time='2018-08-25T01:00', dry_run=False)
 model.import_boundary()
+model.boundary().process_boundary(bnd.process.Multiply(calib_spec=0))
+model.boundary().process_boundary(bnd.process.RemoveEmpty())
 breakpoint()
 
 model.boundary_to_spectra()

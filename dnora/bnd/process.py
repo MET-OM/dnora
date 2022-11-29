@@ -106,6 +106,30 @@ class Multiply(BoundaryProcessor):
     def __str__(self):
         return(f"Multiplying spectral values with {self.calib_spec}")
 
+class RemoveEmpty(BoundaryProcessor):
+    """Remove all empty spectra."""
+
+    def __init__(self, threshold: float = 0.01) -> None:
+        self.threshold = threshold
+
+    def __call__(self, spec, dirs, freq, inds) -> Tuple:
+        check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
+
+        mask = np.full(len(inds),True)
+        for n in inds:
+            if np.max(spec[n,:,:,:]) < self.threshold or np.isnan(spec[n,:,:,:]).any():
+                mask[n] = False
+
+        new_inds = inds[mask]
+        new_spec = spec[mask,:,:,:]
+
+        check_that_spectra_are_consistent(new_spec, dirs, freq, expected_dim=2)
+
+        return new_spec, dirs, freq, new_inds
+
+    def __str__(self):
+        return(f"Removing spectra with all values less than {self.threshold} or with NaN's...")
+
 class ReGridDirs(BoundaryProcessor):
     """Interpolates the spectra to have the same resoltuon but to start from
     a certain values, e.g. 0."""

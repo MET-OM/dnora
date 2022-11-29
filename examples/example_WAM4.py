@@ -6,8 +6,8 @@ from dnora import grd, mdl, bnd
 # DEFINE GRID OBJECT
 # =============================================================================
 # Set grid definitions
-#grid = grd.Grid(lon=(4.00, 5.73), lat=(60.53, 61.25), name='Skjerjehamn')
-grid = grd.Grid(lon=(5.724778-0.8, 5.724778+0.8), lat=(59.480911-0.4, 59.480911+0.4), name='sula_trondheim')
+grid = grd.Grid(lon=(4.00, 5.73), lat=(60.53, 61.25), name='Skjerjehamn')
+#grid = grd.Grid(lon=(5.724778-0.8, 5.724778+0.8), lat=(59.480911-0.4, 59.480911+0.4), name='sula_trondheim')
 
 
 grid.set_spacing(dm=1000)

@@ -82,6 +82,8 @@ class BoundaryReader(ABC):
             return self._source
         return 'remote'
 
+    def post_processing(self):
+        return None
     #def __str__(self):
         #return (f"{self.start_time} - {self.end_time}")
 
@@ -147,7 +149,7 @@ class DnoraNc(BoundaryReader):
         ds = ds.sel(inds=inds)
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
         self._convention = SpectralConvention[ds.spectral_convention.upper()]
-        
+
         return ds.time.values, ds.freq.values, ds.dirs.values, ds.spec.values, lon, lat, x, y, ds.attrs
 
 class ForceFeed(BoundaryReader):
