@@ -14,12 +14,10 @@ grid.set_spacing(dm=1000)
 #grid.import_topo(grd.read.EMODNET2020(tile='C5'))
 grid.import_topo(grd.read.KartverketNo50m(folder='/home/janvb/Documents/Kartverket50m'))
 grid.mesh_grid()
-breakpoint()
 # Create a ModelRun-object
 model = mdl.WW3_NORA3(grid, start_time='2018-08-25T00:00',
                        end_time='2018-08-25T01:00', dry_run=False)
 model.import_boundary()
-model.plot_grid()
 breakpoint()
 
 model.boundary_to_spectra()

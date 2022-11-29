@@ -107,11 +107,12 @@ class Boundary(PointSkeleton):
                     convention_warning=True
 
 
-            new_spec, new_dirs, new_freq = processor(self.spec(), self.dirs(), self.freq())
+            new_spec, new_dirs, new_freq, new_inds = processor(self.spec(), self.dirs(), self.freq(), self.inds())
+            new_inds = list(new_inds)
             metadata = self.metadata()
 
-            self._init_structure(x=self.x(strict=True), y=self.y(strict=True),
-                            lon=self.lon(strict=True), lat=self.lat(strict=True),
+            self._init_structure(x=self.x(strict=True, inds=new_inds), y=self.y(strict=True, inds=new_inds),
+                            lon=self.lon(strict=True, inds=new_inds), lat=self.lat(strict=True, inds=new_inds),
                             time=self.time(), freq=new_freq, dirs=new_dirs)
             self.ds_manager.set(new_spec, 'spec', coord_type='all')
             self.set_metadata(metadata) # Global attributes

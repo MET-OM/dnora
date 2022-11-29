@@ -48,6 +48,7 @@ def test_dlon_dlat_spherical():
 def test_dx_dy_spherical():
     grid = Grid(lon=(4,5), lat=(60,61))
     grid.set_spacing(dx=1110, dy=1110)
+    breakpoint()
     np.testing.assert_array_almost_equal(grid.dlat(),0.01,decimal=3)
     np.testing.assert_array_almost_equal(grid.dlon(),0.02,decimal=3)
     np.testing.assert_array_almost_equal(grid.dy(),1115,decimal=0)

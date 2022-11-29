@@ -26,7 +26,7 @@ def distance_2points(lat1, lon1, lat2, lon2) -> float:
     # a = np.sin(dlat / 2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2)**2
     # c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
     # distance = R * c # in km
-    # #return distance
+    # return distance
     return geopy.distance.geodesic((lat1, lon1), (lat2, lon2)).km
 
 
