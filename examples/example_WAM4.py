@@ -1,7 +1,7 @@
 # =============================================================================
 # IMPORT dnora
 # =============================================================================
-from dnora import grd, mdl, bnd
+from dnora import grd, mdl, bnd, wnd
 # =============================================================================
 # DEFINE GRID OBJECT
 # =============================================================================
@@ -16,11 +16,19 @@ grid.import_topo(grd.read.EMODNET2020(tile='*5'))
 grid.mesh_grid()
 
 # Create a ModelRun-object
-model = mdl.WW3(grid, start_time='2018-08-25T00:00',
-                       end_time='2018-08-25T01:00', dry_run=False)
-model.import_boundary(bnd.read_metno.WAM4km())
-model.plot_grid()
+model = mdl.WW3_WAM4km(grid, start_time='2018-08-25T00:00',
+                       end_time='2018-08-25T05:00', dry_run=False)
+
+model.export_grid(grd.write.REEF3D())
+
+
+#model.import_boundary(read_cache=True)
+#model.cache_boundary()
+#model.import_forcing(wnd.read_metno.MEPS(), write_cache=True, read_cache=True)
 breakpoint()
+model.boundary_to_spectra(write_cache=True)
+model.plot_grid()
+
 
 model.boundary_to_spectra()
 model.spectra_to_waveseries()

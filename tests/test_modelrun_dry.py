@@ -9,8 +9,8 @@ def test_model_one_point():
 
     model.export_boundary(bnd.write.SWAN())
     model.export_forcing(wnd.write.SWAN())
-    model.export_spectra(spc.write.DumpToNc())
-    model.export_waveseries(wsr.write.DumpToNc())
+    model.export_spectra(spc.write.DnoraNc())
+    model.export_waveseries(wsr.write.DnoraNc())
     model.write_input_file(inp.SWAN())
     model.run_model(run.SWAN())
 
@@ -26,8 +26,8 @@ def test_model_one_area():
 
     model.export_boundary(bnd.write.SWAN())
     model.export_forcing(wnd.write.SWAN())
-    model.export_spectra(spc.write.DumpToNc())
-    model.export_waveseries(wsr.write.DumpToNc())
+    model.export_spectra(spc.write.DnoraNc())
+    model.export_waveseries(wsr.write.DnoraNc())
     model.write_input_file(inp.SWAN())
     model.run_model(run.SWAN())
     print(model)
@@ -43,8 +43,8 @@ def test_model_gridded():
 
     model.export_boundary(bnd.write.SWAN())
     model.export_forcing(wnd.write.SWAN())
-    model.export_spectra(spc.write.DumpToNc())
-    model.export_waveseries(wsr.write.DumpToNc())
+    model.export_spectra(spc.write.DnoraNc())
+    model.export_waveseries(wsr.write.DnoraNc())
     model.write_input_file(inp.SWAN())
     model.run_model(run.SWAN())
     print(model)
@@ -59,8 +59,8 @@ def test_model_one_point_cartesian():
 
     model.export_boundary(bnd.write.SWAN())
     model.export_forcing(wnd.write.SWAN())
-    model.export_spectra(spc.write.DumpToNc())
-    model.export_waveseries(wsr.write.DumpToNc())
+    model.export_spectra(spc.write.DnoraNc())
+    model.export_waveseries(wsr.write.DnoraNc())
     model.write_input_file(inp.SWAN())
     model.run_model(run.SWAN())
     print(model)
@@ -75,8 +75,8 @@ def test_model_one_area_cartesian():
 
     model.export_boundary(bnd.write.SWAN())
     model.export_forcing(wnd.write.SWAN())
-    model.export_spectra(spc.write.DumpToNc())
-    model.export_waveseries(wsr.write.DumpToNc())
+    model.export_spectra(spc.write.DnoraNc())
+    model.export_waveseries(wsr.write.DnoraNc())
     model.write_input_file(inp.SWAN())
     model.run_model(run.SWAN())
     print(model)
@@ -92,8 +92,8 @@ def test_model_gridded_cartesian():
 
     model.export_boundary(bnd.write.SWAN())
     model.export_forcing(wnd.write.SWAN())
-    model.export_spectra(spc.write.DumpToNc())
-    model.export_waveseries(wsr.write.DumpToNc())
+    model.export_spectra(spc.write.DnoraNc())
+    model.export_waveseries(wsr.write.DnoraNc())
     model.write_input_file(inp.SWAN())
     model.run_model(run.SWAN())
     print(model)

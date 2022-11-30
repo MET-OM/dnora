@@ -1,12 +1,11 @@
-from . import file_module
-from . import msg
-from . import aux_funcs
+from .. import msg
+from .. import aux_funcs
 import glob, os, re
 from calendar import monthrange
 import pandas as pd
 import numpy as np
 from dataclasses import dataclass
-from .file_module import FileNames
+from ..file_module import FileNames
 @dataclass
 class Cacher:
     dnora_obj: str

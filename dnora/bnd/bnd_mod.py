@@ -114,6 +114,13 @@ class Boundary(PointSkeleton):
             new_inds = list(new_inds)
 
             if new_inds:
+                del_inds = list(set(self.inds())-set(new_inds))
+                if del_inds:
+                    lon, lat = self.lonlat(native=True)
+                    msg.info(f"Removing the following points:")
+                    for ind in list(set(self.inds())-set(new_inds)):
+                        msg.plain(f"ind = {ind}, {self.x_str} = {lon[ind]}, {self.y_str} = {lat[ind]}")
+
                 metadata = self.metadata()
 
                 self._init_structure(x=self.x(strict=True, inds=new_inds), y=self.y(strict=True, inds=new_inds),

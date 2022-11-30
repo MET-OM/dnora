@@ -253,7 +253,7 @@ class Skeleton:
         return self.lat(**kwargs)
 
 
-    def x(self, strict=False, **kwargs) -> np.ndarray:
+    def x(self, strict: bool=False, normalize: bool=False, **kwargs) -> np.ndarray:
         """Returns the cartesian x-coordinate. If the grid is spherical a
         conversion to UTM coordinates is made based on the medain latitude.
 
@@ -283,11 +283,14 @@ class Skeleton:
                 if np.any(negmask):
                     x[negmask], __, __, __ = utm.from_latlon(-lat[negmask], self.lon(**kwargs)[negmask], force_zone_number=number, force_zone_letter=letter)
             #x, __, __, __ = utm.from_latlon(lat, self.lon(**kwargs), force_zone_number=number, force_zone_letter=letter)
-            return x
+        else:
+            x = self.ds_manager.get('x', **kwargs).values.copy()
 
-        return self.ds_manager.get('x', **kwargs).values.copy()
+        if normalize:
+            x = x - min(x)
+        return x
 
-    def y(self, strict=False, **kwargs) -> np.ndarray:
+    def y(self, strict: bool=False, normalize: bool=False, **kwargs) -> np.ndarray:
         """Returns the cartesian y-coordinate. If the grid is spherical a
         conversion to UTM coordinates is made based on the medain longitude.
 
@@ -323,9 +326,12 @@ class Skeleton:
                     y[negmask] = -y[negmask]
 
             #
-            return y
+        else:
+            y = self.ds_manager.get('y', **kwargs).values.copy()
 
-        return self.ds_manager.get('y', **kwargs).values.copy()
+        if normalize:
+            y = y - min(y)
+        return y
 
     def lon(self, strict=False, **kwargs) -> np.ndarray:
         """Returns the spherical lon-coordinate. If the grid is cartesian (UTM)
@@ -377,7 +383,7 @@ class Skeleton:
 
         return self.ds_manager.get('lat', **kwargs).values.copy()
 
-    def _xy(self, x: np.ndarray=None, y: np.ndarray=None, strict=False) -> tuple[np.ndarray, np.ndarray]:
+    def _xy(self, x: np.ndarray=None, y: np.ndarray=None, strict: bool=False, normalize: bool=False) -> tuple[np.ndarray, np.ndarray]:
         """Converts list of points to x and y (UTM) if necessary.
 
         Input is assumed to be in the native format (UTM for cartesian, WGS84
@@ -403,6 +409,11 @@ class Skeleton:
             if np.any(negmask):
                 x[negmask], y[negmask], __, __ = utm.from_latlon(-y[negmask], x[negmask], force_zone_number=number, force_zone_letter=letter)
                 y[negmask] = -y[negmask]
+
+        if normalize:
+            x = x - min(x)
+            y = y - min(y)
+
         return x, y
 
     def _lonlat(self, lon: np.ndarray=None, lat: np.ndarray=None, strict=False) -> tuple[np.ndarray, np.ndarray]:

@@ -156,6 +156,8 @@ def get_default_value(key: str, obj_type: str, primary: dict, fallback: dict):
     3) Returns ModelRun defaults (e.g. ModulRun-wnd-folder)
     """
 
+    obj_type = obj_type.lower()
+
     # Try dnora_obj specific fallback name
     fallback_name = None
     if fallback.get(obj_type) is not None:
@@ -189,98 +191,102 @@ def split_filepath(filepath: str) -> tuple[str, str]:
 
 @dataclass
 class FileNames:
-    format: str
-    dnora_obj: str
-    dict_of_object_names: list=None
-    clean_names: bool=True
-    _filename: str=None
-    _folder: str=None
-    _dateformat: str=None
-    edges_from_grid: bool=False
+    obj_type: str
+    format: str=None
+    dict_of_objects: dict=None
+    dict_of_object_names: dict=None
+    filename: str=None
+    folder: str=None
+    dateformat: str=None
+    edge_object: str=None
+    time_object: str='ModelRun'
     extension: str=None
-    start_time: str = None
-    end_time: str = None
 
     def __post_init__(self):
         defaults_file = Path(__file__).parent.joinpath(Path('defaults.yml'))
         with open(defaults_file, 'r') as file:
           self._defaults = yaml.safe_load(file)
+
+        self.format = self.format or self.dict_of_objects['ModelRun']._get_default_format()
         self.fallback = self._defaults['ModelRun']
         self.primary = self._defaults[self.format]
+
         if self.dict_of_object_names is None:
             self.dict_of_object_names = {}
 
-        dict_keys = [key.lower() for key in self.dict_of_object_names.keys()]
-        if isinstance(self.dnora_obj, str):
-            self.obj_type = self.dnora_obj
-        else:
-            self.obj_type = type(self.dnora_obj).__name__.lower()
-            if not self.obj_type in dict_keys:
-                self.dict_of_object_names[self.obj_type] = self.dnora_obj.name
-        if self.start_time is not None:
-            self.start_time = pd.to_datetime(self.start_time)
-        if self.end_time is not None:
-            self.end_time = pd.to_datetime(self.end_time)
-        #self.placeholders = self._defaults['list_of_placeholders']
+        for key, value in self.dict_of_objects.items():
+            if key not in self.dict_of_object_names.keys() and value is not None:
+                self.dict_of_object_names[key] = value.name
 
-    def dateformat(self) -> str:
-        return self._dateformat or get_default_value('dateformat', self.obj_type, self.primary, self.fallback)
+        if self.edge_object is None:
+            self.edge_object = self.obj_type
 
-    def filename(self, extension: str=None, start_time: str=None, end_time: str=None, plot: bool=False) -> str:
-        if plot:
-            key = 'plotname'
+        # dict_keys = [key.lower() for key in self.dict_of_object_names.keys()]
+        # if isinstance(self.dnora_obj, str):
+        #     self.obj_type = self.dnora_obj
+        # else:
+        #     self.obj_type = type(self.dnora_obj).__name__.lower()
+        #     if not self.obj_type in dict_keys:
+        #         self.dict_of_object_names[self.obj_type] = self.dnora_obj.name
+
+    def get_start_time(self):
+        if self.time_object == 'ModelRun':
+            return pd.to_datetime(self.dict_of_objects['ModelRun'].start_time)
         else:
-            key = 'filename'
-        filename = self._filename or get_default_value(key, self.obj_type, self.primary, self.fallback)
-        filename = self.replace_placeholders(filename, start_time, end_time)
+            return self.dict_of_objects[self.time_object].time()[0]
+
+    def get_end_time(self):
+        if self.time_object == 'ModelRun':
+            return pd.to_datetime(self.dict_of_objects['ModelRun'].end_time)
+        else:
+            return self.dict_of_objects[self.time_object].time()[-1]
+
+    def get_dateformat(self) -> str:
+        return self.dateformat or get_default_value('dateformat', self.obj_type, self.primary, self.fallback)
+
+    def get_filename(self, extension: str=None, start_time: str=None, end_time: str=None, key: str='filename', clean: bool=True, edge_object: str=None) -> str:
+        filename = self.filename or get_default_value(key, self.obj_type, self.primary, self.fallback)
+        start_time = start_time or self.get_start_time()
+        end_time = end_time or self.get_end_time()
+
+        filename = self.replace_placeholders(filename, start_time, end_time, edge_object=edge_object)
+
         extension = extension or self.extension
         if extension is None:
             return Path(filename)
         return f'{Path(filename)}.{extension}'
 
-    def folder(self, plot: bool=False) -> str:
-        if plot:
-            key = 'plotfolder'
-        else:
-            key = 'folder'
-        folder = self._folder or get_default_value(key, self.obj_type, self.primary, self.fallback)
+    def get_folder(self, key: str='folder', clean: bool=True, edge_object: str=None) -> str:
+        folder = self.folder or get_default_value(key, self.obj_type, self.primary, self.fallback)
 
-        return Path(self.replace_placeholders(folder))
+        return Path(self.replace_placeholders(folder, edge_object=edge_object))
 
 
-    def filepath(self, extension: str=None, start_time: str=None, end_time: str=None) -> str:
-        return add_folder_to_filename(self.filename(extension, start_time, end_time), self.folder())
+    def get_filepath(self, extension: str=None, start_time: str=None, end_time: str=None, clean: bool=True, edge_object: str=None) -> str:
+        return add_folder_to_filename(self.get_filename(extension, start_time, end_time, edge_object=edge_object), self.get_folder(edge_object=edge_object))
 
-    def create_folder(self, plot: bool=False) -> None:
-        folder = Path(self.folder(plot=plot))
+    def create_folder(self, key: str='folder', edge_object: str=None) -> None:
+        folder = Path(self.get_folder(key=key, edge_object=edge_object))
 
         if not folder.is_dir():
             msg.plain(f"Creating folder {str(folder)}")
             folder.mkdir(parents=True)
 
-    def replace_placeholders(self, unclean_string: str, start_time: str=None, end_time: str=None) -> str:
+    def clean(self, filename: str) -> str:
+        return clean(filename)
+
+    def replace_placeholders(self, unclean_string: str, start_time=None, end_time=None, edge_object: str=None) -> str:
         unclean_string = replace_objects(unclean_string, self.dict_of_object_names)
-        if not isinstance(self.dnora_obj, str):
-            if self.edges_from_grid:
-                lon = self.dnora_obj.grid().edges('lon', strict=True)
-                lat = self.dnora_obj.grid().edges('lat', strict=True)
-                x = self.dnora_obj.grid().edges('x', strict=True)
-                y = self.dnora_obj.grid().edges('y', strict=True)
-            else:
-                lon = self.dnora_obj.edges('lon', strict=True)
-                lat = self.dnora_obj.edges('lat', strict=True)
-                x = self.dnora_obj.edges('x', strict=True)
-                y = self.dnora_obj.edges('y', strict=True)
+        edge_object =  self.dict_of_objects[edge_object or self.edge_object]
 
-            unclean_string = replace_lonlat(unclean_string, lon, lat)
-            unclean_string = replace_xy(unclean_string, x, y)
-            start_time = start_time or self.dnora_obj.time()[0]
-            end_time = end_time or self.dnora_obj.time()[1]
-            clean_string = replace_times(unclean_string, self.dateformat(), [start_time, end_time])
-        else:
-            clean_string = unclean_string
+        lon = edge_object.edges('lon', strict=True)
+        lat = edge_object.edges('lat', strict=True)
+        x = edge_object.edges('x', strict=True)
+        y = edge_object.edges('y', strict=True)
 
-        if self.clean_names:
-            clean_string = clean(clean_string)
+        unclean_string = replace_lonlat(unclean_string, lon, lat)
+        unclean_string = replace_xy(unclean_string, x, y)
+
+        clean_string = replace_times(unclean_string, self.get_dateformat(), [start_time, end_time])
 
         return clean_string

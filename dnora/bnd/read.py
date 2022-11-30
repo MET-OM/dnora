@@ -71,8 +71,18 @@ class BoundaryReader(ABC):
 
         return time, freq, dirs, spec, lon, lat, x, y, metadata
 
+
     def name(self) -> str:
         return type(self).__name__
+
+    def set_convention(self, convention: SpectralConvention) -> None:
+        if isinstance(convention, str):
+            self._convention = SpectralConvention[convention.upper()]
+        else:
+            self._convention = convention
+
+    def convention(self) -> SpectralConvention:
+        return self._convention
 
     def set_source(self, source: str) -> None:
         self._source = source
@@ -92,11 +102,8 @@ class ConstantBoundary(BoundaryReader):
         self.spec = spec
         self.metadata = metadata
         self.cartesian = cartesian
-        self.spectral_convention = spectral_convention
+        self.set_convention(spectral_convention)
         self.grid = grid
-
-    def convention(self) -> SpectralConvention:
-        return self.spectral_convention
 
     def get_coordinates(self, grid, start_time) -> tuple:
         lon, lat, x, y = aux_funcs.get_coordinates_from_grid(self.grid, self.cartesian, list=True)
@@ -108,14 +115,14 @@ class ConstantBoundary(BoundaryReader):
         lon, lat, x, y = aux_funcs.get_coordinates_from_grid(self.grid, self.cartesian, list=True)
         freq = np.array(range(1,11))/10.
 
-        if self.spectral_convention in [SpectralConvention.WW3, SpectralConvention.MATHVEC]:
+        if self.convention() in [SpectralConvention.WW3, SpectralConvention.MATHVEC]:
             dirs = np.mod(np.linspace(90.,-255.,24),360)
         else:
             dirs = np.linspace(0.,345.,24)
 
-        if self.spectral_convention in [SpectralConvention.MATH, SpectralConvention.MATHVEC]:
+        if self.convention() in [SpectralConvention.MATH, SpectralConvention.MATHVEC]:
             north = 90
-        elif self.spectral_convention in [SpectralConvention.MET]:
+        elif self.convention() in [SpectralConvention.MET]:
             north = 180
         else:
             north = 0
@@ -133,9 +140,6 @@ class DnoraNc(BoundaryReader):
     def __init__(self, files: str) -> None:
         self.files = files
 
-    def convention(self) -> SpectralConvention:
-        return copy(self._convention)
-
     def get_coordinates(self, grid, start_time) -> Tuple:
         data = xr.open_dataset(self.files[0]).isel(time = [0])
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(data)
@@ -148,7 +152,8 @@ class DnoraNc(BoundaryReader):
         ds = xr.open_mfdataset(self.files, preprocess=_crop, data_vars='minimal')
         ds = ds.sel(inds=inds)
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
-        self._convention = SpectralConvention[ds.spectral_convention.upper()]
+        if not hasattr(self, '-_convention'):
+            self.set_convention(ds.spectral_convention)
 
         return ds.time.values, ds.freq.values, ds.dirs.values, ds.spec.values, lon, lat, x, y, ds.attrs
 
@@ -160,11 +165,8 @@ class ForceFeed(BoundaryReader):
         self.spec = copy(spec)
         self.lon = copy(lon)
         self.lat = copy(lat)
-        self._convention = copy(convention)
+        self.set_convention(convention)
         return
-
-    def convention(self) -> SpectralConvention:
-        return copy(self._convention)
 
     def get_coordinates(self, grid, start_time) -> Tuple:
         return copy(self.lon), copy(self.lat)

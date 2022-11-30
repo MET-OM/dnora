@@ -17,9 +17,6 @@ class PointSkeleton(Skeleton):
     4) Methods xy() / lonlat() are identical to e.g. (x(), y()).
     """
 
-    # def __init__(self, x=None, y=None, lon=None, lat=None, time=None, name='PointyData'):
-    #     self.data = super()._create_structure(x, y, lon, lat, time)
-    #     self.data.attrs['name'] = name
     def is_gridded(self) -> bool:
         return False
 
@@ -52,7 +49,7 @@ class PointSkeleton(Skeleton):
 
         return lon[mask], lat[mask]
 
-    def xy(self, mask: np.array=None, strict=False, **kwargs) -> tuple[np.ndarray, np.ndarray]:
+    def xy(self, mask: np.array=None, strict=False, normalize: bool=False, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of x and y of all points.
         If strict=True, then None is returned if grid is sperical.
 
@@ -62,7 +59,7 @@ class PointSkeleton(Skeleton):
         if mask is None:
             mask = np.full(super().size('spatial', **kwargs), True)
 
-        x, y = super().x(strict=strict, **kwargs), super().y(strict=strict, **kwargs)
+        x, y = super().x(strict=strict, normalize=normalize, **kwargs), super().y(strict=strict, normalize=normalize, **kwargs)
 
         if x is None:
             return None, None

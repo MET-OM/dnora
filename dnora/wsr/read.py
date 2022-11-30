@@ -23,7 +23,7 @@ def dict_of_wave_parameters():
     dict_of_wps = {}
     for member in list_of_members:
         if inspect.isclass(member[1]):
-            try: 
+            try:
                 wps = [member[1]()]
             except:
                 wps = None
@@ -43,7 +43,7 @@ def dict_of_wave_parameters():
                         for m in np.linspace(-10,10,41):
                             wps.append(member[1](n,m))
                 except:
-                    wps = None 
+                    wps = None
 
 
             if wps is not None and isinstance(wps[0], WaveParameter):
@@ -147,5 +147,5 @@ class DnoraNc(WaveSeriesReader):
         for var in ds.data_vars:
             if var not in ['lon', 'lat', 'x', 'y']:
                 data[dict_of_wps[var]] = ds.get(var).values
-        breakpoint()   
+
         return ds.get('time'), data, lon, lat, x, y, ds.attrs

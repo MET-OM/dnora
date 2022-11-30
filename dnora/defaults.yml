@@ -24,6 +24,9 @@ list_of_placeholders:
 ModelRun:
   plotfolder: 'figures'
   plotname: 'dnora_plot'
+  folder: 'output'
+  filename: 'dnorafile'
+  dateformat: '%Y%m%dT%H%M'
   grid:
     folder: output
     filename: 'grid_#Grid'

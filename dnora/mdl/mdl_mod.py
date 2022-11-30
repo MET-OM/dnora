@@ -26,7 +26,8 @@ from ..file_module import FileNames
 from typing import Union
 # Import default values and aux_funcsiliry functions
 from .. import msg
-from ..cacher import Cacher
+from ..cacher.cacher import Cacher
+from ..cacher.cache_decorator import cached_reader
 import os, glob
 from .. import file_module
 from ..converters import convert_swash_mat_to_netcdf
@@ -45,14 +46,12 @@ class ModelRun:
         self._global_dry_run = dry_run
         self._dry_run = False  # Set by methods
 
+    @cached_reader('Boundary', bnd.read.DnoraNc)
     def import_boundary(self, boundary_reader: bnd.read.BoundaryReader=None,
                         point_picker: PointPicker=None, name: str=None,
                         expansion_factor: float=1.5,
                         dry_run: bool=False,
-                        source: str='remote',
-                        write_cache: bool=False,
-                        read_cache: bool=False,
-                        cache_name: str=None) -> None:
+                        source: str='remote') -> None:
         """Imports boundary spectra.
 
         source = 'remote' (default) / '<folder>' / 'met'
@@ -68,35 +67,18 @@ class ModelRun:
         point_picker = point_picker or self._get_point_picker()
 
         # This is to allow importing from cache using only a name
-        if boundary_reader is None and not read_cache:
+        if boundary_reader is None:
             raise Exception('Define a BoundaryReader!')
-        if point_picker is None and not read_cache:
+        if point_picker is None:
             raise Exception('Define a PointPicker!')
 
-        if boundary_reader is not None:
-            name = name or boundary_reader.name()
-            boundary_reader.set_source(source)
-        else:
-            convention = SpectralConvention.OCEAN
-            msg.info('No BoundaryReader given, assuming Oceanic convention in spectra!')
+        name = name or boundary_reader.name()
+        boundary_reader.set_source(source)
 
         if name is None:
             raise ValueError('Provide either a name or a BoundaryReader that will then define the name!')
 
         self._boundary = bnd.Boundary(grid=self.grid(), name=name)
-
-        # Prepare for working with cahced data if we have to
-        if write_cache or read_cache:
-            cacher = Cacher(self.boundary(), cache_name)
-
-        # Read whatever we have in the chached data to start with
-        # Setting the reader to read standard DNORA netcdf-files
-
-        if read_cache and not cacher.empty():
-            msg.info('Reading boundary data from cache!!!')
-            original_boundary_reader = copy(boundary_reader)
-            boundary_reader = bnd.read.DnoraNc(files=glob.glob(f'{cacher.filepath(extension=False)}*'))
-
 
         # Import the boundary spectra into the Boundary-object
         if not self.dry_run():
@@ -108,33 +90,11 @@ class ModelRun:
         else:
             msg.info('Dry run! No boundary spectra will be imported.')
 
-        # Patch data if read from cache and all data not found
-        if read_cache and not cacher.empty():
-            patch_start, patch_end = cacher.determine_patch_periods(self.start_time, self.end_time)
-            if patch_start:
-                msg.info('Not all data found in cache. Patching from original source...')
-
-                for t0, t1 in zip(patch_start, patch_end):
-                    boundary_temp = bnd.Boundary(self.grid())
-                    boundary_temp.import_boundary(self.grid(), start_time=t0, end_time=t1,
-                                    boundary_reader=original_boundary_reader,
-                                    point_picker=point_picker,
-                                    expansion_factor=expansion_factor)
-                    self.boundary()._absorb_object(boundary_temp, 'time')
-
-        # Dump monthly netcdf-files that will now be in standard DNORA format
-        if write_cache:
-            msg.info('Caching data:')
-            cacher.write_cache()
-
-
+    @cached_reader('Forcing', wnd.read.DnoraNc)
     def import_forcing(self, forcing_reader: wnd.read.ForcingReader=None,
                         name: str=None, dry_run: bool=False,
                         source: str='remote',
-                        expansion_factor: float=1.2,
-                        write_cache: bool=False,
-                        read_cache: bool=False,
-                        cache_name: str=None) -> None:
+                        expansion_factor: float=1.2) -> None:
         """Imports wind forcing.
 
         source = 'remote' (default) / '<folder>' / 'met'
@@ -149,29 +109,16 @@ class ModelRun:
         forcing_reader = forcing_reader or self._get_forcing_reader()
 
         # This is to allow importing from cache using only a name
-        if forcing_reader is None and not read_cache:
+        if forcing_reader is None:
             raise Exception('Define a ForcingReader!')
 
-        if forcing_reader is not None:
-            name = name or forcing_reader.name()
-            forcing_reader.set_source(source)
+        name = name or forcing_reader.name()
+        forcing_reader.set_source(source)
 
         if name is None:
             raise ValueError('Provide either a name or a ForcingReader that will then define the name!')
 
         self._forcing = wnd.Forcing(grid=self.grid(), name=name)
-
-        # Prepare for working with cahced data if we have to
-        if write_cache or read_cache:
-            cacher = Cacher(self.forcing(), cache_name)
-
-        # Read whatever we have in the chached data to start with
-        # Setting the reader to read standard DNORA netcdf-files
-
-        if read_cache and not cacher.empty():
-            msg.info('Reading forcing data from cache!!!')
-            original_forcing_reader = copy(forcing_reader)
-            forcing_reader = wnd.read.DnoraNc(files=glob.glob(f'{cacher.filepath(extension=False)}*'))
 
         # Import the forcing data into the Forcing-object
         if not self.dry_run():
@@ -182,34 +129,12 @@ class ModelRun:
         else:
             msg.info('Dry run! No forcing will be imported.')
 
-        # Patch data if read from cache and all data not found
-        if read_cache and not cacher.empty():
-            patch_start, patch_end = cacher.determine_patch_periods(self.start_time, self.end_time)
-            if patch_start:
-                msg.info('Not all data found in cache. Patching from original source...')
-
-                for t0, t1 in zip(patch_start, patch_end):
-                    forcing_temp = wnd.Forcing(self.grid())
-                    forcing_temp.import_forcing(self.grid(), start_time=t0, end_time=t1,
-                                    forcing_reader=original_forcing_reader,
-                                    expansion_factor=expansion_factor)
-                    self.forcing()._absorb_object(forcing_temp, 'time')
-
-        # Dump monthly netcdf-files that will now be in standard DNORA format
-        if write_cache:
-            msg.info('Caching data:')
-            cacher.write_cache()
-
-
-
+    @cached_reader('Spectra', spc.read.DnoraNc)
     def import_spectra(self, spectral_reader: SpectralReader=None,
                         point_picker: PointPicker=None,
                         name: str=None, expansion_factor: float=1.5,
                         dry_run: bool=False,
-                        source: str='remote',
-                        write_cache: bool=False,
-                        read_cache: bool=False,
-                        cache_name: str=None) -> None:
+                        source: str='remote') -> None:
         """Imports omnidirectional spectra.
 
         source = 'remote' (default) / '<folder>' / 'met'
@@ -224,37 +149,19 @@ class ModelRun:
         spectral_reader = spectral_reader or self._get_spectral_reader()
 
         # This is to allow importing from cache using only a name
-        if spectral_reader is None and not read_cache:
+        if spectral_reader is None:
             raise Exception('Define a SpectralReader!')
-        if point_picker is None and not read_cache:
+        if point_picker is None:
             raise Exception('Define a PointPicker!')
 
-        if spectral_reader is not None:
-            name = name or spectral_reader.name()
-            convention = spectral_reader.convention()
-            spectral_reader.set_source(source)
-        else:
-            convention = SpectralConvention.OCEAN
-            msg.info('No SpectralReader given, assuming Oceanic convention in spectra!')
+        name = name or spectral_reader.name()
+        spectral_reader.set_source(source)
 
         if name is None:
             raise ValueError('Provide either a name or a SpectralReader that will then define the name!')
 
         # Create spectral object
         self._spectra = spc.Spectra(grid=self.grid(), name=name)
-
-        # Prepare for working with cahced data if we have to
-        if write_cache or read_cache:
-            cacher = Cacher(self.spectra(), cache_name)
-
-        # Read whatever we have in the chached data to start with
-        # Setting the reader to read standard DNORA netcdf-files
-        if read_cache and not cacher.empty():
-            msg.info('Reading spectral data from cache!!!')
-            original_spectral_reader = copy(spectral_reader)
-            spectral_reader = spc.read.DnoraNc(files=glob.glob(f'{cacher.filepath(extension=False)}*'),
-                                                convention=convention)
-            point_picker = point_picker or bnd.pick.TrivialPicker()
 
         # Import the forcing data into the Forcing-object
         if not self.dry_run():
@@ -266,34 +173,12 @@ class ModelRun:
         else:
             msg.info('Dry run! No omnidirectional spectra will be imported.')
 
-        # Patch data if read from cache and all data not found
-        if read_cache and not cacher.empty() and original_spectral_reader is not None:
-            patch_start, patch_end = cacher.determine_patch_periods(self.start_time, self.end_time)
-            if patch_start:
-                msg.info('Not all data found in cache. Patching from original source...')
-
-                for t0, t1 in zip(patch_start, patch_end):
-                    spectra_temp = spc.Spectra(self.grid())
-                    spectra_temp.import_spectra(self.grid(), start_time=t0, end_time=t1,
-                                    spectral_reader=original_spectral_reader,
-                                    point_picker=point_picker,
-                                    expansion_factor=expansion_factor)
-                    self.spectra()._absorb_object(spectra_temp, 'time')
-
-        # Dump monthly netcdf-files that will now be in standard DNORA format
-        if write_cache:
-            msg.info('Caching data:')
-            cacher.write_cache()
-
-
+    @cached_reader('WaveSeries', wsr.read.DnoraNc)
     def import_waveseries(self, waveseries_reader: WavesSeriesReader=None,
                         point_picker: PointPicker=None,
                         name: str=None, expansion_factor: float=1.5,
                         dry_run: bool=False,
-                        source: str='remote',
-                        write_cache: bool=False,
-                        read_cache: bool=False,
-                        cache_name: str=None) -> None:
+                        source: str='remote') -> None:
 
         """Imports wave timeseries data.
 
@@ -308,31 +193,18 @@ class ModelRun:
         waveseries_reader = waveseries_reader or self._get_waveseries_reader()
 
         # This is to allow importing from cache using only a name
-        if waveseries_reader is None and not read_cache:
+        if waveseries_reader is None:
             raise Exception('Define a WaveSeriesReader!')
-        if point_picker is None and not read_cache:
+        if point_picker is None:
             raise Exception('Define a PointPicker!')
 
-        if waveseries_reader is not None:
-            name = name or waveseries_reader.name()
-            waveseries_reader.set_source(source)
+        name = name or waveseries_reader.name()
+        waveseries_reader.set_source(source)
 
         if name is None:
             raise ValueError('Provide either a name or a WaveSeriesReader that will then define the name!')
 
         self._waveseries = WaveSeries(grid=self.grid(), name=name)
-
-        # Prepare for working with cahced data if we have to
-        if write_cache or read_cache:
-            cacher = Cacher(self.waveseries(), cache_name)
-
-        # Read whatever we have in the chached data to start with
-        # Setting the reader to read standard DNORA netcdf-files
-        if read_cache and not cacher.empty():
-            msg.info('Reading WaveSeries data from cache!!!')
-            original_waveseries_reader = copy(waveseries_reader)
-            waveseries_reader = wsr.read.DnoraNc(files=glob.glob(f'{cacher.filepath(extension=False)}*'))
-            point_picker = point_picker or bnd.pick.TrivialPicker()
 
         # Import the forcing data into the Forcing-object
         if not self.dry_run():
@@ -344,86 +216,23 @@ class ModelRun:
         else:
             msg.info('Dry run! No wave data will be imported.')
 
-        # Patch data if read from cache and all data not found
-        if read_cache and not cacher.empty() and original_waveseries_reader is not None:
-            patch_start, patch_end = cacher.determine_patch_periods(self.start_time, self.end_time)
-            if patch_start:
-                msg.info('Not all data found in cache. Patching from original source...')
+    def cache_boundary(self):
+        """Writes existing data to cached files."""
+        self.export_boundary(boundary_writer=bnd.write.DnoraNc(), format='Cache')
 
-                for t0, t1 in zip(patch_start, patch_end):
-                    waveseries_temp = wsr.WaveSeries(self.grid())
-                    waveseries_temp.import_waveseries(self.grid(), start_time=t0, end_time=t1,
-                                    waveseries_reader=original_waveseries_reader,
-                                    point_picker=point_picker,
-                                    expansion_factor=expansion_factor)
-                    self.spectra()._absorb_object(waveseries_temp, 'time')
+    def cache_spectra(self):
+        """Writes existing data to cached files."""
+        self.export_spectra(spectral_writer=spc.write.DnoraNc(), format='Cache')
 
-        # Dump monthly netcdf-files that will now be in standard DNORA format
-        if write_cache:
-            msg.info('Caching data:')
-            cacher.write_cache()
+    def cache_forcing(self):
+        """Writes existing data to cached files."""
+        self.export_forcing(forcing_writer=wnd.write.DnoraNc(), format='Cache')
 
-    def cache_boundary(self, cache_name: str=None, name: str=None):
-        """Writes existing boundary data to cached files.
+    def cache_waveseries(self):
+        """Writes existing data to cached files."""
+        self.export_waveseries(waveseries_writer=wsr.write.DnoraNc(), format='Cache')
 
-        .cache_boundary(cache_name='bnd_cache_test', name='MyBoundary').nc
-
-        Default: <Boundary name>/bnd_cache_<grid area>_YYYYMM.nc
-        """
-
-        if name is not None:
-            self.boundary().name = name
-        cacher = Cacher(self.boundary(), cache_name)
-        msg.info('Caching data:')
-        cacher.write_cache()
-
-    def cache_forcing(self, cache_name: str=None, name: str=None):
-        """Writes existing forcing data to cached files.
-
-        .cache_forcing(cache_name='wnd_cache_test', name='MyForcing')
-
-        writes monthly files to MyForcing/wnd_cache_test_YYYYMM.nc
-
-        Default: <Forcing name>/wnd_cache_<grid area>_YYYYMM.nc
-        """
-        if name is not None:
-            self.spectra().name = name
-        cacher = Cacher(self.spectra(), cache_name)
-        msg.info('Caching data:')
-        cacher.write_cache()
-
-    def cache_spectra(self, cache_name: str=None, name: str=None):
-        """Writes existing spectral data to cached files.
-
-        .cache_spectra(cache_name='spc_cache_test', name='MySpectra')
-
-        writes monthly files to MySpectra/spc_cache_test_YYYYMM.nc
-
-        Default: <Spectra name>/spc_cache_<grid area>_YYYYMM.nc
-        """
-        if name is not None:
-            self.spectra().name = name
-        cacher = Cacher(self.spectra(), cache_name)
-        msg.info('Caching data:')
-        cacher.write_cache()
-
-    def cache_waveseries(self, cache_name: str=None, name: str=None):
-        """Writes existing waveseries data to cached files.
-
-        .cache_waveseries(cache_name='wsr_cache_test', name='MyWaveSeries')
-
-        writes monthly files to MyWaveSeries/wsr_cache_test_YYYYMM.nc
-
-        Default: <WaveSeries name>/wsr_cache_<grid area>_YYYYMM.nc
-        """
-        if name is not None:
-            self.spectra().name = name
-        cacher = Cacher(self.spectra(), cache_name)
-        msg.info('Caching data:')
-        cacher.write_cache()
-
-    def boundary_to_spectra(self, dry_run: bool=False, name :str=None, write_cache=False,
-                            read_cache=False, cache_name=None):
+    def boundary_to_spectra(self, dry_run: bool=False, name :str=None, write_cache=False):
         self._dry_run = dry_run
         if self.boundary() is None:
             msg.warning('No Boundary to convert to Spectra!')
@@ -431,17 +240,16 @@ class ModelRun:
         spectral_reader = spc.read.BoundaryToSpectra(self.boundary())
         msg.header(spectral_reader, 'Converting the boundary spectra to omnidirectional spectra...')
         name = self.boundary().name
+
         if not self.dry_run():
             self.import_spectra(spectral_reader=spectral_reader,
                                 point_picker=bnd.pick.TrivialPicker(),
                                 name=name,
-                                write_cache=write_cache,
-                                read_cache=read_cache, cache_name=cache_name)
+                                write_cache=write_cache)
         else:
             msg.info('Dry run! No boundary will not be converted to spectra.')
 
-    def spectra_to_waveseries(self, dry_run: bool=False, write_cache=False,
-                            read_cache=False, cache_name=None):
+    def spectra_to_waveseries(self, dry_run: bool=False, write_cache=False):
         self._dry_run = dry_run
         if self.spectra() is None:
             msg.warning('No Spectra to convert to WaveSeries!')
@@ -454,22 +262,18 @@ class ModelRun:
             self.import_waveseries(waveseries_reader=waveseries_reader,
                                     point_picker=bnd.pick.TrivialPicker(),
                                     name=name,
-                                    write_cache=write_cache,
-                                    read_cache=read_cache, cache_name=cache_name)
+                                    write_cache=write_cache)
         else:
             msg.info('Dry run! No boundary will not be converted to spectra.')
 
-    def boundary_to_waveseries(self, dry_run: bool=False, write_cache=False,
-                            read_cache=False, cache_name=None):
-        self.boundary_to_spectra(dry_run=dry_run, write_cache=write_cache,
-                                read_cache=read_cache, cache_name=cache_name)
-        self.spectra_to_waveseries(dry_run=dry_run, write_cache=write_cache,
-                                read_cache=read_cache, cache_name=cache_name)
+    def boundary_to_waveseries(self, dry_run: bool=False, write_cache=False):
+        self.boundary_to_spectra(dry_run=dry_run, write_cache=write_cache)
+        self.spectra_to_waveseries(dry_run=dry_run, write_cache=write_cache)
 
 
     def export_grid(self, grid_writer: GridWriter=None,
                     filename: str=None, folder: str=None, dateformat: str=None,
-                    dry_run=False) -> None:
+                    format: str=None, dry_run=False) -> None:
         """Writes the grid data in the Grid-object to an external source,
         e.g. a file."""
         self._dry_run = dry_run
@@ -484,8 +288,8 @@ class ModelRun:
 
         msg.header(self._grid_writer, f"Writing grid topography from {self.grid().name}")
 
-        output_files = self._export_object(self.grid(),filename, folder, dateformat,
-                            writer_function=self._grid_writer)
+        output_files = self._export_object('Grid',filename, folder, dateformat,
+                            writer_function=self._grid_writer, format=format)
 
         # Write status file
         #infofilename = str(Path(output_files[0]).with_suffix('')) + '_dnora_info.txt'
@@ -493,7 +297,7 @@ class ModelRun:
 
     def export_boundary(self, boundary_writer: BoundaryWriter=None,
                         filename: str=None, folder: str=None,
-                        dateformat: str=None, dry_run=False) -> None:
+                        dateformat: str=None, format: str=None, dry_run=False) -> None:
         """Writes the spectra in the Boundary-object to an external source, e.g.
         a file."""
         self._dry_run = dry_run
@@ -512,12 +316,12 @@ class ModelRun:
         if not self.dry_run():
             self.boundary()._set_convention(self._boundary_writer.convention())
 
-        __ = self._export_object(self.boundary(), filename, folder, dateformat,
-                            writer_function=self._boundary_writer)
+        __ = self._export_object('Boundary', filename, folder, dateformat,
+                            writer_function=self._boundary_writer, format=format)
 
     def export_spectra(self, spectral_writer: SpectralWriter=None,
                         filename: str=None, folder: str=None,
-                        dateformat: str=None, dry_run=False) -> None:
+                        dateformat: str=None, format: str=None, dry_run=False) -> None:
         """Writes the spectra in the Spectra-object to an external source, e.g.
         a file."""
         self._dry_run = dry_run
@@ -537,12 +341,12 @@ class ModelRun:
             self.spectra()._set_convention(self._spectral_writer.convention())
 
         # Replace #Spectra etc and add file extension
-        __ = self._export_object(self.spectra(), filename, folder, dateformat,
-                            writer_function=self._spectral_writer)
+        __ = self._export_object('Spectra', filename, folder, dateformat,
+                            writer_function=self._spectral_writer, format=format)
 
     def export_waveseries(self, waveseries_writer: WaveSeriesWriter=None,
                         filename: str=None, folder: str=None,
-                        dateformat: str=None, dry_run=False) -> None:
+                        dateformat: str=None, format: str=None, dry_run=False) -> None:
         """Writes the data of the WaveSeries-object to an external source, e.g.
         a file."""
         self._dry_run = dry_run
@@ -559,12 +363,12 @@ class ModelRun:
             msg.header(self._waveseries_writer, f"Writing wave series data from {self.spectra().name}")
 
         # Replace #Spectra etc and add file extension
-        __ = self._export_object(self.waveseries(), filename, folder, dateformat,
-                            writer_function=self._waveseries_writer)
+        __ = self._export_object('WaveSeries', filename, folder, dateformat,
+                            writer_function=self._waveseries_writer, format=format)
 
     def export_forcing(self, forcing_writer: ForcingWriter=None,
                         filename: str=None, folder: str=None,
-                         dateformat: str=None, dry_run=False) -> None:
+                         dateformat: str=None, format: str=None, dry_run=False) -> None:
         """Writes the forcing data in the Forcing-object to an external source,
         e.g. a file."""
         self._dry_run = dry_run
@@ -582,8 +386,8 @@ class ModelRun:
             msg.header(self._forcing_writer, f"Writing wind forcing from DryRunForcing")
 
 
-        __ = self._export_object(self.forcing(), filename, folder, dateformat,
-                            writer_function=self._forcing_writer)
+        __ = self._export_object('Forcing', filename, folder, dateformat,
+                            writer_function=self._forcing_writer, format=format)
 
     def write_input_file(self, input_file_writer: InputFileWriter=None,
                         filename=None, folder=None, dateformat=None,
@@ -601,16 +405,13 @@ class ModelRun:
         msg.header(self._input_file_writer, "Writing model input file...")
 
         # Controls generation of file names using the proper defaults etc.
-        file_object = FileNames(format=self._get_default_format(),
-                                clean_names=self._input_file_writer._clean_filename(),
-                                dict_of_object_names=self.dict_of_object_names(),
-                                start_time=self.start_time,
-                                end_time=self.end_time,
-                                _filename=filename,
-                                _folder=folder,
-                                _dateformat=dateformat,
+        file_object = FileNames(dict_of_objects=self.dict_of_objects(),
+                                filename=filename,
+                                folder=folder,
+                                dateformat=dateformat,
                                 extension=self._input_file_writer._extension(),
-                                dnora_obj='input_file')
+                                obj_type='input_file',
+                                edge_object='Grid')
 
         file_object.create_folder()
 
@@ -626,14 +427,14 @@ class ModelRun:
 
         if self.dry_run():
             msg.info('Dry run! No files will be written.')
-            output_files = [file_object.filepath()]
+            output_files = [file_object.get_filepath()]
         else:
             # Write the grid using the InputFileWriter object
             output_files = self._input_file_writer(grid=self.grid(),
                             forcing=self.forcing(), boundary=self.boundary(),
                             spectra=self.spectra(), waveseries=self.waveseries(),
                             start_time=start_time, end_time=end_time,
-                            filename=file_object.filepath(),
+                            filename=file_object.get_filepath(),
                             grid_path=grid_path, forcing_path=forcing_path,
                             boundary_path=boundary_path)
             if type(output_files) is not list:
@@ -676,20 +477,17 @@ class ModelRun:
         else:
             extension = input_file_extension or 'swn'
 
-        file_object = FileNames(format=self._get_default_format(),
-                                clean_names=True,
-                                dict_of_object_names=self.dict_of_object_names(),
-                                start_time=self.start_time,
-                                end_time=self.end_time,
-                                _filename=primary_file,
-                                _folder=primary_folder,
-                                _dateformat=dateformat,
+        file_object = FileNames(dict_of_objects=self.dict_of_objects(),
+                                filename=primary_file,
+                                folder=primary_folder,
+                                dateformat=dateformat,
                                 extension=extension,
-                                dnora_obj='input_file')
+                                obj_type='model_executer',
+                                edge_object='Grid')
 
 
         msg.header(self._model_executer, "Running model...")
-        msg.plain(f"Using input file: {file_object.filepath()}")
+        msg.plain(f"Using input file: {file_object.get_filepath()}")
         if not self.dry_run():
             self._model_executer(input_file=file_object.filename(), model_folder=file_object.folder())
         else:
@@ -704,32 +502,29 @@ class ModelRun:
         """
         return self._dry_run or self._global_dry_run
 
-    def _export_object(self, dnora_obj, filename: str, folder: str, dateformat: str,
-                    writer_function: WritingFunction) -> list[str]:
+    def _export_object(self, obj_type, filename: str, folder: str, dateformat: str,
+                    writer_function: WritingFunction, format: str) -> list[str]:
 
         # Controls generation of file names using the proper defaults etc.
-        file_object = FileNames(format=self._get_default_format(),
-                                clean_names=writer_function._clean_filename(),
-                                dict_of_object_names=self.dict_of_object_names(),
-                                start_time=self.start_time,
-                                end_time=self.end_time,
-                                _filename=filename,
-                                _folder=folder,
-                                _dateformat=dateformat,
-                                extension=writer_function._extension(),
-                                dnora_obj=dnora_obj)
+        format = format or self._get_default_format()
+        file_object = FileNames(format=format,
+                                obj_type=obj_type,
+                                dict_of_objects=self.dict_of_objects(),
+                                filename=filename,
+                                folder=folder,
+                                dateformat=dateformat,
+                                extension=writer_function._extension())
         if self.dry_run():
             msg.info('Dry run! No files will be written.')
-            output_files = [file_object.filepath()]
+            output_files = [file_object.get_filepath()]
         else:
             # Write the object using the WriterFunction
             file_object.create_folder()
-            output_files = writer_function(dnora_obj, file_object.filepath())
+            output_files = writer_function(self.dict_of_objects(), file_object)
             if type(output_files) is not list:
                 output_files = [output_files]
 
         # Store name and location where file was written
-        obj_type = type(dnora_obj).__name__.lower()
         self._exported_to[obj_type] = []
         for file in output_files:
             self._exported_to[obj_type].append(file)
@@ -851,8 +646,8 @@ class ModelRun:
             fig = None
         if fig is not None:
             if save_fig:
-                fig.savefig(file_object.filepath(),bbox_inches='tight', dpi=300)
-                msg.to_file(file_object.filepath())
+                fig.savefig(file_object.get_filepath(),bbox_inches='tight', dpi=300)
+                msg.to_file(file_object.get_filepath())
             if show_fig:
                 fig.show()
         return figure_dict
@@ -895,7 +690,9 @@ class ModelRun:
 
 
     def dict_of_objects(self) -> dict[str: ModelRun, str: Grid, str: Forcing, str: Boundary, str: Spectra]:
-        return {'ModelRun': self, 'Grid': self.grid(), 'Topo': self.grid().raw(), 'Forcing': self.forcing(), 'Boundary': self.boundary(), 'Spectra': self.spectra(), 'WaveSeries': self.waveseries()}
+        return {'ModelRun': self, 'Grid': self.grid(), 'Topo': self.grid().raw(), 'Forcing': self.forcing(),
+                'Boundary': self.boundary(), 'Spectra': self.spectra(), 'WaveSeries': self.waveseries(),
+                'input_file': None, 'model_execturer': None}
 
     def list_of_objects(self) -> list[ModelRun, Grid, Forcing, Boundary, Spectra]:
         """[ModelRun, Boundary] etc."""

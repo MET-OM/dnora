@@ -13,7 +13,6 @@ from ..skeletons.point_skeleton import PointSkeleton
 from ..skeletons.datavar_factory import add_datavar
 from ..skeletons.coordinate_factory import add_time, add_frequency, add_direction
 from ..bnd.pick import PointPicker, TrivialPicker
-from ..cacher import Cacher
 #from ..skeletons.mask_factory import add_mask
 #from ..skeletons.datavar_factory import add_datavar
 from copy import deepcopy

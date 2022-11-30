@@ -131,45 +131,47 @@ class REEF3D(ModelRun):
     def _get_model_executer(self):
         return run.REEF3D()
 
-class SWAN_NORA3(SWAN):
+class NORA3(ModelRun):
     def _get_boundary_reader(self):
         return bnd.read_metno.NORA3()
 
     def _get_forcing_reader(self):
         return wnd.read_metno.NORA3()
 
-class SWAN_ERA5(SWAN):
+class ERA5(ModelRun):
     def _get_boundary_reader(self):
         return bnd.read_ec.ERA5()
 
     def _get_forcing_reader(self):
         return wnd.read_ec.ERA5()
 
-
-class SWASH_NORA3(SWASH):
+class WAM4km(ModelRun):
     def _get_boundary_reader(self):
-        return bnd.read_metno.NORA3()
+        return bnd.read_metno.WAM4km()
 
     def _get_forcing_reader(self):
-        return wnd.read_metno.NORA3()
+        return wnd.read_metno.MEPS()
 
-class WW3_NORA3(WW3):
-    def _get_boundary_reader(self):
-        return bnd.read_metno.NORA3()
+class SWAN_NORA3(SWAN, NORA3):
+    pass
 
-    def _get_forcing_reader(self):
-        return wnd.read_metno.NORA3()
+class SWAN_ERA5(SWAN, ERA5):
+    pass
 
-class OnePoint_NORA3(OnePoint):
-    def _get_boundary_reader(self):
-        return bnd.read_metno.NORA3()
+class SWAN_WAM4km(SWAN, WAM4km):
+    pass
 
-    def _get_forcing_reader(self):
-        return wnd.read_metno.NORA3()
+class SWASH_NORA3(SWASH, NORA3):
+    pass
 
-class OnePoint_ERA5(OnePoint):
-    def _get_boundary_reader(self):
-        return bnd.read_ec.ERA5()
+class WW3_NORA3(WW3, NORA3):
+    pass
 
-    def _get_forcing_reader(self):
-        return wnd.read_ec.ERA5()
+class WW3_WAM4km(WW3, WAM4km):
+    pass
+
+class OnePoint_NORA3(OnePoint, NORA3):
+    pass
+    
+class OnePoint_ERA5(OnePoint, ERA5):
+    pass

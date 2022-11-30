@@ -29,13 +29,6 @@ class ForcingWriter(ABC):
         file names."""
         return True
 
-    def _clean_filename(self):
-        """If this is set to False, then the ModelRun object does not clean
-        the filename, and possible placeholders (e.g. #T0) can still be
-        present.
-        """
-        return True
-
     @abstractmethod
     def __call__(self, forcing: Forcing, filename: str) -> List[str]:
         """Writed the data from the Forcing object and returns the file and
@@ -47,16 +40,39 @@ class Null(ForcingWriter):
     def _extension(self):
         return 'junk'
 
-    def __call__(self, forcing, filename):
+    def __call__(self, dict_of_objects: dict, file_object):
         return ''
 
+class DnoraNc(ForcingWriter):
+    def _extension(self) -> str:
+        return 'nc'
+
+    def __call__(self, dict_of_objects: dict, file_object) -> Tuple[str, str]:
+        output_files = []
+        forcing = dict_of_objects['Forcing']
+        for month in forcing.months():
+            t0 = f"{month.strftime('%Y-%m-01')}"
+            d1 = monthrange(int(month.strftime('%Y')), int(month.strftime('%m')))[1]
+            t1 = f"{month.strftime(f'%Y-%m-{d1}')}"
+
+            outfile = file_object.get_filepath(start_time=month, edge_object='Grid')
+
+            outfile = file_object.clean(outfile)
+            if os.path.exists(outfile):
+                os.remove(outfile)
+            forcing.ds().sel(time=slice(t0, t1)).to_netcdf(outfile)
+
+            output_files.append(outfile)
+        return output_files
 
 class WW3(ForcingWriter):
     """Writes wind forcing data to WAVEWATH III netcdf format."""
     def _extension(self):
         return 'nc'
 
-    def __call__(self, forcing: Forcing, filename: str) -> List[str]:
+    def __call__(self, dict_of_objects: dict, file_object) -> List[str]:
+        filename = file_object.get_filepath()
+        forcing = dict_of_objects['Forcing']
         forcing.ds().to_netcdf(filename)
         # WW3 need time to be first
         nco = Nco()
@@ -70,7 +86,9 @@ class SWAN(ForcingWriter):
     def _extension(self):
         return 'asc'
 
-    def __call__(self, forcing: Forcing, filename: str) -> List[str]:
+    def __call__(self, dict_of_objects: dict, file_object) -> List[str]:
+        filename = file_object.get_filepath()
+        forcing = dict_of_objects['Forcing']
 
         days = forcing.days()
         with open(filename, 'w') as file_out:

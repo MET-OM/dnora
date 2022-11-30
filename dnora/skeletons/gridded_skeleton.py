@@ -54,7 +54,7 @@ class GriddedSkeleton(Skeleton):
 
         return lon, lat
 
-    def xy(self, mask: np.array=None, order_by: str='y', strict=False, **kwargs) -> tuple[np.ndarray, np.ndarray]:
+    def xy(self, mask: np.array=None, order_by: str='y', strict=False, normalize: bool=False, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of x and y of all points.
         If strict=True, then None is returned if grid is sperical.
 
@@ -68,7 +68,7 @@ class GriddedSkeleton(Skeleton):
         x, y = self.native_xy(mask, order_by, **kwargs)
 
         # Transforms lon/lat to x/y if necessary
-        x, y = super()._xy(x, y, strict=strict)
+        x, y = super()._xy(x, y, strict=strict, normalize=normalize)
 
         if x is None:
             return None, None

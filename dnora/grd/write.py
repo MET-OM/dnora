@@ -23,13 +23,6 @@ class GridWriter(ABC):
         """Let the ModelRun object know which extension to add to the file name"""
         pass
 
-    def _clean_filename(self):
-        """If this is set to False, then the ModelRun object does not clean
-        the filename, and possible placeholders (e.g. #T0) can still be
-        present.
-        """
-        return True
-
     def _im_silent(self) -> bool:
         """Return False if you want to be responsible for printing out the
         file names."""
@@ -55,8 +48,9 @@ class BoundaryPoints(GridWriter):
     def _extension(self):
         return 'txt'
 
-    def __call__(self, grid: Grid, filename: str):
-        output_file = file_module.clean(filename, list_of_placeholders)
+    def __call__(self, dict_of_objects: dict, file_object) -> List[str]:
+        output_file = file_object.get_filepath()
+        grid = dict_of_objects['Grid']
 
         with open(output_file,'w') as f:
             if self.include_index and hasattr(grid, 'boundary_inds'):
@@ -78,7 +72,9 @@ class WW3(GridWriter):
         self.matrix = matrix
         return
 
-    def __call__(self, grid: Grid, filename: str) -> Tuple:
+    def __call__(self, dict_of_objects: dict, file_object) -> List[str]:
+        filename = file_object.get_filepath()
+        grid = dict_of_objects['Grid']
 
         mask_out = np.zeros(grid.topo().shape)
         mask_out[grid.land_sea_mask()] = 1
@@ -126,7 +122,9 @@ class SWAN(GridWriter):
     def _extension(self):
         return 'bot'
 
-    def __call__(self, grid: Grid, filename: str) -> None:
+    def __call__(self, dict_of_objects: dict, file_object) -> List[str]:
+        filename = file_object.get_filepath()
+        grid = dict_of_objects['Grid']
 
         mask_out = np.ones(grid.topo().shape)
         mask_out[grid.land_sea_mask()] = 0
@@ -151,7 +149,9 @@ class Xyz(GridWriter):
     def _extension(self):
         return 'xyz'
 
-    def __call__(self, grid: Grid, filename: str) -> None:
+    def __call__(self, dict_of_objects: dict, file_object) -> List[str]:
+        filename = file_object.get_filepath()
+        grid = dict_of_objects['Grid']
 
         if self._use_raw:
             z = grid.raw_topo();
@@ -188,19 +188,16 @@ class REEF3D(GridWriter):
     def _extension(self):
         return 'dat'
 
-    def __call__(self, grid: Grid, filename: str) -> None:
+    def __call__(self, dict_of_objects: dict, file_object) -> List[str]:
+        filename = file_object.get_filepath()
 
         if self._use_raw:
-            z = grid.raw_topo();
-            [x, y, utm_zone, utm_letter] = utm.from_latlon(grid.raw_lat(), grid.raw_lon())
-            x = x-min(x) # metres from corner
-            y = y-min(y)
+            grid = dict_of_objects['Topo']
         else:
-            z = grid.topo();
-            x, y = np.meshgrid(np.linspace(0,grid.nx()*grid.dx(),grid.nx()), np.linspace(0,grid.ny()*grid.dy(),grid.ny()))
-            x = x.ravel()
-            y = y.ravel()
-            z = z.ravel()
+            grid = dict_of_objects['Grid']
+
+        z = grid.topo().ravel()
+        x, y = grid.xy(normalize=True)
 
         print('Max depth(m):',np.nanmax(z))
         z = -1*z +np.nanmax(z)# set at zero the maximum depth.

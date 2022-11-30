@@ -67,22 +67,44 @@ class Null(SpectralWriter):
     def _extension(self):
         return 'junk'
 
-    def __call__(self, spectra, filename):
+    def __call__(self, dict_of_objects: dict, file_object):
         return ''
+#
+# class DumpToNc(SpectralWriter):
+#     def __init__(self, convention: Union[SpectralConvention, str]=SpectralConvention.MET) -> None:
+#         self._convention = convention
+#         return
+#
+#     def _extension(self) -> str:
+#         return 'nc'
+#
+#     def __call__(self, dict_of_objects: dict, file_object) -> tuple[str, str]:
+#
+#         dict_of_objects['Spectra'].ds().to_netcdf(file_object.get_filepath())
+#
+#         return file_object.get_filepath()
 
-class DumpToNc(SpectralWriter):
-    def __init__(self, convention: Union[SpectralConvention, str]=SpectralConvention.MET) -> None:
-        self._convention = convention
-        return
-
+class DnoraNc(SpectralWriter):
     def _extension(self) -> str:
         return 'nc'
 
-    def __call__(self, spectra: Spectra, filename: str) -> tuple[str, str]:
+    def __call__(self, dict_of_objects: dict, file_object) -> Tuple[str, str]:
+        output_files = []
+        spectra = dict_of_objects['Spectra']
+        for month in spectra.months():
+            t0 = f"{month.strftime('%Y-%m-01')}"
+            d1 = monthrange(int(month.strftime('%Y')), int(month.strftime('%m')))[1]
+            t1 = f"{month.strftime(f'%Y-%m-{d1}')}"
 
-        spectra.ds().to_netcdf(filename)
+            outfile = file_object.get_filepath(start_time=month, edge_object='Grid')
 
-        return filename
+            outfile = file_object.clean(outfile)
+            if os.path.exists(outfile):
+                os.remove(outfile)
+            spectra.ds().sel(time=slice(t0, t1)).to_netcdf(outfile)
+
+            output_files.append(outfile)
+        return output_files
 
 class REEF3D(SpectralWriter):
     def __init__(self, convention: Union[SpectralConvention, str]=SpectralConvention.MET) -> None:
@@ -92,11 +114,13 @@ class REEF3D(SpectralWriter):
     def _extension(self) -> str:
         return 'dat'
 
-    def __call__(self, spectra: Spectra, filename: str) -> tuple[str, str]:
+    def __call__(self, dict_of_objects: dict, file_object) -> tuple[str, str]:
 
         # Take first spectra and first time step for now
         x = 0
         t = 0
+        filename = file_object.get_filepath()
+        spectra = dict_of_objects['Spectra']
         with open(filename, 'w') as f:
             spec = spectra.spec()[x,t,:]
             freq = spectra.freq()

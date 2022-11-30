@@ -5,7 +5,7 @@ from copy import copy
 from abc import ABC, abstractmethod
 import netCDF4
 import re
-
+from calendar import monthrange
 # Import abstract classes and needed instances of them
 from typing import TYPE_CHECKING, Tuple
 if TYPE_CHECKING:
@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 from .. import msg
 from .. import file_module
 from nco import Nco
+import os
 from .conventions import SpectralConvention
 
 class BoundaryWriter(ABC):
@@ -30,13 +31,6 @@ class BoundaryWriter(ABC):
     def _im_silent(self) -> bool:
         """Return False if you want to be responsible for printing out the
         file names."""
-        return True
-
-    def _clean_filename(self):
-        """If this is set to False, then the ModelRun object does not clean
-        the filename, and possible placeholders (e.g. #T0) can still be
-        present.
-        """
         return True
 
     def convention(self) -> SpectralConvention:
@@ -82,92 +76,92 @@ class Null(BoundaryWriter):
     def _extension(self) -> str:
         return 'junk'
 
-    def __call__(self, forcing, filename):
+    def __call__(self, dict_of_objects: dict, file_object):
         return ''
 
-class DumpToNc(BoundaryWriter):
-    def __init__(self, convention: Union[SpectralConvention, str]=SpectralConvention.OCEAN) -> None:
-        self._convention = convention
-        return
+# class DumpToNc(BoundaryWriter):
+#     def __init__(self, convention: Union[SpectralConvention, str]=SpectralConvention.OCEAN) -> None:
+#         self._convention = convention
+#         return
+#
+#     def _extension(self) -> str:
+#         return 'nc'
+#
+#     def __call__(self, boundary: Boundary, filename: str) -> Tuple[str, str]:
+#         boundary.ds().to_netcdf(filename)
+#         return filename
 
+class DnoraNc(BoundaryWriter):
     def _extension(self) -> str:
         return 'nc'
 
-    def __call__(self, boundary: Boundary, filename: str) -> Tuple[str, str]:
-        boundary.ds().to_netcdf(filename)
-        return filename
-
-
-class NcFiles(BoundaryWriter):
-    def __init__(self, convention: Union[SpectralConvention, str]=SpectralConvention.OCEAN) -> None:
-        self._convention = convention
-        return
-
-    def _extension(self) -> str:
-        return 'nc'
-
-    def _clean_filename(self):
-        return False
-
-    def __call__(self, boundary: Boundary, filename: str) -> Tuple[str, str]:
-
+    def __call__(self, dict_of_objects: dict, file_object) -> Tuple[str, str]:
         output_files = []
-        for n in boundary.x():
-            output_file = file_module.replace_lonlat(filename, lon=boundary.lon()[n], lat=boundary.lat()[n])
-            output_file = file_module.clean(output_file)
-            output_files.append(output_file)
+        boundary = dict_of_objects['Boundary']
+        for month in boundary.months():
+            t0 = f"{month.strftime('%Y-%m-01')}"
+            d1 = monthrange(int(month.strftime('%Y')), int(month.strftime('%m')))[1]
+            t1 = f"{month.strftime(f'%Y-%m-{d1}')}"
 
-            msg.to_file(output_file)
+            outfile = file_object.get_filepath(start_time=month, edge_object='Grid')
 
-            ds = boundary.slice_data(x=[n])
-            ds.to_netcdf(output_file)
+            outfile = file_object.clean(outfile)
+            if os.path.exists(outfile):
+                os.remove(outfile)
+            boundary.ds().sel(time=slice(t0, t1)).to_netcdf(outfile)
 
+            output_files.append(outfile)
         return output_files
+
+
+# class NcFiles(BoundaryWriter):
+#     def __init__(self, convention: Union[SpectralConvention, str]=SpectralConvention.OCEAN) -> None:
+#         self._convention = convention
+#         return
+#
+#     def _extension(self) -> str:
+#         return 'nc'
+#
+#     def _clean_filename(self):
+#         return False
+#
+#     def __call__(self, boundary: Boundary, filename: str) -> Tuple[str, str]:
+#
+#         output_files = []
+#         for n in boundary.x():
+#             output_file = file_module.replace_lonlat(filename, lon=boundary.lon()[n], lat=boundary.lat()[n])
+#             output_file = file_module.clean(output_file)
+#             output_files.append(output_file)
+#
+#             msg.to_file(output_file)
+#
+#             ds = boundary.slice_data(x=[n])
+#             ds.to_netcdf(output_file)
+#
+#         return output_files
 
 
 class WW3(BoundaryWriter):
-    def __init__(self, one_file: bool=True, convention=SpectralConvention.WW3) -> None:
-        self.one_file = one_file
+    def __init__(self, convention=SpectralConvention.WW3) -> None:
         self._convention = convention
         return
 
     def _extension(self) -> str:
         return 'nc'
 
-    def _clean_filename(self):
-        return False
 
-    def _im_silent(self) -> bool:
-        return False
-
-    def __call__(self, boundary: Boundary, filename: str) -> Tuple[str, str]:
+    def __call__(self, dict_of_objects: dict, file_module) -> Tuple[str, str]:
         msg.info('Writing WAVEWATCH-III netcdf-output')
 
-        if self.one_file:
-            if len(boundary.x()) == 1:
-                # Uses $Lon $Lat
-                filename = file_module.replace_lonlat(filename, lon=boundary.lon()[0], lat=boundary.lat()[0])
+        boundar = dict_of_objects['Boundary']
+        output_file = file_module.get_filepath()
+        msg.plain(f"All points >> {output_file}")
+        self.write_netcdf(boundary, output_file)
+        # WW3 need time to be first
+        nco = Nco()
+        nco.ncpdq(input=output_file, output=output_file, options=['-a', 'time,station,frequency,direction'])
 
-            output_files = file_module.clean(filename)
-            msg.plain(f"All points >> {output_files}")
-            self.write_netcdf(boundary, output_files)
-            # WW3 need time to be first
-            nco = Nco()
-            nco.ncpdq(input=output_files, output=output_files, options=['-a', 'time,station,frequency,direction'])
-        else:
-            output_files = []
-            for n in boundary.x():
-                if boundary.mask[n]: # This property is not really used and should always be true
-                    output_file = file_module.replace_lonlat(filename, lon=boundary.lon()[n], lat=boundary.lat()[n])
-                    output_file = file_module.clean(output_file)
-                    output_files.append(output_file)
-
-                    msg.plain(f"Point {n} >> {output_file}")
-                    self.write_netcdf(boundary, output_file, n)
-                else:
-                    msg.info(f"Skipping point {n} ({boundary.lon()[n]:10.7f}, {boundary.lat()[n]:10.7f}). Masked as False.")
-
-        return output_files
+        return output_file
 
     def write_netcdf(self, boundary: Boundary, output_file: str, n: int=None) -> None:
         """Writes WW3 compatible netcdf spectral output from a list containing xarray datasets."""

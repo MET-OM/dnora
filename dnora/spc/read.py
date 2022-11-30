@@ -60,6 +60,16 @@ class SpectralReader(ABC):
 
         return time, freq, spec, mdir, spr, lon, lat, x, y, source
 
+    def set_convention(self, convention: SpectralConvention) -> None:
+        if isinstance(convention, str):
+            self._convention = convert_2d_to_1d(SpectralConvention[convention.upper()])
+        else:
+            self._convention = convert_2d_to_1d(convention)
+
+    def convention(self) -> SpectralConvention:
+        return self._convention
+
+
     def set_source(self, source: str) -> None:
         self._source = source
 
@@ -122,19 +132,14 @@ class BoundaryToSpectra(SpectralReader):
 
 
 class DnoraNc(SpectralReader):
-    def __init__(self, files: str, convention: SpectralConvention) -> None:
-        if not isinstance(convention, SpectralConvention):
-            raise ValueError(f'convention needs to be a SpectralConvention!')
-        if convention not in [SpectralConvention.OCEAN, SpectralConvention.MET, SpectralConvention.MATH]:
-            msg.info(f'2D convention {convention} given to 1D SpectralReader. Converting to {convert_2d_to_1d(convention)}')
-            convention = convert_2d_to_1d(convention)
+    def __init__(self, files: str) -> None:
+        # if not isinstance(convention, SpectralConvention):
+        #     raise ValueError(f'convention needs to be a SpectralConvention!')
+        # if convention not in [SpectralConvention.OCEAN, SpectralConvention.MET, SpectralConvention.MATH]:
+        #     msg.info(f'2D convention {convention} given to 1D SpectralReader. Converting to {convert_2d_to_1d(convention)}')
+        #     convention = convert_2d_to_1d(convention)
 
-        self._convention = convention
         self.files = files
-
-
-    def convention(self) -> SpectralConvention:
-        return copy(self._convention)
 
     def get_coordinates(self, grid, start_time) -> tuple:
         data = xr.open_dataset(self.files[0]).isel(time = [0])
@@ -148,4 +153,6 @@ class DnoraNc(SpectralReader):
         ds = xr.open_mfdataset(self.files, preprocess=_crop, data_vars='minimal')
         ds = ds.sel(inds=inds)
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
+        if not hasattr(self, '-_convention'):
+            self.set_convention(ds.spectral_convention)
         return ds.time.values, ds.freq.values, ds.spec.values, ds.mdir.values, ds.spr.values, lon, lat, x, y, ds.attrs

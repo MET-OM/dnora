@@ -37,16 +37,39 @@ class Null(WaveSeriesWriter):
     def _extension(self):
         return 'junk'
 
-    def __call__(self, waveseries, filename):
+    def __call__(self, dict_of_objects: dict, file_object) -> List[str]:
         return ''
 
-
-class DumpToNc(WaveSeriesWriter):
+class DnoraNc(WaveSeriesWriter):
     def _extension(self) -> str:
         return 'nc'
 
-    def __call__(self, waveseries: WaveSeries, filename: str) -> tuple[str, str]:
+    def __call__(self, dict_of_objects: dict, file_object) -> Tuple[str, str]:
+        output_files = []
+        waveseries = dict_of_objects['WaveSeries']
+        for month in waveseries.months():
+            t0 = f"{month.strftime('%Y-%m-01')}"
+            d1 = monthrange(int(month.strftime('%Y')), int(month.strftime('%m')))[1]
+            t1 = f"{month.strftime(f'%Y-%m-{d1}')}"
 
-        waveseries.ds().to_netcdf(filename)
+            outfile = file_object.get_filepath(start_time=month, edge_object='Grid')
 
-        return filename
+            outfile = file_object.clean(outfile)
+            if os.path.exists(outfile):
+                os.remove(outfile)
+            waveseries.ds().sel(time=slice(t0, t1)).to_netcdf(outfile)
+
+            output_files.append(outfile)
+        return output_files
+
+# class DumpToNc(WaveSeriesWriter):
+#     def _extension(self) -> str:
+#         return 'nc'
+#
+#     def __call__(self, dict_of_objects: dict, file_object) -> List[str]:
+#         filename = file_object.get_filepath()
+#         wavesereies = dict_of_objects['WaveSeries']
+#
+#         waveseries.ds().to_netcdf(filename)
+#
+#         return filename
