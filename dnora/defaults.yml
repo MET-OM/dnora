@@ -111,5 +111,12 @@ REEF3D:
 
 Cache:
   filename: "#ObjectType_#Grid_#Lon0_#Lon1_#Lat0_#Lat1_#T0"
-  folder: "#ObjectType_cache/#Boundary"
   dateformat: '%Y-%m'
+  boundary:
+    folder: "#ObjectType_cache/#Boundary"
+  forcing:
+    folder: "#ObjectType_cache/#Forcing"
+  spectra:
+    folder: "#ObjectType_cache/#Spectra"
+  waveseries:
+    folder: "#ObjectType_cache/#WaveSeries"

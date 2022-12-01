@@ -61,18 +61,18 @@ class Interpolate(Mesher):
     def __str__(self):
         return(f"Meshing using {self.method} interpolation.")
 
-class Constant(Mesher):
-    """Sets a constant depth values"""
-
-    def __init__(self, val: float=1.) -> None:
-        self.val = val
-
-    def __call__(self, data, lon, lat, lonQ, latQ):
-        meshed_data = np.full(data.shape, self.val)
-        return meshed_data
-
-    def __str__(self):
-        return(f"Setting mesh to constant values {self.val}")
+# class Constant(Mesher):
+#     """Sets a constant depth values"""
+#
+#     def __init__(self, val: float=1.) -> None:
+#         self.val = val
+#
+#     def __call__(self, data, lon, lat, lonQ, latQ):
+#         meshed_data = np.full(data.shape, self.val)
+#         return meshed_data
+#
+#     def __str__(self):
+#         return(f"Setting mesh to constant values {self.val}")
 
 
 # class TrivialMesher(Mesher):

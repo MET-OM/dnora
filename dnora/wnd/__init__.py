@@ -20,4 +20,5 @@ from .wnd_mod import Forcing
 from .read import *
 from .read_metno import *
 from .read_ec import *
+from .read_noaa import *
 from .write import *

@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from .bnd.bnd_mod import Boundary
     from .wnd.wnd_mod import Forcing
 
+from nco import Nco
 from calendar import monthrange
 def distance_2points(lat1, lon1, lat2, lon2) -> float:
     """Calculate distance between two points"""
@@ -518,7 +519,8 @@ def write_monthly_nc_files(dnora_obj, file_object) -> list[str]:
         if os.path.exists(outfile):
             os.remove(outfile)
         dnora_obj.ds().sel(time=slice(t0, t1)).to_netcdf(outfile)
-
+        #nco = Nco()
+        #nco.ncpdq(input=outfile, output='view_'+outfile, options=['-a', f'time,{dnora_obj.y_str},{dnora_obj.y_str}'])
         output_files.append(outfile)
     return output_files
 
