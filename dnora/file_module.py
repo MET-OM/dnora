@@ -120,6 +120,10 @@ def replace_objects(filename: str, dict_of_object_names: dict[str: str]) -> str:
 
     return filename
 
+def replace_object_type(filename: str, obj_type: str) -> str:
+    "Replaces the #ObjectType tag to e.g. Boundary of Forcing with lowe case"
+    return re.sub(f"#ObjectType", obj_type.lower(), filename, flags=re.IGNORECASE)
+
 def get_list_of_placeholders():
     defaults_file = Path(__file__).parent.joinpath(Path('defaults.yml'))
     with open(defaults_file, 'r') as file:
@@ -277,6 +281,7 @@ class FileNames:
 
     def replace_placeholders(self, unclean_string: str, start_time=None, end_time=None, edge_object: str=None) -> str:
         unclean_string = replace_objects(unclean_string, self.dict_of_object_names)
+        unclean_string = replace_object_type(unclean_string, self.obj_type)
         edge_object =  self.dict_of_objects[edge_object or self.edge_object]
 
         lon = edge_object.edges('lon', strict=True)

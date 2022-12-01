@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 from .. import msg
 
 from nco import Nco
+from ..aux_funcs import write_monthly_nc_files
 
 class ForcingWriter(ABC):
     """Writes the forcing data to a certain file format.
@@ -47,22 +48,8 @@ class DnoraNc(ForcingWriter):
     def _extension(self) -> str:
         return 'nc'
 
-    def __call__(self, dict_of_objects: dict, file_object) -> Tuple[str, str]:
-        output_files = []
-        forcing = dict_of_objects['Forcing']
-        for month in forcing.months():
-            t0 = f"{month.strftime('%Y-%m-01')}"
-            d1 = monthrange(int(month.strftime('%Y')), int(month.strftime('%m')))[1]
-            t1 = f"{month.strftime(f'%Y-%m-{d1}')}"
-
-            outfile = file_object.get_filepath(start_time=month, edge_object='Grid')
-
-            outfile = file_object.clean(outfile)
-            if os.path.exists(outfile):
-                os.remove(outfile)
-            forcing.ds().sel(time=slice(t0, t1)).to_netcdf(outfile)
-
-            output_files.append(outfile)
+    def __call__(self, dict_of_objects: dict, file_object) -> tuple[str, str]:
+        output_files = write_monthly_nc_files(dict_of_objects['Forcing'], file_object)
         return output_files
 
 class WW3(ForcingWriter):

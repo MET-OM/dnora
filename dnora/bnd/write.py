@@ -5,7 +5,7 @@ from copy import copy
 from abc import ABC, abstractmethod
 import netCDF4
 import re
-from calendar import monthrange
+
 # Import abstract classes and needed instances of them
 from typing import TYPE_CHECKING, Tuple
 if TYPE_CHECKING:
@@ -17,6 +17,7 @@ from .. import file_module
 from nco import Nco
 import os
 from .conventions import SpectralConvention
+from ..aux_funcs import write_monthly_nc_files
 
 class BoundaryWriter(ABC):
     """Writes the boundary spectra to a certain file format.
@@ -95,22 +96,8 @@ class DnoraNc(BoundaryWriter):
     def _extension(self) -> str:
         return 'nc'
 
-    def __call__(self, dict_of_objects: dict, file_object) -> Tuple[str, str]:
-        output_files = []
-        boundary = dict_of_objects['Boundary']
-        for month in boundary.months():
-            t0 = f"{month.strftime('%Y-%m-01')}"
-            d1 = monthrange(int(month.strftime('%Y')), int(month.strftime('%m')))[1]
-            t1 = f"{month.strftime(f'%Y-%m-{d1}')}"
-
-            outfile = file_object.get_filepath(start_time=month, edge_object='Grid')
-
-            outfile = file_object.clean(outfile)
-            if os.path.exists(outfile):
-                os.remove(outfile)
-            boundary.ds().sel(time=slice(t0, t1)).to_netcdf(outfile)
-
-            output_files.append(outfile)
+    def __call__(self, dict_of_objects: dict, file_object) -> tuple[str, str]:
+        output_files = write_monthly_nc_files(dict_of_objects['Boundary'], file_object)
         return output_files
 
 

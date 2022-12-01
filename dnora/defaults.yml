@@ -4,6 +4,7 @@ list_of_placeholders:
   - '#Boundary'
   - '#Spectra'
   - '#WaveSeries'
+  - '#ObjectType'
   - '#T0'
   - '#T1'
   - 'E#Lon'
@@ -109,19 +110,6 @@ REEF3D:
     folder: '#Grid_REEF3D'
 
 Cache:
-  boundary:
-    filename: "bnd_cache_#Grid_#Lon0_#Lon1_#Lat0_#Lat1_#T0"
-    folder: "bnd_cache/#Boundary"
-    dateformat: '%Y%m'
-  forcing:
-    filename: "wnd_cache_#Grid_#Lon0_#Lon1_#Lat0_#Lat1_#T0"
-    folder: "wnd_cache/#Forcing"
-    dateformat: '%Y%m'
-  spectra:
-    filename: "spc_cache_#Grid_#Lon0_#Lon1_#Lat0_#Lat1_#T0"
-    folder: "spc_cache/#Spectra"
-    dateformat: '%Y%m'
-  waveseries:
-    filename: "wsr_cache_#Grid_#Lon0_#Lon1_#Lat0_#Lat1_#T0"
-    folder: "wsr_cache/#WaveSeries"
-    dateformat: '%Y%m'
+  filename: "#ObjectType_#Grid_#Lon0_#Lon1_#Lat0_#Lat1_#T0"
+  folder: "#ObjectType_cache/#Boundary"
+  dateformat: '%Y-%m'

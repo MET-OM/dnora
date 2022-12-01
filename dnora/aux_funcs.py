@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from .bnd.bnd_mod import Boundary
     from .wnd.wnd_mod import Forcing
 
+from calendar import monthrange
 def distance_2points(lat1, lon1, lat2, lon2) -> float:
     """Calculate distance between two points"""
     # distance2 = geopy.distance.geodesic((lat1, lon1), (lat2, lon2)).km
@@ -502,6 +503,24 @@ def check_that_spectra_are_consistent(spec, dirs, freq, expected_dim: int=None) 
             ValueError('Provided array does not contain valid 1D or 2D spectra!')
         else:
             ValueError(f'Expected {expected_dim} dimensional spectra, but they seem to be {spec_dim} dimensional!')
+
+def write_monthly_nc_files(dnora_obj, file_object) -> list[str]:
+    "Writes the data of a DNORA object into montly netcdf-files wh the ames specified by the FileNames instance."
+    output_files = []
+    for month in dnora_obj.months():
+        t0 = f"{month.strftime('%Y-%m-01')}"
+        d1 = monthrange(int(month.strftime('%Y')), int(month.strftime('%m')))[1]
+        t1 = f"{month.strftime(f'%Y-%m-{d1}')}"
+
+        outfile = file_object.get_filepath(start_time=month, edge_object='Grid')
+
+        outfile = file_object.clean(outfile)
+        if os.path.exists(outfile):
+            os.remove(outfile)
+        dnora_obj.ds().sel(time=slice(t0, t1)).to_netcdf(outfile)
+
+        output_files.append(outfile)
+    return output_files
 
 def identify_boundary_edges(boundary_mask: np.ndarray) -> list[str]:
     """Identifies which edges has some boundary points

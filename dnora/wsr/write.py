@@ -6,6 +6,8 @@ from abc import ABC, abstractmethod
 if TYPE_CHECKING:
     from .wsr_mod import WaveSeries
 
+from ..aux_funcs import write_monthly_nc_files
+
 class WaveSeriesWriter(ABC):
     """Writes WaveSeries data to a certain file format.
 
@@ -44,22 +46,8 @@ class DnoraNc(WaveSeriesWriter):
     def _extension(self) -> str:
         return 'nc'
 
-    def __call__(self, dict_of_objects: dict, file_object) -> Tuple[str, str]:
-        output_files = []
-        waveseries = dict_of_objects['WaveSeries']
-        for month in waveseries.months():
-            t0 = f"{month.strftime('%Y-%m-01')}"
-            d1 = monthrange(int(month.strftime('%Y')), int(month.strftime('%m')))[1]
-            t1 = f"{month.strftime(f'%Y-%m-{d1}')}"
-
-            outfile = file_object.get_filepath(start_time=month, edge_object='Grid')
-
-            outfile = file_object.clean(outfile)
-            if os.path.exists(outfile):
-                os.remove(outfile)
-            waveseries.ds().sel(time=slice(t0, t1)).to_netcdf(outfile)
-
-            output_files.append(outfile)
+    def __call__(self, dict_of_objects: dict, file_object) -> tuple[str, str]:
+        output_files = write_monthly_nc_files(dict_of_objects['WaveSeries'], file_object)
         return output_files
 
 # class DumpToNc(WaveSeriesWriter):

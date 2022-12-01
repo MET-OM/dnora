@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 
 from ..bnd.conventions import SpectralConvention
 
+from ..aux_funcs import write_monthly_nc_files
+
 class SpectralWriter(ABC):
     """Writes omnidirectional spectra spectra to a certain file format.
 
@@ -88,22 +90,8 @@ class DnoraNc(SpectralWriter):
     def _extension(self) -> str:
         return 'nc'
 
-    def __call__(self, dict_of_objects: dict, file_object) -> Tuple[str, str]:
-        output_files = []
-        spectra = dict_of_objects['Spectra']
-        for month in spectra.months():
-            t0 = f"{month.strftime('%Y-%m-01')}"
-            d1 = monthrange(int(month.strftime('%Y')), int(month.strftime('%m')))[1]
-            t1 = f"{month.strftime(f'%Y-%m-{d1}')}"
-
-            outfile = file_object.get_filepath(start_time=month, edge_object='Grid')
-
-            outfile = file_object.clean(outfile)
-            if os.path.exists(outfile):
-                os.remove(outfile)
-            spectra.ds().sel(time=slice(t0, t1)).to_netcdf(outfile)
-
-            output_files.append(outfile)
+    def __call__(self, dict_of_objects: dict, file_object) -> tuple[str, str]:
+        output_files = write_monthly_nc_files(dict_of_objects['Spectra'], file_object)
         return output_files
 
 class REEF3D(SpectralWriter):
