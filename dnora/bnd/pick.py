@@ -15,7 +15,7 @@ class PointPicker(ABC):
         pass
 
     @abstractmethod
-    def __call__(self, grid: Union[Grid, UnstrGrid], all_points: UnstrGrid, expansion_factor: float) -> np.ndarray:
+    def __call__(self, grid: Union[Grid, UnstrGrid], all_points: UnstrGrid, **kwargs) -> np.ndarray:
         return inds
 
 class TrivialPicker(PointPicker):
@@ -24,8 +24,7 @@ class TrivialPicker(PointPicker):
         pass
 
     def __call__(self, grid: Union[Grid, UnstrGrid],
-                    all_points: UnstrGrid,
-                    expansion_factor: float) -> np.ndarray:
+                    all_points: UnstrGrid, **kwargs) -> np.ndarray:
         return all_points.inds()
 
 class NearestGridPoint(PointPicker):
@@ -37,8 +36,7 @@ class NearestGridPoint(PointPicker):
         pass
 
     def __call__(self, grid: Union[Grid, UnstrGrid],
-                    all_points: UnstrGrid,
-                    expansion_factor: float) -> np.ndarray:
+                    all_points: UnstrGrid, **kwargs) -> np.ndarray:
 
         lon, lat = grid.boundary_points('lon')
 
@@ -60,7 +58,7 @@ class Area(PointPicker):
     """Choose all the points within a certain area around the grid."""
     def __call__(self, grid: Union[Grid, UnstrGrid],
                     all_points: UnstrGrid,
-                    expansion_factor: float) -> np.ndarray:
+                    expansion_factor: float=1.5, **kwargs) -> np.ndarray:
 
         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
 

@@ -98,7 +98,7 @@ class ERA5(ForcingReader):
     """Reads ERA5 wind data
     """
 
-    def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float):
+    def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float=1.2, **kwargs):
         """Reads boundary spectra between given times and given area around
         the Grid object."""
 

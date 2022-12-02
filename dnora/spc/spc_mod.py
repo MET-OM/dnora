@@ -36,7 +36,7 @@ class Spectra(PointSkeleton):
     def import_spectra(self, start_time: str, end_time: str,
                         spectral_reader: SpectralReader,
                         point_picker: PointPicker,
-                        expansion_factor: float=1.5) -> None:
+                        **kwargs) -> None:
 
         """Imports omnidirectional spectra from a certain source.
 
@@ -51,13 +51,13 @@ class Spectra(PointSkeleton):
         all_points = UnstrGrid(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
 
         msg.header(point_picker, "Choosing boundary spectra...")
-        inds = point_picker(self.grid(), all_points, expansion_factor)
+        inds = point_picker(self.grid(), all_points, **kwargs)
 
         msg.header(spectral_reader, "Loading omnidirectional spectra...")
         time, freq, spec, mdir, spr, lon, lat, x, y, metadata = spectral_reader(self.grid(), start_time, end_time, inds)
 
         self._init_structure(x, y, lon, lat, time=time, freq=freq)
-        
+
         self.ds_manager.set(spec, 'spec', coord_type='all')
         self.ds_manager.set(mdir, 'mdir', coord_type='all')
         self.ds_manager.set(spr, 'spr', coord_type='all')

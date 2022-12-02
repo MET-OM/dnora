@@ -43,7 +43,7 @@ class Boundary(PointSkeleton):
     def import_boundary(self, start_time: str, end_time: str,
                         boundary_reader: BoundaryReader,
                         point_picker: PointPicker,
-                        expansion_factor: float=1.5):
+                        **kwargs):
         """Imports boundary spectra from a certain source.
 
         Spectra are import between start_time and end_time from the source
@@ -58,7 +58,7 @@ class Boundary(PointSkeleton):
         all_points = UnstrGrid(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
 
         msg.header(point_picker, "Choosing boundary spectra...")
-        inds = point_picker(self.grid(), all_points, expansion_factor)
+        inds = point_picker(self.grid(), all_points, **kwargs)
 
         if len(inds) < 1:
             msg.warning("PointPicker didn't find any points. Aborting import of boundary.")
@@ -148,6 +148,10 @@ class Boundary(PointSkeleton):
         """Sets a new spectral directional convention. To not touch spectra, use process=False."""
         if isinstance(convention, str):
             convention = SpectralConvention[convention.upper()]
+
+        if convention is None:
+            msg.info(f"Non new convention given. Keeping convention as {self.convention()}.")
+            return
 
         boundary_processor = boundary_processor_for_convention_change(
                             current_convention = self.convention(),

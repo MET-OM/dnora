@@ -27,7 +27,7 @@ class Forcing(GriddedSkeleton):
 
     def import_forcing(self, start_time: str, end_time: str,
                     forcing_reader: ForcingReader,
-                    expansion_factor: float=1.2):
+                    **kwargs):
         """Imports forcing data from a certain source.
 
         Data are import between start_time and end_time from the source
@@ -39,7 +39,7 @@ class Forcing(GriddedSkeleton):
 
         msg.header(forcing_reader, "Loading wind forcing...")
         time, u, v, lon, lat, x, y, attributes = forcing_reader(
-            self.grid(), start_time, end_time, expansion_factor)
+            self.grid(), start_time, end_time, **kwargs)
 
         self._init_structure(x, y, lon, lat, time=time)
         self.ds_manager.set(u, 'u', coord_type='all')
@@ -53,6 +53,9 @@ class Forcing(GriddedSkeleton):
         if hasattr(self, '_grid'):
             return self._grid
         return None
+
+    def magnitude(self):
+        return (self.u()**2 + self.v()**2)**0.5
 
     def __str__(self) -> str:
         """Prints status of forcing."""

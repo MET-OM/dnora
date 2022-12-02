@@ -12,7 +12,7 @@ class ForcingReader(ABC):
     The area is defined from the Grid object that is passed.
     """
     @abstractmethod
-    def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float):
+    def __call__(self, grid: Grid, start_time: str, end_time: str, **kwargs):
         """Reads in the forcing witih grid and between start_time and end_time.
 
         The variables needed to be returned are:
@@ -47,7 +47,7 @@ class ConstantForcing(ForcingReader):
         self.metadata = metadata
         self.cartesian = cartesian
 
-    def __call__(self, grid, start_time, end_time, expansion_factor):
+    def __call__(self, grid, start_time, end_time, **kwargs):
         time = pd.date_range(start=start_time, end=end_time, freq='H').values
 
         lon, lat, x, y = aux_funcs.get_coordinates_from_grid(grid, self.cartesian)
@@ -62,13 +62,14 @@ class DnoraNc(ForcingReader):
     def __init__(self, files: str) -> None:
         self.files = files
 
-    def __call__(self, grid, start_time, end_time, expansion_factor):
+    def __call__(self, grid, start_time, end_time, expansion_factor: float=1.2, **kwargs):
         def _crop(ds):
             if lon is not None:
                 return ds.sel(time=slice(start_time, end_time), lon=slice(lon[0], lon[1]), lat=slice(lat[0], lat[1]))
             else:
                 return ds.sel(time=slice(start_time, end_time), x=slice(x[0], x[1]), y=slice(y[0], y[1]))
 
+        msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
         ds0 = xr.open_dataset(self.files[0])
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds0)
 

@@ -32,7 +32,7 @@ class GFS(ForcingReader):
         self.last_file = copy(last_file)
 
 
-    def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float):
+    def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float=1.2, **kwargs):
         """Reads wind data between given times and given area around
         the Grid object."""
 
@@ -44,7 +44,7 @@ class GFS(ForcingReader):
 
         msg.info(
             f"Getting wind forcing from GFS from {self.start_time} to {self.end_time}")
-
+        msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
         # Define area to search in
         lon, lat = expand_area(grid.edges('lon'), grid.edges('lat'), expansion_factor)
 

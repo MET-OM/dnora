@@ -32,7 +32,7 @@ class WaveSeries(PointSkeleton):
     def import_waveseries(self, start_time: str, end_time: str,
                         waveseries_reader: WaveSeriesReader,
                         point_picker: PointPicker,
-                        expansion_factor: float=1.5) -> None:
+                        **kwargs) -> None:
 
         self._history.append(copy(waveseries_reader))
 
@@ -42,7 +42,7 @@ class WaveSeries(PointSkeleton):
         all_points = UnstrGrid(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
 
         msg.header(point_picker, "Choosing wave series points...")
-        inds = point_picker(self.grid(), all_points, expansion_factor)
+        inds = point_picker(self.grid(), all_points, **kwargs)
 
         msg.header(waveseries_reader, "Loading wave series data...")
         time, data_dict, lon, lat, x, y, attributes = waveseries_reader(self.grid(), start_time, end_time, inds)

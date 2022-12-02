@@ -49,9 +49,9 @@ class ModelRun:
     @cached_reader('Boundary', bnd.read.DnoraNc)
     def import_boundary(self, boundary_reader: bnd.read.BoundaryReader=None,
                         point_picker: PointPicker=None, name: str=None,
-                        expansion_factor: float=1.5,
                         dry_run: bool=False,
-                        source: str='remote') -> None:
+                        source: str='remote',
+                        **kwargs) -> None:
         """Imports boundary spectra.
 
         source = 'remote' (default) / '<folder>' / 'met'
@@ -86,7 +86,7 @@ class ModelRun:
                                             end_time=self.end_time,
                                             boundary_reader=boundary_reader,
                                             point_picker=point_picker,
-                                            expansion_factor=expansion_factor)
+                                            **kwargs)
         else:
             msg.info('Dry run! No boundary spectra will be imported.')
 
@@ -94,7 +94,7 @@ class ModelRun:
     def import_forcing(self, forcing_reader: wnd.read.ForcingReader=None,
                         name: str=None, dry_run: bool=False,
                         source: str='remote',
-                        expansion_factor: float=1.2) -> None:
+                        **kwargs) -> None:
         """Imports wind forcing.
 
         source = 'remote' (default) / '<folder>' / 'met'
@@ -125,16 +125,15 @@ class ModelRun:
             self.forcing().import_forcing(start_time=self.start_time,
                                         end_time=self.end_time,
                                         forcing_reader=forcing_reader,
-                                        expansion_factor=expansion_factor)
+                                        **kwargs)
         else:
             msg.info('Dry run! No forcing will be imported.')
 
     @cached_reader('Spectra', spc.read.DnoraNc)
     def import_spectra(self, spectral_reader: SpectralReader=None,
                         point_picker: PointPicker=None,
-                        name: str=None, expansion_factor: float=1.5,
-                        dry_run: bool=False,
-                        source: str='remote') -> None:
+                        name: str=None, dry_run: bool=False,
+                        source: str='remote', **kwargs) -> None:
         """Imports omnidirectional spectra.
 
         source = 'remote' (default) / '<folder>' / 'met'
@@ -169,16 +168,15 @@ class ModelRun:
                                         end_time=self.end_time,
                                         spectral_reader=spectral_reader,
                                         point_picker=point_picker,
-                                        expansion_factor=expansion_factor)
+                                        **kwargs)
         else:
             msg.info('Dry run! No omnidirectional spectra will be imported.')
 
     @cached_reader('WaveSeries', wsr.read.DnoraNc)
     def import_waveseries(self, waveseries_reader: WavesSeriesReader=None,
                         point_picker: PointPicker=None,
-                        name: str=None, expansion_factor: float=1.5,
-                        dry_run: bool=False,
-                        source: str='remote') -> None:
+                        name: str=None, dry_run: bool=False,
+                        source: str='remote', **kwargs) -> None:
 
         """Imports wave timeseries data.
 
@@ -212,7 +210,7 @@ class ModelRun:
                                         end_time=self.end_time,
                                         waveseries_reader=waveseries_reader,
                                         point_picker=point_picker,
-                                        expansion_factor=expansion_factor)
+                                        **kwargs)
         else:
             msg.info('Dry run! No wave data will be imported.')
 
@@ -559,7 +557,7 @@ class ModelRun:
         if self._grid_plotter is None:
             raise Exception('Define a GridPlotter!')
 
-        figure_dict = self._plot_object(dnora_obj=self.grid(),
+        figure_dict = self._plot_object(obj_type='Grid',
                             filename=filename, folder=folder,
                             dateformat=dateformat,
                             plotting_function=self._grid_plotter,
@@ -605,15 +603,16 @@ class ModelRun:
         if self._forcing_plotter is None:
             raise Exception('Define a GridPlotter!')
 
-        figure_dict = self._plot_object(filename=filename, folder=folder,
+        figure_dict = self._plot_object(obj_type='Forcing', filename=filename,
+                            folder=folder,
                             dateformat=dateformat,
                             plotting_function=self._forcing_plotter,
                             plain=plain, save_fig=save_fig,
-                            show_fig=show_fig, dnora_obj='Forcing')
+                            show_fig=show_fig)
 
         return figure_dict
 
-    def _plot_object(self, dnora_obj, filename: str, folder: str, dateformat: str,
+    def _plot_object(self, obj_type:str, filename: str, folder: str, dateformat: str,
                     plotting_function: PlottingFunction, plain: bool,
                     save_fig: bool, show_fig: bool) -> dict:
         """Plots a dnora object, e.g. a grid"""
@@ -622,19 +621,26 @@ class ModelRun:
             save_fig = True
 
         # Controls generation of file names using the proper defaults etc.
-        file_object = FileNames(format=self._get_default_format(),
-                                dnora_obj=dnora_obj,
-                                clean_names=True,
-                                dict_of_object_names=self.dict_of_object_names(),
-                                start_time=self.start_time,
-                                end_time=self.end_time,
-                                _filename=filename,
-                                _folder=folder,
-                                _dateformat=dateformat,
-                                extension=plotting_function._extension())
+        file_object = FileNames(dict_of_objects=self.dict_of_objects(),
+                                filename=filename,
+                                folder=folder,
+                                dateformat=dateformat,
+                                extension=plotting_function._extension(),
+                                obj_type=obj_type,
+                                edge_object='Grid')
+        # file_object = FileNames(format=self._get_default_format(),
+        #                         dnora_obj=dnora_obj,
+        #                         clean_names=True,
+        #                         dict_of_object_names=self.dict_of_object_names(),
+        #                         start_time=self.start_time,
+        #                         end_time=self.end_time,
+        #                         _filename=filename,
+        #                         _folder=folder,
+        #                         _dateformat=dateformat,
+        #                         extension=plotting_function._extension())
 
-        file_object.create_folder(plot=True)
-
+        file_object.create_folder(key='plotfolder')
+        dnora_obj = self.dict_of_objects()[obj_type]
         if dnora_obj.is_gridded():
             figure_dict = plotting_function.gridded(dict_of_objects=self.dict_of_objects(), plain=plain)
         else:
@@ -646,8 +652,8 @@ class ModelRun:
             fig = None
         if fig is not None:
             if save_fig:
-                fig.savefig(file_object.get_filepath(),bbox_inches='tight', dpi=300)
-                msg.to_file(file_object.get_filepath())
+                fig.savefig(file_object.get_filepath(key='plotname'),bbox_inches='tight', dpi=300)
+                msg.to_file(file_object.get_filepath(key='plotname'))
             if show_fig:
                 fig.show()
         return figure_dict
@@ -691,8 +697,7 @@ class ModelRun:
 
     def dict_of_objects(self) -> dict[str: ModelRun, str: Grid, str: Forcing, str: Boundary, str: Spectra]:
         return {'ModelRun': self, 'Grid': self.grid(), 'Topo': self.grid().raw(), 'Forcing': self.forcing(),
-                'Boundary': self.boundary(), 'Spectra': self.spectra(), 'WaveSeries': self.waveseries(),
-                'input_file': None, 'model_execturer': None}
+                'Boundary': self.boundary(), 'Spectra': self.spectra(), 'WaveSeries': self.waveseries()}
 
     def list_of_objects(self) -> list[ModelRun, Grid, Forcing, Boundary, Spectra]:
         """[ModelRun, Boundary] etc."""

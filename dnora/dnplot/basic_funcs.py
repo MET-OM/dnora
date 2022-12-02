@@ -183,11 +183,15 @@ def plot_magnitude(fig_dict, lon, lat, data, var, tri=None, vmin=None, vmax=None
         levels = np.linspace(vmin, vmax, 11)
     if gridded:
         xx, yy = np.meshgrid(lon, lat)
+        xx, yy = xx.ravel(), yy.ravel()
+        data = data.ravel()
     else:
         xx, yy = lon, lat
 
     if tri is not None:
         tri = mtri.Triangulation(xx, yy, triangles = tri)
+    else:
+        tri = mtri.Triangulation(xx, yy)
 
     if len(levels) > 1:
         cont = ax.tricontourf(tri, data, cmap=cmap, levels=levels)
@@ -299,9 +303,8 @@ def plot_field(lon, lat, xdata, ydata=None, fig_dict=None, position=111,
 
     if ydata is not None and var == 'ff': #interpretes the data as wind in x- and y-direction
         windMagnitude = (xdata**2 + ydata**2)**0.5
-
         fig_dict = plot_magnitude(fig_dict, lon, lat, windMagnitude, var, vmin=vmin, vmax=vmax, cbar=cbar)
-        ax.add_feature(cfeature.NaturalEarthFeature('physical', 'coastline', '10m', facecolor='none', edgecolor='black'))
+        #ax.add_feature(cfeature.NaturalEarthFeature('physical', 'coastline', '10m', facecolor='none', edgecolor='black'))
         if barbs:
             fig_dict = plot_barbs(fig_dict, lon, lat, xdata, ydata, var, scale)
         else:

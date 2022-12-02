@@ -41,7 +41,7 @@ class NORA3(ForcingReader):
         self.last_file = copy(last_file)
 
 
-    def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float):
+    def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float=1.2, **kwargs):
         """Reads boundary spectra between given times and given area around
         the Grid object."""
 
@@ -169,7 +169,7 @@ class MyWave3km(ForcingReader):
         self.last_file = copy(last_file)
         return
 
-    def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float):
+    def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float=1.2, **kwargs):
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time
@@ -179,7 +179,7 @@ class MyWave3km(ForcingReader):
 
         msg.info(
             f"Getting wind forcing from MEPS from {self.start_time} to {self.end_time}")
-
+        msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
         temp_folder = 'dnora_wnd_temp'
         if not os.path.isdir(temp_folder):
             os.mkdir(temp_folder)
@@ -247,7 +247,7 @@ class MyWave3km(ForcingReader):
 
     def get_url(self, time_stamp):
         filename = time_stamp.strftime('%Y')+time_stamp.strftime('%m')+time_stamp.strftime('%d')+'_MyWam3km_hindcast.nc'
-        
+
         if self.source() == 'remote':
             return 'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_files/' + time_stamp.strftime('%Y')+'/' + time_stamp.strftime('%m')+'/'+filename
         else:
@@ -281,7 +281,7 @@ class MEPS(ForcingReader):
 
         msg.info(
             f"Getting wind forcing from MEPS from {self.start_time} to {self.end_time}")
-
+        msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
         temp_folder = 'dnora_wnd_temp'
         if not os.path.isdir(temp_folder):
             os.mkdir(temp_folder)
