@@ -54,6 +54,33 @@ class NearestGridPoint(PointPicker):
         inds = np.array(inds)
         return inds
 
+class NearestGridPoint_NoDuplicate(PointPicker):
+    """Choose the nearest grid point to each boundary point in the grid with no duplication
+    Set a maximum allowed distance using `max_dist` (in km) at instantiation time.
+    """
+    def __init__(self, max_dist=5):
+        self.max_dist = max_dist
+        pass
+
+    def __call__(self, grid, bnd_lon, bnd_lat):
+        bnd_points = grid.boundary_points()
+        lon = bnd_points[:,0]
+        lat = bnd_points[:,1]
+
+        # Go through all points where we want output and find the nearest available point
+        inds = []
+        for n in range(len(lat)):
+            dx, ind = min_distance(lon[n], lat[n], bnd_lon, bnd_lat)
+            ms = f"Point {n}: lat: {lat[n]:10.7f}, lon: {lon[n]:10.7f} <<< ({bnd_lat[ind]: .7f}, {bnd_lon[ind]: .7f}). Distance: {dx:.1f} km"
+            if self.max_dist is None or dx <= self.max_dist:
+                msg.plain(ms)
+                inds.append(ind)
+            else:
+                msg.plain('DISCARDED, too far: '+ms)
+        #remove duplicate indeces
+        inds = np.unique(np.array(inds))
+        return inds
+
 class Area(PointPicker):
     """Choose all the points within a certain area around the grid."""
     def __init__(self, expansion_factor=2.0):
