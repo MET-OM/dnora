@@ -85,14 +85,15 @@ class SWAN(InputFileWriter):
             file_out.write('$ \n')
 
             file_out.write('INPGRID BOTTOM ' + str(grid.lon()[0])+' '+str(grid.lat()[0])+' 0. '+str(grid.nx()-1)+' '+str(
-                grid.ny()-1)+' ' + str((delta_X/(grid.nx()-1)).round(6)) + ' ' + str((delta_Y/(grid.ny()-1)).round(6)) + '\n')
+                grid.ny()-1)+' ' + str((delta_X/(grid.nx()-1)).round(8)) + ' ' + str((delta_Y/(grid.ny()-1)).round(8)) + '\n')
             file_out.write('READINP BOTTOM 1 \''+ grid_path.split('/')[-1] +'\' 3 0 FREE \n')
             file_out.write('$ \n')
-            
+
             lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.lon_edges(), grid.lat_edges())
+
             bound_string = "BOUNDSPEC SEGMENT XY"
             for lon, lat in zip(lons, lats):
-                bound_string += f" {lon:.2f} {lat:.2f}"
+                bound_string += f" {lon:.4f} {lat:.4f}"
             bound_string += " VARIABLE FILE 0 "
             bound_string += f"'{boundary_path.split('/')[-1]}'\n"
             file_out.write(bound_string)
@@ -104,12 +105,12 @@ class SWAN(InputFileWriter):
                 delta_Yf = np.round(np.abs(forcing.lat()[-1] - forcing.lat()[0]), 5)
 
                 file_out.write('INPGRID WIND '+str(forcing.lon()[0])+' '+str(forcing.lat()[0])+' 0. '+str(forcing.nx()-1)+' '+str(forcing.ny()-1)+' '+str(
-                    (delta_Xf/(forcing.nx()-1)).round(6)) + ' '+str((delta_Yf/(forcing.ny()-1)).round(6)) + ' NONSTATIONARY ' + STR_START + f" {forcing.dt():.0f} HR " + STR_END + '\n')
+                    (delta_Xf/(forcing.nx()-1)).round(8)) + ' '+str((delta_Yf/(forcing.ny()-1)).round(8)) + ' NONSTATIONARY ' + STR_START + f" {forcing.dt():.0f} HR " + STR_END + '\n')
                 file_out.write('READINP WIND '+str(factor_wind)+'  \''+forcing_path.split('/')[-1]+'\' 3 0 0 1 FREE \n')
                 file_out.write('$ \n')
             else:
                 file_out.write('WIND 0 0 \n') # no wind forcing
-                
+
             file_out.write('GEN3 WESTH cds2='+str(self.calib_wcap) + '\n')
             file_out.write('FRICTION JON 0.067 \n')
             file_out.write('PROP BSBT \n')
@@ -301,12 +302,12 @@ class REEF3D(InputFileWriter):
 
                 elif self.wave_input =='JONSWAP':
                     file_out.write('B 85 2 // jonswap' '\n')
-                    file_out.write('B 90 1 // wave input' '\n')                    
+                    file_out.write('B 90 1 // wave input' '\n')
                     file_out.write('B 92 31 // 1st-order irregular wave' '\n')
                     file_out.write('B 93 '+str(self.Hs)+' '+ str(self.Tp)+' // wave height, wave period' '\n')
                     file_out.write('B 134 '+str(self.Sprm)+' // spreading parameter for the directional spreading functions' '\n')
 
-                
+
                 file_out.write(' \n')
                 file_out.write('B 96 200.0 400.0 // wave generation zone length and numerical beach length' '\n')
                 #file_out.write('B 107 0.0 '+str(int(geodat.x.max()))+' 0.0 0.0 200.0 // wave generation zone length and numerical beach length' '\n')

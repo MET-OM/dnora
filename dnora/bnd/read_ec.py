@@ -25,8 +25,8 @@ def reshape_bnd_spec(bnd_spec):
     pass
 
 
-def download_era5_from_cds(start_time, end_time, lon, lat, dlon, dlat, folder='dnora_wnd_temp') -> str:
-    """Downloads ERA5 10 m wind data from the Copernicus Climate Data Store for a
+def download_era5_from_cds(start_time, end_time, lon, lat, dlon, dlat, folder='dnora_bnd_temp') -> str:
+    """Downloads ERA5 spectral data from the Copernicus Climate Data Store for a
     given area and time period"""
     start_time = pd.Timestamp(start_time)
     end_time = pd.Timestamp(end_time)
@@ -92,7 +92,7 @@ class ERA5(BoundaryReader):
             os.remove(f)
 
         restricted_area = self.get_restricted_area()
-        breakpoint()
+
         nc_file = download_era5_from_cds(start_time, end_time,
                                         lon=restricted_area.lon_edges(),
                                         lat=restricted_area.lat_edges(),

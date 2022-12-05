@@ -30,7 +30,7 @@ grid.set_boundary(boundary_setter=bnd_set)
 # =============================================================================
 # DEFINE MODEL OBJECT (mdl.)
 # =============================================================================
-# Options for mdl: SWAN_NORA3, SWAN_ERA5
+# Options for mdl: SWAN_NORA3, SWAN_ERA5, SWAN
 model = mdl.SWAN_NORA3(grid, start_time='2020-01-14T12:00',
                                end_time='2020-01-14T18:00')
 # =============================================================================

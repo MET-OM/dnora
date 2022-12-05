@@ -21,7 +21,7 @@ grid.import_topo(topo_reader=topo_reader)
 grid.mesh_grid()
 #
 # Set the boundaries
-bnd_set = grd.boundary.EdgesAsBoundary(edges=['N', 'W', 'S'], step=20)
+bnd_set = grd.boundary.EdgesAsBoundary(edges=['N', 'W', 'S'])
 grid.set_boundary(boundary_setter=bnd_set)
 #
 #
