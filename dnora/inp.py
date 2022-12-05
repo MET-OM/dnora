@@ -89,6 +89,7 @@ class SWAN(InputFileWriter):
             file_out.write('READINP BOTTOM 1 \''+ grid_path.split('/')[-1] +'\' 3 0 FREE \n')
             file_out.write('$ \n')
 
+<<<<<<< HEAD
             lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.lon_edges(), grid.lat_edges())
 
             bound_string = "BOUNDSPEC SEGMENT XY"
@@ -99,6 +100,20 @@ class SWAN(InputFileWriter):
             file_out.write(bound_string)
             #file_out.write('BOU NEST \''+boundary_path.split('/')[-1]+'\' OPEN \n')
             file_out.write('$ \n')
+=======
+            if boundary is not None:
+                lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.lon_edges(), grid.lat_edges())
+
+                bound_string = "BOUNDSPEC SEGMENT XY"
+                for lon, lat in zip(lons, lats):
+                    bound_string += f" {lon:.4f} {lat:.4f}"
+                bound_string += " VARIABLE FILE 0 "
+                bound_string += f"'{boundary_path.split('/')[-1]}'\n"
+                file_out.write(bound_string)
+
+                #file_out.write('BOU NEST \''+boundary_path.split('/')[-1]+'\' OPEN \n')
+                file_out.write('$ \n')
+>>>>>>> main
 
             if self.wind:
                 delta_Xf = np.round(np.abs(forcing.lon()[-1] - forcing.lon()[0]), 5)
