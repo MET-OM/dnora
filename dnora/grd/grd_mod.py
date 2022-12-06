@@ -242,7 +242,11 @@ class UnstrGrid(PointSkeleton):
         return np.round(len(self.inds())/len(self.boundary_points()[0])/2).astype(int)
 
 class TriGrid(UnstrGrid):
-
+    def __init__(self, x=None, y=None, lon=None, lat=None, name='AnonymousGrid'):
+        self.name = name
+        if not [a for a in (x, y, lon, lat) if a is None]:
+            self._init_structure(x, y, lon, lat)
+            
     def import_triang(self, triang_reader: TriangReader):
         """Reads a triangular mesh."""
         tri, nodes, lon, lat, x, y, types, edge_nodes, zone_number, zone_letter = triang_reader()

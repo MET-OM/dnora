@@ -140,7 +140,7 @@ class WW3(BoundaryWriter):
     def __call__(self, dict_of_objects: dict, file_module) -> Tuple[str, str]:
         msg.info('Writing WAVEWATCH-III netcdf-output')
 
-        boundar = dict_of_objects['Boundary']
+        boundary = dict_of_objects['Boundary']
         output_file = file_module.get_filepath()
         msg.plain(f"All points >> {output_file}")
         self.write_netcdf(boundary, output_file)
@@ -162,10 +162,10 @@ class WW3(BoundaryWriter):
         root_grp = netCDF4.Dataset(output_file, 'w', format='NETCDF4')
         #################### dimensions
         root_grp.createDimension('time', None)
-        if self.one_file:
-            root_grp.createDimension('station', len(boundary.x()))
-        else:
-            root_grp.createDimension('station', 1)
+#        if self.one_file:
+        root_grp.createDimension('station', len(boundary.x()))
+        # else:
+        #     root_grp.createDimension('station', 1)
         root_grp.createDimension('string16', 16)
         root_grp.createDimension('frequency', len(boundary.freq()))
         root_grp.createDimension('direction', len(boundary.dirs()))
@@ -252,16 +252,16 @@ class WW3(BoundaryWriter):
         frequency[:] =boundary.freq()
         direction[:] = boundary.dirs()
 
-        if self.one_file:
-            station[:] = boundary.x()
-            efth[:] =  boundary.spec()
-            longitude[:] = np.full((len(boundary.time()),len(boundary.lon())), boundary.lon(),dtype=float)
-            latitude[:] = np.full((len(boundary.time()),len(boundary.lat())), boundary.lat(),dtype=float)
-        else:
-            station[:] = 1
-            efth[:] =  boundary.spec(x=[n])
-            longitude[:] = np.full((len(boundary.time()),1), boundary.lon()[n],dtype=float)
-            latitude[:] = np.full((len(boundary.time()),1), boundary.lat()[n],dtype=float)
+#        if self.one_file:
+        station[:] = boundary.x()
+        efth[:] =  boundary.spec()
+        longitude[:] = np.full((len(boundary.time()),len(boundary.lon())), boundary.lon(),dtype=float)
+        latitude[:] = np.full((len(boundary.time()),len(boundary.lat())), boundary.lat(),dtype=float)
+        # else:
+        #     station[:] = 1
+        #     efth[:] =  boundary.spec(x=[n])
+        #     longitude[:] = np.full((len(boundary.time()),1), boundary.lon()[n],dtype=float)
+        #     latitude[:] = np.full((len(boundary.time()),1), boundary.lat()[n],dtype=float)
         #longitude[:] = bnd_out.longitude.values
         #latitude[:] = bnd_out.latitude.values
         station_name[:] = 1

@@ -266,7 +266,7 @@ class FileNames:
         return Path(self.replace_placeholders(folder, edge_object=edge_object))
 
 
-    def get_filepath(self, extension: str=None, start_time: str=None, end_time: str=None, key: str='plotfilename', clean: bool=True, edge_object: str=None) -> str:
+    def get_filepath(self, extension: str=None, start_time: str=None, end_time: str=None, key: str='filename', clean: bool=True, edge_object: str=None) -> str:
         return add_folder_to_filename(self.get_filename(extension, start_time, end_time, edge_object=edge_object, key=key), self.get_folder(edge_object=edge_object))
 
     def create_folder(self, key: str='folder', edge_object: str=None) -> None:
