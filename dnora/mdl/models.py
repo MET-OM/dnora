@@ -105,6 +105,9 @@ class SWAN_NORA3(SWAN):
     def _get_forcing_reader(self):
         return wnd.read_metno.NORA3()
 
+    def _get_point_picker(self):
+        return bnd.pick.NearestGridPoint(max_dist=7, remove_duplicate=True)
+
 class SWAN_ERA5(SWAN):
     def _get_boundary_reader(self):
         return bnd.read_ec.ERA5()
