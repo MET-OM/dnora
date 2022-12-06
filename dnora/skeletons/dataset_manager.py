@@ -4,6 +4,14 @@ import xarray as xr
 import utm
 from copy import copy
 from .coordinate_manager import CoordinateManager
+
+
+def move_time_dim_to_front(coord_list) -> list[str]:
+    if 'time' not in coord_list:
+        return coord_list
+    coord_list.insert(0, coord_list.pop(coord_list.index('time')))
+    return coord_list
+
 class DatasetManager:
     """Contains methods related to the creataon and handling of the Xarray
     Dataset that will be used in any object that inherits from Skeleton."""
@@ -87,8 +95,7 @@ class DatasetManager:
         coord_dict = determine_coords()
         var_dict = determine_vars()
         check_consistency()
-
-        self.data = xr.Dataset(coords=coord_dict, data_vars=var_dict)
+        self.set_new_ds(xr.Dataset(coords=coord_dict, data_vars=var_dict))
 
     def set_new_ds(self, ds: xr.Dataset) -> None:
         self.data = ds
@@ -96,7 +103,6 @@ class DatasetManager:
     def ds(self):
         """Resturns the Dataset (None if doesn't exist)."""
         if not hasattr(self, 'data'):
-            #raise Warning('No Dataset found. Returning None.')
             return None
         return self.data
 
@@ -106,6 +112,7 @@ class DatasetManager:
         coord_type = 'all', 'spatial', 'grid' or 'gridpoint'
         """
         self._merge_in_ds(self.compile_to_ds(data, data_name, coord_type))
+        self.set_new_ds(self.ds().transpose(*move_time_dim_to_front(list(self.ds().dims))))
 
     def get(self, data_name: str, default_data=None, **kwargs) -> xr.DataArray:
         """Gets data from Dataset.
@@ -145,9 +152,7 @@ class DatasetManager:
         if not isinstance(ds_list, list):
             ds_list = [ds_list]
         for ds in ds_list:
-            if list(ds.coords)[0] == 'lon':
-                breakpoint()
-            self.data = ds.merge(self.data, compat='override')
+            self.set_new_ds(ds.merge(self.ds(), compat='override'))
 
 
     def compile_to_ds(self, data: np.ndarray, data_name:str, coord_type: str) -> xr.Dataset:
@@ -176,8 +181,6 @@ class DatasetManager:
         coords_dict = self.coords_dict(coord_type)
         check_coord_consistency()
 
-        if list(coords_dict.keys())[0] == 'lon':
-            breakpoint()
         # Data variables
         vars_dict= {}
         vars_dict[data_name] = (coords_dict.keys(),data)

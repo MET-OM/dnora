@@ -137,16 +137,17 @@ class WW3(BoundaryWriter):
         return 'nc'
 
 
-    def __call__(self, dict_of_objects: dict, file_module) -> Tuple[str, str]:
+    def __call__(self, dict_of_objects: dict, file_object) -> Tuple[str, str]:
         msg.info('Writing WAVEWATCH-III netcdf-output')
 
         boundary = dict_of_objects['Boundary']
-        output_file = file_module.get_filepath()
+        output_file = file_object.clean(file_object.get_filepath())
+
         msg.plain(f"All points >> {output_file}")
         self.write_netcdf(boundary, output_file)
         # WW3 need time to be first
-        nco = Nco()
-        nco.ncpdq(input=output_file, output=output_file, options=['-a', 'time,station,frequency,direction'])
+        #nco = Nco()
+        #nco.ncpdq(input=output_file, output=output_file, options=['-a', 'time,station,frequency,direction'])
 
         return output_file
 
@@ -176,7 +177,7 @@ class WW3(BoundaryWriter):
         station = root_grp.createVariable('station', np.int32, ('station',))
         frequency = root_grp.createVariable('frequency',np.float32 , ('frequency',))
         direction = root_grp.createVariable('direction', np.float32, ('direction',))
-        efth = root_grp.createVariable('efth', np.float32, ('station', 'time', 'frequency','direction',))
+        efth = root_grp.createVariable('efth', np.float32, ('time', 'station', 'frequency','direction',))
         latitude = root_grp.createVariable('latitude',np.float32 , ('time','station',))
         longitude = root_grp.createVariable('longitude',np.float32 , ('time','station',))
         station_name = root_grp.createVariable('station_name', 'S1', ('station','string16',))
@@ -254,7 +255,9 @@ class WW3(BoundaryWriter):
 
 #        if self.one_file:
         station[:] = boundary.x()
-        efth[:] =  boundary.spec()
+        #efth[:] =  boundary.spec()
+
+        efth[:] = boundary.spec()
         longitude[:] = np.full((len(boundary.time()),len(boundary.lon())), boundary.lon(),dtype=float)
         latitude[:] = np.full((len(boundary.time()),len(boundary.lat())), boundary.lat(),dtype=float)
         # else:

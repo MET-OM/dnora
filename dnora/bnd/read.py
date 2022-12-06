@@ -152,7 +152,7 @@ class DnoraNc(BoundaryReader):
         ds = xr.open_mfdataset(self.files, preprocess=_crop, data_vars='minimal')
         ds = ds.sel(inds=inds)
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
-        if not hasattr(self, '-_convention'):
+        if not hasattr(self, '_convention'):
             self.set_convention(ds.spectral_convention)
 
         return ds.time.values, ds.freq.values, ds.dirs.values, ds.spec.values, lon, lat, x, y, ds.attrs
