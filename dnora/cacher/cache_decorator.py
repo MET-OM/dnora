@@ -113,7 +113,6 @@ def cached_reader(dnora_obj, reader_function):
 
 
                 new_kwargs[f'{dnora_obj.lower()}_reader'] = reader
-                breakpoint()
                 import_method(*new_args, **new_kwargs)
             else:
                 import_method(*args, **kwargs)

@@ -1,5 +1,5 @@
 from typing import Callable
-
+from ..aux_funcs import move_time_dim_to_front
 class CoordinateManager:
     """Keeps track of coordinates and data variables that are added to classes
     by the decorators.
@@ -88,5 +88,5 @@ class CoordinateManager:
             return None
 
         if type == 'all':
-            return self.added_coords('grid') + self.added_coords('gridpoint')
-        return self.coords[type]
+            return move_time_dim_to_front(self.added_coords('grid') + self.added_coords('gridpoint'))
+        return move_time_dim_to_front(self.coords[type])

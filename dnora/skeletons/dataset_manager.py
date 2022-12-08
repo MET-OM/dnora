@@ -4,13 +4,7 @@ import xarray as xr
 import utm
 from copy import copy
 from .coordinate_manager import CoordinateManager
-
-
-def move_time_dim_to_front(coord_list) -> list[str]:
-    if 'time' not in coord_list:
-        return coord_list
-    coord_list.insert(0, coord_list.pop(coord_list.index('time')))
-    return coord_list
+from ..aux_funcs import move_time_dim_to_front
 
 class DatasetManager:
     """Contains methods related to the creataon and handling of the Xarray
@@ -72,6 +66,8 @@ class DatasetManager:
             for key, value in kwargs.items():
                 coord_dict[key] = value
 
+            coord_dict = {c: coord_dict[c] for c in move_time_dim_to_front(list(coord_dict))}
+
             return coord_dict
 
         def determine_vars() -> dict:
@@ -94,6 +90,7 @@ class DatasetManager:
         x, y = clean_coordinate_vectors(x, y, is_cartesian=(x_str=='x'), indexed=indexed)
         coord_dict = determine_coords()
         var_dict = determine_vars()
+
         check_consistency()
         self.set_new_ds(xr.Dataset(coords=coord_dict, data_vars=var_dict))
 
@@ -177,7 +174,7 @@ class DatasetManager:
             if i < len(data.shape)-1:
                 raise Warning(f'The data had {len(data.shape)} dimensions but only {i} dimensions have been defined. Missing a decorator?')
 
-
+        breakpoint()
         coords_dict = self.coords_dict(coord_type)
         check_coord_consistency()
 
@@ -213,24 +210,23 @@ class DatasetManager:
                 if val in list2:
                     list3.append(val)
             return list3
-
+        breakpoint()
         if type not in ['all', 'spatial', 'grid', 'gridpoint']:
             raise ValueError("Type needs to be 'all', 'spatial', 'grid' or 'gridpoint'.")
 
         if not hasattr(self, 'data'):
             return []
 
-        all_coords = list(self.data.coords)
+        all_coords = move_time_dim_to_front(list(self.ds().coords))
         spatial_coords = self.coord_manager.spatial_coords
 
         if type == 'all':
             return all_coords
-        elif type == 'spatial':
-            #return list(set(all_coords).intersection(set(spatial_coords)))
+        if type == 'spatial':
             return list_intersection(all_coords, spatial_coords)
-        elif type == 'grid':
+        if type == 'grid':
             return self.coords('spatial') + self.coord_manager.added_coords('grid')
-        elif type == 'gridpoint':
+        if type == 'gridpoint':
             return self.coord_manager.added_coords('gridpoint')
 
 
