@@ -357,7 +357,7 @@ class MEPS(ForcingReader):
                                  '--process.rotateVector.direction=latlon',
                                  '--output.file='+nc_fimex]
 
-                if ensemble_member == True: #or prefix == 'subset':
+                if prefix == 'subset': # where ensemble_member == True
                     fimex_command.insert(-2,
                                          '--extract.reduceDimension.name=ensemble_member')
                     fimex_command.insert(-2, '--extract.reduceDimension.start=1')

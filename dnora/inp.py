@@ -1,3 +1,4 @@
+
 from abc import ABC, abstractmethod
 from cmath import nan
 from copy import copy
@@ -36,13 +37,14 @@ class InputFileWriter(ABC):
         return output_file
 
 class SWAN(InputFileWriter):
-    def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, wind=True, spec_points=None, extension='swn'):
+    def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, wind=True, spec_points=None, extension='swn', hotstart=False):
 
         self.calib_wind = calib_wind
         self.calib_wcap = calib_wcap
         self.wind = wind
         self.spec_points = spec_points # list of (lon, lat) points, e.g.,[(4.4, 60.6),(4.4, 60.8)]
         self._extension_in = extension
+        self.hotstart = hotstart # filename of hotstart file
         return
 
     def _extension(self):
@@ -91,9 +93,12 @@ class SWAN(InputFileWriter):
             if boundary is not None:
                 lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.lon_edges(), grid.lat_edges())
 
+            if boundary is not None:
+                lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.lon_edges(), grid.lat_edges())
+
                 bound_string = "BOUNDSPEC SEGMENT XY"
                 for lon, lat in zip(lons, lats):
-                    bound_string += f" {lon:.8f} {lat:.8f}"
+                    bound_string += f" {lon:.4f} {lat:.4f}"
                 bound_string += " VARIABLE FILE 0 "
                 bound_string += f"'{boundary_path.split('/')[-1]}'\n"
                 file_out.write(bound_string)
@@ -111,6 +116,11 @@ class SWAN(InputFileWriter):
                 file_out.write('$ \n')
             else:
                 file_out.write('WIND 0 0 \n') # no wind forcing
+
+            if self.hotstart is True:
+                file_out.write('INITIAL HOTSTART \'hotstart_'+grid.name()+'_'+STR_START.replace('.','')[:-2]+'\''  '\n')
+            else:
+                pass
 
             file_out.write('GEN3 WESTH cds2='+str(self.calib_wcap) + '\n')
             file_out.write('FRICTION JON 0.067 \n')
@@ -137,6 +147,7 @@ class SWAN(InputFileWriter):
             else:
                 pass
             file_out.write('COMPUTE '+STR_START+' 10 MIN ' + STR_END + '\n')
+            file_out.write('HOTFILE \'hotstart_'+grid.name()+'_'+STR_END.replace('.','')[:-2]+'\'' +' FREE \n')
             file_out.write('STOP \n')
 
         return filename
