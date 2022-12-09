@@ -36,7 +36,7 @@ class InputFileWriter(ABC):
         return output_file
 
 class SWAN(InputFileWriter):
-    def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, wind=True, spec_points=None, extension='swn', hotstart=None):
+    def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, wind=True, spec_points=None, extension='swn', hotstart=False):
 
         self.calib_wind = calib_wind
         self.calib_wcap = calib_wcap
@@ -114,8 +114,8 @@ class SWAN(InputFileWriter):
             else:
                 file_out.write('WIND 0 0 \n') # no wind forcing
 
-            if self.hotstart is not None:
-                file_out.write('INITIAL HOTSTART ' + '\''+self.hotstart +'\'' '\n')
+            if self.hotstart is True:
+                file_out.write('INITIAL HOTSTART \'hotstart_'+grid.name()+'_'+STR_START.replace('.','')[:-2]+'\''  '\n')
             else:
                 pass
 
@@ -143,7 +143,7 @@ class SWAN(InputFileWriter):
             else:
                 pass
             file_out.write('COMPUTE '+STR_START+' 10 MIN ' + STR_END + '\n')
-            file_out.write('HOTFILE \'hotstart_'+grid.name()+'_'+STR_END.split('.')[0]+'\'' +' FREE \n')
+            file_out.write('HOTFILE \'hotstart_'+grid.name()+'_'+STR_END.replace('.','')[:-2]+'\'' +' FREE \n')
             file_out.write('STOP \n')
 
         return filename
