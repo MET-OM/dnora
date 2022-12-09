@@ -150,15 +150,15 @@ class WW3(BoundaryWriter):
         else:
             output_files = []
             for n in boundary.x():
-                if boundary.mask[n]: # This property is not really used and should always be true
-                    output_file = file_module.replace_lonlat(filename, lon=boundary.lon()[n], lat=boundary.lat()[n])
-                    output_file = file_module.clean(output_file)
-                    output_files.append(output_file)
+                #if boundary.mask[n]: # This property is not really used and should always be true
+                output_file = file_module.replace_lonlat(filename, lon=boundary.lon()[n], lat=boundary.lat()[n])
+                output_file = file_module.clean(output_file)
+                output_files.append(output_file)
 
-                    msg.plain(f"Point {n} >> {output_file}")
-                    self.write_netcdf(boundary, output_file, n)
-                else:
-                    msg.info(f"Skipping point {n} ({boundary.lon()[n]:10.7f}, {boundary.lat()[n]:10.7f}). Masked as False.")
+                msg.plain(f"Point {n} >> {output_file}")
+                self.write_netcdf(boundary, output_file, n)
+                #else:
+                #    msg.info(f"Skipping point {n} ({boundary.lon()[n]:10.7f}, {boundary.lat()[n]:10.7f}). Masked as False.")
 
         return output_files
 
@@ -297,7 +297,7 @@ class SWAN(BoundaryWriter):
     def __call__(self, boundary: Boundary, filename: str) -> Tuple[str, str]:
 
 
-        swan_bnd_points = boundary.grid.boundary_points() 
+        swan_bnd_points = boundary.grid.boundary_points()
         days = boundary.days()
 
         with open(filename, 'w') as file_out:
