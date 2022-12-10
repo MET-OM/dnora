@@ -169,4 +169,3 @@ class GTSM_ERA5(WaterLevelReader):
 
         #print(waterlevel_gridded)
         return waterlevel_gridded
-

@@ -37,7 +37,7 @@ class InputFileWriter(ABC):
         return output_file
 
 class SWAN(InputFileWriter):
-    def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, calib_wlev = 1, wind=True, waterlevel=False, timestep=10,
+    def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, calib_wlev = 1, wind=True, waterlevel=True, timestep=10,
                  f_low = 0.04, f_high=1., n_freq=31, n_dir=36, spec_points=None, extension='swn'):
 
         self.calib_wind = calib_wind
@@ -117,7 +117,7 @@ class SWAN(InputFileWriter):
 
                 bound_string = "BOUNDSPEC SEGMENT XY"
                 for lon, lat in zip(lons, lats):
-                    bound_string += f" {lon:.8f} {lat:.8f}"
+                    bound_string += f" {lon:.4f} {lat:.4f}"
                 bound_string += " VARIABLE FILE 0 "
                 bound_string += f"'{boundary_path.split('/')[-1]}'\n"
                 file_out.write(bound_string)
@@ -150,7 +150,8 @@ class SWAN(InputFileWriter):
 
                 file_out.write('READINP WLEV '+str(factor_waterlevel)+'  \''+waterlevel_path.split('/')[-1]+'\' 3 0 1 FREE \n')
                 file_out.write('$ \n')
-
+            else:
+                pass
 
             file_out.write('GEN3 WESTH cds2='+str(self.calib_wcap) + '\n')
             file_out.write('FRICTION JON 0.067 \n')
@@ -162,9 +163,7 @@ class SWAN(InputFileWriter):
             file_out.write('$ Generate block-output \n')
             temp_list = forcing_path.split('/')
             forcing_folder = '/'.join(temp_list[0:-1])
-            #file_out.write('BLOCK \'COMPGRID\' HEAD \''+grid.name()+'_'+STR_START.split('.')[0]+'.nc'
-            #               + '\' & \n')
-            file_out.write('BLOCK \'COMPGRID\' HEAD \'' + grid.name() + '_' + STR_START.split('.')[0] + '.vtk'
+            file_out.write('BLOCK \'COMPGRID\' HEAD \''+grid.name()+'_'+STR_START.split('.')[0]+'.nc'
                            + '\' & \n')
             file_out.write(
                 'LAY 1 HSIGN RTP TPS PDIR TM01 DIR DSPR WIND DEP OUTPUT ' + STR_START + ' 1 HR \n')
