@@ -38,7 +38,7 @@ class InputFileWriter(ABC):
 
 class SWAN(InputFileWriter):
     def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, calib_wlev = 1, wind=True, waterlevel=True, timestep=10,
-                 f_low = 0.04, f_high=1., n_freq=31, n_dir=36, spec_points=None, extension='swn'):
+                 f_low = 0.04, f_high=1., n_freq=31, n_dir=36, spec_points=None, extension='swn', hotstart=False):
 
         self.calib_wind = calib_wind
         self.calib_wcap = calib_wcap
@@ -52,6 +52,7 @@ class SWAN(InputFileWriter):
         self.f_high = f_high
         self.n_freq = n_freq
         self.n_dir = n_dir
+        self.hotstart = hotstart # filename of hotstart file
         return
 
     def _extension(self):
@@ -108,7 +109,7 @@ class SWAN(InputFileWriter):
             file_out.write('$ \n')
 
             file_out.write('INPGRID BOTTOM ' + str(grid.lon()[0])+' '+str(grid.lat()[0])+' 0. '+str(grid.nx()-1)+' '+str(
-                grid.ny()-1)+' ' + str((delta_X/(grid.nx()-1)).round(6)) + ' ' + str((delta_Y/(grid.ny()-1)).round(6)) + '\n')
+                grid.ny()-1)+' ' + str((delta_X/(grid.nx()-1)).round(8)) + ' ' + str((delta_Y/(grid.ny()-1)).round(8)) + '\n')
             file_out.write('READINP BOTTOM 1 \''+ grid_path.split('/')[-1] +'\' 3 0 FREE \n')
             file_out.write('$ \n')
 
@@ -151,7 +152,11 @@ class SWAN(InputFileWriter):
                 file_out.write('READINP WLEV '+str(factor_waterlevel)+'  \''+waterlevel_path.split('/')[-1]+'\' 3 0 1 FREE \n')
                 file_out.write('$ \n')
             else:
-                pass
+                pass            
+
+            if self.hotstart is True:
+                file_out.write('INITIAL HOTSTART \'hotstart_'+grid.name()+'_'+STR_START.replace('.','')[:-2]+'\''  '\n')
+
 
             file_out.write('GEN3 WESTH cds2='+str(self.calib_wcap) + '\n')
             file_out.write('FRICTION JON 0.067 \n')
@@ -177,6 +182,7 @@ class SWAN(InputFileWriter):
             else:
                 pass
             file_out.write('COMPUTE '+STR_START+ ' %d MIN ' % self.swan_timestep + STR_END + '\n')
+            file_out.write('HOTFILE \'hotstart_'+grid.name()+'_'+STR_END.replace('.','')[:-2]+'\'' +' FREE \n')
             file_out.write('STOP \n')
 
         return filename

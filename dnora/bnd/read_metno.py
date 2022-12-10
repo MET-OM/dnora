@@ -197,12 +197,14 @@ class WAM4km(BoundaryReader):
 class NORA3(BoundaryReader):
     def __init__(self, stride: int=24, hours_per_file: int=24,
                 last_file: str='', lead_time: int=0,
-                source: str='thredds') -> None:
+                source: str='thredds',
+                folder: str='input/NORA3') -> None:
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
         self.last_file = copy(last_file)
         self.source = source
+        self.folder = folder
         return
 
     def convention(self) -> str:
@@ -257,3 +259,5 @@ class NORA3(BoundaryReader):
             return 'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/SPC'+day.strftime('%Y%m%d')+'00.nc'
         if source == 'lustre':
             return '/lustre/storeB/project/fou/om/WINDSURFER/mw3hindcast/spectra/'+day.strftime('%Y') +'/'+day.strftime('%m')+'/SPC'+day.strftime('%Y%m%d')+'00.nc'
+        if source == 'local':
+            return self.folder + '/SPC'+day.strftime('%Y%m%d')+'00.nc'
