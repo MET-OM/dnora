@@ -71,7 +71,7 @@ def download_GTSM_from_cds(start_time, end_time, folder='dnora_wlv_temp') -> str
         'variable': ['total_water_level'],
         'experiment': 'reanalysis',
         'temporal_aggregation': 'hourly',
-        'year': years,
+        'year': years, # 1979-2018
         'month': months,
     }
 
