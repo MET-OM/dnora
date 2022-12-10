@@ -152,7 +152,7 @@ class SWAN(InputFileWriter):
                 file_out.write('READINP WLEV '+str(factor_waterlevel)+'  \''+waterlevel_path.split('/')[-1]+'\' 3 0 1 FREE \n')
                 file_out.write('$ \n')
             else:
-                pass            
+                pass
 
             if self.hotstart is True:
                 file_out.write('INITIAL HOTSTART \'hotstart_'+grid.name()+'_'+STR_START.replace('.','')[:-2]+'\''  '\n')
@@ -171,7 +171,7 @@ class SWAN(InputFileWriter):
             file_out.write('BLOCK \'COMPGRID\' HEAD \''+grid.name()+'_'+STR_START.split('.')[0]+'.nc'
                            + '\' & \n')
             file_out.write(
-                'LAY 1 HSIGN RTP TPS PDIR TM01 DIR DSPR WIND DEP OUTPUT ' + STR_START + ' 1 HR \n')
+                'LAY 1 HSIGN RTP TPS PDIR TM01 DIR DSPR WIND WATLEV DEP OUTPUT ' + STR_START + ' 1 HR \n')
             file_out.write('$ \n')
             if self.spec_points is  not None:
                 file_out.write('POINTS \'pkt\' &\n')
