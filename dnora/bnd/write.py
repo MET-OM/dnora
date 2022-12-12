@@ -128,7 +128,7 @@ class WW3(BoundaryWriter):
     def write_netcdf(self, boundary: Boundary, output_file: str, n: int=None) -> None:
         """Writes WW3 compatible netcdf spectral output from a list containing xarray datasets."""
 
-            root_grp = netCDF4.Dataset(output_file, 'w', format='NETCDF4')
+        root_grp = netCDF4.Dataset(output_file, 'w', format='NETCDF4')
         #################### dimensions
         root_grp.createDimension('time', None)
         if self.one_file:

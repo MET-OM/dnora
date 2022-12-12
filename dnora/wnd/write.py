@@ -31,7 +31,7 @@ class ForcingWriter(ABC):
         return True
 
     @abstractmethod
-    def __call__(self, forcing: Forcing, filename: str) -> List[str]:
+    def __call__(self, forcing: Forcing, file_object: str) -> List[str]:
         """Writed the data from the Forcing object and returns the file and
         folder where data were written."""
 

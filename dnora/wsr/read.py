@@ -107,7 +107,7 @@ class SpectraToWaveSeries(WaveSeriesReader):
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(self._spectra.ds())
         return lon, lat, x, y
 
-    def __call__(self, grid, start_time, end_time, inds) -> Tuple:
+    def __call__(self, grid, start_time, end_time, inds, parameters: list[str]=[Hs(), Dirm(), Tp(), Sprm()], **kwargs) -> Tuple:
         self.name = self._spectra.name
         #source = self._boundary.data.source
         time = self._spectra.time(data_array=True).sel(time=slice(start_time, end_time)).values
@@ -119,7 +119,10 @@ class SpectraToWaveSeries(WaveSeriesReader):
 
         efth = self._spectra.spec(data_array=True).sel(time=slice(start_time, end_time), inds=inds)
 
-        parameters = [Hs(), Dirm(), Tp(), Sprm()]
+        dict_of_wps = dict_of_wave_parameters()
+        for n, param in enumerate(parameters):
+            if isinstance(param, str):
+                parameters[n] = dict_of_wps[param]
         data = {}
         for wp in parameters:
             data[wp] = wp(self._spectra)
@@ -134,7 +137,7 @@ class DnoraNc(WaveSeriesReader):
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(data)
         return lon, lat, x, y
 
-    def __call__(self, grid, start_time, end_time, inds) -> tuple:
+    def __call__(self, grid, start_time, end_time, inds, **kwargs) -> tuple:
         def _crop(ds):
             return ds.sel(time=slice(start_time, end_time))
         msg.info(f"Getting boundary spectra from DNORA type netcdf files (e.g. {self.files[0]}) from {start_time} to {end_time}")

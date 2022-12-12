@@ -31,7 +31,7 @@ class WaveSeriesWriter(ABC):
         return True
 
     @abstractmethod
-    def __call__(self, waveseries: WaveSeries, filename: str) -> tuple[str, str]:
+    def __call__(self, waveseries: WaveSeries, file_object: str) -> tuple[str, str]:
         """Write the data from the Spectra object and returns the file and
         folder where data were written."""
 
@@ -49,15 +49,3 @@ class DnoraNc(WaveSeriesWriter):
     def __call__(self, dict_of_objects: dict, file_object) -> tuple[str, str]:
         output_files = write_monthly_nc_files(dict_of_objects['WaveSeries'], file_object)
         return output_files
-
-# class DumpToNc(WaveSeriesWriter):
-#     def _extension(self) -> str:
-#         return 'nc'
-#
-#     def __call__(self, dict_of_objects: dict, file_object) -> List[str]:
-#         filename = file_object.get_filepath()
-#         wavesereies = dict_of_objects['WaveSeries']
-#
-#         waveseries.ds().to_netcdf(filename)
-#
-#         return filename

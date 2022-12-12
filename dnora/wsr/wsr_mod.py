@@ -45,7 +45,7 @@ class WaveSeries(PointSkeleton):
         inds = point_picker(self.grid(), all_points, **kwargs)
 
         msg.header(waveseries_reader, "Loading wave series data...")
-        time, data_dict, lon, lat, x, y, attributes = waveseries_reader(self.grid(), start_time, end_time, inds)
+        time, data_dict, lon, lat, x, y, attributes = waveseries_reader(self.grid(), start_time, end_time, inds, **kwargs)
 
         self._init_structure(x, y, lon, lat, time=time)
 

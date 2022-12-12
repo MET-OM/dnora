@@ -12,23 +12,11 @@ if TYPE_CHECKING:
     from .grd.grd_mod import Grid
     from .bnd.bnd_mod import Boundary
     from .wnd.wnd_mod import Forcing
-
+from . import file_module
 from nco import Nco
 from calendar import monthrange
 def distance_2points(lat1, lon1, lat2, lon2) -> float:
     """Calculate distance between two points"""
-    # distance2 = geopy.distance.geodesic((lat1, lon1), (lat2, lon2)).km
-    # R = 6371.0
-    # lat1 = np.radians(lat1)
-    # lon1 = np.radians(lon1)
-    # lat2 = np.radians(lat2)
-    # lon2 = np.radians(lon2)
-    # dlon = lon2 - lon1
-    # dlat = lat2 - lat1
-    # a = np.sin(dlat / 2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2)**2
-    # c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
-    # distance = R * c # in km
-    # return distance
     return geopy.distance.geodesic((lat1, lon1), (lat2, lon2)).km
 
 
@@ -85,103 +73,6 @@ def get_coordinates_from_ds(ds) -> tuple:
 
     raise AttributeError("Dataset doesn't have a combination of lon/lat or x/y!")
 
-#
-# def force_to_xyz(data: np.ndarray, lon: np.ndarray, lat: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-#     '''If the data is given in a matrix, convert it to xyz vectors.
-#
-#     Does nothing is data is already in xyz.'''
-#     # If the data is in a matrix
-#     if len(data.shape) > 1:
-#         lon0, lat0 = np.meshgrid(lon, lat)
-#         x = lon0.ravel()
-#         y = lat0.ravel()
-#         z = data.ravel()
-#     else:
-#         x = lon
-#         y = lat
-#         z = data
-#
-#     return z, x, y
-#
-# def set_spacing_dlon_dlat_fixed_edges(dlon: float, dlat:float, lon: Tuple[float, float], lat: Tuple[float, float]) -> Tuple[float, float, float, float, np.ndarray, np.ndarray]:
-#     """Given dlon, dlat and lon,lat edges, set other spacing varialbles.
-#
-#     Preserves edges (not dlon,dlat)
-#     """
-#     nx = int((lon[1]-lon[0])/dlon + 1)
-#     ny = int((lat[1]-lat[0])/dlat + 1)
-#
-#     # Define longitudes and latitudes
-#     lon_array = np.linspace(lon[0], lon[1], nx)
-#     lat_array = np.linspace(lat[0], lat[1], ny)
-#
-#     if nx > 1:
-#         dlon = (lon[1]-lon[0])/(nx-1)
-#     else:
-#         dlon = 0.
-#
-#     if ny > 1:
-#         dlat = (lat[1]-lat[0])/(ny-1)
-#     else:
-#         dlat = 0.
-#
-#     lon = (min(lon_array), max(lon_array))
-#     lat = (min(lat_array), max(lat_array))
-#     km_x, km_y = domain_size_in_km(lon, lat)
-#
-#     # dx, dy in metres
-#     dx = km_x*1000/nx
-#     dy = km_y*1000/ny
-#
-#     return dlon, dlat, dx, dy, lon_array, lat_array
-#
-# def set_spacing_dlon_dlat_floating_edges(dlon: float, dlat:float, lon: Tuple[float, float], lat: Tuple[float, float]) -> Tuple[float, float, float, float, np.ndarray, np.ndarray]:
-#     """Given dlon, dlat and lon,lat edges, set other spacing varialbles
-#
-#     Preserves dlon, dlat (not edges)
-#     """
-#     lon_array = np.arange(lon[0],lon[1]+dlon/2,dlon)
-#     lat_array = np.arange(lat[0],lat[1]+dlon/2,dlat)
-#
-#     lon = (min(lon_array), max(lon_array))
-#     lat = (min(lat_array), max(lat_array))
-#     km_x, km_y = domain_size_in_km(lon, lat)
-#
-#     # Number of points
-#     nx = len(lon_array)
-#     ny = len(lat_array)
-#
-#     # dx, dy in metres
-#     dx = km_x*1000/nx
-#     dy = km_y*1000/ny
-#
-#     return dlon, dlat, dx, dy, lon_array, lat_array
-#
-# def set_spacing_dx_dy(dx: float, dy:float, lon: Tuple[float, float], lat: Tuple[float, float]) -> Tuple[float, float, float, float, np.ndarray, np.ndarray]:
-#     km_x, km_y = domain_size_in_km(lon, lat)
-#     # Number of points
-#     nx = int(np.round(km_x*1000/dx)+1)
-#     ny = int(np.round(km_y*1000/dy)+1)
-#
-#     # dx, dy in metres
-#     dx = km_x*1000/nx
-#     dy = km_y*1000/ny
-#
-#     if nx > 1:
-#         dlon = (lon[1]-lon[0])/(nx-1)
-#     else:
-#         dlon = 0.
-#     if ny > 1:
-#         dlat = (lat[1]-lat[0])/(ny-1)
-#     else:
-#         dlat = 0.
-#
-#     # Define longitudes and latitudes
-#     lon_array = np.linspace(lon[0], lon[1], nx)
-#     lat_array = np.linspace(lat[0], lat[1], ny)
-#
-#     return dlon, dlat, dx, dy, lon_array, lat_array
-#
 def is_gridded(data: np.ndarray, lon: np.ndarray, lat: np.ndarray) -> bool:
     if lon is None or lat is None:
         return False
@@ -214,40 +105,7 @@ def year_list(start_time, end_time):
     t1 = pd.Timestamp(end_time).strftime('%Y-%m-%d')
     years = pd.date_range(start=t0, end=t1, freq='YS')
     return years.strftime('%Y').to_list()
-#
-#
-# def set_spacing_nx_ny(nx: float, ny:float, lon: Tuple[float, float], lat: Tuple[float, float]) -> Tuple[float, float, float, float, np.ndarray, np.ndarray]:
-#     # Define longitudes and latitudes
-#     lon_array = np.linspace(lon[0], lon[1], nx)
-#     lat_array = np.linspace(lat[0], lat[1], ny)
-#     if nx > 1:
-#         dlon = (lon[1]-lon[0])/(nx-1)
-#     else:
-#         dlon = 0.
-#
-#     if ny > 1:
-#         dlat = (lat[-1]-lat[0])/(ny-1)
-#     else:
-#         dlat = 0.
-#
-#     km_x, km_y = domain_size_in_km(lon, lat)
-#     # dx, dy in metres
-#     dx = km_x*1000/nx
-#     dy = km_y*1000/ny
-#
-#     return dlon, dlat, dx, dy, lon_array, lat_array
-#
-# def last_day_in_month(time_stamp):
-#     year = int(pd.Timestamp(timp_stamp).strftime('%Y'))
-#     month = int(pd.Timestamp(timp_stamp).strftime('%m'))
-#     last_day = calendar.monthrange(year, month)[1]
-#     return last_day
-#
-# # def month_list(start_time, end_time):
-# #     """Determins a Pandas data range of all the months in the time span of the InputModel objext"""
-# #     months = pd.date_range(start=start_time[:7], end=end_time[:7], freq='MS')
-# #     return months
-#
+
 def int_list_of_years(start_time, end_time):
     year0 = min(pd.Series(pd.to_datetime(day_list(start_time, end_time))).dt.year)
     year1 = max(pd.Series(pd.to_datetime(day_list(start_time, end_time))).dt.year)
@@ -267,27 +125,6 @@ def int_list_of_days(start_time, end_time):
     day1 = max(pd.to_datetime(pd.Series(day_list(start_time, end_time))).dt.day)
     return np.linspace(day0,day1,day1-day0+1).astype(int)
 
-
-#
-# def crop_datetimeindex_to_year(times, year: int):
-#     mask = pd.Series(times).dt.year == year
-#     return times[mask]
-#
-# def crop_datetimeindex_to_month(times, month: int):
-#     mask = pd.Series(times).dt.month == month
-#     return times[mask]
-#
-# def create_monthly_time_stamps(start_time: str, end_time: str):
-#     start_times = month_list(start_time, end_time)
-#     end_times = month_list(start_time, end_time)
-#
-#     start_times = start_times[1:]
-#     end_times=start_times-pd.DateOffset(minutes=1)
-#     end_times = end_times.append(pd.DatetimeIndex([end_time]))
-#
-#     start_times = pd.DatetimeIndex([start_time]).append(start_times)
-#
-#     return start_times, end_times
 
 def create_time_stamps(start_time: str, end_time: str, stride: int, hours_per_file: int=0, last_file: str='', lead_time: int=0) -> Tuple:
     """Create time stamps to read in blocks of wind forcing from files.
@@ -515,7 +352,7 @@ def write_monthly_nc_files(dnora_obj, file_object) -> list[str]:
 
         outfile = file_object.get_filepath(start_time=month, edge_object='Grid')
 
-        outfile = file_object.clean(outfile)
+        outfile = file_module.clean_filename(outfile)
         if os.path.exists(outfile):
             os.remove(outfile)
         dnora_obj.ds().sel(time=slice(t0, t1)).to_netcdf(outfile)

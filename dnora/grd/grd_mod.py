@@ -248,7 +248,6 @@ class TriGrid(UnstrGrid):
         if [a for a in (x, y, lon, lat) if a is not None]:
             self._init_structure(x, y, lon, lat)
 
-
     def import_triang(self, triang_reader: TriangReader):
         """Reads a triangular mesh."""
         tri, nodes, lon, lat, x, y, types, edge_nodes, zone_number, zone_letter = triang_reader()

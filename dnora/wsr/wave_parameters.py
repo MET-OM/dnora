@@ -46,32 +46,6 @@ class WaveParameter(ABC):
     def standard_name(self) -> str:
         ''
 
-    #def _is_boundary(self, spec: xr.Dataset) -> bool:
-    #    return 'dirs' in list(spec.coords)
-
-    # def _format_dataset(self, wave_parameter: xr.Dataset, spec: xr.Dataset, data_var=None) -> xr.Dataset:
-    #     if data_var is None:
-    #         data_var = list(wave_parameter.data_vars)[0]
-    #
-    #     # Data variable will be name e.g. 'm0' is it has been calculated using Moment(0)
-    #     # Change name of data variable to name of the parameter
-    #     wave_parameter = wave_parameter.rename({data_var: self.name()})
-    #
-    #     # Drop extra variables from 1D spectra Dataset
-    #     if 'mdir' in list(wave_parameter.data_vars):
-    #         wave_parameter = wave_parameter.drop('mdir')
-    #     if 'spr' in list(wave_parameter.data_vars):
-    #         wave_parameter = wave_parameter.drop('spr')
-    #
-    #     # Copy over global attributes from the spectral Dataset
-    #     #wave_parameter = wave_parameter.assign_attrs({'name': spec.name, 'source': spec.source})
-    #
-    #     # Set parameter specific attributes
-    #     wave_parameter[self.name()].attrs['unit'] = self.unit()
-    #     wave_parameter[self.name()].attrs['standard_name'] = self.standard_name()  # None if not defined
-    #
-    #     return wave_parameter
-
 class Moment(WaveParameter):
     """Spectral moment from spectra"""
     def __init__(self, moment: float) -> None:
@@ -206,7 +180,7 @@ class Tp(WaveParameter):
         m_1 = PowerMoment(-1,10)(spec)
         mask = np.where(m_1 < 0.0000000001)
         m_1[mask] = -999
-        tp = PowerMoment(0,10)(spec)/m_1
+        tp = m_1/PowerMoment(0,10)(spec)
         tp[mask] = 0
         return tp
 

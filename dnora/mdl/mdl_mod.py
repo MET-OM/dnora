@@ -230,7 +230,8 @@ class ModelRun:
         """Writes existing data to cached files."""
         self.export_waveseries(waveseries_writer=wsr.write.DnoraNc(), format='Cache')
 
-    def boundary_to_spectra(self, dry_run: bool=False, name :str=None, write_cache=False):
+    def boundary_to_spectra(self, dry_run: bool=False, name :str=None,
+                            write_cache=False, **kwargs):
         self._dry_run = dry_run
         if self.boundary() is None:
             msg.warning('No Boundary to convert to Spectra!')
@@ -243,11 +244,11 @@ class ModelRun:
             self.import_spectra(spectral_reader=spectral_reader,
                                 point_picker=bnd.pick.TrivialPicker(),
                                 name=name,
-                                write_cache=write_cache)
+                                write_cache=write_cache, **kwargs)
         else:
             msg.info('Dry run! No boundary will not be converted to spectra.')
 
-    def spectra_to_waveseries(self, dry_run: bool=False, write_cache=False):
+    def spectra_to_waveseries(self, dry_run: bool=False, write_cache=False, **kwargs):
         self._dry_run = dry_run
         if self.spectra() is None:
             msg.warning('No Spectra to convert to WaveSeries!')
@@ -260,13 +261,13 @@ class ModelRun:
             self.import_waveseries(waveseries_reader=waveseries_reader,
                                     point_picker=bnd.pick.TrivialPicker(),
                                     name=name,
-                                    write_cache=write_cache)
+                                    write_cache=write_cache, **kwargs)
         else:
             msg.info('Dry run! No boundary will not be converted to spectra.')
 
-    def boundary_to_waveseries(self, dry_run: bool=False, write_cache=False):
-        self.boundary_to_spectra(dry_run=dry_run, write_cache=write_cache)
-        self.spectra_to_waveseries(dry_run=dry_run, write_cache=write_cache)
+    def boundary_to_waveseries(self, dry_run: bool=False, write_cache=False, **kwargs):
+        self.boundary_to_spectra(dry_run=dry_run, write_cache=write_cache, **kwargs)
+        self.spectra_to_waveseries(dry_run=dry_run, write_cache=write_cache, **kwargs)
 
 
     def export_grid(self, grid_writer: GridWriter=None,

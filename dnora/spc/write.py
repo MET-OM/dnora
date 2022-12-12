@@ -58,7 +58,7 @@ class SpectralWriter(ABC):
         return self._convention
 
     @abstractmethod
-    def __call__(self, spectra: Spectra, filename: str) -> tuple[str, str]:
+    def __call__(self, dict_of_objects: dict, file_object: str) -> tuple[str, str]:
         """Write the data from the Spectra object and returns the file and
         folder where data were written."""
 
@@ -71,20 +71,6 @@ class Null(SpectralWriter):
 
     def __call__(self, dict_of_objects: dict, file_object):
         return ''
-#
-# class DumpToNc(SpectralWriter):
-#     def __init__(self, convention: Union[SpectralConvention, str]=SpectralConvention.MET) -> None:
-#         self._convention = convention
-#         return
-#
-#     def _extension(self) -> str:
-#         return 'nc'
-#
-#     def __call__(self, dict_of_objects: dict, file_object) -> tuple[str, str]:
-#
-#         dict_of_objects['Spectra'].ds().to_netcdf(file_object.get_filepath())
-#
-#         return file_object.get_filepath()
 
 class DnoraNc(SpectralWriter):
     def _extension(self) -> str:
@@ -110,10 +96,8 @@ class REEF3D(SpectralWriter):
         filename = file_object.get_filepath()
         spectra = dict_of_objects['Spectra']
         with open(filename, 'w') as f:
-            spec = spectra.spec()[x,t,:]
-            freq = spectra.freq()
-            freq = freq*2*np.pi
-            spec = spec/2/np.pi
+            spec = spectra.spec(angular=True)[x,t,:]
+            freq = spectra.freq(angular=True)
             for i, w in enumerate(freq):
                 f.write(f'{w:.7f} {spec[i]:.7f}\n')
 
