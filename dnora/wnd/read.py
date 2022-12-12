@@ -52,8 +52,8 @@ class ConstantForcing(ForcingReader):
 
         lon, lat, x, y = aux_funcs.get_coordinates_from_grid(grid, self.cartesian)
 
-        u = np.full((grid.ny(), grid.nx(), len(time)), self.u)
-        v = np.full((grid.ny(), grid.nx(), len(time)), self.v)
+        u = np.full((len(time), grid.ny(), grid.nx()), self.u)
+        v = np.full((len(time), grid.ny(), grid.nx()), self.v)
         metadata = {'metadata': 'this is a constant forcing'}
 
         return time, u, v, lon, lat, x, y, metadata

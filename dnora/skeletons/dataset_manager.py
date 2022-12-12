@@ -4,7 +4,12 @@ import xarray as xr
 import utm
 from copy import copy
 from .coordinate_manager import CoordinateManager
-from ..aux_funcs import move_time_dim_to_front
+
+def move_time_dim_to_front(coord_list) -> list[str]:
+    if 'time' not in coord_list:
+        return coord_list
+    coord_list.insert(0, coord_list.pop(coord_list.index('time')))
+    return coord_list
 
 class DatasetManager:
     """Contains methods related to the creataon and handling of the Xarray
@@ -109,7 +114,6 @@ class DatasetManager:
         coord_type = 'all', 'spatial', 'grid' or 'gridpoint'
         """
         self._merge_in_ds(self.compile_to_ds(data, data_name, coord_type))
-        self.set_new_ds(self.ds().transpose(*move_time_dim_to_front(list(self.ds().dims))))
 
     def get(self, data_name: str, default_data=None, **kwargs) -> xr.DataArray:
         """Gets data from Dataset.
@@ -168,13 +172,11 @@ class DatasetManager:
                 if i > len(data.shape)-1:
                     raise Exception(f'{item[0]} coordinate is {len(item[1])} long, but that dimension doesnt exist in the data!!!')
                 if len(item[1]) != data.shape[i]:
-                        breakpoint()
                         raise Exception(f'{item[0]} coordinate is {len(item[1])} long, but size of data in that dimension (dim {i}) is {data.shape[i]}!!!')
 
             if i < len(data.shape)-1:
-                raise Warning(f'The data had {len(data.shape)} dimensions but only {i} dimensions have been defined. Missing a decorator?')
+                raise Exception(f'The data had {len(data.shape)} dimensions but only {i} dimensions have been defined. Missing a decorator?')
 
-        breakpoint()
         coords_dict = self.coords_dict(coord_type)
         check_coord_consistency()
 
@@ -210,14 +212,14 @@ class DatasetManager:
                 if val in list2:
                     list3.append(val)
             return list3
-        breakpoint()
+
         if type not in ['all', 'spatial', 'grid', 'gridpoint']:
             raise ValueError("Type needs to be 'all', 'spatial', 'grid' or 'gridpoint'.")
 
         if not hasattr(self, 'data'):
             return []
 
-        all_coords = move_time_dim_to_front(list(self.ds().coords))
+        all_coords = list(self.ds().coords)
         spatial_coords = self.coord_manager.spatial_coords
 
         if type == 'all':
@@ -225,7 +227,7 @@ class DatasetManager:
         if type == 'spatial':
             return list_intersection(all_coords, spatial_coords)
         if type == 'grid':
-            return self.coords('spatial') + self.coord_manager.added_coords('grid')
+            return move_time_dim_to_front(self.coords('spatial') + self.coord_manager.added_coords('grid'))
         if type == 'gridpoint':
             return self.coord_manager.added_coords('gridpoint')
 
@@ -250,11 +252,12 @@ class DatasetManager:
     def coords_to_size(self, coords: list[str], **kwargs) -> tuple[int]:
         list = []
         data = self._slice_data(self.ds(), **kwargs)
-        for coord, val in data.dims.items():
-            if coord in coords:
-                list.append(val)
+        for coord in coords:
+            list.append(len(data.get(coord)))
+        # for coord, val in data.dims.items():
+        #     if coord in coords:
+        #         list.append(val)
         return tuple(list)
-
 
 
 def clean_coordinate_vectors(x, y, is_cartesian, indexed):

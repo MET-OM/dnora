@@ -99,7 +99,7 @@ class Multiply(BoundaryProcessor):
 
     def __call__(self, spec, dirs, freq, inds) -> Tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
-        new_spec = copy(spec)*self.calib_spec
+        new_spec = spec*self.calib_spec
         check_that_spectra_are_consistent(new_spec, dirs, freq, expected_dim=2)
         return new_spec, dirs, freq, inds
 
@@ -117,11 +117,11 @@ class RemoveEmpty(BoundaryProcessor):
 
         mask = np.full(len(inds),True)
         for n in inds:
-            if np.max(spec[n,:,:,:]) < self.threshold or np.isnan(spec[n,:,:,:]).any():
+            if np.max(spec[:,n,:,:]) < self.threshold or np.isnan(spec[:,n,:,:]).any():
                 mask[n] = False
 
         new_inds = inds[mask]
-        new_spec = spec[mask,:,:,:]
+        new_spec = spec[:,mask,:,:]
 
         check_that_spectra_are_consistent(new_spec, dirs, freq, expected_dim=2)
 

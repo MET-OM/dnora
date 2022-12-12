@@ -65,6 +65,7 @@ class Skeleton:
         #     self.ds_manager.set_new_ds(ds)
         # else:
         #     self.ds_manager.set_new_ds(xr.concat([self.ds(), ds], dim="time").sortby('time'))
+
         self._reset_masks()
         self._reset_datavars()
 
@@ -96,6 +97,7 @@ class Skeleton:
 
         if updated_mask is None:
             updated_mask = self.get(f'{name}_mask',empty=True)
+
         self.ds_manager.set(data=updated_mask.astype(int), data_name=f'{name}_mask', coord_type=coords)
 
     def _update_datavar(self, name: str, updated_var=None) -> None:
@@ -212,7 +214,21 @@ class Skeleton:
             return None
         return self.ds_manager.ds()
 
-    def size(self, type: str='all') -> tuple[int]:
+    # def size(self, type: str='all') -> tuple[int]:
+    #     """Returns the size of the Dataset.
+    #
+    #     'all': size of entire Dataset
+    #     'spatial': size over coordinates from the Skeleton (x, y, lon, lat, inds)
+    #     'grid': size over coordinates for the grid (e.g. z, time)
+    #     'gridpoint': size over coordinates for a grid point (e.g. frequency, direcion or time)
+    #     """
+    #     print('aaaaaa')
+    #     breakpoint()
+    #     if not self._structure_initialized():
+    #         return None
+    #     return self.ds_manager.size(type)
+
+    def size(self, type: str='all', **kwargs) -> tuple[int]:
         """Returns the size of the Dataset.
 
         'all': size of entire Dataset
@@ -222,7 +238,7 @@ class Skeleton:
         """
         if not self._structure_initialized():
             return None
-        return self.ds_manager.size(type)
+        return self.ds_manager.coords_to_size(self.ds_manager.coords(type), **kwargs)
 
     def inds(self, **kwargs) -> np.ndarray:
         if not self._structure_initialized():
@@ -632,19 +648,6 @@ class Skeleton:
             self._name = new_name
         else:
             raise ValueError("name needs to be a string")
-
-
-    def size(self, type: str='all', **kwargs) -> tuple[int]:
-        """Returns the size of the Dataset.
-
-        'all': size of entire Dataset
-        'spatial': size over coordinates from the Skeleton (x, y, lon, lat, inds)
-        'grid': size over coordinates for the grid (e.g. z, time)
-        'gridpoint': size over coordinates for a grid point (e.g. frequency, direcion or time)
-        """
-        if not self._structure_initialized():
-            return None
-        return self.ds_manager.coords_to_size(self.ds_manager.coords(type), **kwargs)
 
 def will_grid_be_spherical_or_cartesian(x, y, lon, lat):
     """Determines if the grid will be spherical or cartesian based on which

@@ -142,8 +142,8 @@ class ERA5(BoundaryReader):
 
         # This is time, freq, dir, station
         spec = np.reshape(spec, (len(bnd_spec.time),len(bnd_spec.frequency),len(bnd_spec.direction),len(lon)))
-        # This is station, time, freq, dir (as we want it)
-        spec = np.moveaxis(spec,3,0)
+        # This is time, station, freq, dir (as we want it)
+        spec = np.moveaxis(spec,3,1)
 
         freq = bnd_spec.frequency.values
         dirs = bnd_spec.direction.values
@@ -154,6 +154,6 @@ class ERA5(BoundaryReader):
         # Inds given by point picker
         lon = lon[inds]
         lat = lat[inds]
-        spec = spec[inds,:,:,:]
+        spec = spec[:,inds,:,:]
 
         return  time, freq, dirs, spec, lon, lat, None, None, attributes

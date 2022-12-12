@@ -68,7 +68,6 @@ class Boundary(PointSkeleton):
         msg.header(boundary_reader, "Loading boundary spectra...")
 
         time, freq, dirs, spec, lon, lat, x, y, metadata = boundary_reader(self.grid(), start_time, end_time, inds)
-
         self._init_structure(x, y, lon, lat, time=time, freq=freq, dirs=dirs)
 
         self.ds_manager.set(spec, 'spec', coord_type='all')

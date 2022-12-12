@@ -126,8 +126,8 @@ class NORA3(ForcingReader):
 
         u = u.fillna(0)
         v = v.fillna(0)
-        u = np.moveaxis(u.values,0,2)
-        v = np.moveaxis(v.values,0,2)
+        #u = np.moveaxis(u.values,0,2)
+        #v = np.moveaxis(v.values,0,2)
 
         time = wind_forcing.time.values
         lon = wind_forcing.x.values
@@ -232,10 +232,10 @@ class MyWave3km(ForcingReader):
         # Go to u and v components
         u, v = u_v_from_dir(wind_forcing.ff, wind_forcing.dd)  # factor 1000
 
-        u = u.fillna(0)
-        v = v.fillna(0)
-        u = np.moveaxis(u.values,0,2)
-        v = np.moveaxis(v.values,0,2)
+        u = -1*u.fillna(0) #*-1 due to ocean convection in WAM!!!
+        v = -1*v.fillna(0) #*-1 due to ocean convection in WAM!!!
+        #u = np.moveaxis(u.values,0,2)
+        #v = np.moveaxis(v.values,0,2)
 
         time = wind_forcing.time.values
         lon = wind_forcing.rlon.values
@@ -350,8 +350,8 @@ class MEPS(ForcingReader):
 
         u = wind_forcing.x_wind_10m.values
         v = wind_forcing.y_wind_10m.values
-        u = np.moveaxis(u,0,2)
-        v = np.moveaxis(v,0,2)
+        #u = np.moveaxis(u,0,2)
+        #v = np.moveaxis(v,0,2)
 
         time = wind_forcing.time.values
         lon = wind_forcing.x.values

@@ -17,27 +17,28 @@ grid.set_spacing(dm=1000)
 
 # Create a ModelRun-object
 model = mdl.WW3_WAM4km(grid, start_time='2022-11-30T00:00',
-                       end_time='2022-11-30T01:00', dry_run=False)
+                        end_time='2022-11-30T01:00', dry_run=False)
 #model.import_boundary(expansion_factor=1.2)
-#model.export_boundary()
-#model.export_grid(grd.write.REEF3D())
+# #model.export_boundary()
+# #model.export_grid(grd.write.REEF3D())
 model.import_forcing(expansion_factor=1.1, write_cache=True)
-#model.plot_forcing()
-#model.import_boundary(read_cache=True)
-#model.cache_boundary()
-#model.import_forcing(wnd.read_metno.MEPS(), write_cache=True, read_cache=True)
-breakpoint()
-model.boundary_to_spectra(write_cache=True)
-model.plot_grid()
 
-
-model.boundary_to_spectra()
-model.spectra_to_waveseries()
-
-model.import_forcing()
-
-model.export_boundary()
-model.export_spectra()
-model.export_waveseries()
-
-model.export_forcing()
+# #model.plot_forcing()
+# #model.import_boundary(read_cache=True)
+# #model.cache_boundary()
+# #model.import_forcing(wnd.read_metno.MEPS(), write_cache=True, read_cache=True)
+# breakpoint()
+# model.boundary_to_spectra(write_cache=True)
+# model.plot_grid()
+#
+#
+# model.boundary_to_spectra()
+# model.spectra_to_waveseries()
+#
+# model.import_forcing()
+#
+# model.export_boundary()
+# model.export_spectra()
+# model.export_waveseries()
+#
+# model.export_forcing()

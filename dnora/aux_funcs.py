@@ -505,12 +505,6 @@ def check_that_spectra_are_consistent(spec, dirs, freq, expected_dim: int=None) 
         else:
             ValueError(f'Expected {expected_dim} dimensional spectra, but they seem to be {spec_dim} dimensional!')
 
-def move_time_dim_to_front(coord_list) -> list[str]:
-    if 'time' not in coord_list:
-        return coord_list
-    coord_list.insert(0, coord_list.pop(coord_list.index('time')))
-    return coord_list
-
 def write_monthly_nc_files(dnora_obj, file_object) -> list[str]:
     "Writes the data of a DNORA object into montly netcdf-files wh the ames specified by the FileNames instance."
     output_files = []

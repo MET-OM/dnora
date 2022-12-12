@@ -102,7 +102,7 @@ class WAM4km(BoundaryReader):
         freq = bnd.freq.values
         dirs = bnd.direction.values
         spec = bnd.SPEC.values
-        spec = np.moveaxis(spec,1,0) # time, inds ... -> inds, time, ...
+        #spec = np.moveaxis(spec,1,0) # time, inds ... -> inds, time, ...
         lon = bnd.longitude.values
         lat = bnd.latitude.values
 
@@ -243,7 +243,7 @@ class WAM4kmOld(BoundaryReader):
         freq = bnd.freq.values
         dirs = bnd.direction.values
         spec = bnd.SPEC.values
-        spec = np.moveaxis(spec,1,0) # time, inds ... -> inds, time, ...
+        #spec = np.moveaxis(spec,1,0) # time, inds ... -> inds, time, ...
         lon = bnd.longitude.values
         lat = bnd.latitude.values
 
@@ -329,7 +329,7 @@ class NORA3(BoundaryReader):
         freq = bnd.freq.values
         dirs = bnd.direction.values
         spec = bnd.SPEC.values
-        spec = np.moveaxis(spec,1,0) # time, inds ... -> inds, time, ...
+        #spec = np.moveaxis(spec,1,0) # time, inds ... -> inds, time, ...
         lon = bnd.longitude.values[0,:]
         lat = bnd.latitude.values[0,:]
         bnd.attrs.pop('direction_convention')

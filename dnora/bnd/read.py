@@ -61,7 +61,7 @@ class BoundaryReader(ABC):
         time:   Time stamps as numpy.datetime64 array
         freq:   Frequency vector as numpy array
         dirs:   Directional vector as numpy array
-        spec:   Boundary spectra [station, time, freq, dirs] as numpy array
+        spec:   Boundary spectra [time, station, freq, dirs] as numpy array
         lon:    Longitude vector as numpy array (None if Cartesian)
         lat:    Latitude vector as numpy array (None if Cartesian)
         x:    Longitude vector as numpy array (None if Spherical)
@@ -128,9 +128,9 @@ class ConstantBoundary(BoundaryReader):
             north = 0
         #dirs = np.array(range(0,360,15))
 
-        spec = np.full((len(inds), len(time), len(freq), len(dirs)), 0)
+        spec = np.full((len(time), len(inds), len(freq), len(dirs)), 0)
         north_ind = np.where(dirs==north)[0][0]
-        spec[:,:,:,north_ind] = np.full((len(inds), len(time), len(freq)), self.spec)
+        spec[:,:,:,north_ind] = np.full((len(time), len(inds), len(freq)), self.spec)
         metadata = {'metadata': 'this is a constant boundary'}
 
         return time, freq, dirs, spec, lon, lat, x, y, metadata
