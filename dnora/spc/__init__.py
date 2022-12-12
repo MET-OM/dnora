@@ -1,3 +1,2 @@
 from .spc_mod import Spectra
-from .read import *
-from .write import *
+from . import read, write

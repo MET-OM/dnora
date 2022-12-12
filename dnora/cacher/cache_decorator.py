@@ -28,17 +28,6 @@ def cached_reader(dnora_obj, reader_function):
                 reader = reader or eval(f'args[0]._get_{dnora_obj.lower()}_reader()')
                 return reader
 
-            # def write_to_cache() -> None:
-            #     for month in mrun.dict_of_objects().get(dnora_obj).months():
-            #         t0 = f"{month.strftime('%Y-%m-01')}"
-            #         d1 = monthrange(int(month.strftime('%Y')), int(month.strftime('%m')))[1]
-            #         t1 = f"{month.strftime(f'%Y-%m-{d1}')}"
-            #         outfile = file_object.filepath(start_time=t0)
-            #         if os.path.exists(outfile):
-            #             os.remove(outfile)
-            #         mrun.dict_of_objects().get(dnora_obj).ds().sel(time=slice(t0, t1)).to_netcdf(outfile)
-            #         msg.to_file(outfile)
-
             def determine_patch_periods():
                 """Determines if there is some periods that we need to patch from thredds
                 adter reading cached data"""

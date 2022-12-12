@@ -24,9 +24,4 @@ Copyright 2021, Konstantinos Christakos and Jan-Victor Björkqvist, MET Norway
 """
 
 from .bnd_mod import Boundary
-from .read import *
-from .read_metno import *
-from .read_ec import *
-from .pick import *
-from .process import *
-from .write import *
+from . import read, read_metno, read_ec, pick, process, write
