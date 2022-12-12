@@ -6,6 +6,11 @@ from ..bnd.conventions import SpectralConvention
 from ..bnd import Boundary
 from ..spc import Spectra
 from typing import Union
+from pint import UnitRegistry
+
+ureg = UnitRegistry()
+ureg.default_format = "~S"
+
 class WaveParameter(ABC):
     """Calculates a wave parameter from spectra xarray
 
@@ -48,7 +53,7 @@ class WaveParameter(ABC):
 
 class Moment(WaveParameter):
     """Spectral moment from spectra"""
-    def __init__(self, moment: float) -> None:
+    def __init__(self, moment: int) -> None:
         self._moment = moment
         pass
 
@@ -64,7 +69,7 @@ class Moment(WaveParameter):
         return ds.values
 
     def unit(self):
-        ''
+        return ureg.meter**2 * eval(f'ureg.second**-{self._moment}')
 
     def name(self):
         """ 1 returns 'm1', 0.5 returns 'm05' etc."""
@@ -95,7 +100,7 @@ class PowerMoment(WaveParameter):
         return ds.values
 
     def unit(self):
-        ''
+        return eval(f'ureg.meter**{self._power*2}') * eval(f'ureg.second**{self._power}') * ureg.second**-1 * eval(f'ureg.second**-{self._moment}')
 
     def name(self):
         """ 1 returns 'm1', 0.5 returns 'm05' etc."""
@@ -123,7 +128,7 @@ class Hs(WaveParameter):
         return 'hs'
 
     def unit(self):
-        return 'm'
+        return Moment(0).unit()**0.5
 
     def standard_name(self):
         return 'sea_surface_wave_significant_height'
@@ -138,7 +143,7 @@ class Tm01(WaveParameter):
         return 'tm01'
 
     def unit(self):
-        return 's'
+        return Moment(0).unit()/Moment(1).unit()
 
     def standard_name(self):
         return 'sea_surface_wave_mean_period_from_variance_spectral_density_first_frequency_moment'
@@ -168,7 +173,7 @@ class Tm02(WaveParameter):
         return 'tm02'
 
     def unit(self):
-        return 's'
+        return (Moment(0).unit()/Moment(2).unit())**0.5
 
     def standard_name(self):
         return 'sea_surface_wave_mean_period_from_variance_spectral_density_second_frequency_moment'
@@ -188,7 +193,7 @@ class Tp(WaveParameter):
         return 'tp'
 
     def unit(self):
-        return 's'
+        return PowerMoment(-1,10).unit()/PowerMoment(0,10).unit()
 
     def standard_name(self):
         return 'sea_surface_wave_period_at_variance_spectral_density_maximum'
@@ -208,7 +213,7 @@ class Fm(WaveParameter):
         return 'fm'
 
     def unit(self):
-        return 'Hz'
+        return Moment(1).unit()/Moment(0).unit()
 
 class Wm(WaveParameter):
     """Mean angular freqeuncy from spectra"""
@@ -220,7 +225,7 @@ class Wm(WaveParameter):
         return 'wm'
 
     def unit(self):
-        return 'rad/s'
+        return Moment(1).unit()/Moment(0).unit()*ureg.rad
 
 
 class Fc(WaveParameter):
@@ -233,7 +238,7 @@ class Fc(WaveParameter):
         return 'fc'
 
     def unit(self):
-        return 'Hz'
+        return PowerMoment(1,4).unit()/PowerMoment(0,4).unit()
 
 class Wc(WaveParameter):
     """Characteristic angular freqeuncy from spectra"""
@@ -245,7 +250,7 @@ class Wc(WaveParameter):
         return 'wc'
 
     def unit(self):
-        return 'rad/s'
+        return PowerMoment(1,4).unit()/PowerMoment(0,4).unit()*ureg.rad
 
 class Fp(WaveParameter):
     """Peak frequency from spectra"""
@@ -257,13 +262,13 @@ class Fp(WaveParameter):
         return 'fp'
 
     def unit(self):
-        return 'Hz'
+        return PowerMoment(1,10).unit()/PowerMoment(0,10).unit()
 
     def standard_name(self):
         return 'sea_surface_wave_frequency_at_variance_spectral_density_maximum'
 
 
-class Fp(WaveParameter):
+class Wp(WaveParameter):
     """Peak angular frequency from spectra"""
 
     def __call__(self, spec: Union[Spectra, Boundary]):
@@ -273,7 +278,7 @@ class Fp(WaveParameter):
         return 'wp'
 
     def unit(self):
-        return 'Hz'
+        return PowerMoment(1,10).unit()/PowerMoment(0,10).unit()*ureg.rad
 
     def standard_name(self):
         return 'sea_surface_wave_angular_frequency_at_variance_spectral_density_maximum'
@@ -311,7 +316,7 @@ class Dirm(WaveParameter):
         return 'dirm'
 
     def unit(self):
-        return 'deg'
+        return ureg.deg
 
     def standard_name(self):
         return 'sea_surface_wave_from_direction'
@@ -348,7 +353,7 @@ class Sprm(WaveParameter):
         return 'sprm'
 
     def unit(self):
-        return 'deg'
+        return ureg.deg
 
     def standard_name(self):
         return 'sea_surface_wave_directional_spread'

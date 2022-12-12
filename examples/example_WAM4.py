@@ -19,7 +19,7 @@ grid.set_spacing(dm=1000)
 model = mdl.WW3_WAM4km(grid, start_time='2022-11-30T00:00',
                         end_time='2022-11-30T01:00', dry_run=False)
 model.import_boundary(expansion_factor=1.2, read_cache=True)
-model.boundary_to_waveseries(parameters=['hs'])
+model.boundary_to_waveseries(parameters=['wc'])
 #model.cache_boundary()
 # #model.export_boundary()
 # #model.export_grid(grd.write.REEF3D())

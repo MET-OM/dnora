@@ -51,7 +51,7 @@ class WaveSeries(PointSkeleton):
 
         for wp, data in data_dict.items():
             self.ds_manager.set(data, wp.name(), coord_type='all')
-            self.ds_manager.set_attrs({'name': wp.name(), 'unit': wp.unit(), 'standard_name': wp.standard_name()}, wp.name())
+            self.ds_manager.set_attrs({'name': wp.name(), 'unit': f'{wp.unit()}', 'standard_name': wp.standard_name()}, wp.name())
             self = add_datavar(wp.name(), aftermath=True)(self) # Creates .hs() etc. methods
         self.ds_manager.set_attrs(attributes) # Global attributes
 
