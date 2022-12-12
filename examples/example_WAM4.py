@@ -18,11 +18,11 @@ grid.set_spacing(dm=1000)
 # Create a ModelRun-object
 model = mdl.WW3_WAM4km(grid, start_time='2022-11-30T00:00',
                         end_time='2022-11-30T01:00', dry_run=False)
-#model.import_boundary(expansion_factor=1.2)
+model.import_boundary(expansion_factor=1.2)
 # #model.export_boundary()
 # #model.export_grid(grd.write.REEF3D())
-model.import_forcing(expansion_factor=1.1, write_cache=True)
-
+#model.import_forcing(expansion_factor=1.1, write_cache=True)
+model.export_boundary()
 # #model.plot_forcing()
 # #model.import_boundary(read_cache=True)
 # #model.cache_boundary()

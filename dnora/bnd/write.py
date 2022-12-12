@@ -80,18 +80,6 @@ class Null(BoundaryWriter):
     def __call__(self, dict_of_objects: dict, file_object):
         return ''
 
-# class DumpToNc(BoundaryWriter):
-#     def __init__(self, convention: Union[SpectralConvention, str]=SpectralConvention.OCEAN) -> None:
-#         self._convention = convention
-#         return
-#
-#     def _extension(self) -> str:
-#         return 'nc'
-#
-#     def __call__(self, boundary: Boundary, filename: str) -> Tuple[str, str]:
-#         boundary.ds().to_netcdf(filename)
-#         return filename
-
 class DnoraNc(BoundaryWriter):
     def _extension(self) -> str:
         return 'nc'
@@ -100,73 +88,53 @@ class DnoraNc(BoundaryWriter):
         output_files = write_monthly_nc_files(dict_of_objects['Boundary'], file_object)
         return output_files
 
-
-# class NcFiles(BoundaryWriter):
-#     def __init__(self, convention: Union[SpectralConvention, str]=SpectralConvention.OCEAN) -> None:
-#         self._convention = convention
-#         return
-#
-#     def _extension(self) -> str:
-#         return 'nc'
-#
-#     def _clean_filename(self):
-#         return False
-#
-#     def __call__(self, boundary: Boundary, filename: str) -> Tuple[str, str]:
-#
-#         output_files = []
-#         for n in boundary.x():
-#             output_file = file_module.replace_lonlat(filename, lon=boundary.lon()[n], lat=boundary.lat()[n])
-#             output_file = file_module.clean(output_file)
-#             output_files.append(output_file)
-#
-#             msg.to_file(output_file)
-#
-#             ds = boundary.slice_data(x=[n])
-#             ds.to_netcdf(output_file)
-#
-#         return output_files
-
-
 class WW3(BoundaryWriter):
-    def __init__(self, convention=SpectralConvention.WW3) -> None:
+    def __init__(self, convention=SpectralConvention.WW3, one_file: bool=True) -> None:
+        self.one_file = one_file
         self._convention = convention
-        return
 
     def _extension(self) -> str:
         return 'nc'
 
+    def _im_silent(self) -> bool:
+        return self.one_file
 
     def __call__(self, dict_of_objects: dict, file_object) -> Tuple[str, str]:
         msg.info('Writing WAVEWATCH-III netcdf-output')
-
         boundary = dict_of_objects['Boundary']
-        output_file = file_object.clean(file_object.get_filepath())
 
-        msg.plain(f"All points >> {output_file}")
-        self.write_netcdf(boundary, output_file)
-        # WW3 need time to be first
-        #nco = Nco()
-        #nco.ncpdq(input=output_file, output=output_file, options=['-a', 'time,station,frequency,direction'])
+        if self.one_file:
+            filename = file_object.get_filename()
+            if len(boundary.x()) == 1:
+                # Uses $Lon $Lat
+                filename = file_module.replace_lonlat(filename, lon=boundary.lon()[0], lat=boundary.lat()[0])
 
-        return output_file
+            output_files = file_module.clean_filename(filename)
+            self.write_netcdf(boundary, output_files)
+
+        else:
+            output_files = []
+            for n in boundary.inds():
+                filename = file_object.get_filename()
+                output_file = file_module.replace_lonlat(filename, lon=boundary.lon()[n], lat=boundary.lat()[n])
+                output_file = file_module.clean_filename(output_file)
+                output_files.append(output_file)
+
+                msg.plain(f"Point {n} >> {output_file}")
+                self.write_netcdf(boundary, output_file, n)
+
+        return output_files
 
     def write_netcdf(self, boundary: Boundary, output_file: str, n: int=None) -> None:
         """Writes WW3 compatible netcdf spectral output from a list containing xarray datasets."""
 
-        #if boundary.name == "AnonymousBoundary":
-        #    output_file = f"ww3_spec_E{lon:09.6f}N{lat:09.6f}.nc"
-        #else:
-        #    output_file = f"ww3_{boundary.name}_E{lon:09.6f}N{lat:09.6f}.nc"
-        #output_file = 'ww3_spec_E'+str(lon)+'N'+str(lat)+'.nc'
-        #output_file = 'Test_ww3.nc'
-        root_grp = netCDF4.Dataset(output_file, 'w', format='NETCDF4')
+            root_grp = netCDF4.Dataset(output_file, 'w', format='NETCDF4')
         #################### dimensions
         root_grp.createDimension('time', None)
-#        if self.one_file:
-        root_grp.createDimension('station', len(boundary.x()))
-        # else:
-        #     root_grp.createDimension('station', 1)
+        if self.one_file:
+            root_grp.createDimension('station', len(boundary.inds()))
+        else:
+            root_grp.createDimension('station', 1)
         root_grp.createDimension('string16', 16)
         root_grp.createDimension('frequency', len(boundary.freq()))
         root_grp.createDimension('direction', len(boundary.dirs()))
@@ -177,7 +145,7 @@ class WW3(BoundaryWriter):
         station = root_grp.createVariable('station', np.int32, ('station',))
         frequency = root_grp.createVariable('frequency',np.float32 , ('frequency',))
         direction = root_grp.createVariable('direction', np.float32, ('direction',))
-        efth = root_grp.createVariable('efth', np.float32, ('time', 'station', 'frequency','direction',))
+        efth = root_grp.createVariable('efth', np.float32, ('time','station','frequency','direction',))
         latitude = root_grp.createVariable('latitude',np.float32 , ('time','station',))
         longitude = root_grp.createVariable('longitude',np.float32 , ('time','station',))
         station_name = root_grp.createVariable('station_name', 'S1', ('station','string16',))
@@ -253,25 +221,22 @@ class WW3(BoundaryWriter):
         frequency[:] =boundary.freq()
         direction[:] = boundary.dirs()
 
-#        if self.one_file:
-        station[:] = boundary.x()
-        #efth[:] =  boundary.spec()
-
-        efth[:] = boundary.spec()
-        longitude[:] = np.full((len(boundary.time()),len(boundary.lon())), boundary.lon(),dtype=float)
-        latitude[:] = np.full((len(boundary.time()),len(boundary.lat())), boundary.lat(),dtype=float)
-        # else:
-        #     station[:] = 1
-        #     efth[:] =  boundary.spec(x=[n])
-        #     longitude[:] = np.full((len(boundary.time()),1), boundary.lon()[n],dtype=float)
-        #     latitude[:] = np.full((len(boundary.time()),1), boundary.lat()[n],dtype=float)
+        if self.one_file:
+            station[:] = boundary.inds()
+            efth[:] =  boundary.spec()
+            longitude[:] = np.full((len(boundary.time()),len(boundary.lon())), boundary.lon(),dtype=float)
+            latitude[:] = np.full((len(boundary.time()),len(boundary.lat())), boundary.lat(),dtype=float)
+        else:
+            station[:] = 1
+            efth[:] =  boundary.spec(inds=[n])
+            longitude[:] = np.full((len(boundary.time()),1), boundary.lon()[n],dtype=float)
+            latitude[:] = np.full((len(boundary.time()),1), boundary.lat()[n],dtype=float)
         #longitude[:] = bnd_out.longitude.values
         #latitude[:] = bnd_out.latitude.values
         station_name[:] = 1
 
         root_grp.close()
         return
-
 
 class SWAN(BoundaryWriter):
     def __init__(self, factor = 1E-4) -> None:

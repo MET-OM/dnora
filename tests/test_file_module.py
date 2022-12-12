@@ -75,69 +75,69 @@ class SplitPath(unittest.TestCase):
 
 class Clean(unittest.TestCase):
     def test_trivial(self):
-        filename = file_module.clean(filename='filename', list_of_placeholders=defaults['list_of_placeholders'])
+        filename = file_module.clean_filename(filename='filename', list_of_placeholders=defaults['list_of_placeholders'])
         self.assertEqual(filename, 'filename')
 
     def test_empty(self):
-        filename = file_module.clean(filename='', list_of_placeholders=defaults['list_of_placeholders'])
+        filename = file_module.clean_filename(filename='', list_of_placeholders=defaults['list_of_placeholders'])
         self.assertEqual(filename, '')
 
     def test_grid(self):
-        filename = file_module.clean(filename='filename_#Grid', list_of_placeholders=defaults['list_of_placeholders'])
+        filename = file_module.clean_filename(filename='filename_#Grid', list_of_placeholders=defaults['list_of_placeholders'])
         self.assertEqual(filename, 'filename')
 
     def test_boundary(self):
-        filename = file_module.clean(filename='filename_#Boundary', list_of_placeholders=defaults['list_of_placeholders'])
+        filename = file_module.clean_filename(filename='filename_#Boundary', list_of_placeholders=defaults['list_of_placeholders'])
         self.assertEqual(filename, 'filename')
 
     def test_spectra(self):
-        filename = file_module.clean(filename='filename_#Spectra', list_of_placeholders=defaults['list_of_placeholders'])
+        filename = file_module.clean_filename(filename='filename_#Spectra', list_of_placeholders=defaults['list_of_placeholders'])
         self.assertEqual(filename, 'filename')
 
     def test_forcing(self):
-        filename = file_module.clean(filename='filename_#Forcing', list_of_placeholders=defaults['list_of_placeholders'])
+        filename = file_module.clean_filename(filename='filename_#Forcing', list_of_placeholders=defaults['list_of_placeholders'])
         self.assertEqual(filename, 'filename')
 
     def test_time(self):
-        filename = file_module.clean(filename='filename_#T0', list_of_placeholders=defaults['list_of_placeholders'])
+        filename = file_module.clean_filename(filename='filename_#T0', list_of_placeholders=defaults['list_of_placeholders'])
         self.assertEqual(filename, 'filename')
 
-        filename = file_module.clean(filename='filename_#T1', list_of_placeholders=defaults['list_of_placeholders'])
+        filename = file_module.clean_filename(filename='filename_#T1', list_of_placeholders=defaults['list_of_placeholders'])
         self.assertEqual(filename, 'filename')
 
-        filename = file_module.clean(filename='filename_#T0-#T1', list_of_placeholders=defaults['list_of_placeholders'])
+        filename = file_module.clean_filename(filename='filename_#T0-#T1', list_of_placeholders=defaults['list_of_placeholders'])
         self.assertEqual(filename, 'filename')
 
-        filename = file_module.clean(filename='filename_#T0_#T1', list_of_placeholders=defaults['list_of_placeholders'])
+        filename = file_module.clean_filename(filename='filename_#T0_#T1', list_of_placeholders=defaults['list_of_placeholders'])
         self.assertEqual(filename, 'filename')
 
     def test_lonlat(self):
-        filename = file_module.clean(filename='filename_#Lon', list_of_placeholders=defaults['list_of_placeholders'])
+        filename = file_module.clean_filename(filename='filename_#Lon', list_of_placeholders=defaults['list_of_placeholders'])
         self.assertEqual(filename, 'filename')
 
-        filename = file_module.clean(filename='filename_#Lat', list_of_placeholders=defaults['list_of_placeholders'])
+        filename = file_module.clean_filename(filename='filename_#Lat', list_of_placeholders=defaults['list_of_placeholders'])
         self.assertEqual(filename, 'filename')
 
-        filename = file_module.clean(filename='filename_E#Lon', list_of_placeholders=defaults['list_of_placeholders'])
+        filename = file_module.clean_filename(filename='filename_E#Lon', list_of_placeholders=defaults['list_of_placeholders'])
         self.assertEqual(filename, 'filename')
 
-        filename = file_module.clean(filename='filename_N#Lat', list_of_placeholders=defaults['list_of_placeholders'])
+        filename = file_module.clean_filename(filename='filename_N#Lat', list_of_placeholders=defaults['list_of_placeholders'])
         self.assertEqual(filename, 'filename')
 
-        filename = file_module.clean(filename='filename_#Lon_#Lat', list_of_placeholders=defaults['list_of_placeholders'])
+        filename = file_module.clean_filename(filename='filename_#Lon_#Lat', list_of_placeholders=defaults['list_of_placeholders'])
         self.assertEqual(filename, 'filename')
 
-        filename = file_module.clean(filename='filename_E#Lon_N#Lat', list_of_placeholders=defaults['list_of_placeholders'])
+        filename = file_module.clean_filename(filename='filename_E#Lon_N#Lat', list_of_placeholders=defaults['list_of_placeholders'])
         self.assertEqual(filename, 'filename')
 
     def test_combinations(self):
-        filename = file_module.clean(filename='filename_#Lon_#Grid#BoundarySaveThis#Forcing__', list_of_placeholders=defaults['list_of_placeholders'])
+        filename = file_module.clean_filename(filename='filename_#Lon_#Grid#BoundarySaveThis#Forcing__', list_of_placeholders=defaults['list_of_placeholders'])
         self.assertEqual(filename, 'filename_SaveThis')
 
-        filename = file_module.clean(filename='filename_#Lon_#T0-#T1#Grid#BoundarySaveThis#Forcing__', list_of_placeholders=defaults['list_of_placeholders'])
+        filename = file_module.clean_filename(filename='filename_#Lon_#T0-#T1#Grid#BoundarySaveThis#Forcing__', list_of_placeholders=defaults['list_of_placeholders'])
         self.assertEqual(filename, 'filename_SaveThis')
 
-        filename = file_module.clean(filename='filename_#Lon_#T0-#T1#Grid#BoundarySaveThisE#Lon#Forcing__', list_of_placeholders=defaults['list_of_placeholders'])
+        filename = file_module.clean_filename(filename='filename_#Lon_#T0-#T1#Grid#BoundarySaveThisE#Lon#Forcing__', list_of_placeholders=defaults['list_of_placeholders'])
         self.assertEqual(filename, 'filename_SaveThis')
 
 class ReplaceObjects(unittest.TestCase):

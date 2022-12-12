@@ -60,6 +60,7 @@ def replace_lonlat(filename: str, lon: float, lat: float) -> str:
 
     e.g. #Lon_#Lat_file.txt, 8.0, 60.05 -> 08.0000000_60.05000000_file.txt
     """
+
     if isinstance(lon, tuple):
         if lon[0] is not None:
             filename = re.sub("#Lon0", f"{lon[0]:010.7f}", filename)
@@ -69,7 +70,7 @@ def replace_lonlat(filename: str, lon: float, lat: float) -> str:
         if lon is not None:
             filename = re.sub("#Lon", f"{lon:010.7f}", filename)
 
-    if isinstance(lon, tuple):
+    if isinstance(lat, tuple):
         if lat[0] is not None:
             filename = re.sub("#Lat0", f"{lat[0]:010.7f}", filename)
         if lat[1] is not None:
@@ -130,7 +131,7 @@ def get_list_of_placeholders():
       defaults = yaml.safe_load(file)
     return defaults['list_of_placeholders']
 
-def clean(filename: str, list_of_placeholders: list[str]=None) -> str:
+def clean_filename(filename: str, list_of_placeholders: list[str]=None) -> str:
     """ Cleans out the file name from possible used placeholders, e.g. #Grid
     as given in the list.
 
@@ -265,7 +266,6 @@ class FileNames:
 
         return Path(self.replace_placeholders(folder, edge_object=edge_object))
 
-
     def get_filepath(self, extension: str=None, start_time: str=None, end_time: str=None, key: str='filename', clean: bool=True, edge_object: str=None) -> str:
         return add_folder_to_filename(self.get_filename(extension, start_time, end_time, edge_object=edge_object, key=key), self.get_folder(edge_object=edge_object))
 
@@ -275,9 +275,6 @@ class FileNames:
         if not folder.is_dir():
             msg.plain(f"Creating folder {str(folder)}")
             folder.mkdir(parents=True)
-
-    def clean(self, filename: str) -> str:
-        return clean(filename)
 
     def replace_placeholders(self, unclean_string: str, start_time=None, end_time=None, edge_object: str=None) -> str:
         unclean_string = replace_objects(unclean_string, self.dict_of_object_names)
