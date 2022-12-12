@@ -68,7 +68,7 @@ class WaveSeriesReader(ABC):
         return lon, lat
 
     @abstractmethod
-    def __call__(self, grid, start_time, end_time, inds) -> Tuple:
+    def __call__(self, grid, start_time, end_time, inds, **kwargs) -> Tuple:
         """Reads in the spectra from inds between start_time and end_time.
 
         The variables needed to be returned are:

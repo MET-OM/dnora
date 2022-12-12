@@ -104,7 +104,7 @@ class ERA5(BoundaryReader):
 
         return lon_all, lat_all, None, None
 
-    def __call__(self, grid, start_time, end_time, inds) -> Tuple:
+    def __call__(self, grid, start_time, end_time, inds, **kwargs) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         msg.info(
             f"Getting ERA5 boundary spectra from {start_time} to {end_time}")

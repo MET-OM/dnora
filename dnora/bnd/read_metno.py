@@ -42,7 +42,7 @@ class WAM4km(BoundaryReader):
 
         return lon_all, lat_all, None, None
 
-    def __call__(self, grid, start_time, end_time, inds) -> Tuple:
+    def __call__(self, grid, start_time, end_time, inds, **kwargs) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time
@@ -180,7 +180,7 @@ class WAM4kmOld(BoundaryReader):
 
         return lon_all, lat_all, None, None
 
-    def __call__(self, grid, start_time, end_time, inds) -> Tuple:
+    def __call__(self, grid, start_time, end_time, inds, **kwargs) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time
@@ -307,7 +307,7 @@ class NORA3(BoundaryReader):
 
         return lon_all, lat_all, None, None
 
-    def __call__(self, grid, start_time, end_time, inds) -> Tuple:
+    def __call__(self, grid, start_time, end_time, inds, **kwargs) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time

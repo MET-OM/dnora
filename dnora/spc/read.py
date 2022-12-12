@@ -43,7 +43,7 @@ class SpectralReader(ABC):
         return convention
 
     @abstractmethod
-    def __call__(self, grid, start_time, end_time, inds) -> tuple:
+    def __call__(self, grid, start_time, end_time, inds, **kwargs) -> tuple:
         """Reads in the spectra from inds between start_time and end_time.
 
         The variables needed to be returned are:
@@ -93,7 +93,7 @@ class BoundaryToSpectra(SpectralReader):
         return self._boundary.lon(strict=True), self._boundary.lat(strict=True), self._boundary.x(strict=True), self._boundary.y(strict=True)
         #return self._boundary.data.lon.values, self._boundary.data.lat.values
 
-    def __call__(self, grid, start_time, end_time, inds) -> tuple:
+    def __call__(self, grid, start_time, end_time, inds, **kwargs) -> tuple:
 
         time = self._boundary.time(data_array=True).sel(time=slice(start_time, end_time)).values
         lon = self._boundary.lon(strict=True)
@@ -133,12 +133,6 @@ class BoundaryToSpectra(SpectralReader):
 
 class DnoraNc(SpectralReader):
     def __init__(self, files: str) -> None:
-        # if not isinstance(convention, SpectralConvention):
-        #     raise ValueError(f'convention needs to be a SpectralConvention!')
-        # if convention not in [SpectralConvention.OCEAN, SpectralConvention.MET, SpectralConvention.MATH]:
-        #     msg.info(f'2D convention {convention} given to 1D SpectralReader. Converting to {convert_2d_to_1d(convention)}')
-        #     convention = convert_2d_to_1d(convention)
-
         self.files = files
 
     def get_coordinates(self, grid, start_time) -> tuple:
@@ -146,13 +140,13 @@ class DnoraNc(SpectralReader):
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(data)
         return lon, lat, x, y
 
-    def __call__(self, grid, start_time, end_time, inds) -> tuple:
+    def __call__(self, grid, start_time, end_time, inds, **kwargs) -> tuple:
         def _crop(ds):
             return ds.sel(time=slice(start_time, end_time))
         msg.info(f"Getting boundary spectra from DNORA type netcdf files (e.g. {self.files[0]}) from {start_time} to {end_time}")
         ds = xr.open_mfdataset(self.files, preprocess=_crop, data_vars='minimal')
         ds = ds.sel(inds=inds)
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
-        if not hasattr(self, '-_convention'):
+        if not hasattr(self, '_convention'):
             self.set_convention(ds.spectral_convention)
         return ds.time.values, ds.freq.values, ds.spec.values, ds.mdir.values, ds.spr.values, lon, lat, x, y, ds.attrs

@@ -271,7 +271,7 @@ class MEPS(ForcingReader):
         self.last_file = copy(last_file)
         return
 
-    def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float):
+    def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float, **kwargs):
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time

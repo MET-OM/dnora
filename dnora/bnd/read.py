@@ -53,7 +53,7 @@ class BoundaryReader(ABC):
         return convention
 
     @abstractmethod
-    def __call__(self, grid, start_time, end_time, inds) -> Tuple:
+    def __call__(self, grid, start_time, end_time, inds, **kwargs) -> Tuple:
         """Reads in the spectra from inds between start_time and end_time.
 
         The variables needed to be returned are:
@@ -110,7 +110,7 @@ class ConstantBoundary(BoundaryReader):
 
         return lon, lat, x, y
 
-    def __call__(self, grid, start_time, end_time, inds):
+    def __call__(self, grid, start_time, end_time, inds, **kwargs):
         time = pd.date_range(start=start_time, end=end_time, freq='H').values
         lon, lat, x, y = aux_funcs.get_coordinates_from_grid(self.grid, self.cartesian, list=True)
         freq = np.array(range(1,11))/10.
@@ -145,7 +145,7 @@ class DnoraNc(BoundaryReader):
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(data)
         return lon, lat, x, y
 
-    def __call__(self, grid, start_time, end_time, inds) -> Tuple:
+    def __call__(self, grid, start_time, end_time, inds, **kwargs) -> Tuple:
         def _crop(ds):
             return ds.sel(time=slice(start_time, end_time))
         msg.info(f"Getting boundary spectra from DNORA type netcdf files (e.g. {self.files[0]}) from {start_time} to {end_time}")
@@ -171,7 +171,7 @@ class ForceFeed(BoundaryReader):
     def get_coordinates(self, grid, start_time) -> Tuple:
         return copy(self.lon), copy(self.lat)
 
-    def __call__(self, grid, start_time, end_time, inds) -> Tuple:
+    def __call__(self, grid, start_time, end_time, inds, **kwargs) -> Tuple:
         #return  copy(self.time), copy(self.freq), copy(self.dirs), np.reshape(self.spec, (len(self.time), len(self.lon), self.spec.shape[0], self.spec.shape[1])), copy(self.lon), copy(self.lat), ''
         return  copy(self.time), copy(self.freq), copy(self.dirs), copy(self.spec), copy(self.lon), copy(self.lat), None, None, {}
 
@@ -208,7 +208,7 @@ class File_WW3Nc(BoundaryReader):
 
         return lon_all, lat_all
 
-    def __call__(self, grid, start_time, end_time, inds) -> Tuple:
+    def __call__(self, grid, start_time, end_time, inds, **kwargs) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time
