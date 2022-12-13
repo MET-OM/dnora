@@ -69,7 +69,7 @@ class Moment(WaveParameter):
         return ds.values
 
     def unit(self):
-        return ureg.meter**2 * eval(f'ureg.second**-{self._moment}')
+        return ureg.meter**2 * pow(ureg.second,-self._moment)
 
     def name(self):
         """ 1 returns 'm1', 0.5 returns 'm05' etc."""
@@ -100,7 +100,7 @@ class PowerMoment(WaveParameter):
         return ds.values
 
     def unit(self):
-        return eval(f'ureg.meter**{self._power*2}') * eval(f'ureg.second**{self._power}') * ureg.second**-1 * eval(f'ureg.second**-{self._moment}')
+        return pow(ureg.meter,self._power*2) * pow(ureg.second,self._power) * ureg.second**-1 * pow(ureg.second,-self._moment)
 
     def name(self):
         """ 1 returns 'm1', 0.5 returns 'm05' etc."""
