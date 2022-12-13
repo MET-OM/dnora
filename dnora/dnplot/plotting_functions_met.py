@@ -167,6 +167,15 @@ def plot_field(lon, lat, xdata, ydata=None, var: str='ff', titleStr=' ', boundar
         ax = plotArrows(ax, lon, lat, xdata, ydata, var, scale)
         ax.add_feature(cfeature.NaturalEarthFeature('physical', 'coastline', '10m', facecolor='none', edgecolor='black'))
         #ax.plot()
+    elif ydata is not None and var == 'vel': #interpretes the data as wind in x- and y-direction
+        # plots magnitude of vel
+        velMagnitude = (xdata**2 + ydata**2)**0.5
+        velMagnitude = np.where(velMagnitude!=0, velMagnitude, np.nan) # only wet points to plots
+        ax = plotMagnitude(ax, fig, lon, lat, velMagnitude, var, vmin=vmin, vmax=vmax, cbar=cbar)
+        # Plot arrows
+        ax = plotArrows(ax, lon, lat, xdata, ydata, var, scale)
+        ax.add_feature(cfeature.NaturalEarthFeature('physical', 'coastline', '10m', facecolor='none', edgecolor='black'))
+        #ax.plot()
     else:
         # Plot only magnutide of field
         ax = plotMagnitude(ax, fig, lon, lat, xdata, var)

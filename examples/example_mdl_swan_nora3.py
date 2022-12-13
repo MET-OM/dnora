@@ -1,7 +1,7 @@
 # =============================================================================
 # IMPORT dnora
 # =============================================================================
-from dnora import grd, mdl, wnd, bnd, inp, wlv
+from dnora import grd, mdl, wnd, bnd, inp, wlv, ocr
 # =============================================================================
 # DEFINE GRID OBJECT
 # =============================================================================
@@ -38,6 +38,7 @@ model = mdl.SWAN_NORA3(grid, start_time='2018-01-14T12:00',
 # =============================================================================
 model.import_boundary(write_cache=True, read_cache=False)
 model.import_forcing(write_cache=True, read_cache=False)
+#model.import_oceancurrent(ocr.read_metno.NorKyst800())
 #model.import_waterlevel(wlv.read_ec.GTSM_ERA5())
 # =============================================================================
 # PLOT GRID, FORCING AND BOUNDARIES

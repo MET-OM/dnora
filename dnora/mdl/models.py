@@ -1,6 +1,6 @@
 from .mdl_mod import ModelRun
 
-from .. import bnd, wnd, grd, inp, run, spc, wlv
+from .. import bnd, wnd, grd, inp, run, spc, wlv, ocr
 
 class SWAN(ModelRun):
     def _get_default_format(self):
@@ -17,6 +17,9 @@ class SWAN(ModelRun):
 
     def _get_waterlevel_writer(self):
         return wlv.write.SWAN()
+
+    def _get_oceancurrent_writer(self):
+        return ocr.write.SWAN()
 
     def _get_point_picker(self):
         return bnd.pick.Area()

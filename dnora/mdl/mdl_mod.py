@@ -9,6 +9,7 @@ from ..bnd.bnd_mod import Boundary
 from ..wnd.wnd_mod import Forcing
 from ..spc.spc_mod import Spectra
 from ..wlv.wlv_mod import WaterLevel
+from ..ocr.ocr_mod import OceanCurrent
 
 # Import abstract classes and needed instances of them
 from ..bnd.read import BoundaryReader
@@ -21,6 +22,9 @@ from ..wnd.write import ForcingWriter
 from ..wlv.read import WaterLevelReader
 from ..wlv.write import WaterLevelWriter
 
+from ..ocr.read import OceanCurrentReader
+from ..ocr.write import OceanCurrentWriter
+
 from ..spc.read import SpectralReader, BoundaryToSpectra
 from ..spc.write import SpectralWriter
 
@@ -28,7 +32,7 @@ from ..grd.write import GridWriter
 from ..grd.process import GridProcessor, TrivialFilter
 from ..trg.write import TrGridWriter
 
-from ..dnplot.dnplot import GridPlotter, TopoPlotter, ForcingPlotter
+from ..dnplot.dnplot import GridPlotter, TopoPlotter, ForcingPlotter, OceanCurrentPlotter
 from ..inp import InputFileWriter
 from ..run import ModelExecuter
 
@@ -40,7 +44,7 @@ from ..bnd.process import processor_for_convention_change
 
 from .. import file_module
 from ..converters import convert_swash_mat_to_netcdf
-WritingFunction = Union[GridWriter, BoundaryWriter, SpectralWriter, ForcingWriter]
+WritingFunction = Union[GridWriter, BoundaryWriter, SpectralWriter, ForcingWriter, WaterLevelWriter, OceanCurrentWriter]
 PlottingFunction = Union[GridPlotter]
 
 class ModelRun:
@@ -117,6 +121,39 @@ class ModelRun:
                                         cache_name=cache_name)
         else:
             msg.info('Dry run! No forcing will be imported.')
+
+
+    def import_oceancurrent(self, oceancurrent_reader: OceanCurrentReader=None,
+                        name: str=None, dry_run: bool=False,
+                        expansion_factor: float=1.2,
+                        write_cache: bool=False,
+                        read_cache: bool=False,
+                        cache_name: str='#Grid_#Lon0_#Lon1_#Lat0_#Lat1') -> None:
+        """Creates an OceanCurrent-object and imports oceancurrent data."""
+        self._dry_run = dry_run
+
+        self._oceancurrent_reader = oceancurrent_reader or self._get_oceancurrent_reader()
+
+        if self._oceancurrent_reader is None:
+            raise Exception('Define an OceanCurrent Reader!')
+
+        # Create oceancurrent object
+        name = name or type(self._oceancurrent_reader).__name__
+        self._oceancurrent = OceanCurrent(grid=self.grid(), name=name)
+
+        # Import the oceancurrent data into the Ocean Current-object
+        if not self.dry_run():
+            self.oceancurrent().import_oceancurrent(start_time=self.start_time,
+                                        end_time=self.end_time,
+                                        oceancurrent_reader=self._oceancurrent_reader,
+                                        expansion_factor=expansion_factor,
+                                        read_cache=read_cache,
+                                        write_cache=write_cache,
+                                        cache_name=cache_name)
+        else:
+            msg.info('Dry run! No OceanCurrent oceancurrent will be imported.')
+
+
 
     def import_waterlevel(self, waterlevel_reader: WaterLevelReader=None,
                         name: str=None, dry_run: bool=False,
@@ -296,6 +333,30 @@ class ModelRun:
                             writer_function=self._forcing_writer,
                             dnora_obj='forcing')
 
+    def export_oceancurrent(self, oceancurrent_writer: OceanCurrentWriter=None,
+                        filename: str=None, folder: str=None,
+                         dateformat: str=None, dry_run=False) -> None:
+        """Writes the OceanCurrent data in the OceanCurrent-object to an external source,
+        e.g. a file."""
+        self._dry_run = dry_run
+        if self.oceancurrent() is None and not self.dry_run():
+            raise Exception('Import OceanCurrent before exporting!')
+
+        self._oceancurrent_writer = oceancurrent_writer or self._get_oceancurrent_writer()
+
+        if self._oceancurrent_writer is None:
+            raise Exception('Define a OceanCurrentWriter!')
+
+        if self.oceancurrent() is not None:
+            msg.header(self._oceancurrent_writer, f"Writing oceancurrent from {self.oceancurrent().name()}")
+        else:
+            msg.header(self._oceancurrent_writer, f"Writing oceancurrent from DryRunOceanCurrent")
+
+
+        __ = self._export_object(filename, folder, dateformat,
+                            writer_function=self._oceancurrent_writer,
+                            dnora_obj='oceancurrent')
+
     def export_waterlevel(self, waterlevel_writer: WaterLevelWriter=None,
                         filename: str=None, folder: str=None,
                          dateformat: str=None, dry_run=False) -> None:
@@ -324,6 +385,7 @@ class ModelRun:
                         filename=None, folder=None, dateformat=None,
                         grid_path: str=None, forcing_path: str=None,
                         boundary_path: str=None, waterlevel_path: str=None,
+                        oceancurrent_path: str=None,
                         start_time: str=None, end_time: str=None,
                         dry_run=False) -> None:
         """Writes the grid data in the Grid-object to an external source,
@@ -356,6 +418,7 @@ class ModelRun:
         forcing_path = forcing_path or self.exported_to('forcing')[-1]
         boundary_path = boundary_path or self.exported_to('boundary')[-1]
         waterlevel_path = waterlevel_path or self.exported_to('waterlevel')[-1]
+        oceancurrent_path = oceancurrent_path or self.exported_to('oceancurrent')[-1]
 
         start_time = start_time or self.start_time
         end_time = end_time or self.end_time
@@ -367,11 +430,11 @@ class ModelRun:
         else:
             # Write the grid using the InputFileWriter object
             output_files = self._input_file_writer(grid=self.grid(),
-                            forcing=self.forcing(), boundary=self.boundary(), waterlevel=self.waterlevel(),
+                            forcing=self.forcing(), boundary=self.boundary(), waterlevel=self.waterlevel(),  oceancurrent=self.oceancurrent(),
                             start_time=start_time, end_time=end_time,
                             filename=file_object.filepath(),
                             grid_path=grid_path, forcing_path=forcing_path,
-                            boundary_path=boundary_path, waterlevel_path=waterlevel_path)
+                            boundary_path=boundary_path, waterlevel_path=waterlevel_path, oceancurrent_path=oceancurrent_path)
             if type(output_files) is not list:
                 output_files = [output_files]
 
@@ -554,6 +617,29 @@ class ModelRun:
 
         return figure_dict
 
+    def plot_oceancurrent(self, oceancurrent_plotter: GridPlotter=None, filename: str=None,
+                    folder: str=None, dateformat: str=None, plain: bool=False,
+                    save_fig: bool=False, show_fig: bool=True) -> dict:
+        """Plot the data in the OceanCurrent-object."""
+
+        if self.oceancurrent() is None:
+            msg.warning('No oceancurrent data to plot!')
+            return
+
+        self._oceancurrent_plotter = oceancurrent_plotter or self._get_oceancurrent_plotter()
+
+        if self._oceancurrent_plotter is None:
+            raise Exception('Define a GridPlotter!')
+
+        figure_dict = self._plot_object(filename=filename, folder=folder,
+                            dateformat=dateformat,
+                            plotting_function=self._oceancurrent_plotter,
+                            plain=plain, save_fig=save_fig,
+                            show_fig=show_fig, dnora_obj='dnplot_oceancurrent')
+
+        return figure_dict
+
+
     def _plot_object(self, filename: str, folder: str, dateformat: str,
                     plotting_function: PlottingFunction, plain: bool,
                     save_fig: bool, show_fig: bool, dnora_obj: str) -> dict:
@@ -576,7 +662,7 @@ class ModelRun:
 
         file_object.create_folder()
 
-        if dnora_obj in ['dnplot_grid', 'dnplot_forcing']:
+        if dnora_obj in ['dnplot_grid', 'dnplot_forcing', 'dnplot_oceancurrent']:
             figure_dict = plotting_function.grid(dict_of_objects=self.dict_of_objects(), plain=plain)
         elif dnora_obj == 'dnplot_topo':
             figure_dict = plotting_function.topo(dict_of_objects=self.dict_of_objects(), plain=plain)
@@ -607,6 +693,13 @@ class ModelRun:
         else:
             return None
 
+    def oceancurrent(self) -> OceanCurrent:
+        """Returns the OceanCurrent object if exists."""
+        if hasattr(self, '_oceancurrent'):
+            return self._oceancurrent
+        else:
+            return None
+
     def waterlevel(self) -> WaterLevel:
         """Returns the waterlevel object if exists."""
         if hasattr(self, '_waterlevel'):
@@ -634,9 +727,10 @@ class ModelRun:
 
 
     def dict_of_objects(self) -> dict[str: ModelRun, str: Grid, str: Forcing, str: Boundary, str: Spectra]:
-        return {'ModelRun': self, 'Grid': self.grid(), 'Forcing': self.forcing(), 'Boundary': self.boundary(), 'Spectra': self.spectra()}
+        return {'ModelRun': self, 'Grid': self.grid(), 'Forcing': self.forcing(), 'Boundary': self.boundary(),
+        'OceanCurrent': self.oceancurrent() ,  'Spectra': self.spectra()}
 
-    def list_of_objects(self) -> list[ModelRun, Grid, Forcing, Boundary, Spectra]:
+    def list_of_objects(self) -> list[ModelRun, Grid, Forcing, Boundary, OceanCurrent, Spectra]:
         """[ModelRun, Boundary] etc."""
         return list(self.dict_of_objects().values())
 
@@ -691,6 +785,12 @@ class ModelRun:
     def _get_waterlevel_writer(self) -> WaterLevelWriter:
         return None
 
+    def _get_oceancurrent_reader(self) -> OceanCurrentReader:
+        return None
+
+    def _get_oceancurrent_writer(self) -> OceanCurrentWriter:
+        return None
+
     def _get_spectral_reader(self) -> SpectralReader:
         return None
 
@@ -718,6 +818,9 @@ class ModelRun:
     def _get_forcing_plotter(self) -> GridPlotter:
         return ForcingPlotter()
 
+    def _get_oceancurrent_plotter(self) -> GridPlotter:
+        return OceanCurrentPlotter()
+
     def __repr__(self):
         lines = [f"<dnora ModelRun object> ({type(self).__name__})", f"  Name: {self.name()}"]
 
@@ -738,6 +841,9 @@ class ModelRun:
             lines.append(f'\tboundary object: {self.boundary().name()} {self.boundary().size()}')
         else:
             lines.append(f'\tboundary: use .import_boundary()')
-
+        if self.oceancurrent() is not None:
+            lines.append(f'\toceancurrent object: {self.oceancurrent().name()} {self.oceancurrent().size()}')
+        else:
+            lines.append(f'\toceancurrent: use .import_oceancurrent()')
 
         return "\n".join(lines)

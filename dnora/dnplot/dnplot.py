@@ -5,6 +5,7 @@ from ..grd.grd_mod import Grid, GridProcessor
 from ..grd.process import TrivialFilter
 from ..bnd.bnd_mod import Boundary
 from ..wnd.wnd_mod import Forcing
+from ..ocr.ocr_mod import OceanCurrent
 from .. import file_module
 from .. import msg
 from .. import aux_funcs
@@ -67,6 +68,7 @@ class TopoPlotter(GridPlotter):
         grid = dict_of_objects['Grid']
         boundary = dict_of_objects['Boundary']
         forcing = dict_of_objects['Forcing']
+        oceancurrent = dict_of_objects['OceanCurrent']
         #
         figure_dict = basic_funcs.plot_field(grid.lon(), grid.lat(), grid.topo(land=np.nan), var='topo', title_str=f"{grid.name()}", cbar=True)
         fig = figure_dict.get('fig')
@@ -85,9 +87,15 @@ class TopoPlotter(GridPlotter):
             lonlat=forcing._point_list(mask=np.full(forcing.size()[1:], True))
             ax.plot(lonlat[:,0], lonlat[:,1],'r.', markersize=1.5, label=f"Forcing from {forcing.name()}")
 
+        # Plot locations of oceancurrent forcing data points
+        if not plain and oceancurrent is not None:
+            #lonlat=oceancurrent._point_list(mask=np.full(oceancurrent.size()[1:], True))
+            lonlat=oceancurrent._point_list(np.where(oceancurrent.magnitude()[0,:,:]!=0, True, False)) # count only wet points (!=0)
+            ax.plot(lonlat[:,0], lonlat[:,1],'m.', markersize=1.5, label=f"OceanCurrent from {oceancurrent.name()}")
+
         #ax.legend(loc="upper right")
         ax.legend(bbox_to_anchor=(0.3, 1.2))
-        x0, x1, y0, y1 = bounds_of_objects([grid, forcing, boundary])
+        x0, x1, y0, y1 = bounds_of_objects([grid, forcing, boundary, oceancurrent])
         x0, x1, y0, y1 = aux_funcs.expand_area(x0, x1, y0, y1, 1.2)
 
         ax.set_xlim([x0,x1])
@@ -107,6 +115,7 @@ class TopoPlotter(GridPlotter):
         grid = dict_of_objects['Grid']
         boundary = dict_of_objects['Boundary']
         forcing = dict_of_objects['Forcing']
+        oceancurrent = dict_of_objects['OceanCurrent']
 
         # Create basic plot
         fig, ax = plt.subplots()
@@ -155,6 +164,12 @@ class TopoPlotter(GridPlotter):
             lonlat=forcing._point_list(mask=np.full(forcing.size()[1:], True))
             ax.plot(lonlat[:,0], lonlat[:,1],'r.', markersize=1.5, label=f"Forcing from {forcing.name()}")
 
+        # Plot locations of oceancurrent forcing data points
+        if not plain and oceancurrent is not None:
+            #lonlat=oceancurrent._point_list(mask=np.full(oceancurrent.size()[1:], True))
+            lonlat=oceancurrent._point_list(np.where(oceancurrent.magnitude()[0,:,:]!=0, True, False)) # count only wet points (!=0)
+            ax.plot(lonlat[:,0], lonlat[:,1],'m.', markersize=1.5, label=f"OceanCurrent from {oceancurrent.name()}")
+
         ax.legend(loc="upper right")
         cbar = fig.colorbar(cont)
         #cbar.set_clim(0, 1500)
@@ -193,6 +208,38 @@ class ForcingPlotter(GridPlotter):
         plt.show(block=True)
 
         return self.fig_dict
+
+class OceanCurrentPlotter(GridPlotter):
+    def _extension(self):
+        return 'pdf'
+
+    def grid(self, dict_of_objects: dict, plain: bool=True):
+        def update_plot(val):
+            title_str = f"{oceancurrent.name()}: {str(oceancurrent.time()[val])}"
+            vmax = np.max(oceancurrent.magnitude())
+            #breakpoint()
+            self.fig_dict = basic_funcs.plot_field(oceancurrent.lon(), oceancurrent.lat(), oceancurrent.u()[val,:,:], oceancurrent.v()[val,:,:],
+                            var='vel', title_str=title_str, fig_dict=self.fig_dict, cbar=self._init_plot, vmin=0, vmax=vmax, barbs=False)
+            # self.fig = fig_dict.get('fig')
+            # self.ax = fig_dict.get('ax')
+            self._init_plot = False
+
+        oceancurrent = dict_of_objects['OceanCurrent']
+        fig, ax = plt.subplots()
+        self.fig_dict = {'fig': fig, 'ax': ax}
+        if len(oceancurrent.time()) > 1:
+            ax_slider = plt.axes([0.17, 0.05, 0.65, 0.03])
+            time_slider = Slider(ax_slider, 'time_index', 0, len(oceancurrent.time())-1, valinit=0, valstep=1)
+            time_slider.on_changed(update_plot)
+        self._init_plot = True
+        update_plot(0)
+        #axnodenr = plt.axes([0.02,0.9,0.2,0.03])
+        #giver    = Button(axnodenr,'Next')
+        #giver.on_clicked(update_plot)
+        plt.show(block=True)
+
+        return self.fig_dict
+
 
 class SpecPlotter(SpectralPlotter):
     def _extension(self):

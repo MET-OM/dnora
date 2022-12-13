@@ -65,6 +65,26 @@ dflt_wlv = {'fs': { 'SWAN': 'waterlevel#Grid#T0_#T1',
                     'General': 'nc'}
         }
 
+"""Default filestrings and datestrings for OceanCurrent """
+dflt_ocr = {'fs': { 'SWAN': 'oceancurrent#Grid#T0_#T1',
+                    'WW3': 'oceancurrent_#Grid_#T0-#T1',
+                    'SWASH': 'oceancurrent#Grid#T0_#T1',
+                    'General': 'oceancurrent_#Grid_#T0-#T1'},
+            'ds': { 'SWAN': '%Y%m%d',
+                    'WW3': '%Y%m%dT%H%M',
+                    'SWASH': '%Y%m%d',
+                    'General': '%Y%m%dT%H%M'},
+            'fldr': {'SWAN': f"{os.getcwd()}/output",
+                    'WW3': f"{os.getcwd()}/output",
+                    'SWASH': f"{os.getcwd()}/output",
+                    'General': ''},
+            'ext': { 'SWAN': 'asc',
+                    'WW3': 'nc',
+                    'SWASH': 'asc',
+                    'General': 'nc'}
+        }
+
+
 """Default filestrings and datestrings for Boundary"""
 dflt_bnd = {'fs': { 'SWAN': 'spec#Boundary#Grid#T0_#T1',
                     'WW3': 'ww3_spec_E#LonN#Lat_#Boundary_#Grid_#T0-#T1',
@@ -146,4 +166,4 @@ dflt_mdl = {'ds': { 'General': '%Y%m%dT%H%M'},
 
 
 # Used to clean up filenames
-list_of_placeholders = ['#Grid', '#Forcing', '#Boundary', '#Spectra', '#ModelRun', '#T0', '#T1', 'E#Lon', 'N#Lat', '#Lon', '#Lat']
+list_of_placeholders = ['#Grid', '#Forcing', '#WaterLevel', '#OceanCurrent', '#Boundary', '#Spectra', '#ModelRun', '#T0', '#T1', 'E#Lon', 'N#Lat', '#Lon', '#Lat']
