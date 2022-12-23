@@ -58,7 +58,7 @@ def download_era5_from_cds(start_time, end_time, lon, lat, dlon, dlat, folder='d
         'type': 'an',
         'format': 'netcdf',
     }
-    print(cds_command)
+    #print(cds_command)
 
     # cds_command ={
     #     'class': 'ea',
