@@ -54,8 +54,8 @@ class Boundary:
         boundary_point_grid = Grid(lon=self.grid.lon_edges(),
                                     lat=self.grid.lat_edges(),
                                     name='boundary_points')
-        boundary_point_grid.set_spacing(nx=self.grid.boundary_nx(),
-                                        ny=self.grid.boundary_ny())
+        #boundary_point_grid.set_spacing(nx=self.grid.boundary_nx(),
+        #                                ny=self.grid.boundary_ny())
         boundary_reader.set_restricted_area(boundary_point_grid)
 
         if write_cache or read_cache:

@@ -121,6 +121,9 @@ class SWAN_ERA5(SWAN):
     def _get_forcing_reader(self):
         return wnd.read_ec.ERA5()
 
+    def _get_point_picker(self):
+        return bnd.pick.NearestGridPoint(max_dist=15, remove_duplicate=True)
+
     def _get_waterlevel_reader(self):
         return wlv.read_ec.GTSM_ERA5()
 
