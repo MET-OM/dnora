@@ -219,14 +219,16 @@ class SWASH(InputFileWriter):
     def __init__(self,bound_side_command='BOU SIDE W CCW CON REG 0.5 14 270 '):
         self.bound_side_command = bound_side_command
 
+
+
         return
 
     def _extension(self):
         return 'sws'
 
-    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary,
+    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, waterlevel: WaterLevel, oceancurrent: OceanCurrent,
                 start_time: str, end_time: str, filename: str,
-                grid_path: str, forcing_path: str, boundary_path: str):
+                grid_path: str, forcing_path: str, boundary_path: str, waterlevel_path: str, oceancurrent_path: str):
 
         DATE_START = start_time
         DATE_END = end_time
@@ -291,8 +293,8 @@ class REEF3D(InputFileWriter):
     def _extension(self):
         return 'txt'
 
-    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary,
-                start_time: str, end_time: str, filename: str, forcing_path: str,
+    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary, waterlevel: WaterLevel, oceancurrent: OceanCurrent,
+                start_time: str, end_time: str, filename: str, forcing_path: str,waterlevel_path: str, oceancurrent_path: str,
                 grid_path: str, boundary_path: str):
 
         geodat = pd.read_csv(grid_path, sep = ' ') # read geo.dat

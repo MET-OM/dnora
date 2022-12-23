@@ -77,6 +77,7 @@ SWAN:
 
 SWASH:
   dateformat: '%Y%m%d'
+  folder: '#Grid_SWASH'
   grid:
     filename: '#Grid_SWASH'
   forcing:
