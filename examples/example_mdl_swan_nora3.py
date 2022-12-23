@@ -14,7 +14,7 @@ grid.set_spacing(dm=150)
 # Import topography and mesh it down to the grid definitions
 # Options for grd.readers: EMODNET2018, EMODNET2020, KartverketNo50m, GEBCO2021
 topo_reader = grd.read.EMODNET2020(
-    tile='*5', folder='~/Documents/EMODNET2020')
+    tile='*5', folder='/home/konstac/bathy')
 grid.import_topo(topo_reader=topo_reader)
 
 # This can be used to get an empty topography for testing
@@ -50,6 +50,7 @@ model.plot_grid(save_fig=True, show_fig=False)
 model.export_grid()
 model.export_boundary()
 model.export_forcing()
+#model.export_oceancurrent()
 #model.export_waterlevel()
 model.write_input_file(input_file_writer=inp.SWAN(
     spec_points=[(5.50, 59.16), (5.55, 59.15)]))
