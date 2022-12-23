@@ -64,7 +64,7 @@ class Boundary:
         if read_cache and not cache_empty:
             msg.info('Reading boundary data from cache!!!')
             original_boundary_reader = copy(boundary_reader)
-            boundary_reader = DnoraNc(files=glob.glob(f'{cache_folder}/{cache_name}*'), convention = boundary_reader.convention())
+            boundary_reader = DnoraNc(files=glob.glob(f'{cache_folder}/{cache_name}_bnd.nc'), convention = boundary_reader.convention())
 
         self._history.append(copy(boundary_reader))
 
@@ -88,30 +88,19 @@ class Boundary:
         if read_cache and not cache_empty:
             patch_start, patch_end = aux_funcs.determine_patch_periods(self.time(), start_time, end_time)
             if patch_start:
-                msg.info('Not all data found in cache. Patching from original source...')
-
-                lon_all, lat_all = original_boundary_reader.get_coordinates(start_time)
-                inds = point_picker(self.grid, lon_all, lat_all)
-                bnd_list = [self.data]
-                for t0, t1 in zip(patch_start, patch_end):
-                    time, freq, dirs, spec, lon, lat, source = original_boundary_reader(t0, t1, inds)
-                    bnd_list.append(self.compile_to_xr(time, freq, dirs, spec, lon, lat, source))
-
-                self.data = xr.concat(bnd_list, dim="time").sortby('time')
+                msg.info(
+                    f'Timesteps stored in {cache_name}_bnd.nc does not cover the entire time range. set read_cache to false and rerun.')
+                exit(-1)
 
 
         if write_cache:
             msg.info('Caching data:')
-            for month in self.months():
-                cache_file = f"{cache_name}_{month.strftime('%Y-%m')}.nc"
-                t0 = f"{month.strftime('%Y-%m-01')}"
-                d1 = monthrange(int(month.strftime('%Y')), int(month.strftime('%m')))[1]
-                t1 = f"{month.strftime(f'%Y-%m-{d1}')}"
-                outfile = f'{cache_folder}/{cache_file}'
-                if os.path.exists(outfile):
-                    os.remove(outfile)
-                self.data.sel(time=slice(t0, t1)).to_netcdf(outfile)
-                msg.to_file(outfile)
+            cache_file = f"{cache_name}_bnd.nc"
+            outfile = f'{cache_folder}/{cache_file}'
+            if os.path.exists(outfile):
+                os.remove(outfile)
+            self.data.to_netcdf(outfile)
+            msg.to_file(outfile)
 
         #self.mask = [True]*len(self.x())
 

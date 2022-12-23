@@ -7,46 +7,46 @@ import re
 import glob, os
 from calendar import monthrange
 # Import abstract classes and needed instances of them
-from .read import ForcingReader, DnoraNc
-from .write import ForcingWriter
+from .read import OceanCurrentReader, DnoraNc
+from .write import OceanCurrentWriter
 
 # Import default values and aux_funcsiliry functions
 from .. import msg
 from .. import aux_funcs
-class Forcing:
-    def __init__(self, grid, name='AnonymousForcing'):
+class OceanCurrent:
+    def __init__(self, grid, name='AnonymousOceanCurrent'):
         self.grid = copy(grid)
         self._name = copy(name)
         self._history = []
         return
 
-    def import_forcing(self, start_time: str, end_time: str,
-                    forcing_reader: ForcingReader,
+    def import_oceancurrent(self, start_time: str, end_time: str,
+                    oceancurrent_reader: OceanCurrentReader,
                     expansion_factor: float=1.2,
                     write_cache: bool=False,
                     read_cache: bool=False,
                     cache_name: str='#Grid_#Lon0_#Lon1_#Lat0_#Lat1'):
-        """Imports forcing data from a certain source.
+        """Imports OceanCurrent data from a certain source.
 
         Data are import between start_time and end_time from the source
-        defined in the forcing_reader. Data are read around an area defined
+        defined in the oceancurrent_reader. Data are read around an area defined
         by the Grid object passed at initialization of this object.
         """
 
         self.start_time = copy(start_time)
         self.end_time = copy(end_time)
-        self._history.append(copy(forcing_reader))
+        self._history.append(copy(oceancurrent_reader))
 
         if write_cache or read_cache:
-            cache_folder, cache_name, cache_empty = aux_funcs.setup_cache('wnd', forcing_reader.name(), cache_name, self.grid)
+            cache_folder, cache_name, cache_empty = aux_funcs.setup_cache('ocr', oceancurrent_reader.name(), cache_name, self.grid)
 
         if read_cache and not cache_empty:
-            msg.info('Reading wind forcing data from cache!!!')
-            original_forcing_reader = copy(forcing_reader)
-            forcing_reader = DnoraNc(files=glob.glob(f'{cache_folder}/{cache_name}_wnd.nc'))
+            msg.info('Reading ocean_current data from cache!!!')
+            original_oceancurrent_reader = copy(oceancurrent_reader)
+            oceancurrent_reader = DnoraNc(files=glob.glob(f'{cache_folder}/{cache_name}_ocr.nc'))
 
-        msg.header(forcing_reader, "Loading wind forcing...")
-        self.data = forcing_reader(
+        msg.header(oceancurrent_reader, "Loading ocean_current forcing...")
+        self.data = oceancurrent_reader(
             self.grid, start_time, end_time, expansion_factor)
 
         ### Patch data if read from cache and all data not found
@@ -54,12 +54,12 @@ class Forcing:
             patch_start, patch_end = aux_funcs.determine_patch_periods(self.time(), start_time, end_time)
             if patch_start:
                 msg.info(
-                    f'Timesteps stored in {cache_name}_wnd.nc does not cover the entire range. set read_cache to false and rerun.')
+                    f'Timesteps stored in {cache_name}_ocr.nc does not cover the entire range. set read_cache to false and rerun.')
                 exit(-1)
 
         if write_cache:
             msg.info('Caching data:')
-            cache_file = f"{cache_name}_wnd.nc"
+            cache_file = f"{cache_name}_ocr.nc"
             outfile = f'{cache_folder}/{cache_file}'
             if os.path.exists(outfile):
                 os.remove(outfile)
@@ -95,7 +95,7 @@ class Forcing:
             return None
 
     def dt(self) -> float:
-        """ Returns time step of forcing data in hours."""
+        """ Returns time step of ocean current forcing data in hours."""
         if hasattr(self, 'data'):
             return self.time().to_series().diff().dt.total_seconds().values[-1]/3600
         else:
@@ -160,7 +160,7 @@ class Forcing:
     def size(self) -> tuple:
         """Returns the size (nt, ny, nx) of the grid."""
 
-        return self.u().shape
+        return self.u().shape     
 
     def _point_list(self, mask):
         """Provides a list on longitudes and latitudes with a given mask.
@@ -200,9 +200,9 @@ class Forcing:
         return times
 
     def __str__(self) -> str:
-        """Prints status of forcing."""
+        """Prints status of ocean current forcing."""
 
-        msg.header(self, f"Status of forcing {self.name()}")
+        msg.header(self, f"Status of Ocean Current {self.name()}")
         if self.time() is not None:
             msg.plain(f"Contains data for {self.time()[0]} - {self.time()[-1]}")
             msg.plain(f"\t dt={self.dt()} hours, i.e. ({self.nt()} time steps)")

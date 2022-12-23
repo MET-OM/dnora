@@ -7,65 +7,62 @@ import re
 import glob, os
 from calendar import monthrange
 # Import abstract classes and needed instances of them
-from .read import ForcingReader, DnoraNc
-from .write import ForcingWriter
+from .read import WaterLevelReader, DnoraNc
+from .write import WaterLevelWriter
 
 # Import default values and aux_funcsiliry functions
 from .. import msg
 from .. import aux_funcs
-class Forcing:
-    def __init__(self, grid, name='AnonymousForcing'):
+class WaterLevel:
+    def __init__(self, grid, name='AnonymousWaterLevel'):
         self.grid = copy(grid)
         self._name = copy(name)
         self._history = []
         return
 
-    def import_forcing(self, start_time: str, end_time: str,
-                    forcing_reader: ForcingReader,
-                    expansion_factor: float=1.2,
+    def import_waterlevel(self, start_time: str, end_time: str,
+                    waterlevel_reader: WaterLevelReader,
+                    expansion_factor: float=1.0,
                     write_cache: bool=False,
                     read_cache: bool=False,
                     cache_name: str='#Grid_#Lon0_#Lon1_#Lat0_#Lat1'):
-        """Imports forcing data from a certain source.
+        """Imports water level data from a certain source.
 
         Data are import between start_time and end_time from the source
-        defined in the forcing_reader. Data are read around an area defined
+        defined in the waterlevel_reader. Data are read around an area defined
         by the Grid object passed at initialization of this object.
         """
 
         self.start_time = copy(start_time)
         self.end_time = copy(end_time)
-        self._history.append(copy(forcing_reader))
+        self._history.append(copy(waterlevel_reader))
 
         if write_cache or read_cache:
-            cache_folder, cache_name, cache_empty = aux_funcs.setup_cache('wnd', forcing_reader.name(), cache_name, self.grid)
+            cache_folder, cache_name, cache_empty = aux_funcs.setup_cache('wlv', waterlevel_reader.name(), cache_name, self.grid)
 
         if read_cache and not cache_empty:
-            msg.info('Reading wind forcing data from cache!!!')
-            original_forcing_reader = copy(forcing_reader)
-            forcing_reader = DnoraNc(files=glob.glob(f'{cache_folder}/{cache_name}_wnd.nc'))
+            msg.info('Reading water level data from cache!!!')
+            original_waterlevel_reader = copy(waterlevel_reader)
+            waterlevel_reader = DnoraNc(files=glob.glob(f'{cache_folder}/{cache_name}_wlv.nc'))
 
-        msg.header(forcing_reader, "Loading wind forcing...")
-        self.data = forcing_reader(
-            self.grid, start_time, end_time, expansion_factor)
+        msg.header(waterlevel_reader, "Loading water level data...")
+        self.data = waterlevel_reader(self.grid, start_time, end_time, expansion_factor)
 
         ### Patch data if read from cache and all data not found
         if read_cache and not cache_empty:
             patch_start, patch_end = aux_funcs.determine_patch_periods(self.time(), start_time, end_time)
             if patch_start:
-                msg.info(
-                    f'Timesteps stored in {cache_name}_wnd.nc does not cover the entire range. set read_cache to false and rerun.')
+                msg.info(f'Timesteps stored in {cache_name}_wlv.nc does not cover the entire range. set read_cache to false and rerun.' )
                 exit(-1)
 
         if write_cache:
             msg.info('Caching data:')
-            cache_file = f"{cache_name}_wnd.nc"
+            cache_file = f"{cache_name}_wlv.nc"
             outfile = f'{cache_folder}/{cache_file}'
             if os.path.exists(outfile):
                 os.remove(outfile)
             self.data.to_netcdf(outfile)
             msg.to_file(outfile)
-
         return
 
     def days(self):
@@ -101,25 +98,25 @@ class Forcing:
         else:
             return 0
 
-    def u(self):
+    def waterlevel(self):
         if hasattr(self, 'data'):
-            return copy(self.data.u.values)
+            return copy(self.data.waterlevel.values)
         else:
             return np.array([[[]]])
 
-    def v(self):
-        if hasattr(self, 'data'):
-            return copy(self.data.v.values)
-        else:
-            return np.array([[[]]])
-
-    def magnitude(self):
-        if np.min(self.u()).shape == 0:
-            return np.array([[[]]])
-        if np.min(self.v()).shape == 0:
-            return self.u()
-
-        return (self.u()**2 + self.v()**2)**0.5
+    # def v(self):
+    #     if hasattr(self, 'data'):
+    #         return copy(self.data.v.values)
+    #     else:
+    #         return np.array([[[]]])
+    #
+    # def magnitude(self):
+    #     if np.min(self.u()).shape == 0:
+    #         return np.array([[[]]])
+    #     if np.min(self.v()).shape == 0:
+    #         return self.u()
+    #
+    #     return (self.u()**2 + self.v()**2)**0.5
 
     def nx(self):
         if min(self.size()) > 0:
@@ -160,7 +157,7 @@ class Forcing:
     def size(self) -> tuple:
         """Returns the size (nt, ny, nx) of the grid."""
 
-        return self.u().shape
+        return self.waterlevel().shape
 
     def _point_list(self, mask):
         """Provides a list on longitudes and latitudes with a given mask.
@@ -200,9 +197,9 @@ class Forcing:
         return times
 
     def __str__(self) -> str:
-        """Prints status of forcing."""
+        """Prints status of waterlevel."""
 
-        msg.header(self, f"Status of forcing {self.name()}")
+        msg.header(self, f"Status of waterlevel {self.name()}")
         if self.time() is not None:
             msg.plain(f"Contains data for {self.time()[0]} - {self.time()[-1]}")
             msg.plain(f"\t dt={self.dt()} hours, i.e. ({self.nt()} time steps)")

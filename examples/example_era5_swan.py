@@ -36,6 +36,7 @@ model = mdl.SWAN_ERA5(grid, start_time='2018-08-25T00:00',
 # Use write_cache the first time
 model.import_boundary(write_cache=True, read_cache=True)
 model.import_forcing(write_cache=True, read_cache=True)
+#model.import_waterlevel()
 # =============================================================================
 # PLOT GRID, FORCING AND BOUNDARIES
 # =============================================================================
@@ -46,6 +47,7 @@ model.plot_grid(save_fig=True, show_fig=False)
 model.export_grid()
 model.export_boundary()
 model.export_forcing()
+#model.export_waterlevel()
 model.write_input_file()
 # =============================================================================
 # SWAN RUN

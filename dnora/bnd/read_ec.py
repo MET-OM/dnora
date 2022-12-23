@@ -11,7 +11,7 @@ from .read import BoundaryReader
 import cdsapi
 # Import aux_funcsiliry functions
 from .. import msg
-from ..aux_funcs import create_time_stamps, expand_area, int_list_of_days, int_list_of_months, int_list_of_years
+from ..aux_funcs import create_time_stamps, expand_area, day_list
 
 
 def renormalize_era5_spec(bnd_spec):
@@ -32,54 +32,18 @@ def download_era5_from_cds(start_time, end_time, lon, lat, dlon, dlat, folder='d
     end_time = pd.Timestamp(end_time)
     c = cdsapi.Client()
 
+    days = day_list(start_time, end_time)
+    #tt = pd.date_range(start=start_time,end=end_time)
+
     filename = f'{folder}/EC_ERA5.nc'
 
-    # years = [f'{y:4.0f}' for y in int_list_of_years(start_time, end_time)]
-    # months = [f'{m:02.0f}' for m in int_list_of_months(start_time, end_time)]
-    # days = [f'{d:02.0f}' for d in int_list_of_days(start_time, end_time)]
-
     # Create string for dates
-    #dates = []
-    #for y in years:
-    #    for m in months:
-    #        for d in days:
-    #            dates.append(f'{y}-{m}-{d}')
+    #dates = [days[0].strftime('%Y-%m-%d'), days[-1].strftime('%Y-%m-%d')]
     #dates = '/'.join(dates)
     dates = f'{str(start_time)[0:10]}/to/{str(end_time)[0:10]}'
-    # cds_command = {
-    # 'class': 'ea',
-    # 'date': '2018-01-01/to/2018-01-01',
-    # 'direction': '1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24',
-    # 'domain': 'g',
-    # 'expver': '1',
-    # 'frequency': '1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30',
-    # 'param': '251.140',
-    # 'stream': 'wave',
-    # 'area': '62/0/59/5', # north, west, south, east
-    # 'grid': '0.5/0.5',
-    # 'time': '00:00:00/01:00:00/02:00:00/03:00:00/04:00:00/05:00:00/06:00:00/07:00:00/08:00:00/09:00:00/10:00:00/11:00:00/12:00:00/13:00:00/14:00:00/15:00:00/16:00:00/17:00:00/18:00:00/19:00:00/20:00:00/21:00:00/22:00:00/23:00:00',
-    # 'type': 'an',
-    # 'format': 'netcdf',
-    # }
 
-# This worked 9.11.2022
-# cds_command = {
-#     'class': 'ea',
-#     'date': '2018-01-01/to/2018-01-02',
-#     'direction': '1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24',
-#     'domain': 'g',
-#     'area': '65/-10/50/5',
-#     'grid': '5/5',
-#     'expver': '1',
-#     'frequency': '1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30',
-#     'param': '251.140',
-#     'stream': 'wave',
-#     'time': '00:00:00/01:00:00/02:00:00/03:00:00/04:00:00/05:00:00/06:00:00/07:00:00/08:00:00/09:00:00/10:00:00/11:00:00/12:00:00/13:00:00/14:00:00/15:00:00/16:00:00/17:00:00/18:00:00/19:00:00/20:00:00/21:00:00/22:00:00/23:00:00',
-#     'type': 'an',
-#     'format': 'netcdf',
-# }
 
-    cds_command = {
+    cds_command ={
         'class': 'ea',
         'date': dates,
         'direction': '1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24',

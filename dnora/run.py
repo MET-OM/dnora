@@ -25,7 +25,7 @@ class SWAN(ModelExecuter):
 
     def __call__(self, input_file: str, model_folder: str) -> None:
         print('Running SWAN----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>')
-        p = Popen(['swanrun', '-input', input_file], cwd=model_folder)
+        p = Popen(['swanrun', '-input', input_file,'-omp', '8'], cwd=model_folder)
         p.wait()
 
         return

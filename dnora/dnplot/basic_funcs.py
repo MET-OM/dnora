@@ -297,6 +297,16 @@ def plot_field(lon, lat, xdata, ydata=None, fig_dict=None, position=111,
             fig_dict = plot_barbs(fig_dict, lon, lat, xdata, ydata, var, scale)
         else:
             fig_dict = plot_arrows(fig_dict, lon, lat, xdata, ydata, var, scale)
+    elif ydata is not None and var == 'vel': #interpretes the data as wind in x- and y-direction
+         velMagnitude = (xdata**2 + ydata**2)**0.5
+         velMagnitude = np.where(velMagnitude!=0, velMagnitude, np.nan) # only wet points to plots
+
+         fig_dict = plot_magnitude(fig_dict, lon, lat, velMagnitude, var, vmin=vmin, vmax=vmax, cbar=cbar)
+         ax.add_feature(cfeature.NaturalEarthFeature('physical', 'coastline', '10m', facecolor='none', edgecolor='black'))
+         if barbs:
+             fig_dict = plot_barbs(fig_dict, lon, lat, xdata, ydata, var, scale)
+         else:
+             fig_dict = plot_arrows(fig_dict, lon, lat, xdata, ydata, var, scale)
 
     else:
         fig_dict = plot_magnitude(fig_dict, lon, lat, xdata, var, vmin=vmin, vmax=vmax, cbar=cbar)
