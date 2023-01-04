@@ -134,6 +134,16 @@ class SWAN_WAM4km(SWAN):
     def _get_forcing_reader(self):
         return wnd.read_metno.MEPS()
 
+class SWAN_WW3_4km(SWAN):
+    def _get_boundary_reader(self):
+        return bnd.read_metno.WW3_4km()
+
+    def _get_forcing_reader(self):
+        return wnd.read_metno.MEPS()
+
+    def _get_point_picker(self):
+        return bnd.pick.NearestGridPoint(max_dist=7, remove_duplicate=True)
+
 class SWASH_NORA3(SWASH):
     def _get_boundary_reader(self):
         return bnd.read_metno.NORA3()
