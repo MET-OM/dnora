@@ -12,7 +12,7 @@ The package contains functions that:
   * create a high-resolution grid using open-access bathymetry/topography datasets,
   * prepare the boundary conditions (NORA3, WAM4-operational wave model at MET Norway, available in https://thredds.met.no/thredds/catalog.html) for the spectral models (SWAN, WW3)
   * prepare the wind (NORA3, WAM4) forcing for the spectral models
-  * create input parameter files (e.g., .swn, .inp, .sws) for the spectral and phase-resolving models (SWAN, WW3, SWASH, HOS-ocean)
+  * create input parameter files for the spectral and phase-resolving models (SWAN, WW3, SWASH, HOS-ocean, REEF3D::FNPF)
   * run the wave models
 
 Installing **dnora**
@@ -75,6 +75,7 @@ Creating a Grid-object
 This section document the grd-module. The grid object is initialized with the following command::
 
    grid = grd.Grid(lon=(lon_min, lon_max), lat=(lat_min, lat_max), name=’GridName’)
+   grid = grd.Grid(lon=(5.35, 5.6), lat=(59.00, 59.17), name='Boknafjorden') # example for Boknafjorden
 
 .. code-block:: rst
 
@@ -113,9 +114,9 @@ This will enforce the resolution and instead change the initially set ``lon_max`
 Setting boundary points
 =====================================
 
-Setting boundary points is now only important for being able to write the grid-files, but are also of consequence when importing boundary spectra. The central method is to set the edged of the grid to boundary points::
+Setting boundary points is now only important for being able to write the grid-files, but are also of consequence when importing boundary spectra. The central method is to set the edged of the grid to boundary points. In addition, it is possible to search for available spectrum for every e.g. tenth point (step=10) in the boundary ::
 
-   bnd_set = grd.boundary.EdgesAsBoundary(edges=['N', 'W', 'S'])
+   bnd_set = grd.boundary.EdgesAsBoundary(edges=['N', 'W', 'S'], step = 10)
    grid.set_boundary(boundary_setter=bnd_set)
 
 .. code-block:: rst
@@ -139,14 +140,12 @@ Importing bathymetrical data
 
 The main idea is that the Grid-object is created, and a fixed set of methods are used to import a topography, mesh it down to a grid, or filter the data. The functionality of these methods are controlled by passing them a callable object. Adding e.g. a topography source thus means adding a new ``TopoReader``-class that can then me passed to the ``Grid``-object’s ``.import_topo()``-method. Different bathymetry readers such as::
 
-   ``EMODNET2018``: reads files with NetCDF format (version 2018) from https://portal.emodnet-bathymetry.eu/,
-   ``EMODNET2018``: reads files with NetCDF format (version 2020, possible to read several files using tile='*') from https://portal.emodnet-bathymetry.eu/,
+   ``EMODNET2020``: reads files with NetCDF format (version 2020, possible to read several files using tile='*') from https://portal.emodnet-bathymetry.eu/,
    ``KartverketNo50m``: reads files with xyz format (possible to read several files using tile='*') from https://kartkatalog.geonorge.no/metadata/dybdedata-terrengmodeller-50-meters-grid-landsdekkende/bbd687d0-d34f-4d95-9e60-27e330e0f76e
    ``GEBCO2021``: reads files with NetCDF format from https://download.gebco.net/
 
 Examples::
 
-   topo_reader=grd.read.EMODNET2018(tile='D5',folder='/home/user/bathy/')
    topo_reader=grd.read.EMODNET2020(tile='D5',folder='/home/user/bathy/')
    topo_reader=grd.read.GEBCO2021(tile='n66.357421875_s57.041015625_w0.703125_e10.37109375',folder='/home/user/bathy/')
    topo_reader=grd.read.KartverketNo50m(tile='B1008',folder='/home/user/bathy/')
@@ -273,14 +272,15 @@ Run the spectral model
 
 This fucntionality is at the moment only available for SWAN and SWASH. To run the model automatically we first need to generate an input file::
 
-   model.write_input_file(inp.SWAN())
+   model.write_input_file()
 
 .. code-block:: rst
+
 
 This generates an input file based on the grid, boundary and forcing data that is available in the object. After that, the model can be automatically ran by::
 
 
-   model.run_model(run.SWAN())
+   model.run_model()
 
 .. code-block:: rst
 
