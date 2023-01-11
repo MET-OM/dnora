@@ -16,7 +16,8 @@ class ModelExecuter(ABC):
         return
 
 class SWAN(ModelExecuter):
-    def __init__(self):
+    def __init__(self, nproc=4):
+        self.nproc = nproc
         return
 
     def _preferred_format(self) -> str:
@@ -25,7 +26,7 @@ class SWAN(ModelExecuter):
 
     def __call__(self, input_file: str, model_folder: str) -> None:
         print('Running SWAN----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>')
-        p = Popen(['swanrun', '-input', input_file,'-omp', '8'], cwd=model_folder)
+        p = Popen(['swanrun', '-input', input_file,'-omp', str(self.nproc)], cwd=model_folder)
         p.wait()
 
         return
