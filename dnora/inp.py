@@ -94,7 +94,7 @@ class SWAN(InputFileWriter):
 
                 bound_string = "BOUNDSPEC SEGMENT XY"
                 for lon, lat in zip(lons, lats):
-                    bound_string += f" {lon:.8f} {lat:.8f}"
+                    bound_string += f" {lon:.4f} {lat:.4f}"
                 bound_string += " VARIABLE FILE 0 "
                 bound_string += f"'{boundary_path.split('/')[-1]}'\n"
                 file_out.write(bound_string)
