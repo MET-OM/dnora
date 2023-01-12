@@ -150,7 +150,7 @@ class KartverketNo50m(TopoReader):
     def __call__(self, lon: tuple, lat: tuple, x: tuple, y: tuple) -> tuple:
         # Area is expanded a bit to not get in trouble in the meshing stage
         # when we interpoolate or filter
-        lon, lat = expand_area(lon, lat, self.expansion_factor)
+        x, y = expand_area(x, y, self.expansion_factor)
 
         print(f'Expansion factor: {self.expansion_factor}')
 
@@ -205,7 +205,6 @@ class KartverketNo50m(TopoReader):
         # topo_lat = topo_lat[mask]
         # topo_lon = topo_lon[mask]
         # topo = topo[mask]
-
 
         return topo, None, None, topo_x, topo_y, self.zone_number, 'W'
 

@@ -62,8 +62,8 @@ class WW3(ForcingWriter):
         forcing = dict_of_objects['Forcing']
         forcing.ds().to_netcdf(filename)
         # WW3 need time to be first
-        nco = Nco()
-        nco.ncpdq(input=filename, output=filename, options=['-a', f'time,{forcing.y_str},{forcing.y_str}'])
+        #nco = Nco()
+        #nco.ncpdq(input=filename, output=filename, options=['-a', f'time,{forcing.y_str},{forcing.y_str}'])
         return filename
 
 

@@ -49,8 +49,9 @@ class WW3(TrGridWriter):
     def __init__(self) -> None:
         return
 
-    def __call__(self, grid: Grid, filename: str) -> Tuple:
-
+    def __call__(self, dict_of_objects: dict, file_object) -> List[str]:
+        filename = file_object.get_filepath()
+        grid = dict_of_objects['Grid']
         output_file = file_module.add_suffix(filename, 'bathy')
 
         with open(output_file,'w') as f:
