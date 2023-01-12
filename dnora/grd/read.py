@@ -230,6 +230,39 @@ class GEBCO2021(TopoReader):
     def __str__(self):
         return(f"Reading GEBCO2021 topography from {self.source}.")
 
+class GEBCO2022(TopoReader):
+    """ Reads the GEBCO_2021 gridded bathymetric data set.
+        A global terrain model for ocean and land,
+        providing elevation data, in meters, on a 15 arc-second interval grid.
+        Reference: GEBCO Compilation Group (2021) GEBCO 2021 Grid (doi:10.5285/c6612cbe-50b3-0cff- e053-6c86abc09f8f)
+        Data (in netCDF format) can be downloaded here: https://www.gebco.net/data_and_products/gridded_bathymetry_data/
+
+        Contributed by: https://github.com/emiliebyer
+    """
+    def __init__(self, expansion_factor: float=1.2, tile: str='n61.0_s59.0_w4.0_e6.0', folder: str='/lustre/storeB/project/fou/om/WW3/bathy/gebco2021'):
+        self.source=f'{folder}/gebco_2022_{tile}.nc'
+        self.expansion_factor = expansion_factor
+        return
+
+    def __call__(self, lon_min: float, lon_max: float, lat_min: float, lat_max: float):
+        # Area is expanded a bit to not get in trouble in the meshing stage
+        # when we interpoolate or filter
+        lon0, lon1, lat0, lat1 = expand_area(lon_min, lon_max, lat_min, lat_max, self.expansion_factor)
+
+        ds = xr.open_dataset(self.source).sel(lon=slice(lon0, lon1), lat=slice(lat0, lat1))
+
+        elevation = ds.elevation.values.astype(float)
+
+        # Negative valies and NaN's are land
+        topo = -1*elevation
+
+        topo_lon = ds.lon.values.astype(float)
+        topo_lat = ds.lat.values.astype(float)
+
+        return topo, topo_lon, topo_lat
+
+    def __str__(self):
+        return(f"Reading GEBCO2022 topography from {self.source}.")
 
 
 class Merge(TopoReader):

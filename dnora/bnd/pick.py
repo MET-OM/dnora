@@ -31,8 +31,9 @@ class NearestGridPoint(PointPicker):
     """Choose the nearest grid point to each boundary point in the grid.
     Set a maximum allowed distance using `max_dist` (in km) at instantiation time.
     """
-    def __init__(self, max_dist=None):
+    def __init__(self, max_dist=None, remove_duplicate=False):
         self.max_dist = max_dist
+        self.remove_duplicate = remove_duplicate
         pass
 
     def __call__(self, grid, bnd_lon, bnd_lat):
@@ -51,7 +52,11 @@ class NearestGridPoint(PointPicker):
             else:
                 msg.plain('DISCARDED, too far: '+ms)
 
-        inds = np.array(inds)
+        if self.remove_duplicate == True:
+            inds = np.unique(np.array(inds))
+            msg.plain('*** Duplicate spectra are removed ***')
+        else:
+            inds = np.array(inds)
         return inds
 
 class Area(PointPicker):
