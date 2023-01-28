@@ -97,10 +97,14 @@ class ERA5(BoundaryReader):
 
         return lon_all, lat_all
 
+
+
+
     def __call__(self, start_time, end_time, inds) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         msg.info(
             f"Getting ERA5 boundary spectra from {start_time} to {end_time}")
+
 
         temp_folder = 'dnora_bnd_temp'
         if not os.path.isdir(temp_folder):
@@ -124,8 +128,8 @@ class ERA5(BoundaryReader):
             nc_file = f'{temp_folder}/EC_ERA5.nc'
         else:
             nc_file = download_era5_from_cds(start_time, end_time,
-                                            lon=(lon[0]-self.dlon, lon[1]+self.dlon),
-                                            lat=(lat[0]-self.dlat, lat[1]+self.dlat),
+                                            lon=(lon[0], lon[1]),
+                                            lat=(lat[0], lat[1]),
                                             dlon=self.dlon,
                                             dlat=self.dlat,
                                             folder=temp_folder)
@@ -158,5 +162,6 @@ class ERA5(BoundaryReader):
         lon = lon[inds]
         lat = lat[inds]
         spec = spec[:,inds,:,:]
+        #breakpoint()
 
         return  time, freq, dirs, spec, lon, lat, source
