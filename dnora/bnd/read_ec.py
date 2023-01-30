@@ -162,6 +162,5 @@ class ERA5(BoundaryReader):
         lon = lon[inds]
         lat = lat[inds]
         spec = spec[:,inds,:,:]
-        #breakpoint()
 
         return  time, freq, dirs, spec, lon, lat, source
