@@ -143,7 +143,7 @@ class SWAN(InputFileWriter):
                 delta_Xf = np.round(np.abs(forcing.lon()[-1] - forcing.lon()[0]), 5)
                 delta_Yf = np.round(np.abs(forcing.lat()[-1] - forcing.lat()[0]), 5)
 
-                file_out.write('INPGRID WIND ' + str(forcing.lon()[0]) + ' ' + str(forcing.lat()[0]) + ' 0. ' + str(
+                file_out.write('INPGRID WIND ' + str(forcing.lon()[0].round(3)) + ' ' + str(forcing.lat()[0].round(3)) + ' 0. ' + str(
                     forcing.nx() - 1) + ' ' + str(forcing.ny() - 1) + ' ' + str(
                     (delta_Xf / (forcing.nx() - 1)).round(6)) + ' ' + str((delta_Yf / (forcing.ny() - 1)).round(
                     6)) + ' NONSTATIONARY ' + STR_START + f" {forcing.dt():.0f} HR " + STR_END + '\n')

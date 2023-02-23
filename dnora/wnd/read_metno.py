@@ -477,7 +477,7 @@ class NORA3(ForcingReader):
 
         wind_forcing = xr.concat(wnd_list, dim="time")
         wind_forcing = wind_forcing.rename_dims({'y': 'lat', 'x': 'lon'})
-
+        wind_forcing = wind_forcing.rename_vars({'y': 'lat', 'x': 'lon'})
 
         # Go to u and v component
         u, v = u_v_from_dir(wind_forcing.wind_speed, wind_forcing.wind_direction)
