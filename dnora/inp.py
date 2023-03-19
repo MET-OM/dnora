@@ -187,7 +187,7 @@ class SWAN(InputFileWriter):
                 file_out.write('INITIAL HOTSTART \'hotstart_'+grid.name()+'_'+STR_START.replace('.','')[:-2]+'\''  '\n')
 
 
-            file_out.write('GEN3 WESTH cds2='+str(self.calib_wcap) + '\n')
+            file_out.write('GEN3 WESTH cds2='+str(self.calib_wcap) +' AGROW'+ '\n')
             file_out.write('FRICTION JON 0.067 \n')
             file_out.write('PROP BSBT \n')
             file_out.write('NUM ACCUR NONST 1 \n')
