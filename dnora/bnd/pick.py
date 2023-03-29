@@ -36,9 +36,9 @@ class NearestGridPoint(PointPicker):
         pass
 
     def __call__(self, grid: Union[Grid, UnstrGrid],
-                    all_points: UnstrGrid, **kwargs) -> np.ndarray:
+                    all_points: UnstrGrid, selected_points: UnstrGrid, **kwargs) -> np.ndarray:
 
-        lon, lat = grid.boundary_points('lon')
+        lon, lat = selected_points.lonlat()
 
         # Go through all points where we want output and find the nearest available point
         inds = []
@@ -59,6 +59,10 @@ class Area(PointPicker):
     def __call__(self, grid: Union[Grid, UnstrGrid],
                     all_points: UnstrGrid,
                     expansion_factor: float=1.5, **kwargs) -> np.ndarray:
+
+        if grid._empty_skeleton():
+            msg.info("Grid is empty, no no points can be found for the area covering the grid!")
+            return np.array([])
 
         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
 

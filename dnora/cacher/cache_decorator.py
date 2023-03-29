@@ -15,7 +15,7 @@ import re
 def cached_reader(dnora_obj, reader_function):
 
     def outer_wrapper(import_method):
-        def wrapper(*args, cache_name: str=None, read_cache: bool=False, write_cache: bool=False, **kwargs):
+        def wrapper(*args, cache_name: str=None, read_cache: bool=False, write_cache: bool=False, patch: bool=False, **kwargs):
             def get_reader(args, kwargs):
                 reader = None
                 if kwargs.get(f'{dnora_obj}_reader') is not None:
@@ -109,7 +109,7 @@ def cached_reader(dnora_obj, reader_function):
 
             if files and read_cache:
                 patch_start, patch_end = determine_patch_periods()
-                if patch_start:
+                if patch_start and patch:
                     msg.info('Not all data found in cache. Patching from original source...')
                     temp_args = tuple(list(args)[1:])
                     for t0, t1 in zip(patch_start, patch_end):

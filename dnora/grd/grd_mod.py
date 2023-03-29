@@ -14,6 +14,7 @@ from .tri_arangers import TriAranger
 from copy import copy
 @topography_methods
 @add_datavar(name='topo', default_value=999., stash_get=True)
+@add_mask(name='buoy', coords='grid', default_value=0)
 @add_mask(name='spec', coords='grid', default_value=0)
 @add_mask(name='boundary', coords='grid', default_value=0)
 @add_mask(name='sea', coords='grid', default_value=1, opposite_name='land')
@@ -188,6 +189,8 @@ class Grid(GriddedSkeleton):
 
 @topography_methods
 @add_datavar(name='topo', default_value=999., stash_get=True)
+@add_mask(name='buoy', coords='grid', default_value=0)
+@add_mask(name='spec', coords='grid', default_value=0)
 @add_mask(name='boundary', coords='grid', default_value=0)
 @add_mask(name='sea', coords='grid', default_value=1, opposite_name='land')
 class UnstrGrid(PointSkeleton):

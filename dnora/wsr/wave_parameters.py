@@ -180,6 +180,42 @@ class Tm02(WaveParameter):
 
 class Tp(WaveParameter):
     """Peak period from spectra"""
+    def __call__(self, spec: Union[Spectra, Boundary]):
+        spec._set_convention(SpectralConvention.MET)
+
+        if isinstance(spec, Boundary):
+            theta = np.deg2rad(spec.mdir(data_array=True))
+            dD = 360/len(spec.dirs())
+            # Normalizing here so that integration over direction becomes summing
+            efth = dD*np.pi/180*spec.spec(data_array=True)
+
+            c1 = ((np.cos(theta)*efth).sum(dim='dirs'))  # Function of frequency
+            s1 = ((np.sin(theta)*efth).sum(dim='dirs'))
+            efth = efth.sum(dim='dirs')
+            dirs = np.rad2deg(np.arctan2(s1,c1))
+        else:
+            efth = spec.spec(data_array=True)
+            dirs = spec.mdir(data_array=True)
+
+
+        inds = efth.argmax(dim='freq')
+
+        freqs =(np.tile(efth.freq.values, [efth.shape[0], efth.shape[1],1]))
+        dirs.values = freqs # Inherit DataArray structure
+
+        return 1/dirs[:,:,inds].values
+
+    def name(self):
+        return 'tp'
+
+    def unit(self):
+        return ureg.second
+
+    def standard_name(self):
+        return 'sea_surface_wave_period_at_variance_spectral_density_maximum'
+
+class TpI(WaveParameter):
+    """Peak period from spectra from integration"""
 
     def __call__(self, spec: Union[Spectra, Boundary]):
         m_1 = PowerMoment(-1,10)(spec)
@@ -190,7 +226,7 @@ class Tp(WaveParameter):
         return tp
 
     def name(self):
-        return 'tp'
+        return 'tpi'
 
     def unit(self):
         return PowerMoment(-1,10).unit()/PowerMoment(0,10).unit()
@@ -357,3 +393,65 @@ class Sprm(WaveParameter):
 
     def standard_name(self):
         return 'sea_surface_wave_directional_spread'
+
+
+class Dirp(WaveParameter):
+    """Peak wave direction"""
+    def __call__(self, spec: Union[Spectra, Boundary]):
+        spec._set_convention(SpectralConvention.MET)
+
+        if isinstance(spec, Boundary):
+            theta = np.deg2rad(spec.mdir(data_array=True))
+            dD = 360/len(spec.dirs())
+            # Normalizing here so that integration over direction becomes summing
+            efth = dD*np.pi/180*spec.spec(data_array=True)
+
+            c1 = ((np.cos(theta)*efth).sum(dim='dirs'))  # Function of frequency
+            s1 = ((np.sin(theta)*efth).sum(dim='dirs'))
+            efth = efth.sum(dim='dirs')
+            dirs = np.rad2deg(np.arctan2(s1,c1))
+        else:
+            efth = spec.spec(data_array=True)
+            dirs = spec.mdir(data_array=True)
+
+
+        inds = efth.argmax(dim='freq')
+
+        return dirs[:,:,inds].values
+
+    def name(self):
+        return 'dirp'
+
+    def unit(self):
+        return ureg.deg
+
+    def standard_name(self):
+        return 'sea_surface_wave_from_direction'
+
+class FF(WaveParameter):
+    """Wind speed"""
+    def __call__(self, spec: Union[Spectra, Boundary]):
+        raise NotImplementedError
+
+    def name(self):
+        return 'ff'
+
+    def unit(self):
+        return ureg.m*ureg.s**-1
+
+    def standard_name(self):
+        return 'wind_speed'
+
+class DD(WaveParameter):
+    """Wind direction"""
+    def __call__(self, spec: Union[Spectra, Boundary]):
+        raise NotImplementedError
+
+    def name(self):
+        return 'dd'
+
+    def unit(self):
+        return ureg.deg
+
+    def standard_name(self):
+        return 'wind_direction'

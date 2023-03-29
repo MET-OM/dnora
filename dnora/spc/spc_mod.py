@@ -49,9 +49,10 @@ class Spectra(PointSkeleton):
         msg.header(spectral_reader, "Reading coordinates of spectra...")
         lon_all, lat_all, x_all, y_all = spectral_reader.get_coordinates(self.grid(), start_time)
         all_points = UnstrGrid(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
-
-        msg.header(point_picker, "Choosing boundary spectra...")
-        inds = point_picker(self.grid(), all_points, **kwargs)
+        selected_points = UnstrGrid(lon=self.grid().boundary_points('lon', strict=True)[0], lat=self.grid().boundary_points('lon', strict=True)[1],
+                                    x=self.grid().boundary_points('x', strict=True)[0], y=self.grid().boundary_points('x', strict=True)[1])
+        msg.header(point_picker, "Choosing spectra...")
+        inds = point_picker(self.grid(), all_points, selected_points=selected_points, **kwargs)
 
         msg.header(spectral_reader, "Loading omnidirectional spectra...")
         time, freq, spec, mdir, spr, lon, lat, x, y, metadata = spectral_reader(self.grid(), start_time, end_time, inds)

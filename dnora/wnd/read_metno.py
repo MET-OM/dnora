@@ -124,8 +124,8 @@ class NORA3(ForcingReader):
         u, v = u_v_from_dir(wind_forcing.wind_speed,
                             wind_forcing.wind_direction)
 
-        u = u.fillna(0)
-        v = v.fillna(0)
+        u = u.fillna(0).values
+        v = v.fillna(0).values
         #u = np.moveaxis(u.values,0,2)
         #v = np.moveaxis(v.values,0,2)
 

@@ -91,12 +91,12 @@ def day_list(start_time, end_time):
     days = pd.date_range(start=t0, end=t1, freq='D')
     return days.strftime('%Y-%m-%d').to_list()
 #
-def month_list(start_time, end_time):
+def month_list(start_time, end_time, fmt='%Y-%m'):
     """Determins a Pandas data range of all the months in the time span"""
     t0 = pd.Timestamp(start_time).strftime('%Y-%m')
     t1 = pd.Timestamp(end_time).strftime('%Y-%m')
     months = pd.date_range(start=t0, end=t1, freq='MS')
-    return months.strftime('%Y-%m').to_list()
+    return months.strftime(fmt).to_list()
 #
 def year_list(start_time, end_time):
     """Determins a Pandas data range of all the years in the time span"""

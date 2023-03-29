@@ -22,9 +22,9 @@ def add_datavar(name, coords='grid', default_value=0., stash_get=False, aftermat
 
             data = self.ds_manager.get(name, **kwargs)
             if data_array:
-                return data
+                return data.copy()
             return data.values.copy()
-
+    
         if not hasattr(c, '_coord_manager'):
             c._coord_manager =  CoordinateManager()
 

@@ -42,6 +42,15 @@ class Null(WaveSeriesWriter):
     def __call__(self, dict_of_objects: dict, file_object) -> List[str]:
         return ''
 
+class DumpToNc(WaveSeriesWriter):
+    def _extension(self) -> str:
+        return 'nc'
+
+    def __call__(self, dict_of_objects: dict, file_object) -> tuple[str, str]:
+        filename = file_object.get_filepath()
+        dict_of_objects['WaveSeries'].ds().to_netcdf(filename)
+        return filename
+
 class DnoraNc(WaveSeriesWriter):
     def _extension(self) -> str:
         return 'nc'

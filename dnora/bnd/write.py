@@ -104,7 +104,7 @@ class WW3(BoundaryWriter):
         boundary = dict_of_objects['Boundary']
 
         if self.one_file:
-            filename = file_object.get_filename()
+            filename = file_object.get_filepath()
             if len(boundary.x()) == 1:
                 # Uses $Lon $Lat
                 filename = file_module.replace_lonlat(filename, lon=boundary.lon()[0], lat=boundary.lat()[0])
@@ -115,7 +115,7 @@ class WW3(BoundaryWriter):
         else:
             output_files = []
             for n in boundary.inds():
-                filename = file_object.get_filename()
+                filename = file_object.get_filepath()
                 output_file = file_module.replace_lonlat(filename, lon=boundary.lon()[n], lat=boundary.lat()[n])
                 output_file = file_module.clean_filename(output_file)
                 output_files.append(output_file)

@@ -80,6 +80,15 @@ class DnoraNc(SpectralWriter):
         output_files = write_monthly_nc_files(dict_of_objects['Spectra'], file_object)
         return output_files
 
+class DumpToNc(SpectralWriter):
+    def _extension(self) -> str:
+        return 'nc'
+
+    def __call__(self, dict_of_objects: dict, file_object) -> tuple[str, str]:
+        filename = file_object.get_filepath()
+        dict_of_objects['Spectra'].ds().to_netcdf(filename)
+        return filename
+
 class REEF3D(SpectralWriter):
     def __init__(self, convention: Union[SpectralConvention, str]=SpectralConvention.MET) -> None:
         self._convention = convention

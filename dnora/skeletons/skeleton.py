@@ -10,10 +10,10 @@ from .. import msg
 def cap_lat_for_utm(lat):
     if isinstance(lat, float):
         lat = np.array([lat])
-    if max(lat) > 84:
+    if len(lat)>0 and max(lat) > 84:
         msg.warning(f'Max latitude {max(lat)}>84. These points well be capped to 84 deg in UTM conversion!')
         lat[lat>84.] = 84.
-    if min(lat) < -80:
+    if len(lat)>0 and min(lat) < -80:
         lat[lat<-80.] = -80.
         msg.warning(f'Min latitude {min(lat)}<-80. These points well be capped to -80 deg in UTM conversion!')
     return lat
@@ -42,7 +42,7 @@ class Skeleton:
         if not hasattr(self, '_coord_manager'):
             self._coord_manager =  CoordinateManager()
 
-        #if not self.is_initialized():
+        x, y, lon, lat = sanitize_input(x, y, lon, lat)
         x_str, y_str, xvec, yvec = will_grid_be_spherical_or_cartesian(x, y, lon, lat)
 
         self.x_str = x_str
@@ -71,6 +71,11 @@ class Skeleton:
 
     def _structure_initialized(self) -> bool:
         return hasattr(self, 'ds_manager')
+
+    def _empty_skeleton(self) -> bool:
+        if not self._structure_initialized():
+            return True
+        return len(self.ds()[self.x_str]) == 0 and len(self.ds()[self.y_str]) == 0
 
     def _absorb_object(self, obj, dimension: str) -> None:
         """Absorb another object of same type. This is used e.g. when pathcing
@@ -246,7 +251,10 @@ class Skeleton:
         inds = self.ds_manager.get('inds', **kwargs)
         if inds is None:
             return None
-        return inds.values.copy()
+        vals = inds.values.copy()
+        if vals.shape == ():
+            vals = vals.reshape(1)[0]
+        return vals
 
     def native_x(self, **kwargs) -> np.ndarray:
         """Returns x-vector for cartesian grids and lon-vector for sperical
@@ -453,7 +461,7 @@ class Skeleton:
 
     def edges(self, coord: str, native: bool=False, strict=False) -> tuple[float, float]:
         """Min and max values of x. Conversion made for sperical grids."""
-        if not self._structure_initialized():
+        if not self._structure_initialized() or self._empty_skeleton():
             return (None, None)
 
         if self._xy_dict.get(coord) is None:
@@ -476,20 +484,20 @@ class Skeleton:
 
     def nx(self) -> int:
         """Length of x/lon-vector."""
-        if not self._structure_initialized():
+        if not self._structure_initialized() or self._empty_skeleton():
             return 0
         return len(self.native_x())
 
     def ny(self):
         """Length of y/lat-vector."""
-        if not self._structure_initialized():
+        if not self._structure_initialized() or self._empty_skeleton():
             return 0
         return len(self.native_y())
 
     def dx(self, strict=False):
         """Mean grid spacing of the x vector. Conversion made for
         spherical grids."""
-        if not self._structure_initialized():
+        if not self._structure_initialized() or self._empty_skeleton():
             return None
 
         if not self.is_cartesian() and (strict or self.strict):
@@ -504,7 +512,7 @@ class Skeleton:
     def dy(self, strict=False):
         """Mean grid spacing of the y vector. Conversion made for
         spherical grids."""
-        if not self._structure_initialized():
+        if not self._structure_initialized() or self._empty_skeleton():
             return None
 
         if not self.is_cartesian() and (strict or self.strict):
@@ -519,7 +527,7 @@ class Skeleton:
     def dlon(self, strict=False):
         """Mean grid spacing of the longitude vector. Conversion made for
         cartesian grids."""
-        if not self._structure_initialized():
+        if not self._structure_initialized() or self._empty_skeleton():
             return None
 
         if self.is_cartesian() and (strict or self.strict):
@@ -533,7 +541,7 @@ class Skeleton:
     def dlat(self, strict=False):
         """Mean grid spacing of the latitude vector. Conversion made for
         cartesian grids."""
-        if not self._structure_initialized():
+        if not self._structure_initialized() or self._empty_skeleton():
             return None
 
         if self.is_cartesian() and (strict or self.strict):
@@ -547,7 +555,7 @@ class Skeleton:
     def native_dx(self):
         """Mean grid spacing of x vector for cartesian grids.
         Mean grid spacing of lon vector for spherical grids."""
-        if not self._structure_initialized():
+        if not self._structure_initialized() or self._empty_skeleton():
             return None
 
         if self.nx() == 1:
@@ -559,7 +567,7 @@ class Skeleton:
     def native_dy(self):
         """Mean grid spacing of y vector for cartesian grids.
         Mean grid spacing of lat vector for spherical grids."""
-        if not self._structure_initialized():
+        if not self._structure_initialized() or self._empty_skeleton():
             return None
 
         if self.ny() == 1:
@@ -584,6 +592,25 @@ class Skeleton:
             old_metadata.update(metadata)
             metadata = old_metadata
         self.ds_manager.set_attrs(metadata)
+
+    def set_mask(self, mask_setter, mask_type: str=None) -> None:
+        """Set a mask that represents e.g. Boundary points or spectral output
+        point.
+
+        NB! Points can overlap with land!
+        """
+
+        if mask_type is None:
+            mask_type = mask_setter._mask_type()
+
+        if mask_type is None:
+            msg.advice(f"Either provide mask_type variable or provide a MaskSetter with a _mask_type method.")
+
+        msg.header(mask_setter, f"Setting {mask_type} points...")
+        print(mask_setter)
+
+        mask = mask_setter(self)
+        self._update_mask(mask_type, mask)
 
     @property
     def x_str(self) -> str:
@@ -649,14 +676,21 @@ class Skeleton:
         else:
             raise ValueError("name needs to be a string")
 
-def will_grid_be_spherical_or_cartesian(x, y, lon, lat):
-    """Determines if the grid will be spherical or cartesian based on which
-    inputs are given and which are None.
+def sanitize_input(x, y, lon, lat):
+    """Sanitizes input. After this all variables are either
+    non-empty np.ndarrays with len >= 1 or None"""
 
-    Returns the ringth vector and string to identify the native values.
-    """
-    xy = False
-    lonlat = False
+    # E.g. lon=1.0, lat=3
+    if isinstance(x, float) or isinstance(x, int):
+        x = np.array([x])
+    if isinstance(y, float) or isinstance(y, int):
+        y = np.array([y])
+    if isinstance(lon, float) or isinstance(lon, int):
+        lon = np.array([lon])
+    if isinstance(lat, float) or isinstance(lat, int):
+        lat = np.array([lat])
+
+    # (None, None) -> None
     if isinstance(x,tuple) and np.all(x==(None, None)):
         x = None
     if isinstance(y,tuple) and np.all(y==(None, None)):
@@ -666,6 +700,47 @@ def will_grid_be_spherical_or_cartesian(x, y, lon, lat):
     if isinstance(lat,tuple) and np.all(lat==(None, None)):
         lat = None
 
+    # np.array(5.222) to np.array([5.222])
+    if isinstance(x,np.ndarray) and not x.shape:
+        x = np.array([x])
+    if isinstance(y,np.ndarray) and not y.shape:
+        y = np.array([y])
+    if isinstance(lon,np.ndarray) and not lon.shape:
+        lon = np.array([lon])
+    if isinstance(lat,np.ndarray) and not lat.shape:
+        lat = np.array([lat])
+
+    # Set np.array([]) to None
+    if x is not None and not any(x):
+        x = None
+    if y is not None and  not any(y):
+        y = None
+    if lon is not None and  not any(lon):
+        lon = None
+    if lat is not None and not any(lat):
+        lat = None
+
+
+    return x, y, lon, lat
+
+def will_grid_be_spherical_or_cartesian(x, y, lon, lat):
+    """Determines if the grid will be spherical or cartesian based on which
+    inputs are given and which are None.
+
+    Returns the ringth vector and string to identify the native values.
+    """
+
+    # Check for empty grid
+    if (lon is None or len(lon) == 0) and (lat is None or len(lat) == 0) and (x is None or len(x) == 0) and (y is None or len(y) == 0):
+        native_x = 'x'
+        native_y = 'y'
+        xvec = np.array([])
+        yvec = np.array([])
+        return native_x, native_y, xvec, yvec
+
+    xy = False
+    lonlat = False
+
     if (x is not None) and (y is not None):
         xy = True
         native_x = 'x'
@@ -673,7 +748,6 @@ def will_grid_be_spherical_or_cartesian(x, y, lon, lat):
         xvec = x
         yvec = y
 
-    #if (lon is not None and lon != none_tuple) and (lat is not None and lat != none_tuple):
     if (lon is not None) and (lat is not None):
         lonlat = True
         native_x = 'lon'
@@ -682,9 +756,14 @@ def will_grid_be_spherical_or_cartesian(x, y, lon, lat):
         yvec = lat
 
     if xy and lonlat:
+        breakpoint()
         raise ValueError("Can't set both lon/lat and x/y!")
 
+    # Empty grid will be cartesian
     if not xy and not lonlat:
-        raise ValueError('Have to set either lon/lat or x/y!')
+        native_x = 'x'
+        native_y = 'y'
+        xvec = np.array([])
+        yvec = np.array([])
 
     return native_x, native_y, xvec, yvec

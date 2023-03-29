@@ -11,6 +11,7 @@ from ..grd import Grid, UnstrGrid
 from .wave_parameters import WaveParameter
 from ..skeletons.point_skeleton import PointSkeleton
 from ..skeletons.datavar_factory import add_datavar
+from ..skeletons.mask_factory import add_mask
 from ..skeletons.coordinate_factory import add_time, add_frequency, add_direction
 from ..bnd.pick import PointPicker, TrivialPicker
 #from ..skeletons.mask_factory import add_mask
@@ -18,7 +19,8 @@ from ..bnd.pick import PointPicker, TrivialPicker
 from copy import deepcopy
 #@add_mask(name='bad', coords='all', default_value=0)
 #@add_datavar(name='spec', coords='all', default_value=0.)
-@add_time(grid_coord=True)
+@add_mask(name='buoy', coords='grid', default_value=1)
+@add_time(grid_coord=False)
 class WaveSeries(PointSkeleton):
     #def __call__(self, parameter: str) -> np.ndarray:
     #    return self.data[parameter].values
@@ -38,11 +40,12 @@ class WaveSeries(PointSkeleton):
 
         msg.header(waveseries_reader, "Reading coordinates of WaveSeries...")
         lon_all, lat_all, x_all, y_all = waveseries_reader.get_coordinates(self.grid(), start_time)
-
+    
         all_points = UnstrGrid(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
-
+        selected_points = UnstrGrid(lon=self.grid().buoy_points('lon', strict=True)[0], lat=self.grid().buoy_points('lon', strict=True)[1],
+                                    x=self.grid().buoy_points('x', strict=True)[0], y=self.grid().buoy_points('x', strict=True)[1])
         msg.header(point_picker, "Choosing wave series points...")
-        inds = point_picker(self.grid(), all_points, **kwargs)
+        inds = point_picker(self.grid(), all_points, selected_points=selected_points, **kwargs)
 
         msg.header(waveseries_reader, "Loading wave series data...")
         time, data_dict, lon, lat, x, y, attributes = waveseries_reader(self.grid(), start_time, end_time, inds, **kwargs)

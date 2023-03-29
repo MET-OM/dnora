@@ -85,6 +85,7 @@ class BoundaryToSpectra(SpectralReader):
     """Integrates boundary spectra to omnidairectional spectra"""
     def __init__(self, boundary: Boundary) -> None:
         self._boundary = copy(boundary)
+        self._boundary._set_convention(SpectralConvention.OCEAN)
 
     def convention(self):
         return convert_2d_to_1d(self._boundary._convention)
@@ -103,6 +104,7 @@ class BoundaryToSpectra(SpectralReader):
 
         freq = self._boundary.freq()
         theta = np.deg2rad(self._boundary.dirs())
+
         dD = 360/len(self._boundary.dirs())
         # Normalizing here so that integration over direction becomes summing
         #efth = self._boundary.data.sel(time=slice(start_time, end_time), x=inds).spec*dD*np.pi/180

@@ -67,6 +67,28 @@ class SpectralProcessor(ABC):
         """Describes how the spectral values as processed"""
         pass
 
+class CutFrequency(SpectralProcessor):
+    """Cuts the spectrum down to a certain frequency range
+    """
+
+    def __init__(self, freq: tuple):
+        self._freq = freq
+
+    def __call__(self, spec, dirs, freq, spr) -> Tuple:
+        check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=1)
+        mask = np.logical_and(freq >= self._freq[0], freq <= self._freq[-1])
+        new_freq = freq[mask]
+        new_dirs = dirs[:,:,mask]
+        new_spr = spr[:,:,mask]
+        new_spec = spec[:,:,mask]
+        check_that_spectra_are_consistent(new_spec, new_dirs, new_freq, expected_dim=1)
+        check_that_spectra_are_consistent(new_spec, new_spr, new_freq, expected_dim=1)
+        return new_spec, new_dirs, new_freq, new_spr
+
+    def __str__(self):
+        return(f"Cutting frequency range to {self._freq[0]-self._freq[-1]}...")
+
+
 class OceanToMet(SpectralProcessor):
     """Changes all directions from Oceanic convention to Meteorological convention.
 

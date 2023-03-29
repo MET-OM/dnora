@@ -8,25 +8,6 @@ from ..grd.process import GridProcessor
 from ..grd.mesh import Mesher, Interpolate
 from .. import msg
 def topography_methods(c):
-    def set_mask(self, mask_setter: MaskSetter, mask_type: str=None) -> None:
-        """Set a mask that represents e.g. Boundary points or spectral output
-        point.
-
-        NB! Points can overlap with land!
-        """
-
-        if mask_type is None:
-            mask_type = mask_setter._mask_type()
-
-        if mask_type is None:
-            msg.advice(f"Either provide mask_type variable or provide a MaskSetter with a _mask_type method.")
-
-        msg.header(mask_setter, f"Setting {mask_type} points...")
-        print(mask_setter)
-
-        mask = mask_setter(self.sea_mask())
-        self._update_mask(mask_type, mask)
-
     def mesh_grid(self, mesher: Mesher=Interpolate(method = 'nearest')) -> None:
         """Meshes the raw data down to the grid definitions."""
 
@@ -107,7 +88,7 @@ def topography_methods(c):
         topo[np.logical_not(self.sea_mask(**kwargs))] = land
         return topo
 
-    c.set_mask = set_mask
+    #c.set_mask = set_mask
     c.mesh_grid = mesh_grid
     c.process_topo = process_topo
     c.process_grid = process_grid

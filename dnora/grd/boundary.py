@@ -4,9 +4,9 @@ from abc import ABC, abstractmethod
 
 # Import aux_funcsiliry functions
 from .. import msg
-
+from .. import aux_funcs
 class MaskSetter(ABC):
-    """Set boundary points in the grid.
+    """Set points (boundary, spec etc.) in the grid.
 
     The dimensions and orientation of the boolean array [True = boundary point]
     that is returned to the object should be:
@@ -19,9 +19,9 @@ class MaskSetter(ABC):
     West = [:,0]
     """
     @abstractmethod
-    def __call__(self, sea_mask: np.ndarray) -> np.ndarray:
+    def __call__(self, grid) -> np.ndarray:
         """This method is called from within the Grid-object."""
-        return boundary_mask
+        return mask
 
     def _mask_type(self) -> str:
         return None
@@ -44,8 +44,8 @@ class ClearBoundary(BoundarySetter):
     def __init__(self):
         pass
 
-    def __call__(self, sea_mask: np.ndarray):
-        mask_size = sea_mask.shape
+    def __call__(self, grid):
+        mask_size = self.sea_mask().shape
         return np.full(mask_size, False)
 
     def __str__(self):
@@ -71,8 +71,8 @@ class EdgesAsBoundary(BoundarySetter):
             self.step = int(step)
         return
 
-    def __call__(self, sea_mask: np.ndarray):
-        mask_size = sea_mask.shape
+    def __call__(self, grid):
+        mask_size = grid.sea_mask().shape
 
         if mask_size == (1, 1):
             return np.full(mask_size, True)
@@ -108,8 +108,8 @@ class MidPointAsBoundary(BoundarySetter):
         self.edges = edges
 
 
-    def __call__(self, sea_mask: np.ndarray):
-        mask_size = sea_mask.shape
+    def __call__(self, grid):
+        mask_size = grid.sea_mask().shape
         if mask_size == (1, 1):
             return np.full(mask_size, True)
 
@@ -161,8 +161,8 @@ class SetMatrix(BoundarySetter):
         self.matrix = matrix
         return
 
-    def __call__(self, mask_size: tuple):
-        if self.matrix.shape == mask_size:
+    def __call__(self, grid):
+        if self.matrix.shape == grid.sea_mask().shape:
             return self.matrix
         else:
             raise Exception(f'Given mask for boundary points does not match the dimensions of the grid ({self.matrix.shape[0]}x{self.matrix.shape[1]} vs {mask_size[0]}x{mask_size[1]})')
@@ -173,9 +173,24 @@ class SetMatrix(BoundarySetter):
 class SetAll(BoundarySetter):
     """Set all points to boundary points. """
 
-    def __call__(self, sea_mask: np.ndarray):
-        mask_size = sea_mask.shape
-        return np.full(mask_size, True)
+    def __call__(self, grid):
+        return np.full(grid.size(), True)
 
     def __str__(self):
         return(f"Setting all points to boundary points.")
+
+class SetLonLat(MaskSetter):
+    """Sets a list of lon, lat points to interest points"""
+
+    def __init__(self, lon=np.ndarray, lat=np.ndarray):
+        self._lon = lon
+        self._lat = lat
+
+    def __call__(self, grid):
+        mask_vec = grid.sea_mask()*False.ravel()
+        lons, lats = grid.lonlat()
+        for lon, lat in zip(self._lon, self._lat):
+            __, ind = aux_funcs.min_distance(lon, lat, lons, lats)
+            mask_vec[ind] = True
+
+        return mask_vec.reshape(grid.sea_mask().shape)

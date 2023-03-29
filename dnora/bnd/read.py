@@ -175,6 +175,71 @@ class ForceFeed(BoundaryReader):
         #return  copy(self.time), copy(self.freq), copy(self.dirs), np.reshape(self.spec, (len(self.time), len(self.lon), self.spec.shape[0], self.spec.shape[1])), copy(self.lon), copy(self.lat), ''
         return  copy(self.time), copy(self.freq), copy(self.dirs), copy(self.spec), copy(self.lon), copy(self.lat), None, None, {}
 
+class WW3Nc(BoundaryReader):
+    def __init__(self, filename: str='ww3.%Y%m_spec.nc', folder: str='', mode: str='single'):
+        """Mode can be 'single' (one file), 'monthly'"""
+        self._filename = filename
+        self._mode = mode
+        self._folder = folder
+
+    def convention(self) -> SpectralConvention:
+        return SpectralConvention.WW3
+
+    def _filenames(self, start_time, end_time, folder):
+        filenames = []
+        if self._mode == 'single':
+            filenames.append(f"{folder}/{self._filename}")
+        else:
+            for file in aux_funcs.month_list(start_time, end_time, fmt=self._filename):
+                filenames.append(f"{folder}/{file}")
+        return filenames
+
+    def get_coordinates(self, grid, start_time) -> Tuple:
+        """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
+        #day = pd.date_range(start_time, start_time,freq='D')
+
+        data = xr.open_dataset(self._filenames(start_time, start_time, folder=self._folder)[0]).isel(time = [0])
+
+        lon_all = data.longitude.values[0]
+        lat_all = data.latitude.values[0]
+
+        return lon_all, lat_all, None, None
+
+    def __call__(self, grid, start_time, end_time, inds, **kwargs) -> Tuple:
+        """Reads in all boundary spectra between the given times and at for the given indeces"""
+
+        msg.info(f"Getting boundary spectra from WW3 netcdf files from {start_time} to {end_time}")
+
+        def _crop(ds):
+            """
+            EMODNET tiles overlap by two cells on each boundary.
+            """
+            return ds.sel(time = slice(start_time, end_time), station = (inds+1))
+
+        import dask
+        with dask.config.set(**{'array.slicing.split_large_chunks': True}):
+            with xr.open_mfdataset(self._filenames(start_time, end_time, self._folder), preprocess=_crop) as ds:
+        # bnd_list = []
+        # for file in self._filenames(start_time, end_time, self._folder):
+        #     try:
+        #         bnd_list.append(xr.open_dataset(file).sel(time = slice(start_time, end_time), station = (inds+1)))
+        #         msg.from_file(file)
+        #     except FileNotFoundError:
+        #         msg.plain(f'Cannot open file {file}!')
+        #
+        # msg.plain('Merging xarrays...')
+        # bnd = xr.concat(bnd_list, dim="time")
+
+                time = ds.time.values
+                freq = ds.frequency.values
+                dirs = ds.direction.values
+                spec = ds.efth.values
+                lon = ds.longitude.values[0,:]
+                lat = ds.latitude.values[0,:]
+
+                return  time, freq, dirs, spec, lon, lat, None, None, ds.attrs
+
+
 class File_WW3Nc(BoundaryReader):
     def __init__(self, folder: str='', filename: str='ww3_T0', dateftm: str='%Y%m%dT%H%M', stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0) -> None:
         self.stride = copy(stride)

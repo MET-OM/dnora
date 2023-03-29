@@ -133,7 +133,7 @@ class ModelRun:
     def import_spectra(self, spectral_reader: SpectralReader=None,
                         point_picker: PointPicker=None,
                         name: str=None, dry_run: bool=False,
-                        source: str='remote', **kwargs) -> None:
+                        source: str='remote', files: list[str] = None, **kwargs) -> None:
         """Imports omnidirectional spectra.
 
         source = 'remote' (default) / '<folder>' / 'met'
@@ -145,7 +145,13 @@ class ModelRun:
         """
 
         self._dry_run = dry_run
-        spectral_reader = spectral_reader or self._get_spectral_reader()
+
+        if files is not None:
+            if not isinstance(files, list):
+                files = [files]
+            spectral_reader = spc.read.DnoraNc(files=files)
+        spectral_reader = spectral_reader or self._get_spectra_reader()
+        point_picker = point_picker or self._get_point_picker()
 
         # This is to allow importing from cache using only a name
         if spectral_reader is None:
@@ -176,7 +182,7 @@ class ModelRun:
     def import_waveseries(self, waveseries_reader: WavesSeriesReader=None,
                         point_picker: PointPicker=None,
                         name: str=None, dry_run: bool=False,
-                        source: str='remote', **kwargs) -> None:
+                        source: str='remote', files: list[str] = None, **kwargs) -> None:
 
         """Imports wave timeseries data.
 
@@ -188,8 +194,13 @@ class ModelRun:
         To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
         """
         self._dry_run = dry_run
+        if files is not None:
+            if not isinstance(files, list):
+                files = [files]
+            waveseries_reader = wsr.read.DnoraNc(files=files)
         waveseries_reader = waveseries_reader or self._get_waveseries_reader()
 
+        point_picker = point_picker or self._get_point_picker()
         # This is to allow importing from cache using only a name
         if waveseries_reader is None:
             raise Exception('Define a WaveSeriesReader!')
@@ -248,13 +259,14 @@ class ModelRun:
         else:
             msg.info('Dry run! No boundary will not be converted to spectra.')
 
-    def spectra_to_waveseries(self, dry_run: bool=False, write_cache=False, **kwargs):
+    def spectra_to_waveseries(self, dry_run: bool=False, write_cache=False,
+                                freq: tuple=(0, 10_000), **kwargs):
         self._dry_run = dry_run
         if self.spectra() is None:
             msg.warning('No Spectra to convert to WaveSeries!')
             return
 
-        waveseries_reader = SpectraToWaveSeries(self.spectra())
+        waveseries_reader = SpectraToWaveSeries(self.spectra(), freq)
         msg.header(waveseries_reader, 'Converting the spectra to wave series data...')
         name = self.spectra().name
         if not self.dry_run():
@@ -265,9 +277,10 @@ class ModelRun:
         else:
             msg.info('Dry run! No boundary will not be converted to spectra.')
 
-    def boundary_to_waveseries(self, dry_run: bool=False, write_cache=False, **kwargs):
+    def boundary_to_waveseries(self, dry_run: bool=False, write_cache=False,
+                                freq: tuple=(0, 10_000), **kwargs):
         self.boundary_to_spectra(dry_run=dry_run, write_cache=write_cache, **kwargs)
-        self.spectra_to_waveseries(dry_run=dry_run, write_cache=write_cache, **kwargs)
+        self.spectra_to_waveseries(dry_run=dry_run, write_cache=write_cache, freq=freq, **kwargs)
 
 
     def export_grid(self, grid_writer: GridWriter=None,
@@ -359,7 +372,7 @@ class ModelRun:
         if self.waveseries() is None:
             msg.header(self._waveseries_writer, f"Writing wave series data from DryRunSpectra")
         else:
-            msg.header(self._waveseries_writer, f"Writing wave series data from {self.spectra().name}")
+            msg.header(self._waveseries_writer, f"Writing wave series data from {self.waveseries().name}")
 
         # Replace #Spectra etc and add file extension
         __ = self._export_object('WaveSeries', filename, folder, dateformat,
@@ -691,13 +704,20 @@ class ModelRun:
         else:
             return None
 
+    def topo(self) -> Grid:
+        """Returns the raw topography object if exists."""
+        if hasattr(self.grid(), '_raw'):
+            return self.grid().raw()
+        else:
+            return None
+
     def input_file(self) -> None:
         """Only defined to have method for all objects"""
         return None
 
 
     def dict_of_objects(self) -> dict[str: ModelRun, str: Grid, str: Forcing, str: Boundary, str: Spectra]:
-        return {'ModelRun': self, 'Grid': self.grid(), 'Topo': self.grid().raw(), 'Forcing': self.forcing(),
+        return {'ModelRun': self, 'Grid': self.grid(), 'Topo': self.topo(), 'Forcing': self.forcing(),
                 'Boundary': self.boundary(), 'Spectra': self.spectra(), 'WaveSeries': self.waveseries()}
 
     def list_of_objects(self) -> list[ModelRun, Grid, Forcing, Boundary, Spectra]:
@@ -749,7 +769,7 @@ class ModelRun:
     def _get_forcing_writer(self) -> ForcingWriter:
         return None
 
-    def _get_spectral_reader(self) -> SpectralReader:
+    def _get_spectra_reader(self) -> SpectralReader:
         return None
 
     def _get_waveseries_reader(self) -> WaveSeriesReader:
@@ -765,7 +785,7 @@ class ModelRun:
         return None
 
     def _get_point_picker(self) -> PointPicker:
-        return None
+        return bnd.pick.TrivialPicker()
 
     def _get_input_file_writer(self) -> InputFileWriter:
         return None
