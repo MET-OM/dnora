@@ -241,60 +241,69 @@ class WW3Nc(WaveSeriesReader):
     def _convert_var(self, var: str) -> str:
         var_dict = {'hs': 'hs', 't02': 'tm02', 'fp': 'fp',
                     't0m1': 'tm_10', 't01': 'tm01',
-                    'spr': 'sprm', 'dir': 'dirm', 'dp': 'dirp'}
+                    'spr': 'sprm', 'dir': 'dirm', 'dp': 'dirp',
+                    'wnd': 'ff', 'wnddir': 'dd'}
         return var_dict.get(var)
 
 
     def get_coordinates(self, grid, start_time) -> tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         #day = pd.date_range(start_time, start_time,freq='D')
-        data = xr.open_dataset(self._filenames(start_time, start_time, folder=self._folder)[0]).isel(time = [0])
+        filename = self._filenames(start_time, start_time, folder=self._folder)[0]
+        aux_funcs.check_if_file(filename, halt=True)
+        ds = xr.open_dataset(filename).isel(time = [0])
+        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
 
-        lon_all = data.longitude.values
-        lat_all = data.latitude.values
-        return lon_all, lat_all, None, None
+        return lon, lat, x, y
 
     def __call__(self, grid, start_time, end_time, inds, **kwargs) -> tuple:
         """Reads in all wave data between the given times and at for the given indeces"""
 
         msg.info(f"Getting wave data from WW3 netcdf files from {start_time} to {end_time}")
-        # wsr_list = []
-        # for file in self._filenames(start_time, end_time, self._folder):
-        #     try:
-        #         wsr_list.append(xr.open_dataset(file).sel(time = slice(start_time, end_time), node = inds).drop_dims(['noel', 'element'])) # Node starts from 0 in WW3
-        #         msg.from_file(file)
-        #     except FileNotFoundError:
-        #         msg.plain(f'Cannot open file {file}!')
 
-        #msg.plain('Merging xarrays...')
-        #ds = xr.concat(wsr_list, dim="time")
-        for file in self._filenames(start_time, end_time, self._folder):
-            msg.from_file(file)
+        #for file in self._filenames(start_time, end_time, self._folder):
+        msg.from_file(self._filenames(start_time, end_time, self._folder))
 
 
         def _crop(ds):
+            """Crop to given time and index.
             """
-            EMODNET tiles overlap by two cells on each boundary.
-            """
-            return ds.sel(time = slice(start_time, end_time), node = inds).drop_dims(['noel', 'element'])
+
+            try: # Unstructured mesh output
+                cropped_ds = ds.sel(time = slice(start_time, end_time), node = inds).drop_dims(['noel', 'element'])
+                if not self._file_identification_message_printed:
+                    msg.info('Identified file as WW3 unstructured output')
+                    self._file_identification_message_printed = True
+                return cropped_ds
+            except KeyError:
+                try: # WW3 Spectral output (get e.g. wind, hs from those files)
+                    cropped_ds = ds.sel(time = slice(start_time, end_time), station = (inds+1)).drop_dims(['frequency','direction', 'string40'])
+                    if not self._file_identification_message_printed:
+                        msg.info('Identified file as WW3 spectral output')
+                        self._file_identification_message_printed = True
+                    return cropped_ds
+                except:
+                    raise KeyError('Could not identify the file as a known format (WW3 Unstructured or Spectral output)!')
+
 
         import dask
         with dask.config.set(**{'array.slicing.split_large_chunks': True}):
+            self._file_identification_message_printed = False
             with xr.open_mfdataset(self._filenames(start_time, end_time, self._folder), preprocess=_crop) as ds:
-                ds['lon'] = ds.longitude.values[0]
-                ds['lat'] = ds.latitude.values[0]
                 lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
 
                 data = {}
                 for var in ds.data_vars:
-                    if var not in ['lon', 'lat', 'longitude', 'latitude', 'x', 'y']:
-                        dnora_var = self._convert_var(var)
-                        if dnora_var is not None:
-                            #if dnora_var == 'fp':
-                            #    data[get_wave_parameter('tp')] = np.swapaxes(ds.get(var).values**-1,0,1)
-                            #else:
-                            msg.info(f'Importing {dnora_var} << {var}')
-                            data[get_wave_parameter(dnora_var)] = np.swapaxes(ds.get(var).values,0,1)
+                    #if var not in ['lon', 'lat', 'longitude', 'latitude', 'x', 'y']:
+                    dnora_var = self._convert_var(var)
+                    if dnora_var is not None:
+                        #if dnora_var == 'fp':
+                        #    data[get_wave_parameter('tp')] = np.swapaxes(ds.get(var).values**-1,0,1)
+                        #else:
+                        msg.info(f'Importing {dnora_var} << {var}')
+                        data[get_wave_parameter(dnora_var)] = np.swapaxes(ds.get(var).values,0,1)
+                    else:
+                        msg.info(f'Could not identify {var} as a DNORA WaveSeries variable')
 
                 return ds.time.values, data, lon, lat, x, y, ds.attrs
 

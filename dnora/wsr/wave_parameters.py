@@ -454,4 +454,4 @@ class DD(WaveParameter):
         return ureg.deg
 
     def standard_name(self):
-        return 'wind_direction'
+        return 'wind_from_direction'

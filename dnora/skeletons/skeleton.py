@@ -710,6 +710,16 @@ def sanitize_input(x, y, lon, lat):
     if isinstance(lat,np.ndarray) and not lat.shape:
         lat = np.array([lat])
 
+    # Throw error if lon.shape = (1,509) or something
+    if lon is not None and len(lon.shape) > 1:
+        raise Exception(f'Longitude vector should have one dimension, but it has dimensions {lon.shape}!')
+    if lat is not None and len(lat.shape) > 1:
+        raise Exception(f'Latitude vector should have one dimension, but it has dimensions {lat.shape}!')
+    if x is not None and len(x.shape) > 1:
+        raise Exception(f'Cartesian x vector should have one dimension, but it has dimensions {x.shape}!')
+    if y is not None and len(y.shape) > 1:
+        raise Exception(f'Cartesian y vector should have one dimension, but it has dimensions {y.shape}!')
+
     # Set np.array([]) to None
     if x is not None and not any(x):
         x = None
@@ -756,7 +766,6 @@ def will_grid_be_spherical_or_cartesian(x, y, lon, lat):
         yvec = lat
 
     if xy and lonlat:
-        breakpoint()
         raise ValueError("Can't set both lon/lat and x/y!")
 
     # Empty grid will be cartesian

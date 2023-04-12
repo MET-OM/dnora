@@ -63,14 +63,23 @@ def get_coordinates_from_grid(grid: Grid, cartesian: bool=False, list: bool=Fals
 
 def get_coordinates_from_ds(ds) -> tuple:
     """Determins if an xarray dataset is cartesian (x,y) or spherical (lon,lat)
-    and returns the vecotrs (None for the ones that are not defined)."""
+    and returns the vecotrs (None for the ones that are not defined).
+
+    If lon, lat is defined over time, the firs instance is grabbed."""
+
+    if 'time' in ds.dims:
+        ds = ds.isel(time=0)
+        
     if hasattr(ds, 'lon') and hasattr(ds, 'lat'):
-        return ds.lon.values, ds.lat.values, None, None
+        return np.squeeze(ds.lon.values), np.squeeze(ds.lat.values), None, None
+
+    if hasattr(ds, 'longitude') and hasattr(ds, 'latitude'):
+        return np.squeeze(ds.longitude.values), np.squeeze(ds.latitude.values), None, None
 
     if hasattr(ds, 'x') and hasattr(ds, 'y'):
-        return None, None, ds.x.values, ds.y.values
+        return None, None, np.squeeze(ds.x.values), np.squeeze(ds.y.values)
 
-    raise AttributeError("Dataset doesn't have a combination of lon/lat or x/y!")
+    raise AttributeError("Dataset doesn't have a combination of lon(gitude)/lat(itude) or x/y!")
 
 def is_gridded(data: np.ndarray, lon: np.ndarray, lat: np.ndarray) -> bool:
     if lon is None or lat is None:
@@ -198,6 +207,12 @@ def expand_area(lon: tuple[float, float] , lat: tuple[float, float], expansion_f
 
     return new_lon, new_lat
 
+def check_if_file(filename: str, halt=False) -> bool:
+    """Checks if a file exists and halts with an error if halt=True"""
+    exists = os.path.isfile(filename)
+    if not exists and halt:
+        raise FileNotFoundError(f'DNORA cannot find file {filename}')
+    return exists
 
 
 def check_if_folder(folder: str, create: bool=True) -> bool:
