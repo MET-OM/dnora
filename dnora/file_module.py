@@ -235,16 +235,10 @@ class FileNames:
         #         self.dict_of_object_names[self.obj_type] = self.dnora_obj.name
 
     def get_start_time(self):
-        if self.time_object == 'ModelRun':
-            return pd.to_datetime(self.dict_of_objects['ModelRun'].start_time)
-        else:
-            return self.dict_of_objects[self.time_object].time()[0]
+        return self.dict_of_objects[self.time_object].time()[0]
 
     def get_end_time(self):
-        if self.time_object == 'ModelRun':
-            return pd.to_datetime(self.dict_of_objects['ModelRun'].end_time)
-        else:
-            return self.dict_of_objects[self.time_object].time()[-1]
+        return self.dict_of_objects[self.time_object].time()[-1]
 
     def get_dateformat(self) -> str:
         return self.dateformat or get_default_value('dateformat', self.obj_type, self.primary, self.fallback)

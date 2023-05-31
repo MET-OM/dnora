@@ -3,7 +3,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
-from copy import copy
 from typing import TYPE_CHECKING, Tuple
 
 # Import objects
@@ -13,7 +12,6 @@ if TYPE_CHECKING:
 # Import default values and aux_funcsiliry functions
 from .. import msg
 
-from nco import Nco
 from ..aux_funcs import write_monthly_nc_files
 
 class ForcingWriter(ABC):

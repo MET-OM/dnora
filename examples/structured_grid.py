@@ -1,13 +1,10 @@
-from dnora import grd, mdl
+from dnora import grd, bnd, mdl
 
-grid = grd.Grid(lon=(4.00, 5.73), lat=(60.53, 61.25), name='Skjerjehamn')
+grid = grd.Grid(lon=[4.00, 5.73], lat=[60.53, 61.25], name='Skjerjehamn')
 grid.set_spacing(dm=500)
+#grid.set_utm(33,'N')
 
-grid.import_topo(grd.read.EMODNET2020(tile='D5'))
-grid.mesh_grid()
+grid.set_boundary(grd.mask.LonLat(lon=4, lat=60.53))
+model = mdl.NORA3(grid, start_time='2018-01-01', end_time='2018-01-02')
 
-grid.set_mask(grd.boundary.EdgesAsBoundary(edges=['N', 'W', 'S']))
-
-model = mdl.WW3(grid)
-model.plot_grid()
-#model.export_grid()
+model.import_boundary(point_picker=bnd.pick.NearestGridPoint())

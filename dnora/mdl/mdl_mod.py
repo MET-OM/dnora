@@ -3,6 +3,8 @@ from copy import copy
 import re
 from pathlib import Path
 import yaml
+import numpy as np
+import pandas as pd
 # Import objects
 from ..grd.grd_mod import Grid
 
@@ -19,7 +21,7 @@ from ..grd.process import GridProcessor, TrivialFilter
 #from ..trg.write import TrGridWriter
 
 from ..dnplot.dnplot import GridPlotter, TopoPlotter, ForcingPlotter
-from ..inp import InputFileWriter
+from ..inp.inp import InputFileWriter
 from ..run import ModelExecuter
 
 from ..file_module import FileNames
@@ -32,7 +34,7 @@ import os, glob
 from .. import file_module
 from ..converters import convert_swash_mat_to_netcdf
 WritingFunction = Union[GridWriter, bnd.write.BoundaryWriter, spc.write.SpectralWriter, wnd.write.ForcingWriter]
-PlottingFunction = Union[GridPlotter]
+#PlottingFunction = Union[GridPlotter]
 
 class ModelRun:
     def __init__(self, grid: Grid, start_time: str='1970-01-01T00:00',
@@ -40,9 +42,10 @@ class ModelRun:
     dry_run: bool=False):
         self.name = copy(name)
         self._grid = copy(grid)
-        self.start_time = copy(start_time)
-        self.end_time = copy(end_time)
-        self._exported_to = {}
+        self._grid.exported_to = [None]
+        self._time = pd.date_range(start_time, end_time, freq='H')
+        #self.start_time = copy(start_time)
+        #self.end_time = copy(end_time)
         self._global_dry_run = dry_run
         self._dry_run = False  # Set by methods
 
@@ -79,11 +82,12 @@ class ModelRun:
             raise ValueError('Provide either a name or a BoundaryReader that will then define the name!')
 
         self._boundary = bnd.Boundary(grid=self.grid(), name=name)
+        self._boundary.exported_to = [None]
 
         # Import the boundary spectra into the Boundary-object
         if not self.dry_run():
-            self.boundary().import_boundary(start_time=self.start_time,
-                                            end_time=self.end_time,
+            self.boundary().import_boundary(start_time=self.time()[0],
+                                            end_time=self.time()[-1],
                                             boundary_reader=boundary_reader,
                                             point_picker=point_picker,
                                             **kwargs)
@@ -119,11 +123,12 @@ class ModelRun:
             raise ValueError('Provide either a name or a ForcingReader that will then define the name!')
 
         self._forcing = wnd.Forcing(grid=self.grid(), name=name)
+        self._forcing.exported_to = [None]
 
         # Import the forcing data into the Forcing-object
         if not self.dry_run():
-            self.forcing().import_forcing(start_time=self.start_time,
-                                        end_time=self.end_time,
+            self.forcing().import_forcing(start_time=self.time()[0],
+                                        end_time=self.time()[-1],
                                         forcing_reader=forcing_reader,
                                         **kwargs)
         else:
@@ -167,11 +172,12 @@ class ModelRun:
 
         # Create spectral object
         self._spectra = spc.Spectra(grid=self.grid(), name=name)
+        self._spectra.exported_to = [None]
 
         # Import the forcing data into the Forcing-object
         if not self.dry_run():
-            self.spectra().import_spectra(start_time=self.start_time,
-                                        end_time=self.end_time,
+            self.spectra().import_spectra(start_time=self.time()[0],
+                                        end_time=self.time()[-1],
                                         spectral_reader=spectral_reader,
                                         point_picker=point_picker,
                                         **kwargs)
@@ -214,11 +220,12 @@ class ModelRun:
             raise ValueError('Provide either a name or a WaveSeriesReader that will then define the name!')
 
         self._waveseries = WaveSeries(grid=self.grid(), name=name)
+        self._waveseries.exported_to = [None]
 
         # Import the forcing data into the Forcing-object
         if not self.dry_run():
-            self.waveseries().import_waveseries(start_time=self.start_time,
-                                        end_time=self.end_time,
+            self.waveseries().import_waveseries(start_time=self.time()[0],
+                                        end_time=self.time()[-1],
                                         waveseries_reader=waveseries_reader,
                                         point_picker=point_picker,
                                         **kwargs)
@@ -282,6 +289,15 @@ class ModelRun:
         self.boundary_to_spectra(dry_run=dry_run, write_cache=write_cache, **kwargs)
         self.spectra_to_waveseries(dry_run=dry_run, write_cache=write_cache, freq=freq, **kwargs)
 
+    def set_spectral_grid(self, freq0: float=0.04118, nfreq: int=32, ndir: int=36, finc: float=1.1, dirshift: float=0.):
+        """Sets spectral grid for model run. Will be used to write input files."""
+        self._spectral_grid = bnd.Boundary(grid=None, name='spectral_grid')
+        freq = np.array([freq0*finc**n for n in np.linspace(0,nfreq-1,nfreq)])
+        dirs = np.linspace(0,360,ndir+1)[0:-1]+dirshift
+        time = self.time()
+        
+        self._spectral_grid._init_structure(x=0, y=0, lon=None, lat=None, time=time, freq=freq, dirs=dirs)
+        
 
     def export_grid(self, grid_writer: GridWriter=None,
                     filename: str=None, folder: str=None, dateformat: str=None,
@@ -427,36 +443,22 @@ class ModelRun:
 
         file_object.create_folder()
 
-        # These are used to write info to the input file where to find the
-        # forcing etc. data that has previously been exported
-        grid_path = grid_path or self.exported_to('grid')[-1]
-        forcing_path = forcing_path or self.exported_to('forcing')[-1]
-        boundary_path = boundary_path or self.exported_to('boundary')[-1]
-
-        start_time = start_time or self.start_time
-        end_time = end_time or self.end_time
-
 
         if self.dry_run():
             msg.info('Dry run! No files will be written.')
             output_files = [file_object.get_filepath()]
         else:
             # Write the grid using the InputFileWriter object
-            output_files = self._input_file_writer(grid=self.grid(),
-                            forcing=self.forcing(), boundary=self.boundary(),
-                            spectra=self.spectra(), waveseries=self.waveseries(),
-                            start_time=start_time, end_time=end_time,
-                            filename=file_object.get_filepath(),
-                            grid_path=grid_path, forcing_path=forcing_path,
-                            boundary_path=boundary_path)
+            output_files = self._input_file_writer(dict_of_objects=self.dict_of_objects(),
+                            filename=file_object.get_filepath())
             if type(output_files) is not list:
                 output_files = [output_files]
 
 
-        # Store name and location where file was written
-        self._exported_to['input_file'] = []
-        for file in output_files:
-            self._exported_to['input_file'].append(file)
+        # # Store name and location where file was written
+        # self._exported_to['input_file'] = []
+        # for file in output_files:
+        #     self._exported_to['input_file'].append(file)
 
         if self._input_file_writer._im_silent() or self.dry_run():
             for file in output_files:
@@ -537,9 +539,9 @@ class ModelRun:
                 output_files = [output_files]
 
         # Store name and location where file was written
-        self._exported_to[obj_type] = []
-        for file in output_files:
-            self._exported_to[obj_type].append(file)
+        self.dict_of_objects().get(obj_type).exported_to = output_files
+        # for file in output_files:
+        #     self._exported_to[obj_type].append(file)
 
         if writer_function._im_silent() or self.dry_run():
             for file in output_files:
@@ -547,130 +549,147 @@ class ModelRun:
 
         return output_files
 
-    def plot_spectra(self):
-        from dnora.dnplot import dnplot
-        __ = dnplot.SpecPlotter().spectra(dict_of_objects=self.dict_of_objects(), plain=False)
+    # def plot_spectra(self):
+    #     from dnora.dnplot import dnplot
+    #     __ = dnplot.SpecPlotter().spectra(dict_of_objects=self.dict_of_objects(), plain=False)
 
-    def plot_boundary(self):
-        from dnora.dnplot import dnplot
-        __ = dnplot.SpecPlotter().boundary(dict_of_objects=self.dict_of_objects(), plain=False)
-
-
-    def plot_grid(self, grid_plotter: GridPlotter=None, filename: str=None,
-                    folder: str=None, dateformat: str=None, plain: bool=False,
-                    save_fig: bool=False, show_fig: bool=True) -> dict:
-        """Plot the data in the Grid-object, possibly overlaying data from the
-        Boundary- and Forcing-objects."""
-
-        if len(self.grid().topo())==0:
-            msg.warning('Grid not meshed and nothing to plot!')
-            return
-
-        self._grid_plotter = grid_plotter or self._get_grid_plotter()
-
-        if self._grid_plotter is None:
-            raise Exception('Define a GridPlotter!')
-
-        figure_dict = self._plot_object(obj_type='Grid',
-                            filename=filename, folder=folder,
-                            dateformat=dateformat,
-                            plotting_function=self._grid_plotter,
-                            plain=plain, save_fig=save_fig,
-                            show_fig=show_fig)
-
-        return figure_dict
-
-    def plot_topo(self, grid_plotter: GridPlotter=None, filename: str=None,
-                folder: str=None, dateformat: str=None, plain: bool=True,
-                save_fig: bool=False, show_fig: bool=True) -> dict:
-        """Plot the raw data in the Grid-object, possibly overlaying data from the
-        Boundary- and Forcing-objects."""
+    # def plot_boundary(self):
+    #     from dnora.dnplot import dnplot
+    #     __ = dnplot.SpecPlotter().boundary(dict_of_objects=self.dict_of_objects(), plain=False)
 
 
-        if len(self.grid().raw_topo()) == 0:
-            msg.warning('No topography imported so nothing to plot!')
-            return
+    # def plot_grid(self, grid_plotter: GridPlotter=None, filename: str=None,
+    #                 folder: str=None, dateformat: str=None, plain: bool=False,
+    #                 save_fig: bool=False, show_fig: bool=True) -> dict:
+    #     """Plot the data in the Grid-object, possibly overlaying data from the
+    #     Boundary- and Forcing-objects."""
 
-        self._grid_plotter = grid_plotter or self._get_topo_plotter()
+    #     if len(self.grid().topo())==0:
+    #         msg.warning('Grid not meshed and nothing to plot!')
+    #         return
 
-        if self._grid_plotter is None:
-            raise Exception('Define a GridPlotter!')
+    #     self._grid_plotter = grid_plotter or self._get_grid_plotter()
 
-        figure_dict = self._plot_object(filename=filename, folder=folder,
-                            dateformat=dateformat,
-                            plotting_function=self._grid_plotter,
-                            plain=plain, save_fig=save_fig,
-                            show_fig=show_fig, dnora_obj='Topo')
-        return figure_dict
+    #     if self._grid_plotter is None:
+    #         raise Exception('Define a GridPlotter!')
 
-    def plot_forcing(self, forcing_plotter: GridPlotter=None, filename: str=None,
-                    folder: str=None, dateformat: str=None, plain: bool=False,
-                    save_fig: bool=False, show_fig: bool=True) -> dict:
-        """Plot the data in the Forcing-object."""
+    #     figure_dict = self._plot_object(obj_type='Grid',
+    #                         filename=filename, folder=folder,
+    #                         dateformat=dateformat,
+    #                         plotting_function=self._grid_plotter,
+    #                         plain=plain, save_fig=save_fig,
+    #                         show_fig=show_fig)
 
-        if self.forcing() is None:
-            msg.warning('No forcing data to plot!')
-            return
+    #     return figure_dict
 
-        self._forcing_plotter = forcing_plotter or self._get_forcing_plotter()
+    # def plot_topo(self, grid_plotter: GridPlotter=None, filename: str=None,
+    #             folder: str=None, dateformat: str=None, plain: bool=True,
+    #             save_fig: bool=False, show_fig: bool=True) -> dict:
+    #     """Plot the raw data in the Grid-object, possibly overlaying data from the
+    #     Boundary- and Forcing-objects."""
 
-        if self._forcing_plotter is None:
-            raise Exception('Define a GridPlotter!')
 
-        figure_dict = self._plot_object(obj_type='Forcing', filename=filename,
-                            folder=folder,
-                            dateformat=dateformat,
-                            plotting_function=self._forcing_plotter,
-                            plain=plain, save_fig=save_fig,
-                            show_fig=show_fig)
+    #     if len(self.grid().raw_topo()) == 0:
+    #         msg.warning('No topography imported so nothing to plot!')
+    #         return
 
-        return figure_dict
+    #     self._grid_plotter = grid_plotter or self._get_topo_plotter()
 
-    def _plot_object(self, obj_type:str, filename: str, folder: str, dateformat: str,
-                    plotting_function: PlottingFunction, plain: bool,
-                    save_fig: bool, show_fig: bool) -> dict:
-        """Plots a dnora object, e.g. a grid"""
+    #     if self._grid_plotter is None:
+    #         raise Exception('Define a GridPlotter!')
 
-        if filename is not None:
-            save_fig = True
+    #     figure_dict = self._plot_object(filename=filename, folder=folder,
+    #                         dateformat=dateformat,
+    #                         plotting_function=self._grid_plotter,
+    #                         plain=plain, save_fig=save_fig,
+    #                         show_fig=show_fig, dnora_obj='Topo')
+    #     return figure_dict
 
-        # Controls generation of file names using the proper defaults etc.
-        file_object = FileNames(dict_of_objects=self.dict_of_objects(),
-                                filename=filename,
-                                folder=folder,
-                                dateformat=dateformat,
-                                extension=plotting_function._extension(),
-                                obj_type=obj_type,
-                                edge_object='Grid')
-        # file_object = FileNames(format=self._get_default_format(),
-        #                         dnora_obj=dnora_obj,
-        #                         clean_names=True,
-        #                         dict_of_object_names=self.dict_of_object_names(),
-        #                         start_time=self.start_time,
-        #                         end_time=self.end_time,
-        #                         _filename=filename,
-        #                         _folder=folder,
-        #                         _dateformat=dateformat,
-        #                         extension=plotting_function._extension())
+    # def plot_forcing(self, forcing_plotter: GridPlotter=None, filename: str=None,
+    #                 folder: str=None, dateformat: str=None, plain: bool=False,
+    #                 save_fig: bool=False, show_fig: bool=True) -> dict:
+    #     """Plot the data in the Forcing-object."""
 
-        file_object.create_folder(key='plotfolder')
-        dnora_obj = self.dict_of_objects()[obj_type]
-        if dnora_obj.is_gridded():
-            figure_dict = plotting_function.gridded(dict_of_objects=self.dict_of_objects(), plain=plain)
-        else:
-            figure_dict = plotting_function.ungridded(dict_of_objects=self.dict_of_objects(), plain=plain)
+    #     if self.forcing() is None:
+    #         msg.warning('No forcing data to plot!')
+    #         return
 
-        if figure_dict is not None:
-            fig = figure_dict.get('fig')
-        else:
-            fig = None
-        if fig is not None:
-            if save_fig:
-                fig.savefig(file_object.get_filepath(key='plotname'),bbox_inches='tight', dpi=300)
-                msg.to_file(file_object.get_filepath(key='plotname'))
-            if show_fig:
-                fig.show()
-        return figure_dict
+    #     self._forcing_plotter = forcing_plotter or self._get_forcing_plotter()
+
+    #     if self._forcing_plotter is None:
+    #         raise Exception('Define a GridPlotter!')
+
+    #     figure_dict = self._plot_object(obj_type='Forcing', filename=filename,
+    #                         folder=folder,
+    #                         dateformat=dateformat,
+    #                         plotting_function=self._forcing_plotter,
+    #                         plain=plain, save_fig=save_fig,
+    #                         show_fig=show_fig)
+
+    #     return figure_dict
+
+    # def _plot_object(self, obj_type:str, filename: str, folder: str, dateformat: str,
+    #                 plotting_function: PlottingFunction, plain: bool,
+    #                 save_fig: bool, show_fig: bool) -> dict:
+    #     """Plots a dnora object, e.g. a grid"""
+
+    #     if filename is not None:
+    #         save_fig = True
+
+    #     # Controls generation of file names using the proper defaults etc.
+    #     file_object = FileNames(dict_of_objects=self.dict_of_objects(),
+    #                             filename=filename,
+    #                             folder=folder,
+    #                             dateformat=dateformat,
+    #                             extension=plotting_function._extension(),
+    #                             obj_type=obj_type,
+    #                             edge_object='Grid')
+    #     # file_object = FileNames(format=self._get_default_format(),
+    #     #                         dnora_obj=dnora_obj,
+    #     #                         clean_names=True,
+    #     #                         dict_of_object_names=self.dict_of_object_names(),
+    #     #                         start_time=self.start_time,
+    #     #                         end_time=self.end_time,
+    #     #                         _filename=filename,
+    #     #                         _folder=folder,
+    #     #                         _dateformat=dateformat,
+    #     #                         extension=plotting_function._extension())
+
+    #     file_object.create_folder(key='plotfolder')
+    #     dnora_obj = self.dict_of_objects()[obj_type]
+    #     if dnora_obj.is_gridded():
+    #         figure_dict = plotting_function.gridded(dict_of_objects=self.dict_of_objects(), plain=plain)
+    #     else:
+    #         figure_dict = plotting_function.ungridded(dict_of_objects=self.dict_of_objects(), plain=plain)
+
+    #     if figure_dict is not None:
+    #         fig = figure_dict.get('fig')
+    #     else:
+    #         fig = None
+    #     if fig is not None:
+    #         if save_fig:
+    #             fig.savefig(file_object.get_filepath(key='plotname'),bbox_inches='tight', dpi=300)
+    #             msg.to_file(file_object.get_filepath(key='plotname'))
+    #         if show_fig:
+    #             fig.show()
+    #     return figure_dict
+    
+    def time(self, crop: bool=False):
+        """Returns start and end time of ModelRun
+        crop = True: Give the period that is covered by all objects (Forcing etc.)"""
+        t0 = self._time[0]
+        t1 = self._time[-1]
+
+        if crop:
+            for dnora_obj in self.list_of_objects():
+                time = dnora_obj.time()
+                if time[0] is not None:
+                    t0 = pd.to_datetime([t0, time[0]]).max()
+                if time[-1] is not None:
+                    t1 = pd.to_datetime([t1, time[-1]]).min()
+        time = pd.date_range(t0, t1, freq='H')
+        return time[::len(time)-1]
+        
 
     def grid(self) -> str:
         """Returns the grid object."""
@@ -711,6 +730,13 @@ class ModelRun:
         else:
             return None
 
+    def spectral_grid(self) -> Boundary:
+        """Returns spectral grid if exists"""
+        if hasattr(self, '_spectral_grid'):
+            return self._spectral_grid
+        else:
+            return None
+
     def input_file(self) -> None:
         """Only defined to have method for all objects"""
         return None
@@ -718,11 +744,12 @@ class ModelRun:
 
     def dict_of_objects(self) -> dict[str: ModelRun, str: Grid, str: Forcing, str: Boundary, str: Spectra]:
         return {'ModelRun': self, 'Grid': self.grid(), 'Topo': self.topo(), 'Forcing': self.forcing(),
-                'Boundary': self.boundary(), 'Spectra': self.spectra(), 'WaveSeries': self.waveseries()}
+                'Boundary': self.boundary(), 'Spectra': self.spectra(), 'WaveSeries': self.waveseries(),
+                'SpectralGrid': self.spectral_grid()}
 
     def list_of_objects(self) -> list[ModelRun, Grid, Forcing, Boundary, Spectra]:
         """[ModelRun, Boundary] etc."""
-        return list(self.dict_of_objects().values())
+        return [x for x in list(self.dict_of_objects().values()) if x is not None]
 
     def list_of_object_strings(self) -> list[str]:
         """['ModelRun', 'Boundary'] etc."""

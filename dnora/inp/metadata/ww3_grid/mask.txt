@@ -1,0 +1,40 @@
+! -------------------------------------------------------------------- !
+! Define the point status map via MASK_NML namelist
+! - only for RECT and CURV grids -
+!
+! * If no mask defined, INBOUND can be used to set active boundaries
+!
+! * IDLA : Layout indicator :
+!                  1   : Read line-by-line bottom to top.  (default)
+!                  2   : Like 1, single read statement.
+!                  3   : Read line-by-line top to bottom.
+!                  4   : Like 3, single read statement.
+! * IDFM : format indicator :
+!                  1   : Free format.  (default)
+!                  2   : Fixed format.
+!                  3   : Unformatted.
+! * FORMAT : element format to read :
+!               '(....)'  : auto detected  (default)
+!               '(f10.6)' : float type
+!
+! * Example :
+!      IDF  IDLA  IDFM   FORMAT    FILENAME
+!      60   1     1     '(....)'  'GLOB-30M.mask'
+!
+! * The legend for the input map is :
+!    -2 : Excluded boundary point (covered by ice)
+!    -1 : Excluded sea point (covered by ice)
+!     0 : Excluded land point
+!     1 : Sea point
+!     2 : Active boundary point
+!     3 : Excluded grid point
+!     7 : Ice point
+!
+! * namelist must be terminated with /
+! * definitions & defaults:
+!     MASK%FILENAME         = 'unset'  ! filename
+!     MASK%IDF              = 60       ! file unit number
+!     MASK%IDLA             = 1        ! layout indicator
+!     MASK%IDFM             = 1        ! format indicator
+!     MASK%FORMAT           = '(....)' ! formatted read format
+! -------------------------------------------------------------------- !

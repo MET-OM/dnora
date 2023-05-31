@@ -77,10 +77,10 @@ class WW3(GridWriter):
         grid = dict_of_objects['Grid']
 
         mask_out = np.zeros(grid.topo().shape)
-        mask_out[grid.land_sea_mask()] = 1
+        mask_out[grid.sea_mask()] = 1
         if grid.boundary_mask().size > 0:
-            msg.info(f'Setting {sum(sum(np.logical_and(grid.boundary_mask(), grid.land_sea_mask()))):d} boundary points in grid...')
-            mask_out[np.logical_and(grid.boundary_mask(), grid.land_sea_mask())] = 2
+            msg.info(f'Setting {sum(sum(np.logical_and(grid.boundary_mask(), grid.sea_mask()))):d} boundary points in grid...')
+            mask_out[np.logical_and(grid.boundary_mask(), grid.sea_mask())] = 2
 
         output_files = []
         if self.matrix:

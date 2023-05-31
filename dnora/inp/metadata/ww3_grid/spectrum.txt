@@ -1,0 +1,11 @@
+! -------------------------------------------------------------------- !
+! Define the spectrum parameterization via SPECTRUM_NML namelist
+!
+! * namelist must be terminated with /
+! * definitions & defaults:
+!     SPECTRUM%XFR         = 0.            ! frequency increment
+!     SPECTRUM%FREQ1       = 0.            ! first frequency (Hz)
+!     SPECTRUM%NK          = 0             ! number of frequencies (wavenumbers)
+!     SPECTRUM%NTH         = 0             ! number of direction bins
+!     SPECTRUM%THOFF       = 0.            ! relative offset of first direction [-0.5,0.5]
+! -------------------------------------------------------------------- !

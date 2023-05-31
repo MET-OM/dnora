@@ -1,5 +1,5 @@
 from dnora.grd import Grid
-from dnora.grd.boundary import SetAll, ClearBoundary
+from dnora.grd.mask import SetAll, ClearBoundary
 import numpy as np
 def test_import_empty():
     grid = Grid(lon=(1,2), lat=(0,3))

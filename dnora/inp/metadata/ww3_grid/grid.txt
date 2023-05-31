@@ -1,0 +1,57 @@
+! -------------------------------------------------------------------- !
+! Define the grid to preprocess via GRID_NML namelist
+!
+! * the tunable parameters for source terms, propagation schemes, and 
+!    numerics are read using namelists. 
+! * Any namelist found in the folowing sections is temporarily written
+!   to param.scratch, and read from there if necessary. 
+! * The order of the namelists is immaterial.
+! * Namelists not needed for the given switch settings will be skipped
+!   automatically
+!
+! * grid type can be : 
+!    'RECT' : rectilinear
+!    'CURV' : curvilinear
+!    'UNST' : unstructured (triangle-based)
+!
+! * coordinate system can be : 
+!    'SPHE' : Spherical (degrees)
+!    'CART' : Cartesian (meters)
+!
+! * grid closure can only be applied in spherical coordinates
+!
+! * grid closure can be : 
+!    'NONE' : No closure is applied
+!    'SMPL' : Simple grid closure. Grid is periodic in the
+!           : i-index and wraps at i=NX+1. In other words,
+!           : (NX+1,J) => (1,J). A grid with simple closure
+!           : may be rectilinear or curvilinear.
+!    'TRPL' : Tripole grid closure : Grid is periodic in the
+!           : i-index and wraps at i=NX+1 and has closure at
+!           : j=NY+1. In other words, (NX+1,J<=NY) => (1,J)
+!           : and (I,NY+1) => (NX-I+1,NY). Tripole
+!           : grid closure requires that NX be even. A grid
+!           : with tripole closure must be curvilinear.
+!
+! * The coastline limit depth is the value which distinguish the sea 
+!   points to the land points. All the points with depth values (ZBIN)
+!   greater than this limit (ZLIM) will be considered as excluded points
+!   and will never be wet points, even if the water level grows over.
+!   It can only overwrite the status of a sea point to a land point.
+!   The value must have a negative value under the mean sea level
+!
+! * The minimum water depth allowed to compute the model is the absolute
+!   depth value (DMIN) used in the model if the input depth is lower to 
+!   avoid the model to blow up.
+!
+! * namelist must be terminated with /
+! * definitions & defaults:
+!     GRID%NAME             = 'unset'            ! grid name (30 char)
+!     GRID%NML              = 'namelists.nml'    ! namelists filename
+!     GRID%TYPE             = 'unset'            ! grid type
+!     GRID%COORD            = 'unset'            ! coordinate system
+!     GRID%CLOS             = 'unset'            ! grid closure
+!
+!     GRID%ZLIM             = 0.        ! coastline limit depth (m)
+!     GRID%DMIN             = 0.        ! abs. minimum water depth (m)
+! -------------------------------------------------------------------- !

@@ -5,7 +5,7 @@ from .grd.grd_mod import Grid
 
 from .grd.read import ForceFeed
 from .grd.mesh import TrivialMesher
-from .grd.boundary import SetMatrix
+from .grd.mask import SetMatrix
 
 # Import aux_funcsiliry functions
 from .aux_funcs import read_ww3_info, add_folder_to_filename

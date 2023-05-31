@@ -1,7 +1,6 @@
 from __future__ import annotations # For TYPE_CHECKING
 
 import numpy as np
-from copy import copy
 from abc import ABC, abstractmethod
 import netCDF4
 import re
@@ -14,7 +13,6 @@ if TYPE_CHECKING:
 # Import default values and aux_funcsiliry functions
 from .. import msg
 from .. import file_module
-from nco import Nco
 import os
 from .conventions import SpectralConvention
 from ..aux_funcs import write_monthly_nc_files

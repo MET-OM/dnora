@@ -6,7 +6,7 @@ from scipy.interpolate import griddata
 from scipy import interpolate
 import os, re
 import geopy.distance
-from typing import TYPE_CHECKING, Tuple, List, Union
+from typing import TYPE_CHECKING, Tuple, List, Union, Iterable
 from . import file_module
 if TYPE_CHECKING:
     from .grd.grd_mod import Grid
@@ -20,16 +20,25 @@ def distance_2points(lat1, lon1, lat2, lon2) -> float:
 
 
 def min_distance(lon, lat, lon_vec , lat_vec) -> Tuple[float, int]:
-    """Calculates minimum distance between a given point and a list of
-    point.
+    """Calculates minimum distance [km] between a given point and a list of
+    points given in spherical coordinates (lon/lat degrees).
+
     Also returns index of the found minimum.
     """
-
     dx = []
     for n, __ in enumerate(lat_vec):
         dx.append(distance_2points(lat, lon, lat_vec[n], lon_vec[n]))
 
     return np.array(dx).min(), np.array(dx).argmin()
+
+def min_cartesian_distance(x, y, x_vec, y_vec) -> tuple[float, int]:
+    """"Calculates minimum distance [km] between a given point and list of points given
+    in cartesian coordinates [m].
+    
+    Also returns incex of found minimum"""
+    dx = ((y-y_vec)**2 + (x-x_vec)**2)**0.5
+
+    return dx.min()/1000, dx.argmin()
 
 def lon_in_km(lat: float) -> float:
     """Converts one longitude degree to km for a given latitude."""
@@ -44,6 +53,27 @@ def domain_size_in_km(lon: Tuple(float, float), lat: Tuple(float, float)) -> Tup
 
     return km_x, km_y
 
+def force_to_iterable(x, fmt: str=None) -> Iterable:
+    """Returns original x if iterable, but tries to convert it to numpy array if it is e.g. integer of float.
+    
+    fmt = 'numpy', 'list' or 'tuple' to force to certain format
+
+    Will return None if given None."""
+    if x is None:
+        return None
+    
+    if not isinstance(x, Iterable):
+        x = [x]
+
+    if fmt == 'numpy':
+        x = np.array(x)
+    elif fmt == 'list':
+        x = list(x)
+    elif fmt == 'tuple':
+        x = tuple(x)
+        
+    return x
+        
 def get_coordinates_from_grid(grid: Grid, cartesian: bool=False, list: bool=False):
     """Gets lon, lat, x, y coordinates from grid.
     x, y None if cartesian=False, and lon, lat None if cartesian=True"""

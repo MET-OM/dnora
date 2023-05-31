@@ -75,7 +75,7 @@ class WW3(ModelRun):
 class OnePoint(ModelRun):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.grid().set_mask(grd.boundary.SetAll())
+        self.grid().set_mask(grd.mask.All())
 
     def _get_default_format(self):
         return 'WW3'

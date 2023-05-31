@@ -5,6 +5,7 @@ import utm
 from copy import copy
 from .skeleton import Skeleton
 from .dataset_manager import DatasetManager
+from .. import aux_funcs
 
 class PointSkeleton(Skeleton):
     """Gives a unstructured structure to the Skeleton.
@@ -39,15 +40,16 @@ class PointSkeleton(Skeleton):
         Identical to (.lon(), .lat()) (with no mask)
         mask is a boolean array (default True for all points)
         """
-        if mask is None:
-            mask = np.full(super().size('spatial', **kwargs), True)
+        # if mask is None:
+        #     mask = np.full(super().size('spatial', **kwargs), True)
 
         lon, lat = super().lon(strict=strict, **kwargs), super().lat(strict=strict, **kwargs)
 
         if lon is None:
             return None, None
-
-        return lon[mask], lat[mask]
+        if mask is not None:
+            return lon[mask], lat[mask]
+        return lon, lat
 
     def xy(self, mask: np.array=None, strict=False, normalize: bool=False, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of x and y of all points.
@@ -56,15 +58,17 @@ class PointSkeleton(Skeleton):
         Identical to (.x(), .y()) (with no mask)
         mask is a boolean array (default True for all points)
         """
-        if mask is None:
-            mask = np.full(super().size('spatial', **kwargs), True)
+        # if mask is None:
+        #     mask = np.full(super().size('spatial', **kwargs), True)
 
         x, y = super().x(strict=strict, normalize=normalize, **kwargs), super().y(strict=strict, normalize=normalize, **kwargs)
 
         if x is None:
             return None, None
 
-        return x[mask], y[mask]
+        if mask is not None:
+            return x[mask], y[mask]
+        return x, y
 
     def native_xy(self, mask: np.array=None, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """Returns a tuple of native x and y of all points.
@@ -72,7 +76,7 @@ class PointSkeleton(Skeleton):
 
         mask is a boolean array (default True for all points)
         """
-        if mask is None:
-            mask = np.full(super().size('spatial', **kwargs), True)
-
-        return super().native_x(**kwargs)[mask], super().native_y(**kwargs)[mask]
+        if mask is not None:
+            return super().native_x(**kwargs)[mask], super().native_y(**kwargs)[mask]
+        else:
+            return super().native_x(**kwargs), super().native_y(**kwargs)

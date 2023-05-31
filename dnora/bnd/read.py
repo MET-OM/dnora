@@ -97,6 +97,7 @@ class BoundaryReader(ABC):
     #def __str__(self):
         #return (f"{self.start_time} - {self.end_time}")
 
+
 class ConstantBoundary(BoundaryReader):
     def __init__(self, grid: Grid, spec: float=1, cartesian: bool=False, metadata: dict=None, spectral_convention: SpectralConvention=SpectralConvention.OCEAN):
         self.spec = spec

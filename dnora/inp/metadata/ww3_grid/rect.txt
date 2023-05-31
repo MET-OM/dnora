@@ -1,0 +1,26 @@
+! -------------------------------------------------------------------- !
+! Define the rectilinear grid type via RECT_NML namelist
+! - only for RECT grids -
+!
+! * The minimum grid size is 3x3.
+!
+! * If the grid increments SX and SY are given in minutes of arc, the scaling
+!   factor SF must be set to 60. to provide an increment factor in degree.
+!
+! * If CSTRG='SMPL', then SX is forced to 360/NX.
+!
+! * value <= value_read / scale_fac
+!
+! * namelist must be terminated with /
+! * definitions & defaults:
+!     RECT%NX               = 0        ! number of points along x-axis
+!     RECT%NY               = 0        ! number of points along y-axis
+!
+!     RECT%SX               = 0.       ! grid increment along x-axis
+!     RECT%SY               = 0.       ! grid increment along y-axis
+!     RECT%SF               = 1.       ! scaling division factor for x-y axis
+!
+!     RECT%X0               = 0.       ! x-coordinate of lower-left corner (deg)
+!     RECT%Y0               = 0.       ! y-coordinate of lower-left corner (deg)
+!     RECT%SF0              = 1.       ! scaling division factor for x0,y0 coord
+! -------------------------------------------------------------------- !

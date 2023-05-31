@@ -47,6 +47,9 @@ def add_mask(name: str, coords: str, default_value: int, opposite_name: str=None
             elif type in self._coord_manager.spherical_strings:
                 return self.lonlat(mask=mask, order_by=order_by, strict=strict, **kwargs)
 
+        def set_mask(self, mask_setter):
+            self._set_mask(mask_setter, mask_type=name)
+
 
         if not hasattr(c, '_coord_manager'):
             c._coord_manager =  CoordinateManager()
@@ -56,6 +59,8 @@ def add_mask(name: str, coords: str, default_value: int, opposite_name: str=None
         if opposite_name is not None:
             exec(f'c.{opposite_name}_mask = get_not_mask')
             exec(f'c.{opposite_name}_points = get_not_points')
+        exec(f'c.set_{name} = set_mask')
+        
         return c
 
     return mask_decorator

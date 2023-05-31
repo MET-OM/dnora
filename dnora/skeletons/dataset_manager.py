@@ -5,6 +5,7 @@ import utm
 from copy import copy
 from .coordinate_manager import CoordinateManager
 from ..aux_funcs import min_distance
+from .. import msg
 def move_time_dim_to_front(coord_list) -> list[str]:
     if 'time' not in coord_list:
         return coord_list
@@ -128,11 +129,10 @@ class DatasetManager:
             return None
 
         data = ds.get(data_name, default_data)
-
         if isinstance(data, xr.DataArray):
             if method == 'nearest':
                 if kwargs.get('lon') is None or kwargs.get('lat') is None:
-                    msg.error("Define both lon and lat when using 'nearest'")
+                    raise Exception("Define both lon and lat when using 'nearest'")
                 else:
                     __, ind = min_distance(kwargs['lon'], kwargs['lat'], ds.get('lon'), ds.get('lat'))
                     if 'inds' in ds.coords:
@@ -268,7 +268,7 @@ class DatasetManager:
         list = []
         data = self._slice_data(self.ds(), **kwargs)
         for coord in coords:
-            list.append(len(data.get(coord)))
+                list.append(len(data.get(coord)))
         # for coord, val in data.dims.items():
         #     if coord in coords:
         #         list.append(val)

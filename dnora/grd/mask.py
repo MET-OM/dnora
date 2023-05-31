@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 # Import aux_funcsiliry functions
 from .. import msg
 from .. import aux_funcs
+from ..grd import UnstrGrid
 class MaskSetter(ABC):
     """Set points (boundary, spec etc.) in the grid.
 
@@ -23,9 +24,6 @@ class MaskSetter(ABC):
         """This method is called from within the Grid-object."""
         return mask
 
-    def _mask_type(self) -> str:
-        return None
-
     @abstractmethod
     def __str__(self):
         """Describes how the boundary points are set.
@@ -34,11 +32,7 @@ class MaskSetter(ABC):
         """
         pass
 
-class BoundarySetter(MaskSetter):
-    def _mask_type(self) -> str:
-        return 'boundary'
-
-class ClearBoundary(BoundarySetter):
+class Clear(MaskSetter):
     """Clears all boundary points by setting a mask with False values."""
 
     def __init__(self):
@@ -49,11 +43,59 @@ class ClearBoundary(BoundarySetter):
         return np.full(mask_size, False)
 
     def __str__(self):
-        return("Clearing all possible boundary points and setting an empty mask.")
+        return("Clearing all possible mask points and setting an empty mask.")
+
+class All(MaskSetter):
+    """Set all points to boundary points. """
+
+    def __call__(self, grid):
+        return np.full(grid.size(), True)
+
+    def __str__(self):
+        return(f"Setting all points to boundary points.")
+
+class LonLat(MaskSetter):
+    """Sets a list of lon, lat points to interest points"""
+
+    def __init__(self, lon=np.ndarray, lat=np.ndarray):
+        self._points = UnstrGrid(lon=lon, lat=lat)
 
 
-class EdgesAsBoundary(BoundarySetter):
-    """Set the grid edges as boundary points.
+    def __call__(self, grid):
+        mask_vec = (grid.sea_mask()*False).ravel()
+        lons, lats = grid.lonlat()
+        for lon, lat in zip(self._points.lon(), self._points.lat()):
+            dx, ind = aux_funcs.min_distance(lon, lat, lons, lats)
+            ms = f"lon: {lons[ind]:10.7f}, lat: {lats[ind]:10.7f} <<< ({lon: .7f}, {lat: .7f}). Distance: {dx:.1f} km"
+            msg.plain(ms)
+            mask_vec[ind] = True
+
+        return mask_vec.reshape(grid.sea_mask().shape)
+    def __str__(self):
+        return(f"Setting given lon, lat points to mask points")
+
+class XY(MaskSetter):
+    """Sets a list of x, y points to interest points"""
+
+    def __init__(self, x=np.ndarray, y=np.ndarray):
+        self._x = x
+        self._y = y
+
+    def __call__(self, grid):
+        mask_vec = (grid.sea_mask()*False).ravel()
+        xs, ys = grid.xy()
+        for x, y in zip(self._x, self._y):
+            dx, ind = aux_funcs.min_distance(x, y, xs, ys, cartesian=True)
+            ms = f"x: {xs[ind]:10.7f}, y: {ys[ind]:10.7f} <<< ({x: .7f}, {y: .7f}). Distance: {dx:.1f} km"
+            mask_vec[ind] = True
+
+        return mask_vec.reshape(grid.sea_mask().shape)
+    
+    def __str__(self):
+        return(f"Setting given x, y points to mask points")
+
+class Edges(MaskSetter):
+    """Set the grid edges as mask points.
 
     Any combination of North, South, East, West ['N', 'S', 'E', 'W'] edges
     can be set.
@@ -94,11 +136,11 @@ class EdgesAsBoundary(BoundarySetter):
         return boundary_mask
 
     def __str__(self):
-        return(f"Setting all edges {self.edges} to boundary points using step {self.step}.")
+        return(f"Setting all edges {self.edges} to mask points using step {self.step}.")
 
 
-class MidPointAsBoundary(BoundarySetter):
-    """Set the middle point of grid edges as boundary points.
+class MidPoint(MaskSetter):
+    """Set the middle point of grid edges as mask points.
 
     Any combination of North, South, East, West ['N', 'S', 'E', 'W'] edges
     can be set.
@@ -141,11 +183,11 @@ class MidPointAsBoundary(BoundarySetter):
         return boundary_mask
 
     def __str__(self):
-        return(f"Setting mid point of edges {self.edges} to boundary points.")
+        return(f"Setting mid point of edges {self.edges} to mask point.")
 
 
-class SetMatrix(BoundarySetter):
-    """Set boundary points by providing a boolean array [True = boundary point].
+class SetMatrix(MaskSetter):
+    """Set boundary points by providing a boolean array [True = mask point].
 
     The dimensions and orientation of the array should be:
 
@@ -170,27 +212,3 @@ class SetMatrix(BoundarySetter):
     def __str__(self):
         return(f"Setting boundary points using the boolean matrix I was initialized with.")
 
-class SetAll(BoundarySetter):
-    """Set all points to boundary points. """
-
-    def __call__(self, grid):
-        return np.full(grid.size(), True)
-
-    def __str__(self):
-        return(f"Setting all points to boundary points.")
-
-class SetLonLat(MaskSetter):
-    """Sets a list of lon, lat points to interest points"""
-
-    def __init__(self, lon=np.ndarray, lat=np.ndarray):
-        self._lon = lon
-        self._lat = lat
-
-    def __call__(self, grid):
-        mask_vec = grid.sea_mask()*False.ravel()
-        lons, lats = grid.lonlat()
-        for lon, lat in zip(self._lon, self._lat):
-            __, ind = aux_funcs.min_distance(lon, lat, lons, lats)
-            mask_vec[ind] = True
-
-        return mask_vec.reshape(grid.sea_mask().shape)

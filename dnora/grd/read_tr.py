@@ -95,7 +95,7 @@ class SmsReader(TriangReader):
     def __str__(self):
         return "Reading triangular grid from SMS-file."
 
-class MshReader(TriangReader):
+class MshFile(TriangReader):
     def __init__(self, filename: str, zone_number: int=None, zone_letter: str='W'):
         self.filename = copy(filename)
         self.zone_number = zone_number

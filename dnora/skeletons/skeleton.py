@@ -4,8 +4,10 @@ import xarray as xr
 import utm
 from copy import copy
 from .dataset_manager import DatasetManager
+from .coordinate_manager import CoordinateManager
 from .. import aux_funcs
 from .. import msg
+from typing import Iterable, Union
 
 def cap_lat_for_utm(lat):
     if isinstance(lat, float):
@@ -29,6 +31,10 @@ class Skeleton:
 
     _xy_dict = {'x': 'x', 'lon': 'x', 'y': 'y', 'lat': 'y'}
     _x_to_xy_dict = {'x': 'xy', 'y': 'xy', 'lon': 'lonlat', 'lat': 'lonlat'}
+
+
+    def __init__(self, x=None, y=None, lon=None, lat=None) -> None:
+        self._init_structure(x, y, lon, lat)
 
     def _init_structure(self, x=None, y=None, lon=None, lat=None, **kwargs) -> None:
         """Determines grid type (Cartesian/Spherical), generates a DatasetManager
@@ -164,7 +170,7 @@ class Skeleton:
     #         return False
     #     return aux_funcs.is_gridded(self.topo(), self.native_x(), self.native_y())
 
-    def set_utm(self, zone_number: int=None, zone_letter: str=None):
+    def set_utm(self, zone_number: int=None, zone_letter: str=None, silent: bool=False):
         """Set UTM zone and number to be used for cartesian coordinates.
 
         If not given for a spherical grid, they will be deduced.
@@ -201,8 +207,8 @@ class Skeleton:
             self._zone_letter = copy(zone_letter)
         else:
             raise ValueError("zone_number needs to be an integer")
-
-        msg.header(self, f'Setting UTM ({zone_number}, {zone_letter})')
+        if not silent:
+            msg.header(self, f'Setting UTM ({zone_number}, {zone_letter})')
 
     def utm(self) -> tuple[int, str]:
         """Returns UTM zone number and letter. Returns 33, 'W' as default
@@ -339,14 +345,12 @@ class Skeleton:
                     _, y[negmask], __, __ = utm.from_latlon(-self.lat(**kwargs)[negmask], lon, force_zone_number=number, force_zone_letter=letter)
                     y[negmask] = -y[negmask]
             else:
-                lon = self.lon(**kwargs)
                 lat = cap_lat_for_utm(self.lat(**kwargs))
-
                 y = np.zeros(len(self.lat(**kwargs)))
                 if np.any(posmask):
-                    _, y[posmask], __, __ = utm.from_latlon(self.lat(**kwargs)[posmask], lon[posmask], force_zone_number=number, force_zone_letter=letter)
+                    _, y[posmask], __, __ = utm.from_latlon(lat[posmask], self.lon(**kwargs)[posmask], force_zone_number=number, force_zone_letter=letter)
                 if np.any(negmask):
-                    _, y[negmask], __, __ = utm.from_latlon(-self.lat(**kwargs)[negmask], lon[negmask], force_zone_number=number, force_zone_letter=letter)
+                    _, y[negmask], __, __ = utm.from_latlon(-lat[negmask], self.lon(**kwargs)[negmask], force_zone_number=number, force_zone_letter=letter)
                     y[negmask] = -y[negmask]
 
             #
@@ -576,6 +580,77 @@ class Skeleton:
         edges = self.edges('y', native=True)
         return (edges[1]-edges[0])/(self.ny()-1)
 
+    def yank_point(self, lon: Union[float, Iterable[float]]=None, lat: Union[float, Iterable[float]]=None, 
+                   x: Union[float, Iterable[float]]=None, y: Union[float, Iterable[float]]=None, 
+                   unique: bool=False) -> dict:
+        """Finds points nearest to the x-y, lon-lat points provided and returns dict of corresponding indeces.
+
+        All Skeletons: key 'dx' (distance to nearest point in km)
+
+        PointSkelton: keys 'inds'
+        GriddedSkeleton: keys 'inds_x' and 'inds_y'
+        
+        Set unique=True to remove any repeated points."""
+        
+        # If lon/lat is given, convert to cartesian and set grid UTM zone to match the query point
+        
+        x = aux_funcs.force_to_iterable(x)
+        y = aux_funcs.force_to_iterable(y)
+        lon = aux_funcs.force_to_iterable(lon)
+        lat = aux_funcs.force_to_iterable(lat)
+
+        breakpoint()
+
+        if all([x is None for x in (x,y,lon,lat)]):
+            raise ValueError('Give either x-y pair or lon-lat pair!')
+
+        orig_zone_number, orig_zone_letter = self.utm()
+        if lon is not None and lat is not None:
+            x = []
+            y = []
+            for lo, la in zip(lon, lat):
+                xx, yy, zone_number, zone_letter = utm.from_latlon(la, lo)
+                x.append(xx)
+                y.append(yy)
+            self.set_utm(zone_number, zone_letter, silent=True)        
+        else:
+            lon = []
+            lat = []
+            for xx, yy in zip(x, y):
+                llat, llon = utm.to_latlon(xx, yy, zone_number=zone_number, zone_letter=zone_letter, strict = False)
+                lon.append(llon)
+                lat.append(llat)           
+        
+        posmask = np.logical_or(lat > 84, lat < -84)
+        inds = []
+        dx = []
+
+        xlist, ylist = self.xy()
+        lonlist, latlist = self.lonlat()
+        for xx, yy, llon, llat, mask in zip(x, y, lon, lat, posmask):
+            if mask:
+                dxx, ii = aux_funcs.min_distance(llon, llat, lonlist, latlist) # Slower, but works for hig/low latitudes
+            else:
+                dxx, ii = aux_funcs.min_cartesian_distance(xx, yy, xlist, ylist)
+            inds.append(ii)
+            dx.append(dxx)
+        self.set_utm(orig_zone_number, orig_zone_letter, silent=True) # Reset UTM zone
+        if unique:
+            inds = np.unique(inds)
+
+        if self.is_gridded():
+            inds_x = []
+            inds_y = []
+            for ind in inds:
+                indy, indx = np.unravel_index(ind,self.size())
+                inds_x.append(indx)
+                inds_y.append(indy)
+            return {'inds_x': np.array(inds_x), 'inds_y': np.array(inds_y), 'dx': np.array(dx)}
+        else:
+            return {'inds': np.array(inds), 'dx': np.array(dx)}
+            
+        
+
     def metadata(self) -> dict:
         """Return metadata of the dataset:
 
@@ -593,7 +668,7 @@ class Skeleton:
             metadata = old_metadata
         self.ds_manager.set_attrs(metadata)
 
-    def set_mask(self, mask_setter, mask_type: str=None) -> None:
+    def _set_mask(self, mask_setter, mask_type: str) -> None:
         """Set a mask that represents e.g. Boundary points or spectral output
         point.
 
@@ -601,16 +676,20 @@ class Skeleton:
         """
 
         if mask_type is None:
-            mask_type = mask_setter._mask_type()
-
-        if mask_type is None:
-            msg.advice(f"Either provide mask_type variable or provide a MaskSetter with a _mask_type method.")
+            msg.advice(f"Provide mask_type variable.")
 
         msg.header(mask_setter, f"Setting {mask_type} points...")
         print(mask_setter)
 
         mask = mask_setter(self)
         self._update_mask(mask_type, mask)
+
+    def masks(self):
+        mask_list = []
+        for var in list(self.ds().data_vars):
+            if var[-5:] == '_mask': 
+                mask_list.append(var)
+        return mask_list
 
     @property
     def x_str(self) -> str:
@@ -680,35 +759,21 @@ def sanitize_input(x, y, lon, lat):
     """Sanitizes input. After this all variables are either
     non-empty np.ndarrays with len >= 1 or None"""
 
-    # E.g. lon=1.0, lat=3
-    if isinstance(x, float) or isinstance(x, int):
-        x = np.array([x])
-    if isinstance(y, float) or isinstance(y, int):
-        y = np.array([y])
-    if isinstance(lon, float) or isinstance(lon, int):
-        lon = np.array([lon])
-    if isinstance(lat, float) or isinstance(lat, int):
-        lat = np.array([lat])
+    x = aux_funcs.force_to_iterable(x, fmt='numpy')
+    y = aux_funcs.force_to_iterable(y, fmt='numpy')
+    lon = aux_funcs.force_to_iterable(lon, fmt='numpy')
+    lat = aux_funcs.force_to_iterable(lat, fmt='numpy')
+    ## By now we should have numpy arrays
 
-    # (None, None) -> None
-    if isinstance(x,tuple) and np.all(x==(None, None)):
+    # np.array([None, None]) -> None
+    if x is None or all(v is None for v in x):
         x = None
-    if isinstance(y,tuple) and np.all(y==(None, None)):
+    if y is None or all(v is None for v in y):
         y = None
-    if isinstance(lon,tuple) and np.all(lon==(None, None)):
+    if lon is None or all(v is None for v in lon):
         lon = None
-    if isinstance(lat,tuple) and np.all(lat==(None, None)):
+    if lat is None or all(v is None for v in lat):
         lat = None
-
-    # np.array(5.222) to np.array([5.222])
-    if isinstance(x,np.ndarray) and not x.shape:
-        x = np.array([x])
-    if isinstance(y,np.ndarray) and not y.shape:
-        y = np.array([y])
-    if isinstance(lon,np.ndarray) and not lon.shape:
-        lon = np.array([lon])
-    if isinstance(lat,np.ndarray) and not lat.shape:
-        lat = np.array([lat])
 
     # Throw error if lon.shape = (1,509) or something
     if lon is not None and len(lon.shape) > 1:
@@ -721,15 +786,17 @@ def sanitize_input(x, y, lon, lat):
         raise Exception(f'Cartesian y vector should have one dimension, but it has dimensions {y.shape}!')
 
     # Set np.array([]) to None
-    if x is not None and not any(x):
+    if x is not None and x.shape == (0,):
         x = None
-    if y is not None and  not any(y):
+    if y is not None and y.shape == (0,):
         y = None
-    if lon is not None and  not any(lon):
+    if lon is not None and lon.shape == (0,):
         lon = None
-    if lat is not None and not any(lat):
+    if lat is not None and lat.shape == (0,):
         lat = None
 
+    if x is None and y is None and lon is None and lat is None:
+        raise Exception('x, y, lon, lat cannot ALL be None!')
 
     return x, y, lon, lat
 

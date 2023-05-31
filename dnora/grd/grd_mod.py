@@ -9,13 +9,17 @@ from ..skeletons.mask_factory import add_mask
 from ..skeletons.datavar_factory import add_datavar
 from .. import aux_funcs
 from .read import TopoReader
+from .read import MshFile as topo_MshFile
 from .read_tr import TriangReader
+from .read_tr import MshFile as triang_MshFile
 from .tri_arangers import TriAranger
 from copy import copy
+from typing import Union
+
 @topography_methods
 @add_datavar(name='topo', default_value=999., stash_get=True)
-@add_mask(name='buoy', coords='grid', default_value=0)
-@add_mask(name='spec', coords='grid', default_value=0)
+@add_mask(name='waveseries', coords='grid', default_value=0)
+@add_mask(name='spectra', coords='grid', default_value=0)
 @add_mask(name='boundary', coords='grid', default_value=0)
 @add_mask(name='sea', coords='grid', default_value=1, opposite_name='land')
 class Grid(GriddedSkeleton):
@@ -187,6 +191,21 @@ class Grid(GriddedSkeleton):
         return ''
 
 
+    def cfl(self, dx=None, f0=0.041180):
+        """Calculates approximate time step [s].
+        Based on grid resolution and given lowest frequency [Hz] (default=0.041180)
+        """
+        if dx is None:
+            dx = min(self.dx(), self.dy()) # Grid spacing [m]
+
+        cg = 1.56/f0*0.5 # Deep water group velocity [m/s]
+        dt = dx/cg
+
+        print(f'Grid spacing dx = {dx:.0f} m and f0 = {f0:.8f} Hz')
+        print(f'Approximate minimum time step: dt = dx/cg = {dx:.0f}/{cg:.1f} = {dt:.1f} s')
+
+        return dt
+
 @topography_methods
 @add_datavar(name='topo', default_value=999., stash_get=True)
 @add_mask(name='buoy', coords='grid', default_value=0)
@@ -194,6 +213,24 @@ class Grid(GriddedSkeleton):
 @add_mask(name='boundary', coords='grid', default_value=0)
 @add_mask(name='sea', coords='grid', default_value=1, opposite_name='land')
 class UnstrGrid(PointSkeleton):
+
+    @classmethod
+    def from_grid(cls, grid: Union[GriddedSkeleton, PointSkeleton], name: str=None, mask: str=None):
+        if name is None:
+            name = grid.name
+        if mask is None:
+            lon, lat = grid.lonlat(strict=True)
+            x, y = grid.xy(strict=True)
+        else:
+            if f"{mask}_mask" not in grid.masks():
+                raise KeyError(f"Grid doesn't have a {mask} mask!")
+            lon, lat = eval(f"grid.{mask}_points(type='lon', strict=True)")
+            x, y = eval(f"grid.{mask}_points(type='x', strict=True)")
+        unstr_grid = cls(lon=lon, lat=lat, x=x, y=y, name=name)
+        utm_number, utm_zone = grid.utm()
+        unstr_grid.set_utm(utm_number, utm_zone)
+        return unstr_grid
+    
     def __init__(self, grid=None, x=None, y=None, lon=None, lat=None, name='AnonymousGrid'):
         self.name = name
         if grid is not None:
@@ -245,6 +282,19 @@ class UnstrGrid(PointSkeleton):
         return np.round(len(self.inds())/len(self.boundary_points()[0])/2).astype(int)
 
 class TriGrid(UnstrGrid):
+    @classmethod
+    def from_msh(cls, filename: str, name: str=None):
+        if name is None:
+            tri_grid = cls()
+        else:
+            tri_grid = cls(name=name)
+        tri_grid.import_triang(triang_MshFile(filename))
+        tri_grid.import_topo(topo_MshFile(filename))
+       
+        return tri_grid
+
+
+
     def __init__(self, x=None, y=None, lon=None, lat=None, name='AnonymousGrid'):
         self.name = name
         # Only initialize if x, y, lon, lat given

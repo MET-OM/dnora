@@ -26,4 +26,4 @@ Copyright 2021, Konstantinos Christakos and Jan-Victor Björkqvist, MET Norway
 """
 
 from .grd_mod import Grid, UnstrGrid, TriGrid
-from . import read, boundary, process, mesh, write, write_trg, tri_arangers
+from . import mask, read, process, mesh, write, write_trg, tri_arangers

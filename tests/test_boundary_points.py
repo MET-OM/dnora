@@ -1,6 +1,6 @@
 import unittest
 from dnora.grd import Grid
-from dnora.grd.boundary import EdgesAsBoundary
+from dnora.grd.mask import EdgesAsBoundary
 from dnora.aux_funcs import identify_boundary_edges, create_ordered_boundary_list, get_coords_for_boundary_edges, create_swan_segment_coords
 import numpy as np
 from copy import copy

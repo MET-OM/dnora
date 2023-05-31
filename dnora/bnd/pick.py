@@ -39,13 +39,13 @@ class NearestGridPoint(PointPicker):
                     all_points: UnstrGrid, selected_points: UnstrGrid, **kwargs) -> np.ndarray:
 
         lon, lat = selected_points.lonlat()
-
         # Go through all points where we want output and find the nearest available point
+        ind_dict = all_points.yank_point(lon=lon, lat=lat)
         inds = []
-        for n in range(len(lat)):
-            dx, ind = min_distance(lon[n], lat[n], all_points.lon(), all_points.lat())
-            ms = f"Point {n}: lat: {lat[n]:10.7f}, lon: {lon[n]:10.7f} <<< ({all_points.lat()[ind]: .7f}, {all_points.lon()[ind]: .7f}). Distance: {dx:.1f} km"
-            if self.max_dist is None or dx <= self.max_dist:
+
+        for n, (x, y, ind) in enumerate(zip(lon, lat, ind_dict.get('inds'))):
+            ms = f"Point {n}: lat: {y:10.7f}, lon: {x:10.7f} <<< ({all_points.lat()[ind]: .7f}, {all_points.lon()[ind]: .7f}). Distance: {ind_dict.get('dx')[n]:.1f} km"
+            if self.max_dist is None or ind_dict.get('dx')[n] <= self.max_dist:
                 msg.plain(ms)
                 inds.append(ind)
             else:

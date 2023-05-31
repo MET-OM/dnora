@@ -1,9 +1,5 @@
 import numpy as np
-import xarray as xr
-from copy import copy
-from .. import aux_funcs
 
-from ..grd.boundary import MaskSetter
 from ..grd.process import GridProcessor
 from ..grd.mesh import Mesher, Interpolate
 from .. import msg

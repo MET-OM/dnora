@@ -5,7 +5,7 @@ import utm
 from copy import copy
 from .skeleton import Skeleton
 from .dataset_manager import DatasetManager
-
+from .. import aux_funcs
 class GriddedSkeleton(Skeleton):
     """Gives a gridded structure to the Skeleton.
 
@@ -17,9 +17,6 @@ class GriddedSkeleton(Skeleton):
     (i.e. raveled meshgrid).
     """
 
-    # def __init__(self, x=None, y=None, lon=None, lat=None, name='GriddedData'):
-    #     self.data = super()._create_structure(x, y, lon, lat)
-    #     self.data.attrs['name'] = name
     def is_gridded(self) -> bool:
         return True
 
@@ -94,3 +91,4 @@ class GriddedSkeleton(Skeleton):
         mask = mask.ravel()
 
         return x.ravel()[mask], y.ravel()[mask]
+    

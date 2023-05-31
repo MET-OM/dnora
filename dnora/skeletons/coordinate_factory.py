@@ -110,7 +110,7 @@ def add_frequency(grid_coord: bool=False, coord_name: str='freq'):
         def df(self, angular=False):
             if not self._structure_initialized():
                 return None
-            freq = get_freq(self, angular=angular).values.copy()
+            freq = get_freq(self, angular=angular).copy()
             return (freq[-1]-freq[0])/(len(freq)-1)
 
         if not hasattr(c, '_coord_manager'):

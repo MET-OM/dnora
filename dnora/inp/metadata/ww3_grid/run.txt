@@ -1,0 +1,12 @@
+! -------------------------------------------------------------------- !
+! Define the run parameterization via RUN_NML namelist
+!
+! * namelist must be terminated with /
+! * definitions & defaults:
+!     RUN%FLDRY            = F             ! dry run (I/O only, no calculation)
+!     RUN%FLCX             = F             ! x-component of propagation
+!     RUN%FLCY             = F             ! y-component of propagation
+!     RUN%FLCTH            = F             ! direction shift
+!     RUN%FLCK             = F             ! wavenumber shift
+!     RUN%FLSOU            = F             ! source terms
+! -------------------------------------------------------------------- !
