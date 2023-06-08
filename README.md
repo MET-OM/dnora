@@ -3,7 +3,7 @@
 
 What is dnora? 
 
-dnora is a software for dynamical downscaling of wave products i.e., NORA3 wave hindcast and WAM4, WW3 wave forecast from [Norwegian Meteorological Institute](https://www.met.no/) and ERA5 from [ECMWF](https://www.ecmwf.int/).
+dnora is a software for dynamical downscaling of wave products i.e., NORA3 wave hindcast and WW3 wave forecast from [Norwegian Meteorological Institute](https://www.met.no/) and ERA5 from [ECMWF](https://www.ecmwf.int/).
 
 [Documentation and installation instructions](https://dnora.readthedocs.io/en/latest/)
 
