@@ -22,7 +22,7 @@ Installing **dnora**
 
 .. code-block:: bash
 
-   $ git clone https://github.com/KonstantinChri/dnora.git
+   $ git clone https://github.com/MET-OM/dnora.git
    $ cd dnora/
 
 3. Create environment with the required dependencies and install dnora
