@@ -20,5 +20,5 @@ Example of long-crested wave propagation at Stad, Norway, using dnora/SWASH:
 ![eta](https://user-images.githubusercontent.com/67804784/160290851-ca743601-2ac7-48b5-be52-da3ec8c31e13.gif)
 
 
-Dnora contains the code of the function read_sms_mesh from the PyFVCOM package (distributed under the MIT License). The original code can be found at https://github.com/pwcazenave/pyfvcom
+dnora contains the code of the function read_sms_mesh from the PyFVCOM package (distributed under the MIT License). The original code can be found at https://github.com/pwcazenave/pyfvcom
 
