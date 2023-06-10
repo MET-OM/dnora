@@ -40,7 +40,7 @@ class InputFileWriter(ABC):
 
 class SWAN(InputFileWriter):
     def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, calib_wlev = 1, calib_ocr = 1, wind=True, waterlevel=True, oceancurrent=True, timestep=10,
-                 f_low = 0.04, f_high=1., n_freq=31, n_dir=36, spec_points=None, extension='swn', hotstart=False, output_var='HSIGN RTP TPS PDIR TM01 TMM10 DIR DSPR DEP'):
+                 f_low = 0.04, f_high=1., n_freq=31, n_dir=36, spec_points=None, extension='swn', output_var='HSIGN RTP TPS PDIR TM01 TMM10 DIR DSPR DEP'):
 
         self.calib_wind = calib_wind
         self.calib_wcap = calib_wcap
@@ -56,7 +56,6 @@ class SWAN(InputFileWriter):
         self.f_high = f_high
         self.n_freq = n_freq
         self.n_dir = n_dir
-        self.hotstart = hotstart # filename of hotstart file
         self.output_var = output_var
         return
 
@@ -84,6 +83,7 @@ class SWAN(InputFileWriter):
         DATE_END = end_time
         STR_START = pd.Timestamp(DATE_START).strftime('%Y%m%d.%H%M%S')
         STR_END = pd.Timestamp(DATE_END).strftime('%Y%m%d.%H%M%S')
+        HOTSTART_FILE = 'hotstart_'+grid.name()+'_'+(pd.Timestamp(DATE_START)-pd.Timedelta(hours=1)).strftime('%Y%m%d%H%M')
         # STR_FORCING_START = STR_START
         # STR_FORCING_END = STR_END
 
@@ -183,8 +183,8 @@ class SWAN(InputFileWriter):
             else:
                 pass
 
-            if self.hotstart is True:
-                file_out.write('INITIAL HOTSTART \'hotstart_'+grid.name()+'_'+STR_START.replace('.','')[:-2]+'\''  '\n')
+            if os.path.isfile(grid_path.split('/')[0]+'/'+HOTSTART_FILE) is True:
+                file_out.write('INITIAL HOTSTART \''+HOTSTART_FILE+'\''  '\n')
 
 
             file_out.write('GEN3 WESTH cds2='+str(self.calib_wcap) +' AGROW'+ '\n')
