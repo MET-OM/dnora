@@ -6,14 +6,14 @@
 Welcome to dnora's documentation!
 =====================================
 
-**dnora** is a Python package for dynamical downscaling of NORA wave hindcast using the spectral wave models SWAN or WAVEWATCH III and wave-flow model SWASH.
+**dnora** is a Python package for dynamical downscaling of regional and global wave hindcast/reanalysis using spectral and phase-resolving wave models.
 
 The package contains functions that:
   * create a high-resolution grid using open-access bathymetry/topography datasets,
-  * prepare the boundary conditions (NORA3, WAM4-operational wave model at MET Norway, available in https://thredds.met.no/thredds/catalog.html) for the spectral models (SWAN, WW3)
-  * prepare the wind (NORA3, WAM4) forcing for the spectral models
-  * create input parameter files for the spectral and phase-resolving models (SWAN, WW3, SWASH, HOS-ocean, REEF3D::FNPF)
-  * run the wave models
+  * prepare the boundary conditions (NORA3 hindcast, WAM4km-, & WWIII_4km- operational wave models at MET Norway and ERA5 from ECMWF)
+  * prepare the wind (NORA3, MEPS, ERA5), ocean (Norkyst800) and water level (GTSM_ERA5) forcing
+  * create input parameter files for the spectral and phase-resolving models
+  * run the wave models i.e., SWAN, WWIII, SWASH, HOS-ocean, REEF3D::FNPF.
 
 Installing **dnora**
 =============================================
