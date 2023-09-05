@@ -295,7 +295,7 @@ class EMODNET2020(TopoReader):
     """
 
     def __init__(self, tile: str='C5', expansion_factor: float=1.2, folder: str='/lustre/storeB/project/fou/om/WW3/bathy/emodnet2020') -> Tuple:
-        self.source = f'{folder}/{tile}_2020.nc'
+        self.source = f'{folder}/{tile}_202*.nc' # for 2020 and 2022 version
         self.expansion_factor = expansion_factor
         return
 
