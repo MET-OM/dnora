@@ -795,8 +795,8 @@ def sanitize_input(x, y, lon, lat):
     if lat is not None and lat.shape == (0,):
         lat = None
 
-    if x is None and y is None and lon is None and lat is None:
-        raise Exception('x, y, lon, lat cannot ALL be None!')
+    #if x is None and y is None and lon is None and lat is None:
+    #    raise Exception('x, y, lon, lat cannot ALL be None!')
 
     return x, y, lon, lat
 
