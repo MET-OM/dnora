@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 # Import aux_funcsiliry functions
 from .. import msg
 from .. import aux_funcs
-from ..grd import UnstrGrid
+from skeletons import PointSkeleton
 class MaskSetter(ABC):
     """Set points (boundary, spec etc.) in the grid.
 
@@ -39,7 +39,7 @@ class Clear(MaskSetter):
         pass
 
     def __call__(self, grid):
-        mask_size = self.sea_mask().shape
+        mask_size = grid.sea_mask().shape
         return np.full(mask_size, False)
 
     def __str__(self):
@@ -58,19 +58,20 @@ class LonLat(MaskSetter):
     """Sets a list of lon, lat points to interest points"""
 
     def __init__(self, lon=np.ndarray, lat=np.ndarray):
-        self._points = UnstrGrid(lon=lon, lat=lat)
-
+        self._points = PointSkeleton(lon=lon, lat=lat)
 
     def __call__(self, grid):
-        mask_vec = (grid.sea_mask()*False).ravel()
-        lons, lats = grid.lonlat()
-        for lon, lat in zip(self._points.lon(), self._points.lat()):
-            dx, ind = aux_funcs.min_distance(lon, lat, lons, lats)
-            ms = f"lon: {lons[ind]:10.7f}, lat: {lats[ind]:10.7f} <<< ({lon: .7f}, {lat: .7f}). Distance: {dx:.1f} km"
-            msg.plain(ms)
-            mask_vec[ind] = True
-
-        return mask_vec.reshape(grid.sea_mask().shape)
+        ind_dict = grid.yank_point(lon=self._points.lon(), lat=self._points.lat(), fast=True)
+        
+        mask = np.full(grid.sea_mask().shape, False)
+        
+        if grid.is_gridded():
+            mask[ind_dict.get("inds_y"), ind_dict.get("inds_x")] = True
+        else:
+            mask[ind_dict.get("inds")] = True
+        
+        return mask
+    
     def __str__(self):
         return(f"Setting given lon, lat points to mask points")
 
@@ -78,18 +79,20 @@ class XY(MaskSetter):
     """Sets a list of x, y points to interest points"""
 
     def __init__(self, x=np.ndarray, y=np.ndarray):
-        self._x = x
-        self._y = y
+        self._points = PointSkeleton(x=x, y=y)
 
     def __call__(self, grid):
-        mask_vec = (grid.sea_mask()*False).ravel()
-        xs, ys = grid.xy()
-        for x, y in zip(self._x, self._y):
-            dx, ind = aux_funcs.min_distance(x, y, xs, ys, cartesian=True)
-            ms = f"x: {xs[ind]:10.7f}, y: {ys[ind]:10.7f} <<< ({x: .7f}, {y: .7f}). Distance: {dx:.1f} km"
-            mask_vec[ind] = True
-
-        return mask_vec.reshape(grid.sea_mask().shape)
+        self._points.set_utm(grid.utm(), silent=True)
+        ind_dict = grid.yank_point(lon=self._points.y(), lat=self._points.y(), fast=True)
+        
+        mask = np.full(grid.sea_mask().shape, False)
+        
+        if grid.is_gridded():
+            mask[ind_dict.get("inds_y"), ind_dict.get("inds_x")] = True
+        else:
+            mask[ind_dict.get("inds")] = True
+        
+        return mask
     
     def __str__(self):
         return(f"Setting given x, y points to mask points")
@@ -119,21 +122,21 @@ class Edges(MaskSetter):
         if mask_size == (1, 1):
             return np.full(mask_size, True)
 
-        boundary_mask = np.full(mask_size, False)
+        mask = np.full(mask_size, False)
         # --------- North boundary ----------
         if 'N' in self.edges:
-            boundary_mask[-1,::self.step] = True
+            mask[-1,::self.step] = True
         ## --------- South boundary ----------
         if 'S' in self.edges:
-            boundary_mask[0,::self.step] = True
+            mask[0,::self.step] = True
         ## --------- East boundary ----------
         if 'E' in self.edges:
-            boundary_mask[::self.step,-1] = True
+            mask[::self.step,-1] = True
         ## --------- West boundary ----------
         if 'W' in self.edges:
-            boundary_mask[::self.step,0] = True
+            mask[::self.step,0] = True
 
-        return boundary_mask
+        return mask
 
     def __str__(self):
         return(f"Setting all edges {self.edges} to mask points using step {self.step}.")
@@ -155,60 +158,60 @@ class MidPoint(MaskSetter):
         if mask_size == (1, 1):
             return np.full(mask_size, True)
 
-        boundary_mask = np.full(mask_size, False)
+        mask = np.full(mask_size, False)
         ny = np.round(mask_size[0]/2).astype(int)
         nx = np.round(mask_size[1]/2).astype(int)
 
         # --------- North boundary ----------
         if 'N' in self.edges:
-            edge = sea_mask[-1,:]
+            edge = grid.sea_mask()[-1,:]
             nx = np.round(np.median(np.where(edge))).astype(int)
-            boundary_mask[-1,nx] = True
+            mask[-1,nx] = True
         ## --------- South boundary ----------
         if 'S' in self.edges:
-            edge = sea_mask[0,:]
+            edge = grid.sea_mask()[0,:]
             nx = np.round(np.median(np.where(edge))).astype(int)
-            boundary_mask[0,nx] = True
+            mask[0,nx] = True
         ## --------- East boundary ----------
         if 'E' in self.edges:
-            edge = sea_mask[:,-1]
+            edge = grid.sea_mask()[:,-1]
             ny = np.round(np.median(np.where(edge))).astype(int)
-            boundary_mask[ny,-1] = True
+            mask[ny,-1] = True
         ## --------- West boundary ----------
         if 'W' in self.edges:
-            edge = sea_mask[:,0]
+            edge = grid.sea_mask()[:,0]
             ny = np.round(np.median(np.where(edge))).astype(int)
-            boundary_mask[ny,0] = True
+            mask[ny,0] = True
 
-        return boundary_mask
+        return mask
 
     def __str__(self):
         return(f"Setting mid point of edges {self.edges} to mask point.")
 
 
-class SetMatrix(MaskSetter):
-    """Set boundary points by providing a boolean array [True = mask point].
+# class SetMatrix(MaskSetter):
+#     """Set boundary points by providing a boolean array [True = mask point].
 
-    The dimensions and orientation of the array should be:
+#     The dimensions and orientation of the array should be:
 
-    rows = latitude and colums = longitude (i.e.) shape = (nr_lat, nr_lon).
+#     rows = latitude and colums = longitude (i.e.) shape = (nr_lat, nr_lon).
 
-    North = [-1,:]
-    South = [0,:]
-    East = [:,-1]
-    West = [:,0]
-    """
+#     North = [-1,:]
+#     South = [0,:]
+#     East = [:,-1]
+#     West = [:,0]
+#     """
 
-    def __init__(self, matrix):
-        self.matrix = matrix
-        return
+#     def __init__(self, matrix):
+#         self.matrix = matrix
+#         return
 
-    def __call__(self, grid):
-        if self.matrix.shape == grid.sea_mask().shape:
-            return self.matrix
-        else:
-            raise Exception(f'Given mask for boundary points does not match the dimensions of the grid ({self.matrix.shape[0]}x{self.matrix.shape[1]} vs {mask_size[0]}x{mask_size[1]})')
+#     def __call__(self, grid):
+#         if self.matrix.shape == grid.sea_mask().shape:
+#             return self.matrix
+#         else:
+#             raise Exception(f'Given mask for boundary points does not match the dimensions of the grid ({self.matrix.shape[0]}x{self.matrix.shape[1]} vs {mask_size[0]}x{mask_size[1]})')
 
-    def __str__(self):
-        return(f"Setting boundary points using the boolean matrix I was initialized with.")
+#     def __str__(self):
+#         return(f"Setting boundary points using the boolean matrix I was initialized with.")
 

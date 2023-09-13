@@ -2,14 +2,12 @@ from __future__ import annotations
 
 import xarray as xr
 import pandas as pd
-import utm
 from copy import copy
 from abc import ABC, abstractmethod
 import numpy as np
 from typing import Tuple, TYPE_CHECKING
 if TYPE_CHECKING:
     from .grd_mod import Grid
-# Import aux_funcsiliry functions
 from ..aux_funcs import expand_area
 import warnings
 from .. import msg
@@ -71,39 +69,31 @@ class TopoReader(ABC):
 
 class ConstantTopo(TopoReader):
     """Creates an empty topography. Called when setting initial spacing."""
-    def __init__(self, grid: Grid=None, nx=0, ny=0, depth=999.):
-        if grid is not None:
-            self.size = (grid.ny(),grid.nx())
-        else:
-            self.size = (ny, nx)
+    def __init__(self, depth=999.):
         self.depth = depth
 
     def __call__(self, lon: tuple, lat: tuple, x: tuple, y: tuple) -> tuple:
         """Creates a trivial topography with all water points."""
-        topo = np.ones(self.size)*self.depth
-        # if cartesian:
-        #     topo_x = np.linspace(x[0], x[1], self.size[1])
-        #     topo_y = np.linspace(y[0], y[1], self.size[0])
-        #     zone_number, zone_letter = 33, 'W'
-        # else:
-        lon, lat = expand_area(lon, lat, 1.5)
-        topo_lon = np.linspace(lon[0], lon[1], self.size[1])
-        topo_lat = np.linspace(lat[0], lat[1], self.size[0])
+        topo = np.full((2,2,),self.depth)
+        topo_lon = np.array(lon)
+        topo_lat = np.array(lat)
 
         return topo, topo_lon, topo_lat, None, None, None, None
 
     def __str__(self):
         return(f"Creating an constant topography with depth values {self.depth}.")
 
-class EMODNET2018(TopoReader):
-    """Reads data from EMODNET bathymetry.
 
-    The data needs to be downloaded from https://portal.emodnet-bathymetry.eu/,
-    since no API to the database exists.
+class EMODNET(TopoReader):
+    """Reads bathymetry from multiple EMODNET tiles in netcdf format.
+
+    For reading several files at once, supply the 'tile' argument with a glob pattern, e.g. 'C*'.
+
+    Contributed by: https://github.com/poplarShift
     """
 
-    def __init__(self, expansion_factor: float=1.2, tile: str='C5', folder: str='/lustre/storeB/project/fou/om/WW3/bathy/emodnet_115m_x_115m'):
-        self.source=f'{folder}/{tile}_2018.dtm'
+    def __init__(self, tile: str='C5', expansion_factor: float=1.2, folder: str='/lustre/storeB/project/fou/om/WW3/bathy/emodnet2020', year: int=2020) -> Tuple:
+        self.source = f'{folder}/{tile}_{year}.nc'
         self.expansion_factor = expansion_factor
         return
 
@@ -112,20 +102,55 @@ class EMODNET2018(TopoReader):
         # when we interpoolate or filter
         lon, lat = expand_area(lon, lat, self.expansion_factor)
 
-        ds = xr.open_dataset(self.source).sel(COLUMNS=slice(lon[0], lon[1]), LINES=slice(lat[0], lat[1]))
+        def _crop(ds):
+            """
+            EMODNET tiles overlap by two cells on each boundary.
+            """
+            return ds.isel(lon=slice(2, -2), lat=slice(2, -2))
 
-        topo = ds.DEPTH.values
-
-        # Negative valies and NaN's are land
-        topo = -1*topo
-
-        topo_lon = ds.COLUMNS.values
-        topo_lat = ds.LINES.values
-
-        return topo, topo_lon, topo_lat, None, None, None
+        import dask
+        with dask.config.set(**{'array.slicing.split_large_chunks': True}):
+            with xr.open_mfdataset(self.source, preprocess=_crop) as ds:
+                ds = ds.sel(lon=slice(lon[0], lon[1]), lat=slice(lat[0], lat[1]))
+                topo = -1 * ds.elevation.values
+                topo_lon = ds.lon.values
+                topo_lat = ds.lat.values
+                return topo, topo_lon, topo_lat, None, None, None, None
 
     def __str__(self):
         return(f"Reading EMODNET topography from {self.source}.")
+
+# class EMODNET2018(TopoReader):
+#     """Reads data from EMODNET bathymetry.
+
+#     The data needs to be downloaded from https://portal.emodnet-bathymetry.eu/,
+#     since no API to the database exists.
+#     """
+
+#     def __init__(self, expansion_factor: float=1.2, tile: str='C5', folder: str='/lustre/storeB/project/fou/om/WW3/bathy/emodnet_115m_x_115m'):
+#         self.source=f'{folder}/{tile}_2018.dtm'
+#         self.expansion_factor = expansion_factor
+#         return
+
+#     def __call__(self, lon: tuple, lat: tuple, x: tuple, y: tuple) -> tuple:
+#         # Area is expanded a bit to not get in trouble in the meshing stage
+#         # when we interpoolate or filter
+#         lon, lat = expand_area(lon, lat, self.expansion_factor)
+
+#         ds = xr.open_dataset(self.source).sel(COLUMNS=slice(lon[0], lon[1]), LINES=slice(lat[0], lat[1]))
+
+#         topo = ds.DEPTH.values
+
+#         # Negative valies and NaN's are land
+#         topo = -1*topo
+
+#         topo_lon = ds.COLUMNS.values
+#         topo_lat = ds.LINES.values
+
+#         return topo, topo_lon, topo_lat, None, None, None
+
+#     def __str__(self):
+#         return(f"Reading EMODNET topography from {self.source}.")
 
 class KartverketNo50m(TopoReader):
     """Reads data from Kartverket bathymetry.
@@ -268,41 +293,7 @@ class GEBCO2021(TopoReader):
 #     def __str__(self):
 #         return("Merging data from several grids.")
 
-class EMODNET2020(TopoReader):
-    """Reads bathymetry from multiple EMODNET tiles in netcdf format.
 
-    For reading several files at once, supply the 'tile' argument with a glob pattern, e.g. 'C*'.
-
-    Contributed by: https://github.com/poplarShift
-    """
-
-    def __init__(self, tile: str='C5', expansion_factor: float=1.2, folder: str='/lustre/storeB/project/fou/om/WW3/bathy/emodnet2020') -> Tuple:
-        self.source = f'{folder}/{tile}_2020.nc'
-        self.expansion_factor = expansion_factor
-        return
-
-    def __call__(self, lon: tuple, lat: tuple, x: tuple, y: tuple) -> tuple:
-        # Area is expanded a bit to not get in trouble in the meshing stage
-        # when we interpoolate or filter
-        lon, lat = expand_area(lon, lat, self.expansion_factor)
-
-        def _crop(ds):
-            """
-            EMODNET tiles overlap by two cells on each boundary.
-            """
-            return ds.isel(lon=slice(2, -2), lat=slice(2, -2))
-
-        import dask
-        with dask.config.set(**{'array.slicing.split_large_chunks': True}):
-            with xr.open_mfdataset(self.source, preprocess=_crop) as ds:
-                ds = ds.sel(lon=slice(lon[0], lon[1]), lat=slice(lat[0], lat[1]))
-                topo = -1 * ds.elevation.values
-                topo_lon = ds.lon.values
-                topo_lat = ds.lat.values
-                return topo, topo_lon, topo_lat, None, None, None, None
-
-    def __str__(self):
-        return(f"Reading EMODNET topography from {self.source}.")
 
 
 class ForceFeed(TopoReader):
