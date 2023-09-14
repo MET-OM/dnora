@@ -6,6 +6,7 @@ from .. import aux_funcs
 from .. import msg
 import pandas as pd
 import numpy as np
+from skeletons import PointSkeleton
 class ForcingReader(ABC):
     """Reads forcing data from some source and provide it to the object.
 
@@ -51,7 +52,6 @@ class ConstantForcing(ForcingReader):
         time = pd.date_range(start=start_time, end=end_time, freq='H').values
 
         lon, lat, x, y = aux_funcs.get_coordinates_from_grid(grid, self.cartesian)
-
         u = np.full((len(time), grid.ny(), grid.nx()), self.u)
         v = np.full((len(time), grid.ny(), grid.nx()), self.v)
         metadata = {'metadata': 'this is a constant forcing'}
@@ -83,7 +83,7 @@ class DnoraNc(ForcingReader):
         ds = xr.open_mfdataset(self.files, preprocess=_crop, data_vars='minimal')
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
 
-        return ds.time.values, ds.u.values, ds.v.values, lon, lat, x, y, ds.attrs
+        return  ds.time.values, ds.u.values, ds.v.values, lon, lat, x, y, ds.attrs
 #
 #
 # class File_WW3Nc(ForcingReader):

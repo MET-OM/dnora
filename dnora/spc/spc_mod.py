@@ -13,61 +13,20 @@ from ..bnd.pick import PointPicker, TrivialPicker
 from .read import SpectralReader
 from .. import msg
 
-from ..skeletons.point_skeleton import PointSkeleton
-from ..skeletons.coordinate_factory import add_time, add_frequency
-from ..skeletons.mask_factory import add_mask
-from ..skeletons.datavar_factory import add_datavar
+from skeletons.point_skeleton import PointSkeleton
+from skeletons.coordinate_factory import add_time, add_frequency
+from skeletons.mask_factory import add_mask
+from skeletons.datavar_factory import add_datavar
 
 from .process import SpectralProcessor
 
-@add_mask(name='bad', coords='all', default_value=0)
+#@add_mask(name='bad', coords='all', default_value=0)
 @add_datavar(name='spec', coords='all', default_value=0.)
 @add_datavar(name='mdir', coords='all', default_value=0.)
 @add_datavar(name='spr', coords='all', default_value=0.)
 @add_frequency(grid_coord=False)
 @add_time(grid_coord=True)
 class Spectra(PointSkeleton):
-    def __init__(self, grid: Grid, name: str="AnonymousSpectra"):
-        self._grid = grid
-        self._name = name
-        self._convention = None
-        self._history = []
-
-    def import_spectra(self, start_time: str, end_time: str,
-                        spectral_reader: SpectralReader,
-                        point_picker: PointPicker,
-                        **kwargs) -> None:
-
-        """Imports omnidirectional spectra from a certain source.
-
-        Spectra are import between start_time and end_time from the source
-        defined in the spectral_reader. Which spectra to choose spatially
-        are determined by the point_picker.
-        """
-        self._history.append(copy(spectral_reader))
-
-        msg.header(spectral_reader, "Reading coordinates of spectra...")
-        lon_all, lat_all, x_all, y_all = spectral_reader.get_coordinates(self.grid(), start_time)
-        all_points = UnstrGrid(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
-        selected_points = UnstrGrid(lon=self.grid().boundary_points('lon', strict=True)[0], lat=self.grid().boundary_points('lon', strict=True)[1],
-                                    x=self.grid().boundary_points('x', strict=True)[0], y=self.grid().boundary_points('x', strict=True)[1])
-        msg.header(point_picker, "Choosing spectra...")
-        inds = point_picker(self.grid(), all_points, selected_points=selected_points, **kwargs)
-
-        msg.header(spectral_reader, "Loading omnidirectional spectra...")
-        time, freq, spec, mdir, spr, lon, lat, x, y, metadata = spectral_reader(self.grid(), start_time, end_time, inds)
-
-        self._init_structure(x, y, lon, lat, time=time, freq=freq)
-
-        self.ds_manager.set(spec, 'spec', coord_type='all')
-        self.ds_manager.set(mdir, 'mdir', coord_type='all')
-        self.ds_manager.set(spr, 'spr', coord_type='all')
-        self.set_metadata(metadata)
-
-        # E.g. are the spectra oceanic convention etc.
-        self._convention = spectral_reader.convention()
-        self.set_metadata({'spectral_convention': self.convention().value}, append=True)
-
     def process_spectra(self, spectral_processors: List[SpectralProcessor]=None):
         """Process all the individual spectra of the spectra object.
 
@@ -146,27 +105,23 @@ class Spectra(PointSkeleton):
             return None
         return copy(self._convention)
 
-    def grid(self) -> Grid:
-        if hasattr(self, '_grid'):
-            return self._grid
-        return None
 
-    def __str__(self) -> str:
-        """Prints status of spectra."""
+    # def __str__(self) -> str:
+    #     """Prints status of spectra."""
 
-        msg.header(self, f"Status of spectra {self.name}")
-        if self.x() is not None:
-            msg.plain(f"Contains data ({len(self.x())} points) for {self.start_time()} - {self.end_time()}")
-            msg.plain(f"Data covers: lon: {min(self.lon())} - {max(self.lon())}, lat: {min(self.lat())} - {max(self.lat())}")
-        if len(self._history) > 0:
-            msg.blank()
-            msg.plain("Object has the following history:")
-            for obj in self._history:
-                msg.process(f"{obj.__class__.__bases__[0].__name__}: {type(obj).__name__}")
-        #msg.print_line()
-        #msg.plain("The Boundary is for the following Grid:")
-        #print(self.grid())
+    #     msg.header(self, f"Status of spectra {self.name}")
+    #     if self.x() is not None:
+    #         msg.plain(f"Contains data ({len(self.x())} points) for {self.start_time()} - {self.end_time()}")
+    #         msg.plain(f"Data covers: lon: {min(self.lon())} - {max(self.lon())}, lat: {min(self.lat())} - {max(self.lat())}")
+    #     if len(self._history) > 0:
+    #         msg.blank()
+    #         msg.plain("Object has the following history:")
+    #         for obj in self._history:
+    #             msg.process(f"{obj.__class__.__bases__[0].__name__}: {type(obj).__name__}")
+    #     #msg.print_line()
+    #     #msg.plain("The Boundary is for the following Grid:")
+    #     #print(self.grid())
 
-        msg.print_line()
+    #     msg.print_line()
 
-        return ''
+    #     return ''

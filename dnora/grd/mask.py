@@ -108,8 +108,8 @@ class Edges(MaskSetter):
     model interpolate the spectra.
     """
 
-    def __init__(self, edges: List[str]=['N', 'S', 'E', 'W'], step: int=1) -> None:
-        self.edges = edges
+    def __init__(self, edges: list[str]=['N', 'S', 'E', 'W'], step: int=1) -> None:
+        self.edges = [edge.upper() for edge in edges]
         if step < 1:
             raise ValueError('step cannot be smaller than 1')
         else:
@@ -150,7 +150,7 @@ class MidPoint(MaskSetter):
     """
 
     def __init__(self, edges: List[str]=['N', 'S', 'E', 'W']) -> None:
-        self.edges = edges
+        self.edges = [edge.upper() for edge in edges]
 
 
     def __call__(self, grid):

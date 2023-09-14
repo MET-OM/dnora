@@ -99,21 +99,20 @@ class BoundaryReader(ABC):
 
 
 class ConstantBoundary(BoundaryReader):
-    def __init__(self, grid: Grid, spec: float=1, cartesian: bool=False, metadata: dict=None, spectral_convention: SpectralConvention=SpectralConvention.OCEAN):
+    def __init__(self, spec: float=1, cartesian: bool=False, metadata: dict=None, spectral_convention: SpectralConvention=SpectralConvention.OCEAN):
         self.spec = spec
         self.metadata = metadata
         self.cartesian = cartesian
         self.set_convention(spectral_convention)
-        self.grid = grid
 
     def get_coordinates(self, grid, start_time) -> tuple:
-        lon, lat, x, y = aux_funcs.get_coordinates_from_grid(self.grid, self.cartesian, list=True)
+        lon, lat, x, y = aux_funcs.get_coordinates_from_grid(grid, self.cartesian, list=True)
 
         return lon, lat, x, y
 
     def __call__(self, grid, start_time, end_time, inds, **kwargs):
         time = pd.date_range(start=start_time, end=end_time, freq='H').values
-        lon, lat, x, y = aux_funcs.get_coordinates_from_grid(self.grid, self.cartesian, list=True)
+        lon, lat, x, y = aux_funcs.get_coordinates_from_grid(grid, self.cartesian, list=True)
         freq = np.array(range(1,11))/10.
 
         if self.convention() in [SpectralConvention.WW3, SpectralConvention.MATHVEC]:

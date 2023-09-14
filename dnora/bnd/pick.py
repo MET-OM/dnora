@@ -1,6 +1,7 @@
 import numpy as np
 from abc import ABC, abstractmethod
 from typing import Union
+from skeletons import PointSkeleton
 # Import objects
 from ..grd.grd_mod import Grid, UnstrGrid
 
@@ -36,11 +37,15 @@ class NearestGridPoint(PointPicker):
         pass
 
     def __call__(self, grid: Union[Grid, UnstrGrid],
-                    all_points: UnstrGrid, selected_points: UnstrGrid, **kwargs) -> np.ndarray:
+                    all_points: PointSkeleton, selected_points: PointSkeleton, **kwargs) -> np.ndarray:
 
+        if selected_points is None:
+            msg.plain('No boundary points provided. Returning empty list of indeces.')
+            return []
+        
         lon, lat = selected_points.lonlat()
         # Go through all points where we want output and find the nearest available point
-        ind_dict = all_points.yank_point(lon=lon, lat=lat)
+        ind_dict = all_points.yank_point(lon=lon, lat=lat, fast=True)
         inds = []
 
         for n, (x, y, ind) in enumerate(zip(lon, lat, ind_dict.get('inds'))):
@@ -57,7 +62,7 @@ class NearestGridPoint(PointPicker):
 class Area(PointPicker):
     """Choose all the points within a certain area around the grid."""
     def __call__(self, grid: Union[Grid, UnstrGrid],
-                    all_points: UnstrGrid,
+                    all_points: PointSkeleton,
                     expansion_factor: float=1.5, **kwargs) -> np.ndarray:
 
         if grid._empty_skeleton():

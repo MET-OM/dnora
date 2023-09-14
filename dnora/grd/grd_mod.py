@@ -29,7 +29,9 @@ class Topography:
         
         if aux_funcs.is_gridded(topo, lon, lat) or aux_funcs.is_gridded(topo, x, y):
             self._raw = Grid(lon=lon, lat=lat, x=x, y=y)
-            self._raw.set_spacing(nx=len(lon), ny=len(lat))
+            x = x or lon
+            y = y or lat
+            self._raw.set_spacing(nx=len(x), ny=len(y))
         else:
             self._raw = UnstrGrid(lon=lon, lat=lat, x=x, y=y)
 
@@ -127,11 +129,6 @@ class Topography:
 @add_mask(name='boundary', coords='grid', default_value=0)
 @add_mask(name='sea', coords='grid', default_value=1, opposite_name='land')
 class Grid(GriddedSkeleton, Topography):
-
-    def __init__(self, x=None, y=None, lon=None, lat=None, name='AnonymousGrid'):
-        self.name = name
-        self._init_structure(x, y, lon, lat)
-
     def boundary_nx(self) -> int:
         """Return approximate number of grid points in the longitude direction
         """
@@ -157,32 +154,7 @@ class Grid(GriddedSkeleton, Topography):
 @add_mask(name='boundary', coords='grid', default_value=0)
 @add_mask(name='sea', coords='grid', default_value=1, opposite_name='land')
 class UnstrGrid(PointSkeleton, Topography):
-
-    @classmethod
-    def from_grid(cls, grid: Union[GriddedSkeleton, PointSkeleton], name: str=None, mask: np.ndarray=None):
-        if name is None:
-            name = grid.name
-        if mask is None:
-            mask = np.full(grid.sea_mask().shape, True)
-        lon, lat = grid.lonlat(strict=True, mask=mask)
-        x, y = grid.xy(strict=True, mask=mask)
-
-        unstr_grid = cls(lon=lon, lat=lat, x=x, y=y, name=name)
-        unstr_grid.set_utm(grid.utm())
-
-        return unstr_grid
-
-    def __init__(self, x=None, y=None, lon=None, lat=None, name='AnonymousGrid'):
-        self.name = name
-        self._init_structure(x, y, lon, lat)    
-
-    # def boundary_nx(self) -> int:
-    #     """Return approximate number of grid points in the longitude direction
-    #     """
-    #     return np.round(len(self.inds())/len(self.boundary_points()[0])/2).astype(int)
-
-    # def boundary_ny(self) -> int:
-    #     return np.round(len(self.inds())/len(self.boundary_points()[0])/2).astype(int)
+    pass
 
 class TriGrid(UnstrGrid):
     @classmethod
@@ -197,7 +169,7 @@ class TriGrid(UnstrGrid):
         self.name = name
         # Only initialize if x, y, lon, lat given
         if [a for a in (x, y, lon, lat) if a is not None]:
-            self._init_structure(x, y, lon, lat)
+            self._init_structure(x, y, lon, lat, name)
 
     def import_triang(self, triang_reader: TriangReader):
         """Reads a triangular mesh."""
