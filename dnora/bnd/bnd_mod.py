@@ -45,7 +45,7 @@ class Boundary(PointSkeleton):
 
             msg.process(f"Processing spectra with {type(processor).__name__}")
             print(processor)
-            self._history.append(copy(processor))
+            #self._history.append(copy(processor))
             old_convention = processor._convention_in()
             if old_convention is not None:
                 if old_convention != self.convention():

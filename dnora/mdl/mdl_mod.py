@@ -22,6 +22,11 @@ from ..spc import Spectra
 from ..spc.read import SpectralReader
 from .. import spc
 
+from ..wsr import WaveSeries
+from ..wsr.read import WaveSeriesReader, SpectraToWaveSeries
+from .. import wsr
+
+from skeletons.datavar_factory import add_datavar
 # Import default values and aux_funcsiliry functions
 from .. import msg
 #from ..cacher.cache_decorator import cached_reader
@@ -82,7 +87,7 @@ class ModelRun:
 
 
     def import_boundary(self, boundary_reader: BoundaryReader=None,
-                        point_picker: PointPicker=None, name_: str=None,
+                        point_picker: PointPicker=None, name: str=None,
                         dry_run: bool=False, source: str='remote',
                        **kwargs):
         """Imports boundary spectra. Which spectra to choose spatically
@@ -142,7 +147,7 @@ class ModelRun:
 
 
     def import_spectra(self, spectral_reader: SpectralReader=None,
-                        point_picker: PointPicker=None, name_: str=None,
+                        point_picker: PointPicker=None, name: str=None,
                         dry_run: bool=False, source: str='remote',
                        **kwargs):
         """Imports spectra. Which spectra to choose spatically
@@ -194,6 +199,36 @@ class ModelRun:
         self.spectra().set_metadata({'spectral_convention': self.spectra().convention().value}, append=True)
    
 
+    def import_waveseries(self, waveseries_reader: WaveSeriesReader=None,
+                        point_picker: PointPicker=None, name: str=None,
+                        dry_run: bool=False, source: str='remote',
+                       **kwargs):
+
+        msg.header(waveseries_reader, "Reading coordinates of WaveSeries...")
+        lon_all, lat_all, x_all, y_all = waveseries_reader.get_coordinates(self.grid(), self.start_time())
+
+        all_points = PointSkeleton(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
+        
+        if np.all(np.logical_not(self.grid().boundary_mask())):
+            boundary_points = None
+        else:
+            boundary_points = PointSkeleton.from_skeleton(self.grid(), mask=self.grid().boundary_mask())
+        
+        msg.header(point_picker, "Choosing wave series points...")
+        inds = point_picker(self.grid(), all_points, selected_points=boundary_points, **kwargs)
+
+        msg.header(waveseries_reader, "Loading wave series data...")
+        time, data_dict, lon, lat, x, y, metadata = waveseries_reader(self.grid(), self.start_time(), self.end_time(), inds, **kwargs)
+
+        self._waveseries = WaveSeries(x, y, lon, lat, time=time, name=name)
+
+        for wp, data in data_dict.items():
+            self._waveseries = add_datavar(wp.name(), append=True)(self.waveseries()) # Creates .hs() etc. methods
+            self.waveseries()._update_datavar(wp.name(), data)
+            self.waveseries().set_metadata({'name': wp.name(), 'unit': f'{wp.unit()}', 'standard_name': wp.standard_name()}, data_array_name=wp.name())
+                       
+        self.waveseries().set_metadata(metadata) # Global attributes
+
     def boundary_to_spectra(self, dry_run: bool=False, name :str=None,
                             write_cache=False, **kwargs):
         self._dry_run = dry_run
@@ -212,6 +247,30 @@ class ModelRun:
         else:
             msg.info('Dry run! No boundary will not be converted to spectra.')
 
+
+
+    def spectra_to_waveseries(self, dry_run: bool=False, write_cache=False,
+                                freq: tuple=(0, 10_000), **kwargs):
+        self._dry_run = dry_run
+        if self.spectra() is None:
+            msg.warning('No Spectra to convert to WaveSeries!')
+            return
+
+        waveseries_reader = SpectraToWaveSeries(self.spectra(), freq)
+        msg.header(waveseries_reader, 'Converting the spectra to wave series data...')
+        name = self.spectra().name
+        if not self.dry_run():
+            self.import_waveseries(waveseries_reader=waveseries_reader,
+                                    point_picker=bnd.pick.TrivialPicker(),
+                                    name=name,
+                                    write_cache=write_cache, **kwargs)
+        else:
+            msg.info('Dry run! No boundary will not be converted to spectra.')
+
+    def boundary_to_waveseries(self, dry_run: bool=False, write_cache=False,
+                                freq: tuple=(0, 10_000), **kwargs):
+        self.boundary_to_spectra(dry_run=dry_run, write_cache=write_cache, **kwargs)
+        self.spectra_to_waveseries(dry_run=dry_run, write_cache=write_cache, freq=freq, **kwargs)
 
     def dry_run(self):
         """Checks if method or global ModelRun dryrun is True.
@@ -241,6 +300,13 @@ class ModelRun:
         """Returns the spectral object if exists."""
         if hasattr(self, '_spectra'):
             return self._spectra
+        else:
+            return None
+
+    def waveseries(self) -> WaveSeries:
+        """Returns the wave series object if exists."""
+        if hasattr(self, '_waveseries'):
+            return self._waveseries
         else:
             return None
 
@@ -280,4 +346,7 @@ class ModelRun:
         return None
 
     def _get_spectral_reader(self) -> SpectralReader:
+        return None
+    
+    def _get_waveseries_reader(self) -> WaveSeriesReader:
         return None

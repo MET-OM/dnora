@@ -46,7 +46,7 @@ class Spectra(PointSkeleton):
         for processor in spectral_processors:
 
             msg.process(f"Processing spectra with {type(processor).__name__}")
-            self._history.append(copy(processor))
+            #self._history.append(copy(processor))
             old_convention = processor._convention_in()
             if old_convention is not None:
                 if old_convention != self.convention():
@@ -60,9 +60,9 @@ class Spectra(PointSkeleton):
             self._init_structure(x=self.x(strict=True), y=self.y(strict=True),
                             lon=self.lon(strict=True), lat=self.lat(strict=True),
                             time=self.time(), freq=new_freq)
-            self.ds_manager.set(new_spec, 'spec', coord_type='all')
-            self.ds_manager.set(new_dirs, 'mdir', coord_type='all')
-            self.ds_manager.set(new_spr, 'spr', coord_type='all')
+            self.set_spec(new_spec)
+            self.set_mdir(new_dirs)
+            self.set_spr(new_spr)
             self.set_metadata(metadata) # Global attributes
 
             # Set new convention if the processor changed it

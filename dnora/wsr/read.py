@@ -112,8 +112,9 @@ class SpectraToWaveSeries(WaveSeriesReader):
         self._freq = freq
 
     def get_coordinates(self, grid, start_time: str) -> tuple[np.ndarray, np.ndarray]:
-        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(self._spectra.ds())
-        return lon, lat, x, y
+        return self._spectra.lon(strict=True), self._spectra.lat(strict=True), self._spectra.x(strict=True), self._spectra.y(strict=True)
+        #lon, lat, x, y = aux_funcs.get_coordinates_from_ds(self._spectra.ds())
+        #return lon, lat, x, y
 #Hs(), Tp(), Dirp(), TpI(), Dirm(), Sprm(), Tm_10(), Tm01(), Tm02()
     def __call__(self, grid, start_time, end_time, inds, parameters: list[str]=[Hs(), Tp(), Dirp(), TpI(), Dirm(), Sprm(), Tm_10(), Tm01(), Tm02()], **kwargs) -> tuple:
         self.name = self._spectra.name
@@ -130,7 +131,8 @@ class SpectraToWaveSeries(WaveSeriesReader):
         data = {}
         for wp in parameters:
             wp = get_wave_parameter(wp)
-            data[wp] = np.swapaxes(wp(self._spectra),0,1)
+            #data[wp] = np.swapaxes(wp(self._spectra),0,1)
+            data[wp] = wp(self._spectra)
         attrs = self._spectra.ds().attrs
         attrs['integration_range'] = f'{self._freq[0]}-{self._freq[-1]} Hz'
         return time, data, lon, lat, x, y, attrs

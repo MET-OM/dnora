@@ -59,7 +59,7 @@ class Moment(WaveParameter):
 
     def __call__(self, spec: Union[Spectra, Boundary]) -> np.ndarray:
         if isinstance(spec, Boundary):
-            dD = 360/len(moment.dirs())
+            dD = 360/len(self._moment.dirs())
             ds = dD*np.pi/180*spec.ds().sum(dim='dirs')
         else:
             ds = spec.ds()
