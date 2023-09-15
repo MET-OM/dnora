@@ -26,18 +26,18 @@ from ..wsr import WaveSeries
 from ..wsr.read import WaveSeriesReader, SpectraToWaveSeries
 from .. import wsr
 
+from ..spectral_grid import SpectralGrid
 from skeletons.datavar_factory import add_datavar
 # Import default values and aux_funcsiliry functions
 from .. import msg
 #from ..cacher.cache_decorator import cached_reader
 
 class ModelRun:
-    def __init__(self, grid: Grid, start_time: str='1970-01-01T00:00',
+    def __init__(self, grid: Grid=None, start_time: str='1970-01-01T00:00',
     end_time: str='2030-12-31T23:59', name: str='AnonymousModelRun',
     dry_run: bool=False):
         self.name = copy(name)
         self._grid = copy(grid)
-        self._grid.exported_to = [None]
         self._time = pd.date_range(start_time, end_time, freq='H')
         self._global_dry_run = dry_run
         self._dry_run = False  # Set by methods
@@ -272,6 +272,14 @@ class ModelRun:
         self.boundary_to_spectra(dry_run=dry_run, write_cache=write_cache, **kwargs)
         self.spectra_to_waveseries(dry_run=dry_run, write_cache=write_cache, freq=freq, **kwargs)
 
+
+    def set_spectral_grid(self, freq0: float=0.04118, nfreq: int=32, ndir: int=36, finc: float=1.1, dirshift: float=0.):
+        """Sets spectral grid for model run. Will be used to write input files."""
+        freq = np.array([freq0*finc**n for n in np.linspace(0,nfreq-1,nfreq)])
+        dirs = np.linspace(0,360,ndir+1)[0:-1]+dirshift
+        self._spectral_grid = SpectralGrid(name='spectral_grid', freq=freq, dirs=dirs)
+        
+
     def dry_run(self):
         """Checks if method or global ModelRun dryrun is True.
         """
@@ -309,6 +317,44 @@ class ModelRun:
             return self._waveseries
         else:
             return None
+
+    def topo(self) -> Grid:
+        """Returns the raw topography object if exists."""
+        if hasattr(self.grid(), '_raw'):
+            return self.grid().raw()
+        else:
+            return None
+        
+    def spectral_grid(self) -> Boundary:
+        """Returns the spectral grid object if exists."""
+        if hasattr(self, '_spectral_grid'):
+            return self._spectral_grid
+        else:
+            return None
+
+    def dict_of_objects(self) -> dict[str: ModelRun, str: Grid, str: Forcing, str: Boundary, str: Spectra]:
+        return {'ModelRun': self, 'Grid': self.grid(), 'Topo': self.topo(), 'Forcing': self.forcing(),
+                'Boundary': self.boundary(), 'Spectra': self.spectra(), 'WaveSeries': self.waveseries(),
+                'SpectralGrid': self.spectral_grid()}
+
+    def list_of_objects(self) -> list[ModelRun, Grid, Forcing, Boundary, Spectra]:
+        """[ModelRun, Boundary] etc."""
+        return [x for x in list(self.dict_of_objects().values()) if x is not None]
+
+    def list_of_object_strings(self) -> list[str]:
+        """['ModelRun', 'Boundary'] etc."""
+        return list(self.dict_of_objects().keys())
+
+    def dict_of_object_names(self) -> dict[str: str]:
+        """ {'Boundary': 'NORA3'} etc."""
+        d = {}
+        for a,b in self.dict_of_objects().items():
+            if b is None:
+                d[a] = None
+            else:
+                d[a] = b.name
+        return d
+
 
     def time(self, crop: bool=False):
         """Returns times of ModelRun
@@ -352,4 +398,19 @@ class ModelRun:
         return None
     
     def _get_waveseries_reader(self) -> WaveSeriesReader:
+        return None
+    
+    def _get_boundary_writer(self) -> BoundaryWriter:
+        return None
+
+    def _get_forcing_writer(self) -> ForcingWriter:
+        return None
+
+    def _get_spectral_writer(self) -> SpectralWriter:
+        return None
+
+    def _get_waveseries_writer(self) -> WaveSeriesWriter:
+        return None
+
+    def _get_grid_writer(self) -> GridWriter:
         return None
