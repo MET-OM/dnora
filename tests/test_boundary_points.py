@@ -1,6 +1,6 @@
 import unittest
 from dnora.grd import Grid
-from dnora.grd.mask import EdgesAsBoundary
+from dnora.grd.mask import Edges
 from dnora.aux_funcs import identify_boundary_edges, create_ordered_boundary_list, get_coords_for_boundary_edges, create_swan_segment_coords
 import numpy as np
 from copy import copy
@@ -9,7 +9,7 @@ class IdentifyBnd(unittest.TestCase):
 	def test_all_edges(self):
 		grid = Grid(lon=(0,1), lat=(0,1))
 		grid.set_spacing(nx=4, ny =4)
-		grid.set_mask(EdgesAsBoundary(edges=['N','W','S','E']))
+		grid.set_boundary_points(Edges(edges=['N','W','S','E']))
 
 		self.assertEqual(set(identify_boundary_edges(grid.boundary_mask())),set(['N','W','S','E']))
 
@@ -23,7 +23,7 @@ class IdentifyBnd(unittest.TestCase):
 			incomplete_list = copy(full_list)
 			incomplete_list.remove(not_this)
 
-			grid.set_mask(EdgesAsBoundary(edges=incomplete_list))
+			grid.set_boundary_points(Edges(edges=incomplete_list))
 			self.assertEqual(set(identify_boundary_edges(grid.boundary_mask())),set(incomplete_list))
 
 class OrderBnd(unittest.TestCase):
@@ -142,7 +142,7 @@ class FullPipeline(unittest.TestCase):
 		grid = Grid(lon=(0,1), lat=(2,3))
 		grid.set_spacing(nx=4, ny =5)
 
-		grid.set_mask(EdgesAsBoundary(edges=['N']))
+		grid.set_boundary_points(Edges(edges=['N']))
 		lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([0,1])), True)
 		self.assertEqual(np.array_equal(lats,np.array([3,3])), True)
@@ -151,7 +151,7 @@ class FullPipeline(unittest.TestCase):
 		grid = Grid(lon=(0,1), lat=(2,3))
 		grid.set_spacing(nx=4, ny =5)
 
-		grid.set_mask(EdgesAsBoundary(edges=['N','W']))
+		grid.set_boundary_points(Edges(edges=['N','W']))
 		lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([0,0,1])), True)
 		self.assertEqual(np.array_equal(lats,np.array([2,3,3])), True)
@@ -160,7 +160,7 @@ class FullPipeline(unittest.TestCase):
 		grid = Grid(lon=(0,1), lat=(2,3))
 		grid.set_spacing(nx=4, ny =5)
 
-		grid.set_mask(EdgesAsBoundary(edges=['N','W','E']))
+		grid.set_boundary_points(Edges(edges=['N','W','E']))
 		lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([0,0,1,1])), True)
 		self.assertEqual(np.array_equal(lats,np.array([2,3,3,2])), True)
@@ -176,7 +176,7 @@ class FullPipeline(unittest.TestCase):
 	def test_invalid_edges(self):
 		grid = Grid(lon=(0,1), lat=(2,3))
 		grid.set_spacing(nx=4, ny =5)
-		grid.set_mask(EdgesAsBoundary(edges=['W','E']))
+		grid.set_boundary_points(Edges(edges=['W','E']))
 
 		lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.edges('lon'), grid.edges('lat'))
 		self.assertEqual(np.array_equal(lons,np.array([])), True)
