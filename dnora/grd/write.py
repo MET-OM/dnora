@@ -29,7 +29,7 @@ class GridWriter(ABC):
         return True
 
     @abstractmethod
-    def __call__(self, grid: Grid, filename: str, folder: str) -> List:
+    def __call__(self, grid: Grid, filename: str, folder: str) -> list:
         return output_files
 
 class Null(GridWriter):
@@ -38,6 +38,17 @@ class Null(GridWriter):
 
     def __call__(self, grid: Grid, filename: str):
         return ''
+
+class DnoraNc(GridWriter):
+    def _extension(self) -> str:
+        return 'nc'
+
+    def __call__(self, dict_of_objects: dict, file_object) -> tuple[str, str]:
+        output_file = file_object.get_filepath()
+        dict_of_objects['Grid'].ds().to_netcdf(output_file)
+        print(output_file)
+        return output_file
+
 
 class BoundaryPoints(GridWriter):
     """Writes boundary points from unsutructured grid."""
@@ -48,7 +59,7 @@ class BoundaryPoints(GridWriter):
     def _extension(self):
         return 'txt'
 
-    def __call__(self, dict_of_objects: dict, file_object) -> List[str]:
+    def __call__(self, dict_of_objects: dict, file_object) -> list[str]:
         output_file = file_object.get_filepath()
         grid = dict_of_objects['Grid']
 

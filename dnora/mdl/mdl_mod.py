@@ -5,27 +5,35 @@ import numpy as np
 from skeletons import PointSkeleton
 # Import objects
 from ..grd.grd_mod import Grid
+from .. import grd
+from ..grd.write import GridWriter
 
-
+from ..file_module import FileNames
 # Import abstract classes and needed instances of them
 from ..wnd import Forcing
 from ..wnd.read import ForcingReader
+from ..wnd.write import ForcingWriter
 from .. import wnd
 
 from ..bnd import Boundary
 from ..bnd.read import BoundaryReader
+from ..bnd.write import BoundaryWriter
 from ..bnd.pick import PointPicker
 from .. import bnd
 
 
 from ..spc import Spectra
 from ..spc.read import SpectralReader
+from ..spc.write import SpectralWriter
 from .. import spc
 
 from ..wsr import WaveSeries
 from ..wsr.read import WaveSeriesReader, SpectraToWaveSeries
+from ..wsr.write import WaveSeriesWriter
 from .. import wsr
 
+from ..run import ModelExecuter
+from ..inp.inp import InputFileWriter
 from ..spectral_grid import SpectralGrid
 from skeletons.datavar_factory import add_datavar
 # Import default values and aux_funcsiliry functions
@@ -70,10 +78,12 @@ class ModelRun:
         if name is None:
             raise ValueError('Provide either a name or a ForcingReader that will then define the name!')
 
+        msg.header(forcing_reader, "Importing wind forcing...")
+
         if not self.dry_run():
             time, u, v, lon, lat, x, y, attributes = forcing_reader(self.grid(), self.start_time(), self.end_time(), **kwargs)
             
-            self._forcing = Forcing(lon=lon, lat=lat, x=x, y=y, time=time)
+            self._forcing = Forcing(lon=lon, lat=lat, x=x, y=y, time=time, name=name)
             x = x or lon
             y = y or lat
             self.forcing().set_spacing(nx=len(x), ny=len(y))
@@ -111,7 +121,13 @@ class ModelRun:
         if point_picker is None:
             raise Exception('Define a PointPicker!')
 
+        name = name or boundary_reader.name()
+        boundary_reader.set_source(source)
 
+        if name is None:
+            raise ValueError('Provide either a name or a BoundaryReader that will then define the name!')
+
+      
         msg.header(boundary_reader, "Reading coordinates of spectra...")
         lon_all, lat_all, x_all, y_all = boundary_reader.get_coordinates(self.grid(), self.start_time())
         all_points = PointSkeleton(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
@@ -130,8 +146,8 @@ class ModelRun:
         # Main reading happens here
         msg.header(boundary_reader, "Loading boundary spectra...")
 
-        time, freq, dirs, spec, lon, lat, x, y, metadata = boundary_reader(self.grid(), self.start_time(), self.end_time(), inds)
-        self._boundary = Boundary(x=x, y=y, lon=lon, lat=lat, time=time, freq=freq, dirs=dirs)
+        time, freq, dirs, spec, lon, lat, x, y, metadata = boundary_reader(self.grid(), self.start_time(), self.end_time(), inds, **kwargs)
+        self._boundary = Boundary(x=x, y=y, lon=lon, lat=lat, time=time, freq=freq, dirs=dirs, name=name)
 
         self.boundary().set_spec(spec)
         self.boundary().set_metadata(metadata)
@@ -171,6 +187,12 @@ class ModelRun:
         if point_picker is None:
             raise Exception('Define a PointPicker!')
 
+        name = name or spectral_reader.name()
+        spectral_reader.set_source(source)
+
+        if name is None:
+            raise ValueError('Provide either a name or a SpectralReader that will then define the name!')
+
         msg.header(spectral_reader, "Reading coordinates of spectra...")
         lon_all, lat_all, x_all, y_all = spectral_reader.get_coordinates(self.grid(), self.start_time())
         all_points = PointSkeleton(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
@@ -184,9 +206,9 @@ class ModelRun:
         inds = point_picker(self.grid(), all_points, selected_points=boundary_points, **kwargs)
 
         msg.header(spectral_reader, "Loading omnidirectional spectra...")
-        time, freq, spec, mdir, spr, lon, lat, x, y, metadata = spectral_reader(self.grid(), self.start_time(), self.end_time(), inds)
+        time, freq, spec, mdir, spr, lon, lat, x, y, metadata = spectral_reader(self.grid(), self.start_time(), self.end_time(), inds, **kwargs)
 
-        self._spectra = Spectra(x=x, y=y, lon=lon, lat=lat, time=time, freq=freq)
+        self._spectra = Spectra(x=x, y=y, lon=lon, lat=lat, time=time, freq=freq, name=name)
 
         self.spectra().set_spec(spec)
         self.spectra().set_mdir(mdir)
@@ -203,6 +225,23 @@ class ModelRun:
                         point_picker: PointPicker=None, name: str=None,
                         dry_run: bool=False, source: str='remote',
                        **kwargs):
+
+
+        self._dry_run = dry_run
+        waveseries_reader = waveseries_reader or self._get_waveseries_reader()
+        point_picker = point_picker or self._get_point_picker()
+
+        # This is to allow importing from cache using only a name
+        if waveseries_reader is None:
+            raise Exception('Define a WaveSeriesReader!')
+        if point_picker is None:
+            raise Exception('Define a PointPicker!')
+
+        name = name or waveseries_reader.name()
+        waveseries_reader.set_source(source)
+
+        if name is None:
+            raise ValueError('Provide either a name or a WaveSeriesReader that will then define the name!')
 
         msg.header(waveseries_reader, "Reading coordinates of WaveSeries...")
         lon_all, lat_all, x_all, y_all = waveseries_reader.get_coordinates(self.grid(), self.start_time())
@@ -278,7 +317,243 @@ class ModelRun:
         freq = np.array([freq0*finc**n for n in np.linspace(0,nfreq-1,nfreq)])
         dirs = np.linspace(0,360,ndir+1)[0:-1]+dirshift
         self._spectral_grid = SpectralGrid(name='spectral_grid', freq=freq, dirs=dirs)
-        
+
+    def export_grid(self, grid_writer: GridWriter=None,
+                    filename: str=None, folder: str=None, dateformat: str=None,
+                    format: str=None, dry_run=False) -> None:
+        """Writes the grid data in the Grid-object to an external source,
+        e.g. a file."""
+        self._dry_run = dry_run
+        if len(self.grid().topo())==0:
+            msg.warning('Grid not meshed so nothing to export!')
+            return
+
+        # Try to use defaul grid writer if not provided
+        self._grid_writer = grid_writer or self._get_grid_writer()
+        if self._grid_writer is None:
+            raise Exception('Define a GridWriter!')
+
+        msg.header(self._grid_writer, f"Writing grid topography from {self.grid().name}")
+
+        output_files = self._export_object('Grid',filename, folder, dateformat,
+                            writer_function=self._grid_writer, format=format)
+
+    def export_boundary(self, boundary_writer: BoundaryWriter=None,
+                        filename: str=None, folder: str=None,
+                        dateformat: str=None, format: str=None, dry_run=False) -> None:
+        """Writes the spectra in the Boundary-object to an external source, e.g.
+        a file."""
+        self._dry_run = dry_run
+        if self.boundary() is None and not self.dry_run(dry_run):
+            raise Exception('Import boundary before exporting!')
+
+        self._boundary_writer = boundary_writer or self._get_boundary_writer()
+        if self._boundary_writer is None:
+            raise Exception('Define a BoundaryWriter!')
+
+        if self.boundary() is None:
+            msg.header(self._boundary_writer, f"Writing boundary spectra from DryRunBoundary")
+        else:
+            msg.header(self._boundary_writer, f"Writing boundary spectra from {self.boundary().name}")
+
+        if not self.dry_run():
+            self.boundary()._set_convention(self._boundary_writer.convention())
+
+        __ = self._export_object('Boundary', filename, folder, dateformat,
+                            writer_function=self._boundary_writer, format=format)
+
+    def export_spectra(self, spectral_writer: SpectralWriter=None,
+                        filename: str=None, folder: str=None,
+                        dateformat: str=None, format: str=None, dry_run=False) -> None:
+        """Writes the spectra in the Spectra-object to an external source, e.g.
+        a file."""
+        self._dry_run = dry_run
+        if self.spectra() is None and not self.dry_run():
+            raise Exception('Import spectra before exporting!')
+
+        self._spectral_writer = spectral_writer or self._get_spectral_writer()
+        if self._spectral_writer is None:
+            raise Exception('Define a SpectralWriter!')
+
+        if self.spectra() is None:
+            msg.header(self._spectral_writer, f"Writing omnidirectional spectra from DryRunSpectra")
+        else:
+            msg.header(self._spectral_writer, f"Writing omnidirectional spectra from {self.spectra().name}")
+
+        if not self.dry_run():
+            self.spectra()._set_convention(self._spectral_writer.convention())
+
+        # Replace #Spectra etc and add file extension
+        __ = self._export_object('Spectra', filename, folder, dateformat,
+                            writer_function=self._spectral_writer, format=format)
+
+    def export_waveseries(self, waveseries_writer: WaveSeriesWriter=None,
+                        filename: str=None, folder: str=None,
+                        dateformat: str=None, format: str=None, dry_run=False) -> None:
+        """Writes the data of the WaveSeries-object to an external source, e.g.
+        a file."""
+        self._dry_run = dry_run
+        if self.waveseries() is None and not self.dry_run():
+            raise Exception('Import waveseries data before exporting!')
+
+        self._waveseries_writer = waveseries_writer or self._get_waveseries_writer()
+        if self._waveseries_writer is None:
+            raise Exception('Define a WaveSeriesWriter!')
+
+        if self.waveseries() is None:
+            msg.header(self._waveseries_writer, f"Writing wave series data from DryRunSpectra")
+        else:
+            msg.header(self._waveseries_writer, f"Writing wave series data from {self.waveseries().name}")
+
+        # Replace #Spectra etc and add file extension
+        __ = self._export_object('WaveSeries', filename, folder, dateformat,
+                            writer_function=self._waveseries_writer, format=format)
+
+    def export_forcing(self, forcing_writer: ForcingWriter=None,
+                        filename: str=None, folder: str=None,
+                         dateformat: str=None, format: str=None, dry_run=False) -> None:
+        """Writes the forcing data in the Forcing-object to an external source,
+        e.g. a file."""
+        self._dry_run = dry_run
+        if self.forcing() is None and not self.dry_run():
+            raise Exception('Import forcing before exporting!')
+
+        self._forcing_writer = forcing_writer or self._get_forcing_writer()
+
+        if self._forcing_writer is None:
+            raise Exception('Define a ForcingWriter!')
+
+        if self.forcing() is not None:
+            msg.header(self._forcing_writer, f"Writing wind forcing from {self.forcing().name}")
+        else:
+            msg.header(self._forcing_writer, f"Writing wind forcing from DryRunForcing")
+
+
+        __ = self._export_object('Forcing', filename, folder, dateformat,
+                            writer_function=self._forcing_writer, format=format)
+
+    def write_input_file(self, input_file_writer: InputFileWriter=None,
+                        filename=None, folder=None, dateformat=None,
+                        grid_path: str=None, forcing_path: str=None,
+                        boundary_path: str=None, start_time: str=None,
+                        end_time: str=None, dry_run=False) -> None:
+        """Writes the grid data in the Grid-object to an external source,
+        e.g. a file."""
+        self._dry_run = dry_run
+        self._input_file_writer = input_file_writer or self._get_input_file_writer()
+        if self._input_file_writer is None:
+            raise Exception('Define an InputFileWriter!')
+
+
+        msg.header(self._input_file_writer, "Writing model input file...")
+
+        # Controls generation of file names using the proper defaults etc.
+        file_object = FileNames(dict_of_objects=self.dict_of_objects(),
+                                filename=filename,
+                                folder=folder,
+                                dateformat=dateformat,
+                                extension=self._input_file_writer._extension(),
+                                obj_type='input_file',
+                                edge_object='Grid')
+
+        file_object.create_folder()
+
+
+        if self.dry_run():
+            msg.info('Dry run! No files will be written.')
+            output_files = [file_object.get_filepath()]
+        else:
+            # Write the grid using the InputFileWriter object
+            output_files = self._input_file_writer(dict_of_objects=self.dict_of_objects(),
+                            filename=file_object.get_filepath())
+            if type(output_files) is not list:
+                output_files = [output_files]
+
+
+        if self._input_file_writer._im_silent() or self.dry_run():
+            for file in output_files:
+                msg.to_file(file)
+
+        return
+
+    def run_model(self, model_executer: ModelExecuter=None,
+                input_file: str=None, folder: str=None,
+                dateformat: str=None, input_file_extension: str=None,
+                dry_run: bool=False, mat_to_nc: bool=False) -> None:
+        """Run the model."""
+        self._dry_run = dry_run
+        self._model_executer = model_executer or self._get_model_executer()
+        if self._model_executer is None:
+            raise Exception('Define a ModelExecuter!')
+
+        # We always assume that the model is located in the folder the input
+        # file was written to
+
+        # Option 1) Use user provided
+        # Option 2) Use knowledge of where has been exported
+        # Option 3) Use default values to guess where is has previously been exported
+        exported_path = Path(self.exported_to('input_file')[0])
+        primary_file = input_file or exported_path.name
+        primary_folder = folder #or str(exported_path.parent)
+
+        if hasattr(self, '_input_file_writer'):
+            extension = input_file_extension or self._input_file_writer._extension()
+        else:
+            extension = input_file_extension or 'swn'
+
+        file_object = FileNames(dict_of_objects=self.dict_of_objects(),
+                                filename=primary_file,
+                                folder=primary_folder,
+                                dateformat=dateformat,
+                                extension=extension,
+                                obj_type='model_executer',
+                                edge_object='Grid')
+
+
+        msg.header(self._model_executer, "Running model...")
+        msg.plain(f"Using input file: {file_object.get_filepath()}")
+        if not self.dry_run():
+            self._model_executer(input_file=file_object.filename(), model_folder=file_object.folder())
+        else:
+            msg.info('Dry run! Model will not run.')
+        if mat_to_nc:
+            input_file = f'{file_object.folder()}/{self.grid().name}.mat'
+            output_file = f'{file_object.folder()}/{self.grid().name}.nc'
+            convert_swash_mat_to_netcdf(input_file=input_file,output_file=output_file, lon=self.grid().lon_edges(), lat=self.grid().lat_edges(), dt=1)
+
+    def _export_object(self, obj_type, filename: str, folder: str, dateformat: str,
+                    writer_function: WritingFunction, format: str) -> list[str]:
+
+        # Controls generation of file names using the proper defaults etc.
+        format = format or self._get_default_format()
+        file_object = FileNames(format=format,
+                                obj_type=obj_type,
+                                dict_of_objects=self.dict_of_objects(),
+                                filename=filename,
+                                folder=folder,
+                                dateformat=dateformat,
+                                extension=writer_function._extension())
+        if self.dry_run():
+            msg.info('Dry run! No files will be written.')
+            output_files = [file_object.get_filepath()]
+        else:
+            # Write the object using the WriterFunction
+            file_object.create_folder()
+            output_files = writer_function(self.dict_of_objects(), file_object)
+            if type(output_files) is not list:
+                output_files = [output_files]
+
+        # Store name and location where file was written
+        self.dict_of_objects().get(obj_type).exported_to = output_files
+        # for file in output_files:
+        #     self._exported_to[obj_type].append(file)
+
+        if writer_function._im_silent() or self.dry_run():
+            for file in output_files:
+                msg.to_file(file)
+
+        return output_files
+
 
     def dry_run(self):
         """Checks if method or global ModelRun dryrun is True.
@@ -401,16 +676,16 @@ class ModelRun:
         return None
     
     def _get_boundary_writer(self) -> BoundaryWriter:
-        return None
+        return bnd.write.DnoraNc()
 
     def _get_forcing_writer(self) -> ForcingWriter:
-        return None
+        return wnd.write.DnoraNc()
 
     def _get_spectral_writer(self) -> SpectralWriter:
-        return None
+        return spc.write.DnoraNc()
 
     def _get_waveseries_writer(self) -> WaveSeriesWriter:
-        return None
+        return wsr.write.DnoraNc()
 
     def _get_grid_writer(self) -> GridWriter:
-        return None
+        return grd.write.DnoraNc()
