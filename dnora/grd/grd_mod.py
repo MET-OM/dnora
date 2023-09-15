@@ -166,6 +166,11 @@ class Topography:
 @add_mask(name='boundary', coords='grid', default_value=0)
 @add_mask(name='sea', coords='grid', default_value=1, opposite_name='land')
 class Grid(GriddedSkeleton, Topography):
+    def __init__(self, x=None, y=None, lon=None, lat=None, name='LonelyGrid', **kwargs):
+        if np.all([a is None for a in [x,y,lon,lat]]):
+            x, y = 0, 0
+        super().__init__(x, y, lon, lat, name, **kwargs)
+
     def boundary_nx(self) -> int:
         """Return approximate number of grid points in the longitude direction
         """
@@ -191,7 +196,8 @@ class Grid(GriddedSkeleton, Topography):
 @add_mask(name='boundary', coords='grid', default_value=0)
 @add_mask(name='sea', coords='grid', default_value=1, opposite_name='land')
 class UnstrGrid(PointSkeleton, Topography):
-    pass
+    def __init__(self, x=0, y=0, lon=None, lat=None, name='LonelyGrid', **kwargs):
+        super().__init__(x, y, lon, lat, name, **kwargs)
 
 class TriGrid(UnstrGrid):
     @classmethod

@@ -652,7 +652,7 @@ class WW3(InputFileWriter):
                  filename: str):
 
         grid = dict_of_objects.get('Grid') 
-        spectral_grid = dict_of_objects.get('SpectralGrid') or dict_of_objects.get('Boundary')
+        spectral_grid = dict_of_objects.get('SpectralGrid')
         if grid is not None:
             if spectral_grid is not None:
                 freq1 = spectral_grid.freq()[0]

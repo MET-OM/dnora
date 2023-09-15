@@ -39,6 +39,8 @@ from skeletons.datavar_factory import add_datavar
 # Import default values and aux_funcsiliry functions
 from .. import msg
 #from ..cacher.cache_decorator import cached_reader
+from ..cacher.cache_decorator import cached_reader
+from ..converters import convert_swash_mat_to_netcdf
 
 class ModelRun:
     def __init__(self, grid: Grid=None, start_time: str='1970-01-01T00:00',
@@ -50,7 +52,7 @@ class ModelRun:
         self._global_dry_run = dry_run
         self._dry_run = False  # Set by methods
 
-    #@cached_reader('Forcing', wnd.read.DnoraNc)
+    @cached_reader('Forcing', wnd.read.DnoraNc)
     def import_forcing(self, forcing_reader: ForcingReader=None,
                         name: str=None, dry_run: bool=False,
                         source: str='remote',
@@ -95,7 +97,7 @@ class ModelRun:
         else:
             msg.info('Dry run! No forcing will be imported.')
 
-
+    @cached_reader('Boundary', bnd.read.DnoraNc)
     def import_boundary(self, boundary_reader: BoundaryReader=None,
                         point_picker: PointPicker=None, name: str=None,
                         dry_run: bool=False, source: str='remote',
@@ -161,7 +163,7 @@ class ModelRun:
         return
 
 
-
+    @cached_reader('Spectra', spc.read.DnoraNc)
     def import_spectra(self, spectral_reader: SpectralReader=None,
                         point_picker: PointPicker=None, name: str=None,
                         dry_run: bool=False, source: str='remote',
@@ -220,7 +222,7 @@ class ModelRun:
         self.spectra()._convention = spectral_reader.convention()
         self.spectra().set_metadata({'spectral_convention': self.spectra().convention().value}, append=True)
    
-
+    @cached_reader('WaveSeries', wsr.read.DnoraNc)
     def import_waveseries(self, waveseries_reader: WaveSeriesReader=None,
                         point_picker: PointPicker=None, name: str=None,
                         dry_run: bool=False, source: str='remote',
@@ -267,6 +269,22 @@ class ModelRun:
             self.waveseries().set_metadata({'name': wp.name(), 'unit': f'{wp.unit()}', 'standard_name': wp.standard_name()}, data_array_name=wp.name())
                        
         self.waveseries().set_metadata(metadata) # Global attributes
+
+    def cache_boundary(self):
+        """Writes existing data to cached files."""
+        self.export_boundary(boundary_writer=bnd.write.DnoraNc(), format='Cache')
+
+    def cache_spectra(self):
+        """Writes existing data to cached files."""
+        self.export_spectra(spectral_writer=spc.write.DnoraNc(), format='Cache')
+
+    def cache_forcing(self):
+        """Writes existing data to cached files."""
+        self.export_forcing(forcing_writer=wnd.write.DnoraNc(), format='Cache')
+
+    def cache_waveseries(self):
+        """Writes existing data to cached files."""
+        self.export_waveseries(waveseries_writer=wsr.write.DnoraNc(), format='Cache')
 
     def boundary_to_spectra(self, dry_run: bool=False, name :str=None,
                             write_cache=False, **kwargs):
@@ -621,6 +639,10 @@ class ModelRun:
         else:
             return None
 
+    def input_file(self) -> None:
+        """Only defined to have method for all objects"""
+        return None
+
     def dict_of_objects(self) -> dict[str: ModelRun, str: Grid, str: Forcing, str: Boundary, str: Spectra]:
         return {'ModelRun': self, 'Grid': self.grid(), 'Topo': self.topo(), 'Forcing': self.forcing(),
                 'Boundary': self.boundary(), 'Spectra': self.spectra(), 'WaveSeries': self.waveseries(),
@@ -644,7 +666,21 @@ class ModelRun:
                 d[a] = b.name
         return d
 
+    def exported_to(self, object: str) -> str:
+        """Returns the path the object (e.g. grid) was exported to.
 
+        If object has not been exported, the default filename is returned as
+        a best guess
+        """
+
+        if eval(f'self.{object}()') is None:
+            return ['']
+
+        if self._exported_to.get(object) is not None:
+            return self._exported_to[object]
+
+        return ['']
+    
     def time(self, crop: bool=False):
         """Returns times of ModelRun
         crop = True: Give the period that is covered by all objects (Forcing etc.)"""

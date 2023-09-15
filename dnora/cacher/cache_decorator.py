@@ -35,7 +35,7 @@ def cached_reader(dnora_obj, reader_function):
                 # This is not optimal, but seems to work
                 times =  mrun.dict_of_objects().get(dnora_obj).time()
                 dt =times[1]-times[0]
-                wanted_times = pd.date_range(start=mrun.start_time, end=mrun.end_time, freq=dt)
+                wanted_times = pd.date_range(start=mrun.start_time(), end=mrun.end_time(), freq=dt)
                 wanted_times.isin(times)
 
                 if np.all(wanted_times.isin(times)):
@@ -73,7 +73,7 @@ def cached_reader(dnora_obj, reader_function):
 
             # FileObject takes names from the dict of objects, so create one here
 
-            exec(f'mrun._{dnora_obj.lower()} = {dnora_obj}(grid=mrun.grid(), name=name)')
+            exec(f"mrun._{dnora_obj.lower()} = {dnora_obj}(name=name)")
             file_object = FileNames(format='Cache',
                                     obj_type=dnora_obj,
                                     extension='nc',

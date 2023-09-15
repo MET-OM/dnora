@@ -2,7 +2,8 @@ from __future__ import annotations # For TYPE_CHECKING
 from copy import copy
 
 from typing import List
-
+import numpy as np
+import pandas as pd
 # Import objects
 from .conventions import SpectralConvention
 from .process import boundary_processor_for_convention_change
@@ -24,6 +25,10 @@ from skeletons.datavar_factory import add_datavar
 @add_frequency(grid_coord=False)
 @add_time(grid_coord=True)
 class Boundary(PointSkeleton):
+    def __init__(self, x=None, y=None, lon=None, lat=None, time=pd.date_range('1990-01-01 00:00', '1990-01-01 00:00', freq='H'), freq=np.linspace(0.1,1,10), dirs=np.linspace(0,350,36), name='LonelyBoundary', **kwargs):
+        if np.all([a is None for a in [x,y,lon,lat]]):
+            x, y = 0, 0
+        super().__init__(x=x, y=y, lon=lon, lat=lat, name=name, time=time, freq=freq, dirs=dirs, **kwargs)
 
     def process_boundary(self, boundary_processors: List[BoundaryProcessor]=None):
         """Process all the individual spectra of the boundary object.
