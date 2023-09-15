@@ -20,7 +20,7 @@ class BoundaryReader(ABC):
         These are needed fo the PointPicker object to choose the relevant
         point to actually read in.
 
-        Provide the result as two equally long nump arrays.
+        Provide the result as for equally long nump arrays (None for missing values).
         """
         return lon, lat, x, y
 
@@ -219,16 +219,6 @@ class WW3Nc(BoundaryReader):
         import dask
         with dask.config.set(**{'array.slicing.split_large_chunks': True}):
             with xr.open_mfdataset(self._filenames(start_time, end_time, self._folder), preprocess=_crop) as ds:
-        # bnd_list = []
-        # for file in self._filenames(start_time, end_time, self._folder):
-        #     try:
-        #         bnd_list.append(xr.open_dataset(file).sel(time = slice(start_time, end_time), station = (inds+1)))
-        #         msg.from_file(file)
-        #     except FileNotFoundError:
-        #         msg.plain(f'Cannot open file {file}!')
-        #
-        # msg.plain('Merging xarrays...')
-        # bnd = xr.concat(bnd_list, dim="time")
 
                 time = ds.time.values
                 freq = ds.frequency.values
@@ -240,77 +230,77 @@ class WW3Nc(BoundaryReader):
                 return  time, freq, dirs, spec, lon, lat, None, None, ds.attrs
 
 
-class File_WW3Nc(BoundaryReader):
-    def __init__(self, folder: str='', filename: str='ww3_T0', dateftm: str='%Y%m%dT%H%M', stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0) -> None:
-        self.stride = copy(stride)
-        self.hours_per_file = copy(hours_per_file)
-        self.lead_time = copy(lead_time)
-        self.last_file = copy(last_file)
+# class File_WW3Nc(BoundaryReader):
+#     def __init__(self, folder: str='', filename: str='ww3_T0', dateftm: str='%Y%m%dT%H%M', stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0) -> None:
+#         self.stride = copy(stride)
+#         self.hours_per_file = copy(hours_per_file)
+#         self.lead_time = copy(lead_time)
+#         self.last_file = copy(last_file)
 
-        if (not folder == '') and (not folder[-1] == '/'):
-            self.folder = folder + '/'
-        else:
-            self.folder = copy(folder)
+#         if (not folder == '') and (not folder[-1] == '/'):
+#             self.folder = folder + '/'
+#         else:
+#             self.folder = copy(folder)
 
-        self.filestring = copy(filename)
-        self.datestring = copy(dateftm)
+#         self.filestring = copy(filename)
+#         self.datestring = copy(dateftm)
 
-        return
+#         return
 
-    def convention(self) -> SpectralConvention:
-        return SpectralConvention.WW3
+#     def convention(self) -> SpectralConvention:
+#         return SpectralConvention.WW3
 
-    def get_coordinates(self, grid, start_time) -> Tuple:
-        """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
-        #day = pd.date_range(start_time, start_time,freq='D')
-        start_times, end_times, file_times = aux_funcs.create_time_stamps(start_time, start_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
-        filename = self.get_filename(file_times[0])
+#     def get_coordinates(self, grid, start_time) -> Tuple:
+#         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
+#         #day = pd.date_range(start_time, start_time,freq='D')
+#         start_times, end_times, file_times = aux_funcs.create_time_stamps(start_time, start_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
+#         filename = self.get_filename(file_times[0])
 
-        data = xr.open_dataset(filename).isel(time = [0])
+#         data = xr.open_dataset(filename).isel(time = [0])
 
-        lon_all = data.longitude.values[0]
-        lat_all = data.latitude.values[0]
+#         lon_all = data.longitude.values[0]
+#         lat_all = data.latitude.values[0]
 
-        return lon_all, lat_all
+#         return lon_all, lat_all
 
-    def __call__(self, grid, start_time, end_time, inds, **kwargs) -> Tuple:
-        """Reads in all boundary spectra between the given times and at for the given indeces"""
-        self.start_time = start_time
-        self.end_time = end_time
+#     def __call__(self, grid, start_time, end_time, inds, **kwargs) -> Tuple:
+#         """Reads in all boundary spectra between the given times and at for the given indeces"""
+#         self.start_time = start_time
+#         self.end_time = end_time
 
-        start_times, end_times, file_times = aux_funcs.create_time_stamps(start_time, end_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
+#         start_times, end_times, file_times = aux_funcs.create_time_stamps(start_time, end_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
 
-        msg.info(f"Getting boundary spectra from NORA3 from {self.start_time} to {self.end_time}")
-        bnd_list = []
-        for n in range(len(file_times)):
-            filename = self.get_filename(file_times[n])
-            msg.from_file(filename)
-            msg.plain(f"Reading boundary spectra: {start_times[n]}-{end_times[n]}")
+#         msg.info(f"Getting boundary spectra from NORA3 from {self.start_time} to {self.end_time}")
+#         bnd_list = []
+#         for n in range(len(file_times)):
+#             filename = self.get_filename(file_times[n])
+#             msg.from_file(filename)
+#             msg.plain(f"Reading boundary spectra: {start_times[n]}-{end_times[n]}")
 
-            bnd_list.append(xr.open_dataset(filename).sel(time = slice(start_times[n], end_times[n]), station = (inds+1)))
+#             bnd_list.append(xr.open_dataset(filename).sel(time = slice(start_times[n], end_times[n]), station = (inds+1)))
 
-        bnd=xr.concat(bnd_list, dim="time")
-
-
-        # for x in range(len(inds)):
-        #     for t in range(len(bnd.time.values)):
-        #         new_spec, new_dirs = WW3ToOcean()(bnd.efth.values[t,x,:,:],bnd.direction.values)
-        #         bnd.efth.values[t,x,:,:] = new_spec
-
-        time = bnd.time.values
-        freq = bnd.frequency.values
-        dirs = bnd.direction.values
-        spec = bnd.efth.values
-        lon = bnd.longitude.values[0,:]
-        lat = bnd.latitude.values[0,:]
-
-        source = f"ww3_ouput_spectra"
-
-        return  time, freq, dirs, spec, lon, lat, None, None, bnd.attrs
+#         bnd=xr.concat(bnd_list, dim="time")
 
 
-    def get_filename(self, time) -> str:
-        filename = self.folder + file_module.replace_times(self.filename,
-                                                        self.dateformat,
-                                                        [time]) + '.nc'
-        return filename
+#         # for x in range(len(inds)):
+#         #     for t in range(len(bnd.time.values)):
+#         #         new_spec, new_dirs = WW3ToOcean()(bnd.efth.values[t,x,:,:],bnd.direction.values)
+#         #         bnd.efth.values[t,x,:,:] = new_spec
+
+#         time = bnd.time.values
+#         freq = bnd.frequency.values
+#         dirs = bnd.direction.values
+#         spec = bnd.efth.values
+#         lon = bnd.longitude.values[0,:]
+#         lat = bnd.latitude.values[0,:]
+
+#         source = f"ww3_ouput_spectra"
+
+#         return  time, freq, dirs, spec, lon, lat, None, None, bnd.attrs
+
+
+#     def get_filename(self, time) -> str:
+#         filename = self.folder + file_module.replace_times(self.filename,
+#                                                         self.dateformat,
+#                                                         [time]) + '.nc'
+#         return filename

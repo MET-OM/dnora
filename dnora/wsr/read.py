@@ -69,9 +69,9 @@ class WaveSeriesReader(ABC):
         These are needed fo the PointPicker object to choose the relevant
         point to actually read in.
 
-        Provide the result as two equally long nump arrays.
+        Provide the result as four equally long nump arrays (None for missing values).
         """
-        return lon, lat
+        return lon, lat, x, y
 
     @abstractmethod
     def __call__(self, grid, start_time, end_time, inds, **kwargs) -> tuple:

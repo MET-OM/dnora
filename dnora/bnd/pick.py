@@ -3,45 +3,38 @@ from abc import ABC, abstractmethod
 from typing import Union
 from skeletons import PointSkeleton
 # Import objects
-from ..grd.grd_mod import Grid, UnstrGrid
+from ..grd.grd_mod import Grid, TriGrid
 
 # Import aux_funcsiliry functions
 from .. import msg
-from ..aux_funcs import min_distance, expand_area
+from ..aux_funcs import expand_area
 
 class PointPicker(ABC):
-    """PointPickers take in longitude and latitude values, and returns indeces
+    """PointPickers take in the grid, a PointSkeleton of all available points and a PointSkeleton of interest points and returns indeces
     of the chosen points."""
     def __init__(self):
         pass
 
     @abstractmethod
-    def __call__(self, grid: Union[Grid, UnstrGrid], all_points: UnstrGrid, **kwargs) -> np.ndarray:
+    def __call__(self, grid: Union[Grid, TriGrid], all_points: PointSkeleton, **kwargs) -> np.ndarray:
         return inds
 
 class TrivialPicker(PointPicker):
     """Choose all the points in the list."""
-    def __init__(self):
-        pass
-
-    def __call__(self, grid: Union[Grid, UnstrGrid],
-                    all_points: UnstrGrid, **kwargs) -> np.ndarray:
+    def __call__(self, grid: Union[Grid, TriGrid],
+                    all_points: PointSkeleton, **kwargs) -> np.ndarray:
         return all_points.inds()
 
 class NearestGridPoint(PointPicker):
     """Choose the nearest grid point to each boundary point in the grid.
     Set a maximum allowed distance using `max_dist` (in km) at instantiation time.
     """
-    def __init__(self, max_dist=None):
-        self.max_dist = max_dist
-        pass
-
-    def __call__(self, grid: Union[Grid, UnstrGrid],
-                    all_points: PointSkeleton, selected_points: PointSkeleton, **kwargs) -> np.ndarray:
+    def __call__(self, grid: Union[Grid, TriGrid],
+                    all_points: PointSkeleton, selected_points: PointSkeleton, max_dist: float=None, **kwargs) -> np.ndarray:
 
         if selected_points is None:
-            msg.plain('No boundary points provided. Returning empty list of indeces.')
-            return []
+            msg.plain('No interest points provided. Returning empty list of indeces.')
+            return np.array([])
         
         lon, lat = selected_points.lonlat()
         # Go through all points where we want output and find the nearest available point
@@ -50,7 +43,7 @@ class NearestGridPoint(PointPicker):
 
         for n, (x, y, ind) in enumerate(zip(lon, lat, ind_dict.get('inds'))):
             ms = f"Point {n}: lat: {y:10.7f}, lon: {x:10.7f} <<< ({all_points.lat()[ind]: .7f}, {all_points.lon()[ind]: .7f}). Distance: {ind_dict.get('dx')[n]:.1f} km"
-            if self.max_dist is None or ind_dict.get('dx')[n] <= self.max_dist:
+            if max_dist is None or ind_dict.get('dx')[n] <= max_dist:
                 msg.plain(ms)
                 inds.append(ind)
             else:
@@ -61,11 +54,11 @@ class NearestGridPoint(PointPicker):
 
 class Area(PointPicker):
     """Choose all the points within a certain area around the grid."""
-    def __call__(self, grid: Union[Grid, UnstrGrid],
+    def __call__(self, grid: Union[Grid, TriGrid],
                     all_points: PointSkeleton,
                     expansion_factor: float=1.5, **kwargs) -> np.ndarray:
 
-        if grid._empty_skeleton():
+        if grid._skeleton_empty():
             msg.info("Grid is empty, no no points can be found for the area covering the grid!")
             return np.array([])
 
