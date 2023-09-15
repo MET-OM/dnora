@@ -336,6 +336,9 @@ class ModelRun:
         crop = True: Give the period that is covered by all objects (Forcing etc.)"""
         return self.time(crop=crop)[-1]
 
+    def _get_default_format(self) -> str:
+        return 'ModelRun'
+
     def _get_forcing_reader(self) -> ForcingReader:
         return None
     

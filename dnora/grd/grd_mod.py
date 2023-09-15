@@ -13,9 +13,45 @@ from typing import Union
 from .. import aux_funcs
 from .process import GridProcessor
 from .mesh import Mesher, Interpolate
+import xarray as xr
+from ..aux_funcs import get_coordinates_from_ds
 
 
 class Topography:
+    @classmethod
+    def from_ds(cls, ds: xr.Dataset, topo_var_name: str='topo'):
+        lon, lat, x, y = get_coordinates_from_ds(ds)
+        grid = cls(lon=lon, lat=lat, x=x, y=y)
+        
+        if grid.is_gridded():
+            grid.set_spacing(nx=len(x), ny=len(y))
+            x = x or lon
+            y = y or lat
+        topo = ds.get(topo_var_name)
+        sea_mask = ds.get('sea_mask')
+        boundary_mask = ds.get('boundary_mask')
+
+        if topo is not None:
+            grid.set_topo(topo.values)
+
+        if sea_mask is not None:
+            grid.set_sea_mask(sea_mask.values)
+        
+        if boundary_mask is not None:
+            grid.set_boundary_mask(boundary_mask.values)
+
+        return grid
+
+    @classmethod
+    def from_netcdf(cls, filename: str):
+        ds = xr.open_dataset(filename)
+        grid = cls.from_ds(ds, topo_var_name='topo')
+        return grid
+
+    def export_grid(self, filename: str='dnora_grid') -> None:
+        """Exports grid to netcdf file"""
+        self.ds().to_netcdf(filename+'.nc')
+
     def import_topo(self, topo_reader: TopoReader) -> None:
         """Reads the raw bathymetrical data."""
 
@@ -43,6 +79,7 @@ class Topography:
 
         if zone_number is not None:
             self._raw.set_utm(zone_number, zone_letter)
+
         self.raw().set_topo(topo)
         self.raw().set_sea_mask(self.raw().topo()>0)
 

@@ -74,7 +74,9 @@ class ConstantTopo(TopoReader):
 
     def __call__(self, lon: tuple, lat: tuple, x: tuple, y: tuple) -> tuple:
         """Creates a trivial topography with all water points."""
-        topo = np.full((2,2,),self.depth)
+        lon =np.unique(lon)
+        lat =np.unique(lat)
+        topo = np.full((len(lat),len(lon)),self.depth)
         topo_lon = np.array(lon)
         topo_lat = np.array(lat)
 
