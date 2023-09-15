@@ -312,10 +312,24 @@ class ModelRun:
         self.spectra_to_waveseries(dry_run=dry_run, write_cache=write_cache, freq=freq, **kwargs)
 
 
-    def set_spectral_grid(self, freq0: float=0.04118, nfreq: int=32, ndir: int=36, finc: float=1.1, dirshift: float=0.):
+    def set_spectral_grid_from_boundary(self):
+        if self.boundary() is None:
+            msg.warning("No Boundary exists. Can't set spectral grid.")
+            return
+        self.set_spectral_grid(freq=self.boundary().freq(), dirs=self.boundary().dirs())
+
+    def set_spectral_grid_from_spectra(self, **kwargs):
+        if self.spectra() is None:
+            msg.warning("No Spectra exists. Can't set spectral grid.")
+            return
+        self.set_spectral_grid(freq=self.spectra().freq(), **kwargs)
+
+    def set_spectral_grid(self, freq: np.ndarray=None, dirs: np.ndarray=None, freq0: float=0.04118, nfreq: int=32, ndir: int=36, finc: float=1.1, dirshift: float=0.):
         """Sets spectral grid for model run. Will be used to write input files."""
-        freq = np.array([freq0*finc**n for n in np.linspace(0,nfreq-1,nfreq)])
-        dirs = np.linspace(0,360,ndir+1)[0:-1]+dirshift
+        if freq is None:
+            freq = np.array([freq0*finc**n for n in np.linspace(0,nfreq-1,nfreq)])
+        if dirs is None:
+            dirs = np.linspace(0,360,ndir+1)[0:-1]+dirshift
         self._spectral_grid = SpectralGrid(name='spectral_grid', freq=freq, dirs=dirs)
 
     def export_grid(self, grid_writer: GridWriter=None,
