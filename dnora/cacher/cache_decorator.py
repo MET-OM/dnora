@@ -2,6 +2,7 @@ from ..bnd import Boundary
 from ..wnd import Forcing
 from ..spc import Spectra
 from ..wsr import WaveSeries
+from ..wlv import WaterLevel
 from ..file_module import FileNames
 import glob, os
 from copy import copy
@@ -18,8 +19,8 @@ def cached_reader(dnora_obj, reader_function):
         def wrapper(*args, cache_name: str=None, read_cache: bool=False, write_cache: bool=False, patch: bool=False, **kwargs):
             def get_reader(args, kwargs):
                 reader = None
-                if kwargs.get(f'{dnora_obj}_reader') is not None:
-                    reader = kwargs.get(f'{dnora_obj}_reader')
+                if kwargs.get(f'{dnora_obj.lower()}_reader') is not None:
+                    reader = kwargs.get(f'{dnora_obj.lower()}_reader')
                 else:
                     new_args = []
                     for arg in args:
@@ -72,7 +73,6 @@ def cached_reader(dnora_obj, reader_function):
                     name = given_reader.name()
 
             # FileObject takes names from the dict of objects, so create one here
-
             exec(f"mrun._{dnora_obj.lower()} = {dnora_obj}(name=name)")
             file_object = FileNames(format='Cache',
                                     obj_type=dnora_obj,

@@ -2,9 +2,13 @@ from dnora import grd, wnd, bnd, spc, wsr, mdl, inp, run
 def test_model_one_point():
     grid = grd.Grid(lon=5, lat=60)
     model = mdl.ModelRun(grid=grid, dry_run=True)
+    
     model.import_boundary(bnd.read_metno.NORA3(), bnd.pick.Area())
     model.import_forcing(wnd.read_metno.NORA3())
     model.import_spectra(spc.read.BoundaryToSpectra(model.boundary()), point_picker=bnd.pick.TrivialPicker())
+    
+    
+
     model.import_waveseries(wsr.read.SpectraToWaveSeries(model.spectra()), point_picker=bnd.pick.TrivialPicker())
 
     model.export_boundary(bnd.write.SWAN())

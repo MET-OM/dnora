@@ -85,7 +85,7 @@ class BoundaryToSpectra(SpectralReader):
     """Integrates boundary spectra to omnidairectional spectra"""
     def __init__(self, boundary: Boundary) -> None:
         self._boundary = copy(boundary)
-        self._boundary._set_convention(SpectralConvention.OCEAN)
+        #self._boundary._set_convention(SpectralConvention.OCEAN)
 
     def convention(self):
         return convert_2d_to_1d(self._boundary._convention)

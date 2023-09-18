@@ -1,6 +1,7 @@
+from ..wlv.read import WaterLevelReader
 from .mdl_mod import ModelRun
 
-from .. import bnd, wnd, grd, inp, run, spc, wsr
+from .. import bnd, wnd, grd, inp, run, spc, wsr, wlv
 
 class SWAN(ModelRun):
     def _get_default_format(self):
@@ -144,6 +145,9 @@ class ERA5(ModelRun):
 
     def _get_forcing_reader(self):
         return wnd.read_ec.ERA5()
+
+    def _get_waterlevel_reader(self) -> WaterLevelReader:
+        return wlv.read_ec.GTSM_ERA5()
 
 class WAM4km(ModelRun):
     def _get_boundary_reader(self):

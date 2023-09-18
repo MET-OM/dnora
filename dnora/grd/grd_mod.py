@@ -12,11 +12,10 @@ from copy import copy
 from typing import Union
 from .. import aux_funcs
 from .process import GridProcessor
-from .mesh import Mesher, Interpolate
+from .mesh import Mesher, Interpolate, Trivial
 import xarray as xr
-from ..aux_funcs import get_coordinates_from_ds
-
-
+from ..aux_funcs import get_coordinates_from_ds, read_ww3_info
+from pathlib import Path
 class Topography:
     @classmethod
     def from_ds(cls, ds: xr.Dataset, topo_var_name: str='topo'):
@@ -47,6 +46,7 @@ class Topography:
         ds = xr.open_dataset(filename)
         grid = cls.from_ds(ds, topo_var_name='topo')
         return grid
+    
 
     def export_grid(self, filename: str='dnora_grid') -> None:
         """Exports grid to netcdf file"""
@@ -166,6 +166,27 @@ class Topography:
 @add_mask(name='boundary', coords='grid', default_value=0)
 @add_mask(name='sea', coords='grid', default_value=1, opposite_name='land')
 class Grid(GriddedSkeleton, Topography):
+    @classmethod
+    def from_ww3_grid(cls, gridname: str, folder: str=''):
+        """Recreate a WW3 grid object based on the _info, _bathy and _mapsta files"""
+
+        filename = Path(folder) / f"{gridname}_info.txt"
+
+        print(filename)
+        lon_min, lon_max, lat_min, lat_max, dlon, dlat, NX, NY = read_ww3_info(filename)
+
+        filename = Path(folder) / f'{gridname}_bathy.txt'
+        topo=np.loadtxt(filename).reshape((NY,NX))
+        filename = Path(folder) / f'{gridname}_mapsta.txt'
+        mask=np.loadtxt(filename).reshape((NY,NX)) == 2 # Boundary points given as value 2
+
+        grid = cls(lon=(lon_min, lon_max), lat=(lat_min, lat_max), name=gridname)
+        grid.set_spacing(nx = NX, ny = NY)
+        grid.set_topo(topo)
+        grid.set_boundary_mask(mask)
+
+        return grid
+    
     def __init__(self, x=None, y=None, lon=None, lat=None, name='LonelyGrid', **kwargs):
         if np.all([a is None for a in [x,y,lon,lat]]):
             x, y = 0, 0
@@ -196,23 +217,25 @@ class Grid(GriddedSkeleton, Topography):
 @add_mask(name='boundary', coords='grid', default_value=0)
 @add_mask(name='sea', coords='grid', default_value=1, opposite_name='land')
 class UnstrGrid(PointSkeleton, Topography):
-    def __init__(self, x=0, y=0, lon=None, lat=None, name='LonelyGrid', **kwargs):
+    def __init__(self, x=None, y=None, lon=None, lat=None, name='LonelyGrid', **kwargs):
+        if np.all([a is None for a in [x,y,lon,lat]]):
+            x, y = 0, 0
         super().__init__(x, y, lon, lat, name, **kwargs)
 
 class TriGrid(UnstrGrid):
     @classmethod
-    def from_msh(cls, filename: str, name: str='AnonymousGrid'):
+    def from_msh(cls, filename: str, name: str='LonelyGrid'):
         tri_grid = cls(name=name)
         tri_grid.import_triang(triang_MshFile(filename))
         tri_grid.import_topo(topo_MshFile(filename))
        
         return tri_grid
 
-    def __init__(self, x=None, y=None, lon=None, lat=None, name='AnonymousGrid'):
+    def __init__(self, x=None, y=None, lon=None, lat=None, name='LonelyGrid'):
         self.name = name
         # Only initialize if x, y, lon, lat given
         if [a for a in (x, y, lon, lat) if a is not None]:
-            self._init_structure(x, y, lon, lat, name)
+            self._init_structure(x, y, lon, lat)
 
     def import_triang(self, triang_reader: TriangReader):
         """Reads a triangular mesh."""

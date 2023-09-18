@@ -30,7 +30,7 @@ def test_import_export():
     model = mdl.ModelRun(grid=grid, start_time=start_time, end_time=end_time)
 
     model.import_forcing(wnd.read.ConstantForcing())
-    model.import_boundary(bnd.read.ConstantBoundary(grid), point_picker=bnd.pick.TrivialPicker())
+    model.import_boundary(bnd.read.ConstantBoundary(), point_picker=bnd.pick.TrivialPicker())
     model.boundary_to_spectra()
     model.spectra_to_waveseries()
     model.export_grid(grd.write.Null())
@@ -47,7 +47,7 @@ def test_conventions():
     end_time = '2020-02-01 00:00:00'
     model = mdl.ModelRun(grid=grid, start_time=start_time, end_time=end_time)
     # Import constant spectra in oceanic convention with one component going north
-    model.import_boundary(bnd.read.ConstantBoundary(grid, spectral_convention=SpectralConvention.OCEAN), point_picker=bnd.pick.TrivialPicker())
+    model.import_boundary(bnd.read.ConstantBoundary(spectral_convention=SpectralConvention.OCEAN), point_picker=bnd.pick.TrivialPicker())
 
     assert model.boundary().convention() == SpectralConvention.OCEAN
 

@@ -27,7 +27,7 @@ from .process import SpectralProcessor
 @add_frequency(grid_coord=False)
 @add_time(grid_coord=True)
 class Spectra(PointSkeleton):
-    def __init__(self, x=None, y=None, lon=None, lat=None, time=pd.date_range('1990-01-01 00:00', '1990-01-01 00:00', freq='H'), freq=np.linspace(0.1,1,10), name='LonelySpectra', **kwargs):
+    def __init__(self, x=None, y=None, lon=None, lat=None, time=pd.date_range('1990-01-01 00:00', '1990-01-01 01:00', freq='H'), freq=np.linspace(0.1,1,10), name='LonelySpectra', **kwargs):
         if np.all([a is None for a in [x,y,lon,lat]]):
             x, y = 0, 0
         super().__init__(x=x, y=y, lon=lon, lat=lat, name=name, time=time, freq=freq, **kwargs)

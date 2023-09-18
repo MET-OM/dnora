@@ -1,6 +1,6 @@
 import numpy as np
-from matplotlib.tri.triangulation import Triangulation
-from matplotlib.tri import CubicTriInterpolator
+#from matplotlib.tri.triangulation import Triangulation
+import matplotlib.tri as triangulation # CubicTriInterpolator, triangulation
 
 # This function is taken dircetly from the PyFVCOM package
 # https://github.com/pwcazenave/pyfvcom
@@ -212,11 +212,11 @@ def trigradient(x, y, z, t=None):
     """
 
     if np.any(t):
-        tt = Triangulation(x.ravel(), y.ravel())
+        tt = triangulation.Triangulation(x.ravel(), y.ravel())
     else:
-        tt = Triangulation(x.ravel(), y.ravel(), t)
+        tt = triangulation.Triangulation(x.ravel(), y.ravel(), t)
 
-    tci = CubicTriInterpolator(tt, z.ravel())
+    tci = triangulation.CubicTriInterpolator(tt, z.ravel())
     # Gradient requested here at the mesh nodes but could be anywhere else:
     dx, dy = tci.gradient(tt.x, tt.y)
 

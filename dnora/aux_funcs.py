@@ -6,14 +6,15 @@ from scipy.interpolate import griddata
 from scipy import interpolate
 import os, re
 import geopy.distance
-from typing import TYPE_CHECKING, Tuple, List, Union, Iterable
+from typing import TYPE_CHECKING, Union, Iterable
 from . import file_module
 if TYPE_CHECKING:
     from .grd.grd_mod import Grid
-    from .bnd.bnd_mod import Boundary
-    from .wnd.wnd_mod import Forcing
+
 from . import file_module
 from calendar import monthrange
+
+
 def distance_2points(lat1, lon1, lat2, lon2) -> float:
     """Calculate distance between two points"""
     return geopy.distance.geodesic((lat1, lon1), (lat2, lon2)).km
@@ -52,44 +53,6 @@ def domain_size_in_km(lon: Tuple(float, float), lat: Tuple(float, float)) -> Tup
     km_y = distance_2points(lat[0], lon[0], lat[1], lon[0])
 
     return km_x, km_y
-
-def force_to_iterable(x, fmt: str=None) -> Iterable:
-    """Returns original x if iterable, but tries to convert it to numpy array if it is e.g. integer of float.
-    
-    fmt = 'numpy', 'list' or 'tuple' to force to certain format
-
-    Will return None if given None."""
-    if x is None:
-        return None
-    
-    if not isinstance(x, Iterable):
-        x = [x]
-
-    if fmt == 'numpy':
-        x = np.array(x)
-    elif fmt == 'list':
-        x = list(x)
-    elif fmt == 'tuple':
-        x = tuple(x)
-        
-    return x
-        
-def get_coordinates_from_grid(grid: Grid, cartesian: bool=False, list: bool=False):
-    """Gets lon, lat, x, y coordinates from grid.
-    x, y None if cartesian=False, and lon, lat None if cartesian=True"""
-    if cartesian:
-        lon, lat = None, None
-        if list:
-            x, y = grid.xy()
-        else:
-            x, y = grid.x(), grid.y()
-    else:
-        x, y = None, None
-        if list:
-            lon, lat = grid.lonlat()
-        else:
-            lon, lat = grid.lon(), grid.lat()
-    return lon, lat, x, y
 
 def get_coordinates_from_ds(ds) -> tuple:
     """Determins if an xarray dataset is cartesian (x,y) or spherical (lon,lat)
@@ -164,7 +127,7 @@ def int_list_of_days(start_time, end_time):
     return np.linspace(day0,day1,day1-day0+1).astype(int)
 
 
-def create_time_stamps(start_time: str, end_time: str, stride: int, hours_per_file: int=0, last_file: str='', lead_time: int=0) -> Tuple:
+def create_time_stamps(start_time: str, end_time: str, stride: int, hours_per_file: int=0, last_file: str='', lead_time: int=0) -> tuple:
     """Create time stamps to read in blocks of wind forcing from files.
     Options
     start_time:     Wanted start times
@@ -263,7 +226,7 @@ def check_if_folder(folder: str, create: bool=True) -> bool:
 # -----------------------------------------------------------------------------
 # MISC STAND ALONE FUNCTIONS
 # -----------------------------------------------------------------------------
-def read_ww3_info(filename) -> Tuple[float, float, float, float, float, float, int, int]:
+def read_ww3_info(filename) -> tuple[float, float, float, float, float, float, int, int]:
     """Read grid specification from the GridName_info.txt file"""
     with open(filename,'r') as f:
         lines = f.readlines()
@@ -286,7 +249,7 @@ def read_ww3_info(filename) -> Tuple[float, float, float, float, float, float, i
     return lon_min, lon_max, lat_min, lat_max, dlon, dlat, nx, ny
 
 
-def u_v_from_dir(ws, wdir) -> Tuple[float, float]:
+def u_v_from_dir(ws, wdir) -> tuple[float, float]:
     """Converts wind speed and direction (from) to u and v components."""
 
     # see http://tornado.sfsu.edu/geosciences/classes/m430/Wind/WindDirection.html

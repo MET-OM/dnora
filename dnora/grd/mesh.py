@@ -75,18 +75,18 @@ class Interpolate(Mesher):
 #         return(f"Setting mesh to constant values {self.val}")
 
 
-# class TrivialMesher(Mesher):
-#     """Passes along data.
-#
-#     NB! This might not fit the grid, and is only used for e.g. recreating a
-#     Grid-object from an ouput file.
-#     """
-#
-#     def __init__(self):
-#         pass
-#
-#     def __call__(self, data, lon, lat, lonQ, latQ):
-#         return copy(data)
-#
-#     def __str__(self):
-#         return("Passing input data along as final meshed grid.")
+class Trivial(Mesher):
+    """Passes along data.
+
+    NB! This might not fit the grid, and is only used for e.g. recreating a
+    Grid-object from an ouput file.
+    """
+
+    def __init__(self):
+        pass
+
+    def __call__(self, data, lon, lat, lonQ, latQ):
+        return copy(data)
+
+    def __str__(self):
+        return("Passing input data along as final meshed grid.")

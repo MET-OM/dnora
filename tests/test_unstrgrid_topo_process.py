@@ -4,7 +4,7 @@ from dnora.grd.process import SetConstantDepth, SetMinDepth, SetMaxDepth
 import numpy as np
 def test_import_empty():
     grid = UnstrGrid(lon=[0,1,2,3], lat=[6,7,8,9])
-    topo_reader = ConstantTopo(grid=grid)
+    topo_reader = ConstantTopo()
     grid.import_topo(topo_reader)
     np.testing.assert_array_almost_equal(grid.raw().topo().mean(),999)
     grid.mesh_grid()
@@ -15,7 +15,7 @@ def test_import_empty():
 
 def test_import_land():
     grid = UnstrGrid(lon=[0,1,2,3], lat=[6,7,8,9])
-    topo_reader = ConstantTopo(grid=grid, depth=0.)
+    topo_reader = ConstantTopo(depth=0.)
     grid.import_topo(topo_reader)
     np.testing.assert_array_almost_equal(grid.raw().topo().mean(),0)
     grid.mesh_grid()
@@ -26,9 +26,9 @@ def test_import_land():
 
 def test_min_depth():
     grid = UnstrGrid(lon=[0,1,2,3], lat=[6,7,8,9])
-    topo_reader = ConstantTopo(grid=grid)
+    topo_reader = ConstantTopo()
     grid.import_topo(topo_reader)
-    grid.process_topo(SetMinDepth(depth=1000))
+    grid.raw().process_grid(SetMinDepth(depth=1000))
     np.testing.assert_array_almost_equal(grid.raw().topo().mean(),1000)
 
     grid.mesh_grid()
@@ -39,9 +39,9 @@ def test_min_depth():
 
 def test_max_depth():
     grid = UnstrGrid(lon=[0,1,2,3], lat=[6,7,8,9])
-    topo_reader = ConstantTopo(grid=grid)
+    topo_reader = ConstantTopo()
     grid.import_topo(topo_reader)
-    grid.process_topo(SetMaxDepth(depth=100))
+    grid.raw().process_grid(SetMaxDepth(depth=100))
     np.testing.assert_array_almost_equal(grid.raw().topo().mean(),100)
 
     grid.mesh_grid()
