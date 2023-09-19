@@ -133,6 +133,10 @@ class Topography:
         boundary_mask = mask_setter(self)
         self.set_boundary_mask(boundary_mask)
 
+    def set_output_points(self, mask_setter) -> None:
+        mask = mask_setter(self)
+        self.set_output_mask(mask)
+
     def time(self) -> tuple:
         return (None, None)
 
@@ -164,6 +168,7 @@ class Topography:
 
 @add_datavar(name='topo', default_value=999.)
 @add_mask(name='boundary', coords='grid', default_value=0)
+@add_mask(name='output', coords='grid', default_value=0)
 @add_mask(name='sea', coords='grid', default_value=1, opposite_name='land')
 class Grid(GriddedSkeleton, Topography):
     @classmethod
