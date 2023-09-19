@@ -205,12 +205,6 @@ def replace_object_type(filename: str, obj_type: str) -> str:
     "Replaces the #ObjectType tag to e.g. Boundary of Forcing with lowe case"
     return re.sub(f"#ObjectType", obj_type.lower(), filename, flags=re.IGNORECASE)
 
-def get_list_of_placeholders():
-    defaults_file = Path(__file__).parent.joinpath(Path('defaults.yml'))
-    with open(defaults_file, 'r') as file:
-      defaults = yaml.safe_load(file)
-    return defaults['list_of_placeholders']
-
 def clean_filename(filename: str, list_of_placeholders: list[str]=None) -> str:
     """ Cleans out the file name from possible used placeholders, e.g. #Grid
     as given in the list.
@@ -218,7 +212,7 @@ def clean_filename(filename: str, list_of_placeholders: list[str]=None) -> str:
     Also removes multiple underscores '___' etc.
     """
     if list_of_placeholders is None:
-        list_of_placeholders = get_list_of_placeholders()
+        list_of_placeholders = read_defaults('export_defaults.yml', from_module=True)['list_of_placeholders']
 
     for s in list_of_placeholders:
             filename = re.sub(s, '', filename)
