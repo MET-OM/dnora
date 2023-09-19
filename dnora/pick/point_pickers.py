@@ -12,12 +12,9 @@ from ..aux_funcs import expand_area
 class PointPicker(ABC):
     """PointPickers take in the grid, a PointSkeleton of all available points and a PointSkeleton of interest points and returns indeces
     of the chosen points."""
-    def __init__(self):
-        pass
-
     @abstractmethod
-    def __call__(self, grid: Union[Grid, TriGrid], all_points: PointSkeleton, **kwargs) -> np.ndarray:
-        return inds
+    def __call__(self, grid: Union[Grid, TriGrid], all_points: PointSkeleton, selected_points: PointSkeleton, **kwargs) -> np.ndarray:
+        pass
 
 class TrivialPicker(PointPicker):
     """Choose all the points in the list."""
