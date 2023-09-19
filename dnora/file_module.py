@@ -1,9 +1,89 @@
+from __future__ import annotations
 from pathlib import Path
-import yaml
+from .defaults import read_defaults
 from dataclasses import dataclass
 import pandas as pd
 import re
 from . import msg
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .mdl.mdl_mod import ModelRun
+
+@dataclass
+class FileNames:
+    obj_type: str
+    format: str=None
+    model: ModelRun=None
+    filename: str=None
+    folder: str=None
+    dateformat: str=None
+    edge_object: str=None
+    time_object: str='ModelRun'
+
+    def __post_init__(self):
+        self._defaults = read_defaults('export_defaults.yml', from_module=True)
+
+        self.format = self.format or self.model._get_default_format()
+        self.fallback = self._defaults['DNORA']
+        self.primary = self._defaults[self.format]
+
+        if self.edge_object is None:
+            self.edge_object = self.obj_type
+
+    def get_start_time(self):
+        return self.model.start_time(crop_with=self.time_object)
+
+    def get_end_time(self):
+        return self.model.end_time(crop_with=self.time_object)
+
+    def get_dateformat(self) -> str:
+        return self.dateformat or get_default_value('dateformat', self.obj_type, self.primary, self.fallback)
+
+    def get_filename(self, extension: str=None, start_time: str=None, end_time: str=None, key: str='filename', clean: bool=True, edge_object: str=None) -> str:
+        filename = self.filename or get_default_value(key, self.obj_type, self.primary, self.fallback)
+        start_time = start_time or self.get_start_time()
+        end_time = end_time or self.get_end_time()
+
+        filename = self.replace_placeholders(filename, start_time, end_time, edge_object=edge_object)
+
+        extension = extension or get_default_value('extension', self.obj_type, self.primary, self.fallback)
+        if extension is None:
+            return Path(filename)
+        return f'{Path(filename)}.{extension}'
+
+    def get_folder(self, key: str='folder', clean: bool=True, edge_object: str=None) -> str:
+        folder = self.folder or get_default_value(key, self.obj_type, self.primary, self.fallback)
+
+        return Path(self.replace_placeholders(folder, edge_object=edge_object))
+
+    def get_filepath(self, extension: str=None, start_time: str=None, end_time: str=None, key: str='filename', clean: bool=True, edge_object: str=None) -> str:
+        return add_folder_to_filename(self.get_filename(extension, start_time, end_time, edge_object=edge_object, key=key), self.get_folder(edge_object=edge_object))
+
+    def create_folder(self, key: str='folder', edge_object: str=None) -> None:
+        folder = Path(self.get_folder(key=key, edge_object=edge_object))
+
+        if not folder.is_dir():
+            msg.plain(f"Creating folder {str(folder)}")
+            folder.mkdir(parents=True)
+
+    def replace_placeholders(self, unclean_string: str, start_time=None, end_time=None, edge_object: str=None) -> str:
+        unclean_string = replace_objects(unclean_string, self.model.dict_of_object_names())
+        unclean_string = replace_object_type(unclean_string, self.obj_type)
+        edge_object =  self.model[edge_object or self.edge_object]
+
+        lon = edge_object.edges('lon', strict=True)
+        lat = edge_object.edges('lat', strict=True)
+        x = edge_object.edges('x', strict=True)
+        y = edge_object.edges('y', strict=True)
+
+        unclean_string = replace_lonlat(unclean_string, lon, lat)
+        unclean_string = replace_xy(unclean_string, x, y)
+
+        clean_string = replace_times(unclean_string, self.get_dateformat(), [start_time, end_time])
+
+        return clean_string
+
 
 def add_prefix(filename: str, prefix: str) -> str:
     """Adds a prefix to a filename, e.g. FileName.txt -> new_FileName.txt"""
@@ -194,95 +274,3 @@ def split_filepath(filepath: str) -> tuple[str, str]:
     filename = Path(filepath).name
     return filename, folder
 
-@dataclass
-class FileNames:
-    obj_type: str
-    format: str=None
-    dict_of_objects: dict=None
-    dict_of_object_names: dict=None
-    filename: str=None
-    folder: str=None
-    dateformat: str=None
-    edge_object: str=None
-    time_object: str='ModelRun'
-    extension: str=None
-
-    def __post_init__(self):
-        defaults_file = Path(__file__).parent.joinpath(Path('defaults.yml'))
-        with open(defaults_file, 'r') as file:
-          self._defaults = yaml.safe_load(file)
-
-        self.format = self.format or self.dict_of_objects['ModelRun']._get_default_format()
-        self.fallback = self._defaults['ModelRun']
-        self.primary = self._defaults[self.format]
-
-        if self.dict_of_object_names is None:
-            self.dict_of_object_names = {}
-
-        for key, value in self.dict_of_objects.items():
-            if key not in self.dict_of_object_names.keys() and value is not None:
-                self.dict_of_object_names[key] = value.name
-
-        if self.edge_object is None:
-            self.edge_object = self.obj_type
-
-        # dict_keys = [key.lower() for key in self.dict_of_object_names.keys()]
-        # if isinstance(self.dnora_obj, str):
-        #     self.obj_type = self.dnora_obj
-        # else:
-        #     self.obj_type = type(self.dnora_obj).__name__.lower()
-        #     if not self.obj_type in dict_keys:
-        #         self.dict_of_object_names[self.obj_type] = self.dnora_obj.name
-
-    def get_start_time(self):
-        return self.dict_of_objects[self.time_object].time()[0]
-
-    def get_end_time(self):
-        return self.dict_of_objects[self.time_object].time()[-1]
-
-    def get_dateformat(self) -> str:
-        return self.dateformat or get_default_value('dateformat', self.obj_type, self.primary, self.fallback)
-
-    def get_filename(self, extension: str=None, start_time: str=None, end_time: str=None, key: str='filename', clean: bool=True, edge_object: str=None) -> str:
-        filename = self.filename or get_default_value(key, self.obj_type, self.primary, self.fallback)
-        start_time = start_time or self.get_start_time()
-        end_time = end_time or self.get_end_time()
-
-        filename = self.replace_placeholders(filename, start_time, end_time, edge_object=edge_object)
-
-        extension = extension or self.extension
-        if extension is None:
-            return Path(filename)
-        return f'{Path(filename)}.{extension}'
-
-    def get_folder(self, key: str='folder', clean: bool=True, edge_object: str=None) -> str:
-        folder = self.folder or get_default_value(key, self.obj_type, self.primary, self.fallback)
-
-        return Path(self.replace_placeholders(folder, edge_object=edge_object))
-
-    def get_filepath(self, extension: str=None, start_time: str=None, end_time: str=None, key: str='filename', clean: bool=True, edge_object: str=None) -> str:
-        return add_folder_to_filename(self.get_filename(extension, start_time, end_time, edge_object=edge_object, key=key), self.get_folder(edge_object=edge_object))
-
-    def create_folder(self, key: str='folder', edge_object: str=None) -> None:
-        folder = Path(self.get_folder(key=key, edge_object=edge_object))
-
-        if not folder.is_dir():
-            msg.plain(f"Creating folder {str(folder)}")
-            folder.mkdir(parents=True)
-
-    def replace_placeholders(self, unclean_string: str, start_time=None, end_time=None, edge_object: str=None) -> str:
-        unclean_string = replace_objects(unclean_string, self.dict_of_object_names)
-        unclean_string = replace_object_type(unclean_string, self.obj_type)
-        edge_object =  self.dict_of_objects[edge_object or self.edge_object]
-
-        lon = edge_object.edges('lon', strict=True)
-        lat = edge_object.edges('lat', strict=True)
-        x = edge_object.edges('x', strict=True)
-        y = edge_object.edges('y', strict=True)
-
-        unclean_string = replace_lonlat(unclean_string, lon, lat)
-        unclean_string = replace_xy(unclean_string, x, y)
-
-        clean_string = replace_times(unclean_string, self.get_dateformat(), [start_time, end_time])
-
-        return clean_string

@@ -9,7 +9,7 @@ from ..grd.grd_mod import Grid, UnstrGrid
 from .process import spectral_processor_for_convention_change
 from ..bnd.conventions import SpectralConvention, convert_2d_to_1d
 # Import abstract classes and needed instances of them
-from ..bnd.pick import PointPicker, TrivialPicker
+from ..pick.point_pickers import PointPicker, TrivialPicker
 from .read import SpectralReader
 from .. import msg
 

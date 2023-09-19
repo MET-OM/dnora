@@ -30,7 +30,7 @@ class NearestGridPoint(PointPicker):
     Set a maximum allowed distance using `max_dist` (in km) at instantiation time.
     """
     def __call__(self, grid: Union[Grid, TriGrid],
-                    all_points: PointSkeleton, selected_points: PointSkeleton, max_dist: float=None, **kwargs) -> np.ndarray:
+                    all_points: PointSkeleton, selected_points: PointSkeleton, max_dist: float=None, fast: bool=True,  **kwargs) -> np.ndarray:
 
         if selected_points is None:
             msg.plain('No interest points provided. Returning empty list of indeces.')
@@ -38,12 +38,12 @@ class NearestGridPoint(PointPicker):
         
         lon, lat = selected_points.lonlat()
         # Go through all points where we want output and find the nearest available point
-        ind_dict = all_points.yank_point(lon=lon, lat=lat, fast=True)
+        ind_dict = all_points.yank_point(lon=lon, lat=lat, fast=fast, unique=True)
         inds = []
 
         for n, (x, y, ind) in enumerate(zip(lon, lat, ind_dict.get('inds'))):
-            ms = f"Point {n}: lat: {y:10.7f}, lon: {x:10.7f} <<< ({all_points.lat()[ind]: .7f}, {all_points.lon()[ind]: .7f}). Distance: {ind_dict.get('dx')[n]:.1f} km"
-            if max_dist is None or ind_dict.get('dx')[n] <= max_dist:
+            ms = f"Point {n}: lat: {y:10.7f}, lon: {x:10.7f} <<< ({all_points.lat()[ind]: .7f}, {all_points.lon()[ind]: .7f}). Distance: {ind_dict.get('dx')[n]/1000:.1f} km"
+            if max_dist is None or ind_dict.get('dx')[n]/1000 <= max_dist:
                 msg.plain(ms)
                 inds.append(ind)
             else:

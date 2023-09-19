@@ -17,4 +17,4 @@ Copyright 2021, Konstantinos Christakos and Jan-Victor Björkqvist, MET Norway
 """
 
 from .wnd_mod import Forcing
-from . import read, read_metno, read_ec, read_noaa, write
+from . import read, read_metno, read_ec, read_noaa

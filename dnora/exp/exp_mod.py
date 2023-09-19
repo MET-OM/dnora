@@ -3,16 +3,16 @@ from .. import msg
 from ..file_module import FileNames
 
 from typing import Union
+from ..grd.grd_mod import Grid, TriGrid
+from .grd.grid_writers import GridWriter
+from .wnd.forcing_writers import ForcingWriter
+from .bnd.boundary_writers import BoundaryWriter
+from .spc.spectral_writers import SpectralWriter
+from .wsr.waveseries_writers import WaveSeriesWriter
+from .wlv.waterlevel_writers import WaterLevelWriter
+from .inp.input_file_writers import InputFileWriter
 
-from ..grd.write import GridWriter
-from ..wnd.write import ForcingWriter
-from ..bnd.write import BoundaryWriter
-from ..spc.write import SpectralWriter
-from ..wsr.write import WaveSeriesWriter
-from ..wlv.write import WaterLevelWriter
-from ..inp.inp import InputFileWriter
-
-WritingFunction = Union[GridWriter, ForcingWriter]
+WritingFunction = Union[GridWriter, ForcingWriter, BoundaryWriter, SpectralWriter, WaveSeriesWriter, WaterLevelWriter, InputFileWriter]
 
 class DataExporter:
     def __init__(self, model: ModelRun):
@@ -20,74 +20,75 @@ class DataExporter:
 
     def export_grid(self, grid_writer: GridWriter=None,
                 filename: str=None, folder: str=None, dateformat: str=None,
-                format: str=None, dry_run=False) -> None:
+                format: str=None, dry_run=False, **kwargs) -> None:
         """Writes the grid data in the Grid-object to an external source,
         e.g. a file."""
-
-        writer_function = self._setup_export('Grid', grid_writer, dry_run)
-
+        if type(self.model.grid()) is Grid:
+            writer_function = self._setup_export('Grid', grid_writer, dry_run)
+        elif type(self.model.grid()) is TriGrid:
+            writer_function = self._setup_export('TriGrid', grid_writer, dry_run)
+            
         self._export_object('Grid',filename, folder, dateformat,
-                            writer_function=writer_function, format=format)
-
+                        writer_function=writer_function, format=format, **kwargs)
 
     def export_boundary(self, boundary_writer: BoundaryWriter=None,
                         filename: str=None, folder: str=None,
-                        dateformat: str=None, format: str=None, dry_run=False) -> None:
+                        dateformat: str=None, format: str=None, dry_run=False, **kwargs) -> None:
         """Writes the spectra in the Boundary-object to an external source, e.g.
         a file."""
         writer_function = self._setup_export('Boundary', boundary_writer, dry_run)
 
         if not self.dry_run():
-            self.boundary()._set_convention(writer_function.convention())
+            self.model.boundary()._set_convention(writer_function.convention())
 
         self._export_object('Boundary', filename, folder, dateformat,
-                            writer_function=writer_function, format=format)
+                            writer_function=writer_function, format=format, **kwargs)
 
     def export_spectra(self, spectral_writer: SpectralWriter=None,
                         filename: str=None, folder: str=None,
-                        dateformat: str=None, format: str=None, dry_run=False) -> None:
+                        dateformat: str=None, format: str=None, dry_run=False, **kwargs) -> None:
         """Writes the spectra in the Spectra-object to an external source, e.g.
         a file."""
         writer_function = self._setup_export('Spectra', spectral_writer, dry_run)
 
         if not self.dry_run():
-            self.spectra()._set_convention(writer_function.convention())
+            self.model.spectra()._set_convention(writer_function.convention())
 
         self._export_object('Spectra', filename, folder, dateformat,
-                            writer_function=writer_function, format=format)
+                            writer_function=writer_function, format=format, **kwargs)
 
     def export_waveseries(self, waveseries_writer: WaveSeriesWriter=None,
                         filename: str=None, folder: str=None,
-                        dateformat: str=None, format: str=None, dry_run=False) -> None:
+                        dateformat: str=None, format: str=None, dry_run=False, **kwargs) -> None:
         """Writes the data of the WaveSeries-object to an external source, e.g.
         a file."""
         writer_function = self._setup_export('WaveSeries', waveseries_writer, dry_run)
 
         self._export_object('WaveSeries', filename, folder, dateformat,
-                            writer_function=writer_function, format=format)
+                            writer_function=writer_function, format=format, **kwargs)
 
     def export_forcing(self, forcing_writer: ForcingWriter=None,
                         filename: str=None, folder: str=None,
-                            dateformat: str=None, format: str=None, dry_run=False) -> None:
+                            dateformat: str=None, format: str=None, dry_run=False, **kwargs) -> None:
         """Writes the forcing data in the Forcing-object to an external source,
         e.g. a file."""
         writer_function = self._setup_export('Forcing', forcing_writer, dry_run)
 
         self._export_object('Forcing', filename, folder, dateformat,
-                            writer_function=writer_function, format=format)
+                            writer_function=writer_function, format=format, **kwargs)
 
     def export_waterlevel(self, waterlevel_writer: WaterLevelWriter=None,
                         filename: str=None, folder: str=None,
-                            dateformat: str=None, format: str=None, dry_run=False) -> None:
+                            dateformat: str=None, format: str=None, dry_run=False, **kwargs) -> None:
         """Writes the forcing data in the Forcing-object to an external source,
         e.g. a file."""
         writer_function = self._setup_export('aterLevel', waterlevel_writer, dry_run)
 
         self._export_object('WaterLevel', filename, folder, dateformat,
-                            writer_function=writer_function, format=format)
+                            writer_function=writer_function, format=format, **kwargs)
 
     def _export_object(self, obj_type, filename: str, folder: str, dateformat: str,
-                    writer_function: WritingFunction, format: str) -> list[str]:
+                    writer_function: WritingFunction, format: str, **kwargs) -> list[str]:
 
         # Controls generation of file names using the proper defaults etc.
         msg.header(writer_function, f"Writing {obj_type} data from {self.model[obj_type].name}")
@@ -95,23 +96,22 @@ class DataExporter:
         format = format or self._get_default_format()
         file_object = FileNames(format=format,
                                 obj_type=obj_type,
-                                dict_of_objects=self.model.dict_of_objects(),
+                                model=self.model,
                                 filename=filename,
                                 folder=folder,
-                                dateformat=dateformat,
-                                extension=writer_function._extension())
+                                dateformat=dateformat)
         if self.dry_run():
             msg.info('Dry run! No files will be written.')
             output_files = [file_object.get_filepath()]
         else:
             # Write the object using the WriterFunction
             file_object.create_folder()
-            output_files = writer_function(self.model.dict_of_objects(), file_object)
+            output_files = writer_function(self.model, file_object, **kwargs)
             if type(output_files) is not list:
                 output_files = [output_files]
 
         # Store name and location where file was written
-        self.model[obj_type].exported_to = output_files
+        self.model._exported_to[obj_type.lower()] = output_files
         # for file in output_files:
         #     self._exported_to[obj_type].append(file)
 
@@ -125,7 +125,7 @@ class DataExporter:
                         filename=None, folder=None, dateformat=None,
                         grid_path: str=None, forcing_path: str=None,
                         boundary_path: str=None, start_time: str=None,
-                        end_time: str=None, dry_run=False) -> None:
+                        end_time: str=None, dry_run=False, **kwargs) -> None:
         """Writes the grid data in the Grid-object to an external source,
         e.g. a file."""
         self._dry_run = dry_run
@@ -137,11 +137,10 @@ class DataExporter:
         msg.header(self._input_file_writer, "Writing model input file...")
 
         # Controls generation of file names using the proper defaults etc.
-        file_object = FileNames(dict_of_objects=self.model.dict_of_objects(),
+        file_object = FileNames(model=self.model,
                                 filename=filename,
                                 folder=folder,
                                 dateformat=dateformat,
-                                extension=self._input_file_writer._extension(),
                                 obj_type='input_file',
                                 edge_object='Grid')
 
@@ -153,8 +152,8 @@ class DataExporter:
             output_files = [file_object.get_filepath()]
         else:
             # Write the grid using the InputFileWriter object
-            output_files = self._input_file_writer(dict_of_objects=self.model.dict_of_objects(),
-                            filename=file_object.get_filepath())
+            output_files = self._input_file_writer(self.model,
+                            filename=file_object.get_filepath(), **kwargs)
             if type(output_files) is not list:
                 output_files = [output_files]
 
@@ -167,13 +166,15 @@ class DataExporter:
 
     def _setup_export(self, obj_type: str, writer_function, dry_run: bool):
         self._dry_run = dry_run
-        if self.model[obj_type] is None and not self.dry_run():
-            raise Exception(f'Import {obj_type} before exporting!')
+        if obj_type == 'TriGrid':
+            check_type = 'Grid'
+        if self.model[check_type] is None and not self.dry_run():
+            raise Exception(f'Import {check_type} before exporting!')
         
         writer_function = writer_function or self[f'{obj_type}_writer']
 
         if writer_function is None:
-            raise Exception('Define a {obj_type}Writer!')
+            raise Exception(f'Define a {check_type}Writer!')
         
         return writer_function
 
@@ -188,19 +189,22 @@ class DataExporter:
         return 'ModelRun'
     
     def _get_boundary_writer(self) -> BoundaryWriter:
-        return bnd.write.DnoraNc()
+        return bnd.DnoraNc()
 
     def _get_forcing_writer(self) -> ForcingWriter:
-        return wnd.write.DnoraNc()
+        return wnd.DnoraNc()
 
     def _get_spectral_writer(self) -> SpectralWriter:
-        return spc.write.DnoraNc()
+        return spc.DnoraNc()
 
     def _get_waveseries_writer(self) -> WaveSeriesWriter:
-        return wsr.write.DnoraNc()
+        return wsr.DnoraNc()
 
     def _get_waterlevel_writer(self) -> WaterLevelWriter:
-        return wlv.write.DnoraNc()
+        return wlv.DnoraNc()
 
     def _get_grid_writer(self) -> GridWriter:
-        return grd.write.DnoraNc()
+        return grd.DnoraNc()
+
+    def _get_trigrid_writer(self) -> GridWriter:
+        return grd.DnoraNc()

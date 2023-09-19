@@ -5,48 +5,41 @@ import numpy as np
 from skeletons import PointSkeleton
 # Import objects
 from ..grd.grd_mod import Grid
-from .. import grd
-from ..grd.write import GridWriter
 
 from ..file_module import FileNames
 # Import abstract classes and needed instances of them
 from ..wnd import Forcing
 from ..wnd.read import ForcingReader
-from ..wnd.write import ForcingWriter
 from .. import wnd
 
 from ..bnd import Boundary
 from ..bnd.read import BoundaryReader
-from ..bnd.write import BoundaryWriter
-from ..bnd.pick import PointPicker
+from ..pick.point_pickers import PointPicker
 from .. import bnd
 
 
 from ..spc import Spectra
 from ..spc.read import SpectralReader
-from ..spc.write import SpectralWriter
 from .. import spc
 
 from ..wsr import WaveSeries
 from ..wsr.read import WaveSeriesReader, SpectraToWaveSeries
-from ..wsr.write import WaveSeriesWriter
 from .. import wsr
 
 from ..wlv import WaterLevel
 from ..wlv.read import WaterLevelReader
-from ..wlv.write import WaterLevelWriter
 from .. import wlv
 
-from ..run import ModelExecuter
-from ..inp.inp import InputFileWriter
+from ..run.model_executers import ModelExecuter
 from ..spectral_grid import SpectralGrid
+
 from skeletons.datavar_factory import add_datavar
-# Import default values and aux_funcsiliry functions
+
 from .. import msg
-#from ..cacher.cache_decorator import cached_reader
 from ..cacher.cache_decorator import cached_reader
 from ..converters import convert_swash_mat_to_netcdf
 from pathlib import Path
+
 class ModelRun:
     def __init__(self, grid: Grid=None, start_time: str='1970-01-01T00:00',
     end_time: str='2030-12-31T23:59', name: str='AnonymousModelRun',
@@ -54,6 +47,7 @@ class ModelRun:
         self.name = copy(name)
         self._grid = copy(grid)
         self._time = pd.date_range(start_time, end_time, freq='H')
+        self._exported_to = {}
         self._global_dry_run = dry_run
         self._dry_run = False  # Set by methods
 
@@ -507,7 +501,7 @@ class ModelRun:
         else:
             return None
         
-    def spectral_grid(self) -> Boundary:
+    def spectralgrid(self) -> Boundary:
         """Returns the spectral grid object if exists."""
         if hasattr(self, '_spectral_grid'):
             return self._spectral_grid
@@ -521,7 +515,7 @@ class ModelRun:
     def dict_of_objects(self) -> dict[str: ModelRun, str: Grid, str: Forcing, str: Boundary, str: Spectra]:
         return {'ModelRun': self, 'Grid': self.grid(), 'Topo': self.topo(), 'Forcing': self.forcing(),
                 'Boundary': self.boundary(), 'Spectra': self.spectra(), 'WaveSeries': self.waveseries(),
-                'WaterLevel': self.waterlevel(), 'SpectralGrid': self.spectral_grid()}
+                'WaterLevel': self.waterlevel(), 'SpectralGrid': self.spectralgrid()}
 
     def list_of_objects(self) -> list[ModelRun, Grid, Forcing, Boundary, Spectra, WaveSeries, WaterLevel]:
         """[ModelRun, Boundary] etc."""
@@ -541,52 +535,62 @@ class ModelRun:
                 d[a] = b.name
         return d
 
-    # def exported_to(self, object: str) -> str:
-    #     """Returns the path the object (e.g. grid) was exported to.
+    def exported_to(self, obj_str: str) -> str:
+        """Returns the path the object (e.g. grid) was exported to.
 
-    #     If object has not been exported, the default filename is returned as
-    #     a best guess
-    #     """
+        If object has not been exported, the default filename is returned as
+        a best guess
+        """
 
-    #     if eval(f'self.{object}()') is None:
-    #         return ['']
+        if self[obj_str] is None:
+            return ['']
 
-    #     if self._exported_to.get(object) is not None:
-    #         return self._exported_to[object]
+        default_name = FileNames(model=self, format=self._get_default_format(), obj_type=obj_str).get_filepath()
+        return self._exported_to.get(obj_str.lower(), default_name)
 
-    #     return ['']
-    
-    def time(self, crop: bool=False):
+            
+    def time(self,  crop_with: list[str]=None):
         """Returns times of ModelRun
-        crop = True: Give the period that is covered by all objects (Forcing etc.)"""
+        crop_with = ['Forcing', 'Boundary'] gives time period covered by those objects
+        crop_with = 'all' crops with all objects"""
         t0 = self._time[0]
         t1 = self._time[-1]
 
-        if crop:
-            for dnora_obj in self.list_of_objects():
-                time = dnora_obj.time()
-                if time[0] is not None:
-                    t0 = pd.to_datetime([t0, time[0]]).max()
-                if time[-1] is not None:
-                    t1 = pd.to_datetime([t1, time[-1]]).min()
+        if crop_with is not None:
+            if type(crop_with) is not list:
+                    crop_with = [crop_with]
+
+            if 'all' in crop_with:
+                crop_with = self.list_of_object_strings()
+
+            for obj_str in crop_with:
+                dnora_obj = self[obj_str]
+                if dnora_obj is not None:
+                    time = dnora_obj.time()
+                    if time[0] is not None:
+                        t0 = pd.to_datetime([t0, time[0]]).max()
+                    if time[-1] is not None:
+                        t1 = pd.to_datetime([t1, time[-1]]).min()
         time = pd.date_range(t0, t1, freq='H')
         return time[::len(time)-1]
     
-    def start_time(self, crop: bool=False):
+    def start_time(self, crop_with: list[str]=None):
         """Returns start time of ModelRun
         crop = True: Give the period that is covered by all objects (Forcing etc.)"""
-        return self.time(crop=crop)[0]
+        return self.time(crop_with=crop_with)[0]
 
-    def end_time(self, crop: bool=False):
+    def end_time(self, crop_with: list[str]=None):
         """Returns start time of ModelRun
         crop = True: Give the period that is covered by all objects (Forcing etc.)"""
-        return self.time(crop=crop)[-1]
+        return self.time(crop_with=crop_with)[-1]
     
     def __getitem__(self, dnora_str: str):
+        if dnora_str.lower() == 'modelrun':
+            return self
         return eval(f'self.{dnora_str.lower()}()')
 
     def _get_default_format(self) -> str:
-        return 'ModelRun'
+        return 'DNORA'
 
     def _get_forcing_reader(self) -> ForcingReader:
         return None

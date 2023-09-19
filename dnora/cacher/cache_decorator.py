@@ -76,8 +76,7 @@ def cached_reader(dnora_obj, reader_function):
             exec(f"mrun._{dnora_obj.lower()} = {dnora_obj}(name=name)")
             file_object = FileNames(format='Cache',
                                     obj_type=dnora_obj,
-                                    extension='nc',
-                                    dict_of_objects=mrun.dict_of_objects(),
+                                    model=mrun,
                                     edge_object='Grid',
                                     filename=cache_name
                                     )

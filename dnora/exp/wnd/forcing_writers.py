@@ -7,80 +7,68 @@ from typing import TYPE_CHECKING
 
 # Import objects
 if TYPE_CHECKING:
-    from .wnd_mod import Forcing # Boundary object
+    from ...mdl.mdl_mod import ModelRun
+    from ...file_module import FileNames
 
 # Import default values and aux_funcsiliry functions
-from .. import msg
+from ... import msg
 
-from ..aux_funcs import write_monthly_nc_files
+from ...aux_funcs import write_monthly_nc_files
 
 class ForcingWriter(ABC):
     """Writes the forcing data to a certain file format.
 
     This object is provided to the .export_forcing() method.
     """
-    @abstractmethod
-    def _extension(self):
-        pass
-
     def _im_silent(self) -> bool:
         """Return False if you want to be responsible for printing out the
         file names."""
         return True
 
+    def _clean_filename(self) -> bool:
+        """If this is set to False, then the ModelRun object does not clean
+        the filename, and possible placeholders (e.g. #T0) can still be
+        present.
+        """
+
     @abstractmethod
-    def __call__(self, forcing: Forcing, file_object: str) -> list[str]:
+    def __call__(self, model: ModelRun, file_object: FileNames, **kwargs) -> list[str]:
         """Writed the data from the Forcing object and returns the file and
         folder where data were written."""
 
         return output_file
 
 class Null(ForcingWriter):
-    def _extension(self):
-        return 'junk'
-
-    def __call__(self, dict_of_objects: dict, file_object):
+    def __call__(self, model: ModelRun, file_object: FileNames, **kwargs):
         return ''
 
 class DnoraNc(ForcingWriter):
-    def _extension(self) -> str:
-        return 'nc'
-
-    def __call__(self, dict_of_objects: dict, file_object) -> tuple[str, str]:
-        output_files = write_monthly_nc_files(dict_of_objects['Forcing'], file_object)
+    def __call__(self, model: ModelRun, file_object: FileNames, **kwargs) -> tuple[str, str]:
+        output_files = write_monthly_nc_files(model.forcing(), file_object)
         return output_files
 
 class WW3(ForcingWriter):
     """Writes wind forcing data to WAVEWATH III netcdf format."""
-    def _extension(self):
-        return 'nc'
-
-    def __call__(self, dict_of_objects: dict, file_object) -> list[str]:
+    def __call__(self, model: ModelRun, file_object: FileNames, **kwargs) -> list[str]:
         filename = file_object.get_filepath()
-        forcing = dict_of_objects['Forcing']
-        forcing.ds().to_netcdf(filename)
-        # WW3 need time to be first
-        #nco = Nco()
-        #nco.ncpdq(input=filename, output=filename, options=['-a', f'time,{forcing.y_str},{forcing.y_str}'])
+        model.forcing().ds().to_netcdf(filename)
+
         return filename
 
 
 class SWAN(ForcingWriter):
     """Writes wind forcing data to SWAN ascii format."""
-
-    def _extension(self):
-        return 'asc'
-
-    def __call__(self, dict_of_objects: dict, file_object) -> list[str]:
+    def __call__(self, model: ModelRun, file_object: FileNames, **kwargs) -> list[str]:
         filename = file_object.get_filepath()
-        forcing = dict_of_objects['Forcing']
+        forcing = model.forcing()
 
-        days = forcing.days()
+        days = forcing.days(datetime=False)
         with open(filename, 'w') as file_out:
             ct = 0
             for day in days:
-                msg.plain(day.strftime('%Y-%m-%d'))
-                times = forcing.times_in_day(day)
+                msg.plain(day)
+                #times = forcing.times_in_day(day)
+                times = forcing.time(time=slice(day, day))
                 for n in range(len(times)):
                     time_stamp = pd.to_datetime(
                         times[n]).strftime('%Y%m%d.%H%M%S')+'\n'

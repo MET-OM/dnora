@@ -1,13 +1,13 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 import numpy as np
-from .. import file_module
-from .. import msg
+from ... import file_module
+from ... import msg
 
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .trg_mod import Grid
+    from ...grd.grd_mod import Grid
 
 class TrGridWriter(ABC):
     """Abstract class for writing the TrGrid-object's data to files to be Used

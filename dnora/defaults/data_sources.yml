@@ -1,0 +1,25 @@
+local:
+  folder: 'input'
+  grid:
+    folder: '~/Documents/bathy'
+  forcing:
+    folder: '~/Documents/wind_forcing'
+  boundary:
+    folder: '~/Documents/boundary'
+  spectra:
+    folder: '~/Documents/spectra'
+  waveseries:
+    folder: '~/Documents/wave_series'
+
+internal:
+  folder: 'input'
+  grid:
+    folder: '~/Documents/bathy'
+  forcing:
+    folder: '~/Documents/wind_forcing'
+  boundary:
+    folder: '~/Documents/boundary'
+  spectra:
+    folder: '~/Documents/spectra'
+  waveseries:
+    folder: '~/Documents/wave_series'

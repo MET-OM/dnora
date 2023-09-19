@@ -3,6 +3,8 @@ from abc import ABC, abstractmethod
 
 class ModelExecuter(ABC):
     """Runs the model."""
+    def __init__(self, model):
+        self.model = model
 
     @abstractmethod
     def _preferred_format(self) -> str:
@@ -10,7 +12,9 @@ class ModelExecuter(ABC):
         return
 
     @abstractmethod
-    def __call__(self, input_file: str, model_folder: str) -> None:
+    def run(self, input_file: str=None, folder: str=None,
+                dateformat: str=None, input_file_extension: str=None,
+                dry_run: bool=False, mat_to_nc: bool=False) -> None:
         """Runs the model executable"""
 
         return

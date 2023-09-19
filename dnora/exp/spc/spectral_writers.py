@@ -9,11 +9,12 @@ import re
 # Import abstract classes and needed instances of them
 from typing import TYPE_CHECKING, Union
 if TYPE_CHECKING:
-    from .spc_mod import Spectra
+    from ...mdl.mdl_mod import ModelRun
+    from ...file_module import FileNames
 
-from ..bnd.conventions import SpectralConvention
+from ...bnd.conventions import SpectralConvention
 
-from ..aux_funcs import write_monthly_nc_files
+from ...aux_funcs import write_monthly_nc_files
 
 class SpectralWriter(ABC):
     """Writes omnidirectional spectra spectra to a certain file format.
@@ -23,20 +24,16 @@ class SpectralWriter(ABC):
 
     _convention = None
 
-    def _clean_filename(self):
+    def _im_silent(self) -> bool:
+        """Return False if you want to be responsible for printing out the
+        file names."""
+        return True
+
+    def _clean_filename(self) -> bool:
         """If this is set to False, then the ModelRun object does not clean
         the filename, and possible placeholders (e.g. #T0) can still be
         present.
         """
-        return True
-
-    @abstractmethod
-    def _extension(self) -> str:
-        pass
-
-    def _im_silent(self) -> bool:
-        """Return False if you want to be responsible for printing out the
-        file names."""
         return True
 
     def convention(self) -> str:
@@ -58,7 +55,7 @@ class SpectralWriter(ABC):
         return self._convention
 
     @abstractmethod
-    def __call__(self, dict_of_objects: dict, file_object: str) -> tuple[str, str]:
+    def __call__(self, model: ModelRun, file_object: FileNames, **kwargs) -> tuple[str, str]:
         """Write the data from the Spectra object and returns the file and
         folder where data were written."""
 
@@ -66,44 +63,30 @@ class Null(SpectralWriter):
     def convention(self):
         return SpectralConvention.OCEAN
 
-    def _extension(self):
-        return 'junk'
-
-    def __call__(self, dict_of_objects: dict, file_object):
+    def __call__(self, model: ModelRun, file_object: FileNames, **kwargs):
         return ''
 
 class DnoraNc(SpectralWriter):
-    def _extension(self) -> str:
-        return 'nc'
-
-    def __call__(self, dict_of_objects: dict, file_object) -> tuple[str, str]:
-        output_files = write_monthly_nc_files(dict_of_objects['Spectra'], file_object)
+    def __call__(self, model: ModelRun, file_object: FileNames, **kwargs) -> tuple[str, str]:
+        output_files = write_monthly_nc_files(model.spectra(), file_object)
         return output_files
 
 class DumpToNc(SpectralWriter):
-    def _extension(self) -> str:
-        return 'nc'
-
-    def __call__(self, dict_of_objects: dict, file_object) -> tuple[str, str]:
-        filename = file_object.get_filepath()
-        dict_of_objects['Spectra'].ds().to_netcdf(filename)
+    def __call__(self, model: ModelRun, file_object: FileNames, **kwargs) -> tuple[str, str]:
+        filename = file_object.get_filepath(extension='nc')
+        model.spectra().ds().to_netcdf(filename)
         return filename
 
 class REEF3D(SpectralWriter):
-    def __init__(self, convention: Union[SpectralConvention, str]=SpectralConvention.MET) -> None:
-        self._convention = convention
-        return
-
-    def _extension(self) -> str:
-        return 'dat'
-
-    def __call__(self, dict_of_objects: dict, file_object) -> tuple[str, str]:
+    def __call__(self, model: ModelRun, file_object: FileNames, convention: Union[SpectralConvention, str]=SpectralConvention.MET, **kwargs) -> tuple[str, str]:
 
         # Take first spectra and first time step for now
         x = 0
         t = 0
         filename = file_object.get_filepath()
-        spectra = dict_of_objects['Spectra']
+        spectra = model.spectra()
+        self._convention = convention
+        spectra._set_convention(self.convention())
         with open(filename, 'w') as f:
             spec = spectra.spec(angular=True)[x,t,:]
             freq = spectra.freq(angular=True)

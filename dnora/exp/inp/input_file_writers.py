@@ -5,14 +5,14 @@ import numpy as np
 import pandas as pd
 
 # Import objects
-from ..wnd.wnd_mod import Forcing
-from ..grd.grd_mod import Grid
-from ..bnd.bnd_mod import Boundary
-from ..spc.spc_mod import Spectra
-from ..wsr.wsr_mod import WaveSeries
-from ..aux_funcs import create_swan_segment_coords
-from .. import msg
-from .. import file_module
+from ...wnd.wnd_mod import Forcing
+from ...grd.grd_mod import Grid
+from ...bnd.bnd_mod import Boundary
+from ...spc.spc_mod import Spectra
+from ...wsr.wsr_mod import WaveSeries
+from ...aux_funcs import create_swan_segment_coords
+from ... import msg
+from ... import file_module
 class InputFileWriter(ABC):
     @abstractmethod
     def _extension(self):
@@ -38,7 +38,7 @@ class InputFileWriter(ABC):
         return output_file
 
 class SWAN(InputFileWriter):
-    def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, wind=True, spec_points=None, extension='swn'):
+    def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, wind=True, spec_points=None):
 
         self.calib_wind = calib_wind
         self.calib_wcap = calib_wcap
@@ -47,16 +47,13 @@ class SWAN(InputFileWriter):
         self._extension_in = extension
         return
 
-    def _extension(self):
-        return self._extension_in
-
-    def __call__(self, dict_of_objects: dict,
+    def __call__(self, model,
                  filename: str):
         
-        forcing = dict_of_objects.get('Forcing')
-        grid = dict_of_objects.get('Grid')
-        boundary = dict_of_objects.get('Boundary')
-        spectral_grid = dict_of_objects.get('SpectralGrid')
+        forcing = model.forcing()
+        grid = model.grid()
+        boundary = model.boundary()
+        spectral_grid = model.spectralgrid()
         grid_path = grid.exported_to[-1]
         forcing_path = forcing.exported_to[-1]
         boundary_path = boundary.exported_to[-1]
@@ -66,8 +63,8 @@ class SWAN(InputFileWriter):
             self.wind = False
 
         # Define start and end times of model run
-        DATE_START = dict_of_objects.get('ModelRun').time(crop=True)[0]
-        DATE_END = dict_of_objects.get('ModelRun').time(crop=True)[-1]
+        DATE_START = model.time(crop=True)[0]
+        DATE_END = model.time(crop=True)[-1]
         STR_START = DATE_START.strftime('%Y%m%d.%H%M%S')
         STR_END = DATE_END.strftime('%Y%m%d.%H%M%S')
 
@@ -154,9 +151,6 @@ class SWASH(InputFileWriter):
         self.bound_side_command = bound_side_command
 
         return
-
-    def _extension(self):
-        return 'sws'
 
     def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary,
                 spectra: Spectra, waveseries: WaveSeries,

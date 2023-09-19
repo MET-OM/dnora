@@ -8,14 +8,15 @@ import re
 # Import abstract classes and needed instances of them
 from typing import TYPE_CHECKING, Tuple
 if TYPE_CHECKING:
-    from .bnd_mod import Boundary
+    from ...mdl.mdl_mod import ModelRun
+    from ...file_module import FileNames
 
 # Import default values and aux_funcsiliry functions
-from .. import msg
-from .. import file_module
+from ... import msg
+from ... import file_module
 import os
-from .conventions import SpectralConvention
-from ..aux_funcs import write_monthly_nc_files
+from ...bnd.conventions import SpectralConvention
+from ...aux_funcs import write_monthly_nc_files
 
 class BoundaryWriter(ABC):
     """Writes the boundary spectra to a certain file format.
@@ -23,13 +24,16 @@ class BoundaryWriter(ABC):
     This object is provided to the .export_boundary() method.
     """
     _convention = None
-    @abstractmethod
-    def _extension(self) -> str:
-        pass
 
     def _im_silent(self) -> bool:
         """Return False if you want to be responsible for printing out the
         file names."""
+        return True
+
+    def _clean_filename(self) -> bool:
+        """If this is set to False, then the ModelRun object does not clean
+        the filename, and possible placeholders (e.g. #T0) can still be
+        present."""
         return True
 
     def convention(self) -> SpectralConvention:
@@ -62,7 +66,7 @@ class BoundaryWriter(ABC):
         return self._convention
 
     @abstractmethod
-    def __call__(self, boundary: Boundary, filename: str) -> List[str]:
+    def __call__(self, model: ModelRun, file_object: FileNames, **kwargs) -> list[str]:
         """Writed the data from the Boundary object and returns the file and
         folder where data were written."""
 
@@ -72,18 +76,12 @@ class Null(BoundaryWriter):
     def convention(self) -> SpectralConvention:
         return SpectralConvention.OCEAN
 
-    def _extension(self) -> str:
-        return 'junk'
-
-    def __call__(self, dict_of_objects: dict, file_object):
+    def __call__(self, model: ModelRun, file_object: FileNames, **kwargs):
         return ''
 
 class DnoraNc(BoundaryWriter):
-    def _extension(self) -> str:
-        return 'nc'
-
-    def __call__(self, dict_of_objects: dict, file_object) -> tuple[str, str]:
-        output_files = write_monthly_nc_files(dict_of_objects['Boundary'], file_object)
+    def __call__(self, model: ModelRun, file_object: FileNames, **kwargs) -> tuple[str, str]:
+        output_files = write_monthly_nc_files(model.boundary(), file_object)
         return output_files
 
 class WW3(BoundaryWriter):
@@ -91,15 +89,12 @@ class WW3(BoundaryWriter):
         self.one_file = one_file
         self._convention = convention
 
-    def _extension(self) -> str:
-        return 'nc'
-
     def _im_silent(self) -> bool:
         return self.one_file
 
-    def __call__(self, dict_of_objects: dict, file_object) -> Tuple[str, str]:
+    def __call__(self, model: ModelRun, file_object: FileNames, **kwargs) -> Tuple[str, str]:
         msg.info('Writing WAVEWATCH-III netcdf-output')
-        boundary = dict_of_objects['Boundary']
+        boundary = model.boundary()
 
         if self.one_file:
             filename = file_object.get_filepath()
@@ -123,7 +118,7 @@ class WW3(BoundaryWriter):
 
         return output_files
 
-    def write_netcdf(self, boundary: Boundary, output_file: str, n: int=None) -> None:
+    def write_netcdf(self, boundary, output_file: str, n: int=None) -> None:
         """Writes WW3 compatible netcdf spectral output from a list containing xarray datasets."""
 
         root_grp = netCDF4.Dataset(output_file, 'w', format='NETCDF4')
@@ -237,32 +232,24 @@ class WW3(BoundaryWriter):
         return
 
 class SWAN(BoundaryWriter):
-    def __init__(self, factor = 1E-4) -> None:
-        self.factor = factor
-        return
-
     def convention(self) -> SpectralConvention:
         """Convention of spectra"""
         return SpectralConvention.MET
 
-    def _extension(self) -> str:
-        return 'asc'
-
-    def __call__(self, boundary: Boundary, filename: str) -> Tuple[str, str]:
-
-
-        swan_bnd_points = boundary.grid.boundary_points()
-        days = boundary.days()
+    def __call__(self, model: ModelRun, file_object: FileNames, factor: float = 1E-4, **kwargs) -> Tuple[str, str]:
+        filename = file_object.get_filepath()
+        boundary = model.boundary()
+        days = boundary.days(datetime=False)
 
         with open(filename, 'w') as file_out:
             file_out.write('SWAN   1\n')
-            file_out.write('$ Data produced by '+boundary.data.source+'\n')
+            file_out.write('$ Data produced by '+boundary.name+'\n')
             file_out.write('TIME\n')
             file_out.write('          1\n')
             file_out.write('LONLAT\n')
-            file_out.write('          '+format(len(boundary.x()))+'\n')
-            for k in range(len(boundary.x())):
-                file_out.write('   '+format(swan_bnd_points[k,0],'.4f')+'  '+format(swan_bnd_points[k,1],'.4f')+'\n')
+            file_out.write('          '+format(len(boundary.inds()))+'\n')
+            for k in range(len(boundary.inds())):
+                file_out.write('   '+format(boundary.lon()[k],'.4f')+'  '+format(boundary.lat()[k],'.4f')+'\n')
             file_out.write('AFREQ\n')
             file_out.write('          '+str(len(boundary.freq()))+'\n')
             for l in range(len(boundary.freq())):
@@ -280,16 +267,16 @@ class SWAN(BoundaryWriter):
             #msg.to_file(f"{output_path}")
 
             for day in days:
-                msg.plain(day.strftime('%Y-%m-%d'))
-                times = boundary.times_in_day(day)
+                msg.plain(day)
+                times = boundary.time(time=slice(day, day))
                 for tim in times:
                     time_stamp = str(tim).split('-')[0]+str(tim).split('-')[1]+str(tim).split('-')[2][:2]+'.'+str(tim).split('-')[2][3:5]+'0000\n'
                     file_out.write(time_stamp)
                     for n in range(len(boundary.x())):
                         file_out.write('FACTOR\n')
-                        file_out.write(format(self.factor,'1.0E')+'\n')
-                        S = boundary.spec(start_time=tim, end_time=tim, x=[n]).squeeze()
+                        file_out.write(format(factor,'1.0E')+'\n')
+                        S = boundary.spec(time=slice(str(tim), str(tim)), inds=n).squeeze()
 
 			# SWAN uses m*m/Hz/deg normalization
-                        np.savetxt(file_out,S*np.pi/(180*self.factor), fmt='%-10.0f')
+                        np.savetxt(file_out,S*np.pi/(180*factor), fmt='%-10.0f')
         return filename
