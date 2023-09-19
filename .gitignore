@@ -1,3 +1,4 @@
+*.pyc
 *.nc
 *.asc
 dnora/__pycache__
@@ -9,3 +10,4 @@ dnora/mdl/__pycache__
 dnora/examples/output
 dnora/output
 dnora/jobs
+.eggs
