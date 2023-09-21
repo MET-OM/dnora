@@ -6,14 +6,16 @@ from copy import copy
 from abc import ABC, abstractmethod
 import numpy as np
 from typing import Tuple, TYPE_CHECKING
+
 if TYPE_CHECKING:
     from .grd_mod import Grid
 from ..aux_funcs import expand_area
 import warnings
 from .. import msg
 
+
 class TopoReader(ABC):
-    """Abstract class for reading the bathymetry. """
+    """Abstract class for reading the bathymetry."""
 
     @abstractmethod
     def __init__(self):
@@ -69,21 +71,22 @@ class TopoReader(ABC):
 
 class ConstantTopo(TopoReader):
     """Creates an empty topography. Called when setting initial spacing."""
-    def __init__(self, depth=999.):
+
+    def __init__(self, depth=999.0):
         self.depth = depth
 
     def __call__(self, lon: tuple, lat: tuple, x: tuple, y: tuple) -> tuple:
         """Creates a trivial topography with all water points."""
-        lon =np.unique(lon)
-        lat =np.unique(lat)
-        topo = np.full((len(lat),len(lon)),self.depth)
+        lon = np.unique(lon)
+        lat = np.unique(lat)
+        topo = np.full((len(lat), len(lon)), self.depth)
         topo_lon = np.array(lon)
         topo_lat = np.array(lat)
 
         return topo, topo_lon, topo_lat, None, None, None, None
 
     def __str__(self):
-        return(f"Creating an constant topography with depth values {self.depth}.")
+        return f"Creating an constant topography with depth values {self.depth}."
 
 
 class EMODNET(TopoReader):
@@ -94,8 +97,14 @@ class EMODNET(TopoReader):
     Contributed by: https://github.com/poplarShift
     """
 
-    def __init__(self, tile: str='C5', expansion_factor: float=1.2, folder: str='/lustre/storeB/project/fou/om/WW3/bathy/emodnet2020', year: int=2020) -> Tuple:
-        self.source = f'{folder}/{tile}_{year}.nc'
+    def __init__(
+        self,
+        tile: str = "C5",
+        expansion_factor: float = 1.2,
+        folder: str = "/lustre/storeB/project/fou/om/WW3/bathy/emodnet2020",
+        year: int = 2020,
+    ) -> Tuple:
+        self.source = f"{folder}/{tile}_{year}.nc"
         self.expansion_factor = expansion_factor
         return
 
@@ -111,7 +120,8 @@ class EMODNET(TopoReader):
             return ds.isel(lon=slice(2, -2), lat=slice(2, -2))
 
         import dask
-        with dask.config.set(**{'array.slicing.split_large_chunks': True}):
+
+        with dask.config.set(**{"array.slicing.split_large_chunks": True}):
             with xr.open_mfdataset(self.source, preprocess=_crop) as ds:
                 ds = ds.sel(lon=slice(lon[0], lon[1]), lat=slice(lat[0], lat[1]))
                 topo = -1 * ds.elevation.values
@@ -120,7 +130,8 @@ class EMODNET(TopoReader):
                 return topo, topo_lon, topo_lat, None, None, None, None
 
     def __str__(self):
-        return(f"Reading EMODNET topography from {self.source}.")
+        return f"Reading EMODNET topography from {self.source}."
+
 
 # class EMODNET2018(TopoReader):
 #     """Reads data from EMODNET bathymetry.
@@ -154,21 +165,27 @@ class EMODNET(TopoReader):
 #     def __str__(self):
 #         return(f"Reading EMODNET topography from {self.source}.")
 
+
 class KartverketNo50m(TopoReader):
     """Reads data from Kartverket bathymetry.
 
-        High resolution bathymetry dataset for the whole Norwegian Coast.
-        Can be found at:
-        https://kartkatalog.geonorge.no/metadata/dybdedata-terrengmodeller-50-meters-grid-landsdekkende/bbd687d0-d34f-4d95-9e60-27e330e0f76e
+    High resolution bathymetry dataset for the whole Norwegian Coast.
+    Can be found at:
+    https://kartkatalog.geonorge.no/metadata/dybdedata-terrengmodeller-50-meters-grid-landsdekkende/bbd687d0-d34f-4d95-9e60-27e330e0f76e
 
-        For reading several files at once, supply the 'tile' argument with a glob pattern, e.g. 'B*'.
+    For reading several files at once, supply the 'tile' argument with a glob pattern, e.g. 'B*'.
 
-        Contributed by: https://github.com/emiliebyer
-        """
+    Contributed by: https://github.com/emiliebyer
+    """
 
-    def __init__(self, expansion_factor: float=1.2, zone_number: int=33,
-                 tile: str='B1008', folder: str='/lustre/storeB/project/fou/om/WW3/bathy/kartverket_50m_x_50m') -> Tuple:
-        self.source=f'{folder}/{tile}_grid50_utm{zone_number}.xyz'
+    def __init__(
+        self,
+        expansion_factor: float = 1.2,
+        zone_number: int = 33,
+        tile: str = "B1008",
+        folder: str = "/lustre/storeB/project/fou/om/WW3/bathy/kartverket_50m_x_50m",
+    ) -> Tuple:
+        self.source = f"{folder}/{tile}_grid50_utm{zone_number}.xyz"
         self.expansion_factor = expansion_factor
         self.zone_number = zone_number
 
@@ -179,26 +196,27 @@ class KartverketNo50m(TopoReader):
         # when we interpoolate or filter
         x, y = expand_area(x, y, self.expansion_factor)
 
-        print(f'Expansion factor: {self.expansion_factor}')
+        print(f"Expansion factor: {self.expansion_factor}")
 
         import dask.dataframe as dd
-        df = dd.read_csv(self.source, sep= ' ', header=None)
-        df.columns = ['x','y','z']
-        topo_x = np.array(df['x'].astype(float))
-        topo_y = np.array(df['y'].astype(float))
-        z = np.array(df['z'].astype(float))
+
+        df = dd.read_csv(self.source, sep=" ", header=None)
+        df.columns = ["x", "y", "z"]
+        topo_x = np.array(df["x"].astype(float))
+        topo_y = np.array(df["y"].astype(float))
+        z = np.array(df["z"].astype(float))
 
         # Converting from utm to latitude and longitude
-        #lat, lon = utm.to_latlon(x, y, self.zone_number, northern=True, strict=False)
+        # lat, lon = utm.to_latlon(x, y, self.zone_number, northern=True, strict=False)
 
         # Applying given max and min values for lat and lon
-        #mask_lat = np.logical_and(lat0 <= lat, lat <= lat1)
-        #mask_lon = np.logical_and(lon0 <= lon, lon <= lon1)
-        #mask = np.logical_and(mask_lat, mask_lon)
+        # mask_lat = np.logical_and(lat0 <= lat, lat <= lat1)
+        # mask_lon = np.logical_and(lon0 <= lon, lon <= lon1)
+        # mask = np.logical_and(mask_lat, mask_lon)
         mask_x = np.logical_and(x[0] <= topo_x, topo_x <= x[1])
         mask_y = np.logical_and(y[0] <= topo_y, topo_y <= y[1])
         mask = np.logical_and(mask_x, mask_y)
-        #topo_lon = lon[mask]
+        # topo_lon = lon[mask]
         topo_x = topo_x[mask]
         topo_y = topo_y[mask]
         topo = z[mask]
@@ -233,22 +251,29 @@ class KartverketNo50m(TopoReader):
         # topo_lon = topo_lon[mask]
         # topo = topo[mask]
 
-        return topo, None, None, topo_x, topo_y, self.zone_number, 'W'
+        return topo, None, None, topo_x, topo_y, self.zone_number, "W"
 
     def __str__(self):
-        return(f"Reading Kartverket topography from {self.source}.")
+        return f"Reading Kartverket topography from {self.source}."
+
 
 class GEBCO2021(TopoReader):
-    """ Reads the GEBCO_2021 gridded bathymetric data set.
-        A global terrain model for ocean and land,
-        providing elevation data, in meters, on a 15 arc-second interval grid.
-        Reference: GEBCO Compilation Group (2021) GEBCO 2021 Grid (doi:10.5285/c6612cbe-50b3-0cff- e053-6c86abc09f8f)
-        Data (in netCDF format) can be downloaded here: https://www.gebco.net/data_and_products/gridded_bathymetry_data/
+    """Reads the GEBCO_2021 gridded bathymetric data set.
+    A global terrain model for ocean and land,
+    providing elevation data, in meters, on a 15 arc-second interval grid.
+    Reference: GEBCO Compilation Group (2021) GEBCO 2021 Grid (doi:10.5285/c6612cbe-50b3-0cff- e053-6c86abc09f8f)
+    Data (in netCDF format) can be downloaded here: https://www.gebco.net/data_and_products/gridded_bathymetry_data/
 
-        Contributed by: https://github.com/emiliebyer
+    Contributed by: https://github.com/emiliebyer
     """
-    def __init__(self, expansion_factor: float=1.2, tile: str='n61.0_s59.0_w4.0_e6.0', folder: str='/lustre/storeB/project/fou/om/WW3/bathy/gebco2021'):
-        self.source=f'{folder}/gebco_2021_{tile}.nc'
+
+    def __init__(
+        self,
+        expansion_factor: float = 1.2,
+        tile: str = "n61.0_s59.0_w4.0_e6.0",
+        folder: str = "/lustre/storeB/project/fou/om/WW3/bathy/gebco2021",
+    ):
+        self.source = f"{folder}/gebco_2021_{tile}.nc"
         self.expansion_factor = expansion_factor
         return
 
@@ -257,12 +282,14 @@ class GEBCO2021(TopoReader):
         # when we interpoolate or filter
         lon, lat = expand_area(lon, lat, self.expansion_factor)
 
-        ds = xr.open_dataset(self.source).sel(lon=slice(lon[0],lon[1]), lat=slice(lat[0],lat[1]))
+        ds = xr.open_dataset(self.source).sel(
+            lon=slice(lon[0], lon[1]), lat=slice(lat[0], lat[1])
+        )
 
         elevation = ds.elevation.values.astype(float)
 
         # Negative valies and NaN's are land
-        topo = -1*elevation
+        topo = -1 * elevation
 
         topo_lon = ds.lon.values.astype(float)
         topo_lat = ds.lat.values.astype(float)
@@ -270,8 +297,7 @@ class GEBCO2021(TopoReader):
         return topo, topo_lon, topo_lat, None, None, None, None
 
     def __str__(self):
-        return(f"Reading GEBCO2021 topography from {self.source}.")
-
+        return f"Reading GEBCO2021 topography from {self.source}."
 
 
 # class Merge(TopoReader):
@@ -296,8 +322,6 @@ class GEBCO2021(TopoReader):
 #         return("Merging data from several grids.")
 
 
-
-
 class ForceFeed(TopoReader):
     """Simply passes on the data it was fed upon initialization"""
 
@@ -316,13 +340,19 @@ class ForceFeed(TopoReader):
         return topo, topo_lon, topo_lat, None, None, None, None
 
     def __str__(self):
-        return("Passing on the topography I was initialized with.")
+        return "Passing on the topography I was initialized with."
+
 
 class MshFile(TopoReader):
     """Reads topography data from msh-file"""
 
-    def __init__(self, filename: str, expansion_factor: float=1.2,
-                zone_number: int=None, zone_letter: str='W'):
+    def __init__(
+        self,
+        filename: str,
+        expansion_factor: float = 1.2,
+        zone_number: int = None,
+        zone_letter: str = "W",
+    ):
         self.filename = filename
         self.expansion_factor = expansion_factor
         self.zone_number = zone_number
@@ -334,25 +364,25 @@ class MshFile(TopoReader):
 
         mesh = meshio.read(self.filename)
 
-        topo_x = mesh.points[:,0]
-        topo_y = mesh.points[:,1]
-        topo = mesh.points[:,2]
+        topo_x = mesh.points[:, 0]
+        topo_y = mesh.points[:, 1]
+        topo = mesh.points[:, 2]
 
         if self.zone_number is None:
-            xedges, yedges  = expand_area(lon, lat, self.expansion_factor)
+            xedges, yedges = expand_area(lon, lat, self.expansion_factor)
         else:
-            xedges, yedges  = expand_area(x, y, self.expansion_factor)
+            xedges, yedges = expand_area(x, y, self.expansion_factor)
 
-        mask1=np.logical_and(topo_x>=xedges[0], topo_x<=xedges[1])
-        mask2=np.logical_and(topo_y>=yedges[0], topo_y<=yedges[1])
+        mask1 = np.logical_and(topo_x >= xedges[0], topo_x <= xedges[1])
+        mask2 = np.logical_and(topo_y >= yedges[0], topo_y <= yedges[1])
         mask = np.logical_and(mask1, mask2)
         topo_x = topo_x[mask]
         topo_y = topo_y[mask]
-        topo=topo[mask]
+        topo = topo[mask]
         if self.zone_number is None:
             return topo, topo_x, topo_y, None, None, None, None
         else:
             return topo, None, None, topo_x, topo_y, self.zone_number, self.zone_letter
 
     def __str__(self):
-        return(f"Reading topography from {self.filename}.")
+        return f"Reading topography from {self.filename}."
