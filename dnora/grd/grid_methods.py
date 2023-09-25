@@ -96,7 +96,6 @@ class GridMethods:
             self._raw.set_utm(zone_number, zone_letter)
 
         self.raw().set_topo(topo)
-        self.raw().set_sea_mask(self.raw().topo() > 0)
 
     def mesh_grid(self, mesher: Mesher = Interpolate(method="nearest")) -> None:
         """Meshes the raw data down to the grid definitions."""

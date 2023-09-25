@@ -7,6 +7,7 @@ from .read import MshFile as topo_MshFile
 from .read_tr import TriangReader
 from .read_tr import MshFile as triang_MshFile
 from .tri_arangers import TriAranger
+from .mesh import Trivial as TrivialMesher
 
 
 @add_datavar(name="topo", default_value=999.0)
@@ -18,6 +19,9 @@ class TriGrid(PointSkeleton, GridMethods):
         tri_grid = cls(name=name)
         tri_grid.import_triang(triang_MshFile(filename))
         tri_grid.import_topo(topo_MshFile(filename))
+        tri_grid.mesh_grid(TrivialMesher())
+        # tri_grid.set_topo(tri_grid.raw().topo())
+        # tri_grid.set_sea_mask(tri_grid.topo() > 0)
 
         return tri_grid
 

@@ -94,4 +94,4 @@ class Trivial(Mesher):
         return copy(data)
 
     def __str__(self):
-        return "Passing input data along as final meshed grid."
+        return ""
