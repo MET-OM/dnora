@@ -1,6 +1,6 @@
+from geo_skeletons import PointSkeleton
+from geo_skeletons.decorators import add_frequency, add_direction
 
-from skeletons.point_skeleton import PointSkeleton
-from skeletons.coordinate_factory import add_frequency, add_direction
 
 @add_direction(grid_coord=True)
 @add_frequency(grid_coord=True)

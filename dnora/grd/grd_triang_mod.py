@@ -20,8 +20,6 @@ class TriGrid(PointSkeleton, GridMethods):
         tri_grid.import_triang(triang_MshFile(filename))
         tri_grid.import_topo(topo_MshFile(filename))
         tri_grid.mesh_grid(TrivialMesher())
-        # tri_grid.set_topo(tri_grid.raw().topo())
-        # tri_grid.set_sea_mask(tri_grid.topo() > 0)
 
         return tri_grid
 

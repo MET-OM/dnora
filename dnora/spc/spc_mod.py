@@ -4,35 +4,48 @@ import numpy as np
 import xarray as xr
 from typing import List
 import pandas as pd
+
 # Import objects
-from ..grd.grd_mod import Grid, UnstrGrid
+from ..grd.grd_mod import Grid
 from .process import spectral_processor_for_convention_change
 from ..bnd.conventions import SpectralConvention, convert_2d_to_1d
+
 # Import abstract classes and needed instances of them
 from ..pick.point_pickers import PointPicker, TrivialPicker
 from .read import SpectralReader
 from .. import msg
 
-from skeletons.point_skeleton import PointSkeleton
-from skeletons.coordinate_factory import add_time, add_frequency
-from skeletons.mask_factory import add_mask
-from skeletons.datavar_factory import add_datavar
+from geo_skeletons.point_skeleton import PointSkeleton
+from geo_skeletons.decorators import add_time, add_frequency, add_datavar
 
 from .process import SpectralProcessor
 
-#@add_mask(name='bad', coords='all', default_value=0)
-@add_datavar(name='spec', coords='all', default_value=0.)
-@add_datavar(name='mdir', coords='all', default_value=0.)
-@add_datavar(name='spr', coords='all', default_value=0.)
+
+# @add_mask(name='bad', coords='all', default_value=0)
+@add_datavar(name="spec", coords="all", default_value=0.0)
+@add_datavar(name="mdir", coords="all", default_value=0.0)
+@add_datavar(name="spr", coords="all", default_value=0.0)
 @add_frequency(grid_coord=False)
 @add_time(grid_coord=True)
 class Spectra(PointSkeleton):
-    def __init__(self, x=None, y=None, lon=None, lat=None, time=pd.date_range('1990-01-01 00:00', '1990-01-01 01:00', freq='H'), freq=np.linspace(0.1,1,10), name='LonelySpectra', **kwargs):
-        if np.all([a is None for a in [x,y,lon,lat]]):
+    def __init__(
+        self,
+        x=None,
+        y=None,
+        lon=None,
+        lat=None,
+        time=pd.date_range("1990-01-01 00:00", "1990-01-01 01:00", freq="H"),
+        freq=np.linspace(0.1, 1, 10),
+        name="LonelySpectra",
+        **kwargs,
+    ):
+        if np.all([a is None for a in [x, y, lon, lat]]):
             x, y = 0, 0
-        super().__init__(x=x, y=y, lon=lon, lat=lat, name=name, time=time, freq=freq, **kwargs)
+        super().__init__(
+            x=x, y=y, lon=lon, lat=lat, name=name, time=time, freq=freq, **kwargs
+        )
 
-    def process_spectra(self, spectral_processors: List[SpectralProcessor]=None):
+    def process_spectra(self, spectral_processors: List[SpectralProcessor] = None):
         """Process all the individual spectra of the spectra object.
 
         E.g. change convention form WW3 to Oceanic, interpolate spectra to
@@ -49,67 +62,84 @@ class Spectra(PointSkeleton):
         convention_warning = False
 
         for processor in spectral_processors:
-
             msg.process(f"Processing spectra with {type(processor).__name__}")
-            #self._history.append(copy(processor))
+            # self._history.append(copy(processor))
             old_convention = processor._convention_in()
             if old_convention is not None:
                 if old_convention != self.convention():
-                    msg.warning(f"Spectral convention ({self.convention()}) doesn't match that expected by the processor ({old_convention})!")
-                    convention_warning=True
+                    msg.warning(
+                        f"Spectral convention ({self.convention()}) doesn't match that expected by the processor ({old_convention})!"
+                    )
+                    convention_warning = True
 
-
-            new_spec, new_dirs, new_freq, new_spr = processor(self.spec(), self.mdir(), self.freq(), self.spr())
+            new_spec, new_dirs, new_freq, new_spr = processor(
+                self.spec(), self.mdir(), self.freq(), self.spr()
+            )
             metadata = self.metadata()
 
-            self._init_structure(x=self.x(strict=True), y=self.y(strict=True),
-                            lon=self.lon(strict=True), lat=self.lat(strict=True),
-                            time=self.time(), freq=new_freq)
+            self._init_structure(
+                x=self.x(strict=True),
+                y=self.y(strict=True),
+                lon=self.lon(strict=True),
+                lat=self.lat(strict=True),
+                time=self.time(),
+                freq=new_freq,
+            )
             self.set_spec(new_spec)
             self.set_mdir(new_dirs)
             self.set_spr(new_spr)
-            self.set_metadata(metadata) # Global attributes
+            self.set_metadata(metadata)  # Global attributes
 
             # Set new convention if the processor changed it
             new_convention = processor._convention_out()
             if new_convention is not None:
                 self._set_convention(new_convention, process=False)
                 if convention_warning:
-                    msg.warning(f"Convention variable set to {new_convention}, but this might be wrong...")
+                    msg.warning(
+                        f"Convention variable set to {new_convention}, but this might be wrong..."
+                    )
                 else:
-                    msg.info(f"Changing convention from {old_convention} >>> {new_convention}")
+                    msg.info(
+                        f"Changing convention from {old_convention} >>> {new_convention}"
+                    )
 
             print(processor)
 
             msg.blank()
         return
 
-    def _set_convention(self, convention: SpectralConvention, process: bool=True) -> None:
+    def _set_convention(
+        self, convention: SpectralConvention, process: bool = True
+    ) -> None:
         """Sets a new spectral directional convention. To not touch spectra, use process=False."""
         if isinstance(convention, str):
             convention = SpectralConvention[convention.upper()]
 
         spectral_processor = spectral_processor_for_convention_change(
-                            current_convention = self.convention(),
-                            wanted_convention = convert_2d_to_1d(convention))
+            current_convention=self.convention(),
+            wanted_convention=convert_2d_to_1d(convention),
+        )
 
         if spectral_processor is None:
-            msg.info(f"Convention ({self.convention()}) already equals wanted convention ({convention}).")
+            msg.info(
+                f"Convention ({self.convention()}) already equals wanted convention ({convention})."
+            )
             return
 
         if process:
             self.process_spectra(spectral_processor)
         else:
             self._convention = convention
-            self.set_metadata({'spectral_convention': self.convention().value}, append=True)
-            print(f'Spectral convention is now: {self.convention()}')
+            self.set_metadata(
+                {"spectral_convention": self.convention().value}, append=True
+            )
+            print(f"Spectral convention is now: {self.convention()}")
 
     def convention(self):
         """Returns the convention (OCEAN/MET/MATH) of the spectra"""
-        if not hasattr(self, '_convention'):
+        if not hasattr(self, "_convention"):
             return None
         return copy(self._convention)
-
 
     # def __str__(self) -> str:
     #     """Prints status of spectra."""

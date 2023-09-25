@@ -1,12 +1,14 @@
-from __future__ import annotations # For TYPE_CHECKING
+from __future__ import annotations  # For TYPE_CHECKING
 from copy import copy
 import pandas as pd
 import numpy as np
-from skeletons import PointSkeleton
+from geo_skeletons import PointSkeleton
+
 # Import objects
 from ..grd.grd_mod import Grid
 
 from ..file_module import FileNames
+
 # Import abstract classes and needed instances of them
 from ..wnd import Forcing
 from ..wnd.read import ForcingReader
@@ -33,29 +35,39 @@ from .. import wlv
 from ..run.model_executers import ModelExecuter
 from ..spectral_grid import SpectralGrid
 
-from skeletons.datavar_factory import add_datavar
+from skeletons.decorators import add_datavar
 
 from .. import msg
 from ..cacher.cache_decorator import cached_reader
 from ..converters import convert_swash_mat_to_netcdf
 from pathlib import Path
 
+
 class ModelRun:
-    def __init__(self, grid: Grid=None, start_time: str='1970-01-01T00:00',
-    end_time: str='2030-12-31T23:59', name: str='AnonymousModelRun',
-    dry_run: bool=False):
+    def __init__(
+        self,
+        grid: Grid = None,
+        start_time: str = "1970-01-01T00:00",
+        end_time: str = "2030-12-31T23:59",
+        name: str = "AnonymousModelRun",
+        dry_run: bool = False,
+    ):
         self.name = copy(name)
         self._grid = copy(grid)
-        self._time = pd.date_range(start_time, end_time, freq='H')
+        self._time = pd.date_range(start_time, end_time, freq="H")
         self._exported_to = {}
         self._global_dry_run = dry_run
         self._dry_run = False  # Set by methods
 
-    @cached_reader('Forcing', wnd.read.DnoraNc)
-    def import_forcing(self, forcing_reader: ForcingReader=None,
-                        name: str=None, dry_run: bool=False,
-                        source: str='remote',
-                        **kwargs) -> None:
+    @cached_reader("Forcing", wnd.read.DnoraNc)
+    def import_forcing(
+        self,
+        forcing_reader: ForcingReader = None,
+        name: str = None,
+        dry_run: bool = False,
+        source: str = "remote",
+        **kwargs,
+    ) -> None:
         """Imports wind forcing.
 
         source = 'remote' (default) / '<folder>' / 'met'
@@ -71,36 +83,45 @@ class ModelRun:
 
         # This is to allow importing from cache using only a name
         if forcing_reader is None:
-            raise Exception('Define a ForcingReader!')
+            raise Exception("Define a ForcingReader!")
 
         name = name or forcing_reader.name()
         forcing_reader.set_source(source)
 
         if name is None:
-            raise ValueError('Provide either a name or a ForcingReader that will then define the name!')
+            raise ValueError(
+                "Provide either a name or a ForcingReader that will then define the name!"
+            )
 
         msg.header(forcing_reader, "Importing wind forcing...")
 
         if not self.dry_run():
-            time, u, v, lon, lat, x, y, attributes = forcing_reader(self.grid(), self.start_time(), self.end_time(), **kwargs)
-            
+            time, u, v, lon, lat, x, y, attributes = forcing_reader(
+                self.grid(), self.start_time(), self.end_time(), **kwargs
+            )
+
             self._forcing = Forcing(lon=lon, lat=lat, x=x, y=y, time=time, name=name)
             x = x or lon
             y = y or lat
             self.forcing().set_spacing(nx=len(x), ny=len(y))
-            
-            self.forcing().name = name 
+
+            self.forcing().name = name
             self.forcing().set_u(u)
             self.forcing().set_v(v)
             self.forcing().set_metadata(attributes)
         else:
-            msg.info('Dry run! No forcing will be imported.')
+            msg.info("Dry run! No forcing will be imported.")
 
-    @cached_reader('Boundary', bnd.read.DnoraNc)
-    def import_boundary(self, boundary_reader: BoundaryReader=None,
-                        point_picker: PointPicker=None, name: str=None,
-                        dry_run: bool=False, source: str='remote',
-                       **kwargs):
+    @cached_reader("Boundary", bnd.read.DnoraNc)
+    def import_boundary(
+        self,
+        boundary_reader: BoundaryReader = None,
+        point_picker: PointPicker = None,
+        name: str = None,
+        dry_run: bool = False,
+        source: str = "remote",
+        **kwargs,
+    ):
         """Imports boundary spectra. Which spectra to choose spatically
         are determined by the point_picker.
 
@@ -108,7 +129,7 @@ class ModelRun:
 
         The implementation of this is up to the BoundaryReader, and all options might not be functional.
         'met' options will only work in MET Norway internal networks.
-        
+
         To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
         """
 
@@ -118,57 +139,77 @@ class ModelRun:
 
         # This is to allow importing from cache using only a name
         if boundary_reader is None:
-            raise Exception('Define a BoundaryReader!')
+            raise Exception("Define a BoundaryReader!")
         if point_picker is None:
-            raise Exception('Define a PointPicker!')
+            raise Exception("Define a PointPicker!")
 
         name = name or boundary_reader.name()
         boundary_reader.set_source(source)
 
         if name is None:
-            raise ValueError('Provide either a name or a BoundaryReader that will then define the name!')
+            raise ValueError(
+                "Provide either a name or a BoundaryReader that will then define the name!"
+            )
 
         if not self.dry_run():
             msg.header(boundary_reader, "Reading coordinates of spectra...")
-            lon_all, lat_all, x_all, y_all = boundary_reader.get_coordinates(self.grid(), self.start_time())
+            lon_all, lat_all, x_all, y_all = boundary_reader.get_coordinates(
+                self.grid(), self.start_time()
+            )
             all_points = PointSkeleton(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
-            
+
             if np.all(np.logical_not(self.grid().boundary_mask())):
                 boundary_points = None
             else:
-                boundary_points = PointSkeleton.from_skeleton(self.grid(), mask=self.grid().boundary_mask())
-            
-       
+                boundary_points = PointSkeleton.from_skeleton(
+                    self.grid(), mask=self.grid().boundary_mask()
+                )
+
             msg.header(point_picker, "Choosing boundary spectra...")
-            inds = point_picker(self.grid(), all_points, selected_points=boundary_points, **kwargs)
+            inds = point_picker(
+                self.grid(), all_points, selected_points=boundary_points, **kwargs
+            )
             if len(inds) < 1:
-                msg.warning("PointPicker didn't find any points. Aborting import of boundary.")
+                msg.warning(
+                    "PointPicker didn't find any points. Aborting import of boundary."
+                )
                 return
 
             # Main reading happens here
             msg.header(boundary_reader, "Loading boundary spectra...")
 
-            time, freq, dirs, spec, lon, lat, x, y, metadata = boundary_reader(self.grid(), self.start_time(), self.end_time(), inds, **kwargs)
-            self._boundary = Boundary(x=x, y=y, lon=lon, lat=lat, time=time, freq=freq, dirs=dirs, name=name)
+            time, freq, dirs, spec, lon, lat, x, y, metadata = boundary_reader(
+                self.grid(), self.start_time(), self.end_time(), inds, **kwargs
+            )
+            self._boundary = Boundary(
+                x=x, y=y, lon=lon, lat=lat, time=time, freq=freq, dirs=dirs, name=name
+            )
 
             self.boundary().set_spec(spec)
             self.boundary().set_metadata(metadata)
             # E.g. are the spectra oceanic convention etc.
             self.boundary()._convention = boundary_reader.convention()
 
-            self.boundary().set_metadata({'spectral_convention': self.boundary().convention().value}, append=True)
+            self.boundary().set_metadata(
+                {"spectral_convention": self.boundary().convention().value}, append=True
+            )
 
             if boundary_reader.post_processing() is not None:
                 self.boundary().process_boundary(boundary_reader.post_processing())
             return
         else:
-            msg.info('Dry run! No boundary spectra will be imported.')
+            msg.info("Dry run! No boundary spectra will be imported.")
 
-    @cached_reader('Spectra', spc.read.DnoraNc)
-    def import_spectra(self, spectral_reader: SpectralReader=None,
-                        point_picker: PointPicker=None, name: str=None,
-                        dry_run: bool=False, source: str='remote',
-                       **kwargs):
+    @cached_reader("Spectra", spc.read.DnoraNc)
+    def import_spectra(
+        self,
+        spectral_reader: SpectralReader = None,
+        point_picker: PointPicker = None,
+        name: str = None,
+        dry_run: bool = False,
+        source: str = "remote",
+        **kwargs,
+    ):
         """Imports spectra. Which spectra to choose spatically
         are determined by the point_picker.
 
@@ -176,7 +217,7 @@ class ModelRun:
 
         The implementation of this is up to the SpectralReader, and all options might not be functional.
         'met' options will only work in MET Norway internal networks.
-        
+
         To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
         """
 
@@ -186,102 +227,142 @@ class ModelRun:
 
         # This is to allow importing from cache using only a name
         if spectral_reader is None:
-            raise Exception('Define a SpectralReader!')
+            raise Exception("Define a SpectralReader!")
         if point_picker is None:
-            raise Exception('Define a PointPicker!')
+            raise Exception("Define a PointPicker!")
 
         name = name or spectral_reader.name()
         spectral_reader.set_source(source)
 
         if name is None:
-            raise ValueError('Provide either a name or a SpectralReader that will then define the name!')
+            raise ValueError(
+                "Provide either a name or a SpectralReader that will then define the name!"
+            )
 
         if not self.dry_run():
             msg.header(spectral_reader, "Reading coordinates of spectra...")
-            lon_all, lat_all, x_all, y_all = spectral_reader.get_coordinates(self.grid(), self.start_time())
+            lon_all, lat_all, x_all, y_all = spectral_reader.get_coordinates(
+                self.grid(), self.start_time()
+            )
             all_points = PointSkeleton(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
-            
+
             if np.all(np.logical_not(self.grid().boundary_mask())):
                 boundary_points = None
             else:
-                boundary_points = PointSkeleton.from_skeleton(self.grid(), mask=self.grid().boundary_mask())
-            
+                boundary_points = PointSkeleton.from_skeleton(
+                    self.grid(), mask=self.grid().boundary_mask()
+                )
+
             msg.header(point_picker, "Choosing spectra...")
-            inds = point_picker(self.grid(), all_points, selected_points=boundary_points, **kwargs)
+            inds = point_picker(
+                self.grid(), all_points, selected_points=boundary_points, **kwargs
+            )
 
             msg.header(spectral_reader, "Loading omnidirectional spectra...")
-            time, freq, spec, mdir, spr, lon, lat, x, y, metadata = spectral_reader(self.grid(), self.start_time(), self.end_time(), inds, **kwargs)
+            time, freq, spec, mdir, spr, lon, lat, x, y, metadata = spectral_reader(
+                self.grid(), self.start_time(), self.end_time(), inds, **kwargs
+            )
 
-            self._spectra = Spectra(x=x, y=y, lon=lon, lat=lat, time=time, freq=freq, name=name)
+            self._spectra = Spectra(
+                x=x, y=y, lon=lon, lat=lat, time=time, freq=freq, name=name
+            )
 
             self.spectra().set_spec(spec)
             self.spectra().set_mdir(mdir)
             self.spectra().set_spr(spr)
-            
+
             self.spectra().set_metadata(metadata)
 
             # E.g. are the spectra oceanic convention etc.
             self.spectra()._convention = spectral_reader.convention()
-            self.spectra().set_metadata({'spectral_convention': self.spectra().convention().value}, append=True)
+            self.spectra().set_metadata(
+                {"spectral_convention": self.spectra().convention().value}, append=True
+            )
         else:
-            msg.info('Dry run! No spectra will be imported.')
+            msg.info("Dry run! No spectra will be imported.")
 
-    @cached_reader('WaveSeries', wsr.read.DnoraNc)
-    def import_waveseries(self, waveseries_reader: WaveSeriesReader=None,
-                        point_picker: PointPicker=None, name: str=None,
-                        dry_run: bool=False, source: str='remote',
-                       **kwargs):
-
-
+    @cached_reader("WaveSeries", wsr.read.DnoraNc)
+    def import_waveseries(
+        self,
+        waveseries_reader: WaveSeriesReader = None,
+        point_picker: PointPicker = None,
+        name: str = None,
+        dry_run: bool = False,
+        source: str = "remote",
+        **kwargs,
+    ):
         self._dry_run = dry_run
         waveseries_reader = waveseries_reader or self._get_waveseries_reader()
         point_picker = point_picker or self._get_point_picker()
 
         # This is to allow importing from cache using only a name
         if waveseries_reader is None:
-            raise Exception('Define a WaveSeriesReader!')
+            raise Exception("Define a WaveSeriesReader!")
         if point_picker is None:
-            raise Exception('Define a PointPicker!')
+            raise Exception("Define a PointPicker!")
 
         name = name or waveseries_reader.name()
         waveseries_reader.set_source(source)
 
         if name is None:
-            raise ValueError('Provide either a name or a WaveSeriesReader that will then define the name!')
+            raise ValueError(
+                "Provide either a name or a WaveSeriesReader that will then define the name!"
+            )
 
         if not self.dry_run():
             msg.header(waveseries_reader, "Reading coordinates of WaveSeries...")
-            lon_all, lat_all, x_all, y_all = waveseries_reader.get_coordinates(self.grid(), self.start_time())
+            lon_all, lat_all, x_all, y_all = waveseries_reader.get_coordinates(
+                self.grid(), self.start_time()
+            )
 
             all_points = PointSkeleton(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
-            
+
             if np.all(np.logical_not(self.grid().boundary_mask())):
                 boundary_points = None
             else:
-                boundary_points = PointSkeleton.from_skeleton(self.grid(), mask=self.grid().boundary_mask())
-            
+                boundary_points = PointSkeleton.from_skeleton(
+                    self.grid(), mask=self.grid().boundary_mask()
+                )
+
             msg.header(point_picker, "Choosing wave series points...")
-            inds = point_picker(self.grid(), all_points, selected_points=boundary_points, **kwargs)
+            inds = point_picker(
+                self.grid(), all_points, selected_points=boundary_points, **kwargs
+            )
 
             msg.header(waveseries_reader, "Loading wave series data...")
-            time, data_dict, lon, lat, x, y, metadata = waveseries_reader(self.grid(), self.start_time(), self.end_time(), inds, **kwargs)
+            time, data_dict, lon, lat, x, y, metadata = waveseries_reader(
+                self.grid(), self.start_time(), self.end_time(), inds, **kwargs
+            )
 
             self._waveseries = WaveSeries(x, y, lon, lat, time=time, name=name)
 
             for wp, data in data_dict.items():
-                self._waveseries = add_datavar(wp.name(), append=True)(self.waveseries()) # Creates .hs() etc. methods
+                self._waveseries = add_datavar(wp.name(), append=True)(
+                    self.waveseries()
+                )  # Creates .hs() etc. methods
                 self.waveseries()._update_datavar(wp.name(), data)
-                self.waveseries().set_metadata({'name': wp.name(), 'unit': f'{wp.unit()}', 'standard_name': wp.standard_name()}, data_array_name=wp.name())
-                        
-            self.waveseries().set_metadata(metadata) # Global attributes
+                self.waveseries().set_metadata(
+                    {
+                        "name": wp.name(),
+                        "unit": f"{wp.unit()}",
+                        "standard_name": wp.standard_name(),
+                    },
+                    data_array_name=wp.name(),
+                )
+
+            self.waveseries().set_metadata(metadata)  # Global attributes
         else:
-            msg.info('Dry run! No waveseries will be imported.')
-    
-    @cached_reader('WaterLevel', wlv.read.DnoraNc)
-    def import_waterlevel(self, waterlevel_reader: WaterLevelReader=None,
-                        name: str=None, dry_run: bool=False,
-                        source: str='remote',
-                        **kwargs) -> None:
+            msg.info("Dry run! No waveseries will be imported.")
+
+    @cached_reader("WaterLevel", wlv.read.DnoraNc)
+    def import_waterlevel(
+        self,
+        waterlevel_reader: WaterLevelReader = None,
+        name: str = None,
+        dry_run: bool = False,
+        source: str = "remote",
+        **kwargs,
+    ) -> None:
         """Imports waterlevel.
 
         source = 'remote' (default) / '<folder>' / 'met'
@@ -297,93 +378,117 @@ class ModelRun:
 
         # This is to allow importing from cache using only a name
         if waterlevel_reader is None:
-            raise Exception('Define a WaterLevelReader!')
+            raise Exception("Define a WaterLevelReader!")
 
         name = name or waterlevel_reader.name()
         waterlevel_reader.set_source(source)
 
         if name is None:
-            raise ValueError('Provide either a name or a WaterLevelReader that will then define the name!')
+            raise ValueError(
+                "Provide either a name or a WaterLevelReader that will then define the name!"
+            )
 
         msg.header(waterlevel_reader, "Importing water level data...")
 
         if not self.dry_run():
-            time, waterlevel, lon, lat, x, y, attributes = waterlevel_reader(self.grid(), self.start_time(), self.end_time(), **kwargs)
-            self._waterlevel = WaterLevel(lon=lon, lat=lat, x=x, y=y, time=time, name=name)
+            time, waterlevel, lon, lat, x, y, attributes = waterlevel_reader(
+                self.grid(), self.start_time(), self.end_time(), **kwargs
+            )
+            self._waterlevel = WaterLevel(
+                lon=lon, lat=lat, x=x, y=y, time=time, name=name
+            )
             x = x or lon
             y = y or lat
             self.waterlevel().set_spacing(nx=len(x), ny=len(y))
-            
-            self.waterlevel().name = name 
+
+            self.waterlevel().name = name
             self.waterlevel().set_waterlevel(waterlevel)
             self.waterlevel().set_metadata(attributes)
         else:
-            msg.info('Dry run! No water level data will be imported.')
-    
-    
+            msg.info("Dry run! No water level data will be imported.")
+
     def cache_boundary(self):
         """Writes existing data to cached files."""
-        self.export_boundary(boundary_writer=bnd.write.DnoraNc(), format='Cache')
+        self.export_boundary(boundary_writer=bnd.write.DnoraNc(), format="Cache")
 
     def cache_spectra(self):
         """Writes existing data to cached files."""
-        self.export_spectra(spectral_writer=spc.write.DnoraNc(), format='Cache')
+        self.export_spectra(spectral_writer=spc.write.DnoraNc(), format="Cache")
 
     def cache_forcing(self):
         """Writes existing data to cached files."""
-        self.export_forcing(forcing_writer=wnd.write.DnoraNc(), format='Cache')
+        self.export_forcing(forcing_writer=wnd.write.DnoraNc(), format="Cache")
 
     def cache_waveseries(self):
         """Writes existing data to cached files."""
-        self.export_waveseries(waveseries_writer=wsr.write.DnoraNc(), format='Cache')
+        self.export_waveseries(waveseries_writer=wsr.write.DnoraNc(), format="Cache")
 
     def cache_waterlevel(self):
         """Writes existing data to cached files."""
-        self.export_waterlevel(waterlevel_writer=wlv.write.DnoraNc(), format='Cache')
+        self.export_waterlevel(waterlevel_writer=wlv.write.DnoraNc(), format="Cache")
 
-    def boundary_to_spectra(self, dry_run: bool=False, name :str=None,
-                            write_cache=False, **kwargs):
+    def boundary_to_spectra(
+        self, dry_run: bool = False, name: str = None, write_cache=False, **kwargs
+    ):
         self._dry_run = dry_run
         if self.boundary() is None:
-            msg.warning('No Boundary to convert to Spectra!')
+            msg.warning("No Boundary to convert to Spectra!")
 
         spectral_reader = spc.read.BoundaryToSpectra(self.boundary())
-        msg.header(spectral_reader, 'Converting the boundary spectra to omnidirectional spectra...')
+        msg.header(
+            spectral_reader,
+            "Converting the boundary spectra to omnidirectional spectra...",
+        )
         name = self.boundary().name
 
         if not self.dry_run():
-            self.import_spectra(spectral_reader=spectral_reader,
-                                point_picker=bnd.pick.TrivialPicker(),
-                                name=name,
-                                write_cache=write_cache, **kwargs)
+            self.import_spectra(
+                spectral_reader=spectral_reader,
+                point_picker=bnd.pick.TrivialPicker(),
+                name=name,
+                write_cache=write_cache,
+                **kwargs,
+            )
         else:
-            msg.info('Dry run! No boundary will not be converted to spectra.')
+            msg.info("Dry run! No boundary will not be converted to spectra.")
 
-
-
-    def spectra_to_waveseries(self, dry_run: bool=False, write_cache=False,
-                                freq: tuple=(0, 10_000), **kwargs):
+    def spectra_to_waveseries(
+        self,
+        dry_run: bool = False,
+        write_cache=False,
+        freq: tuple = (0, 10_000),
+        **kwargs,
+    ):
         self._dry_run = dry_run
         if self.spectra() is None:
-            msg.warning('No Spectra to convert to WaveSeries!')
+            msg.warning("No Spectra to convert to WaveSeries!")
             return
 
         waveseries_reader = SpectraToWaveSeries(self.spectra(), freq)
-        msg.header(waveseries_reader, 'Converting the spectra to wave series data...')
+        msg.header(waveseries_reader, "Converting the spectra to wave series data...")
         name = self.spectra().name
         if not self.dry_run():
-            self.import_waveseries(waveseries_reader=waveseries_reader,
-                                    point_picker=bnd.pick.TrivialPicker(),
-                                    name=name,
-                                    write_cache=write_cache, **kwargs)
+            self.import_waveseries(
+                waveseries_reader=waveseries_reader,
+                point_picker=bnd.pick.TrivialPicker(),
+                name=name,
+                write_cache=write_cache,
+                **kwargs,
+            )
         else:
-            msg.info('Dry run! No boundary will not be converted to spectra.')
+            msg.info("Dry run! No boundary will not be converted to spectra.")
 
-    def boundary_to_waveseries(self, dry_run: bool=False, write_cache=False,
-                                freq: tuple=(0, 10_000), **kwargs):
+    def boundary_to_waveseries(
+        self,
+        dry_run: bool = False,
+        write_cache=False,
+        freq: tuple = (0, 10_000),
+        **kwargs,
+    ):
         self.boundary_to_spectra(dry_run=dry_run, write_cache=write_cache, **kwargs)
-        self.spectra_to_waveseries(dry_run=dry_run, write_cache=write_cache, freq=freq, **kwargs)
-
+        self.spectra_to_waveseries(
+            dry_run=dry_run, write_cache=write_cache, freq=freq, **kwargs
+        )
 
     def set_spectral_grid_from_boundary(self):
         if self.boundary() is None:
@@ -397,23 +502,40 @@ class ModelRun:
             return
         self.set_spectral_grid(freq=self.spectra().freq(), **kwargs)
 
-    def set_spectral_grid(self, freq: np.ndarray=None, dirs: np.ndarray=None, freq0: float=0.04118, nfreq: int=32, ndir: int=36, finc: float=1.1, dirshift: float=0.):
+    def set_spectral_grid(
+        self,
+        freq: np.ndarray = None,
+        dirs: np.ndarray = None,
+        freq0: float = 0.04118,
+        nfreq: int = 32,
+        ndir: int = 36,
+        finc: float = 1.1,
+        dirshift: float = 0.0,
+    ):
         """Sets spectral grid for model run. Will be used to write input files."""
         if freq is None:
-            freq = np.array([freq0*finc**n for n in np.linspace(0,nfreq-1,nfreq)])
+            freq = np.array(
+                [freq0 * finc**n for n in np.linspace(0, nfreq - 1, nfreq)]
+            )
         if dirs is None:
-            dirs = np.linspace(0,360,ndir+1)[0:-1]+dirshift
-        self._spectral_grid = SpectralGrid(name='spectral_grid', freq=freq, dirs=dirs)
+            dirs = np.linspace(0, 360, ndir + 1)[0:-1] + dirshift
+        self._spectral_grid = SpectralGrid(name="spectral_grid", freq=freq, dirs=dirs)
 
-    def run_model(self, model_executer: ModelExecuter=None,
-                input_file: str=None, folder: str=None,
-                dateformat: str=None, input_file_extension: str=None,
-                dry_run: bool=False, mat_to_nc: bool=False) -> None:
+    def run_model(
+        self,
+        model_executer: ModelExecuter = None,
+        input_file: str = None,
+        folder: str = None,
+        dateformat: str = None,
+        input_file_extension: str = None,
+        dry_run: bool = False,
+        mat_to_nc: bool = False,
+    ) -> None:
         """Run the model."""
         self._dry_run = dry_run
         self._model_executer = model_executer or self._get_model_executer()
         if self._model_executer is None:
-            raise Exception('Define a ModelExecuter!')
+            raise Exception("Define a ModelExecuter!")
 
         # We always assume that the model is located in the folder the input
         # file was written to
@@ -421,38 +543,46 @@ class ModelRun:
         # Option 1) Use user provided
         # Option 2) Use knowledge of where has been exported
         # Option 3) Use default values to guess where is has previously been exported
-        exported_path = Path(self.exported_to('input_file')[0])
+        exported_path = Path(self.exported_to("input_file")[0])
         primary_file = input_file or exported_path.name
-        primary_folder = folder #or str(exported_path.parent)
+        primary_folder = folder  # or str(exported_path.parent)
 
-        if hasattr(self, '_input_file_writer'):
+        if hasattr(self, "_input_file_writer"):
             extension = input_file_extension or self._input_file_writer._extension()
         else:
-            extension = input_file_extension or 'swn'
+            extension = input_file_extension or "swn"
 
-        file_object = FileNames(dict_of_objects=self.dict_of_objects(),
-                                filename=primary_file,
-                                folder=primary_folder,
-                                dateformat=dateformat,
-                                extension=extension,
-                                obj_type='model_executer',
-                                edge_object='Grid')
-
+        file_object = FileNames(
+            dict_of_objects=self.dict_of_objects(),
+            filename=primary_file,
+            folder=primary_folder,
+            dateformat=dateformat,
+            extension=extension,
+            obj_type="model_executer",
+            edge_object="Grid",
+        )
 
         msg.header(self._model_executer, "Running model...")
         msg.plain(f"Using input file: {file_object.get_filepath()}")
         if not self.dry_run():
-            self._model_executer(input_file=file_object.filename(), model_folder=file_object.folder())
+            self._model_executer(
+                input_file=file_object.filename(), model_folder=file_object.folder()
+            )
         else:
-            msg.info('Dry run! Model will not run.')
+            msg.info("Dry run! Model will not run.")
         if mat_to_nc:
-            input_file = f'{file_object.folder()}/{self.grid().name}.mat'
-            output_file = f'{file_object.folder()}/{self.grid().name}.nc'
-            convert_swash_mat_to_netcdf(input_file=input_file,output_file=output_file, lon=self.grid().lon_edges(), lat=self.grid().lat_edges(), dt=1)
+            input_file = f"{file_object.folder()}/{self.grid().name}.mat"
+            output_file = f"{file_object.folder()}/{self.grid().name}.nc"
+            convert_swash_mat_to_netcdf(
+                input_file=input_file,
+                output_file=output_file,
+                lon=self.grid().lon_edges(),
+                lat=self.grid().lat_edges(),
+                dt=1,
+            )
 
     def dry_run(self):
-        """Checks if method or global ModelRun dryrun is True.
-        """
+        """Checks if method or global ModelRun dryrun is True."""
         return self._dry_run or self._global_dry_run
 
     def grid(self) -> str:
@@ -461,49 +591,49 @@ class ModelRun:
 
     def forcing(self) -> Forcing:
         """Returns the forcing object if exists."""
-        if hasattr(self, '_forcing'):
+        if hasattr(self, "_forcing"):
             return self._forcing
         else:
             return None
 
     def boundary(self) -> Boundary:
         """Returns the boundary object if exists."""
-        if hasattr(self, '_boundary'):
+        if hasattr(self, "_boundary"):
             return self._boundary
         else:
             return None
 
     def spectra(self) -> Spectra:
         """Returns the spectral object if exists."""
-        if hasattr(self, '_spectra'):
+        if hasattr(self, "_spectra"):
             return self._spectra
         else:
             return None
 
     def waveseries(self) -> WaveSeries:
         """Returns the wave series object if exists."""
-        if hasattr(self, '_waveseries'):
+        if hasattr(self, "_waveseries"):
             return self._waveseries
         else:
             return None
-    
+
     def waterlevel(self) -> WaterLevel:
         """Returns the water level object if exists."""
-        if hasattr(self, '_waterlevel'):
+        if hasattr(self, "_waterlevel"):
             return self._waterlevel
         else:
             return None
 
     def topo(self) -> Grid:
         """Returns the raw topography object if exists."""
-        if hasattr(self.grid(), '_raw'):
+        if hasattr(self.grid(), "_raw"):
             return self.grid().raw()
         else:
             return None
-        
+
     def spectralgrid(self) -> Boundary:
         """Returns the spectral grid object if exists."""
-        if hasattr(self, '_spectral_grid'):
+        if hasattr(self, "_spectral_grid"):
             return self._spectral_grid
         else:
             return None
@@ -512,12 +642,24 @@ class ModelRun:
         """Only defined to have method for all objects"""
         return None
 
-    def dict_of_objects(self) -> dict[str: ModelRun, str: Grid, str: Forcing, str: Boundary, str: Spectra]:
-        return {'ModelRun': self, 'Grid': self.grid(), 'Topo': self.topo(), 'Forcing': self.forcing(),
-                'Boundary': self.boundary(), 'Spectra': self.spectra(), 'WaveSeries': self.waveseries(),
-                'WaterLevel': self.waterlevel(), 'SpectralGrid': self.spectralgrid()}
+    def dict_of_objects(
+        self,
+    ) -> dict[str:ModelRun, str:Grid, str:Forcing, str:Boundary, str:Spectra]:
+        return {
+            "ModelRun": self,
+            "Grid": self.grid(),
+            "Topo": self.topo(),
+            "Forcing": self.forcing(),
+            "Boundary": self.boundary(),
+            "Spectra": self.spectra(),
+            "WaveSeries": self.waveseries(),
+            "WaterLevel": self.waterlevel(),
+            "SpectralGrid": self.spectralgrid(),
+        }
 
-    def list_of_objects(self) -> list[ModelRun, Grid, Forcing, Boundary, Spectra, WaveSeries, WaterLevel]:
+    def list_of_objects(
+        self,
+    ) -> list[ModelRun, Grid, Forcing, Boundary, Spectra, WaveSeries, WaterLevel]:
         """[ModelRun, Boundary] etc."""
         return [x for x in list(self.dict_of_objects().values()) if x is not None]
 
@@ -525,10 +667,10 @@ class ModelRun:
         """['ModelRun', 'Boundary'] etc."""
         return list(self.dict_of_objects().keys())
 
-    def dict_of_object_names(self) -> dict[str: str]:
-        """ {'Boundary': 'NORA3'} etc."""
+    def dict_of_object_names(self) -> dict[str:str]:
+        """{'Boundary': 'NORA3'} etc."""
         d = {}
-        for a,b in self.dict_of_objects().items():
+        for a, b in self.dict_of_objects().items():
             if b is None:
                 d[a] = None
             else:
@@ -543,13 +685,14 @@ class ModelRun:
         """
 
         if self[obj_str] is None:
-            return ['']
+            return [""]
 
-        default_name = FileNames(model=self, format=self._get_default_format(), obj_type=obj_str).get_filepath()
+        default_name = FileNames(
+            model=self, format=self._get_default_format(), obj_type=obj_str
+        ).get_filepath()
         return self._exported_to.get(obj_str.lower(), default_name)
 
-            
-    def time(self,  crop_with: list[str]=None):
+    def time(self, crop_with: list[str] = None):
         """Returns times of ModelRun
         crop_with = ['Forcing', 'Boundary'] gives time period covered by those objects
         crop_with = 'all' crops with all objects"""
@@ -558,9 +701,9 @@ class ModelRun:
 
         if crop_with is not None:
             if type(crop_with) is not list:
-                    crop_with = [crop_with]
+                crop_with = [crop_with]
 
-            if 'all' in crop_with:
+            if "all" in crop_with:
                 crop_with = self.list_of_object_strings()
 
             for obj_str in crop_with:
@@ -571,41 +714,41 @@ class ModelRun:
                         t0 = pd.to_datetime([t0, time[0]]).max()
                     if time[-1] is not None:
                         t1 = pd.to_datetime([t1, time[-1]]).min()
-        time = pd.date_range(t0, t1, freq='H')
-        return time[::len(time)-1]
-    
-    def start_time(self, crop_with: list[str]=None):
+        time = pd.date_range(t0, t1, freq="H")
+        return time[:: len(time) - 1]
+
+    def start_time(self, crop_with: list[str] = None):
         """Returns start time of ModelRun
         crop = True: Give the period that is covered by all objects (Forcing etc.)"""
         return self.time(crop_with=crop_with)[0]
 
-    def end_time(self, crop_with: list[str]=None):
+    def end_time(self, crop_with: list[str] = None):
         """Returns start time of ModelRun
         crop = True: Give the period that is covered by all objects (Forcing etc.)"""
         return self.time(crop_with=crop_with)[-1]
-    
+
     def __getitem__(self, dnora_str: str):
-        if dnora_str.lower() == 'modelrun':
+        if dnora_str.lower() == "modelrun":
             return self
-        return eval(f'self.{dnora_str.lower()}()')
+        return eval(f"self.{dnora_str.lower()}()")
 
     def _get_default_format(self) -> str:
-        return 'DNORA'
+        return "DNORA"
 
     def _get_forcing_reader(self) -> ForcingReader:
         return None
-    
+
     def _get_boundary_reader(self) -> BoundaryReader:
         return None
-    
+
     def _get_point_picker(self) -> PointPicker:
         return None
 
     def _get_spectral_reader(self) -> SpectralReader:
         return None
-    
+
     def _get_waveseries_reader(self) -> WaveSeriesReader:
         return None
-    
+
     def _get_waterlevel_reader(self) -> WaterLevelReader:
         return None
