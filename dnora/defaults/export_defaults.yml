@@ -22,7 +22,7 @@ list_of_placeholders:
   - '#X'
   - '#Y'
 
-DNORA:
+ModelRun:
   folder: 'output'
   filename: 'dnorafile'
   dateformat: '%Y%m%dT%H%M'

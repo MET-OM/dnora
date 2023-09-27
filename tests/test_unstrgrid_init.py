@@ -1,7 +1,7 @@
-from dnora.grd import UnstrGrid
+from dnora.grd import TriGrid
 import numpy as np
 def test_init_trivial():
-    grid = UnstrGrid(lon=(1,2), lat=(0,3))
+    grid = TriGrid(lon=(1,2), lat=(0,3))
     assert grid.nx() == 2
     assert grid.ny() == 2
     assert grid.size() == (2,)
@@ -11,7 +11,7 @@ def test_init_trivial():
     np.testing.assert_array_almost_equal(grid.lonlat(),(np.array([1,2]), np.array([0,3])))
 
 def test_init_one_point_in_lat():
-    grid = UnstrGrid(lon=(3,5), lat=(0,0))
+    grid = TriGrid(lon=(3,5), lat=(0,0))
     assert grid.nx() == 2
     assert grid.ny() == 2
     assert grid.size() == (2,)
@@ -21,7 +21,7 @@ def test_init_one_point_in_lat():
     np.testing.assert_array_almost_equal(grid.lonlat(),(np.array([3,5]), np.array([0,0])))
 
 def test_init_one_point_in_lon():
-    grid = UnstrGrid(lon=(0,0), lat=(3,5))
+    grid = TriGrid(lon=(0,0), lat=(3,5))
     assert grid.nx() == 2
     assert grid.ny() == 2
     assert grid.size() == (2,)
@@ -31,7 +31,7 @@ def test_init_one_point_in_lon():
     np.testing.assert_array_almost_equal(grid.lonlat(),(np.array([0,0]), np.array([3,5])))
 
 def test_init_one_point():
-    grid = UnstrGrid(lon=0, lat=3)
+    grid = TriGrid(lon=0, lat=3)
     assert grid.nx() == 1
     assert grid.ny() == 1
     assert grid.size() == (1,)
@@ -41,7 +41,7 @@ def test_init_one_point():
     np.testing.assert_array_almost_equal(grid.lonlat(),(np.array([0]), np.array([3])))
 
 def test_init_long():
-    grid = UnstrGrid(lon=[0,2,4,5,6,6], lat=[3,1,2,3,4,5])
+    grid = TriGrid(lon=[0,2,4,5,6,6], lat=[3,1,2,3,4,5])
     assert grid.nx() == 6
     assert grid.ny() == 6
     assert grid.size() == (6,)

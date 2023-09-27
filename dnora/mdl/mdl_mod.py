@@ -18,6 +18,7 @@ from ..bnd import Boundary
 from ..bnd.read import BoundaryReader
 from ..pick.point_pickers import PointPicker
 from .. import bnd
+from .. import pick
 
 
 from ..spc import Spectra
@@ -35,7 +36,7 @@ from .. import wlv
 from ..run.model_executers import ModelExecuter
 from ..spectral_grid import SpectralGrid
 
-from skeletons.decorators import add_datavar
+from geo_skeletons.decorators import add_datavar
 
 from .. import msg
 from ..cacher.cache_decorator import cached_reader
@@ -444,7 +445,7 @@ class ModelRun:
         if not self.dry_run():
             self.import_spectra(
                 spectral_reader=spectral_reader,
-                point_picker=bnd.pick.TrivialPicker(),
+                point_picker=pick.TrivialPicker(),
                 name=name,
                 write_cache=write_cache,
                 **kwargs,
@@ -470,7 +471,7 @@ class ModelRun:
         if not self.dry_run():
             self.import_waveseries(
                 waveseries_reader=waveseries_reader,
-                point_picker=bnd.pick.TrivialPicker(),
+                point_picker=pick.TrivialPicker(),
                 name=name,
                 write_cache=write_cache,
                 **kwargs,
@@ -547,17 +548,16 @@ class ModelRun:
         primary_file = input_file or exported_path.name
         primary_folder = folder  # or str(exported_path.parent)
 
-        if hasattr(self, "_input_file_writer"):
-            extension = input_file_extension or self._input_file_writer._extension()
-        else:
-            extension = input_file_extension or "swn"
+        # if hasattr(self, "_input_file_writer"):
+        #     extension = input_file_extension or self._input_file_writer._extension()
+        # else:
+        #     extension = input_file_extension or "swn"
 
         file_object = FileNames(
-            dict_of_objects=self.dict_of_objects(),
+            model=self,
             filename=primary_file,
             folder=primary_folder,
             dateformat=dateformat,
-            extension=extension,
             obj_type="model_executer",
             edge_object="Grid",
         )
@@ -731,9 +731,6 @@ class ModelRun:
         if dnora_str.lower() == "modelrun":
             return self
         return eval(f"self.{dnora_str.lower()}()")
-
-    def _get_default_format(self) -> str:
-        return "DNORA"
 
     def _get_forcing_reader(self) -> ForcingReader:
         return None

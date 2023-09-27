@@ -1,8 +1,10 @@
 from subprocess import Popen
 from abc import ABC, abstractmethod
 
+
 class ModelExecuter(ABC):
     """Runs the model."""
+
     def __init__(self, model):
         self.model = model
 
@@ -12,12 +14,19 @@ class ModelExecuter(ABC):
         return
 
     @abstractmethod
-    def run(self, input_file: str=None, folder: str=None,
-                dateformat: str=None, input_file_extension: str=None,
-                dry_run: bool=False, mat_to_nc: bool=False) -> None:
+    def __call__(
+        self,
+        input_file: str = None,
+        folder: str = None,
+        dateformat: str = None,
+        input_file_extension: str = None,
+        dry_run: bool = False,
+        mat_to_nc: bool = False,
+    ) -> None:
         """Runs the model executable"""
 
         return
+
 
 class SWAN(ModelExecuter):
     def __init__(self):
@@ -25,14 +34,15 @@ class SWAN(ModelExecuter):
 
     def _preferred_format(self) -> str:
         """For generation of file name."""
-        return 'SWAN'
+        return "SWAN"
 
     def __call__(self, input_file: str, model_folder: str) -> None:
-        print('Running SWAN----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>')
-        p = Popen(['swanrun', '-input', input_file], cwd=model_folder)
+        print("Running SWAN----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>")
+        p = Popen(["swanrun", "-input", input_file], cwd=model_folder)
         p.wait()
 
         return
+
 
 class SWASH(ModelExecuter):
     def __init__(self):
@@ -40,12 +50,13 @@ class SWASH(ModelExecuter):
 
     def _preferred_format(self) -> str:
         """For generation of file name."""
-        return 'SWASH'
+        return "SWASH"
 
     def __call__(self, input_file: str, model_folder: str) -> None:
-        print('Running SWASH----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>')
-        p = Popen(['swashrun', '-input', input_file], cwd=model_folder)
+        print("Running SWASH----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>")
+        p = Popen(["swashrun", "-input", input_file], cwd=model_folder)
         p.wait()
+
 
 class HOS_ocean(ModelExecuter):
     def __init__(self):
@@ -53,11 +64,11 @@ class HOS_ocean(ModelExecuter):
 
     def _preferred_format(self) -> str:
         """For generation of file name."""
-        return 'HOS_ocean'
+        return "HOS_ocean"
 
     def __call__(self, input_file: str, model_folder: str) -> None:
-        print('Running HOS_ocean------------------->>>>>>>>>>>>>>>>>>>>>>>>>>')
-        p = Popen(['HOS-ocean'],cwd=model_folder)
+        print("Running HOS_ocean------------------->>>>>>>>>>>>>>>>>>>>>>>>>>")
+        p = Popen(["HOS-ocean"], cwd=model_folder)
         p.wait()
 
 
@@ -68,14 +79,17 @@ class REEF3D(ModelExecuter):
 
     def _preferred_format(self) -> str:
         """For generation of file name."""
-        return 'REEF3D'
+        return "REEF3D"
 
     def __call__(self, input_file: str, model_folder: str) -> None:
-        p = Popen(['DiveMESH'],cwd=model_folder)
+        p = Popen(["DiveMESH"], cwd=model_folder)
         p.wait()
 
         if self.nproc == 1:
-            p = Popen(['REEF3D'],cwd=model_folder)
+            p = Popen(["REEF3D"], cwd=model_folder)
         else:
-            p = Popen(['/usr/bin/mpirun -n '+str(self.nproc)+' --oversubscribe REEF3D'],cwd=model_folder)
+            p = Popen(
+                ["/usr/bin/mpirun -n " + str(self.nproc) + " --oversubscribe REEF3D"],
+                cwd=model_folder,
+            )
         p.wait()

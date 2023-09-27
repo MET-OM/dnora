@@ -1,3 +1,4 @@
+from __future__ import annotations
 import numpy as np
 from abc import ABC, abstractmethod
 from copy import copy
@@ -5,28 +6,18 @@ import scipy.ndimage as ndimage
 
 # Import aux_funcsility functions
 from .. import msg
+from typing import Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .grd_mod import Grid, UnstrGrid
 
 
 class GridProcessor(ABC):
     """Abstract class for modifying bathymetrical data of the Grid-object."""
 
     @abstractmethod
-    def __init__(self):
+    def __call__(self, grid: Union[Grid, UnstrGrid]) -> np.ndarray:
         pass
-
-    def topo(self, data, lon, lat, sea_mask) -> np.ndarray:
-        """Gets raw bathymetrical information in xyz-format and returns modified version.
-
-        This method is called from within the Grid-object
-        """
-        return None
-
-    def grid(self, data, lon, lat, sea_mask, boundary_mask) -> np.ndarray:
-        """Gets meshed bathymetrical information and returns a modified version.
-
-        This method is called from within the Grid-object
-        """
-        return None
 
     @abstractmethod
     def __str__(self):
@@ -41,14 +32,8 @@ class GridProcessor(ABC):
 class TrivialFilter(GridProcessor):
     """Returns the identical data it is passed. Used as default option."""
 
-    def __init__(self):
-        pass
-
-    def topo(self, data, lon, lat, sea_mask):
-        return copy(data)
-
-    def grid(self, data, lon, lat, sea_mask, boundary_mask):
-        return copy(data)
+    def __call__(self, grid: Union[Grid, UnstrGrid], **kwargs) -> np.ndarray:
+        return grid.topo()
 
     def __str__(self):
         return "Doing nothing to the data, just passing it along."
@@ -61,24 +46,26 @@ class SetMinDepth(GridProcessor):
     are set to land. Otherwise the shallow points are set to min_depth.
     """
 
-    def __init__(
-        self, depth: float, to_land: bool = False, ignore_land_mask: bool = False
-    ) -> None:
+    def __init__(self, depth: float = 2.0):
+        self.depth = float(depth)
+
+    def __call__(
+        self,
+        grid: Union[Grid, UnstrGrid],
+        to_land: bool = False,
+        ignore_land_mask: bool = False,
+        **kwargs,
+    ):
+        data = grid.topo()
         self.to_land = to_land
-        self.depth = depth
-        self.ignore_land_mask = ignore_land_mask
 
-    def topo(self, data, lon, lat, sea_mask):
-        return self.grid(data, lon, lat, sea_mask)
-
-    def grid(self, data, lon, lat, sea_mask, boundary_mask=None):
         shallow_points = data < self.depth
-        if self.ignore_land_mask:
+        if ignore_land_mask:
             mask = shallow_points
         else:
-            mask = np.logical_and(shallow_points, sea_mask)
+            mask = np.logical_and(shallow_points, grid.sea_mask())
 
-        if self.to_land:
+        if to_land:
             new_value = np.nan
         else:
             new_value = self.depth
@@ -103,59 +90,45 @@ class SetMaxDepth(GridProcessor):
     are set to land. Otherwise the shallow points are set to depth.
     """
 
-    def __init__(self, depth: float, to_land: bool = False) -> None:
-        self.to_land = to_land
-        self.depth = depth
+    def __init__(self, depth: float = 999.0):
+        self.depth = float(depth)
 
-    def topo(self, data, lon, lat, sea_mask):
-        return self.grid(data, lon, lat, sea_mask)
+    def __call__(
+        self,
+        grid: Union[Grid, UnstrGrid],
+        **kwargs,
+    ):
+        data = grid.topo()
 
-    def grid(self, data, lon, lat, sea_mask, boundary_mask=None):
         deep_points = data > self.depth
-        if self.to_land:
-            new_data = copy(data)
-            new_data[
-                np.logical_and(deep_points, sea_mask)
-            ] = np.nan  # Don't touch land points
-            msg.plain(
-                f"Affected {np.count_nonzero(np.logical_and(deep_points, sea_mask))} points"
-            )
-        else:
-            # Set points to the limiter
-            new_data = copy(data)
-            new_data[
-                np.logical_and(deep_points, sea_mask)
-            ] = self.depth  # Don't touch land points
-            msg.plain(
-                f"Affected {np.count_nonzero(np.logical_and(deep_points, sea_mask))} points"
-            )
+
+        new_data = copy(data)
+        new_data[
+            np.logical_and(deep_points, grid.sea_mask())
+        ] = self.depth  # Don't touch land points
+        msg.plain(
+            f"Affected {np.count_nonzero(np.logical_and(deep_points, grid.sea_mask()))} points"
+        )
         return new_data
 
     def __str__(self):
-        if self.to_land:
-            return f"Setting points deeper than {self.depth} to land (nan)"
-        else:
-            return f"Setting points deeper than {self.depth} to {self.depth}"
+        return f"Setting points deeper than {self.depth} to {self.depth}"
 
 
 class SetConstantDepth(GridProcessor):
     """Set a constant depth for the grid."""
 
-    def __init__(self, depth: float) -> None:
-        self.depth = depth
+    def __init__(self, depth: float = 999.0):
+        self.depth = float(depth)
 
-    def topo(self, data, lon, lat, sea_mask):
-        land_mask = np.logical_not(sea_mask)
-        new_data = np.ones((len(lat), len(lon))) * self.depth
-        new_data[land_mask] = np.nan  # Don't touch land points
-        msg.plain(f"Affected {np.count_nonzero(sea_mask)} points")
-        return new_data
-
-    def grid(self, data, lon, lat, sea_mask, boundary_mask=None):
-        land_mask = np.logical_not(sea_mask)
-        new_data = np.ones((len(lat), len(lon))) * self.depth
-        new_data[land_mask] = np.nan  # Don't touch land points
-        msg.plain(f"Affected {np.count_nonzero(sea_mask)} points")
+    def __call__(
+        self,
+        grid: Union[Grid, UnstrGrid],
+        **kwargs,
+    ):
+        new_data = np.full(grid.size(), self.depth)
+        new_data[grid.land_mask()] = np.nan  # Don't touch land points
+        msg.plain(f"Affected {np.count_nonzero(grid.sea_mask())} points")
         return new_data
 
     def __str__(self):
@@ -163,16 +136,26 @@ class SetConstantDepth(GridProcessor):
 
 
 class GaussianFilter(GridProcessor):
-    """Set a constant depth for the grid."""
+    """Gaussian filter. Only works for structured grid."""
 
-    def __init__(self, sigma: float = 0.5) -> None:
+    def __call__(
+        self,
+        grid: Union[Grid, UnstrGrid],
+        sigma: float = 0.5,
+        **kwargs,
+    ):
         self.sigma = sigma
+        if not grid.is_gridded():
+            msg.info(
+                f"GaussianFilter only implemented for structured grids. Doing nothing."
+            )
+            return grid.topo()
 
-    def grid(self, data, lon, lat, sea_mask, boundary_mask=None):
-        land_mask = np.logical_not(sea_mask)
-        data[land_mask] = 0
-        new_data = ndimage.filters.gaussian_filter(data, sigma=self.sigma)
-        new_data[land_mask] = np.nan  # Don't touch land points
+        new_data = grid.topo()
+        new_data[grid.land_mask()] = 0
+        new_data = ndimage.filters.gaussian_filter(new_data, sigma=sigma)
+        new_data[grid.land_mask()] = np.nan  # Don't touch land points
+
         return new_data
 
     def __str__(self):

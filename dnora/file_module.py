@@ -10,22 +10,23 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .mdl.mdl_mod import ModelRun
 
+
 @dataclass
 class FileNames:
     obj_type: str
-    format: str=None
-    model: ModelRun=None
-    filename: str=None
-    folder: str=None
-    dateformat: str=None
-    edge_object: str=None
-    time_object: str='ModelRun'
+    format: str = None
+    model: ModelRun = None
+    filename: str = None
+    folder: str = None
+    dateformat: str = None
+    edge_object: str = None
+    time_object: str = "ModelRun"
 
     def __post_init__(self):
-        self._defaults = read_defaults('export_defaults.yml', from_module=True)
+        self._defaults = read_defaults("export_defaults.yml", from_module=True)
 
-        self.format = self.format or self.model._get_default_format()
-        self.fallback = self._defaults['DNORA']
+        self.format = self.format or "ModelRun"
+        self.fallback = self._defaults["ModelRun"]
         self.primary = self._defaults[self.format]
 
         if self.edge_object is None:
@@ -38,88 +39,133 @@ class FileNames:
         return self.model.end_time(crop_with=self.time_object)
 
     def get_dateformat(self) -> str:
-        return self.dateformat or get_default_value('dateformat', self.obj_type, self.primary, self.fallback)
+        return self.dateformat or get_default_value(
+            "dateformat", self.obj_type, self.primary, self.fallback
+        )
 
-    def get_filename(self, extension: str=None, start_time: str=None, end_time: str=None, key: str='filename', clean: bool=True, edge_object: str=None) -> str:
-        filename = self.filename or get_default_value(key, self.obj_type, self.primary, self.fallback)
+    def get_filename(
+        self,
+        extension: str = None,
+        start_time: str = None,
+        end_time: str = None,
+        key: str = "filename",
+        clean: bool = True,
+        edge_object: str = None,
+    ) -> str:
+        filename = self.filename or get_default_value(
+            key, self.obj_type, self.primary, self.fallback
+        )
         start_time = start_time or self.get_start_time()
         end_time = end_time or self.get_end_time()
 
-        filename = self.replace_placeholders(filename, start_time, end_time, edge_object=edge_object)
+        filename = self.replace_placeholders(
+            filename, start_time, end_time, edge_object=edge_object
+        )
 
-        extension = extension or get_default_value('extension', self.obj_type, self.primary, self.fallback)
+        extension = extension or get_default_value(
+            "extension", self.obj_type, self.primary, self.fallback
+        )
         if extension is None:
             return Path(filename)
-        return f'{Path(filename)}.{extension}'
+        return f"{Path(filename)}.{extension}"
 
-    def get_folder(self, key: str='folder', clean: bool=True, edge_object: str=None) -> str:
-        folder = self.folder or get_default_value(key, self.obj_type, self.primary, self.fallback)
+    def get_folder(
+        self, key: str = "folder", clean: bool = True, edge_object: str = None
+    ) -> str:
+        folder = self.folder or get_default_value(
+            key, self.obj_type, self.primary, self.fallback
+        )
 
         return Path(self.replace_placeholders(folder, edge_object=edge_object))
 
-    def get_filepath(self, extension: str=None, start_time: str=None, end_time: str=None, key: str='filename', clean: bool=True, edge_object: str=None) -> str:
-        return add_folder_to_filename(self.get_filename(extension, start_time, end_time, edge_object=edge_object, key=key), self.get_folder(edge_object=edge_object))
+    def get_filepath(
+        self,
+        extension: str = None,
+        start_time: str = None,
+        end_time: str = None,
+        key: str = "filename",
+        clean: bool = True,
+        edge_object: str = None,
+    ) -> str:
+        return add_folder_to_filename(
+            self.get_filename(
+                extension, start_time, end_time, edge_object=edge_object, key=key
+            ),
+            self.get_folder(edge_object=edge_object),
+        )
 
-    def create_folder(self, key: str='folder', edge_object: str=None) -> None:
+    def create_folder(self, key: str = "folder", edge_object: str = None) -> None:
         folder = Path(self.get_folder(key=key, edge_object=edge_object))
 
         if not folder.is_dir():
             msg.plain(f"Creating folder {str(folder)}")
             folder.mkdir(parents=True)
 
-    def replace_placeholders(self, unclean_string: str, start_time=None, end_time=None, edge_object: str=None) -> str:
-        unclean_string = replace_objects(unclean_string, self.model.dict_of_object_names())
+    def replace_placeholders(
+        self,
+        unclean_string: str,
+        start_time=None,
+        end_time=None,
+        edge_object: str = None,
+    ) -> str:
+        unclean_string = replace_objects(
+            unclean_string, self.model.dict_of_object_names()
+        )
         unclean_string = replace_object_type(unclean_string, self.obj_type)
-        edge_object =  self.model[edge_object or self.edge_object]
+        edge_object = self.model[edge_object or self.edge_object]
 
-        lon = edge_object.edges('lon', strict=True)
-        lat = edge_object.edges('lat', strict=True)
-        x = edge_object.edges('x', strict=True)
-        y = edge_object.edges('y', strict=True)
+        lon = edge_object.edges("lon", strict=True)
+        lat = edge_object.edges("lat", strict=True)
+        x = edge_object.edges("x", strict=True)
+        y = edge_object.edges("y", strict=True)
 
         unclean_string = replace_lonlat(unclean_string, lon, lat)
         unclean_string = replace_xy(unclean_string, x, y)
 
-        clean_string = replace_times(unclean_string, self.get_dateformat(), [start_time, end_time])
+        clean_string = replace_times(
+            unclean_string, self.get_dateformat(), [start_time, end_time]
+        )
 
         return clean_string
 
 
 def add_prefix(filename: str, prefix: str) -> str:
     """Adds a prefix to a filename, e.g. FileName.txt -> new_FileName.txt"""
-    if prefix == '':
+    if prefix == "":
         return filename
 
-    if prefix[-1] == '_':
+    if prefix[-1] == "_":
         prefix = prefix[:-1]
 
-    if filename == '':
-            return prefix
+    if filename == "":
+        return prefix
 
-    if filename[0] == '_':
+    if filename[0] == "_":
         filename = filename[1:]
 
-    return f'{prefix}_{filename}'
+    return f"{prefix}_{filename}"
+
 
 def add_suffix(filename: str, suffix: str) -> str:
     """Adds a suffix to a filename, e.g. FileName.txt -> FileName_new.txt"""
-    if suffix == '':
+    if suffix == "":
         return filename
 
-    if suffix[0] == '_':
+    if suffix[0] == "_":
         suffix = suffix[1:]
 
-    if filename == '':
+    if filename == "":
         return suffix
 
-    filename_list = filename.split('.')
+    filename_list = filename.split(".")
 
     if len(filename_list) == 1:
-        return f'{filename}_{suffix}'
+        return f"{filename}_{suffix}"
     else:
-        filename = '.'.join(filename_list[0:-1])
-        extension = f'{filename_list[-1]}'
-        return f'{filename}_{suffix}.{extension}'
+        filename = ".".join(filename_list[0:-1])
+        extension = f"{filename_list[-1]}"
+        return f"{filename}_{suffix}.{extension}"
+
 
 def replace_times(filename: str, dateformat: str, times: list) -> str:
     """Substitutes the strings #T0, #T1, #T2... etc. in filname with time
@@ -133,6 +179,7 @@ def replace_times(filename: str, dateformat: str, times: list) -> str:
             filename = re.sub(f"#T{ct}", pd.Timestamp(t).strftime(dateformat), filename)
 
     return filename
+
 
 def replace_lonlat(filename: str, lon: float, lat: float) -> str:
     """Substitutes the strings #Lon, #Lat in filename with values of lon and
@@ -161,6 +208,7 @@ def replace_lonlat(filename: str, lon: float, lat: float) -> str:
 
     return filename
 
+
 def replace_xy(filename: str, x: float, y: float) -> str:
     """Substitutes the strings #X, #Y in filename with values of lon and
     lat.
@@ -187,7 +235,8 @@ def replace_xy(filename: str, x: float, y: float) -> str:
 
     return filename
 
-def replace_objects(filename: str, dict_of_object_names: dict[str: str]) -> str:
+
+def replace_objects(filename: str, dict_of_object_names: dict[str:str]) -> str:
     """Substitutes the strings #{Object} in filename with the name given to
     the object.
 
@@ -201,29 +250,34 @@ def replace_objects(filename: str, dict_of_object_names: dict[str: str]) -> str:
 
     return filename
 
+
 def replace_object_type(filename: str, obj_type: str) -> str:
     "Replaces the #ObjectType tag to e.g. Boundary of Forcing with lowe case"
     return re.sub(f"#ObjectType", obj_type.lower(), filename, flags=re.IGNORECASE)
 
-def clean_filename(filename: str, list_of_placeholders: list[str]=None) -> str:
-    """ Cleans out the file name from possible used placeholders, e.g. #Grid
+
+def clean_filename(filename: str, list_of_placeholders: list[str] = None) -> str:
+    """Cleans out the file name from possible used placeholders, e.g. #Grid
     as given in the list.
 
     Also removes multiple underscores '___' etc.
     """
     if list_of_placeholders is None:
-        list_of_placeholders = read_defaults('export_defaults.yml', from_module=True)['list_of_placeholders']
+        list_of_placeholders = read_defaults("export_defaults.yml", from_module=True)[
+            "list_of_placeholders"
+        ]
 
     for s in list_of_placeholders:
-            filename = re.sub(s, '', filename)
+        filename = re.sub(s, "", filename)
 
-    filename = re.sub("_{2,10}", '_', filename)
-    filename = re.sub("_-_", '', filename)
-    filename = re.sub("_-", '_', filename)
-    if filename and filename[-1] == '_':
+    filename = re.sub("_{2,10}", "_", filename)
+    filename = re.sub("_-_", "", filename)
+    filename = re.sub("_-", "_", filename)
+    if filename and filename[-1] == "_":
         filename = filename[:-1]
 
     return filename
+
 
 def get_default_value(key: str, obj_type: str, primary: dict, fallback: dict):
     """Get a key (e.g. folder) from the defaults list.
@@ -260,11 +314,12 @@ def get_default_value(key: str, obj_type: str, primary: dict, fallback: dict):
 
     return final_name
 
+
 def add_folder_to_filename(filename: str, folder: str) -> str:
     return str(Path(folder).joinpath(filename))
+
 
 def split_filepath(filepath: str) -> tuple[str, str]:
     folder = str(Path(filepath).parent)
     filename = Path(filepath).name
     return filename, folder
-

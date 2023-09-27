@@ -1,9 +1,4 @@
-from dnora import grd
-from dnora import mdl
-from dnora import bnd
-from dnora import wnd
-from dnora import spc
-from dnora import wsr
+from dnora import grd, mdl, bnd, wnd, spc, wsr, pick, exp, wlv
 from dnora.bnd.conventions import SpectralConvention
 import pandas as pd
 import numpy as np
@@ -30,14 +25,18 @@ def test_import_export():
     model = mdl.ModelRun(grid=grid, start_time=start_time, end_time=end_time)
 
     model.import_forcing(wnd.read.ConstantForcing())
-    model.import_boundary(bnd.read.ConstantBoundary(), point_picker=bnd.pick.TrivialPicker())
+    model.import_boundary(bnd.read.ConstantBoundary(), point_picker=pick.TrivialPicker())
     model.boundary_to_spectra()
     model.spectra_to_waveseries()
-    model.export_grid(grd.write.Null())
-    model.export_forcing(wnd.write.Null())
-    model.export_boundary(bnd.write.Null())
-    model.export_spectra(spc.write.Null())
-    model.export_waveseries(wsr.write.Null())
+    model.import_waterlevel(wlv.read.ConstantWaterLevel())
+
+    exporter = exp.Null(model)
+    exporter.export_boundary()
+    exporter.export_forcing()
+    exporter.export_spectra()
+    exporter.export_waveseries()
+    exporter.export_waterlevel()
+    exporter.write_input_file()
 
 
 
@@ -47,7 +46,7 @@ def test_conventions():
     end_time = '2020-02-01 00:00:00'
     model = mdl.ModelRun(grid=grid, start_time=start_time, end_time=end_time)
     # Import constant spectra in oceanic convention with one component going north
-    model.import_boundary(bnd.read.ConstantBoundary(spectral_convention=SpectralConvention.OCEAN), point_picker=bnd.pick.TrivialPicker())
+    model.import_boundary(bnd.read.ConstantBoundary(spectral_convention=SpectralConvention.OCEAN), point_picker=pick.TrivialPicker())
 
     assert model.boundary().convention() == SpectralConvention.OCEAN
 

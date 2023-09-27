@@ -13,11 +13,9 @@ from ...wsr.wsr_mod import WaveSeries
 from ...aux_funcs import create_swan_segment_coords
 from ... import msg
 from ... import file_module
-class InputFileWriter(ABC):
-    @abstractmethod
-    def _extension(self):
-        pass
 
+
+class InputFileWriter(ABC):
     def _clean_filename(self):
         """If this is set to False, then the ModelRun object does not clean
         the filename, and possible placeholders (e.g. #T0) can still be
@@ -31,25 +29,41 @@ class InputFileWriter(ABC):
         return True
 
     @abstractmethod
-    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary,
-                spectra: Spectra, waveseries: WaveSeries,
-                start_time: str, end_time: str, filename: str,
-                grid_path: str, forcing_path: str, boundary_path: str) -> str:
+    def __call__(
+        self,
+        grid: Grid,
+        forcing: Forcing,
+        boundary: Boundary,
+        spectra: Spectra,
+        waveseries: WaveSeries,
+        start_time: str,
+        end_time: str,
+        filename: str,
+        grid_path: str,
+        forcing_path: str,
+        boundary_path: str,
+    ) -> str:
         return output_file
 
-class SWAN(InputFileWriter):
-    def __init__(self, calib_wind=1, calib_wcap=0.5000E-04, wind=True, spec_points=None):
 
+class Null(InputFileWriter):
+    def __call__(self, model, filename: str):
+        return ''
+
+
+class SWAN(InputFileWriter):
+    def __init__(
+        self, calib_wind=1, calib_wcap=0.5000e-04, wind=True, spec_points=None
+    ):
         self.calib_wind = calib_wind
         self.calib_wcap = calib_wcap
         self.wind = wind
-        self.spec_points = spec_points # list of (lon, lat) points, e.g.,[(4.4, 60.6),(4.4, 60.8)]
-        self._extension_in = extension
+        self.spec_points = (
+            spec_points  # list of (lon, lat) points, e.g.,[(4.4, 60.6),(4.4, 60.8)]
+        )
         return
 
-    def __call__(self, model,
-                 filename: str):
-        
+    def __call__(self, model, filename: str):
         forcing = model.forcing()
         grid = model.grid()
         boundary = model.boundary()
@@ -59,14 +73,16 @@ class SWAN(InputFileWriter):
         boundary_path = boundary.exported_to[-1]
 
         if forcing is None and self.wind == True:
-            msg.info('No forcing object provided. Wind information will NOT be written to SWAN input file!')
+            msg.info(
+                "No forcing object provided. Wind information will NOT be written to SWAN input file!"
+            )
             self.wind = False
 
         # Define start and end times of model run
         DATE_START = model.time(crop=True)[0]
         DATE_END = model.time(crop=True)[-1]
-        STR_START = DATE_START.strftime('%Y%m%d.%H%M%S')
-        STR_END = DATE_END.strftime('%Y%m%d.%H%M%S')
+        STR_START = DATE_START.strftime("%Y%m%d.%H%M%S")
+        STR_END = DATE_END.strftime("%Y%m%d.%H%M%S")
 
         delta_X = np.round(np.abs(grid.lon()[-1] - grid.lon()[0]), 5)
         delta_Y = np.round(np.abs(grid.lat()[-1] - grid.lat()[0]), 5)
@@ -74,291 +90,505 @@ class SWAN(InputFileWriter):
         delta_Xf = np.round(np.abs(forcing.lon()[-1] - forcing.lon()[0]), 5)
         delta_Yf = np.round(np.abs(forcing.lat()[-1] - forcing.lat()[0]), 5)
 
-        factor_wind = self.calib_wind*0.001
+        factor_wind = self.calib_wind * 0.001
 
-        with open(filename, 'w') as file_out:
+        with open(filename, "w") as file_out:
+            file_out.write("$************************HEADING************************\n")
+            file_out.write("$ \n")
+            file_out.write(" PROJ '" + grid.name() + "' 'T24' \n")
+            file_out.write("$ \n")
+            file_out.write("$*******************MODEL INPUT*************************\n")
+            file_out.write("$ \n")
+            file_out.write("SET NAUT \n")
+            file_out.write("$ \n")
+            file_out.write("MODE NONSTATIONARY TWOD \n")
+            file_out.write("COORD SPHE CCM \n")
             file_out.write(
-                '$************************HEADING************************\n')
-            file_out.write('$ \n')
-            file_out.write(' PROJ \'' + grid.name() + '\' \'T24\' \n')
-            file_out.write('$ \n')
+                "CGRID "
+                + str(grid.lon()[0])
+                + " "
+                + str(grid.lat()[0])
+                + " 0. "
+                + str(delta_X)
+                + " "
+                + str(delta_Y)
+                + " "
+                + str(grid.nx() - 1)
+                + " "
+                + str(grid.ny() - 1)
+                + " CIRCLE 36 0.04 1.0 31 \n"
+            )
+            file_out.write("$ \n")
+
             file_out.write(
-                '$*******************MODEL INPUT*************************\n')
-            file_out.write('$ \n')
-            file_out.write('SET NAUT \n')
-            file_out.write('$ \n')
-            file_out.write('MODE NONSTATIONARY TWOD \n')
-            file_out.write('COORD SPHE CCM \n')
-            file_out.write('CGRID '+str(grid.lon()[0])+' '+str(grid.lat()[0])+' 0. '+str(delta_X)+' '+str(
-                delta_Y)+' '+str(grid.nx()-1)+' '+str(grid.ny()-1)+' CIRCLE 36 0.04 1.0 31 \n')
-            file_out.write('$ \n')
+                "INPGRID BOTTOM "
+                + str(grid.lon()[0])
+                + " "
+                + str(grid.lat()[0])
+                + " 0. "
+                + str(grid.nx() - 1)
+                + " "
+                + str(grid.ny() - 1)
+                + " "
+                + str((delta_X / (grid.nx() - 1)).round(6))
+                + " "
+                + str((delta_Y / (grid.ny() - 1)).round(6))
+                + "\n"
+            )
+            file_out.write(
+                "READINP BOTTOM 1 '" + grid_path.split("/")[-1] + "' 3 0 FREE \n"
+            )
+            file_out.write("$ \n")
 
-            file_out.write('INPGRID BOTTOM ' + str(grid.lon()[0])+' '+str(grid.lat()[0])+' 0. '+str(grid.nx()-1)+' '+str(
-                grid.ny()-1)+' ' + str((delta_X/(grid.nx()-1)).round(6)) + ' ' + str((delta_Y/(grid.ny()-1)).round(6)) + '\n')
-            file_out.write('READINP BOTTOM 1 \''+ grid_path.split('/')[-1] +'\' 3 0 FREE \n')
-            file_out.write('$ \n')
-
-            lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.lon_edges(), grid.lat_edges())
+            lons, lats = create_swan_segment_coords(
+                grid.boundary_mask(), grid.lon_edges(), grid.lat_edges()
+            )
             bound_string = "BOUNDSPEC SEGMENT XY"
             for lon, lat in zip(lons, lats):
                 bound_string += f" {lon:.2f} {lat:.2f}"
             bound_string += " VARIABLE FILE 0 "
             bound_string += f"'{boundary_path.split('/')[-1]}'\n"
             file_out.write(bound_string)
-            #file_out.write('BOU NEST \''+boundary_path.split('/')[-1]+'\' OPEN \n')
-            file_out.write('$ \n')
+            # file_out.write('BOU NEST \''+boundary_path.split('/')[-1]+'\' OPEN \n')
+            file_out.write("$ \n")
 
             if self.wind:
-
-                file_out.write('INPGRID WIND '+str(forcing.lon()[0])+' '+str(forcing.lat()[0])+' 0. '+str(forcing.nx()-1)+' '+str(forcing.ny()-1)+' '+str(
-                    (delta_Xf/(forcing.nx()-1)).round(6)) + ' '+str((delta_Yf/(forcing.ny()-1)).round(6)) + ' NONSTATIONARY ' + STR_START + f" {forcing.dt():.0f} HR " + STR_END + '\n')
-                file_out.write('READINP WIND '+str(factor_wind)+'  \''+forcing_path.split('/')[-1]+'\' 3 0 0 1 FREE \n')
-                file_out.write('$ \n')
+                file_out.write(
+                    "INPGRID WIND "
+                    + str(forcing.lon()[0])
+                    + " "
+                    + str(forcing.lat()[0])
+                    + " 0. "
+                    + str(forcing.nx() - 1)
+                    + " "
+                    + str(forcing.ny() - 1)
+                    + " "
+                    + str((delta_Xf / (forcing.nx() - 1)).round(6))
+                    + " "
+                    + str((delta_Yf / (forcing.ny() - 1)).round(6))
+                    + " NONSTATIONARY "
+                    + STR_START
+                    + f" {forcing.dt():.0f} HR "
+                    + STR_END
+                    + "\n"
+                )
+                file_out.write(
+                    "READINP WIND "
+                    + str(factor_wind)
+                    + "  '"
+                    + forcing_path.split("/")[-1]
+                    + "' 3 0 0 1 FREE \n"
+                )
+                file_out.write("$ \n")
             else:
-                file_out.write('OFF QUAD \n')
-            file_out.write('GEN3 WESTH cds2='+str(self.calib_wcap) + '\n')
-            file_out.write('FRICTION JON 0.067 \n')
-            file_out.write('PROP BSBT \n')
-            file_out.write('NUM ACCUR NONST 1 \n')
-            file_out.write('$ \n')
+                file_out.write("OFF QUAD \n")
+            file_out.write("GEN3 WESTH cds2=" + str(self.calib_wcap) + "\n")
+            file_out.write("FRICTION JON 0.067 \n")
+            file_out.write("PROP BSBT \n")
+            file_out.write("NUM ACCUR NONST 1 \n")
+            file_out.write("$ \n")
+            file_out.write("$*******************************************************\n")
+            file_out.write("$ Generate block-output \n")
+            temp_list = forcing_path.split("/")
+            forcing_folder = "/".join(temp_list[0:-1])
             file_out.write(
-                '$*******************************************************\n')
-            file_out.write('$ Generate block-output \n')
-            temp_list = forcing_path.split('/')
-            forcing_folder = '/'.join(temp_list[0:-1])
-            file_out.write('BLOCK \'COMPGRID\' HEAD \''+grid.name()+'_'+STR_START.split('.')[0]+'.nc'
-                           + '\' & \n')
+                "BLOCK 'COMPGRID' HEAD '"
+                + grid.name()
+                + "_"
+                + STR_START.split(".")[0]
+                + ".nc"
+                + "' & \n"
+            )
             file_out.write(
-                'LAY 1 HSIGN RTP TPS PDIR TM01 DIR DSPR WIND DEP OUTPUT ' + STR_START + ' 1 HR \n')
-            file_out.write('$ \n')
-            if self.spec_points is  not None:
-                file_out.write('POINTS \'pkt\' &\n')
+                "LAY 1 HSIGN RTP TPS PDIR TM01 DIR DSPR WIND DEP OUTPUT "
+                + STR_START
+                + " 1 HR \n"
+            )
+            file_out.write("$ \n")
+            if self.spec_points is not None:
+                file_out.write("POINTS 'pkt' &\n")
                 for i in range(len(self.spec_points)):
-                    file_out.write(str(self.spec_points[i][0])+' '+str(self.spec_points[i][1])+ ' &\n')
-                file_out.write('SPECOUT \'pkt\' SPEC2D ABS \''+grid.name()+'_'+STR_START.split('.')[0]+'_spec.nc'+ '\' & \n')
-                file_out.write('OUTPUT ' + STR_START + ' 1 HR \n')
+                    file_out.write(
+                        str(self.spec_points[i][0])
+                        + " "
+                        + str(self.spec_points[i][1])
+                        + " &\n"
+                    )
+                file_out.write(
+                    "SPECOUT 'pkt' SPEC2D ABS '"
+                    + grid.name()
+                    + "_"
+                    + STR_START.split(".")[0]
+                    + "_spec.nc"
+                    + "' & \n"
+                )
+                file_out.write("OUTPUT " + STR_START + " 1 HR \n")
             else:
                 pass
-            file_out.write('COMPUTE '+STR_START+' 10 MIN ' + STR_END + '\n')
-            file_out.write('STOP \n')
+            file_out.write("COMPUTE " + STR_START + " 10 MIN " + STR_END + "\n")
+            file_out.write("STOP \n")
 
         return filename
 
 
-
 class SWASH(InputFileWriter):
-    def __init__(self,bound_side_command='BOU SIDE W CCW CON REG 0.5 14 270 '):
+    def __init__(self, bound_side_command="BOU SIDE W CCW CON REG 0.5 14 270 "):
         self.bound_side_command = bound_side_command
 
         return
 
-    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary,
-                spectra: Spectra, waveseries: WaveSeries,
-                start_time: str, end_time: str, filename: str,
-                grid_path: str, forcing_path: str, boundary_path: str):
-
+    def __call__(
+        self,
+        grid: Grid,
+        forcing: Forcing,
+        boundary: Boundary,
+        spectra: Spectra,
+        waveseries: WaveSeries,
+        start_time: str,
+        end_time: str,
+        filename: str,
+        grid_path: str,
+        forcing_path: str,
+        boundary_path: str,
+    ):
         DATE_START = start_time
         DATE_END = end_time
-        STR_START =  pd.Timestamp(DATE_START).strftime('%H%M%S')
-        STR_END =  pd.Timestamp(DATE_END).strftime('%H%M%S')
+        STR_START = pd.Timestamp(DATE_START).strftime("%H%M%S")
+        STR_END = pd.Timestamp(DATE_END).strftime("%H%M%S")
 
         delta_X = np.round(np.abs(grid.lon()[-1] - grid.lon()[0]), 8)
         delta_Y = np.round(np.abs(grid.lat()[-1] - grid.lat()[0]), 8)
 
-        with open(filename, 'w') as file_out:
+        with open(filename, "w") as file_out:
+            file_out.write("$************************HEADING************************\n")
+            file_out.write("$ \n")
+            file_out.write(" PROJ '" + grid.name() + "' 'T24' \n")
+            file_out.write("$ \n")
+            file_out.write("$*******************MODEL INPUT*************************\n")
+            file_out.write("$ \n")
+            file_out.write("SET NAUT \n")
+            file_out.write("$ \n")
+            file_out.write("MODE NONSTATIONARY TWOD \n")
+            file_out.write("COORD SPHE CCM \n")
             file_out.write(
-                '$************************HEADING************************\n')
-            file_out.write('$ \n')
-            file_out.write(' PROJ \'' + grid.name() + '\' \'T24\' \n')
-            file_out.write('$ \n')
+                "CGRID REG "
+                + str(grid.lon()[0])
+                + " "
+                + str(grid.lat()[0])
+                + " 0. "
+                + str(delta_X)
+                + " "
+                + str(delta_Y)
+                + " "
+                + str(grid.nx() - 1)
+                + " "
+                + str(grid.ny() - 1)
+                + " \n"
+            )
+            file_out.write("$ \n")
+            file_out.write("VERT 1 \n")
+            file_out.write("$ \n")
             file_out.write(
-                '$*******************MODEL INPUT*************************\n')
-            file_out.write('$ \n')
-            file_out.write('SET NAUT \n')
-            file_out.write('$ \n')
-            file_out.write('MODE NONSTATIONARY TWOD \n')
-            file_out.write('COORD SPHE CCM \n')
-            file_out.write('CGRID REG '+str(grid.lon()[0])+' '+str(grid.lat()[0])+' 0. '+str(delta_X)+' '+str(
-                delta_Y)+' '+str(grid.nx()-1)+' '+str(grid.ny()-1)+' \n')
-            file_out.write('$ \n')
-            file_out.write('VERT 1 \n')
-            file_out.write('$ \n')
-            file_out.write('INPGRID BOTTOM ' + str(grid.lon()[0])+' '+str(grid.lat()[0])+' 0. '+str(grid.nx()-1)+' '+str(
-                grid.ny()-1)+' ' + str((delta_X/(grid.nx()-1)).round(8)) + ' ' + str((delta_Y/(grid.ny()-1)).round(8)) +  ' EXC -999 \n')
-            file_out.write('READINP BOTTOM 1 \''+grid_path.split('/')[-1] +'\' 3 0 FREE \n')
-            file_out.write('$ \n')
-            file_out.write(self.bound_side_command +' \n')
-            #file_out.write('BOU NEST \''+add_folder_to_filename(self.bnd_filename, self.bnd_folder)+'\' OPEN \n')
-            file_out.write('$ \n')
+                "INPGRID BOTTOM "
+                + str(grid.lon()[0])
+                + " "
+                + str(grid.lat()[0])
+                + " 0. "
+                + str(grid.nx() - 1)
+                + " "
+                + str(grid.ny() - 1)
+                + " "
+                + str((delta_X / (grid.nx() - 1)).round(8))
+                + " "
+                + str((delta_Y / (grid.ny() - 1)).round(8))
+                + " EXC -999 \n"
+            )
             file_out.write(
-                '$*******************************************************\n')
-            file_out.write('$ OUTPUT REQUESTS \n')
-            temp_list = grid_path.split('/')
-            forcing_folder = '/'.join(temp_list[0:-1])
-            file_out.write('BLOCK \'COMPGRID\' NOHEAD \''+grid.name()+'.mat'
-                           + '\' & \n')
+                "READINP BOTTOM 1 '" + grid_path.split("/")[-1] + "' 3 0 FREE \n"
+            )
+            file_out.write("$ \n")
+            file_out.write(self.bound_side_command + " \n")
+            # file_out.write('BOU NEST \''+add_folder_to_filename(self.bnd_filename, self.bnd_folder)+'\' OPEN \n')
+            file_out.write("$ \n")
+            file_out.write("$*******************************************************\n")
+            file_out.write("$ OUTPUT REQUESTS \n")
+            temp_list = grid_path.split("/")
+            forcing_folder = "/".join(temp_list[0:-1])
             file_out.write(
-                'LAY 3 WATL BOTL OUTPUT ' + STR_START + ' 5 SEC \n')
-            file_out.write('$ \n')
-            file_out.write('COMPUTE '+STR_START+' 0.001 SEC ' + STR_END + '\n')
-            file_out.write('STOP \n')
+                "BLOCK 'COMPGRID' NOHEAD '" + grid.name() + ".mat" + "' & \n"
+            )
+            file_out.write("LAY 3 WATL BOTL OUTPUT " + STR_START + " 5 SEC \n")
+            file_out.write("$ \n")
+            file_out.write("COMPUTE " + STR_START + " 0.001 SEC " + STR_END + "\n")
+            file_out.write("STOP \n")
 
         return filename
+
 
 class REEF3D(InputFileWriter):
-    def __init__(self, option = 'REEF3D', edges = ['W'], nproc = 1,rot_angle=0, wave_input='SPEC1D'):
+    def __init__(
+        self, option="REEF3D", edges=["W"], nproc=1, rot_angle=0, wave_input="SPEC1D"
+    ):
         self.option = option
-        self.nproc = nproc # number of processors
+        self.nproc = nproc  # number of processors
         self.edges = edges
-        self.rot_angle = rot_angle # anlge for domain rotation
-        self.wave_input = wave_input # 'SPEC1D' for NORA3 frequency spectrum or 'JONSWAP' providing Hs and Tp
+        self.rot_angle = rot_angle  # anlge for domain rotation
+        self.wave_input = wave_input  # 'SPEC1D' for NORA3 frequency spectrum or 'JONSWAP' providing Hs and Tp
 
     def _extension(self):
-        return 'txt'
+        return "txt"
 
-    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary,
-                spectra: Spectra, waveseries: WaveSeries,
-                start_time: str, end_time: str, filename: str, forcing_path: str,
-                grid_path: str, boundary_path: str):
+    def __call__(
+        self,
+        grid: Grid,
+        forcing: Forcing,
+        boundary: Boundary,
+        spectra: Spectra,
+        waveseries: WaveSeries,
+        start_time: str,
+        end_time: str,
+        filename: str,
+        forcing_path: str,
+        grid_path: str,
+        boundary_path: str,
+    ):
+        geodat = pd.read_csv(grid_path, sep=" ")  # read geo.dat
+        geodat.columns = ["x", "y", "z"]
 
-        geodat = pd.read_csv(grid_path, sep = ' ') # read geo.dat
-        geodat.columns = ['x', 'y', 'z']
+        if self.option == "DiveMESH":
+            filename = "/".join(filename.split("/")[:-1]) + "/control.txt"
+            with open(filename, "w") as file_out:
+                if "W" in self.edges:
+                    file_out.write("C 11 6 // West side: wave generation" "\n")
+                    file_out.write("C 12 7 // side: numerical beach" "\n")
+                    file_out.write("C 13 7 // side: numerical beach" "\n")
+                    file_out.write("C 14 7 // side: numerical beach" "\n")
+                elif "N" in self.edges:
+                    file_out.write("C 12 6 // North side: wave generation" "\n")
+                    file_out.write("C 13 3 // side: numerical beach" "\n")
+                    file_out.write("C 14 3 // side: numerical beach" "\n")
+                    file_out.write("C 11 7 // side: numerical beach" "\n")
+                elif "E" in self.edges:
+                    file_out.write("C 14 6 // East side: wave generation" "\n")
+                    file_out.write("C 11 7 // side: numerical beach" "\n")
+                    file_out.write("C 12 7 // side: numerical beach" "\n")
+                    file_out.write("C 13 7 // side: numerical beach" "\n")
+                elif "S" in self.edges:
+                    file_out.write("C 13 6 // South side: wave generation" "\n")
+                    file_out.write("C 11 7 // side: numerical beach" "\n")
+                    file_out.write("C 12 7 // side: numerical beach" "\n")
+                    file_out.write("C 14 7 // side: numerical beach" "\n")
 
-        if self.option == 'DiveMESH':
-            filename =  '/'.join(filename.split('/')[:-1])+'/control.txt'
-            with open(filename, 'w') as file_out:
-                if 'W' in self.edges:
-                    file_out.write('C 11 6 // West side: wave generation' '\n')
-                    file_out.write('C 12 7 // side: numerical beach' '\n')
-                    file_out.write('C 13 7 // side: numerical beach' '\n')
-                    file_out.write('C 14 7 // side: numerical beach' '\n')
-                elif 'N' in self.edges:
-                    file_out.write('C 12 6 // North side: wave generation' '\n')
-                    file_out.write('C 13 3 // side: numerical beach' '\n')
-                    file_out.write('C 14 3 // side: numerical beach' '\n')
-                    file_out.write('C 11 7 // side: numerical beach' '\n')
-                elif 'E' in self.edges:
-                    file_out.write('C 14 6 // East side: wave generation' '\n')
-                    file_out.write('C 11 7 // side: numerical beach' '\n')
-                    file_out.write('C 12 7 // side: numerical beach' '\n')
-                    file_out.write('C 13 7 // side: numerical beach' '\n')
-                elif 'S' in self.edges:
-                    file_out.write('C 13 6 // South side: wave generation' '\n')
-                    file_out.write('C 11 7 // side: numerical beach' '\n')
-                    file_out.write('C 12 7 // side: numerical beach' '\n')
-                    file_out.write('C 14 7 // side: numerical beach' '\n')
+                file_out.write("C 15 21 // bottom: wall boundary" "\n")
+                file_out.write("C 16 3 // top: symmetry plane" "\n")
+                file_out.write(" \n")
 
-                file_out.write('C 15 21 // bottom: wall boundary' '\n')
-                file_out.write('C 16 3 // top: symmetry plane' '\n')
-                file_out.write(' \n')
+                file_out.write(
+                    "B 1 "
+                    + str(int(grid.dx().round(0)))
+                    + " // horizontal mesh size dx"
+                    "\n"
+                )
+                file_out.write(
+                    "B 2 "
+                    + str(int(geodat.x.max() / int(grid.dx().round(0))))
+                    + " "
+                    + str(int(geodat.y.max() / int(grid.dx().round(0))))
+                    + " 10 // number of cells in x, y and z directions"
+                    "\n"
+                )
+                file_out.write(
+                    "B 10 0.0 "
+                    + str(int(geodat.x.max()))
+                    + " 0.0 "
+                    + str(int(geodat.y.max()))
+                    + " 0.0 1.0 // rectangular domain size"
+                    "\n"
+                )
+                file_out.write(" \n")
 
-                file_out.write('B 1 '+str(int(grid.dx().round(0)))+' // horizontal mesh size dx' '\n')
-                file_out.write('B 2 '+str(int(geodat.x.max()/int(grid.dx().round(0))))+
-                ' '+str(int(geodat.y.max()/int(grid.dx().round(0))))
-                +' 10 // number of cells in x, y and z directions' '\n')
-                file_out.write('B 10 0.0 '+str(int(geodat.x.max()))+' 0.0 '+str(int(geodat.y.max()))+' 0.0 1.0 // rectangular domain size' '\n')
-                file_out.write(' \n')
+                file_out.write("B 103 5 // vertical grid clustering" "\n")
+                file_out.write(
+                    "B 113 2.5 // the stretching factor for the vertical grid clustering"
+                    "\n"
+                )
+                file_out.write(
+                    "B 116 1.0 // the focal point for the vertical grid clustering, which is water depth here"
+                    "\n"
+                )
+                file_out.write(" \n")
 
-                file_out.write('B 103 5 // vertical grid clustering' '\n')
-                file_out.write('B 113 2.5 // the stretching factor for the vertical grid clustering' '\n')
-                file_out.write('B 116 1.0 // the focal point for the vertical grid clustering, which is water depth here' '\n')
-                file_out.write(' \n')
+                file_out.write("G 10 1 // turn geodat on/off" "\n")
+                file_out.write(
+                    "G 13 "
+                    + str(self.rot_angle)
+                    + " // rotation angle of geo coordinates around vertical axis"
+                    "\n"
+                )
+                file_out.write("G 15 2 // local inverse distance interpolation" "\n")
+                file_out.write("G 20 0 // use automatic grid size off" "\n")
+                file_out.write("G 31 14 // number of smoothing iterations" "\n")
+                # file_out.write('G 41 1' '\n')
+                file_out.write(" \n")
 
-                file_out.write('G 10 1 // turn geodat on/off' '\n')
-                file_out.write('G 13 '+str(self.rot_angle)+' // rotation angle of geo coordinates around vertical axis' '\n')
-                file_out.write('G 15 2 // local inverse distance interpolation' '\n')
-                file_out.write('G 20 0 // use automatic grid size off' '\n')
-                file_out.write('G 31 14 // number of smoothing iterations' '\n')
-                #file_out.write('G 41 1' '\n')
-                file_out.write(' \n')
+                file_out.write(
+                    "M 10 " + str(self.nproc) + " // number of processors" "\n"
+                )
+                file_out.write("M 20 2 // decomposition method 2" "\n")
+        elif self.option == "REEF3D":
+            with open(filename, "w") as file_out:
+                file_out.write("A 10 3  // choose the model reef::fnpf" "\n")
+                file_out.write(
+                    "A 310 3 // 3rd-order runge-kutta for fsfbc time treatment" "\n"
+                )
+                file_out.write(
+                    "A 311 5 // 5th-order weno for fsfbc spatial treatment including wetting-drying"
+                    "\n"
+                )
+                file_out.write("A 320 1 // 2nd-order laplace" "\n")
+                file_out.write(" \n")
 
-                file_out.write('M 10 '+str(self.nproc)+' // number of processors' '\n')
-                file_out.write('M 20 2 // decomposition method 2' '\n')
-        elif self.option == 'REEF3D':
-            with open(filename, 'w') as file_out:
-                file_out.write('A 10 3  // choose the model reef::fnpf' '\n')
-                file_out.write('A 310 3 // 3rd-order runge-kutta for fsfbc time treatment' '\n')
-                file_out.write('A 311 5 // 5th-order weno for fsfbc spatial treatment including wetting-drying' '\n')
-                file_out.write('A 320 1 // 2nd-order laplace' '\n')
-                file_out.write(' \n')
+                file_out.write(
+                    "A 341 2.0 // size of coastal relaxation zone by a factor of the horizontal cell size"
+                    "\n"
+                )
+                file_out.write("A 343 1   // turn on wetting-drying" "\n")
+                file_out.write(
+                    "A 345 0.001 // wetting-drying water depth threshold" "\n"
+                )
+                file_out.write(
+                    "A 346 2.1   // added viscosity within the coastal relaxation zone"
+                    "\n"
+                )
+                file_out.write(" \n")
 
-                file_out.write('A 341 2.0 // size of coastal relaxation zone by a factor of the horizontal cell size' '\n')
-                file_out.write('A 343 1   // turn on wetting-drying' '\n')
-                file_out.write('A 345 0.001 // wetting-drying water depth threshold' '\n')
-                file_out.write('A 346 2.1   // added viscosity within the coastal relaxation zone' '\n')
-                file_out.write(' \n')
+                file_out.write(
+                    "A 350 1 // viscosity damping wave breaking algorithm" "\n"
+                )
+                file_out.write(
+                    "A 351 3 // breaking wave detection for both deep and shallow water"
+                    "\n"
+                )
+                file_out.write(
+                    "A 352 3 // additional filtering for viscosity based breaking for both deep and shallow water"
+                    "\n"
+                )
+                file_out.write("A 361 5 // filtering outer iterations" "\n")
+                file_out.write("A 362 2 // filtering inner iterations" "\n")
+                file_out.write(
+                    "A 365 1.86 // artificial viscosity for breaking wave energy dissipation"
+                    "\n"
+                )
+                file_out.write(" \n")
+                if self.wave_input == "SPEC1D":
+                    file_out.write("B 85 10 // spectrum file" "\n")
+                    file_out.write("B 90 1 // wave input" "\n")
+                    file_out.write("B 92 31 // 1st-order irregular wave" "\n")
 
-                file_out.write('A 350 1 // viscosity damping wave breaking algorithm' '\n')
-                file_out.write('A 351 3 // breaking wave detection for both deep and shallow water' '\n')
-                file_out.write('A 352 3 // additional filtering for viscosity based breaking for both deep and shallow water' '\n')
-                file_out.write('A 361 5 // filtering outer iterations' '\n')
-                file_out.write('A 362 2 // filtering inner iterations' '\n')
-                file_out.write('A 365 1.86 // artificial viscosity for breaking wave energy dissipation' '\n')
-                file_out.write(' \n')
-                if self.wave_input =='SPEC1D':
-                    file_out.write('B 85 10 // spectrum file' '\n')
-                    file_out.write('B 90 1 // wave input' '\n')
-                    file_out.write('B 92 31 // 1st-order irregular wave' '\n')
+                elif self.wave_input == "JONSWAP":
+                    file_out.write("B 85 2 // jonswap" "\n")
+                    file_out.write("B 90 1 // wave input" "\n")
+                    file_out.write("B 92 31 // 1st-order irregular wave" "\n")
+                    file_out.write(
+                        "B 93 "
+                        + str(waveseries.hs()[0])
+                        + " "
+                        + str(waveseries.tp()[0])
+                        + " // wave height, wave period"
+                        "\n"
+                    )
+                    file_out.write(
+                        "B 134 "
+                        + str(waveseries.sprm()[0])
+                        + " // spreading parameter for the directional spreading functions"
+                        "\n"
+                    )
 
-                elif self.wave_input =='JONSWAP':
-                    file_out.write('B 85 2 // jonswap' '\n')
-                    file_out.write('B 90 1 // wave input' '\n')
-                    file_out.write('B 92 31 // 1st-order irregular wave' '\n')
-                    file_out.write('B 93 '+str(waveseries.hs()[0])+' '+ str(waveseries.tp()[0])+' // wave height, wave period' '\n')
-                    file_out.write('B 134 '+str(waveseries.sprm()[0])+' // spreading parameter for the directional spreading functions' '\n')
+                file_out.write(" \n")
+                file_out.write(
+                    "B 96 200.0 400.0 // wave generation zone length and numerical beach length"
+                    "\n"
+                )
+                # file_out.write('B 107 0.0 '+str(int(geodat.x.max()))+' 0.0 0.0 200.0 // wave generation zone length and numerical beach length' '\n')
+                # file_out.write('B 107 0.0 '+str(int(geodat.x.max()))+' '+str(int(geodat.y.max()))+' '+str(int(geodat.x.max()))+' 200.0 // customised numerical beach at the side walls' '\n')
+                # file_out.write('B 107 25000.0 12000.0 0.0 16000.0 200.0 // customised numerical beach at the end of the tank' '\n')
+                # file_out.write('B 107 0.0 0.0 2900.0 3500.0 200.0 // customised numerical beach at the side walls' '\n')
+                # file_out.write('B 108 0.0 0.0 0.0 '+str(int(geodat.y.max()))+' 200.0 // customised wave generation zone' '\n')
+                file_out.write("B 98 2 // relaxation method 2 for wave generation" "\n")
+                file_out.write("B 99 2 // relaxation method 2 for numerical beach" "\n")
+                file_out.write(" \n")
 
+                file_out.write(
+                    "F 60 " + str(grid.topo().max().round(1)) + " // still water depth"
+                    "\n"
+                )
+                file_out.write(" \n")
 
-                file_out.write(' \n')
-                file_out.write('B 96 200.0 400.0 // wave generation zone length and numerical beach length' '\n')
-                #file_out.write('B 107 0.0 '+str(int(geodat.x.max()))+' 0.0 0.0 200.0 // wave generation zone length and numerical beach length' '\n')
-                #file_out.write('B 107 0.0 '+str(int(geodat.x.max()))+' '+str(int(geodat.y.max()))+' '+str(int(geodat.x.max()))+' 200.0 // customised numerical beach at the side walls' '\n')
-                #file_out.write('B 107 25000.0 12000.0 0.0 16000.0 200.0 // customised numerical beach at the end of the tank' '\n')
-                #file_out.write('B 107 0.0 0.0 2900.0 3500.0 200.0 // customised numerical beach at the side walls' '\n')
-                #file_out.write('B 108 0.0 0.0 0.0 '+str(int(geodat.y.max()))+' 200.0 // customised wave generation zone' '\n')
-                file_out.write('B 98 2 // relaxation method 2 for wave generation' '\n')
-                file_out.write('B 99 2 // relaxation method 2 for numerical beach' '\n')
-                file_out.write(' \n')
+                file_out.write("G 50 1 // read in geo bathymetry" "\n")
+                file_out.write(" \n")
 
-                file_out.write('F 60 '+str(grid.topo().max().round(1))+' // still water depth' '\n')
-                file_out.write(' \n')
+                file_out.write(
+                    "I 30 0 // turn off full tank initialisation, one can turn it on for a quick check of the setup"
+                    "\n"
+                )
+                file_out.write(" \n")
 
-                file_out.write('G 50 1 // read in geo bathymetry' '\n')
-                file_out.write(' \n')
+                file_out.write("N 41 1800.0 // simulation time" "\n")
+                file_out.write("N 47 1.0 // cfl number" "\n")
+                file_out.write(" \n")
 
-                file_out.write('I 30 0 // turn off full tank initialisation, one can turn it on for a quick check of the setup' '\n')
-                file_out.write(' \n')
+                file_out.write(
+                    "M 10 " + str(self.nproc) + " // number of processors" "\n"
+                )
+                file_out.write(" \n")
 
-                file_out.write('N 41 1800.0 // simulation time' '\n')
-                file_out.write('N 47 1.0 // cfl number' '\n')
-                file_out.write(' \n')
+                file_out.write("P 180 1 // turn on .vtp free surface printout" "\n")
+                file_out.write(
+                    "P 185 0.0 1800.0 0.5 // print out .vtp files interval based on simulation time window"
+                    "\n"
+                )
+                file_out.write(" \n")
 
-                file_out.write('M 10 '+str(self.nproc)+' // number of processors' '\n')
-                file_out.write(' \n')
-
-                file_out.write('P 180 1 // turn on .vtp free surface printout' '\n')
-                file_out.write('P 185 0.0 1800.0 0.5 // print out .vtp files interval based on simulation time window' '\n')
-                file_out.write(' \n')
-
-                file_out.write('W 22 -9.81 // gravity' '\n')
-                file_out.write(' \n')
+                file_out.write("W 22 -9.81 // gravity" "\n")
+                file_out.write(" \n")
 
         return filename
-
 
 
 class HOS_ocean(InputFileWriter):
-    def __init__(self,n1=256, n2=64, xlen=None, ylen=80,T_stop=100,f_out=1,toler=1.0e-7,n=4,Ta=0,
-    depth = 100, Tp_real=10,Hs_real=4.5,gamma=3.3,beta=0.78,random_phases=1,
-    tecplot=11,i_out_dim=1,i_3d=1,i_a_3d=0,i_2d=0,i_prob=0,i_sw=0):
-
-        self.n1 = n1 # default is 256 at HOS-ocean-1.5/sources/HOS/variables_3D.f90
-        self.n2 = n2 # default is 256 at HOS-ocean-1.5/sources/HOS/variables_3D.f90
+    def __init__(
+        self,
+        n1=256,
+        n2=64,
+        xlen=None,
+        ylen=80,
+        T_stop=100,
+        f_out=1,
+        toler=1.0e-7,
+        n=4,
+        Ta=0,
+        depth=100,
+        Tp_real=10,
+        Hs_real=4.5,
+        gamma=3.3,
+        beta=0.78,
+        random_phases=1,
+        tecplot=11,
+        i_out_dim=1,
+        i_3d=1,
+        i_a_3d=0,
+        i_2d=0,
+        i_prob=0,
+        i_sw=0,
+    ):
+        self.n1 = n1  # default is 256 at HOS-ocean-1.5/sources/HOS/variables_3D.f90
+        self.n2 = n2  # default is 256 at HOS-ocean-1.5/sources/HOS/variables_3D.f90
         self.T_stop = T_stop
         self.f_out = f_out
         self.toler = toler
         self.n = n
         self.Ta = Ta
-        self.depth = depth #np.mean(self.topo()[self.land_sea_mask()])
+        self.depth = depth  # np.mean(self.topo()[self.land_sea_mask()])
         self.Tp_real = Tp_real
         self.Hs_real = Hs_real
         self.gamma = gamma
@@ -372,141 +602,208 @@ class HOS_ocean(InputFileWriter):
         self.i_prob = i_prob
         self.i_sw = i_sw
         if xlen is None:
-            self.xlen = (self.n1*9.81*self.Tp_real**2)/(8*2*np.pi) # according to n1*2*np.pi/xlen = 5 k_p
-            self.ylen = (self.n2*9.81*self.Tp_real**2)/(8*2*np.pi)
+            self.xlen = (self.n1 * 9.81 * self.Tp_real**2) / (
+                8 * 2 * np.pi
+            )  # according to n1*2*np.pi/xlen = 5 k_p
+            self.ylen = (self.n2 * 9.81 * self.Tp_real**2) / (8 * 2 * np.pi)
         else:
             self.xlen = xlen
             self.ylen = ylen
         return
 
     def _extension(self):
-        return 'dat'
+        return "dat"
 
-    def __call__(self, grid: Grid, forcing: Forcing, boundary: Boundary,
-                spectra: Spectra, waveseries: WaveSeries,
-                start_time: str, end_time: str, filename: str,
-                grid_path: str, forcing_path: str, boundary_path: str):
-
+    def __call__(
+        self,
+        grid: Grid,
+        forcing: Forcing,
+        boundary: Boundary,
+        spectra: Spectra,
+        waveseries: WaveSeries,
+        start_time: str,
+        end_time: str,
+        filename: str,
+        grid_path: str,
+        forcing_path: str,
+        boundary_path: str,
+    ):
         # Create input file name
         __, folder = file_module.split_filepath(filename)
-        filename.create_folder(folder=folder+'/Results')
+        filename.create_folder(folder=folder + "/Results")
 
-        with open(filename, 'w') as file_out:
-            file_out.write(
-                'Restart previous computation :: i_restart        :: 0\n')
-            file_out.write('Choice of computed case      :: i_case           :: 3\n')
+        with open(filename, "w") as file_out:
+            file_out.write("Restart previous computation :: i_restart        :: 0\n")
+            file_out.write("Choice of computed case      :: i_case           :: 3\n")
 
-            file_out.write('--- Geometry of the horizontal domain\n')
+            file_out.write("--- Geometry of the horizontal domain\n")
             file_out.write(
-                'Length in x-direction        :: xlen             :: '+format(self.xlen,".1f")+'\n')
+                "Length in x-direction        :: xlen             :: "
+                + format(self.xlen, ".1f")
+                + "\n"
+            )
             file_out.write(
-                'Length in y-direction        :: ylen             :: '+format(self.ylen,".1f")+'\n')
+                "Length in y-direction        :: ylen             :: "
+                + format(self.ylen, ".1f")
+                + "\n"
+            )
 
-            file_out.write('--- Time stuff \n')
+            file_out.write("--- Time stuff \n")
             file_out.write(
-                'Duration of the simulation   :: T_stop           :: '+format(self.T_stop,".1f")+'\n')
+                "Duration of the simulation   :: T_stop           :: "
+                + format(self.T_stop, ".1f")
+                + "\n"
+            )
             file_out.write(
-                'Sampling frequency (output)  :: f_out            :: '+format(self.f_out,".1f")+'\n')
+                "Sampling frequency (output)  :: f_out            :: "
+                + format(self.f_out, ".1f")
+                + "\n"
+            )
             file_out.write(
-                'Tolerance of RK scheme       :: toler            :: '+format(self.toler,".2e")+'\n')
+                "Tolerance of RK scheme       :: toler            :: "
+                + format(self.toler, ".2e")
+                + "\n"
+            )
             file_out.write(
-                'Dommermuth initialisation    :: n                :: '+format(self.n,".0f")+'\n')
+                "Dommermuth initialisation    :: n                :: "
+                + format(self.n, ".0f")
+                + "\n"
+            )
             file_out.write(
-                'Dommermuth initialisation    :: Ta               :: '+format(self.Ta,".1f")+'\n')
+                "Dommermuth initialisation    :: Ta               :: "
+                + format(self.Ta, ".1f")
+                + "\n"
+            )
 
-            file_out.write('--- Physical dimensional parameters \n')
+            file_out.write("--- Physical dimensional parameters \n")
+            file_out.write("Gravity                      :: grav             :: 9.81\n")
             file_out.write(
-                'Gravity                      :: grav             :: 9.81\n')
-            file_out.write(
-                'Water depth                  :: depth            :: '+format(self.depth,".1f")+'\n')
+                "Water depth                  :: depth            :: "
+                + format(self.depth, ".1f")
+                + "\n"
+            )
 
-            file_out.write('--- Irregular waves (i_case=3) \n')
+            file_out.write("--- Irregular waves (i_case=3) \n")
             file_out.write(
-                'Peak period in s             :: Tp_real          :: '+format(self.Tp_real,".1f")+'\n')
+                "Peak period in s             :: Tp_real          :: "
+                + format(self.Tp_real, ".1f")
+                + "\n"
+            )
             file_out.write(
-                'Significant wave height in m :: Hs_real          :: '+format(self.Hs_real,".1f")+'\n')
+                "Significant wave height in m :: Hs_real          :: "
+                + format(self.Hs_real, ".1f")
+                + "\n"
+            )
             file_out.write(
-                'JONSWAP Spectrum             :: gamma            :: '+format(self.gamma,".1f")+'\n')
+                "JONSWAP Spectrum             :: gamma            :: "
+                + format(self.gamma, ".1f")
+                + "\n"
+            )
             file_out.write(
-                'Directionality (Dysthe)      :: beta             :: '+format(self.beta,".5f")+'\n')
+                "Directionality (Dysthe)      :: beta             :: "
+                + format(self.beta, ".5f")
+                + "\n"
+            )
             file_out.write(
-                'Random phases generation     :: random_phases    :: '+format(self.random_phases,".0f")+'\n')
+                "Random phases generation     :: random_phases    :: "
+                + format(self.random_phases, ".0f")
+                + "\n"
+            )
 
-            file_out.write('--- Output files \n')
+            file_out.write("--- Output files \n")
             file_out.write(
-                'Tecplot version              :: tecplot          :: '+format(self.tecplot,".0f")+'\n')
+                "Tecplot version              :: tecplot          :: "
+                + format(self.tecplot, ".0f")
+                + "\n"
+            )
             file_out.write(
-                'Output: 1-dim. ; 0-nondim.   :: i_out_dim        :: '+format(self.i_out_dim,".0f")+'\n')
+                "Output: 1-dim. ; 0-nondim.   :: i_out_dim        :: "
+                + format(self.i_out_dim, ".0f")
+                + "\n"
+            )
             file_out.write(
-                '3d free surface quantities   :: i_3d             :: '+format(self.i_3d,".0f")+'\n')
+                "3d free surface quantities   :: i_3d             :: "
+                + format(self.i_3d, ".0f")
+                + "\n"
+            )
             file_out.write(
-                '3d modes                     :: i_a_3d           :: '+format(self.i_a_3d,".0f")+'\n')
+                "3d modes                     :: i_a_3d           :: "
+                + format(self.i_a_3d, ".0f")
+                + "\n"
+            )
             file_out.write(
-                '2d free surface, center line :: i_2d             :: '+format(self.i_2d,".0f")+'\n')
+                "2d free surface, center line :: i_2d             :: "
+                + format(self.i_2d, ".0f")
+                + "\n"
+            )
             file_out.write(
-                'Wave probes in domain        :: i_prob           :: '+format(self.i_prob,".0f")+'\n')
+                "Wave probes in domain        :: i_prob           :: "
+                + format(self.i_prob, ".0f")
+                + "\n"
+            )
             file_out.write(
-                'Swense output 1="yes",0="no" :: i_sw             :: '+format(self.i_sw,".0f")+'\n')
+                'Swense output 1="yes",0="no" :: i_sw             :: '
+                + format(self.i_sw, ".0f")
+                + "\n"
+            )
         return filename
-
 
 
 def ww3_grid(grid, filename, grid_exported_to, freq1, nth, nk):
     """Writes ww3_grid.nml file"""
 
     def write_block(fn: str):
-        with open(f'{folder}{fn}', 'r') as fin:
+        with open(f"{folder}{fn}", "r") as fin:
             block = fin.read()
         fout.write(block)
 
     def write_spectrum():
-        fout.write('&SPECTRUM_NML\n')
-        fout.write('  SPECTRUM%XFR         = 1.1\n')
-        fout.write(f'  SPECTRUM%FREQ1       = {freq1:.5f}\n')
-        fout.write(f'  SPECTRUM%NK          = {nk:.0f}\n')
-        fout.write(f'  SPECTRUM%NTH         = {nth:.0f}\n')
-        fout.write('/\n\n')
+        fout.write("&SPECTRUM_NML\n")
+        fout.write("  SPECTRUM%XFR         = 1.1\n")
+        fout.write(f"  SPECTRUM%FREQ1       = {freq1:.5f}\n")
+        fout.write(f"  SPECTRUM%NK          = {nk:.0f}\n")
+        fout.write(f"  SPECTRUM%NTH         = {nth:.0f}\n")
+        fout.write("/\n\n")
 
     def write_run():
-        fout.write('&RUN_NML\n')
-        fout.write('  RUN%FLCX       = T\n')
-        fout.write('  RUN%FLCY       = T\n')
-        fout.write('  RUN%FLTH       = T\n')
-        fout.write('  RUN%FLCK       = T\n')
-        fout.write('  RUN%FLSOU      = T\n')
-        fout.write('/\n\n')
+        fout.write("&RUN_NML\n")
+        fout.write("  RUN%FLCX       = T\n")
+        fout.write("  RUN%FLCY       = T\n")
+        fout.write("  RUN%FLTH       = T\n")
+        fout.write("  RUN%FLCK       = T\n")
+        fout.write("  RUN%FLSOU      = T\n")
+        fout.write("/\n\n")
 
     def write_timestep():
         # Multiples of 10 s
         if grid.is_gridded():
-            dtxy = np.floor(0.9*grid.cfl(f0=freq1)/10)*10
-        else: # This needs to be corrected !!!!!!!!!!!!!!
-            dtxy = 10.
+            dtxy = np.floor(0.9 * grid.cfl(f0=freq1) / 10) * 10
+        else:  # This needs to be corrected !!!!!!!!!!!!!!
+            dtxy = 10.0
 
         if dtxy < 10:
             dtxy = 10
             dtkth = 10
         else:
             dtkth = dtxy / 2
-        
-        dtmax = 3*dtxy
-       
+
+        dtmax = 3 * dtxy
+
         if dtxy < 20:
             dtmin = 5
         else:
             dtmin = 10
 
-        
-        fout.write('&TIMESTEPS_NML\n')
-        fout.write(f'  TIMESTEPS%DTMAX        =  {dtmax:.0f}.\n')
-        fout.write(f'  TIMESTEPS%DTXY         =  {dtxy:.0f}.\n')
-        fout.write(f'  TIMESTEPS%DTKTH        =  {dtkth:.0f}.\n')
-        fout.write(f'  TIMESTEPS%DTMIN        =  {dtmin:.0f}.\n')
+        fout.write("&TIMESTEPS_NML\n")
+        fout.write(f"  TIMESTEPS%DTMAX        =  {dtmax:.0f}.\n")
+        fout.write(f"  TIMESTEPS%DTXY         =  {dtxy:.0f}.\n")
+        fout.write(f"  TIMESTEPS%DTKTH        =  {dtkth:.0f}.\n")
+        fout.write(f"  TIMESTEPS%DTMIN        =  {dtmin:.0f}.\n")
 
-        fout.write('/\n\n')
+        fout.write("/\n\n")
 
     def write_grid():
-        fout.write('&GRID_NML\n')
+        fout.write("&GRID_NML\n")
         fout.write(f"  GRID%NAME             = '{grid.name}'\n")
         fout.write("  GRID%NML              = 'namelists.nml'\n")
         if grid.is_gridded():
@@ -519,58 +816,57 @@ def ww3_grid(grid, filename, grid_exported_to, freq1, nth, nk):
             fout.write("  GRID%COORD            = 'SPHE'\n")
         fout.write("  GRID%CLOS             = 'NONE'\n")
         fout.write("  GRID%DMIN             = '2.0'\n")
-        fout.write('/\n\n')
+        fout.write("/\n\n")
 
     def write_rect():
-        sf = 1.0e+06
-        fout.write('&RECT_NML\n')
-        fout.write(f'  RECT%NX               = {grid.nx():.0f}\n')
-        fout.write(f'  RECT%NY               = {grid.ny():.0f}\n')
-        fout.write(f'  RECT%SX               = {grid.dlon()*sf:.0f}.\n')    
-        fout.write(f'  RECT%SY               = {grid.dlat()*sf:.0f}.\n')    
-        fout.write(f'  RECT%SF               = {sf:.0f}.\n') 
-        fout.write(f'  RECT%X0               = {min(grid.lon()):.6f}\n') 
-        fout.write(f'  RECT%Y0               = {min(grid.lat()):.6f}\n')
-        fout.write(f'  RECT%SF0              = 1.\n')
-        fout.write('/\n\n')
+        sf = 1.0e06
+        fout.write("&RECT_NML\n")
+        fout.write(f"  RECT%NX               = {grid.nx():.0f}\n")
+        fout.write(f"  RECT%NY               = {grid.ny():.0f}\n")
+        fout.write(f"  RECT%SX               = {grid.dlon()*sf:.0f}.\n")
+        fout.write(f"  RECT%SY               = {grid.dlat()*sf:.0f}.\n")
+        fout.write(f"  RECT%SF               = {sf:.0f}.\n")
+        fout.write(f"  RECT%X0               = {min(grid.lon()):.6f}\n")
+        fout.write(f"  RECT%Y0               = {min(grid.lat()):.6f}\n")
+        fout.write(f"  RECT%SF0              = 1.\n")
+        fout.write("/\n\n")
 
     def write_cart():
-        sf = 1.0e+00
-        fout.write('&RECT_NML\n')
-        fout.write(f'  RECT%NX               = {grid.nx():.0f}\n')
-        fout.write(f'  RECT%NY               = {grid.ny():.0f}\n')
-        fout.write(f'  RECT%SX               = {grid.dx()*sf:.0f}.\n')    
-        fout.write(f'  RECT%SY               = {grid.dy()*sf:.0f}.\n')    
-        fout.write(f'  RECT%SF               = {sf:.0f}.\n') 
-        fout.write(f'  RECT%X0               = {min(grid.x()):.6f}\n') 
-        fout.write(f'  RECT%Y0               = {min(grid.y()):.6f}\n')
-        fout.write(f'  RECT%SF0              = 1.\n')
-        fout.write('/\n\n')
+        sf = 1.0e00
+        fout.write("&RECT_NML\n")
+        fout.write(f"  RECT%NX               = {grid.nx():.0f}\n")
+        fout.write(f"  RECT%NY               = {grid.ny():.0f}\n")
+        fout.write(f"  RECT%SX               = {grid.dx()*sf:.0f}.\n")
+        fout.write(f"  RECT%SY               = {grid.dy()*sf:.0f}.\n")
+        fout.write(f"  RECT%SF               = {sf:.0f}.\n")
+        fout.write(f"  RECT%X0               = {min(grid.x()):.6f}\n")
+        fout.write(f"  RECT%Y0               = {min(grid.y()):.6f}\n")
+        fout.write(f"  RECT%SF0              = 1.\n")
+        fout.write("/\n\n")
 
     def write_depth():
-        fout.write('&DEPTH_NML\n')
-        fout.write(f'  DEPTH%SF               = -1.\n')
-        fout.write(f'  DEPTH%FILENAME         =  {grid_exported_to[0]}\n')
-        fout.write(f'  DEPTH%IDLA             =  1\n')
-        fout.write(f'  DEPTH%IDFM             = 2\n')
+        fout.write("&DEPTH_NML\n")
+        fout.write(f"  DEPTH%SF               = -1.\n")
+        fout.write(f"  DEPTH%FILENAME         =  {grid_exported_to[0]}\n")
+        fout.write(f"  DEPTH%IDLA             =  1\n")
+        fout.write(f"  DEPTH%IDFM             = 2\n")
         fout.write(f"  DEPTH%FORMAT           = '(F15.6)\n")
-        fout.write('/\n\n')
+        fout.write("/\n\n")
 
     def write_mask():
-        fout.write('&MASK_NML\n')
-        fout.write(f'  MASK%FILENAME         =  {grid_exported_to[-1]}\n')
-        fout.write(f'  MASK%IDLA             =  1\n')
-        fout.write(f'  MASK%IDFM             = 2\n')
+        fout.write("&MASK_NML\n")
+        fout.write(f"  MASK%FILENAME         =  {grid_exported_to[-1]}\n")
+        fout.write(f"  MASK%IDLA             =  1\n")
+        fout.write(f"  MASK%IDFM             = 2\n")
         fout.write(f"  MASK%FORMAT           = '(I3)\n")
-        fout.write('/\n\n')
+        fout.write("/\n\n")
 
     def write_unst():
-        fout.write('&UNST_NML\n')
-        fout.write(f'  UNST%SF               = -1.\n')
-        fout.write(f'  UNST%FILENAME         =  {grid_exported_to[0]}\n')
-        fout.write(f'  UNST%IDLA             =  4\n')
-        fout.write('/\n\n')
-
+        fout.write("&UNST_NML\n")
+        fout.write(f"  UNST%SF               = -1.\n")
+        fout.write(f"  UNST%FILENAME         =  {grid_exported_to[0]}\n")
+        fout.write(f"  UNST%IDLA             =  4\n")
+        fout.write("/\n\n")
 
     def write_inbnd():
         blocks = []
@@ -580,58 +876,57 @@ def ww3_grid(grid, filename, grid_exported_to, freq1, nth, nk):
         for n, point in enumerate(grid.boundary_mask()):
             if point:
                 if not in_segment:
-                    blocks.append(n+1)
-                    connect_flags.append('F')
+                    blocks.append(n + 1)
+                    connect_flags.append("F")
                     in_segment = True
                     ct += 1
             else:
                 if in_segment:
                     in_segment = False
-                    if n > (blocks[-1] + 1): # Block longer than one needs to be ended
+                    if n > (blocks[-1] + 1):  # Block longer than one needs to be ended
                         blocks.append(n)
-                        connect_flags.append('T')
+                        connect_flags.append("T")
                         ct += 1
 
-        fout.write('&INBND_COUNT_NML\n')
-        fout.write(f'  INBND_COUNT%N_POINT    = {ct:.0f}\n')
-        fout.write('/\n\n')  
-        fout.write('&INBND_POINT_NML\n')
+        fout.write("&INBND_COUNT_NML\n")
+        fout.write(f"  INBND_COUNT%N_POINT    = {ct:.0f}\n")
+        fout.write("/\n\n")
+        fout.write("&INBND_POINT_NML\n")
         for n, (block, flag) in enumerate(zip(blocks, connect_flags)):
-            fout.write(f'  INBND_POINT({n+1:.0f})         = {block:.0f} 1 {flag}\n')
-        fout.write('/\n\n')
-    
-    folder = __file__[:-6] + '/metadata/ww3_grid/'
+            fout.write(f"  INBND_POINT({n+1:.0f})         = {block:.0f} 1 {flag}\n")
+        fout.write("/\n\n")
 
-    with open(filename, 'w') as fout:
-        write_block('header.txt')
-        fout.write('\n')
-        write_block('spectrum.txt')
+    folder = __file__[:-6] + "/metadata/ww3_grid/"
+
+    with open(filename, "w") as fout:
+        write_block("header.txt")
+        fout.write("\n")
+        write_block("spectrum.txt")
         write_spectrum()
-        write_block('run.txt')
+        write_block("run.txt")
         write_run()
-        write_block('timesteps.txt')
+        write_block("timesteps.txt")
         write_timestep()
-        write_block('grid.txt')
+        write_block("grid.txt")
         write_grid()
         if grid.is_gridded():
             if grid.is_cartesian():
-                write_block('rect.txt')
+                write_block("rect.txt")
                 write_cart()
             else:
-                write_block('rect.txt')
+                write_block("rect.txt")
                 write_rect()
-            write_block('depth.txt')
+            write_block("depth.txt")
             write_depth()
-            write_block('mask.txt')
+            write_block("mask.txt")
             write_mask()
-            
-        else:
-            write_block('unst.txt')
-            write_unst()
-            write_block('inbnd.txt')
-            write_inbnd()
-        write_block('footer.txt')
 
+        else:
+            write_block("unst.txt")
+            write_unst()
+            write_block("inbnd.txt")
+            write_inbnd()
+        write_block("footer.txt")
 
 
 class WW3(InputFileWriter):
@@ -640,13 +935,11 @@ class WW3(InputFileWriter):
         return
 
     def _extension(self):
-        return 'nml'
+        return "nml"
 
-    def __call__(self, dict_of_objects: dict,
-                 filename: str):
-
-        grid = dict_of_objects.get('Grid') 
-        spectral_grid = dict_of_objects.get('SpectralGrid')
+    def __call__(self, dict_of_objects: dict, filename: str):
+        grid = dict_of_objects.get("Grid")
+        spectral_grid = dict_of_objects.get("SpectralGrid")
         if grid is not None:
             if spectral_grid is not None:
                 freq1 = spectral_grid.freq()[0]
@@ -658,7 +951,9 @@ class WW3(InputFileWriter):
                 nk = 32
             ww3_grid(grid, filename, grid.exported_to, freq1, nth, nk)
 
-        return filename 
+        return filename
+
+
 """         nx = grid.nx()
         ny = grid.ny()
 

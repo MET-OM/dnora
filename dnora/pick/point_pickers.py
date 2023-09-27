@@ -1,11 +1,14 @@
+from __future__ import annotations
 import numpy as np
 from abc import ABC, abstractmethod
 from typing import Union
 from geo_skeletons import PointSkeleton
 
 # Import objects
-from ..grd.grd_triang_mod import TriGrid
-from ..grd.grd_mod import Grid
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..grd.grd_mod import Grid, TriGrid
 
 # Import aux_funcsiliry functions
 from .. import msg
