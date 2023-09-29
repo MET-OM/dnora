@@ -5,13 +5,13 @@ from ..file_module import FileNames
 from typing import Union
 from ..grd.grd_mod import Grid, TriGrid
 from . import grd, wnd, bnd, spc, wsr, wlv, inp
-from .grd.grid_writers import GridWriter
-from .wnd.forcing_writers import ForcingWriter
-from .bnd.boundary_writers import BoundaryWriter
-from .spc.spectral_writers import SpectralWriter
-from .wsr.waveseries_writers import WaveSeriesWriter
-from .wlv.waterlevel_writers import WaterLevelWriter
-from .inp.input_file_writers import InputFileWriter
+from grd.grid_writers import GridWriter
+from wnd.forcing_writers import ForcingWriter
+from bnd.boundary_writers import BoundaryWriter
+from spc.spectral_writers import SpectralWriter
+from wsr.waveseries_writers import WaveSeriesWriter
+from wlv.waterlevel_writers import WaterLevelWriter
+from inp.input_file_writers import InputFileWriter
 
 WritingFunction = Union[
     GridWriter,
@@ -27,6 +27,7 @@ WritingFunction = Union[
 class DataExporter:
     def __init__(self, model: ModelRun):
         self.model = model
+        self.exported_to = {}
 
     def export_grid(
         self,
@@ -221,7 +222,7 @@ class DataExporter:
                 output_files = [output_files]
 
         # Store name and location where file was written
-        self.model._exported_to[obj_type.lower()] = output_files
+        self._exported_to[obj_type.lower()] = output_files
         # for file in output_files:
         #     self._exported_to[obj_type].append(file)
 
@@ -247,7 +248,7 @@ class DataExporter:
         """Writes the grid data in the Grid-object to an external source,
         e.g. a file."""
         self._dry_run = dry_run
-        self._input_file_writer = input_file_writer or self._get_input_file_writer()
+        input_file_writer = input_file_writer or self._get_input_file_writer()
 
         if self._input_file_writer is None:
             msg.info("No InputFileWriter defines. Won't do anything.")
@@ -273,13 +274,13 @@ class DataExporter:
             output_files = [file_object.get_filepath()]
         else:
             # Write the grid using the InputFileWriter object
-            output_files = self._input_file_writer(
-                self.model, filename=file_object.get_filepath(), **kwargs
+            output_files = input_file_writer(
+                self.model, file_object, self.exported_to, **kwargs
             )
             if type(output_files) is not list:
                 output_files = [output_files]
 
-        if self._input_file_writer._im_silent() or self.dry_run():
+        if input_file_writer._im_silent() or self.dry_run():
             for file in output_files:
                 msg.to_file(file)
 

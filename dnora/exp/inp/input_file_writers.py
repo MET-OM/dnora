@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from copy import copy
 import os
@@ -5,14 +7,29 @@ import numpy as np
 import pandas as pd
 
 # Import objects
-from ...wnd.wnd_mod import Forcing
-from ...grd.grd_mod import Grid
-from ...bnd.bnd_mod import Boundary
-from ...spc.spc_mod import Spectra
-from ...wsr.wsr_mod import WaveSeries
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # from ...wnd.wnd_mod import Forcing
+    # from ...grd.grd_mod import Grid
+    # from ...bnd.bnd_mod import Boundary
+    # from ...spc.spc_mod import Spectra
+    # from ...wsr.wsr_mod import WaveSeries
+    from ...mdl.mdl_mod import ModelRun
+    from ...file_module import FileNames
+
 from ...aux_funcs import create_swan_segment_coords
 from ... import msg
 from ... import file_module
+
+from .ww3_functions import (
+    ww3_grid,
+    ww3_prnc,
+    ww3_specfile_list,
+    ww3_bounc,
+    ww3_shel,
+    ww3_spectral_output_list,
+)
 
 
 class InputFileWriter(ABC):
@@ -31,52 +48,46 @@ class InputFileWriter(ABC):
     @abstractmethod
     def __call__(
         self,
-        grid: Grid,
-        forcing: Forcing,
-        boundary: Boundary,
-        spectra: Spectra,
-        waveseries: WaveSeries,
-        start_time: str,
-        end_time: str,
-        filename: str,
-        grid_path: str,
-        forcing_path: str,
-        boundary_path: str,
-    ) -> str:
-        return output_file
+        model: ModelRun,
+        file_object: FileNames,
+        exported_files: dict[str, list[str]],
+        **kwargs,
+    ) -> list[str]:
+        return output_files
 
 
 class Null(InputFileWriter):
     def __call__(self, model, filename: str):
-        return ''
+        return ""
 
 
 class SWAN(InputFileWriter):
-    def __init__(
-        self, calib_wind=1, calib_wcap=0.5000e-04, wind=True, spec_points=None
+    def __call__(
+        self,
+        model: ModelRun,
+        file_object: FileNames,
+        exported_files: dict[str, list[str]],
+        calib_wind: float = 1.0,
+        calib_wcap: float = 0.5000e-04,
+        use_wind: bool = True,
+        **kwargs,
     ):
-        self.calib_wind = calib_wind
-        self.calib_wcap = calib_wcap
-        self.wind = wind
-        self.spec_points = (
-            spec_points  # list of (lon, lat) points, e.g.,[(4.4, 60.6),(4.4, 60.8)]
-        )
-        return
-
-    def __call__(self, model, filename: str):
         forcing = model.forcing()
         grid = model.grid()
-        boundary = model.boundary()
-        spectral_grid = model.spectralgrid()
-        grid_path = grid.exported_to[-1]
-        forcing_path = forcing.exported_to[-1]
-        boundary_path = boundary.exported_to[-1]
+        grid_path = exported_files["grid"][-1]
+        forcing_path = exported_files["forcing"][-1]
+        boundary_path = exported_files["boundary"][-1]
 
-        if forcing is None and self.wind == True:
+        filename = file_object.get_filepath()
+
+        spec_lon, spec_lat = grid.output_points()
+        spec_points = [(x, y) for x, y in zip(spec_lon, spec_lat)]
+
+        if forcing is None and use_ind == True:
             msg.info(
                 "No forcing object provided. Wind information will NOT be written to SWAN input file!"
             )
-            self.wind = False
+            use_wind = False
 
         # Define start and end times of model run
         DATE_START = model.time(crop=True)[0]
@@ -90,7 +101,7 @@ class SWAN(InputFileWriter):
         delta_Xf = np.round(np.abs(forcing.lon()[-1] - forcing.lon()[0]), 5)
         delta_Yf = np.round(np.abs(forcing.lat()[-1] - forcing.lat()[0]), 5)
 
-        factor_wind = self.calib_wind * 0.001
+        factor_wind = calib_wind * 0.001
 
         with open(filename, "w") as file_out:
             file_out.write("$************************HEADING************************\n")
@@ -152,7 +163,7 @@ class SWAN(InputFileWriter):
             # file_out.write('BOU NEST \''+boundary_path.split('/')[-1]+'\' OPEN \n')
             file_out.write("$ \n")
 
-            if self.wind:
+            if use_wind:
                 file_out.write(
                     "INPGRID WIND "
                     + str(forcing.lon()[0])
@@ -182,7 +193,7 @@ class SWAN(InputFileWriter):
                 file_out.write("$ \n")
             else:
                 file_out.write("OFF QUAD \n")
-            file_out.write("GEN3 WESTH cds2=" + str(self.calib_wcap) + "\n")
+            file_out.write("GEN3 WESTH cds2=" + str(calib_wcap) + "\n")
             file_out.write("FRICTION JON 0.067 \n")
             file_out.write("PROP BSBT \n")
             file_out.write("NUM ACCUR NONST 1 \n")
@@ -205,15 +216,10 @@ class SWAN(InputFileWriter):
                 + " 1 HR \n"
             )
             file_out.write("$ \n")
-            if self.spec_points is not None:
+            if spec_points:
                 file_out.write("POINTS 'pkt' &\n")
-                for i in range(len(self.spec_points)):
-                    file_out.write(
-                        str(self.spec_points[i][0])
-                        + " "
-                        + str(self.spec_points[i][1])
-                        + " &\n"
-                    )
+                for lon, lat in spec_points:
+                    file_out.write(str(lon) + " " + str(lat) + " &\n")
                 file_out.write(
                     "SPECOUT 'pkt' SPEC2D ABS '"
                     + grid.name()
@@ -232,37 +238,29 @@ class SWAN(InputFileWriter):
 
 
 class SWASH(InputFileWriter):
-    def __init__(self, bound_side_command="BOU SIDE W CCW CON REG 0.5 14 270 "):
-        self.bound_side_command = bound_side_command
-
-        return
-
     def __call__(
         self,
-        grid: Grid,
-        forcing: Forcing,
-        boundary: Boundary,
-        spectra: Spectra,
-        waveseries: WaveSeries,
-        start_time: str,
-        end_time: str,
-        filename: str,
-        grid_path: str,
-        forcing_path: str,
-        boundary_path: str,
-    ):
-        DATE_START = start_time
-        DATE_END = end_time
+        model: ModelRun,
+        file_object: FileNames,
+        exported_files: dict[str, list[str]],
+        bound_side_command: str = "BOU SIDE W CCW CON REG 0.5 14 270 ",
+        **kwargs,
+    ) -> list[str]:
+        grid = model.grid()
+        filename = file_object.get_filepath()
+        grid_path = exported_files["grid"][-1]
+        DATE_START = model.time(crop=True)[0]
+        DATE_END = model.time(crop=True)[-1]
         STR_START = pd.Timestamp(DATE_START).strftime("%H%M%S")
         STR_END = pd.Timestamp(DATE_END).strftime("%H%M%S")
 
-        delta_X = np.round(np.abs(grid.lon()[-1] - grid.lon()[0]), 8)
-        delta_Y = np.round(np.abs(grid.lat()[-1] - grid.lat()[0]), 8)
+        delta_X = np.round(np.abs(grid.edges("lon")[-1] - grid.edges("lon")[0]), 8)
+        delta_Y = np.round(np.abs(grid.edges("lat")[-1] - grid.edges("lat")[0]), 8)
 
         with open(filename, "w") as file_out:
             file_out.write("$************************HEADING************************\n")
             file_out.write("$ \n")
-            file_out.write(" PROJ '" + grid.name() + "' 'T24' \n")
+            file_out.write(" PROJ '" + grid.name + "' 'T24' \n")
             file_out.write("$ \n")
             file_out.write("$*******************MODEL INPUT*************************\n")
             file_out.write("$ \n")
@@ -272,9 +270,9 @@ class SWASH(InputFileWriter):
             file_out.write("COORD SPHE CCM \n")
             file_out.write(
                 "CGRID REG "
-                + str(grid.lon()[0])
+                + str(grid.edges("lon")[0])
                 + " "
-                + str(grid.lat()[0])
+                + str(grid.edges("lat")[0])
                 + " 0. "
                 + str(delta_X)
                 + " "
@@ -314,9 +312,7 @@ class SWASH(InputFileWriter):
             file_out.write("$ OUTPUT REQUESTS \n")
             temp_list = grid_path.split("/")
             forcing_folder = "/".join(temp_list[0:-1])
-            file_out.write(
-                "BLOCK 'COMPGRID' NOHEAD '" + grid.name() + ".mat" + "' & \n"
-            )
+            file_out.write("BLOCK 'COMPGRID' NOHEAD '" + grid.name + ".mat" + "' & \n")
             file_out.write("LAY 3 WATL BOTL OUTPUT " + STR_START + " 5 SEC \n")
             file_out.write("$ \n")
             file_out.write("COMPUTE " + STR_START + " 0.001 SEC " + STR_END + "\n")
@@ -326,36 +322,27 @@ class SWASH(InputFileWriter):
 
 
 class REEF3D(InputFileWriter):
-    def __init__(
-        self, option="REEF3D", edges=["W"], nproc=1, rot_angle=0, wave_input="SPEC1D"
-    ):
-        self.option = option
-        self.nproc = nproc  # number of processors
-        self.edges = edges
-        self.rot_angle = rot_angle  # anlge for domain rotation
-        self.wave_input = wave_input  # 'SPEC1D' for NORA3 frequency spectrum or 'JONSWAP' providing Hs and Tp
-
-    def _extension(self):
-        return "txt"
-
     def __call__(
         self,
-        grid: Grid,
-        forcing: Forcing,
-        boundary: Boundary,
-        spectra: Spectra,
-        waveseries: WaveSeries,
-        start_time: str,
-        end_time: str,
-        filename: str,
-        forcing_path: str,
-        grid_path: str,
-        boundary_path: str,
-    ):
+        model: ModelRun,
+        file_object: FileNames,
+        exported_files: dict[str, list[str]],
+        option: str = "REEF3D",
+        edges: list[str] = ["W"],
+        nproc: int = 1,
+        rot_angles: int = 0,
+        wave_input: str = "SPEC1D",
+        **kwargs,
+    ) -> list[str]:
+        grid = model.grid()
+        waveseries = model.waveseries()
+        filename = file_object.get_filepath()
+        grid_path = exported_files["grid"][-1]
+
         geodat = pd.read_csv(grid_path, sep=" ")  # read geo.dat
         geodat.columns = ["x", "y", "z"]
 
-        if self.option == "DiveMESH":
+        if option == "DiveMESH":
             filename = "/".join(filename.split("/")[:-1]) + "/control.txt"
             with open(filename, "w") as file_out:
                 if "W" in self.edges:
@@ -435,7 +422,7 @@ class REEF3D(InputFileWriter):
                     "M 10 " + str(self.nproc) + " // number of processors" "\n"
                 )
                 file_out.write("M 20 2 // decomposition method 2" "\n")
-        elif self.option == "REEF3D":
+        elif option == "REEF3D":
             with open(filename, "w") as file_out:
                 file_out.write("A 10 3  // choose the model reef::fnpf" "\n")
                 file_out.write(
@@ -480,12 +467,12 @@ class REEF3D(InputFileWriter):
                     "\n"
                 )
                 file_out.write(" \n")
-                if self.wave_input == "SPEC1D":
+                if wave_input == "SPEC1D":
                     file_out.write("B 85 10 // spectrum file" "\n")
                     file_out.write("B 90 1 // wave input" "\n")
                     file_out.write("B 92 31 // 1st-order irregular wave" "\n")
 
-                elif self.wave_input == "JONSWAP":
+                elif wave_input == "JONSWAP":
                     file_out.write("B 85 2 // jonswap" "\n")
                     file_out.write("B 90 1 // wave input" "\n")
                     file_out.write("B 92 31 // 1st-order irregular wave" "\n")
@@ -537,9 +524,7 @@ class REEF3D(InputFileWriter):
                 file_out.write("N 47 1.0 // cfl number" "\n")
                 file_out.write(" \n")
 
-                file_out.write(
-                    "M 10 " + str(self.nproc) + " // number of processors" "\n"
-                )
+                file_out.write("M 10 " + str(nproc) + " // number of processors" "\n")
                 file_out.write(" \n")
 
                 file_out.write("P 180 1 // turn on .vtp free surface printout" "\n")
@@ -616,21 +601,16 @@ class HOS_ocean(InputFileWriter):
 
     def __call__(
         self,
-        grid: Grid,
-        forcing: Forcing,
-        boundary: Boundary,
-        spectra: Spectra,
-        waveseries: WaveSeries,
-        start_time: str,
-        end_time: str,
-        filename: str,
-        grid_path: str,
-        forcing_path: str,
-        boundary_path: str,
+        model: ModelRun,
+        file_object: FileNames,
+        exported_files: dict[str, list[str]],
+        **kwargs,
     ):
         # Create input file name
+        filename = file_object.get_filepath()
         __, folder = file_module.split_filepath(filename)
-        filename.create_folder(folder=folder + "/Results")
+
+        file_object.create_folder(folder=folder + "/Results")
 
         with open(filename, "w") as file_out:
             file_out.write("Restart previous computation :: i_restart        :: 0\n")
@@ -749,235 +729,87 @@ class HOS_ocean(InputFileWriter):
         return filename
 
 
-def ww3_grid(grid, filename, grid_exported_to, freq1, nth, nk):
-    """Writes ww3_grid.nml file"""
+class WW3Grid(InputFileWriter):
+    # def __init__(self):
+    #     self.scaling = 10**6
+    #     return
 
-    def write_block(fn: str):
-        with open(f"{folder}{fn}", "r") as fin:
-            block = fin.read()
-        fout.write(block)
-
-    def write_spectrum():
-        fout.write("&SPECTRUM_NML\n")
-        fout.write("  SPECTRUM%XFR         = 1.1\n")
-        fout.write(f"  SPECTRUM%FREQ1       = {freq1:.5f}\n")
-        fout.write(f"  SPECTRUM%NK          = {nk:.0f}\n")
-        fout.write(f"  SPECTRUM%NTH         = {nth:.0f}\n")
-        fout.write("/\n\n")
-
-    def write_run():
-        fout.write("&RUN_NML\n")
-        fout.write("  RUN%FLCX       = T\n")
-        fout.write("  RUN%FLCY       = T\n")
-        fout.write("  RUN%FLTH       = T\n")
-        fout.write("  RUN%FLCK       = T\n")
-        fout.write("  RUN%FLSOU      = T\n")
-        fout.write("/\n\n")
-
-    def write_timestep():
-        # Multiples of 10 s
-        if grid.is_gridded():
-            dtxy = np.floor(0.9 * grid.cfl(f0=freq1) / 10) * 10
-        else:  # This needs to be corrected !!!!!!!!!!!!!!
-            dtxy = 10.0
-
-        if dtxy < 10:
-            dtxy = 10
-            dtkth = 10
+    def __call__(
+        self,
+        model: ModelRun,
+        file_object: FileNames,
+        exported_files: dict[str, list[str]],
+        folder_on_server: str = "/server/gridfiles/",
+        **kwargs,
+    ) -> list[str]:
+        grid = model.grid()
+        spectral_grid = model.spectralgrid()
+        filename = file_object.get_filepath()
+        if spectral_grid is not None:
+            freq1 = spectral_grid.freq()[0]
+            nth = len(spectral_grid.dirs())
+            nk = len(spectral_grid.freq())
         else:
-            dtkth = dtxy / 2
+            freq1 = 0.04118
+            nth = 36
+            nk = 32
+        ww3_grid(
+            grid, filename, exported_files["grid"][-1], folder_on_server, freq1, nth, nk
+        )
 
-        dtmax = 3 * dtxy
+        return filename
 
-        if dtxy < 20:
-            dtmin = 5
-        else:
-            dtmin = 10
 
-        fout.write("&TIMESTEPS_NML\n")
-        fout.write(f"  TIMESTEPS%DTMAX        =  {dtmax:.0f}.\n")
-        fout.write(f"  TIMESTEPS%DTXY         =  {dtxy:.0f}.\n")
-        fout.write(f"  TIMESTEPS%DTKTH        =  {dtkth:.0f}.\n")
-        fout.write(f"  TIMESTEPS%DTMIN        =  {dtmin:.0f}.\n")
+class WW3Forcing(InputFileWriter):
+    def __call__(
+        self,
+        model: ModelRun,
+        file_object: FileNames,
+        exported_files: dict[str, list[str]],
+        folder_on_server: str = "/server/windfiles/",
+        **kwargs,
+    ) -> list[str]:
+        grid = model.grid()
+        forcing = model.forcing()
 
-        fout.write("/\n\n")
+        filename = file_object.get_filepath()
 
-    def write_grid():
-        fout.write("&GRID_NML\n")
-        fout.write(f"  GRID%NAME             = '{grid.name}'\n")
-        fout.write("  GRID%NML              = 'namelists.nml'\n")
-        if grid.is_gridded():
-            fout.write("  GRID%TYPE             = 'RECT'\n")
-        else:
-            fout.write("  GRID%TYPE             = 'UNST'\n")
-        if grid.is_cartesian():
-            fout.write("  GRID%TYPE             = 'CART'\n")
-        else:
-            fout.write("  GRID%COORD            = 'SPHE'\n")
-        fout.write("  GRID%CLOS             = 'NONE'\n")
-        fout.write("  GRID%DMIN             = '2.0'\n")
-        fout.write("/\n\n")
+        ww3_prnc(filename, exported_files["forcing"][-1], folder_on_server)
 
-    def write_rect():
-        sf = 1.0e06
-        fout.write("&RECT_NML\n")
-        fout.write(f"  RECT%NX               = {grid.nx():.0f}\n")
-        fout.write(f"  RECT%NY               = {grid.ny():.0f}\n")
-        fout.write(f"  RECT%SX               = {grid.dlon()*sf:.0f}.\n")
-        fout.write(f"  RECT%SY               = {grid.dlat()*sf:.0f}.\n")
-        fout.write(f"  RECT%SF               = {sf:.0f}.\n")
-        fout.write(f"  RECT%X0               = {min(grid.lon()):.6f}\n")
-        fout.write(f"  RECT%Y0               = {min(grid.lat()):.6f}\n")
-        fout.write(f"  RECT%SF0              = 1.\n")
-        fout.write("/\n\n")
+        return filename
 
-    def write_cart():
-        sf = 1.0e00
-        fout.write("&RECT_NML\n")
-        fout.write(f"  RECT%NX               = {grid.nx():.0f}\n")
-        fout.write(f"  RECT%NY               = {grid.ny():.0f}\n")
-        fout.write(f"  RECT%SX               = {grid.dx()*sf:.0f}.\n")
-        fout.write(f"  RECT%SY               = {grid.dy()*sf:.0f}.\n")
-        fout.write(f"  RECT%SF               = {sf:.0f}.\n")
-        fout.write(f"  RECT%X0               = {min(grid.x()):.6f}\n")
-        fout.write(f"  RECT%Y0               = {min(grid.y()):.6f}\n")
-        fout.write(f"  RECT%SF0              = 1.\n")
-        fout.write("/\n\n")
 
-    def write_depth():
-        fout.write("&DEPTH_NML\n")
-        fout.write(f"  DEPTH%SF               = -1.\n")
-        fout.write(f"  DEPTH%FILENAME         =  {grid_exported_to[0]}\n")
-        fout.write(f"  DEPTH%IDLA             =  1\n")
-        fout.write(f"  DEPTH%IDFM             = 2\n")
-        fout.write(f"  DEPTH%FORMAT           = '(F15.6)\n")
-        fout.write("/\n\n")
-
-    def write_mask():
-        fout.write("&MASK_NML\n")
-        fout.write(f"  MASK%FILENAME         =  {grid_exported_to[-1]}\n")
-        fout.write(f"  MASK%IDLA             =  1\n")
-        fout.write(f"  MASK%IDFM             = 2\n")
-        fout.write(f"  MASK%FORMAT           = '(I3)\n")
-        fout.write("/\n\n")
-
-    def write_unst():
-        fout.write("&UNST_NML\n")
-        fout.write(f"  UNST%SF               = -1.\n")
-        fout.write(f"  UNST%FILENAME         =  {grid_exported_to[0]}\n")
-        fout.write(f"  UNST%IDLA             =  4\n")
-        fout.write("/\n\n")
-
-    def write_inbnd():
-        blocks = []
-        connect_flags = []
-        ct = 0
-        in_segment = False
-        for n, point in enumerate(grid.boundary_mask()):
-            if point:
-                if not in_segment:
-                    blocks.append(n + 1)
-                    connect_flags.append("F")
-                    in_segment = True
-                    ct += 1
-            else:
-                if in_segment:
-                    in_segment = False
-                    if n > (blocks[-1] + 1):  # Block longer than one needs to be ended
-                        blocks.append(n)
-                        connect_flags.append("T")
-                        ct += 1
-
-        fout.write("&INBND_COUNT_NML\n")
-        fout.write(f"  INBND_COUNT%N_POINT    = {ct:.0f}\n")
-        fout.write("/\n\n")
-        fout.write("&INBND_POINT_NML\n")
-        for n, (block, flag) in enumerate(zip(blocks, connect_flags)):
-            fout.write(f"  INBND_POINT({n+1:.0f})         = {block:.0f} 1 {flag}\n")
-        fout.write("/\n\n")
-
-    folder = __file__[:-6] + "/metadata/ww3_grid/"
-
-    with open(filename, "w") as fout:
-        write_block("header.txt")
-        fout.write("\n")
-        write_block("spectrum.txt")
-        write_spectrum()
-        write_block("run.txt")
-        write_run()
-        write_block("timesteps.txt")
-        write_timestep()
-        write_block("grid.txt")
-        write_grid()
-        if grid.is_gridded():
-            if grid.is_cartesian():
-                write_block("rect.txt")
-                write_cart()
-            else:
-                write_block("rect.txt")
-                write_rect()
-            write_block("depth.txt")
-            write_depth()
-            write_block("mask.txt")
-            write_mask()
-
-        else:
-            write_block("unst.txt")
-            write_unst()
-            write_block("inbnd.txt")
-            write_inbnd()
-        write_block("footer.txt")
+class WW3Boundary(InputFileWriter):
+    def __call__(
+        self,
+        model: ModelRun,
+        file_object: FileNames,
+        exported_files: dict[str, list[str]],
+        method: str = "nearest",
+        verbose_level: int = 2,
+        folder_on_server: str = "/server/boundaryfiles/",
+        **kwargs,
+    ) -> list[str]:
+        ww3_specfile_list(exported_files["boundary"][-1])
+        if method == "nearest":
+            method = 0
+        if method == "linear":
+            method = 1
+        ww3_bounc(method, verbose_level)
 
 
 class WW3(InputFileWriter):
-    def __init__(self):
-        self.scaling = 10**6
-        return
-
-    def _extension(self):
-        return "nml"
-
-    def __call__(self, dict_of_objects: dict, filename: str):
-        grid = dict_of_objects.get("Grid")
-        spectral_grid = dict_of_objects.get("SpectralGrid")
-        if grid is not None:
-            if spectral_grid is not None:
-                freq1 = spectral_grid.freq()[0]
-                nth = len(spectral_grid.dirs())
-                nk = len(spectral_grid.freq())
-            else:
-                freq1 = 0.04118
-                nth = 36
-                nk = 32
-            ww3_grid(grid, filename, grid.exported_to, freq1, nth, nk)
-
-        return filename
-
-
-"""         nx = grid.nx()
-        ny = grid.ny()
-
-        sx = round(grid.dlon()*self.scaling)
-        sy = round(grid.dlat()*self.scaling)
-
-        sf = self.scaling
-
-        x0 = min(grid.lon())
-        y0 = min(grid.lat())
-        sf0 = 1.
-
-
-        with open(filename, 'w') as file_out:
-            file_out.write('&RECT_NML\n')
-            file_out.write(f'  RECT%NX          = {nx:.0f}\n')
-            file_out.write(f'  RECT%NY          = {ny:.0f}\n')
-            file_out.write(f'  RECT%SX          = {sx:.0f}.\n')
-            file_out.write(f'  RECT%SY          = {sy:.0f}.\n')
-            file_out.write(f'  RECT%SF          = {sf:.0f}.\n')
-            file_out.write(f'  RECT%X0          = {x0}\n')
-            file_out.write(f'  RECT%Y0          = {y0}\n')
-            file_out.write(f'  RECT%SF0         = {sf0:.0f}.\n')
-            file_out.write('/')
-
-        return filename
- """
+    def __call__(
+        self,
+        model: ModelRun,
+        file_object: FileNames,
+        exported_files: dict[str, list[str]],
+        homog_wind: tuple[float, float] = None,
+        folder_on_server: str = "/server/boundaryfiles/",
+        **kwargs,
+    ) -> list[str]:
+        lons, lats = model.grid().ouput_points()
+        ww3_spectral_output_list(lons, lats)
+        start_time = model.start_time(crop=True).strftime("%Y%m%d %H0000")
+        end_time = model.end_time(crop=True).strftime("%Y%m%d %H0000")
+        ww3_shel(start_time, end_time, homog_wind)

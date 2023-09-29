@@ -491,19 +491,19 @@ class ModelRun:
             dry_run=dry_run, write_cache=write_cache, freq=freq, **kwargs
         )
 
-    def set_spectral_grid_from_boundary(self):
+    def set_spectralgrid_from_boundary(self):
         if self.boundary() is None:
             msg.warning("No Boundary exists. Can't set spectral grid.")
             return
-        self.set_spectral_grid(freq=self.boundary().freq(), dirs=self.boundary().dirs())
+        self.set_spectralgrid(freq=self.boundary().freq(), dirs=self.boundary().dirs())
 
-    def set_spectral_grid_from_spectra(self, **kwargs):
+    def set_spectralgrid_from_spectra(self, **kwargs):
         if self.spectra() is None:
             msg.warning("No Spectra exists. Can't set spectral grid.")
             return
-        self.set_spectral_grid(freq=self.spectra().freq(), **kwargs)
+        self.set_spectralgrid(freq=self.spectra().freq(), **kwargs)
 
-    def set_spectral_grid(
+    def set_spectralgrid(
         self,
         freq: np.ndarray = None,
         dirs: np.ndarray = None,
@@ -520,7 +520,7 @@ class ModelRun:
             )
         if dirs is None:
             dirs = np.linspace(0, 360, ndir + 1)[0:-1] + dirshift
-        self._spectral_grid = SpectralGrid(name="spectral_grid", freq=freq, dirs=dirs)
+        self._spectralgrid = SpectralGrid(name="spectralgrid", freq=freq, dirs=dirs)
 
     def run_model(
         self,
@@ -631,10 +631,10 @@ class ModelRun:
         else:
             return None
 
-    def spectralgrid(self) -> Boundary:
+    def spectralgrid(self) -> SpectralGrid:
         """Returns the spectral grid object if exists."""
-        if hasattr(self, "_spectral_grid"):
-            return self._spectral_grid
+        if hasattr(self, "_spectralgrid"):
+            return self._spectralgrid
         else:
             return None
 
