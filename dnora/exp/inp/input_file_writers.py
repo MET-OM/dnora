@@ -57,7 +57,13 @@ class InputFileWriter(ABC):
 
 
 class Null(InputFileWriter):
-    def __call__(self, model, filename: str):
+    def __call__(
+        self,
+        model: ModelRun,
+        file_object: FileNames,
+        exported_files: dict[str, list[str]],
+        **kwargs,
+    ) -> list[str]:
         return ""
 
 
