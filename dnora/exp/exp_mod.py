@@ -3,17 +3,16 @@ from .. import msg
 from ..file_module import FileNames
 
 from typing import Union
-from ..grd.grd_mod import Grid, TriGrid
-from . import grd, wnd, bnd, spc, wsr, wlv, inp
-from grd.grid_writers import GridWriter
-from wnd.forcing_writers import ForcingWriter
-from bnd.boundary_writers import BoundaryWriter
-from spc.spectral_writers import SpectralWriter
-from wsr.waveseries_writers import WaveSeriesWriter
-from wlv.waterlevel_writers import WaterLevelWriter
-from inp.input_file_writers import InputFileWriter
+from . import grd, wnd, bnd, spc, wsr, wlv
+from .grd.grid_writers import GridWriter
+from .wnd.forcing_writers import ForcingWriter
+from .bnd.boundary_writers import BoundaryWriter
+from .spc.spectral_writers import SpectralWriter
+from .wsr.waveseries_writers import WaveSeriesWriter
+from .wlv.waterlevel_writers import WaterLevelWriter
+from .inp.input_file_writers import InputFileWriter
 
-WritingFunction = Union[
+WriterFunction = Union[
     GridWriter,
     ForcingWriter,
     BoundaryWriter,
@@ -41,10 +40,10 @@ class DataExporter:
     ) -> None:
         """Writes the grid data in the Grid-object to an external source,
         e.g. a file."""
-        if type(self.model.grid()) is Grid:
-            writer_function = self._setup_export("Grid", grid_writer, dry_run)
-        elif type(self.model.grid()) is TriGrid:
-            writer_function = self._setup_export("TriGrid", grid_writer, dry_run)
+        # type og self.grid() can be either Grid or TriGrid
+        writer_function = self._setup_export(
+            type(self.model.grid()).__name__, grid_writer, dry_run
+        )
 
         self._export_object(
             "Grid",
@@ -188,7 +187,7 @@ class DataExporter:
         filename: str,
         folder: str,
         dateformat: str,
-        writer_function: WritingFunction,
+        writer_function: WriterFunction,
         format: str,
         **kwargs,
     ) -> list[str]:
@@ -222,13 +221,10 @@ class DataExporter:
                 output_files = [output_files]
 
         # Store name and location where file was written
-        self._exported_to[obj_type.lower()] = output_files
-        # for file in output_files:
-        #     self._exported_to[obj_type].append(file)
+        self.exported_to[obj_type.lower()] = output_files
 
-        if writer_function._im_silent() or self.dry_run():
-            for file in output_files:
-                msg.to_file(file)
+        for file in output_files:
+            msg.to_file(file)
 
     def write_input_file(
         self,
@@ -250,23 +246,24 @@ class DataExporter:
         self._dry_run = dry_run
         input_file_writer = input_file_writer or self._get_input_file_writer()
 
-        if self._input_file_writer is None:
+        if input_file_writer is None:
             msg.info("No InputFileWriter defines. Won't do anything.")
             return
 
-        msg.header(self._input_file_writer, "Writing model input file...")
+        msg.header(input_file_writer, "Writing model input file...")
 
         # Controls generation of file names using the proper defaults etc.
         format = format or self._get_default_format()
+
         file_object = FileNames(
             model=self.model,
             filename=filename,
             folder=folder,
+            format=format,
             dateformat=dateformat,
             obj_type="input_file",
             edge_object="Grid",
         )
-
         file_object.create_folder()
 
         if self.dry_run():
@@ -286,20 +283,18 @@ class DataExporter:
 
         return
 
-    def _setup_export(self, obj_type: str, writer_function, dry_run: bool):
+    def _setup_export(
+        self, obj_type: str, writer_function, dry_run: bool
+    ) -> WriterFunction:
         self._dry_run = dry_run
-        if obj_type == "TriGrid":
-            check_type = "Grid"
-        else:
-            check_type = obj_type
 
-        if self.model[check_type] is None:
+        if self.model[obj_type] is None:
             return None
 
         writer_function = writer_function or self[f"{obj_type}_writer"]
 
         if writer_function is None:
-            raise Exception(f"Define a {check_type}Writer!")
+            raise Exception(f"Define a {obj_type}Writer!")
 
         return writer_function
 

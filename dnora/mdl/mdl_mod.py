@@ -3,9 +3,10 @@ from copy import copy
 import pandas as pd
 import numpy as np
 from geo_skeletons import PointSkeleton
+import re
 
 # Import objects
-from ..grd.grd_mod import Grid
+from ..grd.grd_mod import Grid, TriGrid
 
 from ..file_module import FileNames
 
@@ -491,19 +492,21 @@ class ModelRun:
             dry_run=dry_run, write_cache=write_cache, freq=freq, **kwargs
         )
 
-    def set_spectralgrid_from_boundary(self):
+    def set_spectral_grid_from_boundary(self, **kwargs):
         if self.boundary() is None:
             msg.warning("No Boundary exists. Can't set spectral grid.")
             return
-        self.set_spectralgrid(freq=self.boundary().freq(), dirs=self.boundary().dirs())
+        self.set_spectral_grid(
+            freq=self.boundary().freq(), dirs=self.boundary().dirs(), **kwargs
+        )
 
-    def set_spectralgrid_from_spectra(self, **kwargs):
+    def set_spectral_grid_from_spectra(self, **kwargs):
         if self.spectra() is None:
             msg.warning("No Spectra exists. Can't set spectral grid.")
             return
-        self.set_spectralgrid(freq=self.spectra().freq(), **kwargs)
+        self.set_spectral_grid(freq=self.spectra().freq(), **kwargs)
 
-    def set_spectralgrid(
+    def set_spectral_grid(
         self,
         freq: np.ndarray = None,
         dirs: np.ndarray = None,
@@ -511,16 +514,32 @@ class ModelRun:
         nfreq: int = 32,
         ndir: int = 36,
         finc: float = 1.1,
-        dirshift: float = 0.0,
+        dirshift: float = None,
     ):
         """Sets spectral grid for model run. Will be used to write input files."""
         if freq is None:
             freq = np.array(
                 [freq0 * finc**n for n in np.linspace(0, nfreq - 1, nfreq)]
             )
+        if len(freq) < nfreq:
+            start_freq = freq[-1]
+            add_freq = np.array(
+                [
+                    start_freq * finc**n
+                    for n in np.linspace(1, nfreq - len(freq), nfreq - len(freq))
+                ]
+            )
+            freq = np.concatenate((freq, add_freq))
         if dirs is None:
+            if dirshift is None:
+                dirshift = 0.0
             dirs = np.linspace(0, 360, ndir + 1)[0:-1] + dirshift
-        self._spectralgrid = SpectralGrid(name="spectralgrid", freq=freq, dirs=dirs)
+        if len(dirs) < ndir:
+            if dirshift is None:
+                dirshift = np.min(np.abs(dirs))
+            dirs = np.linspace(0, 360, ndir + 1)[0:-1] + dirshift
+
+        self._spectral_grid = SpectralGrid(name="spectral_grid", freq=freq, dirs=dirs)
 
     def run_model(
         self,
@@ -624,6 +643,13 @@ class ModelRun:
         else:
             return None
 
+    def oceancurrent(self) -> WaterLevel:
+        """Returns the ocean current object if exists."""
+        if hasattr(self, "_oceancurrent"):
+            return self._oceancurrent
+        else:
+            return None
+
     def topo(self) -> Grid:
         """Returns the raw topography object if exists."""
         if hasattr(self.grid(), "_raw"):
@@ -631,10 +657,10 @@ class ModelRun:
         else:
             return None
 
-    def spectralgrid(self) -> SpectralGrid:
+    def spectral_grid(self) -> SpectralGrid:
         """Returns the spectral grid object if exists."""
-        if hasattr(self, "_spectralgrid"):
-            return self._spectralgrid
+        if hasattr(self, "_spectral_grid"):
+            return self._spectral_grid
         else:
             return None
 
@@ -654,7 +680,7 @@ class ModelRun:
             "Spectra": self.spectra(),
             "WaveSeries": self.waveseries(),
             "WaterLevel": self.waterlevel(),
-            "SpectralGrid": self.spectralgrid(),
+            "SpectralGrid": self.spectral_grid(),
         }
 
     def list_of_objects(
@@ -728,9 +754,22 @@ class ModelRun:
         return self.time(crop_with=crop_with)[-1]
 
     def __getitem__(self, dnora_str: str):
-        if dnora_str.lower() == "modelrun":
+        dnora_str = camel_to_snake(dnora_str)
+
+        if dnora_str == "model_run":
             return self
-        return eval(f"self.{dnora_str.lower()}()")
+
+        if dnora_str == "tri_grid":
+            if type(self.grid()) == TriGrid:
+                return self.grid()
+            else:
+                return None
+        try:
+            return eval(f"self.{dnora_str}()")
+        except AttributeError:
+            return eval(f"self.{dnora_str.replace('_', '')}()")
+        except:
+            return None
 
     def _get_forcing_reader(self) -> ForcingReader:
         return None
@@ -749,3 +788,7 @@ class ModelRun:
 
     def _get_waterlevel_reader(self) -> WaterLevelReader:
         return None
+
+
+def camel_to_snake(string: str) -> str:
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", string).lower()

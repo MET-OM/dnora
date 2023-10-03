@@ -749,18 +749,31 @@ class WW3Grid(InputFileWriter):
         **kwargs,
     ) -> list[str]:
         grid = model.grid()
-        spectral_grid = model.spectralgrid()
-        filename = file_object.get_filepath()
+        spectral_grid = model.spectral_grid()
+        if file_object.get_filename() == "":
+            filename = file_object.get_folder() + "/ww3_grid.nml"
+        else:
+            filename = file_object.get_filepath()
+
         if spectral_grid is not None:
             freq1 = spectral_grid.freq()[0]
             nth = len(spectral_grid.dirs())
             nk = len(spectral_grid.freq())
+            dirshift = spectral_grid.dirs()[0]
         else:
             freq1 = 0.04118
             nth = 36
             nk = 32
+            dirshift = 0
         ww3_grid(
-            grid, filename, exported_files["grid"][-1], folder_on_server, freq1, nth, nk
+            grid,
+            filename,
+            exported_files["grid"],
+            folder_on_server,
+            freq1,
+            nth,
+            nk,
+            dirshift,
         )
 
         return filename
@@ -775,12 +788,11 @@ class WW3Forcing(InputFileWriter):
         folder_on_server: str = "/server/windfiles/",
         **kwargs,
     ) -> list[str]:
-        grid = model.grid()
-        forcing = model.forcing()
-
-        filename = file_object.get_filepath()
-
-        ww3_prnc(filename, exported_files["forcing"][-1], folder_on_server)
+        if file_object.get_filename() == "":
+            filename = file_object.get_folder() + "/ww3_prnc.nml"
+        else:
+            filename = file_object.get_filepath()
+        ww3_prnc(filename, exported_files["forcing"], folder_on_server)
 
         return filename
 
@@ -796,12 +808,27 @@ class WW3Boundary(InputFileWriter):
         folder_on_server: str = "/server/boundaryfiles/",
         **kwargs,
     ) -> list[str]:
-        ww3_specfile_list(exported_files["boundary"][-1])
+        ww3_specfile_list(
+            file_object.get_folder() + "/spectral_boundary_files.list",
+            exported_files["boundary"],
+        )
+        if file_object.get_filename() == "":
+            filename = file_object.get_folder() + "/ww3_bounc.nml"
+        else:
+            filename = file_object.get_filepath()
         if method == "nearest":
-            method = 0
-        if method == "linear":
             method = 1
-        ww3_bounc(method, verbose_level)
+        if method == "linear":
+            method = 2
+        if method not in [1, 2]:
+            msg.warning(
+                f"Cannot undestand method={method} (not nearest/linear). Uning nearest neighbour."
+            )
+            method = 1
+
+        ww3_bounc(filename, method, verbose_level)
+
+        return filename
 
 
 class WW3(InputFileWriter):
@@ -810,12 +837,28 @@ class WW3(InputFileWriter):
         model: ModelRun,
         file_object: FileNames,
         exported_files: dict[str, list[str]],
-        homog_wind: tuple[float, float] = None,
-        folder_on_server: str = "/server/boundaryfiles/",
+        homog: dict[tuple[float, float]] = None,
+        folder_on_server: str = "/server/namelists/",
         **kwargs,
     ) -> list[str]:
-        lons, lats = model.grid().ouput_points()
-        ww3_spectral_output_list(lons, lats)
-        start_time = model.start_time(crop=True).strftime("%Y%m%d %H0000")
-        end_time = model.end_time(crop=True).strftime("%Y%m%d %H0000")
-        ww3_shel(start_time, end_time, homog_wind)
+        if homog is None:
+            homog = {}
+        lons, lats = model.grid().output_points()
+        ww3_spectral_output_list(
+            file_object.get_folder() + "/spectral_points.list", lons, lats
+        )
+        start_time = model.start_time(crop_with="all").strftime("%Y%m%d %H0000")
+        end_time = model.end_time(crop_with="all").strftime("%Y%m%d %H0000")
+        if file_object.get_filename() == "":
+            filename = file_object.get_folder() + "/ww3_shel.nml"
+        else:
+            filename = file_object.get_filepath()
+
+        forcing = {}
+        forcing["wnd"] = model.forcing() is not None
+        forcing["wlv"] = model.waterlevel() is not None
+        forcing["ocr"] = model.oceancurrent() is not None
+
+        ww3_shel(filename, folder_on_server, start_time, end_time, forcing, homog)
+
+        return filename

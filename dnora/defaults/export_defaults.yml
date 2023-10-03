@@ -95,7 +95,7 @@ WW3:
     filename: 'wind_#Forcing_#Grid_#T0-#T1'
     extension: 'nc'
   input_file:
-    filename: 'ww3_'
+    filename: ''
     folder: 'MyWW3Folder'
     extension: 'nml'
 

@@ -227,6 +227,7 @@ class Grid(GriddedSkeleton, GridMethods):
 
 @add_datavar(name="topo", default_value=999.0)
 @add_mask(name="boundary", coords="grid", default_value=0)
+@add_mask(name="output", coords="grid", default_value=0)
 @add_mask(name="sea", coords="grid", default_value=1, opposite_name="land")
 class UnstrGrid(PointSkeleton, GridMethods):
     def __init__(self, x=None, y=None, lon=None, lat=None, name="LonelyGrid", **kwargs):

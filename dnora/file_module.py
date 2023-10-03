@@ -52,9 +52,12 @@ class FileNames:
         clean: bool = True,
         edge_object: str = None,
     ) -> str:
-        filename = self.filename or get_default_value(
-            key, self.obj_type, self.primary, self.fallback
-        )
+        if self.filename is not None:
+            filename = self.filename
+        else:
+            filename = get_default_value(
+                key, self.obj_type, self.primary, self.fallback
+            )
         start_time = start_time or self.get_start_time()
         end_time = end_time or self.get_end_time()
 
@@ -65,8 +68,10 @@ class FileNames:
         extension = extension or get_default_value(
             "extension", self.obj_type, self.primary, self.fallback
         )
+        if filename == "":
+            return filename
         if extension is None:
-            return Path(filename)
+            return str(Path(filename))
         return f"{Path(filename)}.{extension}"
 
     def get_folder(
@@ -76,7 +81,7 @@ class FileNames:
             key, self.obj_type, self.primary, self.fallback
         )
 
-        return Path(self.replace_placeholders(folder, edge_object=edge_object))
+        return str(Path(self.replace_placeholders(folder, edge_object=edge_object)))
 
     def get_filepath(
         self,
@@ -297,7 +302,8 @@ def get_default_value(key: str, obj_type: str, primary: dict, fallback: dict):
         fallback_name = fallback[obj_type].get(key)
 
     # Try object non-specific fallback name
-    fallback_name = fallback_name or fallback.get(key)
+    if fallback_name is None:
+        fallback_name = fallback.get(key)
 
     # Try dnora_obj specific primary name
     primary_name = None
@@ -305,9 +311,13 @@ def get_default_value(key: str, obj_type: str, primary: dict, fallback: dict):
         primary_name = primary[obj_type].get(key)
 
     # Try dnora_obj non-specific primary name
-    primary_name = primary_name or primary.get(key)
+    if primary_name is None:
+        primary_name = primary.get(key)
 
-    final_name = primary_name or fallback_name
+    if primary_name is not None:
+        final_name = primary_name
+    else:
+        final_name = fallback_name
 
     if final_name is None:
         raise ValueError("Could not find any default name!")
