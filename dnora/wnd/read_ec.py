@@ -1,4 +1,4 @@
-from abc import ABC,  abstractmethod
+from abc import ABC, abstractmethod
 from copy import copy
 import numpy as np
 import xarray as xr
@@ -6,6 +6,7 @@ from subprocess import call
 import os, glob
 import time
 import cdsapi
+
 # Import objects
 from ..grd.grd_mod import Grid
 
@@ -14,19 +15,25 @@ from .read import ForcingReader
 
 # Import aux_funcsiliry functions
 from .. import msg
-from ..aux_funcs import u_v_from_dir, expand_area, int_list_of_days, int_list_of_months, int_list_of_years
+from ..aux_funcs import (
+    expand_area,
+    int_list_of_days,
+    int_list_of_months,
+    int_list_of_years,
+)
 import pandas as pd
 
 
-
-def download_era5_from_cds(start_time, end_time, lon, lat, folder='dnora_wnd_temp') -> str:
+def download_era5_from_cds(
+    start_time, end_time, lon, lat, folder="dnora_wnd_temp"
+) -> str:
     """Downloads ERA5 10 m wind data from the Copernicus Climate Data Store for a
     given area and time period"""
     start_time = pd.Timestamp(start_time)
     end_time = pd.Timestamp(end_time)
     c = cdsapi.Client()
 
-    filename = f'{folder}/EC_ERA5.nc'
+    filename = f"{folder}/EC_ERA5.nc"
     # cds_command_test = {
     #     'product_type': 'reanalysis',
     #     'format': 'netcdf',
@@ -54,59 +61,82 @@ def download_era5_from_cds(start_time, end_time, lon, lat, folder='dnora_wnd_tem
     #     ],
     # }
 
-    years = [f'{y:4.0f}' for y in int_list_of_years(start_time, end_time)]
+    years = [f"{y:4.0f}" for y in int_list_of_years(start_time, end_time)]
     if len(years) == 1:
         years = years[0]
-    months = [f'{m:02.0f}' for m in int_list_of_months(start_time, end_time)]
+    months = [f"{m:02.0f}" for m in int_list_of_months(start_time, end_time)]
     if len(months) == 1:
         months = months[0]
-    days = [f'{d:02.0f}' for d in int_list_of_days(start_time, end_time)]
+    days = [f"{d:02.0f}" for d in int_list_of_days(start_time, end_time)]
     if len(days) == 1:
         days = days[0]
 
     cds_command = {
-        'product_type': 'reanalysis',
-        'format': 'netcdf',
-        'variable': [
-            '10m_u_component_of_wind', '10m_v_component_of_wind',
+        "product_type": "reanalysis",
+        "format": "netcdf",
+        "variable": [
+            "10m_u_component_of_wind",
+            "10m_v_component_of_wind",
         ],
-        'year': years,
-        'month': months,
-        'day': days,
-        'time': [
-            '00:00', '01:00', '02:00',
-            '03:00', '04:00', '05:00',
-            '06:00', '07:00', '08:00',
-            '09:00', '10:00', '11:00',
-            '12:00', '13:00', '14:00',
-            '15:00', '16:00', '17:00',
-            '18:00', '19:00', '20:00',
-            '21:00', '22:00', '23:00',
+        "year": years,
+        "month": months,
+        "day": days,
+        "time": [
+            "00:00",
+            "01:00",
+            "02:00",
+            "03:00",
+            "04:00",
+            "05:00",
+            "06:00",
+            "07:00",
+            "08:00",
+            "09:00",
+            "10:00",
+            "11:00",
+            "12:00",
+            "13:00",
+            "14:00",
+            "15:00",
+            "16:00",
+            "17:00",
+            "18:00",
+            "19:00",
+            "20:00",
+            "21:00",
+            "22:00",
+            "23:00",
         ],
-        'area': [
-            lat[1], lon[0], lat[0],
-            #lat[1], 4, lat[0],
+        "area": [
+            lat[1],
+            lon[0],
+            lat[0],
+            # lat[1], 4, lat[0],
             lon[1],
         ],
     }
 
-    c.retrieve('reanalysis-era5-single-levels', cds_command, filename)
+    c.retrieve("reanalysis-era5-single-levels", cds_command, filename)
     return filename
 
 
 class ERA5(ForcingReader):
-    """Reads ERA5 wind data
-    """
+    """Reads ERA5 wind data"""
 
-    def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float=1.2, **kwargs):
+    def __call__(
+        self,
+        grid: Grid,
+        start_time: str,
+        end_time: str,
+        expansion_factor: float = 1.2,
+        **kwargs,
+    ):
         """Reads boundary spectra between given times and given area around
         the Grid object."""
 
-        msg.info(
-            f"Getting ERA5 wind forcing from {start_time} to {end_time}")
+        msg.info(f"Getting ERA5 wind forcing from {start_time} to {end_time}")
 
-
-        temp_folder = 'dnora_wnd_temp'
+        temp_folder = "dnora_wnd_temp"
         if not os.path.isdir(temp_folder):
             os.mkdir(temp_folder)
             print("Creating folder %s..." % temp_folder)
@@ -116,14 +146,18 @@ class ERA5(ForcingReader):
             os.remove(f)
 
         # Define area to search in
-        lon, lat = expand_area(grid.edges('lon'), grid.edges('lat'), expansion_factor)
+        lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
 
-        nc_file = download_era5_from_cds(start_time, end_time, lon=lon, lat=lat, folder='dnora_wnd_temp')
+        nc_file = download_era5_from_cds(
+            start_time, end_time, lon=lon, lat=lat, folder="dnora_wnd_temp"
+        )
         wind_forcing = xr.open_dataset(nc_file)
-        wind_forcing = wind_forcing.rename_dims({'longitude': 'lon', 'latitude': 'lat'})
-        wind_forcing = wind_forcing.rename_vars({'longitude': 'lon', 'latitude': 'lat'})
-        wind_forcing = wind_forcing.rename_vars({'u10': 'u', 'v10': 'v'})
+        wind_forcing = wind_forcing.rename_dims({"longitude": "lon", "latitude": "lat"})
+        wind_forcing = wind_forcing.rename_vars({"longitude": "lon", "latitude": "lat"})
+        wind_forcing = wind_forcing.rename_vars({"u10": "u", "v10": "v"})
 
-        wind_forcing = wind_forcing.isel(lat=slice(None,None,-1)) # ERA5 gives lat as descending
+        wind_forcing = wind_forcing.isel(
+            lat=slice(None, None, -1)
+        )  # ERA5 gives lat as descending
 
         return wind_forcing

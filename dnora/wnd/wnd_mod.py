@@ -2,6 +2,7 @@ from geo_skeletons import GriddedSkeleton
 from geo_skeletons.decorators import add_time, add_datavar
 import numpy as np
 import pandas as pd
+from ..aux_funcs import speed_dir_from_u_v
 
 
 @add_datavar(name="v", default_value=0.0)
@@ -23,7 +24,12 @@ class Forcing(GriddedSkeleton):
         super().__init__(x=x, y=y, lon=lon, lat=lat, name=name, time=time, **kwargs)
 
     def magnitude(self):
-        return (self.u() ** 2 + self.v() ** 2) ** 0.5
+        ws, __ = speed_dir_from_u_v(self.u(), self.v())
+        return ws
+
+    def direction(self):
+        __, wdir = speed_dir_from_u_v(self.u(), self.v())
+        return wdir
 
     # def __str__(self) -> str:
     #     """Prints status of forcing."""

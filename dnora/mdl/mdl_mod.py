@@ -34,6 +34,10 @@ from ..wlv import WaterLevel
 from ..wlv.read import WaterLevelReader
 from .. import wlv
 
+from ..ocr import OceanCurrent
+from ..ocr.read import OceanCurrentReader
+from .. import ocr
+
 from ..run.model_executers import ModelExecuter
 from ..spectral_grid import SpectralGrid
 
@@ -88,7 +92,6 @@ class ModelRun:
             raise Exception("Define a ForcingReader!")
 
         name = name or forcing_reader.name()
-        forcing_reader.set_source(source)
 
         if name is None:
             raise ValueError(
@@ -99,7 +102,11 @@ class ModelRun:
 
         if not self.dry_run():
             time, u, v, lon, lat, x, y, attributes = forcing_reader(
-                self.grid(), self.start_time(), self.end_time(), **kwargs
+                grid=self.grid(),
+                start_time=self.start_time(),
+                end_time=self.end_time(),
+                source=source,
+                **kwargs,
             )
 
             self._forcing = Forcing(lon=lon, lat=lat, x=x, y=y, time=time, name=name)
@@ -146,7 +153,6 @@ class ModelRun:
             raise Exception("Define a PointPicker!")
 
         name = name or boundary_reader.name()
-        boundary_reader.set_source(source)
 
         if name is None:
             raise ValueError(
@@ -156,7 +162,7 @@ class ModelRun:
         if not self.dry_run():
             msg.header(boundary_reader, "Reading coordinates of spectra...")
             lon_all, lat_all, x_all, y_all = boundary_reader.get_coordinates(
-                self.grid(), self.start_time()
+                grid=self.grid(), start_time=self.start_time(), source=source
             )
             all_points = PointSkeleton(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
 
@@ -169,7 +175,10 @@ class ModelRun:
 
             msg.header(point_picker, "Choosing boundary spectra...")
             inds = point_picker(
-                self.grid(), all_points, selected_points=boundary_points, **kwargs
+                grid=self.grid(),
+                all_points=all_points,
+                selected_points=boundary_points,
+                **kwargs,
             )
             if len(inds) < 1:
                 msg.warning(
@@ -181,7 +190,12 @@ class ModelRun:
             msg.header(boundary_reader, "Loading boundary spectra...")
 
             time, freq, dirs, spec, lon, lat, x, y, metadata = boundary_reader(
-                self.grid(), self.start_time(), self.end_time(), inds, **kwargs
+                grid=self.grid(),
+                start_time=self.start_time(),
+                end_time=self.end_time(),
+                inds=inds,
+                source=source,
+                **kwargs,
             )
             self._boundary = Boundary(
                 x=x, y=y, lon=lon, lat=lat, time=time, freq=freq, dirs=dirs, name=name
@@ -234,7 +248,6 @@ class ModelRun:
             raise Exception("Define a PointPicker!")
 
         name = name or spectral_reader.name()
-        spectral_reader.set_source(source)
 
         if name is None:
             raise ValueError(
@@ -244,7 +257,7 @@ class ModelRun:
         if not self.dry_run():
             msg.header(spectral_reader, "Reading coordinates of spectra...")
             lon_all, lat_all, x_all, y_all = spectral_reader.get_coordinates(
-                self.grid(), self.start_time()
+                grid=self.grid(), start_time=self.start_time(), source=source
             )
             all_points = PointSkeleton(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
 
@@ -257,12 +270,20 @@ class ModelRun:
 
             msg.header(point_picker, "Choosing spectra...")
             inds = point_picker(
-                self.grid(), all_points, selected_points=boundary_points, **kwargs
+                grid=self.grid(),
+                all_points=all_points,
+                selected_points=boundary_points,
+                **kwargs,
             )
 
             msg.header(spectral_reader, "Loading omnidirectional spectra...")
             time, freq, spec, mdir, spr, lon, lat, x, y, metadata = spectral_reader(
-                self.grid(), self.start_time(), self.end_time(), inds, **kwargs
+                grid=self.grid(),
+                start_time=self.start_time(),
+                end_time=self.end_time(),
+                inds=inds,
+                source=source,
+                **kwargs,
             )
 
             self._spectra = Spectra(
@@ -304,7 +325,6 @@ class ModelRun:
             raise Exception("Define a PointPicker!")
 
         name = name or waveseries_reader.name()
-        waveseries_reader.set_source(source)
 
         if name is None:
             raise ValueError(
@@ -314,7 +334,7 @@ class ModelRun:
         if not self.dry_run():
             msg.header(waveseries_reader, "Reading coordinates of WaveSeries...")
             lon_all, lat_all, x_all, y_all = waveseries_reader.get_coordinates(
-                self.grid(), self.start_time()
+                grid=self.grid(), start_time=self.start_time(), source=source
             )
 
             all_points = PointSkeleton(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
@@ -328,12 +348,20 @@ class ModelRun:
 
             msg.header(point_picker, "Choosing wave series points...")
             inds = point_picker(
-                self.grid(), all_points, selected_points=boundary_points, **kwargs
+                grid=self.grid(),
+                all_points=all_points,
+                selected_points=boundary_points,
+                **kwargs,
             )
 
             msg.header(waveseries_reader, "Loading wave series data...")
             time, data_dict, lon, lat, x, y, metadata = waveseries_reader(
-                self.grid(), self.start_time(), self.end_time(), inds, **kwargs
+                grid=self.grid(),
+                start_time=self.start_time(),
+                end_time=self.end_time(),
+                inds=inds,
+                source=source,
+                **kwargs,
             )
 
             self._waveseries = WaveSeries(x, y, lon, lat, time=time, name=name)
@@ -383,7 +411,6 @@ class ModelRun:
             raise Exception("Define a WaterLevelReader!")
 
         name = name or waterlevel_reader.name()
-        waterlevel_reader.set_source(source)
 
         if name is None:
             raise ValueError(
@@ -394,7 +421,11 @@ class ModelRun:
 
         if not self.dry_run():
             time, waterlevel, lon, lat, x, y, attributes = waterlevel_reader(
-                self.grid(), self.start_time(), self.end_time(), **kwargs
+                grid=self.grid(),
+                start_time=self.start_time(),
+                end_time=self.end_time(),
+                source=source,
+                **kwargs,
             )
             self._waterlevel = WaterLevel(
                 lon=lon, lat=lat, x=x, y=y, time=time, name=name
@@ -406,6 +437,63 @@ class ModelRun:
             self.waterlevel().name = name
             self.waterlevel().set_waterlevel(waterlevel)
             self.waterlevel().set_metadata(attributes)
+        else:
+            msg.info("Dry run! No water level data will be imported.")
+
+    @cached_reader("OceanCurrent", ocr.read.DnoraNc)
+    def import_oceancurrent(
+        self,
+        oceancurrent_reader: OceanCurrentReader = None,
+        name: str = None,
+        dry_run: bool = False,
+        source: str = "remote",
+        **kwargs,
+    ) -> None:
+        """Imports waterlevel.
+
+        source = 'remote' (default) / '<folder>' / 'met'
+
+        The implementation of this is up to the OceanCurrentReader, and all options might not be functional.
+        'met' options will only work in MET Norway internal networks.
+
+        To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
+        """
+        self._dry_run = dry_run
+
+        oceancurrent_reader = oceancurrent_reader or self._get_oceancurrent_reader()
+
+        # This is to allow importing from cache using only a name
+        if oceancurrent_reader is None:
+            raise Exception("Define a OcenacurrentReader!")
+
+        name = name or oceancurrent_reader.name()
+
+        if name is None:
+            raise ValueError(
+                "Provide either a name or a OceanCurrentReader that will then define the name!"
+            )
+
+        msg.header(oceancurrent_reader, "Importing water level data...")
+
+        if not self.dry_run():
+            time, u, v, lon, lat, x, y, attributes = oceancurrent_reader(
+                grid=self.grid(),
+                start_time=self.start_time(),
+                end_time=self.end_time(),
+                source=source,
+                **kwargs,
+            )
+            self._oceancurrent = OceanCurrent(
+                lon=lon, lat=lat, x=x, y=y, time=time, name=name
+            )
+            x = x or lon
+            y = y or lat
+            self.oceancurrent().set_spacing(nx=len(x), ny=len(y))
+
+            self.oceancurrent().name = name
+            self.oceancurrent().set_u(u)
+            self.oceancurrent().set_v(v)
+            self.oceancurrent().set_metadata(attributes)
         else:
             msg.info("Dry run! No water level data will be imported.")
 
@@ -680,6 +768,7 @@ class ModelRun:
             "Spectra": self.spectra(),
             "WaveSeries": self.waveseries(),
             "WaterLevel": self.waterlevel(),
+            "OceanCurrent": self.oceancurrent(),
             "SpectralGrid": self.spectral_grid(),
         }
 
@@ -787,6 +876,9 @@ class ModelRun:
         return None
 
     def _get_waterlevel_reader(self) -> WaterLevelReader:
+        return None
+
+    def _get_oceancurrent_reader(self) -> OceanCurrentReader:
         return None
 
 
