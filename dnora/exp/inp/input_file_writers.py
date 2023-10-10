@@ -77,7 +77,7 @@ class SWAN(InputFileWriter):
         spec_lon, spec_lat = grid.output_points()
         spec_points = [(x, y) for x, y in zip(spec_lon, spec_lat)]
 
-        if forcing is None and use_ind == True:
+        if forcing is None and use_wind == True:
             msg.info(
                 "No forcing object provided. Wind information will NOT be written to SWAN input file!"
             )

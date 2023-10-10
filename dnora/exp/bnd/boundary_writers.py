@@ -259,7 +259,9 @@ class SWAN(BoundaryWriter):
         """Convention of spectra"""
         return SpectralConvention.MET
 
-    def __call__(self, model: ModelRun, file_object: FileNames, **kwargs) -> str:
+    def __call__(
+        self, model: ModelRun, file_object: FileNames, factor: float = 1e-4, **kwargs
+    ) -> str:
         filename = file_object.get_filepath()
         boundary = model.boundary()
         days = boundary.days(datetime=False)
