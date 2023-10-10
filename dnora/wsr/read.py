@@ -119,7 +119,12 @@ class SpectraToWaveSeries(WaveSeriesReader):
 
     def __init__(self, spectra: Spectra, freq: tuple = (0, 10_000)) -> None:
         self._spectra = deepcopy(spectra)
-        self._spectra.process_spectra(process.CutFrequency(freq))
+        try:
+            self._spectra.process_spectra(process.CutFrequency(freq))
+        except AttributeError:
+            msg.warning(
+                f"Object {self._spectra.name} does not have a process_spectra method!\nNot cutting any frequencies!"
+            )
         self._freq = freq
 
     def get_coordinates(
