@@ -38,6 +38,10 @@ from ..ocr import OceanCurrent
 from ..ocr.read import OceanCurrentReader
 from .. import ocr
 
+from ..ice import IceForcing
+from ..ice.read import IceForcingReader
+from .. import ice
+
 from ..run.model_executers import ModelExecuter
 from ..spectral_grid import SpectralGrid
 
@@ -499,6 +503,72 @@ class ModelRun:
         else:
             msg.info("Dry run! No water level data will be imported.")
 
+    @cached_reader("IceForcing", ice.read.DnoraNc)
+    def import_iceforcing(
+        self,
+        iceforcing_reader: IceForcingReader = None,
+        name: str = None,
+        dry_run: bool = False,
+        source: str = "remote",
+        **kwargs,
+    ) -> None:
+        """Imports waterlevel.
+
+        source = 'remote' (default) / '<folder>' / 'met'
+
+        The implementation of this is up to the WaterLevelReader, and all options might not be functional.
+        'met' options will only work in MET Norway internal networks.
+
+        To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
+        """
+        self._dry_run = dry_run
+
+        iceforcing_reader = iceforcing_reader or self._get_iceforcing_reader()
+
+        # This is to allow importing from cache using only a name
+        if iceforcing_reader is None:
+            raise Exception("Define a IceForcingReader!")
+
+        name = name or iceforcing_reader.name()
+
+        if name is None:
+            raise ValueError(
+                "Provide either a name or a WaterLevelReader that will then define the name!"
+            )
+
+        msg.header(iceforcing_reader, "Importing water level data...")
+
+        if not self.dry_run():
+            (
+                time,
+                concentration,
+                thickness,
+                lon,
+                lat,
+                x,
+                y,
+                attributes,
+            ) = iceforcing_reader(
+                grid=self.grid(),
+                start_time=self.start_time(),
+                end_time=self.end_time(),
+                source=source,
+                **kwargs,
+            )
+            self._iceforcing = IceForcing(
+                lon=lon, lat=lat, x=x, y=y, time=time, name=name
+            )
+            x = x or lon
+            y = y or lat
+            self.iceforcing().set_spacing(nx=len(x), ny=len(y))
+
+            self.iceforcing().name = name
+            self.iceforcing().set_concentration(concentration)
+            self.iceforcing().set_thickness(thickness)
+            self.iceforcing().set_metadata(attributes)
+        else:
+            msg.info("Dry run! No ice forcing data will be imported.")
+
     def cache_boundary(self):
         """Writes existing data to cached files."""
         self.export_boundary(boundary_writer=bnd.write.DnoraNc(), format="Cache")
@@ -743,6 +813,13 @@ class ModelRun:
         else:
             return None
 
+    def iceforcing(self) -> WaterLevel:
+        """Returns the ocean current object if exists."""
+        if hasattr(self, "_iceforcing"):
+            return self._iceforcing
+        else:
+            return None
+
     def topo(self) -> Grid:
         """Returns the raw topography object if exists."""
         if hasattr(self.grid(), "_raw"):
@@ -886,6 +963,8 @@ class ModelRun:
     def _get_oceancurrent_reader(self) -> OceanCurrentReader:
         return None
 
+    def _get_iceforcing_reader(self) -> IceForcingReader:
+        return None
 
 def camel_to_snake(string: str) -> str:
     return re.sub(r"(?<!^)(?=[A-Z])", "_", string).lower()
