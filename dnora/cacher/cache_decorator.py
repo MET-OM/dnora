@@ -1,9 +1,9 @@
-from ..bnd import Boundary
-from ..wnd import Forcing
-from ..spc import Spectra
-from ..wsr import WaveSeries
-from ..wlv import WaterLevel
-from ..ocr import OceanCurrent
+# from ..bnd import Boundary
+# from ..wnd import Forcing
+# from ..spc import Spectra
+# from ..wsr import WaveSeries
+# from ..wlv import WaterLevel
+# from ..ocr import OceanCurrent
 from ..file_module import FileNames
 import glob, os
 from copy import copy
@@ -12,6 +12,14 @@ from .. import msg
 import pandas as pd
 import numpy as np
 import re
+from geo_skeletons import GriddedSkeleton
+
+
+class DummyDnoraObject(GriddedSkeleton):
+    """Created as a placeholder for the real object to have the .name interface for creating filenames."""
+
+    def __init__(self, name: str):
+        super().__init__(x=0, y=0, name=name)
 
 
 def cached_reader(dnora_obj, reader_function):
@@ -22,6 +30,7 @@ def cached_reader(dnora_obj, reader_function):
             read_cache: bool = False,
             write_cache: bool = False,
             patch: bool = False,
+            dry_run: bool = False,
             **kwargs,
         ):
             def get_reader(args, kwargs):
@@ -86,7 +95,10 @@ def cached_reader(dnora_obj, reader_function):
                     name = given_reader.name()
 
             # FileObject takes names from the dict of objects, so create one here
-            exec(f"mrun._{dnora_obj.lower()} = {dnora_obj}(name=name)")
+            # exec(f"mrun._{dnora_obj.lower()} = {dnora_obj}(name=name)")
+            # mrun._dry_run = dry_run
+            # if not mrun.dry_run():
+            exec(f"mrun._{dnora_obj.lower()} = DummyDnoraObject(name=name)")
             file_object = FileNames(
                 format="Cache",
                 obj_type=dnora_obj,
