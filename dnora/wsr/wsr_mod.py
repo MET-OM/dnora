@@ -11,19 +11,10 @@ import pandas as pd
 @add_mask(name="buoy", coords="grid", default_value=1)
 @add_time(grid_coord=False)
 class WaveSeries(PointSkeleton):
-    def __init__(
-        self,
-        x=None,
-        y=None,
-        lon=None,
-        lat=None,
-        time=pd.date_range("1990-01-01 00:00", "1990-01-01 01:00", freq="H"),
-        name: str = "LonelyWaveSeries",
-        **kwargs
-    ):
-        if np.all([a is None for a in [x, y, lon, lat]]):
-            x, y = 0, 0
-        super().__init__(x=x, y=y, lon=lon, lat=lat, name=name, time=time, **kwargs)
+    def __init__(self, x, y, lon, lat, **kwargs):
+        # if np.all([a is None for a in [x, y, lon, lat]]):
+        #     x, y = 0, 0
+        super().__init__(x, y, lon, lat, **kwargs)
         self._coord_manager = deepcopy(
             WaveSeries._coord_manager
         )  # We are dynamically adding data variables to the instance

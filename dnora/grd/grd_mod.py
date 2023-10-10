@@ -199,10 +199,10 @@ class Grid(GriddedSkeleton, GridMethods):
 
         return grid
 
-    def __init__(self, x=None, y=None, lon=None, lat=None, name="LonelyGrid", **kwargs):
-        if np.all([a is None for a in [x, y, lon, lat]]):
-            x, y = 0, 0
-        super().__init__(x, y, lon, lat, name, **kwargs)
+    # def __init__(self, x=None, y=None, lon=None, lat=None, name="LonelyGrid", **kwargs):
+    #     if np.all([a is None for a in [x, y, lon, lat]]):
+    #         x, y = 0, 0
+    #     super().__init__(x, y, lon, lat, name, **kwargs)
 
     def boundary_nx(self) -> int:
         """Return approximate number of grid points in the longitude direction"""
@@ -230,10 +230,11 @@ class Grid(GriddedSkeleton, GridMethods):
 @add_mask(name="output", coords="grid", default_value=0)
 @add_mask(name="sea", coords="grid", default_value=1, opposite_name="land")
 class UnstrGrid(PointSkeleton, GridMethods):
-    def __init__(self, x=None, y=None, lon=None, lat=None, name="LonelyGrid", **kwargs):
-        if np.all([a is None for a in [x, y, lon, lat]]):
-            x, y = 0, 0
-        super().__init__(x, y, lon, lat, name, **kwargs)
+    pass
+    # def __init__(self, x=None, y=None, lon=None, lat=None, name="LonelyGrid", **kwargs):
+    #     if np.all([a is None for a in [x, y, lon, lat]]):
+    #         x, y = 0, 0
+    #     super().__init__(x, y, lon, lat, name, **kwargs)
 
 
 class TriGrid(UnstrGrid):
