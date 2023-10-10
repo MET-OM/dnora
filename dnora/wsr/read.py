@@ -85,8 +85,10 @@ class WaveSeriesReader(ABC):
         point to actually read in.
 
         Provide the result as four equally long nump arrays (None for missing values).
-        """
+
         return lon, lat, x, y
+        """
+        pass
 
     @abstractmethod
     def __call__(
@@ -103,9 +105,10 @@ class WaveSeriesReader(ABC):
         x:    Longitude vector as numpy array (None if Spherical)
         y:    Latitude vector as numpy array (None if Spherical)
         attributes: metadata: dict{key, value} will be set as attributes of the xr.Dataset
-        """
 
         return time, data, lon, lat, x, y, attributes
+        """
+        pass
 
     def name(self) -> str:
         return type(self).__name__
@@ -281,8 +284,7 @@ class E39(WaveSeriesReader):
                     )
         return ds.time.values, data, lon, lat, x, y, ds.attrs
 
-    @staticmethod
-    def get_url(month, loc, source) -> str:
+    def get_url(self, month, loc, source) -> str:
         if source == "remote":
             return (
                 "https://thredds.met.no/thredds/dodsC/obs/buoy-svv-e39/"

@@ -18,7 +18,10 @@ class IceForcingReader(ABC):
     def __call__(
         self, grid: Grid, start_time: str, end_time: str, expansion_factor: float
     ):
+        """
         return time, concentration, thickness, lon, lat, x, y, metadata
+        """
+        pass
 
     def name(self) -> str:
         return type(self).__name__

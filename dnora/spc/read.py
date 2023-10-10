@@ -23,9 +23,10 @@ class SpectralReader(ABC):
         These are needed fo the PointPicker object to choose the relevant
         point to actually read in.
 
-        Provide the result as two equally long nump arrays.
-        """
+        Provide the result as four equally long nump arrays.
         return lon, lat, x, y
+        """
+        pass
 
     @abstractmethod
     def convention(self) -> SpectralConvention:
@@ -42,7 +43,7 @@ class SpectralReader(ABC):
         MATH:     Mathematical convention
                     Direction to. North = 90, East = 0.
         """
-        return convention
+        pass
 
     @abstractmethod
     def __call__(
@@ -60,9 +61,10 @@ class SpectralReader(ABC):
         lon:    Longitude vector as numpy array
         lat:    Latitude vector as numpy array
         source: Source of the data as String
-        """
 
         return time, freq, spec, mdir, spr, lon, lat, x, y, source
+        """
+        pass
 
     def set_convention(self, convention: SpectralConvention) -> None:
         if isinstance(convention, str):

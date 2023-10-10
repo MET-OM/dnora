@@ -818,7 +818,7 @@ class ModelRun:
 
     def dict_of_objects(
         self,
-    ) -> dict[str:ModelRun, str:Grid, str:Forcing, str:Boundary, str:Spectra]:
+    ) -> dict[str:Grid, str:Forcing, str:Boundary, str:Spectra]:
         return {
             "ModelRun": self,
             "Grid": self.grid(),
@@ -829,6 +829,7 @@ class ModelRun:
             "WaveSeries": self.waveseries(),
             "WaterLevel": self.waterlevel(),
             "OceanCurrent": self.oceancurrent(),
+            "IceForcing": self.iceforcing(),
             "SpectralGrid": self.spectral_grid(),
         }
 
