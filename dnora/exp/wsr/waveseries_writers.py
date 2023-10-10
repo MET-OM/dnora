@@ -22,4 +22,4 @@ class WaveSeriesWriter(ABC):
     ) -> list[str, str]:
         """Write the data from the Spectra object and returns the file and
         folder where data were written."""
-        output_files
+        pass

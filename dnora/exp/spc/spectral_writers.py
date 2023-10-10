@@ -32,7 +32,7 @@ class SpectralWriter(ABC):
     ) -> Union[str, list[str]]:
         """Write the data from the Spectra object and returns the file and
         folder where data were written."""
-        output_files
+        pass
 
     def convention(self) -> str:
         """Defines in which format the incoming spectra should be.

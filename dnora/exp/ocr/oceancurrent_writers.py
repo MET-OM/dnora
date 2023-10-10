@@ -24,4 +24,4 @@ class OceanCurrentWriter(ABC):
     def __call__(
         self, model: ModelRun, file_object: FileNames, **kwargs
     ) -> Union[str, list[str]]:
-        return output_files
+        pass

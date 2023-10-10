@@ -25,8 +25,7 @@ class WaterLevelWriter(ABC):
     def __call__(self, model: ModelRun, file_object: FileNames, **kwargs) -> list[str]:
         """Writed the data from the WaterLevel object and returns the file and
         folder where data were written."""
-
-        return output_files
+        pass
 
 
 class SWAN(WaterLevelWriter):

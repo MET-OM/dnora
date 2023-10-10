@@ -41,7 +41,7 @@ class InputFileWriter(ABC):
         exported_files: dict[str, list[str]],
         **kwargs,
     ) -> Union[str, list[str]]:
-        return output_files
+        pass
 
 
 class Null(InputFileWriter):

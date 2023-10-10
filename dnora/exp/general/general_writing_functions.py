@@ -18,7 +18,7 @@ class GeneralWritingFunction(ABC):
     def __call__(
         self, model: ModelRun, file_object: FileNames, obj_type: str, **kwargs
     ) -> Union[str, list[str]]:
-        return output_files
+        pass
 
 
 class Null(GeneralWritingFunction):

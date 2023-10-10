@@ -28,14 +28,14 @@ class ForcingWriter(ABC):
     ) -> list[str, str]:
         """Write the data from the Spectra object and returns the file and
         folder where data were written."""
-        output_files
+        pass
 
     @abstractmethod
     def __call__(self, model: ModelRun, file_object: FileNames, **kwargs) -> list[str]:
         """Writed the data from the Forcing object and returns the file and
         folder where data were written."""
 
-        return output_file
+        pass
 
 
 class WW3(ForcingWriter):
