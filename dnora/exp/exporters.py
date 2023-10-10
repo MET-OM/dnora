@@ -1,25 +1,26 @@
 from .exp_mod import DataExporter
 from . import grd, bnd, wnd, spc, wsr, wlv, inp
+from .general.general_writing_functions import DnoraNc, Null, DumpToNc
 
 
-class Null(DataExporter):
+class NullExporter(DataExporter):
     def _get_boundary_writer(self):
-        return bnd.Null()
+        return Null()
 
     def _get_spectra_writer(self):
-        return spc.Null()
+        return Null()
 
     def _get_forcing_writer(self):
-        return wnd.Null()
+        return Null()
 
     def _get_grid_writer(self):
-        return grd.Null()
+        return Null()
 
     def _get_waterlevel_writer(self):
-        return wlv.Null()
+        return Null()
 
     def _get_input_file_writer(self):
-        return inp.Null()
+        return Null()
 
 
 class SWAN(DataExporter):
@@ -30,7 +31,7 @@ class SWAN(DataExporter):
         return bnd.SWAN()
 
     def _get_spectra_writer(self):
-        return spc.DumpToNc()
+        return DumpToNc()
 
     def _get_forcing_writer(self):
         return wnd.SWAN()
@@ -67,10 +68,10 @@ class WW3(DataExporter):
         return bnd.WW3()
 
     def _get_spectra_writer(self):
-        return spc.DumpToNc()
+        return DumpToNc()
 
     def _get_waveseries_writer(self):
-        return wsr.DumpToNc()
+        return DumpToNc()
 
     def _get_forcing_writer(self):
         return wnd.WW3()

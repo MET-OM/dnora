@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 # Import objects
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     # from ...wnd.wnd_mod import Forcing
@@ -33,18 +33,6 @@ from .ww3_functions import (
 
 
 class InputFileWriter(ABC):
-    def _clean_filename(self):
-        """If this is set to False, then the ModelRun object does not clean
-        the filename, and possible placeholders (e.g. #T0) can still be
-        present.
-        """
-        return True
-
-    def _im_silent(self) -> bool:
-        """Return False if you want to be responsible for printing out the
-        file names."""
-        return True
-
     @abstractmethod
     def __call__(
         self,
@@ -52,7 +40,7 @@ class InputFileWriter(ABC):
         file_object: FileNames,
         exported_files: dict[str, list[str]],
         **kwargs,
-    ) -> list[str]:
+    ) -> Union[str, list[str]]:
         return output_files
 
 
@@ -63,7 +51,7 @@ class Null(InputFileWriter):
         file_object: FileNames,
         exported_files: dict[str, list[str]],
         **kwargs,
-    ) -> list[str]:
+    ) -> str:
         return ""
 
 
@@ -77,7 +65,7 @@ class SWAN(InputFileWriter):
         calib_wcap: float = 0.5000e-04,
         use_wind: bool = True,
         **kwargs,
-    ):
+    ) -> str:
         forcing = model.forcing()
         grid = model.grid()
         grid_path = exported_files["grid"][-1]
@@ -251,7 +239,7 @@ class SWASH(InputFileWriter):
         exported_files: dict[str, list[str]],
         bound_side_command: str = "BOU SIDE W CCW CON REG 0.5 14 270 ",
         **kwargs,
-    ) -> list[str]:
+    ) -> str:
         grid = model.grid()
         filename = file_object.get_filepath()
         grid_path = exported_files["grid"][-1]
@@ -339,7 +327,7 @@ class REEF3D(InputFileWriter):
         rot_angles: int = 0,
         wave_input: str = "SPEC1D",
         **kwargs,
-    ) -> list[str]:
+    ) -> str:
         grid = model.grid()
         waveseries = model.waveseries()
         filename = file_object.get_filepath()
@@ -602,16 +590,13 @@ class HOS_ocean(InputFileWriter):
             self.ylen = ylen
         return
 
-    def _extension(self):
-        return "dat"
-
     def __call__(
         self,
         model: ModelRun,
         file_object: FileNames,
         exported_files: dict[str, list[str]],
         **kwargs,
-    ):
+    ) -> str:
         # Create input file name
         filename = file_object.get_filepath()
         __, folder = file_module.split_filepath(filename)
@@ -747,7 +732,7 @@ class WW3Grid(InputFileWriter):
         exported_files: dict[str, list[str]],
         folder_on_server: str = "/server/gridfiles/",
         **kwargs,
-    ) -> list[str]:
+    ) -> str:
         grid = model.grid()
         spectral_grid = model.spectral_grid()
         if file_object.get_filename() == "":
@@ -787,7 +772,7 @@ class WW3Forcing(InputFileWriter):
         exported_files: dict[str, list[str]],
         folder_on_server: str = "/server/windfiles/",
         **kwargs,
-    ) -> list[str]:
+    ) -> str:
         if file_object.get_filename() == "":
             filename = file_object.get_folder() + "/ww3_prnc.nml"
         else:
@@ -807,7 +792,7 @@ class WW3Boundary(InputFileWriter):
         verbose_level: int = 2,
         folder_on_server: str = "/server/boundaryfiles/",
         **kwargs,
-    ) -> list[str]:
+    ) -> str:
         ww3_specfile_list(
             file_object.get_folder() + "/spectral_boundary_files.list",
             exported_files["boundary"],
@@ -840,7 +825,7 @@ class WW3(InputFileWriter):
         homog: dict[tuple[float, float]] = None,
         folder_on_server: str = "/server/namelists/",
         **kwargs,
-    ) -> list[str]:
+    ) -> str:
         if homog is None:
             homog = {}
         lons, lats = model.grid().output_points()

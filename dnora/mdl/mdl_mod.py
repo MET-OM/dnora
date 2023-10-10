@@ -436,9 +436,7 @@ class ModelRun:
             self._waterlevel = WaterLevel(
                 lon=lon, lat=lat, x=x, y=y, time=time, name=name
             )
-            x = x or lon
-            y = y or lat
-            self.waterlevel().set_spacing(nx=len(x), ny=len(y))
+            self.waterlevel().set_spacing(nx=len(x or lon), ny=len(y or lat))
 
             self.waterlevel().name = name
             self.waterlevel().set_waterlevel(waterlevel)
@@ -568,26 +566,6 @@ class ModelRun:
             self.iceforcing().set_metadata(attributes)
         else:
             msg.info("Dry run! No ice forcing data will be imported.")
-
-    def cache_boundary(self):
-        """Writes existing data to cached files."""
-        self.export_boundary(boundary_writer=bnd.write.DnoraNc(), format="Cache")
-
-    def cache_spectra(self):
-        """Writes existing data to cached files."""
-        self.export_spectra(spectral_writer=spc.write.DnoraNc(), format="Cache")
-
-    def cache_forcing(self):
-        """Writes existing data to cached files."""
-        self.export_forcing(forcing_writer=wnd.write.DnoraNc(), format="Cache")
-
-    def cache_waveseries(self):
-        """Writes existing data to cached files."""
-        self.export_waveseries(waveseries_writer=wsr.write.DnoraNc(), format="Cache")
-
-    def cache_waterlevel(self):
-        """Writes existing data to cached files."""
-        self.export_waterlevel(waterlevel_writer=wlv.write.DnoraNc(), format="Cache")
 
     def boundary_to_spectra(
         self, dry_run: bool = False, name: str = None, write_cache=False, **kwargs
@@ -965,6 +943,7 @@ class ModelRun:
 
     def _get_iceforcing_reader(self) -> IceForcingReader:
         return None
+
 
 def camel_to_snake(string: str) -> str:
     return re.sub(r"(?<!^)(?=[A-Z])", "_", string).lower()
