@@ -159,8 +159,9 @@ class ModelRun:
                 "Provide either a name or a BoundaryReader that will then define the name!"
             )
 
+        msg.header(boundary_reader, "Reading coordinates of spectra...")
+
         if not self.dry_run():
-            msg.header(boundary_reader, "Reading coordinates of spectra...")
             lon_all, lat_all, x_all, y_all = boundary_reader.get_coordinates(
                 grid=self.grid(), start_time=self.start_time(), source=source
             )
@@ -254,8 +255,8 @@ class ModelRun:
                 "Provide either a name or a SpectralReader that will then define the name!"
             )
 
+        msg.header(spectral_reader, "Reading coordinates of spectra...")
         if not self.dry_run():
-            msg.header(spectral_reader, "Reading coordinates of spectra...")
             lon_all, lat_all, x_all, y_all = spectral_reader.get_coordinates(
                 grid=self.grid(), start_time=self.start_time(), source=source
             )
@@ -315,6 +316,7 @@ class ModelRun:
         **kwargs,
     ):
         self._dry_run = dry_run
+
         waveseries_reader = waveseries_reader or self._get_waveseries_reader()
         point_picker = point_picker or self._get_point_picker()
 
@@ -331,8 +333,8 @@ class ModelRun:
                 "Provide either a name or a WaveSeriesReader that will then define the name!"
             )
 
+        msg.header(waveseries_reader, "Reading coordinates of WaveSeries...")
         if not self.dry_run():
-            msg.header(waveseries_reader, "Reading coordinates of WaveSeries...")
             lon_all, lat_all, x_all, y_all = waveseries_reader.get_coordinates(
                 grid=self.grid(), start_time=self.start_time(), source=source
             )
@@ -553,11 +555,14 @@ class ModelRun:
         if self.spectra() is None:
             msg.warning("No Spectra to convert to WaveSeries!")
             return
-
-        waveseries_reader = SpectraToWaveSeries(self.spectra(), freq)
-        msg.header(waveseries_reader, "Converting the spectra to wave series data...")
         name = self.spectra().name
+
         if not self.dry_run():
+            waveseries_reader = SpectraToWaveSeries(self.spectra(), freq)
+            msg.header(
+                waveseries_reader, "Converting the spectra to wave series data..."
+            )
+
             self.import_waveseries(
                 waveseries_reader=waveseries_reader,
                 point_picker=pick.TrivialPicker(),
