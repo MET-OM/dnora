@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from geo_skeletons import PointSkeleton
 import re
+from typing import Union
 
 # Import objects
 from ..grd.grd_mod import Grid, TriGrid
@@ -23,7 +24,7 @@ from .. import pick
 
 
 from ..spc import Spectra
-from ..spc.read import SpectralReader
+from ..spc.read import SpectraReader
 from .. import spc
 
 from ..wsr import WaveSeries
@@ -52,6 +53,32 @@ from ..cacher.cache_decorator import cached_reader
 from ..converters import convert_swash_mat_to_netcdf
 from pathlib import Path
 
+ReaderFunction = Union[
+    ForcingReader,
+    BoundaryReader,
+    SpectraReader,
+    WaveSeriesReader,
+    WaterLevelReader,
+    OceanCurrentReader,
+    IceForcingReader,
+]
+DnoraObject = Union[
+    Grid, TriGrid, Forcing, Boundary, WaveSeries, WaterLevel, OceanCurrent, IceForcing
+]
+
+OBJECT_STRINGS = [
+    "ModelRun",
+    "Grid",
+    "Forcing",
+    "Boundary",
+    "Spectra",
+    "WaveSeries",
+    "WaterLevel",
+    "OceanCurrent",
+    "IceForcing",
+    "SpectralGrid",
+]
+
 
 class ModelRun:
     def __init__(
@@ -68,6 +95,101 @@ class ModelRun:
         self._exported_to = {}
         self._global_dry_run = dry_run
         self._dry_run = False  # Set by methods
+        self._reader_dict = {}
+        self._point_picker = None
+        self._consistency_check(
+            objects_to_ignore_get=["ModelRun"],
+            objects_to_ignore_import=["ModelRun", "SpectralGrid", "Grid"],
+        )
+
+    def _consistency_check(
+        self, objects_to_ignore_get: list[str], objects_to_ignore_import: list[str]
+    ):
+        for obj_type in OBJECT_STRINGS:
+            if obj_type not in objects_to_ignore_get:
+                if not hasattr(self, obj_type.lower()) and not hasattr(
+                    self, camel_to_snake(obj_type)
+                ):
+                    raise SyntaxError(
+                        f"No getter method self.{obj_type.lower()}() or self.{camel_to_snake(obj_type)}() defined for object {obj_type}!"
+                    )
+
+            if obj_type not in objects_to_ignore_import:
+                if not hasattr(self, f"import_{obj_type.lower()}"):
+                    raise SyntaxError(
+                        f"No import method self.import_{obj_type.lower()}() defined for object {obj_type}!"
+                    )
+
+    def _setup_import(
+        self,
+        obj_type: str,
+        name: str,
+        dry_run: bool,
+        reader: ReaderFunction,
+    ) -> tuple[ReaderFunction, str]:
+        """Sets up readers, names and dry runs porperties for import of object."""
+
+        if obj_type not in OBJECT_STRINGS:
+            raise ValueError(f"Dnora object {obj_type} not listed in OBJECT_STRINGS!")
+
+        self._dry_run = dry_run
+
+        reader = reader or self._get_reader(obj_type)
+        if reader is None:
+            raise Exception(f"Define a {obj_type}Reader!")
+
+        name = name or reader.name()
+
+        if name is None:
+            raise ValueError(
+                f"Provide either a name or a {obj_type}Reader that will then define the name!"
+            )
+
+        msg.header(reader, f"Importing {obj_type}...")
+        return reader, name
+
+    def _setup_point_picker(self, point_picker: PointPicker):
+        """Sets up point picker using possible default values."""
+        point_picker = point_picker or self._get_point_picker()
+        if point_picker is None:
+            raise Exception("Define a PointPicker!")
+        return point_picker
+
+    def _pick_points(
+        self,
+        reader: ReaderFunction,
+        point_picker: PointPicker,
+        mask_of_points: np.ndarray[bool],
+        source: str,
+        **kwargs,
+    ):
+        if not self.dry_run():
+            lon_all, lat_all, x_all, y_all = reader.get_coordinates(
+                grid=self.grid(), start_time=self.start_time(), source=source
+            )
+
+            all_points = PointSkeleton(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
+
+            if np.all(np.logical_not(mask_of_points)):
+                interest_points = None
+            else:
+                interest_points = PointSkeleton.from_skeleton(
+                    self.grid(), mask=mask_of_points
+                )
+
+            msg.header(point_picker, "Choosing points to import...")
+            inds = point_picker(
+                grid=self.grid(),
+                all_points=all_points,
+                selected_points=interest_points,
+                **kwargs,
+            )
+            if len(inds) < 1:
+                msg.warning(
+                    "PointPicker didn't find any points. Aborting import of boundary."
+                )
+                return
+            return inds
 
     @cached_reader("Forcing", wnd.read.DnoraNc)
     def import_forcing(
@@ -87,22 +209,10 @@ class ModelRun:
 
         To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
         """
-        self._dry_run = dry_run
 
-        forcing_reader = forcing_reader or self._get_forcing_reader()
-
-        # This is to allow importing from cache using only a name
-        if forcing_reader is None:
-            raise Exception("Define a ForcingReader!")
-
-        name = name or forcing_reader.name()
-
-        if name is None:
-            raise ValueError(
-                "Provide either a name or a ForcingReader that will then define the name!"
-            )
-
-        msg.header(forcing_reader, "Importing wind forcing...")
+        forcing_reader, name = self._setup_import(
+            "Forcing", name, dry_run, forcing_reader
+        )
 
         if not self.dry_run():
             time, u, v, lon, lat, x, y, attributes = forcing_reader(
@@ -146,52 +256,17 @@ class ModelRun:
         To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
         """
 
-        self._dry_run = dry_run
-        boundary_reader = boundary_reader or self._get_boundary_reader()
-        point_picker = point_picker or self._get_point_picker()
+        boundary_reader, name = self._setup_import(
+            "Boundary", name, dry_run, boundary_reader
+        )
 
-        # This is to allow importing from cache using only a name
-        if boundary_reader is None:
-            raise Exception("Define a BoundaryReader!")
-        if point_picker is None:
-            raise Exception("Define a PointPicker!")
+        point_picker = self._setup_point_picker(point_picker)
 
-        name = name or boundary_reader.name()
-
-        if name is None:
-            raise ValueError(
-                "Provide either a name or a BoundaryReader that will then define the name!"
-            )
-
-        msg.header(boundary_reader, "Reading coordinates of spectra...")
+        inds = self._pick_points(
+            boundary_reader, point_picker, self.grid().boundary_mask(), source, **kwargs
+        )
 
         if not self.dry_run():
-            lon_all, lat_all, x_all, y_all = boundary_reader.get_coordinates(
-                grid=self.grid(), start_time=self.start_time(), source=source
-            )
-            all_points = PointSkeleton(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
-
-            if np.all(np.logical_not(self.grid().boundary_mask())):
-                boundary_points = None
-            else:
-                boundary_points = PointSkeleton.from_skeleton(
-                    self.grid(), mask=self.grid().boundary_mask()
-                )
-
-            msg.header(point_picker, "Choosing boundary spectra...")
-            inds = point_picker(
-                grid=self.grid(),
-                all_points=all_points,
-                selected_points=boundary_points,
-                **kwargs,
-            )
-            if len(inds) < 1:
-                msg.warning(
-                    "PointPicker didn't find any points. Aborting import of boundary."
-                )
-                return
-
-            # Main reading happens here
             msg.header(boundary_reader, "Loading boundary spectra...")
 
             time, freq, dirs, spec, lon, lat, x, y, metadata = boundary_reader(
@@ -224,7 +299,7 @@ class ModelRun:
     @cached_reader("Spectra", spc.read.DnoraNc)
     def import_spectra(
         self,
-        spectral_reader: SpectralReader = None,
+        spectral_reader: SpectraReader = None,
         point_picker: PointPicker = None,
         name: str = None,
         dry_run: bool = False,
@@ -241,46 +316,17 @@ class ModelRun:
 
         To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
         """
+        spectral_reader, name = self._setup_import(
+            "Spectra", name, dry_run, spectral_reader
+        )
 
-        self._dry_run = dry_run
-        spectral_reader = spectral_reader or self._get_spectral_reader()
-        point_picker = point_picker or self._get_point_picker()
+        point_picker = self._setup_point_picker(point_picker)
 
-        # This is to allow importing from cache using only a name
-        if spectral_reader is None:
-            raise Exception("Define a SpectralReader!")
-        if point_picker is None:
-            raise Exception("Define a PointPicker!")
+        inds = self._pick_points(
+            spectral_reader, point_picker, self.grid().boundary_mask(), source, **kwargs
+        )
 
-        name = name or spectral_reader.name()
-
-        if name is None:
-            raise ValueError(
-                "Provide either a name or a SpectralReader that will then define the name!"
-            )
-
-        msg.header(spectral_reader, "Reading coordinates of spectra...")
         if not self.dry_run():
-            lon_all, lat_all, x_all, y_all = spectral_reader.get_coordinates(
-                grid=self.grid(), start_time=self.start_time(), source=source
-            )
-            all_points = PointSkeleton(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
-
-            if np.all(np.logical_not(self.grid().boundary_mask())):
-                boundary_points = None
-            else:
-                boundary_points = PointSkeleton.from_skeleton(
-                    self.grid(), mask=self.grid().boundary_mask()
-                )
-
-            msg.header(point_picker, "Choosing spectra...")
-            inds = point_picker(
-                grid=self.grid(),
-                all_points=all_points,
-                selected_points=boundary_points,
-                **kwargs,
-            )
-
             msg.header(spectral_reader, "Loading omnidirectional spectra...")
             time, freq, spec, mdir, spr, lon, lat, x, y, metadata = spectral_reader(
                 grid=self.grid(),
@@ -319,47 +365,21 @@ class ModelRun:
         source: str = "remote",
         **kwargs,
     ):
-        self._dry_run = dry_run
+        waveseries_reader, name = self._setup_import(
+            "WaveSeries", name, dry_run, waveseries_reader
+        )
 
-        waveseries_reader = waveseries_reader or self._get_waveseries_reader()
-        point_picker = point_picker or self._get_point_picker()
+        point_picker = self._setup_point_picker(point_picker)
 
-        # This is to allow importing from cache using only a name
-        if waveseries_reader is None:
-            raise Exception("Define a WaveSeriesReader!")
-        if point_picker is None:
-            raise Exception("Define a PointPicker!")
+        inds = self._pick_points(
+            waveseries_reader,
+            point_picker,
+            self.grid().boundary_mask(),
+            source,
+            **kwargs,
+        )
 
-        name = name or waveseries_reader.name()
-
-        if name is None:
-            raise ValueError(
-                "Provide either a name or a WaveSeriesReader that will then define the name!"
-            )
-
-        msg.header(waveseries_reader, "Reading coordinates of WaveSeries...")
         if not self.dry_run():
-            lon_all, lat_all, x_all, y_all = waveseries_reader.get_coordinates(
-                grid=self.grid(), start_time=self.start_time(), source=source
-            )
-
-            all_points = PointSkeleton(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
-
-            if np.all(np.logical_not(self.grid().boundary_mask())):
-                boundary_points = None
-            else:
-                boundary_points = PointSkeleton.from_skeleton(
-                    self.grid(), mask=self.grid().boundary_mask()
-                )
-
-            msg.header(point_picker, "Choosing wave series points...")
-            inds = point_picker(
-                grid=self.grid(),
-                all_points=all_points,
-                selected_points=boundary_points,
-                **kwargs,
-            )
-
             msg.header(waveseries_reader, "Loading wave series data...")
             time, data_dict, lon, lat, x, y, metadata = waveseries_reader(
                 grid=self.grid(),
@@ -408,22 +428,9 @@ class ModelRun:
 
         To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
         """
-        self._dry_run = dry_run
-
-        waterlevel_reader = waterlevel_reader or self._get_waterlevel_reader()
-
-        # This is to allow importing from cache using only a name
-        if waterlevel_reader is None:
-            raise Exception("Define a WaterLevelReader!")
-
-        name = name or waterlevel_reader.name()
-
-        if name is None:
-            raise ValueError(
-                "Provide either a name or a WaterLevelReader that will then define the name!"
-            )
-
-        msg.header(waterlevel_reader, "Importing water level data...")
+        waterlevel_reader, name = self._setup_import(
+            "WaterLevel", name, dry_run, waterlevel_reader
+        )
 
         if not self.dry_run():
             time, waterlevel, lon, lat, x, y, attributes = waterlevel_reader(
@@ -462,22 +469,9 @@ class ModelRun:
 
         To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
         """
-        self._dry_run = dry_run
-
-        oceancurrent_reader = oceancurrent_reader or self._get_oceancurrent_reader()
-
-        # This is to allow importing from cache using only a name
-        if oceancurrent_reader is None:
-            raise Exception("Define a OcenacurrentReader!")
-
-        name = name or oceancurrent_reader.name()
-
-        if name is None:
-            raise ValueError(
-                "Provide either a name or a OceanCurrentReader that will then define the name!"
-            )
-
-        msg.header(oceancurrent_reader, "Importing water level data...")
+        oceancurrent_reader, name = self._setup_import(
+            "OceanCurrent", name, dry_run, oceancurrent_reader
+        )
 
         if not self.dry_run():
             time, u, v, lon, lat, x, y, attributes = oceancurrent_reader(
@@ -519,23 +513,9 @@ class ModelRun:
 
         To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
         """
-        self._dry_run = dry_run
-
-        iceforcing_reader = iceforcing_reader or self._get_iceforcing_reader()
-
-        # This is to allow importing from cache using only a name
-        if iceforcing_reader is None:
-            raise Exception("Define a IceForcingReader!")
-
-        name = name or iceforcing_reader.name()
-
-        if name is None:
-            raise ValueError(
-                "Provide either a name or a WaterLevelReader that will then define the name!"
-            )
-
-        msg.header(iceforcing_reader, "Importing water level data...")
-
+        iceforcing_reader, name = self._setup_import(
+            "IceForcing", name, dry_run, iceforcing_reader
+        )
         if not self.dry_run():
             (
                 time,
@@ -745,7 +725,7 @@ class ModelRun:
         """Checks if method or global ModelRun dryrun is True."""
         return self._dry_run or self._global_dry_run
 
-    def grid(self) -> str:
+    def grid(self) -> Union[Grid, TriGrid]:
         """Returns the grid object."""
         return self._grid
 
@@ -784,24 +764,17 @@ class ModelRun:
         else:
             return None
 
-    def oceancurrent(self) -> WaterLevel:
+    def oceancurrent(self) -> OceanCurrent:
         """Returns the ocean current object if exists."""
         if hasattr(self, "_oceancurrent"):
             return self._oceancurrent
         else:
             return None
 
-    def iceforcing(self) -> WaterLevel:
+    def iceforcing(self) -> IceForcing:
         """Returns the ocean current object if exists."""
         if hasattr(self, "_iceforcing"):
             return self._iceforcing
-        else:
-            return None
-
-    def topo(self) -> Grid:
-        """Returns the raw topography object if exists."""
-        if hasattr(self.grid(), "_raw"):
-            return self.grid().raw()
         else:
             return None
 
@@ -816,42 +789,21 @@ class ModelRun:
         """Only defined to have method for all objects"""
         return None
 
-    def dict_of_objects(
-        self,
-    ) -> dict[str:Grid, str:Forcing, str:Boundary, str:Spectra]:
-        return {
-            "ModelRun": self,
-            "Grid": self.grid(),
-            "Topo": self.topo(),
-            "Forcing": self.forcing(),
-            "Boundary": self.boundary(),
-            "Spectra": self.spectra(),
-            "WaveSeries": self.waveseries(),
-            "WaterLevel": self.waterlevel(),
-            "OceanCurrent": self.oceancurrent(),
-            "IceForcing": self.iceforcing(),
-            "SpectralGrid": self.spectral_grid(),
-        }
-
     def list_of_objects(
         self,
-    ) -> list[ModelRun, Grid, Forcing, Boundary, Spectra, WaveSeries, WaterLevel]:
+    ) -> list[DnoraObject]:
         """[ModelRun, Boundary] etc."""
-        return [x for x in list(self.dict_of_objects().values()) if x is not None]
-
-    def list_of_object_strings(self) -> list[str]:
-        """['ModelRun', 'Boundary'] etc."""
-        return list(self.dict_of_objects().keys())
+        return [x for x in OBJECT_STRINGS if self[x] is not None]
 
     def dict_of_object_names(self) -> dict[str:str]:
         """{'Boundary': 'NORA3'} etc."""
-        d = {}
-        for a, b in self.dict_of_objects().items():
-            if b is None:
-                d[a] = None
+        dict_of_object_names = {}
+        for obj_type in OBJECT_STRINGS:
+            if self[obj_type] is None:
+                dict_of_object_names[obj_type] = None
             else:
-                d[a] = b.name
-        return d
+                dict_of_object_names[obj_type] = self[obj_type].name
+        return dict_of_object_names
 
     def exported_to(self, obj_str: str) -> str:
         """Returns the path the object (e.g. grid) was exported to.
@@ -921,29 +873,11 @@ class ModelRun:
         except:
             return None
 
-    def _get_forcing_reader(self) -> ForcingReader:
-        return None
-
-    def _get_boundary_reader(self) -> BoundaryReader:
-        return None
+    def _get_reader(self, obj_type: str):
+        return self._reader_dict.get(camel_to_snake(obj_type))
 
     def _get_point_picker(self) -> PointPicker:
-        return None
-
-    def _get_spectral_reader(self) -> SpectralReader:
-        return None
-
-    def _get_waveseries_reader(self) -> WaveSeriesReader:
-        return None
-
-    def _get_waterlevel_reader(self) -> WaterLevelReader:
-        return None
-
-    def _get_oceancurrent_reader(self) -> OceanCurrentReader:
-        return None
-
-    def _get_iceforcing_reader(self) -> IceForcingReader:
-        return None
+        return self._point_picker
 
 
 def camel_to_snake(string: str) -> str:

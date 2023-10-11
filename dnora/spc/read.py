@@ -10,7 +10,7 @@ from .. import aux_funcs
 from .. import msg
 
 
-class SpectralReader(ABC):
+class SpectraReader(ABC):
     """Reads boundary spectra from some source and provide it to the object."""
 
     def __init__(self):
@@ -79,7 +79,7 @@ class SpectralReader(ABC):
         return type(self).__name__
 
 
-class BoundaryToSpectra(SpectralReader):
+class BoundaryToSpectra(SpectraReader):
     """Integrates boundary spectra to omnidairectional spectra"""
 
     def __init__(self, boundary: Boundary) -> None:
@@ -151,7 +151,7 @@ class BoundaryToSpectra(SpectralReader):
         return self._boundary.name
 
 
-class DnoraNc(SpectralReader):
+class DnoraNc(SpectraReader):
     def __init__(self, files: str) -> None:
         self.files = files
 

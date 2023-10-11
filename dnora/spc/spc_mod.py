@@ -11,8 +11,7 @@ from .process import spectral_processor_for_convention_change
 from ..bnd.conventions import SpectralConvention, convert_2d_to_1d
 
 # Import abstract classes and needed instances of them
-from ..pick.point_pickers import PointPicker, TrivialPicker
-from .read import SpectralReader
+from .read import SpectraReader
 from .. import msg
 
 from geo_skeletons.point_skeleton import PointSkeleton
@@ -21,30 +20,12 @@ from geo_skeletons.decorators import add_time, add_frequency, add_datavar
 from .process import SpectralProcessor
 
 
-# @add_mask(name='bad', coords='all', default_value=0)
 @add_datavar(name="spec", coords="all", default_value=0.0)
 @add_datavar(name="mdir", coords="all", default_value=0.0)
 @add_datavar(name="spr", coords="all", default_value=0.0)
 @add_frequency(grid_coord=False)
 @add_time(grid_coord=True)
 class Spectra(PointSkeleton):
-    # def __init__(
-    #     self,
-    #     x=None,
-    #     y=None,
-    #     lon=None,
-    #     lat=None,
-    #     time=pd.date_range("1990-01-01 00:00", "1990-01-01 01:00", freq="H"),
-    #     freq=np.linspace(0.1, 1, 10),
-    #     name="LonelySpectra",
-    #     **kwargs,
-    # ):
-    #     if np.all([a is None for a in [x, y, lon, lat]]):
-    #         x, y = 0, 0
-    #     super().__init__(
-    #         x=x, y=y, lon=lon, lat=lat, name=name, time=time, freq=freq, **kwargs
-    #     )
-
     def process_spectra(self, spectral_processors: List[SpectralProcessor] = None):
         """Process all the individual spectra of the spectra object.
 
