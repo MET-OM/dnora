@@ -105,6 +105,7 @@ class ModelRun:
     def _consistency_check(
         self, objects_to_ignore_get: list[str], objects_to_ignore_import: list[str]
     ):
+        """Checks that the class contains the proper import and getter methods. This is a safety feature in case more object types are added."""
         for obj_type in OBJECT_STRINGS:
             if obj_type not in objects_to_ignore_get:
                 if not hasattr(self, obj_type.lower()) and not hasattr(
@@ -163,6 +164,7 @@ class ModelRun:
         source: str,
         **kwargs,
     ):
+        """Gets the indeces of the point defined by the logical mask with respect to all points available from the reader function."""
         if not self.dry_run():
             lon_all, lat_all, x_all, y_all = reader.get_coordinates(
                 grid=self.grid(), start_time=self.start_time(), source=source
@@ -874,7 +876,11 @@ class ModelRun:
             return None
 
     def _get_reader(self, obj_type: str):
-        return self._reader_dict.get(camel_to_snake(obj_type))
+        if obj_type not in OBJECT_STRINGS:
+            raise Warning(
+                f"Trying to access a reader function for object {obj_type}, which is not defined in the list of OBJECT_STRINGS!"
+            )
+        return self._reader_dict.get(obj_type)
 
     def _get_point_picker(self) -> PointPicker:
         return self._point_picker

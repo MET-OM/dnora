@@ -11,3 +11,4 @@ dnora/examples/output
 dnora/output
 dnora/jobs
 .eggs
+dnora/exp/inp/__pycache__/input_file_writers.cpython-310.pyc
