@@ -193,8 +193,8 @@ class ModelRun:
     @cached_reader(DnoraObjectType.Forcing, wnd.read.DnoraNc)
     def import_forcing(
         self,
-        forcing_reader: ForcingReader = None,
-        name: str = None,
+        forcing_reader: ForcingReader | None = None,
+        name: str | None = None,
         dry_run: bool = False,
         source: str = "remote",
         **kwargs,
@@ -239,9 +239,9 @@ class ModelRun:
     @cached_reader(DnoraObjectType.Boundary, bnd.read.DnoraNc)
     def import_boundary(
         self,
-        boundary_reader: BoundaryReader = None,
-        point_picker: PointPicker = None,
-        name: str = None,
+        boundary_reader: BoundaryReader | None = None,
+        point_picker: PointPicker | None = None,
+        name: str | None = None,
         dry_run: bool = False,
         source: str = "remote",
         **kwargs,
@@ -300,9 +300,9 @@ class ModelRun:
     @cached_reader(DnoraObjectType.Spectra, spc.read.DnoraNc)
     def import_spectra(
         self,
-        spectral_reader: SpectraReader = None,
-        point_picker: PointPicker = None,
-        name: str = None,
+        spectral_reader: SpectraReader | None = None,
+        point_picker: PointPicker | None = None,
+        name: str | None = None,
         dry_run: bool = False,
         source: str = "remote",
         **kwargs,
@@ -359,9 +359,9 @@ class ModelRun:
     @cached_reader(DnoraObjectType.WaveSeries, wsr.read.DnoraNc)
     def import_waveseries(
         self,
-        waveseries_reader: WaveSeriesReader = None,
-        point_picker: PointPicker = None,
-        name: str = None,
+        waveseries_reader: WaveSeriesReader | None = None,
+        point_picker: PointPicker | None = None,
+        name: str | None = None,
         dry_run: bool = False,
         source: str = "remote",
         **kwargs,
@@ -416,8 +416,8 @@ class ModelRun:
     @cached_reader(DnoraObjectType.WaterLevel, wlv.read.DnoraNc)
     def import_waterlevel(
         self,
-        waterlevel_reader: WaterLevelReader = None,
-        name: str = None,
+        waterlevel_reader: WaterLevelReader | None = None,
+        name: str | None = None,
         dry_run: bool = False,
         source: str = "remote",
         **kwargs,
@@ -457,8 +457,8 @@ class ModelRun:
     @cached_reader(DnoraObjectType.OceanCurrent, ocr.read.DnoraNc)
     def import_oceancurrent(
         self,
-        oceancurrent_reader: OceanCurrentReader = None,
-        name: str = None,
+        oceancurrent_reader: OceanCurrentReader | None = None,
+        name: str | None = None,
         dry_run: bool = False,
         source: str = "remote",
         **kwargs,
@@ -501,8 +501,8 @@ class ModelRun:
     @cached_reader(DnoraObjectType.IceForcing, ice.read.DnoraNc)
     def import_iceforcing(
         self,
-        iceforcing_reader: IceForcingReader = None,
-        name: str = None,
+        iceforcing_reader: IceForcingReader | None = None,
+        name: str | None = None,
         dry_run: bool = False,
         source: str = "remote",
         **kwargs,
@@ -551,7 +551,11 @@ class ModelRun:
             msg.info("Dry run! No ice forcing data will be imported.")
 
     def boundary_to_spectra(
-        self, dry_run: bool = False, name: str = None, write_cache=False, **kwargs
+        self,
+        dry_run: bool = False,
+        name: str | None = None,
+        write_cache=False,
+        **kwargs,
     ):
         self._dry_run = dry_run
         if self.boundary() is None:
@@ -632,13 +636,13 @@ class ModelRun:
 
     def set_spectral_grid(
         self,
-        freq: np.ndarray = None,
-        dirs: np.ndarray = None,
+        freq: np.ndarray | None = None,
+        dirs: np.ndarray | None = None,
         freq0: float = 0.04118,
         nfreq: int = 32,
         ndir: int = 36,
         finc: float = 1.1,
-        dirshift: float = None,
+        dirshift: float | None = None,
     ):
         """Sets spectral grid for model run. Will be used to write input files."""
         if freq is None:
@@ -669,11 +673,10 @@ class ModelRun:
 
     def run_model(
         self,
-        model_executer: ModelExecuter = None,
-        input_file: str = None,
-        folder: str = None,
-        dateformat: str = None,
-        input_file_extension: str = None,
+        model_executer: ModelExecuter | None = None,
+        input_file: str | None = None,
+        folder: str | None = None,
+        dateformat: str | None = None,
         dry_run: bool = False,
         mat_to_nc: bool = False,
     ) -> None:
