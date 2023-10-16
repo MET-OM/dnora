@@ -1,21 +1,7 @@
-from __future__ import annotations
-
 import numpy as np
 import pandas as pd
-from scipy.interpolate import griddata
 from scipy import interpolate
-import os, re
 import geopy.distance
-from typing import TYPE_CHECKING, Union, Iterable
-from . import file_module
-
-if TYPE_CHECKING:
-    from .grd.grd_mod import Grid
-
-from . import file_module
-from calendar import monthrange
-
-from .dnora_object_type import DnoraObjectType
 
 
 def distance_2points(lat1, lon1, lat2, lon2) -> float:
@@ -23,7 +9,7 @@ def distance_2points(lat1, lon1, lat2, lon2) -> float:
     return geopy.distance.geodesic((lat1, lon1), (lat2, lon2)).km
 
 
-def min_distance(lon, lat, lon_vec, lat_vec) -> Tuple[float, int]:
+def min_distance(lon, lat, lon_vec, lat_vec) -> tuple[float, int]:
     """Calculates minimum distance [km] between a given point and a list of
     points given in spherical coordinates (lon/lat degrees).
 
@@ -53,8 +39,8 @@ def lon_in_km(lat: float) -> float:
 
 
 def domain_size_in_km(
-    lon: Tuple(float, float), lat: Tuple(float, float)
-) -> Tuple[float, float]:
+    lon: tuple[float, float], lat: tuple[float, float]
+) -> tuple[float, float]:
     """Calculates approximate size of grid in km."""
 
     km_x = distance_2points(
@@ -418,25 +404,6 @@ def check_that_spectra_are_consistent(
             ValueError(
                 f"Expected {expected_dim} dimensional spectra, but they seem to be {spec_dim} dimensional!"
             )
-
-
-def write_monthly_nc_files(dnora_obj, file_object) -> list[str]:
-    "Writes the data of a DNORA object into montly netcdf-files wh the ames specified by the FileNames instance."
-    output_files = []
-    for month in dnora_obj.months():
-        t0 = f"{month.strftime('%Y-%m-01')}"
-        d1 = monthrange(int(month.strftime("%Y")), int(month.strftime("%m")))[1]
-        t1 = f"{month.strftime(f'%Y-%m-{d1}')}"
-
-        outfile = file_object.get_filepath(start_time=month, edge_object=DnoraObjectType.Grid)
-
-        outfile = file_module.clean_filename(outfile)
-        if os.path.exists(outfile):
-            os.remove(outfile)
-        dnora_obj.ds().sel(time=slice(t0, t1)).to_netcdf(outfile)
-
-        output_files.append(outfile)
-    return output_files
 
 
 def identify_boundary_edges(boundary_mask: np.ndarray) -> list[str]:

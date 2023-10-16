@@ -13,8 +13,6 @@ if TYPE_CHECKING:
 # Import default values and aux_funcsiliry functions
 from ... import msg
 
-from ...aux_funcs import write_monthly_nc_files
-
 
 class ForcingWriter(ABC):
     """Writes the forcing data to a certain file format.

@@ -1,13 +1,11 @@
 from __future__ import annotations  # For TYPE_CHECKING
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING
 from abc import ABC, abstractmethod
 
 # Import abstract classes and needed instances of them
 if TYPE_CHECKING:
     from ...mdl.mdl_mod import ModelRun
     from ...file_module import FileNames
-
-from ...aux_funcs import write_monthly_nc_files
 
 
 class WaveSeriesWriter(ABC):

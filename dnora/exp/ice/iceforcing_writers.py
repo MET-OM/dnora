@@ -10,9 +10,6 @@ if TYPE_CHECKING:
     from ...mdl.mdl_mod import ModelRun
     from ...file_module import FileNames
 
-# Import default values and aux_funcsiliry functions
-from ...aux_funcs import write_monthly_nc_files
-
 
 class IceForcingWriter(ABC):
     """Writes the water level data to a certain file format.

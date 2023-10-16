@@ -15,8 +15,6 @@ if TYPE_CHECKING:
 
 from ...bnd.conventions import SpectralConvention
 
-from ...aux_funcs import write_monthly_nc_files
-
 
 class SpectralWriter(ABC):
     """Writes omnidirectional spectra spectra to a certain file format.

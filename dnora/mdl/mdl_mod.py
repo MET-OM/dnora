@@ -67,21 +67,6 @@ DnoraObject = Union[
     Grid, TriGrid, Forcing, Boundary, WaveSeries, WaterLevel, OceanCurrent, IceForcing
 ]
 
-# OBJECT_STRINGS = [dnora_obj.name for dnora_obj in DnoraObjectType]
-
-#  [
-#     "ModelRun",
-#     "Grid",
-#     "Forcing",
-#     "Boundary",
-#     "Spectra",
-#     "WaveSeries",
-#     "WaterLevel",
-#     "OceanCurrent",
-#     "IceForcing",
-#     "SpectralGrid",
-# ]
-
 
 class ModelRun:
     def __init__(
@@ -679,7 +664,7 @@ class ModelRun:
             dirs = np.linspace(0, 360, ndir + 1)[0:-1] + dirshift
 
         self[DnoraObjectType.SpectralGrid] = SpectralGrid(
-            name="spectral_grid", freq=freq, dirs=dirs
+            name=DnoraObjectType.SpectralGrid.value, freq=freq, dirs=dirs
         )
 
     def run_model(
@@ -872,5 +857,5 @@ class ModelRun:
         return self._point_picker
 
 
-def camel_to_snake(string: str) -> str:
-    return re.sub(r"(?<!^)(?=[A-Z])", "_", string).lower()
+# def camel_to_snake(string: str) -> str:
+#     return re.sub(r"(?<!^)(?=[A-Z])", "_", string).lower()

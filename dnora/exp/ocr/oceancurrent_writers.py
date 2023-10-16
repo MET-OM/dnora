@@ -11,7 +11,6 @@ if TYPE_CHECKING:
     from ...file_module import FileNames
 
 # Import default values and aux_funcsiliry functions
-from ...aux_funcs import write_monthly_nc_files
 
 
 class OceanCurrentWriter(ABC):
