@@ -10,6 +10,7 @@ from typing import Union
 from ..grd.grd_mod import Grid, TriGrid
 
 from ..file_module import FileNames
+from ..dnora_object_type import DnoraObjectType
 
 # Import abstract classes and needed instances of them
 from ..wnd import Forcing
@@ -66,18 +67,20 @@ DnoraObject = Union[
     Grid, TriGrid, Forcing, Boundary, WaveSeries, WaterLevel, OceanCurrent, IceForcing
 ]
 
-OBJECT_STRINGS = [
-    "ModelRun",
-    "Grid",
-    "Forcing",
-    "Boundary",
-    "Spectra",
-    "WaveSeries",
-    "WaterLevel",
-    "OceanCurrent",
-    "IceForcing",
-    "SpectralGrid",
-]
+# OBJECT_STRINGS = [dnora_obj.name for dnora_obj in DnoraObjectType]
+
+#  [
+#     "ModelRun",
+#     "Grid",
+#     "Forcing",
+#     "Boundary",
+#     "Spectra",
+#     "WaveSeries",
+#     "WaterLevel",
+#     "OceanCurrent",
+#     "IceForcing",
+#     "SpectralGrid",
+# ]
 
 
 class ModelRun:
@@ -92,61 +95,70 @@ class ModelRun:
         self.name = copy(name)
         self._grid = copy(grid)
         self._time = pd.date_range(start_time, end_time, freq="H")
-        self._exported_to = {}
+        self._exported_to: dict[DnoraObjectType : list[str]] = {}
         self._global_dry_run = dry_run
         self._dry_run = False  # Set by methods
-        self._reader_dict = {}
+        self._reader_dict: dict[DnoraObjectType:ReaderFunction] = {}
+        self._dnora_objects: dict[DnoraObjectType:DnoraObject] = {
+            DnoraObjectType.ModelRun: self,
+            DnoraObjectType.Grid: grid,
+        }
         self._point_picker = None
         self._consistency_check(
-            objects_to_ignore_get=["ModelRun"],
-            objects_to_ignore_import=["ModelRun", "SpectralGrid", "Grid"],
+            objects_to_ignore_get=[
+                DnoraObjectType.ModelRun,
+                DnoraObjectType.TriGrid,
+                DnoraObjectType.InputFile,
+            ],
+            objects_to_ignore_import=[
+                DnoraObjectType.ModelRun,
+                DnoraObjectType.Grid,
+                DnoraObjectType.SpectralGrid,
+                DnoraObjectType.TriGrid,
+                DnoraObjectType.InputFile,
+            ],
         )
 
     def _consistency_check(
         self, objects_to_ignore_get: list[str], objects_to_ignore_import: list[str]
     ):
         """Checks that the class contains the proper import and getter methods. This is a safety feature in case more object types are added."""
-        for obj_type in OBJECT_STRINGS:
+        for obj_type in DnoraObjectType:
             if obj_type not in objects_to_ignore_get:
-                if not hasattr(self, obj_type.lower()) and not hasattr(
-                    self, camel_to_snake(obj_type)
-                ):
+                if not hasattr(self, obj_type.value):
                     raise SyntaxError(
-                        f"No getter method self.{obj_type.lower()}() or self.{camel_to_snake(obj_type)}() defined for object {obj_type}!"
+                        f"No getter method self.{obj_type.value}() defined for object {obj_type.name}!"
                     )
 
             if obj_type not in objects_to_ignore_import:
-                if not hasattr(self, f"import_{obj_type.lower()}"):
+                if not hasattr(self, f"import_{obj_type.value}"):
                     raise SyntaxError(
-                        f"No import method self.import_{obj_type.lower()}() defined for object {obj_type}!"
+                        f"No import method self.import_{obj_type.value}() defined for object {obj_type.name}!"
                     )
 
     def _setup_import(
         self,
-        obj_type: str,
+        obj_type: DnoraObjectType,
         name: str,
         dry_run: bool,
         reader: ReaderFunction,
     ) -> tuple[ReaderFunction, str]:
         """Sets up readers, names and dry runs porperties for import of object."""
 
-        if obj_type not in OBJECT_STRINGS:
-            raise ValueError(f"Dnora object {obj_type} not listed in OBJECT_STRINGS!")
-
         self._dry_run = dry_run
 
         reader = reader or self._get_reader(obj_type)
         if reader is None:
-            raise Exception(f"Define a {obj_type}Reader!")
+            raise Exception(f"Define a {obj_type.name}Reader!")
 
         name = name or reader.name()
 
         if name is None:
             raise ValueError(
-                f"Provide either a name or a {obj_type}Reader that will then define the name!"
+                f"Provide either a name or a {obj_type.name}Reader that will then define the name!"
             )
 
-        msg.header(reader, f"Importing {obj_type}...")
+        msg.header(reader, f"Importing {obj_type.name}...")
         return reader, name
 
     def _setup_point_picker(self, point_picker: PointPicker):
@@ -193,7 +205,7 @@ class ModelRun:
                 return
             return inds
 
-    @cached_reader("Forcing", wnd.read.DnoraNc)
+    @cached_reader(DnoraObjectType.Forcing, wnd.read.DnoraNc)
     def import_forcing(
         self,
         forcing_reader: ForcingReader = None,
@@ -213,7 +225,7 @@ class ModelRun:
         """
 
         forcing_reader, name = self._setup_import(
-            "Forcing", name, dry_run, forcing_reader
+            DnoraObjectType.Forcing, name, dry_run, forcing_reader
         )
 
         if not self.dry_run():
@@ -225,7 +237,9 @@ class ModelRun:
                 **kwargs,
             )
 
-            self._forcing = Forcing(lon=lon, lat=lat, x=x, y=y, time=time, name=name)
+            self[DnoraObjectType.Forcing] = Forcing(
+                lon=lon, lat=lat, x=x, y=y, time=time, name=name
+            )
             x = x or lon
             y = y or lat
             self.forcing().set_spacing(nx=len(x), ny=len(y))
@@ -237,7 +251,7 @@ class ModelRun:
         else:
             msg.info("Dry run! No forcing will be imported.")
 
-    @cached_reader("Boundary", bnd.read.DnoraNc)
+    @cached_reader(DnoraObjectType.Boundary, bnd.read.DnoraNc)
     def import_boundary(
         self,
         boundary_reader: BoundaryReader = None,
@@ -259,7 +273,7 @@ class ModelRun:
         """
 
         boundary_reader, name = self._setup_import(
-            "Boundary", name, dry_run, boundary_reader
+            DnoraObjectType.Boundary, name, dry_run, boundary_reader
         )
 
         point_picker = self._setup_point_picker(point_picker)
@@ -279,7 +293,7 @@ class ModelRun:
                 source=source,
                 **kwargs,
             )
-            self._boundary = Boundary(
+            self[DnoraObjectType.Boundary] = Boundary(
                 x=x, y=y, lon=lon, lat=lat, time=time, freq=freq, dirs=dirs, name=name
             )
 
@@ -298,7 +312,7 @@ class ModelRun:
         else:
             msg.info("Dry run! No boundary spectra will be imported.")
 
-    @cached_reader("Spectra", spc.read.DnoraNc)
+    @cached_reader(DnoraObjectType.Spectra, spc.read.DnoraNc)
     def import_spectra(
         self,
         spectral_reader: SpectraReader = None,
@@ -319,7 +333,7 @@ class ModelRun:
         To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
         """
         spectral_reader, name = self._setup_import(
-            "Spectra", name, dry_run, spectral_reader
+            DnoraObjectType.Spectra, name, dry_run, spectral_reader
         )
 
         point_picker = self._setup_point_picker(point_picker)
@@ -339,7 +353,7 @@ class ModelRun:
                 **kwargs,
             )
 
-            self._spectra = Spectra(
+            self[DnoraObjectType.Spectra] = Spectra(
                 x=x, y=y, lon=lon, lat=lat, time=time, freq=freq, name=name
             )
 
@@ -357,7 +371,7 @@ class ModelRun:
         else:
             msg.info("Dry run! No spectra will be imported.")
 
-    @cached_reader("WaveSeries", wsr.read.DnoraNc)
+    @cached_reader(DnoraObjectType.WaveSeries, wsr.read.DnoraNc)
     def import_waveseries(
         self,
         waveseries_reader: WaveSeriesReader = None,
@@ -368,7 +382,7 @@ class ModelRun:
         **kwargs,
     ):
         waveseries_reader, name = self._setup_import(
-            "WaveSeries", name, dry_run, waveseries_reader
+            DnoraObjectType.WaveSeries, name, dry_run, waveseries_reader
         )
 
         point_picker = self._setup_point_picker(point_picker)
@@ -392,7 +406,9 @@ class ModelRun:
                 **kwargs,
             )
 
-            self._waveseries = WaveSeries(x, y, lon, lat, time=time, name=name)
+            self[DnoraObjectType.WaveSeries] = WaveSeries(
+                x, y, lon, lat, time=time, name=name
+            )
 
             for wp, data in data_dict.items():
                 self._waveseries = add_datavar(wp.name(), append=True)(
@@ -412,7 +428,7 @@ class ModelRun:
         else:
             msg.info("Dry run! No waveseries will be imported.")
 
-    @cached_reader("WaterLevel", wlv.read.DnoraNc)
+    @cached_reader(DnoraObjectType.WaterLevel, wlv.read.DnoraNc)
     def import_waterlevel(
         self,
         waterlevel_reader: WaterLevelReader = None,
@@ -431,7 +447,7 @@ class ModelRun:
         To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
         """
         waterlevel_reader, name = self._setup_import(
-            "WaterLevel", name, dry_run, waterlevel_reader
+            DnoraObjectType.WaterLevel, name, dry_run, waterlevel_reader
         )
 
         if not self.dry_run():
@@ -442,7 +458,7 @@ class ModelRun:
                 source=source,
                 **kwargs,
             )
-            self._waterlevel = WaterLevel(
+            self[DnoraObjectType.WaterLevel] = WaterLevel(
                 lon=lon, lat=lat, x=x, y=y, time=time, name=name
             )
             self.waterlevel().set_spacing(nx=len(x or lon), ny=len(y or lat))
@@ -453,7 +469,7 @@ class ModelRun:
         else:
             msg.info("Dry run! No water level data will be imported.")
 
-    @cached_reader("OceanCurrent", ocr.read.DnoraNc)
+    @cached_reader(DnoraObjectType.OceanCurrent, ocr.read.DnoraNc)
     def import_oceancurrent(
         self,
         oceancurrent_reader: OceanCurrentReader = None,
@@ -472,7 +488,7 @@ class ModelRun:
         To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
         """
         oceancurrent_reader, name = self._setup_import(
-            "OceanCurrent", name, dry_run, oceancurrent_reader
+            DnoraObjectType.OceanCurrent, name, dry_run, oceancurrent_reader
         )
 
         if not self.dry_run():
@@ -483,7 +499,7 @@ class ModelRun:
                 source=source,
                 **kwargs,
             )
-            self._oceancurrent = OceanCurrent(
+            self[DnoraObjectType.OceanCurrent] = OceanCurrent(
                 lon=lon, lat=lat, x=x, y=y, time=time, name=name
             )
             x = x or lon
@@ -497,7 +513,7 @@ class ModelRun:
         else:
             msg.info("Dry run! No water level data will be imported.")
 
-    @cached_reader("IceForcing", ice.read.DnoraNc)
+    @cached_reader(DnoraObjectType.IceForcing, ice.read.DnoraNc)
     def import_iceforcing(
         self,
         iceforcing_reader: IceForcingReader = None,
@@ -516,7 +532,7 @@ class ModelRun:
         To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
         """
         iceforcing_reader, name = self._setup_import(
-            "IceForcing", name, dry_run, iceforcing_reader
+            DnoraObjectType.IceForcing, name, dry_run, iceforcing_reader
         )
         if not self.dry_run():
             (
@@ -535,7 +551,7 @@ class ModelRun:
                 source=source,
                 **kwargs,
             )
-            self._iceforcing = IceForcing(
+            self[DnoraObjectType.IceForcing] = IceForcing(
                 lon=lon, lat=lat, x=x, y=y, time=time, name=name
             )
             x = x or lon
@@ -662,7 +678,9 @@ class ModelRun:
                 dirshift = np.min(np.abs(dirs))
             dirs = np.linspace(0, 360, ndir + 1)[0:-1] + dirshift
 
-        self._spectral_grid = SpectralGrid(name="spectral_grid", freq=freq, dirs=dirs)
+        self[DnoraObjectType.SpectralGrid] = SpectralGrid(
+            name="spectral_grid", freq=freq, dirs=dirs
+        )
 
     def run_model(
         self,
@@ -676,8 +694,8 @@ class ModelRun:
     ) -> None:
         """Run the model."""
         self._dry_run = dry_run
-        self._model_executer = model_executer or self._get_model_executer()
-        if self._model_executer is None:
+        model_executer = model_executer or self._get_model_executer()
+        if model_executer is None:
             raise Exception("Define a ModelExecuter!")
 
         # We always assume that the model is located in the folder the input
@@ -686,7 +704,7 @@ class ModelRun:
         # Option 1) Use user provided
         # Option 2) Use knowledge of where has been exported
         # Option 3) Use default values to guess where is has previously been exported
-        exported_path = Path(self.exported_to("input_file")[0])
+        exported_path = Path(self.exported_to(DnoraObjectType.InputFile)[0])
         primary_file = input_file or exported_path.name
         primary_folder = folder  # or str(exported_path.parent)
 
@@ -700,14 +718,14 @@ class ModelRun:
             filename=primary_file,
             folder=primary_folder,
             dateformat=dateformat,
-            obj_type="model_executer",
-            edge_object="Grid",
+            obj_type=DnoraObjectType.InputFile,
+            edge_object=DnoraObjectType.Grid,
         )
 
-        msg.header(self._model_executer, "Running model...")
+        msg.header(model_executer, "Running model...")
         msg.plain(f"Using input file: {file_object.get_filepath()}")
         if not self.dry_run():
-            self._model_executer(
+            model_executer(
                 input_file=file_object.filename(), model_folder=file_object.folder()
             )
         else:
@@ -729,63 +747,39 @@ class ModelRun:
 
     def grid(self) -> Union[Grid, TriGrid]:
         """Returns the grid object."""
-        return self._grid
+        return self._dnora_objects.get(DnoraObjectType.Grid)
 
     def forcing(self) -> Forcing:
         """Returns the forcing object if exists."""
-        if hasattr(self, "_forcing"):
-            return self._forcing
-        else:
-            return None
+        return self._dnora_objects.get(DnoraObjectType.Forcing)
 
     def boundary(self) -> Boundary:
         """Returns the boundary object if exists."""
-        if hasattr(self, "_boundary"):
-            return self._boundary
-        else:
-            return None
+        return self._dnora_objects.get(DnoraObjectType.Boundary)
 
     def spectra(self) -> Spectra:
         """Returns the spectral object if exists."""
-        if hasattr(self, "_spectra"):
-            return self._spectra
-        else:
-            return None
+        return self._dnora_objects.get(DnoraObjectType.Spectra)
 
     def waveseries(self) -> WaveSeries:
         """Returns the wave series object if exists."""
-        if hasattr(self, "_waveseries"):
-            return self._waveseries
-        else:
-            return None
+        return self._dnora_objects.get(DnoraObjectType.WaveSeries)
 
     def waterlevel(self) -> WaterLevel:
         """Returns the water level object if exists."""
-        if hasattr(self, "_waterlevel"):
-            return self._waterlevel
-        else:
-            return None
+        return self._dnora_objects.get(DnoraObjectType.WaterLevel)
 
     def oceancurrent(self) -> OceanCurrent:
         """Returns the ocean current object if exists."""
-        if hasattr(self, "_oceancurrent"):
-            return self._oceancurrent
-        else:
-            return None
+        return self._dnora_objects.get(DnoraObjectType.OceanCurrent)
 
     def iceforcing(self) -> IceForcing:
         """Returns the ocean current object if exists."""
-        if hasattr(self, "_iceforcing"):
-            return self._iceforcing
-        else:
-            return None
+        return self._dnora_objects.get(DnoraObjectType.IceForcing)
 
     def spectral_grid(self) -> SpectralGrid:
         """Returns the spectral grid object if exists."""
-        if hasattr(self, "_spectral_grid"):
-            return self._spectral_grid
-        else:
-            return None
+        return self._dnora_objects.get(DnoraObjectType.SpectralGrid)
 
     def input_file(self) -> None:
         """Only defined to have method for all objects"""
@@ -795,32 +789,32 @@ class ModelRun:
         self,
     ) -> list[DnoraObject]:
         """[ModelRun, Boundary] etc."""
-        return [x for x in OBJECT_STRINGS if self[x] is not None]
+        return [self[x] for x in DnoraObjectType if self[x] is not None]
 
     def dict_of_object_names(self) -> dict[str:str]:
         """{'Boundary': 'NORA3'} etc."""
         dict_of_object_names = {}
-        for obj_type in OBJECT_STRINGS:
+        for obj_type in DnoraObjectType:
             if self[obj_type] is None:
                 dict_of_object_names[obj_type] = None
             else:
                 dict_of_object_names[obj_type] = self[obj_type].name
         return dict_of_object_names
 
-    def exported_to(self, obj_str: str) -> str:
+    def exported_to(self, obj_type: DnoraObjectType) -> str:
         """Returns the path the object (e.g. grid) was exported to.
 
         If object has not been exported, the default filename is returned as
         a best guess
         """
 
-        if self[obj_str] is None:
+        if self[obj_type] is None:
             return [""]
 
         default_name = FileNames(
-            model=self, format=self._get_default_format(), obj_type=obj_str
+            model=self, format=self._get_default_format(), obj_type=obj_type
         ).get_filepath()
-        return self._exported_to.get(obj_str.lower(), default_name)
+        return self._exported_to.get(obj_type, default_name)
 
     def time(self, crop_with: list[str] = None):
         """Returns times of ModelRun
@@ -857,29 +851,21 @@ class ModelRun:
         crop = True: Give the period that is covered by all objects (Forcing etc.)"""
         return self.time(crop_with=crop_with)[-1]
 
-    def __getitem__(self, dnora_str: str):
-        dnora_str = camel_to_snake(dnora_str)
+    def __getitem__(self, dnora_obj: DnoraObjectType):
+        # dnora_str = camel_to_snake(dnora_str)
 
-        if dnora_str == "model_run":
-            return self
-
-        if dnora_str == "tri_grid":
+        if dnora_obj == DnoraObjectType.TriGrid:
             if type(self.grid()) == TriGrid:
                 return self.grid()
             else:
                 return None
-        try:
-            return eval(f"self.{dnora_str}()")
-        except AttributeError:
-            return eval(f"self.{dnora_str.replace('_', '')}()")
-        except:
-            return None
+
+        return self._dnora_objects.get(dnora_obj)
+
+    def __setitem__(self, key: DnoraObjectType, value: DnoraObject):
+        self._dnora_objects[key] = value
 
     def _get_reader(self, obj_type: str):
-        if obj_type not in OBJECT_STRINGS:
-            raise Warning(
-                f"Trying to access a reader function for object {obj_type}, which is not defined in the list of OBJECT_STRINGS!"
-            )
         return self._reader_dict.get(obj_type)
 
     def _get_point_picker(self) -> PointPicker:

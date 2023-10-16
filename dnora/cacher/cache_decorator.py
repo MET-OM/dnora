@@ -14,6 +14,8 @@ import numpy as np
 import re
 from geo_skeletons import GriddedSkeleton
 
+from ..dnora_object_type import DnoraObjectType
+
 
 class DummyDnoraObject(GriddedSkeleton):
     """Created as a placeholder for the real object to have the .name interface for creating filenames."""
@@ -35,8 +37,8 @@ def cached_reader(dnora_obj, reader_function):
         ):
             def get_reader(args, kwargs):
                 reader = None
-                if kwargs.get(f"{dnora_obj.lower()}_reader") is not None:
-                    reader = kwargs.get(f"{dnora_obj.lower()}_reader")
+                if kwargs.get(f"{dnora_obj.value}_reader") is not None:
+                    reader = kwargs.get(f"{dnora_obj.value}_reader")
                 else:
                     new_args = []
                     for arg in args:
@@ -44,7 +46,7 @@ def cached_reader(dnora_obj, reader_function):
                             reader_function.__bases__[0] == arg.__class__.__bases__[0]
                         ):  # HAve we found the e.g. BoundaryReader
                             reader = arg
-                reader = reader or eval(f"args[0]._get_{dnora_obj.lower()}_reader()")
+                reader = reader or args[0]._get_reader(dnora_obj)
                 return reader
 
             def determine_patch_periods():
@@ -98,14 +100,16 @@ def cached_reader(dnora_obj, reader_function):
             # exec(f"mrun._{dnora_obj.lower()} = {dnora_obj}(name=name)")
             # mrun._dry_run = dry_run
             # if not mrun.dry_run():
-            exec(f"mrun._{dnora_obj.lower()} = DummyDnoraObject(name=name)")
+            # exec(f"mrun._{dnora_obj.lower()} = DummyDnoraObject(name=name)")
+            mrun[dnora_obj] = DummyDnoraObject(name=name)
             file_object = FileNames(
                 format="Cache",
                 obj_type=dnora_obj,
                 model=mrun,
-                edge_object="Grid",
+                edge_object=DnoraObjectType.Grid,
                 filename=cache_name,
             )
+            mrun[dnora_obj] = None
             file_object.create_folder()
 
             files = glob.glob(f"{file_object.get_filepath()[0:-3]}*")

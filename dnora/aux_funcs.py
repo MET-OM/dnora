@@ -15,6 +15,8 @@ if TYPE_CHECKING:
 from . import file_module
 from calendar import monthrange
 
+from .dnora_object_type import DnoraObjectType
+
 
 def distance_2points(lat1, lon1, lat2, lon2) -> float:
     """Calculate distance between two points"""
@@ -426,7 +428,7 @@ def write_monthly_nc_files(dnora_obj, file_object) -> list[str]:
         d1 = monthrange(int(month.strftime("%Y")), int(month.strftime("%m")))[1]
         t1 = f"{month.strftime(f'%Y-%m-{d1}')}"
 
-        outfile = file_object.get_filepath(start_time=month, edge_object="Grid")
+        outfile = file_object.get_filepath(start_time=month, edge_object=DnoraObjectType.Grid)
 
         outfile = file_module.clean_filename(outfile)
         if os.path.exists(outfile):

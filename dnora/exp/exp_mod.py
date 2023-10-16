@@ -15,6 +15,7 @@ from .ice.iceforcing_writers import IceForcingWriter
 from .inp.input_file_writers import InputFileWriter
 
 from .decorators import add_export_method
+from ..dnora_object_type import DnoraObjectType
 
 WriterFunction = Union[
     GeneralWritingFunction,
@@ -30,37 +31,37 @@ WriterFunction = Union[
 ]
 
 
-@add_export_method("Grid")
-@add_export_method("Forcing")
-@add_export_method("Boundary")
-@add_export_method("Spectra")
-@add_export_method("WaveSeries")
-@add_export_method("WaterLevel")
-@add_export_method("OceanCurrent")
-@add_export_method("IceForcing")
+@add_export_method(DnoraObjectType.Grid)
+@add_export_method(DnoraObjectType.Forcing)
+@add_export_method(DnoraObjectType.Boundary)
+@add_export_method(DnoraObjectType.Spectra)
+@add_export_method(DnoraObjectType.WaveSeries)
+@add_export_method(DnoraObjectType.WaterLevel)
+@add_export_method(DnoraObjectType.OceanCurrent)
+@add_export_method(DnoraObjectType.IceForcing)
 class DataExporter:
     def __init__(self, model: ModelRun):
         self.model = model
         self.exported_to = {}
 
     def _setup_export(
-        self, obj_type: str, writer_function, dry_run: bool
+        self, obj_type: DnoraObjectType, writer_function, dry_run: bool
     ) -> WriterFunction:
         self._dry_run = dry_run
 
         if self.model[obj_type] is None:
             return None
 
-        writer_function = writer_function or self[f"{obj_type}_writer"]
+        writer_function = writer_function or self[obj_type]
 
         if writer_function is None:
-            raise Exception(f"Define a {obj_type}Writer!")
+            raise Exception(f"Define a {obj_type.name}Writer!")
 
         return writer_function
 
     def _export_object(
         self,
-        obj_type,
+        obj_type: DnoraObjectType,
         filename: str,
         folder: str,
         dateformat: str,
@@ -70,12 +71,12 @@ class DataExporter:
     ) -> list[str]:
         # Controls generation of file names using the proper defaults etc.
         if writer_function is None:
-            msg.info(f"No {obj_type} data exists. Won't export anything.")
+            msg.info(f"No {obj_type.name} data exists. Won't export anything.")
             return
 
         msg.header(
             writer_function,
-            f"Writing {obj_type} data from {self.model[obj_type].name}",
+            f"Writing {obj_type.name} data from {self.model[obj_type].name}",
         )
 
         format = format or self._get_default_format()
@@ -98,7 +99,7 @@ class DataExporter:
                 output_files = [output_files]
 
         # Store name and location where file was written
-        self.exported_to[obj_type.lower()] = output_files
+        self.exported_to[obj_type] = output_files
 
         for file in output_files:
             msg.to_file(file)
@@ -138,8 +139,8 @@ class DataExporter:
             folder=folder,
             format=format,
             dateformat=dateformat,
-            obj_type="input_file",
-            edge_object="Grid",
+            obj_type=DnoraObjectType.InputFile,
+            edge_object=DnoraObjectType.Grid,
         )
         file_object.create_folder()
 
@@ -160,9 +161,9 @@ class DataExporter:
 
         return
 
-    def __getitem__(self, writer: str):
+    def __getitem__(self, obj_type: DnoraObjectType):
         """writer = 'grid_writer, forcing_writer etc."""
-        return eval(f"self._get_{writer.lower()}()")
+        return eval(f"self._get_{obj_type.value}_writer()")
 
     def dry_run(self) -> bool:
         return self._dry_run or self.model.dry_run()

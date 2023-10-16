@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .mdl.mdl_mod import ModelRun
 
+from .dnora_object_type import DnoraObjectType
+
 
 @dataclass
 class FileNames:
@@ -19,8 +21,8 @@ class FileNames:
     filename: str = None
     folder: str = None
     dateformat: str = None
-    edge_object: str = None
-    time_object: str = "ModelRun"
+    edge_object: str = DnoraObjectType.Grid
+    time_object: str = DnoraObjectType.ModelRun
 
     def __post_init__(self):
         self._defaults = read_defaults("export_defaults.yml", from_module=True)
@@ -111,7 +113,7 @@ class FileNames:
         unclean_string: str,
         start_time=None,
         end_time=None,
-        edge_object: str = None,
+        edge_object: DnoraObjectType = None,
     ) -> str:
         unclean_string = replace_objects(
             unclean_string, self.model.dict_of_object_names()
@@ -241,7 +243,9 @@ def replace_xy(filename: str, x: float, y: float) -> str:
     return filename
 
 
-def replace_objects(filename: str, dict_of_object_names: dict[str:str]) -> str:
+def replace_objects(
+    filename: str, dict_of_object_names: dict[DnoraObjectType, str]
+) -> str:
     """Substitutes the strings #{Object} in filename with the name given to
     the object.
 
@@ -251,14 +255,16 @@ def replace_objects(filename: str, dict_of_object_names: dict[str:str]) -> str:
 
     for obj_type, obj_name in dict_of_object_names.items():
         if obj_name is not None:
-            filename = re.sub(f"#{obj_type}", obj_name, filename, flags=re.IGNORECASE)
+            filename = re.sub(
+                f"#{obj_type.name}", obj_name, filename, flags=re.IGNORECASE
+            )
 
     return filename
 
 
-def replace_object_type(filename: str, obj_type: str) -> str:
+def replace_object_type(filename: str, obj_type: DnoraObjectType) -> str:
     "Replaces the #ObjectType tag to e.g. Boundary of Forcing with lowe case"
-    return re.sub(f"#ObjectType", obj_type.lower(), filename, flags=re.IGNORECASE)
+    return re.sub(f"#ObjectType", obj_type.value, filename, flags=re.IGNORECASE)
 
 
 def clean_filename(filename: str, list_of_placeholders: list[str] = None) -> str:
@@ -284,7 +290,9 @@ def clean_filename(filename: str, list_of_placeholders: list[str] = None) -> str
     return filename
 
 
-def get_default_value(key: str, obj_type: str, primary: dict, fallback: dict):
+def get_default_value(
+    key: str, obj_type: DnoraObjectType, primary: dict, fallback: dict
+):
     """Get a key (e.g. folder) from the defaults list.
 
     1) Tries Model+dnora_obj specific value (e.g. SWAN-wnd-folder)
@@ -294,12 +302,12 @@ def get_default_value(key: str, obj_type: str, primary: dict, fallback: dict):
     3) Returns ModelRun defaults (e.g. ModulRun-wnd-folder)
     """
 
-    obj_type = obj_type.lower()
+    obj_str = obj_type.value
 
     # Try dnora_obj specific fallback name
     fallback_name = None
-    if fallback.get(obj_type) is not None:
-        fallback_name = fallback[obj_type].get(key)
+    if fallback.get(obj_str) is not None:
+        fallback_name = fallback[obj_str].get(key)
 
     # Try object non-specific fallback name
     if fallback_name is None:
@@ -307,8 +315,8 @@ def get_default_value(key: str, obj_type: str, primary: dict, fallback: dict):
 
     # Try dnora_obj specific primary name
     primary_name = None
-    if primary.get(obj_type) is not None:
-        primary_name = primary[obj_type].get(key)
+    if primary.get(obj_str) is not None:
+        primary_name = primary[obj_str].get(key)
 
     # Try dnora_obj non-specific primary name
     if primary_name is None:

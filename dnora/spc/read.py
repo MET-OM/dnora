@@ -148,6 +148,8 @@ class BoundaryToSpectra(SpectraReader):
         return time, freq, spec, mdir, spr, lon, lat, x, y, self._boundary.ds().attrs
 
     def name(self):
+        if self._boundary is None:
+            return "EmptyData"
         return self._boundary.name
 
 

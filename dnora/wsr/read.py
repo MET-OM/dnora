@@ -126,7 +126,7 @@ class SpectraToWaveSeries(WaveSeriesReader):
             self._spectra.process_spectra(process.CutFrequency(freq))
         except AttributeError:
             msg.warning(
-                f"Object {self._spectra.name} does not have a process_spectra method!\nNot cutting any frequencies!"
+                f"Object {self.name()} does not have a process_spectra method!\nNot cutting any frequencies!"
             )
         self._freq = freq
 
@@ -185,6 +185,11 @@ class SpectraToWaveSeries(WaveSeriesReader):
         attrs = self._spectra.ds().attrs
         attrs["integration_range"] = f"{self._freq[0]}-{self._freq[-1]} Hz"
         return time, data, lon, lat, x, y, attrs
+
+    def name(self) -> str:
+        if self._spectra is None:
+            return "EmptyData"
+        return self._spectra.name
 
 
 class DnoraNc(WaveSeriesReader):
