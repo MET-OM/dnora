@@ -38,7 +38,7 @@ class WAM4km(BoundaryReader):
     def post_processing(self):
         return RemoveEmpty()
 
-    def get_coordinates(self, grid, start_time) -> Tuple:
+    def get_coordinates(self, grid, start_time, source: str) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
 
         start_times, end_times, file_times = create_time_stamps(
@@ -209,7 +209,7 @@ class NORA3(BoundaryReader):
     def convention(self) -> str:
         return SpectralConvention.OCEAN
 
-    def get_coordinates(self, grid, start_time) -> Tuple:
+    def get_coordinates(self, grid, start_time, source: str) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         start_times, end_times, file_times = create_time_stamps(
             start_time,
@@ -323,7 +323,7 @@ class WW3_4km(BoundaryReader):
     def post_processing(self):
         return RemoveEmpty()
 
-    def get_coordinates(self, start_time) -> Tuple:
+    def get_coordinates(self, start_time, source: str) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
 
         start_times, end_times, file_times = create_time_stamps(
@@ -343,7 +343,7 @@ class WW3_4km(BoundaryReader):
 
         return lon_all, lat_all
 
-    def __call__(self, start_time, end_time, inds) -> Tuple:
+    def __call__(self, start_time, end_time, inds, source: str) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time
