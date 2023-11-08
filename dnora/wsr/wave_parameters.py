@@ -199,7 +199,7 @@ class Tp(WaveParameter):
     """Peak period from spectra"""
 
     def __call__(self, spec: Union[Spectra, Boundary]):
-        spec._set_convention(SpectralConvention.MET)
+        spec.set_convention(SpectralConvention.MET)
 
         if isinstance(spec, Boundary):
             theta = np.deg2rad(spec.mdir(data_array=True))
@@ -346,7 +346,7 @@ class Dirm(WaveParameter):
     """Mean wave direction"""
 
     def __call__(self, spec: Union[Spectra, Boundary]):
-        spec._set_convention(SpectralConvention.MET)
+        spec.set_convention(SpectralConvention.MET)
 
         if isinstance(spec, Boundary):
             theta = np.deg2rad(spec.mdir(data_array=True))
@@ -426,7 +426,7 @@ class Dirp(WaveParameter):
     """Peak wave direction"""
 
     def __call__(self, spec: Union[Spectra, Boundary]):
-        spec._set_convention(SpectralConvention.MET)
+        spec.set_convention(SpectralConvention.MET)
 
         if isinstance(spec, Boundary):
             theta = np.deg2rad(spec.mdir(data_array=True))

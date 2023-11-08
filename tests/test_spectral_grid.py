@@ -1,5 +1,6 @@
 from dnora import grd, mdl, bnd
 import numpy as np
+from dnora.dnora_object_type import DnoraObjectType
 
 
 def test_set_spectral_grid():
@@ -10,4 +11,4 @@ def test_set_spectral_grid():
 
     model.set_spectral_grid()
     model.spectral_grid()
-    model["SpectralGrid"]
+    model[DnoraObjectType.SpectralGrid]

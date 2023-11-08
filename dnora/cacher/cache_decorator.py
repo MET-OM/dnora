@@ -101,7 +101,10 @@ def cached_reader(dnora_obj, reader_function):
             # mrun._dry_run = dry_run
             # if not mrun.dry_run():
             # exec(f"mrun._{dnora_obj.lower()} = DummyDnoraObject(name=name)")
-            mrun[dnora_obj] = DummyDnoraObject(name=name)
+            try:
+                mrun[dnora_obj] = DummyDnoraObject(name=name)
+            except:
+                breakpoint()
             file_object = FileNames(
                 format="Cache",
                 obj_type=dnora_obj,

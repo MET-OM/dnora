@@ -1,13 +1,13 @@
 import numpy as np
-from copy import copy
 from abc import ABC, abstractmethod
-from typing import Tuple
 
 # Import aux_funcsiliry functions
 from .. import msg
 
 from ..bnd.conventions import SpectralConvention
 from ..aux_funcs import check_that_spectra_are_consistent
+
+
 class SpectralProcessor(ABC):
     def __init__(self):
         pass
@@ -49,7 +49,7 @@ class SpectralProcessor(ABC):
         return None
 
     @abstractmethod
-    def __call__(self, spec, dirs, freq, spr) -> Tuple:
+    def __call__(self, spec, dirs, freq, spr, inds) -> tuple:
         """Processes individual spectra and returns them to object.
 
         In addition to the spectra, also the direction and frequency
@@ -60,33 +60,33 @@ class SpectralProcessor(ABC):
         with 1, and 2 dimensional objects so that it can be called by the user
         to modify a single spectra etc.
         """
-        return spec, dirs, freq, spr
+        return spec, dirs, freq, spr, inds
 
     @abstractmethod
     def __str__(self):
         """Describes how the spectral values as processed"""
         pass
 
+
 class CutFrequency(SpectralProcessor):
-    """Cuts the spectrum down to a certain frequency range
-    """
+    """Cuts the spectrum down to a certain frequency range"""
 
     def __init__(self, freq: tuple):
         self._freq = freq
 
-    def __call__(self, spec, dirs, freq, spr) -> Tuple:
+    def __call__(self, spec, dirs, freq, spr, inds) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=1)
         mask = np.logical_and(freq >= self._freq[0], freq <= self._freq[-1])
         new_freq = freq[mask]
-        new_dirs = dirs[:,:,mask]
-        new_spr = spr[:,:,mask]
-        new_spec = spec[:,:,mask]
+        new_dirs = dirs[:, :, mask]
+        new_spr = spr[:, :, mask]
+        new_spec = spec[:, :, mask]
         check_that_spectra_are_consistent(new_spec, new_dirs, new_freq, expected_dim=1)
         check_that_spectra_are_consistent(new_spec, new_spr, new_freq, expected_dim=1)
-        return new_spec, new_dirs, new_freq, new_spr
+        return new_spec, new_dirs, new_freq, new_spr, inds
 
     def __str__(self):
-        return(f"Cutting frequency range to {self._freq[0]-self._freq[-1]}...")
+        return f"Cutting frequency range to {self._freq[0]-self._freq[-1]}..."
 
 
 class OceanToMet(SpectralProcessor):
@@ -108,14 +108,15 @@ class OceanToMet(SpectralProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.MET
 
-    def __call__(self, spec, dirs, freq, spr) -> Tuple:
+    def __call__(self, spec, dirs, freq, spr, inds) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=1)
-        new_dirs = np.mod(dirs+180, 360)
+        new_dirs = np.mod(dirs + 180, 360)
         check_that_spectra_are_consistent(spec, new_dirs, freq, expected_dim=1)
-        return spec, new_dirs, freq, spr
+        return spec, new_dirs, freq, spr, inds
 
     def __str__(self):
-        return("Shifting directions 180 degrees.")
+        return "Shifting directions 180 degrees."
+
 
 class MetToOcean(SpectralProcessor):
     """Changes all directions from Meteorological convention to Oceanic convention.
@@ -136,14 +137,14 @@ class MetToOcean(SpectralProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.OCEAN
 
-    def __call__(self, spec, dirs, freq, spr) -> Tuple:
+    def __call__(self, spec, dirs, freq, spr, inds) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=1)
-        new_dirs = np.mod(dirs+180, 360)
+        new_dirs = np.mod(dirs + 180, 360)
         check_that_spectra_are_consistent(spec, new_dirs, freq, expected_dim=1)
-        return spec, new_dirs, freq, spr
+        return spec, new_dirs, freq, spr, inds
 
     def __str__(self):
-        return("Shifting directions 180 degrees.")
+        return "Shifting directions 180 degrees."
 
 
 class OceanToMath(SpectralProcessor):
@@ -165,14 +166,14 @@ class OceanToMath(SpectralProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.MATH
 
-    def __call__(self, spec, dirs, freq, spr) -> Tuple:
+    def __call__(self, spec, dirs, freq, spr, inds) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=1)
-        new_dirs = np.mod(-dirs+90, 360)
+        new_dirs = np.mod(-dirs + 90, 360)
         check_that_spectra_are_consistent(spec, new_dirs, freq, expected_dim=1)
-        return spec, new_dirs, freq, spr
+        return spec, new_dirs, freq, spr, inds
 
     def __str__(self):
-        return("Shifting 90 degrees and changing to anti-clockwise.")
+        return "Shifting 90 degrees and changing to anti-clockwise."
 
 
 class MathToOcean(SpectralProcessor):
@@ -194,47 +195,62 @@ class MathToOcean(SpectralProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.OCEAN
 
-    def __call__(self, spec, dirs, freq, spr) -> Tuple:
+    def __call__(self, spec, dirs, freq, spr, inds) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=1)
-        new_dirs = np.mod(-dirs+90, 360)
+        new_dirs = np.mod(-dirs + 90, 360)
         check_that_spectra_are_consistent(spec, new_dirs, freq, expected_dim=1)
-        return spec, new_dirs, freq, spr
+        return spec, new_dirs, freq, spr, inds
 
     def __str__(self):
-        return("Shifting 90 degrees and changing to clockwise.")
+        return "Shifting 90 degrees and changing to clockwise."
 
-def spectral_processor_for_convention_change(current_convention: str, wanted_convention: str) -> SpectralProcessor:
-        """Provides a BoundaryProcessor object for the .change_convention()
-        method of the Boundary objects.
 
-        The conventions to choose from are predetermined:
+def spectral_processor_for_convention_change(
+    current_convention: str, wanted_convention: str
+) -> SpectralProcessor:
+    """Provides a BoundaryProcessor object for the .change_convention()
+    method of the Boundary objects.
 
-        OCEAN:    Oceanic convention
-                    Direction to. North = 0, East = 90.
+    The conventions to choose from are predetermined:
 
-        MET:      Meteorological convention
-                    Direction from. North = 0, East = 90.
+    OCEAN:    Oceanic convention
+                Direction to. North = 0, East = 90.
 
-        MATH:     Mathematical convention
-                    Direction to. North = 90, East = 0.
-        """
+    MET:      Meteorological convention
+                Direction from. North = 0, East = 90.
 
-        dict_of_processors = {
-        SpectralConvention.OCEAN:   {SpectralConvention.MET: OceanToMet(),
-                                    SpectralConvention.MATH: OceanToMath()},
-        SpectralConvention.MET:     {SpectralConvention.OCEAN: MetToOcean(),
-                                    SpectralConvention.MATH: [MetToOcean(), OceanToMath()]},
-        SpectralConvention.MATH:    {SpectralConvention.OCEAN: MathToOcean(),
-                                    SpectralConvention.MET: [MathToOcean(), OceanToMet()]}
-        }
+    MATH:     Mathematical convention
+                Direction to. North = 90, East = 0.
+    """
 
-        if not wanted_convention or (current_convention == wanted_convention):
-            return None
-        if not current_convention in list(dict_of_processors.keys()):
-            raise ValueError (f"Current convention {current_convention} not recognized! (should be {list(dict_of_processors.keys())})")
-        elif not wanted_convention in list(dict_of_processors[current_convention].keys()):
-            raise ValueError (f"Wanted convention {wanted_convention} not recognized! (should be {list(dict_of_processors.keys())})")
-        elif dict_of_processors[current_convention][wanted_convention] is None:
-            raise NotImplementedError(f"Can't process conversion {current_convention} >> {wanted_convention} yet!")
-        else:
-            return dict_of_processors[current_convention][wanted_convention]
+    dict_of_processors = {
+        SpectralConvention.OCEAN: {
+            SpectralConvention.MET: OceanToMet(),
+            SpectralConvention.MATH: OceanToMath(),
+        },
+        SpectralConvention.MET: {
+            SpectralConvention.OCEAN: MetToOcean(),
+            SpectralConvention.MATH: [MetToOcean(), OceanToMath()],
+        },
+        SpectralConvention.MATH: {
+            SpectralConvention.OCEAN: MathToOcean(),
+            SpectralConvention.MET: [MathToOcean(), OceanToMet()],
+        },
+    }
+
+    if not wanted_convention or (current_convention == wanted_convention):
+        return None
+    if not current_convention in list(dict_of_processors.keys()):
+        raise ValueError(
+            f"Current convention {current_convention} not recognized! (should be {list(dict_of_processors.keys())})"
+        )
+    elif not wanted_convention in list(dict_of_processors[current_convention].keys()):
+        raise ValueError(
+            f"Wanted convention {wanted_convention} not recognized! (should be {list(dict_of_processors.keys())})"
+        )
+    elif dict_of_processors[current_convention][wanted_convention] is None:
+        raise NotImplementedError(
+            f"Can't process conversion {current_convention} >> {wanted_convention} yet!"
+        )
+    else:
+        return dict_of_processors[current_convention][wanted_convention]

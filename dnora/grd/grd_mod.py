@@ -55,7 +55,9 @@ class GridMethods:
 
         msg.header(topo_reader, "Importing topography...")
 
-        topo, lon, lat, x, y, zone_number, zone_letter = topo_reader(self, **kwargs)
+        topo, lon, lat, x, y, zone_number, zone_letter, metadata = topo_reader(
+            self, **kwargs
+        )
         print(topo_reader)
 
         if 0 in topo.shape:
@@ -92,6 +94,7 @@ class GridMethods:
             self._raw.set_utm((zone_number, zone_letter))
 
         self.raw().set_topo(topo)
+        self.raw().set_metadata(metadata)
 
     def mesh_grid(self, mesher: Mesher = Interpolate(), **kwargs) -> None:
         """Meshes the raw data down to the grid definitions."""
@@ -117,6 +120,7 @@ class GridMethods:
 
         self.set_topo(topo)
         self.set_sea_mask(self.topo() > 0)
+        self.set_metadata(self.raw().metadata())
 
     def process_grid(self, grid_processor: GridProcessor = None, **kwargs) -> None:
         """Processes the gridded bathymetrical data, e.g. with a filter."""

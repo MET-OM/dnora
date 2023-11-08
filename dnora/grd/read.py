@@ -52,7 +52,16 @@ class TopoReader(ABC):
 
         This method is called from within the Grid-object
         """
-        return topo, topo_lon, topo_lat, topo_x, topo_y, zone_number, zone_letter
+        return (
+            topo,
+            topo_lon,
+            topo_lat,
+            topo_x,
+            topo_y,
+            zone_number,
+            zone_letter,
+            metadata,
+        )
 
     @abstractmethod
     def __str__(self):
@@ -82,6 +91,7 @@ class ConstantTopo(TopoReader):
             grid.y(strict=True),
             zone_number,
             zone_letter,
+            {"source": type(self).__name__},
         )
 
     def __str__(self):
@@ -108,7 +118,7 @@ class EMODNET(TopoReader):
         self.source = f"{folder}/{tile}_{year}.nc"
         # Area is expanded a bit to not get in trouble in the meshing stage
         # when we interpoolate or filter
-        lon, lat = expand_area(grid.lon(), grid.lat(), expansion_factor)
+        lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
 
         def _crop(ds):
             """
@@ -124,7 +134,16 @@ class EMODNET(TopoReader):
                 topo = -1 * ds.elevation.values
                 topo_lon = ds.lon.values
                 topo_lat = ds.lat.values
-                return topo, topo_lon, topo_lat, None, None, None, None
+                return (
+                    topo,
+                    topo_lon,
+                    topo_lat,
+                    None,
+                    None,
+                    None,
+                    None,
+                    {"source": f"EMODNET{year:.0f}"},
+                )
 
     def __str__(self):
         return f"Reading EMODNET topography from {self.source}."
@@ -167,7 +186,7 @@ class KartverketNo50m(TopoReader):
         # Area is expanded a bit to not get in trouble in the meshing stage
         # when we interpoolate or filter
         self.source = f"{folder}/{tile}_grid50_utm{zone_number}.xyz"
-        x, y = expand_area(grid.x(), grid.y(), self.expansion_factor)
+        x, y = expand_area(grid.edges("x"), grid.edges("y"), self.expansion_factor)
 
         print(f"Expansion factor: {self.expansion_factor}")
 
@@ -187,7 +206,16 @@ class KartverketNo50m(TopoReader):
         topo_y = topo_y[mask]
         topo = z[mask]
 
-        return topo, None, None, topo_x, topo_y, zone_number, "W"
+        return (
+            topo,
+            None,
+            None,
+            topo_x,
+            topo_y,
+            zone_number,
+            "W",
+            {"source": "Kartverket50m"},
+        )
 
     def __str__(self):
         return f"Reading Kartverket topography from {self.source}."
@@ -215,7 +243,7 @@ class GEBCO2021(TopoReader):
         # Area is expanded a bit to not get in trouble in the meshing stage
         # when we interpoolate or filter
 
-        lon, lat = expand_area(grid.lon(), grid.lat(), expansion_factor)
+        lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
 
         ds = xr.open_dataset(self.source).sel(
             lon=slice(lon[0], lon[1]), lat=slice(lat[0], lat[1])
@@ -229,7 +257,7 @@ class GEBCO2021(TopoReader):
         topo_lon = ds.lon.values.astype(float)
         topo_lat = ds.lat.values.astype(float)
 
-        return topo, topo_lon, topo_lat, None, None, None, None
+        return topo, topo_lon, topo_lat, None, None, None, None, {"source": "GEBCO2021"}
 
     def __str__(self):
         return f"Reading GEBCO2021 topography from {self.source}."
@@ -276,6 +304,7 @@ class ForceFeed(TopoReader):
             grid.y(strict=True),
             None,
             None,
+            {"source": "ForceFeed"},
         )
 
     def __str__(self):
@@ -314,9 +343,27 @@ class MshFile(TopoReader):
         topo_y = topo_y[mask]
         topo = topo[mask]
         if self.zone_number is None:
-            return topo, topo_x, topo_y, None, None, None, None
+            return (
+                topo,
+                topo_x,
+                topo_y,
+                None,
+                None,
+                None,
+                None,
+                {"source": self.filename},
+            )
         else:
-            return topo, None, None, topo_x, topo_y, zone_number, zone_letter
+            return (
+                topo,
+                None,
+                None,
+                topo_x,
+                topo_y,
+                zone_number,
+                zone_letter,
+                {"source": self.filename},
+            )
 
     def __str__(self):
         return f"Reading topography from {self.filename}."

@@ -19,7 +19,7 @@ from .. import wnd
 
 from ..bnd import Boundary
 from ..bnd.read import BoundaryReader
-from ..pick.point_pickers import PointPicker
+from ..pick.point_pickers import PointPicker, NearestGridPoint
 from .. import bnd
 from .. import pick
 
@@ -69,9 +69,12 @@ DnoraObject = Union[
 
 
 class ModelRun:
+    _reader_dict: dict[DnoraObjectType:ReaderFunction] = {}
+    _point_picker: PointPicker = NearestGridPoint()
+
     def __init__(
         self,
-        grid: Grid = None,
+        grid: Grid | None = None,
         start_time: str = "1970-01-01T00:00",
         end_time: str = "2030-12-31T23:59",
         name: str = "AnonymousModelRun",
@@ -83,12 +86,11 @@ class ModelRun:
         self._exported_to: dict[DnoraObjectType : list[str]] = {}
         self._global_dry_run = dry_run
         self._dry_run = False  # Set by methods
-        self._reader_dict: dict[DnoraObjectType:ReaderFunction] = {}
+
         self._dnora_objects: dict[DnoraObjectType:DnoraObject] = {
             DnoraObjectType.ModelRun: self,
             DnoraObjectType.Grid: grid,
         }
-        self._point_picker = None
         self._consistency_check(
             objects_to_ignore_get=[
                 DnoraObjectType.ModelRun,
@@ -213,28 +215,29 @@ class ModelRun:
             DnoraObjectType.Forcing, name, dry_run, forcing_reader
         )
 
-        if not self.dry_run():
-            time, u, v, lon, lat, x, y, attributes = forcing_reader(
-                grid=self.grid(),
-                start_time=self.start_time(),
-                end_time=self.end_time(),
-                source=source,
-                **kwargs,
-            )
-
-            self[DnoraObjectType.Forcing] = Forcing(
-                lon=lon, lat=lat, x=x, y=y, time=time, name=name
-            )
-            x = x or lon
-            y = y or lat
-            self.forcing().set_spacing(nx=len(x), ny=len(y))
-
-            self.forcing().name = name
-            self.forcing().set_u(u)
-            self.forcing().set_v(v)
-            self.forcing().set_metadata(attributes)
-        else:
+        if self.dry_run():
             msg.info("Dry run! No forcing will be imported.")
+            return
+
+        time, u, v, lon, lat, x, y, attributes = forcing_reader(
+            grid=self.grid(),
+            start_time=self.start_time(),
+            end_time=self.end_time(),
+            source=source,
+            **kwargs,
+        )
+
+        self[DnoraObjectType.Forcing] = Forcing(
+            lon=lon, lat=lat, x=x, y=y, time=time, name=name
+        )
+        x = x or lon
+        y = y or lat
+        self.forcing().set_spacing(nx=len(x), ny=len(y))
+
+        self.forcing().name = name
+        self.forcing().set_u(u)
+        self.forcing().set_v(v)
+        self.forcing().set_metadata(attributes)
 
     @cached_reader(DnoraObjectType.Boundary, bnd.read.DnoraNc)
     def import_boundary(
@@ -260,42 +263,37 @@ class ModelRun:
         boundary_reader, name = self._setup_import(
             DnoraObjectType.Boundary, name, dry_run, boundary_reader
         )
-
         point_picker = self._setup_point_picker(point_picker)
 
         inds = self._pick_points(
             boundary_reader, point_picker, self.grid().boundary_mask(), source, **kwargs
         )
 
-        if not self.dry_run():
-            msg.header(boundary_reader, "Loading boundary spectra...")
-
-            time, freq, dirs, spec, lon, lat, x, y, metadata = boundary_reader(
-                grid=self.grid(),
-                start_time=self.start_time(),
-                end_time=self.end_time(),
-                inds=inds,
-                source=source,
-                **kwargs,
-            )
-            self[DnoraObjectType.Boundary] = Boundary(
-                x=x, y=y, lon=lon, lat=lat, time=time, freq=freq, dirs=dirs, name=name
-            )
-
-            self.boundary().set_spec(spec)
-            self.boundary().set_metadata(metadata)
-            # E.g. are the spectra oceanic convention etc.
-            self.boundary()._convention = boundary_reader.convention()
-
-            self.boundary().set_metadata(
-                {"spectral_convention": self.boundary().convention().value}, append=True
-            )
-
-            if boundary_reader.post_processing() is not None:
-                self.boundary().process_boundary(boundary_reader.post_processing())
-            return
-        else:
+        if self.dry_run():
             msg.info("Dry run! No boundary spectra will be imported.")
+            return
+
+        msg.header(boundary_reader, "Loading boundary spectra...")
+
+        time, freq, dirs, spec, lon, lat, x, y, metadata = boundary_reader(
+            grid=self.grid(),
+            start_time=self.start_time(),
+            end_time=self.end_time(),
+            inds=inds,
+            source=source,
+            **kwargs,
+        )
+        self[DnoraObjectType.Boundary] = Boundary(
+            x=x, y=y, lon=lon, lat=lat, time=time, freq=freq, dirs=dirs, name=name
+        )
+
+        self.boundary().set_spec(spec)
+        self.boundary().set_metadata(metadata)
+        # E.g. are the spectra oceanic convention etc.
+        self.boundary()._mark_convention(boundary_reader.convention())
+
+        if boundary_reader.post_processing() is not None:
+            self.boundary().process_boundary(boundary_reader.post_processing())
 
     @cached_reader(DnoraObjectType.Spectra, spc.read.DnoraNc)
     def import_spectra(
@@ -327,34 +325,32 @@ class ModelRun:
             spectral_reader, point_picker, self.grid().boundary_mask(), source, **kwargs
         )
 
-        if not self.dry_run():
-            msg.header(spectral_reader, "Loading omnidirectional spectra...")
-            time, freq, spec, mdir, spr, lon, lat, x, y, metadata = spectral_reader(
-                grid=self.grid(),
-                start_time=self.start_time(),
-                end_time=self.end_time(),
-                inds=inds,
-                source=source,
-                **kwargs,
-            )
-
-            self[DnoraObjectType.Spectra] = Spectra(
-                x=x, y=y, lon=lon, lat=lat, time=time, freq=freq, name=name
-            )
-
-            self.spectra().set_spec(spec)
-            self.spectra().set_mdir(mdir)
-            self.spectra().set_spr(spr)
-
-            self.spectra().set_metadata(metadata)
-
-            # E.g. are the spectra oceanic convention etc.
-            self.spectra()._convention = spectral_reader.convention()
-            self.spectra().set_metadata(
-                {"spectral_convention": self.spectra().convention().value}, append=True
-            )
-        else:
+        if self.dry_run():
             msg.info("Dry run! No spectra will be imported.")
+            return
+
+        msg.header(spectral_reader, "Loading omnidirectional spectra...")
+        time, freq, spec, mdir, spr, lon, lat, x, y, metadata = spectral_reader(
+            grid=self.grid(),
+            start_time=self.start_time(),
+            end_time=self.end_time(),
+            inds=inds,
+            source=source,
+            **kwargs,
+        )
+
+        self[DnoraObjectType.Spectra] = Spectra(
+            x=x, y=y, lon=lon, lat=lat, time=time, freq=freq, name=name
+        )
+
+        self.spectra().set_spec(spec)
+        self.spectra().set_mdir(mdir)
+        self.spectra().set_spr(spr)
+
+        self.spectra().set_metadata(metadata)
+
+        # E.g. are the spectra oceanic convention etc.
+        self.spectra()._mark_convention(spectral_reader.convention())
 
     @cached_reader(DnoraObjectType.WaveSeries, wsr.read.DnoraNc)
     def import_waveseries(
@@ -380,38 +376,39 @@ class ModelRun:
             **kwargs,
         )
 
-        if not self.dry_run():
-            msg.header(waveseries_reader, "Loading wave series data...")
-            time, data_dict, lon, lat, x, y, metadata = waveseries_reader(
-                grid=self.grid(),
-                start_time=self.start_time(),
-                end_time=self.end_time(),
-                inds=inds,
-                source=source,
-                **kwargs,
-            )
-
-            self[DnoraObjectType.WaveSeries] = WaveSeries(
-                x, y, lon, lat, time=time, name=name
-            )
-
-            for wp, data in data_dict.items():
-                self._waveseries = add_datavar(wp.name(), append=True)(
-                    self.waveseries()
-                )  # Creates .hs() etc. methods
-                self.waveseries()._update_datavar(wp.name(), data)
-                self.waveseries().set_metadata(
-                    {
-                        "name": wp.name(),
-                        "unit": f"{wp.unit()}",
-                        "standard_name": wp.standard_name(),
-                    },
-                    data_array_name=wp.name(),
-                )
-
-            self.waveseries().set_metadata(metadata)  # Global attributes
-        else:
+        if self.dry_run():
             msg.info("Dry run! No waveseries will be imported.")
+            return
+
+        msg.header(waveseries_reader, "Loading wave series data...")
+        time, data_dict, lon, lat, x, y, metadata = waveseries_reader(
+            grid=self.grid(),
+            start_time=self.start_time(),
+            end_time=self.end_time(),
+            inds=inds,
+            source=source,
+            **kwargs,
+        )
+
+        self[DnoraObjectType.WaveSeries] = WaveSeries(
+            x, y, lon, lat, time=time, name=name
+        )
+
+        for wp, data in data_dict.items():
+            self._waveseries = add_datavar(wp.name(), append=True)(
+                self.waveseries()
+            )  # Creates .hs() etc. methods
+            self.waveseries()._update_datavar(wp.name(), data)
+            self.waveseries().set_metadata(
+                {
+                    "name": wp.name(),
+                    "unit": f"{wp.unit()}",
+                    "standard_name": wp.standard_name(),
+                },
+                data_array_name=wp.name(),
+            )
+
+        self.waveseries().set_metadata(metadata)  # Global attributes
 
     @cached_reader(DnoraObjectType.WaterLevel, wlv.read.DnoraNc)
     def import_waterlevel(
@@ -435,24 +432,25 @@ class ModelRun:
             DnoraObjectType.WaterLevel, name, dry_run, waterlevel_reader
         )
 
-        if not self.dry_run():
-            time, waterlevel, lon, lat, x, y, attributes = waterlevel_reader(
-                grid=self.grid(),
-                start_time=self.start_time(),
-                end_time=self.end_time(),
-                source=source,
-                **kwargs,
-            )
-            self[DnoraObjectType.WaterLevel] = WaterLevel(
-                lon=lon, lat=lat, x=x, y=y, time=time, name=name
-            )
-            self.waterlevel().set_spacing(nx=len(x or lon), ny=len(y or lat))
-
-            self.waterlevel().name = name
-            self.waterlevel().set_waterlevel(waterlevel)
-            self.waterlevel().set_metadata(attributes)
-        else:
+        if self.dry_run():
             msg.info("Dry run! No water level data will be imported.")
+            return
+
+        time, waterlevel, lon, lat, x, y, attributes = waterlevel_reader(
+            grid=self.grid(),
+            start_time=self.start_time(),
+            end_time=self.end_time(),
+            source=source,
+            **kwargs,
+        )
+        self[DnoraObjectType.WaterLevel] = WaterLevel(
+            lon=lon, lat=lat, x=x, y=y, time=time, name=name
+        )
+        self.waterlevel().set_spacing(nx=len(x or lon), ny=len(y or lat))
+
+        self.waterlevel().name = name
+        self.waterlevel().set_waterlevel(waterlevel)
+        self.waterlevel().set_metadata(attributes)
 
     @cached_reader(DnoraObjectType.OceanCurrent, ocr.read.DnoraNc)
     def import_oceancurrent(
@@ -476,27 +474,26 @@ class ModelRun:
             DnoraObjectType.OceanCurrent, name, dry_run, oceancurrent_reader
         )
 
-        if not self.dry_run():
-            time, u, v, lon, lat, x, y, attributes = oceancurrent_reader(
-                grid=self.grid(),
-                start_time=self.start_time(),
-                end_time=self.end_time(),
-                source=source,
-                **kwargs,
-            )
-            self[DnoraObjectType.OceanCurrent] = OceanCurrent(
-                lon=lon, lat=lat, x=x, y=y, time=time, name=name
-            )
-            x = x or lon
-            y = y or lat
-            self.oceancurrent().set_spacing(nx=len(x), ny=len(y))
+        if self.dry_run():
+            msg.info("Dry run! No ocean current data will be imported.")
+            return
 
-            self.oceancurrent().name = name
-            self.oceancurrent().set_u(u)
-            self.oceancurrent().set_v(v)
-            self.oceancurrent().set_metadata(attributes)
-        else:
-            msg.info("Dry run! No water level data will be imported.")
+        time, u, v, lon, lat, x, y, attributes = oceancurrent_reader(
+            grid=self.grid(),
+            start_time=self.start_time(),
+            end_time=self.end_time(),
+            source=source,
+            **kwargs,
+        )
+        self[DnoraObjectType.OceanCurrent] = OceanCurrent(
+            lon=lon, lat=lat, x=x, y=y, time=time, name=name
+        )
+        self.oceancurrent().set_spacing(nx=len(x or lon), ny=len(y or lat))
+
+        self.oceancurrent().name = name
+        self.oceancurrent().set_u(u)
+        self.oceancurrent().set_v(v)
+        self.oceancurrent().set_metadata(attributes)
 
     @cached_reader(DnoraObjectType.IceForcing, ice.read.DnoraNc)
     def import_iceforcing(
@@ -519,36 +516,35 @@ class ModelRun:
         iceforcing_reader, name = self._setup_import(
             DnoraObjectType.IceForcing, name, dry_run, iceforcing_reader
         )
-        if not self.dry_run():
-            (
-                time,
-                concentration,
-                thickness,
-                lon,
-                lat,
-                x,
-                y,
-                attributes,
-            ) = iceforcing_reader(
-                grid=self.grid(),
-                start_time=self.start_time(),
-                end_time=self.end_time(),
-                source=source,
-                **kwargs,
-            )
-            self[DnoraObjectType.IceForcing] = IceForcing(
-                lon=lon, lat=lat, x=x, y=y, time=time, name=name
-            )
-            x = x or lon
-            y = y or lat
-            self.iceforcing().set_spacing(nx=len(x), ny=len(y))
-
-            self.iceforcing().name = name
-            self.iceforcing().set_concentration(concentration)
-            self.iceforcing().set_thickness(thickness)
-            self.iceforcing().set_metadata(attributes)
-        else:
+        if self.dry_run():
             msg.info("Dry run! No ice forcing data will be imported.")
+            return
+        (
+            time,
+            concentration,
+            thickness,
+            lon,
+            lat,
+            x,
+            y,
+            attributes,
+        ) = iceforcing_reader(
+            grid=self.grid(),
+            start_time=self.start_time(),
+            end_time=self.end_time(),
+            source=source,
+            **kwargs,
+        )
+        self[DnoraObjectType.IceForcing] = IceForcing(
+            lon=lon, lat=lat, x=x, y=y, time=time, name=name
+        )
+
+        self.iceforcing().set_spacing(nx=len(x or lon), ny=len(y or lat))
+
+        self.iceforcing().name = name
+        self.iceforcing().set_concentration(concentration)
+        self.iceforcing().set_thickness(thickness)
+        self.iceforcing().set_metadata(attributes)
 
     def boundary_to_spectra(
         self,
@@ -560,24 +556,27 @@ class ModelRun:
         self._dry_run = dry_run
         if self.boundary() is None:
             msg.warning("No Boundary to convert to Spectra!")
+            return
 
         spectral_reader = spc.read.BoundaryToSpectra(self.boundary())
         msg.header(
             spectral_reader,
             "Converting the boundary spectra to omnidirectional spectra...",
         )
+
         name = self.boundary().name
 
-        if not self.dry_run():
-            self.import_spectra(
-                spectral_reader=spectral_reader,
-                point_picker=pick.TrivialPicker(),
-                name=name,
-                write_cache=write_cache,
-                **kwargs,
-            )
-        else:
+        if self.dry_run():
             msg.info("Dry run! No boundary will not be converted to spectra.")
+            return
+
+        self.import_spectra(
+            spectral_reader=spectral_reader,
+            point_picker=pick.TrivialPicker(),
+            name=name,
+            write_cache=write_cache,
+            **kwargs,
+        )
 
     def spectra_to_waveseries(
         self,
@@ -590,23 +589,23 @@ class ModelRun:
         if self.spectra() is None:
             msg.warning("No Spectra to convert to WaveSeries!")
             return
+
         name = self.spectra().name
 
-        if not self.dry_run():
-            waveseries_reader = SpectraToWaveSeries(self.spectra(), freq)
-            msg.header(
-                waveseries_reader, "Converting the spectra to wave series data..."
-            )
-
-            self.import_waveseries(
-                waveseries_reader=waveseries_reader,
-                point_picker=pick.TrivialPicker(),
-                name=name,
-                write_cache=write_cache,
-                **kwargs,
-            )
-        else:
+        if self.dry_run():
             msg.info("Dry run! No boundary will not be converted to spectra.")
+            return
+
+        waveseries_reader = SpectraToWaveSeries(self.spectra(), freq)
+        msg.header(waveseries_reader, "Converting the spectra to wave series data...")
+
+        self.import_waveseries(
+            waveseries_reader=waveseries_reader,
+            point_picker=pick.TrivialPicker(),
+            name=name,
+            write_cache=write_cache,
+            **kwargs,
+        )
 
     def boundary_to_waveseries(
         self,
@@ -853,7 +852,7 @@ class ModelRun:
     def __setitem__(self, key: DnoraObjectType, value: DnoraObject):
         self._dnora_objects[key] = value
 
-    def _get_reader(self, obj_type: str):
+    def _get_reader(self, obj_type: DnoraObjectType):
         return self._reader_dict.get(obj_type)
 
     def _get_point_picker(self) -> PointPicker:

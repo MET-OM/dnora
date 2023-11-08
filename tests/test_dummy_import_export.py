@@ -3,6 +3,8 @@ from dnora.bnd.conventions import SpectralConvention
 import pandas as pd
 import numpy as np
 
+from dnora.dnora_object_type import DnoraObjectType
+
 
 def get_freq_and_dir_vector(math=False):
     f = np.linspace(0.1, 1, 10)  # np.loadtxt('data/freq.test')
@@ -36,7 +38,13 @@ def test_import_export():
     model.spectra_to_waveseries()
     model.import_waterlevel(wlv.read.ConstantWaterLevel())
 
-    for obj_type in ["Forcing", "Boundary", "Spectra", "WaveSeries"]:
+    for obj_type in [
+        DnoraObjectType.Forcing,
+        DnoraObjectType.Boundary,
+        DnoraObjectType.Spectra,
+        DnoraObjectType.WaveSeries,
+        DnoraObjectType.WaterLevel,
+    ]:
         assert model[obj_type] is not None
 
     exporter = exp.NullExporter(model)
@@ -79,7 +87,7 @@ def test_conventions():
     assert mdir == 180
 
     # Meteorological convention
-    model.boundary()._set_convention(SpectralConvention.MET)
+    model.boundary().set_convention(SpectralConvention.MET)
     assert model.boundary().convention() == SpectralConvention.MET
     np.testing.assert_array_almost_equal(model.boundary().dirs(), D)
     np.testing.assert_array_almost_equal(model.boundary().freq(), f)
@@ -96,7 +104,7 @@ def test_conventions():
     assert mdir == 180
 
     # Mathematical convention (directional vector still starts from 0!)
-    model.boundary()._set_convention(SpectralConvention.MATH)
+    model.boundary().set_convention(SpectralConvention.MATH)
     assert model.boundary().convention() == SpectralConvention.MATH
     np.testing.assert_array_almost_equal(model.boundary().dirs(), D)
     np.testing.assert_array_almost_equal(model.boundary().freq(), f)
@@ -114,7 +122,7 @@ def test_conventions():
 
     f, D = get_freq_and_dir_vector(math=True)
     # WW3 convention (Oceanic, but vector starts from 90 downwards)
-    model.boundary()._set_convention(SpectralConvention.WW3)
+    model.boundary().set_convention(SpectralConvention.WW3)
     assert model.boundary().convention() == SpectralConvention.WW3
     np.testing.assert_array_almost_equal(model.boundary().dirs(), D)
     np.testing.assert_array_almost_equal(model.boundary().freq(), f)
@@ -131,7 +139,7 @@ def test_conventions():
     assert mdir == 180
 
     # MATHVEC convention (MAthematical and vector starts from 90 downwards)
-    model.boundary()._set_convention(SpectralConvention.MATHVEC)
+    model.boundary().set_convention(SpectralConvention.MATHVEC)
     assert model.boundary().convention() == SpectralConvention.MATHVEC
     np.testing.assert_array_almost_equal(model.boundary().dirs(), D)
     np.testing.assert_array_almost_equal(model.boundary().freq(), f)
