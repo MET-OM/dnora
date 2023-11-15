@@ -11,6 +11,7 @@ from ..grd.grd_mod import Grid, TriGrid
 
 from ..file_module import FileNames
 from ..dnora_object_type import DnoraObjectType
+from ..data_sources import DataSource
 
 # Import abstract classes and needed instances of them
 from ..wnd import Forcing
@@ -53,6 +54,7 @@ from .. import msg
 from ..cacher.cache_decorator import cached_reader
 from ..converters import convert_swash_mat_to_netcdf
 from pathlib import Path
+from ..defaults.default_reader import data_sources
 
 ReaderFunction = Union[
     ForcingReader,
@@ -129,6 +131,8 @@ class ModelRun:
         name: str,
         dry_run: bool,
         reader: ReaderFunction,
+        source: str,
+        folder: str,
     ) -> tuple[ReaderFunction, str]:
         """Sets up readers, names and dry runs porperties for import of object."""
 
@@ -146,7 +150,20 @@ class ModelRun:
             )
 
         msg.header(reader, f"Importing {obj_type.name}...")
-        return reader, name
+
+        if folder and source is None:
+            source = "local"
+
+        if source in ["internal", "local"]:
+            if folder is None:
+                folder = data_sources(source)
+        elif source == "remote":
+            folder = ""
+        else:
+            raise ValueError(
+                f"source should be 'local', 'internal', or 'remote', not {source}!"
+            )
+        return reader, name, DataSource[source.upper()], folder
 
     def _setup_point_picker(self, point_picker: PointPicker):
         """Sets up point picker using possible default values."""
@@ -161,12 +178,16 @@ class ModelRun:
         point_picker: PointPicker,
         mask_of_points: np.ndarray[bool],
         source: str,
+        folder: str,
         **kwargs,
     ):
         """Gets the indeces of the point defined by the logical mask with respect to all points available from the reader function."""
         if not self.dry_run():
             lon_all, lat_all, x_all, y_all = reader.get_coordinates(
-                grid=self.grid(), start_time=self.start_time(), source=source
+                grid=self.grid(),
+                start_time=self.start_time(),
+                source=source,
+                folder=folder,
             )
 
             all_points = PointSkeleton(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
@@ -185,6 +206,7 @@ class ModelRun:
                 selected_points=interest_points,
                 **kwargs,
             )
+
             if len(inds) < 1:
                 msg.warning(
                     "PointPicker didn't find any points. Aborting import of boundary."
@@ -198,7 +220,8 @@ class ModelRun:
         forcing_reader: ForcingReader | None = None,
         name: str | None = None,
         dry_run: bool = False,
-        source: str = "remote",
+        source: str = None,
+        folder: str = None,
         **kwargs,
     ) -> None:
         """Imports wind forcing.
@@ -211,8 +234,8 @@ class ModelRun:
         To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
         """
 
-        forcing_reader, name = self._setup_import(
-            DnoraObjectType.Forcing, name, dry_run, forcing_reader
+        forcing_reader, name, source, folder = self._setup_import(
+            DnoraObjectType.Forcing, name, dry_run, forcing_reader, source, folder
         )
 
         if self.dry_run():
@@ -224,6 +247,7 @@ class ModelRun:
             start_time=self.start_time(),
             end_time=self.end_time(),
             source=source,
+            folder=folder,
             **kwargs,
         )
 
@@ -246,27 +270,34 @@ class ModelRun:
         point_picker: PointPicker | None = None,
         name: str | None = None,
         dry_run: bool = False,
-        source: str = "remote",
+        source: str = None,
+        folder: str = None,
         **kwargs,
     ):
         """Imports boundary spectra. Which spectra to choose spatically
         are determined by the point_picker.
 
-        source = 'remote' (default) / '<folder>' / 'met'
+        source = 'remote' / 'internal' / 'local'
+
+        If 'folder' is set, then source is assumed to be 'local'
 
         The implementation of this is up to the BoundaryReader, and all options might not be functional.
-        'met' options will only work in MET Norway internal networks.
 
         To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
         """
 
-        boundary_reader, name = self._setup_import(
-            DnoraObjectType.Boundary, name, dry_run, boundary_reader
+        boundary_reader, name, source, folder = self._setup_import(
+            DnoraObjectType.Boundary, name, dry_run, boundary_reader, source, folder
         )
         point_picker = self._setup_point_picker(point_picker)
 
         inds = self._pick_points(
-            boundary_reader, point_picker, self.grid().boundary_mask(), source, **kwargs
+            boundary_reader,
+            point_picker,
+            self.grid().boundary_mask(),
+            source,
+            folder,
+            **kwargs,
         )
 
         if self.dry_run():
@@ -281,6 +312,7 @@ class ModelRun:
             end_time=self.end_time(),
             inds=inds,
             source=source,
+            folder=folder,
             **kwargs,
         )
         self[DnoraObjectType.Boundary] = Boundary(
@@ -302,7 +334,8 @@ class ModelRun:
         point_picker: PointPicker | None = None,
         name: str | None = None,
         dry_run: bool = False,
-        source: str = "remote",
+        source: str = None,
+        folder: str = None,
         **kwargs,
     ):
         """Imports spectra. Which spectra to choose spatically
@@ -315,14 +348,19 @@ class ModelRun:
 
         To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
         """
-        spectral_reader, name = self._setup_import(
-            DnoraObjectType.Spectra, name, dry_run, spectral_reader
+        spectral_reader, name, source, folder = self._setup_import(
+            DnoraObjectType.Spectra, name, dry_run, spectral_reader, source, folder
         )
 
         point_picker = self._setup_point_picker(point_picker)
 
         inds = self._pick_points(
-            spectral_reader, point_picker, self.grid().boundary_mask(), source, **kwargs
+            spectral_reader,
+            point_picker,
+            self.grid().boundary_mask(),
+            source,
+            folder,
+            **kwargs,
         )
 
         if self.dry_run():
@@ -336,6 +374,7 @@ class ModelRun:
             end_time=self.end_time(),
             inds=inds,
             source=source,
+            folder=folder,
             **kwargs,
         )
 
@@ -359,11 +398,12 @@ class ModelRun:
         point_picker: PointPicker | None = None,
         name: str | None = None,
         dry_run: bool = False,
-        source: str = "remote",
+        source: str = None,
+        folder: str = None,
         **kwargs,
     ):
-        waveseries_reader, name = self._setup_import(
-            DnoraObjectType.WaveSeries, name, dry_run, waveseries_reader
+        waveseries_reader, name, source, folder = self._setup_import(
+            DnoraObjectType.WaveSeries, name, dry_run, waveseries_reader, source, folder
         )
 
         point_picker = self._setup_point_picker(point_picker)
@@ -373,6 +413,7 @@ class ModelRun:
             point_picker,
             self.grid().boundary_mask(),
             source,
+            folder,
             **kwargs,
         )
 
@@ -387,6 +428,7 @@ class ModelRun:
             end_time=self.end_time(),
             inds=inds,
             source=source,
+            folder=folder,
             **kwargs,
         )
 
@@ -416,7 +458,8 @@ class ModelRun:
         waterlevel_reader: WaterLevelReader | None = None,
         name: str | None = None,
         dry_run: bool = False,
-        source: str = "remote",
+        source: str = None,
+        folder: str = None,
         **kwargs,
     ) -> None:
         """Imports waterlevel.
@@ -428,8 +471,8 @@ class ModelRun:
 
         To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
         """
-        waterlevel_reader, name = self._setup_import(
-            DnoraObjectType.WaterLevel, name, dry_run, waterlevel_reader
+        waterlevel_reader, name, source, folder = self._setup_import(
+            DnoraObjectType.WaterLevel, name, dry_run, waterlevel_reader, source, folder
         )
 
         if self.dry_run():
@@ -441,6 +484,7 @@ class ModelRun:
             start_time=self.start_time(),
             end_time=self.end_time(),
             source=source,
+            folder=folder,
             **kwargs,
         )
         self[DnoraObjectType.WaterLevel] = WaterLevel(
@@ -458,7 +502,8 @@ class ModelRun:
         oceancurrent_reader: OceanCurrentReader | None = None,
         name: str | None = None,
         dry_run: bool = False,
-        source: str = "remote",
+        source: str = None,
+        folder: str = None,
         **kwargs,
     ) -> None:
         """Imports waterlevel.
@@ -470,8 +515,13 @@ class ModelRun:
 
         To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
         """
-        oceancurrent_reader, name = self._setup_import(
-            DnoraObjectType.OceanCurrent, name, dry_run, oceancurrent_reader
+        oceancurrent_reader, name, source, folder = self._setup_import(
+            DnoraObjectType.OceanCurrent,
+            name,
+            dry_run,
+            oceancurrent_reader,
+            source,
+            folder,
         )
 
         if self.dry_run():
@@ -483,6 +533,7 @@ class ModelRun:
             start_time=self.start_time(),
             end_time=self.end_time(),
             source=source,
+            folder=folder,
             **kwargs,
         )
         self[DnoraObjectType.OceanCurrent] = OceanCurrent(
@@ -501,7 +552,8 @@ class ModelRun:
         iceforcing_reader: IceForcingReader | None = None,
         name: str | None = None,
         dry_run: bool = False,
-        source: str = "remote",
+        source: str = None,
+        folder: str = None,
         **kwargs,
     ) -> None:
         """Imports waterlevel.
@@ -513,8 +565,8 @@ class ModelRun:
 
         To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
         """
-        iceforcing_reader, name = self._setup_import(
-            DnoraObjectType.IceForcing, name, dry_run, iceforcing_reader
+        iceforcing_reader, name, source, folder = self._setup_import(
+            DnoraObjectType.IceForcing, name, dry_run, iceforcing_reader, source, folder
         )
         if self.dry_run():
             msg.info("Dry run! No ice forcing data will be imported.")
@@ -533,6 +585,7 @@ class ModelRun:
             start_time=self.start_time(),
             end_time=self.end_time(),
             source=source,
+            folder=folder,
             **kwargs,
         )
         self[DnoraObjectType.IceForcing] = IceForcing(

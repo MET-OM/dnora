@@ -11,9 +11,21 @@ from ..aux_funcs import expand_area
 
 from typing import Union
 
+from ..defaults.default_reader import read_defaults
+
 
 class TopoReader(ABC):
     """Abstract class for reading the bathymetry."""
+
+    def local(self) -> str:
+        """Returns the default local folder"""
+        defaults = read_defaults("data_sources.yml", from_module=True)
+        return defaults["local"]
+
+    def internal(self) -> str:
+        """Returns the default internal folder"""
+        defaults = read_defaults("data_sources.yml", from_module=True)
+        return defaults["internal"]
 
     @abstractmethod
     def __call__(self, grid: Union[Grid, UnstrGrid], **kwargs):

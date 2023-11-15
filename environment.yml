@@ -20,3 +20,4 @@ dependencies:
   - cdsapi
   - geopy
   - pint
+  - python-dotenv

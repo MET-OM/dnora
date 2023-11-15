@@ -38,7 +38,7 @@ class WAM4km(BoundaryReader):
     def post_processing(self):
         return RemoveEmpty()
 
-    def get_coordinates(self, grid, start_time, source: str) -> Tuple:
+    def get_coordinates(self, grid, start_time, source: str, folder: str) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
 
         start_times, end_times, file_times = create_time_stamps(
@@ -59,7 +59,7 @@ class WAM4km(BoundaryReader):
         return lon_all, lat_all, None, None
 
     def __call__(
-        self, grid, start_time, end_time, inds, source: str, **kwargs
+        self, grid, start_time, end_time, inds, source: str, folder: str, **kwargs
     ) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
@@ -165,7 +165,7 @@ class WAM4km(BoundaryReader):
         return True
 
     @staticmethod
-    def get_url(day, source: str):
+    def get_url(day, source: str, folder: str):
         if source == "remote":
             return (
                 "https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/"
@@ -180,9 +180,9 @@ class WAM4km(BoundaryReader):
                 + day.strftime("%H")
                 + "Z.nc"
             )
-        if source == "met":
+        if source == "internal":
             return (
-                "/lustre/storeB/project/fou/om/xxxxxxxxx/"
+                f"{folder}/xxxxxxxxx/"
                 + day.strftime("%Y")
                 + "/"
                 + day.strftime("%m")
@@ -190,7 +190,7 @@ class WAM4km(BoundaryReader):
                 + day.strftime("%Y%m%d")
             )
         else:
-            return source + "/MyWave_wam4_SPC_" + day.strftime("%Y%m%d")
+            return folder + "/MyWave_wam4_SPC_" + day.strftime("%Y%m%d")
 
 
 class NORA3(BoundaryReader):
@@ -209,7 +209,7 @@ class NORA3(BoundaryReader):
     def convention(self) -> str:
         return SpectralConvention.OCEAN
 
-    def get_coordinates(self, grid, start_time, source: str) -> Tuple:
+    def get_coordinates(self, grid, start_time, source: str, folder: str) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         start_times, end_times, file_times = create_time_stamps(
             start_time,
@@ -219,7 +219,7 @@ class NORA3(BoundaryReader):
             last_file=self.last_file,
             lead_time=self.lead_time,
         )
-        url = self.get_url(file_times[0], source)
+        url = self.get_url(file_times[0], source, folder)
         data = xr.open_dataset(url).isel(time=[0])
 
         lon_all = data.longitude.values[0]
@@ -228,7 +228,7 @@ class NORA3(BoundaryReader):
         return lon_all, lat_all, None, None
 
     def __call__(
-        self, grid, start_time, end_time, inds, source: str, **kwargs
+        self, grid, start_time, end_time, inds, source: str, folder: str, **kwargs
     ) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
@@ -248,7 +248,7 @@ class NORA3(BoundaryReader):
         )
         bnd_list = []
         for n in range(len(file_times)):
-            url = self.get_url(file_times[n], source)
+            url = self.get_url(file_times[n], source, folder)
             msg.from_file(url)
             msg.plain(f"Reading boundary spectra: {start_times[n]}-{end_times[n]}")
             with xr.open_dataset(url) as f:
@@ -270,7 +270,7 @@ class NORA3(BoundaryReader):
         return time, freq, dirs, spec, lon, lat, None, None, bnd.attrs
 
     @staticmethod
-    def get_url(day, source) -> str:
+    def get_url(day, source: str, folder: str) -> str:
         if source == "remote":
             return (
                 "https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/"
@@ -281,9 +281,9 @@ class NORA3(BoundaryReader):
                 + day.strftime("%Y%m%d")
                 + "00.nc"
             )
-        if source == "met":
+        if source == "internal":
             return (
-                "/lustre/storeB/project/fou/om/WINDSURFER/mw3hindcast/spectra/"
+                f"{folder}WINDSURFER/mw3hindcast/spectra/"
                 + day.strftime("%Y")
                 + "/"
                 + day.strftime("%m")
@@ -292,7 +292,7 @@ class NORA3(BoundaryReader):
                 + "00.nc"
             )
         else:
-            return source + "/SPC" + day.strftime("%Y%m%d") + "00.nc"
+            return folder + "/SPC" + day.strftime("%Y%m%d") + "00.nc"
 
 
 class WW3_4km(BoundaryReader):
@@ -323,7 +323,7 @@ class WW3_4km(BoundaryReader):
     def post_processing(self):
         return RemoveEmpty()
 
-    def get_coordinates(self, start_time, source: str) -> Tuple:
+    def get_coordinates(self, start_time, source: str, folder: str) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
 
         start_times, end_times, file_times = create_time_stamps(
@@ -334,7 +334,7 @@ class WW3_4km(BoundaryReader):
             last_file=self.last_file,
             lead_time=self.lead_time,
         )
-        url = self.get_url(file_times[0])
+        url = self.get_url(file_times[0], source, folder)
 
         data = xr.open_dataset(url).isel(time=[0])
 
@@ -343,7 +343,7 @@ class WW3_4km(BoundaryReader):
 
         return lon_all, lat_all
 
-    def __call__(self, start_time, end_time, inds, source: str) -> Tuple:
+    def __call__(self, start_time, end_time, inds, source: str, folder: str) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time
@@ -368,7 +368,7 @@ class WW3_4km(BoundaryReader):
             ct = 1
             keep_trying = True
             while keep_trying:
-                url = self.get_url(file_time)
+                url = self.get_url(file_time, source, folder)
                 try:
                     with xr.open_dataset(url) as f:
                         this_ds = f.sel(
@@ -448,20 +448,53 @@ class WW3_4km(BoundaryReader):
         return True
 
     @staticmethod
-    def get_url(day):
-        url = (
-            "https://thredds.met.no/thredds/dodsC/ww3_4km_archive_files/"
-            + day.strftime("%Y")
-            + "/"
-            + day.strftime("%m")
-            + "/"
-            + day.strftime("%d")
-            + "/ww3_4km_"
-            + self.tile
-            + "_SPC_"
-            + day.strftime("%Y%m%d")
-            + "T"
-            + day.strftime("%H")
-            + "Z.nc"
-        )
+    def get_url(day, source, folder):
+        if source == "remote":
+            url = (
+                "https://thredds.met.no/thredds/dodsC/ww3_4km_archive_files/"
+                + day.strftime("%Y")
+                + "/"
+                + day.strftime("%m")
+                + "/"
+                + day.strftime("%d")
+                + "/ww3_4km_"
+                + self.tile
+                + "_SPC_"
+                + day.strftime("%Y%m%d")
+                + "T"
+                + day.strftime("%H")
+                + "Z.nc"
+            )
+        elif source == "internal":
+            url = (
+                f"{folder}/xxxxx/"
+                + +day.strftime("%Y")
+                + "/"
+                + day.strftime("%m")
+                + "/"
+                + day.strftime("%d")
+                + "/ww3_4km_"
+                + self.tile
+                + "_SPC_"
+                + day.strftime("%Y%m%d")
+                + "T"
+                + day.strftime("%H")
+                + "Z.nc"
+            )
+        else:
+            url = (
+                f"{folder}/"
+                + +day.strftime("%Y")
+                + "/"
+                + day.strftime("%m")
+                + "/"
+                + day.strftime("%d")
+                + "/ww3_4km_"
+                + self.tile
+                + "_SPC_"
+                + day.strftime("%Y%m%d")
+                + "T"
+                + day.strftime("%H")
+                + "Z.nc"
+            )
         return url
