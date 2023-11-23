@@ -26,6 +26,15 @@ def test_dnora(model):
     exporter.export_waveseries()
 
 
+def test_cache(model):
+    exporter = exp.Cacher(model)
+    exporter.export_boundary()
+    exporter.export_forcing()
+    exporter.export_spectra()
+    exporter.export_waveseries()
+    exporter.write_input_file()
+
+
 def test_swan(model):
     exporter = exp.SWAN(model)
     exporter.export_boundary()
@@ -33,11 +42,6 @@ def test_swan(model):
     exporter.export_spectra()
     exporter.export_waveseries()
     exporter.write_input_file()
-
-    exporter.cache_boundary()
-    exporter.cache_forcing()
-    exporter.cache_spectra()
-    exporter.cache_waveseries()
 
 
 def test_ww3(model):

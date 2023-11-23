@@ -45,7 +45,28 @@ class ForcingReader(ABC):
         return DataSource.UNDEFINED
 
 
-class ConstantForcing(DataReader):
+class ConstantForcing(ForcingReader):
+    def __init__(self, u: float = 1, v: float = 2, metadata: dict = None):
+        self.u = u
+        self.v = v
+        self.metadata = metadata
+
+    def __call__(self, grid, start_time, end_time, source: DataSource, **kwargs):
+        time = pd.date_range(start=start_time, end=end_time, freq="H").values
+
+        lon = grid.lon(strict=True)
+        lat = grid.lat(strict=True)
+        x = grid.x(strict=True)
+        y = grid.y(strict=True)
+
+        u = np.full((len(time), grid.ny(), grid.nx()), self.u)
+        v = np.full((len(time), grid.ny(), grid.nx()), self.v)
+        metadata = {"metadata": "this is a constant forcing"}
+
+        return time, u, v, lon, lat, x, y, metadata
+
+
+class ConstantForcing2(DataReader):
     def __init__(self, u: float = 1, v: float = 2, metadata: dict = None):
         self.u = u
         self.v = v

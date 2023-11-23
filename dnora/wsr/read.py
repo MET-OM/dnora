@@ -140,10 +140,7 @@ class SpectraToWaveSeries(WaveSeriesReader):
         self._freq = freq
 
     def get_coordinates(
-        self,
-        grid,
-        start_time: str,
-        source: DataSource,
+        self, grid, start_time: str, source: DataSource, folder: str
     ) -> tuple[np.ndarray, np.ndarray]:
         return (
             self._spectra.lon(strict=True),
@@ -209,10 +206,7 @@ class DnoraNc(WaveSeriesReader):
         self.files = files
 
     def get_coordinates(
-        self,
-        grid,
-        start_time,
-        source: DataSource,
+        self, grid, start_time, source: DataSource, folder: str
     ) -> tuple:
         data = xr.open_dataset(self.files[0]).isel(time=[0])
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(data)
@@ -276,10 +270,7 @@ class E39(WaveSeriesReader):
             return self._buoy_dict()[self._loc]
 
     def get_coordinates(
-        self,
-        grid,
-        start_time,
-        source: DataSource,
+        self, grid, start_time, source: DataSource, folder: str
     ) -> tuple:
         start_time = pd.to_datetime(start_time)
         url = self.get_url(start_time, self.loc(), source)
@@ -361,10 +352,7 @@ class WW3Nc(WaveSeriesReader):
         return var_dict.get(var)
 
     def get_coordinates(
-        self,
-        grid,
-        start_time,
-        source: DataSource,
+        self, grid, start_time, source: DataSource, folder: str
     ) -> tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         # day = pd.date_range(start_time, start_time,freq='D')
@@ -459,10 +447,7 @@ class WW3Nc_old(WaveSeriesReader):
         return var_dict.get(var)
 
     def get_coordinates(
-        self,
-        grid,
-        start_time,
-        source: DataSource,
+        self, grid, start_time, source: DataSource, folder: str
     ) -> tuple:
         start_time = pd.to_datetime(start_time)
         ds = xr.open_dataset(self._filename).isel(time=[0])

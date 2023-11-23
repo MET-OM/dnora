@@ -34,7 +34,7 @@ class SWAN(DataExporter):
         return ModelFormat.SWAN
 
 
-class SWAN(DataExporter):
+class SWASH(DataExporter):
     _writer_dict = {
         DnoraObjectType.Boundary: bnd.SWAN(),
         DnoraObjectType.Forcing: wnd.SWAN(),

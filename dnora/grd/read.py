@@ -94,7 +94,9 @@ class ConstantTopo(TopoReader):
     def __init__(self, depth: float = 999.0):
         self.depth = float(depth)
 
-    def __call__(self, grid: Union[Grid, UnstrGrid], source: DataSource, **kwargs):
+    def __call__(
+        self, grid: Union[Grid, UnstrGrid], source: DataSource, folder: str, **kwargs
+    ):
         """Creates a trivial topography with all water points."""
         topo = np.full(grid.size(), self.depth)
         zone_number, zone_letter = grid.utm()

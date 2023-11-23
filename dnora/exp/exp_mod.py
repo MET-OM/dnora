@@ -168,7 +168,9 @@ class DataExporter:
         """Writes the grid data in the Grid-object to an external source,
         e.g. a file."""
         self._dry_run = dry_run
-        input_file_writer = input_file_writer or self._get_input_file_writer()
+        input_file_writer = input_file_writer or self._get_writer(
+            DnoraObjectType.InputFile
+        )
 
         if input_file_writer is None:
             msg.info("No InputFileWriter defines. Won't do anything.")
