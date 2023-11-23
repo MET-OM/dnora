@@ -15,6 +15,7 @@ from .conventions import SpectralConvention
 # Import aux_funcsiliry functions
 from .. import msg
 from ..aux_funcs import create_time_stamps
+from ..data_sources import DataSource
 
 
 class WAM4km(BoundaryReader):
@@ -35,10 +36,15 @@ class WAM4km(BoundaryReader):
     def convention(self) -> str:
         return SpectralConvention.OCEAN
 
+    def default_data_source(self) -> DataSource:
+        return DataSource.REMOTE
+
     def post_processing(self):
         return RemoveEmpty()
 
-    def get_coordinates(self, grid, start_time, source: str, folder: str) -> Tuple:
+    def get_coordinates(
+        self, grid, start_time, source: DataSource, folder: str
+    ) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
 
         start_times, end_times, file_times = create_time_stamps(
@@ -59,7 +65,14 @@ class WAM4km(BoundaryReader):
         return lon_all, lat_all, None, None
 
     def __call__(
-        self, grid, start_time, end_time, inds, source: str, folder: str, **kwargs
+        self,
+        grid,
+        start_time,
+        end_time,
+        inds,
+        source: DataSource,
+        folder: str,
+        **kwargs,
     ) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
@@ -165,8 +178,8 @@ class WAM4km(BoundaryReader):
         return True
 
     @staticmethod
-    def get_url(day, source: str, folder: str):
-        if source == "remote":
+    def get_url(day, source: DataSource, folder: str):
+        if source == DataSource.REMOTE:
             return (
                 "https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/"
                 + day.strftime("%Y")
@@ -180,7 +193,7 @@ class WAM4km(BoundaryReader):
                 + day.strftime("%H")
                 + "Z.nc"
             )
-        if source == "internal":
+        if source == DataSource.INTERNAL:
             return (
                 f"{folder}/xxxxxxxxx/"
                 + day.strftime("%Y")
@@ -209,7 +222,12 @@ class NORA3(BoundaryReader):
     def convention(self) -> str:
         return SpectralConvention.OCEAN
 
-    def get_coordinates(self, grid, start_time, source: str, folder: str) -> Tuple:
+    def default_data_source(self) -> DataSource:
+        return DataSource.REMOTE
+
+    def get_coordinates(
+        self, grid, start_time, source: DataSource, folder: str
+    ) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         start_times, end_times, file_times = create_time_stamps(
             start_time,
@@ -228,7 +246,14 @@ class NORA3(BoundaryReader):
         return lon_all, lat_all, None, None
 
     def __call__(
-        self, grid, start_time, end_time, inds, source: str, folder: str, **kwargs
+        self,
+        grid,
+        start_time,
+        end_time,
+        inds,
+        source: DataSource,
+        folder: str,
+        **kwargs,
     ) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
@@ -271,7 +296,7 @@ class NORA3(BoundaryReader):
 
     @staticmethod
     def get_url(day, source: str, folder: str) -> str:
-        if source == "remote":
+        if source == DataSource.REMOTE:
             return (
                 "https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/"
                 + day.strftime("%Y")
@@ -281,7 +306,7 @@ class NORA3(BoundaryReader):
                 + day.strftime("%Y%m%d")
                 + "00.nc"
             )
-        if source == "internal":
+        if source == DataSource.INTERNAL:
             return (
                 f"{folder}WINDSURFER/mw3hindcast/spectra/"
                 + day.strftime("%Y")
@@ -323,7 +348,10 @@ class WW3_4km(BoundaryReader):
     def post_processing(self):
         return RemoveEmpty()
 
-    def get_coordinates(self, start_time, source: str, folder: str) -> Tuple:
+    def default_data_source(self) -> DataSource:
+        return DataSource.REMOTE
+
+    def get_coordinates(self, start_time, source: DataSource, folder: str) -> Tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
 
         start_times, end_times, file_times = create_time_stamps(
@@ -343,7 +371,9 @@ class WW3_4km(BoundaryReader):
 
         return lon_all, lat_all
 
-    def __call__(self, start_time, end_time, inds, source: str, folder: str) -> Tuple:
+    def __call__(
+        self, start_time, end_time, inds, source: DataSource, folder: str
+    ) -> Tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time
@@ -449,7 +479,7 @@ class WW3_4km(BoundaryReader):
 
     @staticmethod
     def get_url(day, source, folder):
-        if source == "remote":
+        if source == DataSource.REMOTE:
             url = (
                 "https://thredds.met.no/thredds/dodsC/ww3_4km_archive_files/"
                 + day.strftime("%Y")
@@ -465,7 +495,7 @@ class WW3_4km(BoundaryReader):
                 + day.strftime("%H")
                 + "Z.nc"
             )
-        elif source == "internal":
+        elif source == DataSource.INTERNAL:
             url = (
                 f"{folder}/xxxxx/"
                 + +day.strftime("%Y")
