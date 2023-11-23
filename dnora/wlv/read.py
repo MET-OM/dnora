@@ -25,6 +25,9 @@ class WaterLevelReader(ABC):
     def name(self) -> str:
         return type(self).__name__
 
+    def default_data_source(self) -> DataSource:
+        return DataSource.UNDEFINED
+
 
 class DnoraNc(WaterLevelReader):
     def __init__(self, files: str) -> None:
@@ -74,9 +77,6 @@ class DnoraNc(WaterLevelReader):
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
 
         return ds.time.values, ds.waterlevel.values, lon, lat, x, y, ds.attrs
-
-    def default_data_source(self) -> DataSource:
-        return DataSource.UNDEFINED
 
 
 class ConstantWaterLevel(WaterLevelReader):

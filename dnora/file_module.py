@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 
 from .dnora_object_type import DnoraObjectType
 
+from .model_formats import ModelFormat
+
 
 @dataclass
 class FileNames:
@@ -27,9 +29,9 @@ class FileNames:
     def __post_init__(self):
         self._defaults = read_defaults("export_defaults.yml", from_module=True)
 
-        self.format = self.format or "ModelRun"
-        self.fallback = self._defaults["ModelRun"]
-        self.primary = self._defaults[self.format]
+        self.format = self.format or ModelFormat.MODELRUN
+        self.fallback = self._defaults[ModelFormat.MODELRUN.name]
+        self.primary = self._defaults[self.format.name]
 
         if self.edge_object is None:
             self.edge_object = self.obj_type

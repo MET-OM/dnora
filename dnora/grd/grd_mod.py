@@ -15,6 +15,7 @@ from .read import MshFile as topo_MshFile
 from .read_tr import MshFile as triang_MshFile
 from .tri_arangers import TriAranger
 from .mesh import Trivial as TrivialMesher
+from ..data_sources import DataSource
 
 
 class GridMethods:
@@ -50,13 +51,19 @@ class GridMethods:
         """Exports grid to netcdf file"""
         self.ds().to_netcdf(filename + ".nc")
 
-    def import_topo(self, topo_reader: TopoReader, **kwargs) -> None:
+    def import_topo(
+        self,
+        topo_reader: TopoReader,
+        source: str | DataSource = DataSource.UNDEFINED,
+        folder: str = None,
+        **kwargs,
+    ) -> None:
         """Reads the raw bathymetrical data."""
 
         msg.header(topo_reader, "Importing topography...")
 
         topo, lon, lat, x, y, zone_number, zone_letter, metadata = topo_reader(
-            self, **kwargs
+            self, source=source, folder=folder, **kwargs
         )
         print(topo_reader)
 

@@ -95,10 +95,7 @@ class BoundaryToSpectra(SpectraReader):
         return convert_2d_to_1d(self._boundary._convention)
 
     def get_coordinates(
-        self,
-        grid,
-        start_time: str,
-        source: DataSource,
+        self, grid, start_time: str, source: DataSource, folder: str
     ) -> tuple[np.ndarray, np.ndarray]:
         return (
             self._boundary.lon(strict=True),
@@ -166,10 +163,7 @@ class DnoraNc(SpectraReader):
         self.files = files
 
     def get_coordinates(
-        self,
-        grid,
-        start_time,
-        source: DataSource,
+        self, grid, start_time, source: DataSource, folder: str
     ) -> tuple:
         data = xr.open_dataset(self.files[0]).isel(time=[0])
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(data)

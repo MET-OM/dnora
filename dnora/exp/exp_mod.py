@@ -1,4 +1,3 @@
-from ..mdl import ModelRun
 from .. import msg
 from ..file_module import FileNames
 from ..bnd.conventions import SpectralConvention
@@ -15,7 +14,8 @@ from .ice.iceforcing_writers import IceForcingWriter
 from .inp.input_file_writers import InputFileWriter
 
 from .decorators import add_export_method
-from ..dnora_object_type import DnoraObjectType
+from ..dnora_object_type import DnoraObjectType, object_type_from_string
+from ..model_formats import ModelFormat
 
 WriterFunction = Union[
     GeneralWritingFunction,
@@ -40,9 +40,55 @@ WriterFunction = Union[
 @add_export_method(DnoraObjectType.OceanCurrent)
 @add_export_method(DnoraObjectType.IceForcing)
 class DataExporter:
-    def __init__(self, model: ModelRun):
+    _writer_dict = {DnoraObjectType.InputFile: None}
+
+    def _get_default_writer(self) -> WriterFunction:
+        return DumpToNc()
+
+    def _get_default_format(self) -> str:
+        return ModelFormat.MODELRUN
+
+    def _get_writer(self, obj_type: DnoraObjectType) -> WriterFunction:
+        return self._writer_dict.get(obj_type, self._get_default_writer())
+
+    def __init__(self, model):
         self.model = model
         self.exported_to = {}
+
+    def export(
+        self,
+        obj_type: DnoraObjectType | str,
+        writer: str = None,
+        filename: str = None,
+        folder: str = None,
+        dateformat: str = None,
+        format: str = None,
+        dry_run=False,
+        **kwargs,
+    ) -> None:
+        obj_type = object_type_from_string(obj_type)
+        writer_function = self._setup_export(obj_type, writer, dry_run)
+
+        if not self.dry_run():
+            try:  # GeneralWritingFunction might not have this method defined
+                wanted_convention = writer_function.convention()
+            except AttributeError:
+                wanted_convention = self._get_spectral_convention()
+
+            try:
+                self.model[obj_type]._set_convention(wanted_convention)
+            except AttributeError:  # Can only be done for spectra
+                pass
+
+        self._export_object(
+            obj_type,
+            filename,
+            folder,
+            dateformat,
+            writer_function=writer_function,
+            format=format,
+            **kwargs,
+        )
 
     def _setup_export(
         self, obj_type: DnoraObjectType, writer_function, dry_run: bool
@@ -52,7 +98,7 @@ class DataExporter:
         if self.model[obj_type] is None:
             return None
 
-        writer_function = writer_function or self[obj_type]
+        writer_function = writer_function or self._get_writer(obj_type)
 
         if writer_function is None:
             raise Exception(f"Define a {obj_type.name}Writer!")
@@ -122,7 +168,9 @@ class DataExporter:
         """Writes the grid data in the Grid-object to an external source,
         e.g. a file."""
         self._dry_run = dry_run
-        input_file_writer = input_file_writer or self._get_input_file_writer()
+        input_file_writer = input_file_writer or self._get_writer(
+            DnoraObjectType.InputFile
+        )
 
         if input_file_writer is None:
             msg.info("No InputFileWriter defines. Won't do anything.")
@@ -161,39 +209,12 @@ class DataExporter:
 
         return
 
-    def __getitem__(self, obj_type: DnoraObjectType):
-        """writer = 'grid_writer, forcing_writer etc."""
-        return eval(f"self._get_{obj_type.value}_writer()")
+    # def __getitem__(self, obj_type: DnoraObjectType):
+    #     """writer = 'grid_writer, forcing_writer etc."""
+    #     return self._get_writer(obj_type)
 
     def dry_run(self) -> bool:
         return self._dry_run or self.model.dry_run()
-
-    def _get_default_format(self) -> str:
-        return "ModelRun"
-
-    def _get_boundary_writer(self) -> BoundaryWriter:
-        return DnoraNc()
-
-    def _get_forcing_writer(self) -> ForcingWriter:
-        return DnoraNc()
-
-    def _get_spectra_writer(self) -> SpectralWriter:
-        return DnoraNc()
-
-    def _get_waveseries_writer(self) -> WaveSeriesWriter:
-        return DnoraNc()
-
-    def _get_waterlevel_writer(self) -> WaterLevelWriter:
-        return DnoraNc()
-
-    def _get_grid_writer(self) -> GridWriter:
-        return DumpToNc()
-
-    def _get_trigrid_writer(self) -> GridWriter:
-        return DnoraNc()
-
-    def _get_input_file_writer(self) -> InputFileWriter:
-        return None
 
     def _get_spectral_convention(self) -> SpectralConvention:
         """Used only if method is not defined, such as for GeneralWritingFunctions that just dump everything to montly netcdf-files."""
