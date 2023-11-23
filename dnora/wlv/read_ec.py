@@ -85,6 +85,7 @@ class GTSM_ERA5(WaterLevelReader):
         start_time: str,
         end_time: str,
         source: DataSource,
+        folder: str,
         expansion_factor: float = 1.1,
     ):
         """Reads hourly water level from GTSM_ERA5 database"""

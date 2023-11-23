@@ -44,6 +44,7 @@ class GFS(ForcingReader):
         start_time: str,
         end_time: str,
         source: DataSource,
+        folder: str,
         expansion_factor: float = 1.2,
         **kwargs,
     ):
