@@ -159,7 +159,7 @@ class ModelRun:
                     f"source should be 'local' (DataSource.LOCAL), 'internal' (DataSource.INTERNAL), or 'remote' (DataSource.REMOTE), not {source}!"
                 )
 
-        if folder and source is None:
+        if folder and source is DataSource.UNDEFINED:
             source = DataSource.LOCAL
 
         if source in [DataSource.INTERNAL, DataSource.LOCAL]:
@@ -167,6 +167,9 @@ class ModelRun:
                 folder = data_sources(source)
         elif source == DataSource.REMOTE:
             folder = ""
+
+        if source == DataSource.UNDEFINED:
+            source = reader.default_data_source()
 
         return reader, name, source, folder
 
