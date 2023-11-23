@@ -30,6 +30,7 @@ from ..bnd.conventions import SpectralConvention
 
 from dnora.wsr import wave_parameters
 import inspect
+from ..data_sources import DataSource
 
 
 def dict_of_wave_parameters():
@@ -78,7 +79,12 @@ class WaveSeriesReader(ABC):
         pass
 
     @abstractmethod
-    def get_coordinates(self, grid: Grid, start_time: str, source: str):
+    def get_coordinates(
+        self,
+        grid: Grid,
+        start_time: str,
+        source: DataSource,
+    ):
         """Return a list of all the available coordinated in the source.
 
         These are needed fo the PointPicker object to choose the relevant
@@ -92,7 +98,7 @@ class WaveSeriesReader(ABC):
 
     @abstractmethod
     def __call__(
-        self, grid, start_time, end_time, inds, source: str, **kwargs
+        self, grid, start_time, end_time, inds, source: DataSource, **kwargs
     ) -> tuple:
         """Reads in the spectra from inds between start_time and end_time.
 
@@ -116,6 +122,9 @@ class WaveSeriesReader(ABC):
     # def __str__(self):
     # return (f"{self.start_time} - {self.end_time}")
 
+    def default_data_source(self) -> DataSource:
+        return DataSource.UNDEFINED
+
 
 class SpectraToWaveSeries(WaveSeriesReader):
     """Integrates spectra to wave series"""
@@ -131,7 +140,10 @@ class SpectraToWaveSeries(WaveSeriesReader):
         self._freq = freq
 
     def get_coordinates(
-        self, grid, start_time: str, source: str
+        self,
+        grid,
+        start_time: str,
+        source: DataSource,
     ) -> tuple[np.ndarray, np.ndarray]:
         return (
             self._spectra.lon(strict=True),
@@ -196,13 +208,18 @@ class DnoraNc(WaveSeriesReader):
     def __init__(self, files: str) -> None:
         self.files = files
 
-    def get_coordinates(self, grid, start_time, source: str) -> tuple:
+    def get_coordinates(
+        self,
+        grid,
+        start_time,
+        source: DataSource,
+    ) -> tuple:
         data = xr.open_dataset(self.files[0]).isel(time=[0])
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(data)
         return lon, lat, x, y
 
     def __call__(
-        self, grid, start_time, end_time, inds, source: str, **kwargs
+        self, grid, start_time, end_time, inds, source: DataSource, **kwargs
     ) -> tuple:
         def _crop(ds):
             return ds.sel(time=slice(start_time, end_time))
@@ -258,14 +275,19 @@ class E39(WaveSeriesReader):
         else:
             return self._buoy_dict()[self._loc]
 
-    def get_coordinates(self, grid, start_time, source: str) -> tuple:
+    def get_coordinates(
+        self,
+        grid,
+        start_time,
+        source: DataSource,
+    ) -> tuple:
         start_time = pd.to_datetime(start_time)
         url = self.get_url(start_time, self.loc(), source)
         ds = xr.open_dataset(url).isel(time=[0])
         return ds.longitude.values, ds.latitude.values, None, None
 
     def __call__(
-        self, grid, start_time, end_time, inds, source: str, **kwargs
+        self, grid, start_time, end_time, inds, source: DataSource, **kwargs
     ) -> tuple:
         # loc = np.array(self._buoys())[inds][0]
         months = aux_funcs.month_list(start_time, end_time)
@@ -338,7 +360,12 @@ class WW3Nc(WaveSeriesReader):
         }
         return var_dict.get(var)
 
-    def get_coordinates(self, grid, start_time) -> tuple:
+    def get_coordinates(
+        self,
+        grid,
+        start_time,
+        source: DataSource,
+    ) -> tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         # day = pd.date_range(start_time, start_time,freq='D')
         filename = self._filenames(start_time, start_time, folder=self._folder)[0]
@@ -348,7 +375,9 @@ class WW3Nc(WaveSeriesReader):
 
         return lon, lat, x, y
 
-    def __call__(self, grid, start_time, end_time, inds, **kwargs) -> tuple:
+    def __call__(
+        self, grid, start_time, end_time, inds, source: DataSource, **kwargs
+    ) -> tuple:
         """Reads in all wave data between the given times and at for the given indeces"""
 
         msg.info(
@@ -429,12 +458,19 @@ class WW3Nc_old(WaveSeriesReader):
         }
         return var_dict.get(var)
 
-    def get_coordinates(self, grid, start_time) -> tuple:
+    def get_coordinates(
+        self,
+        grid,
+        start_time,
+        source: DataSource,
+    ) -> tuple:
         start_time = pd.to_datetime(start_time)
         ds = xr.open_dataset(self._filename).isel(time=[0])
         return ds.longitude.values, ds.latitude.values, None, None
 
-    def __call__(self, grid, start_time, end_time, inds, **kwargs) -> tuple:
+    def __call__(
+        self, grid, start_time, end_time, inds, source: DataSource, **kwargs
+    ) -> tuple:
         ds = xr.open_dataset(self._filename).sel(node=inds)
 
         ds["lon"] = ds.longitude.values

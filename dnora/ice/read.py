@@ -6,6 +6,7 @@ import numpy as np
 from ..grd.grd_mod import Grid
 from .. import aux_funcs
 from .. import msg
+from ..data_sources import DataSource
 
 
 class IceForcingReader(ABC):
@@ -26,13 +27,22 @@ class IceForcingReader(ABC):
     def name(self) -> str:
         return type(self).__name__
 
+    def default_data_source(self) -> DataSource:
+        return DataSource.UNDEFINED
+
 
 class DnoraNc(IceForcingReader):
     def __init__(self, files: str) -> None:
         self.files = files
 
     def __call__(
-        self, grid, start_time, end_time, expansion_factor: float = 1.2, **kwargs
+        self,
+        grid,
+        start_time,
+        end_time,
+        source: DataSource,
+        expansion_factor: float = 1.2,
+        **kwargs,
     ):
         def _crop(ds):
             if lon is not None:
@@ -88,7 +98,7 @@ class ConstantIceForcing(IceForcingReader):
         self.thickness = thickness
         self.metadata = metadata
 
-    def __call__(self, grid, start_time, end_time, **kwargs):
+    def __call__(self, grid, start_time, end_time, source: DataSource, **kwargs):
         time = pd.date_range(start=start_time, end=end_time, freq="H").values
 
         lon = grid.lon(strict=True)

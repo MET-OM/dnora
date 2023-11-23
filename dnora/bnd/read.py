@@ -11,6 +11,7 @@ from .. import msg
 from .. import aux_funcs
 from .conventions import SpectralConvention
 import pandas as pd
+from ..data_sources import DataSource
 
 
 class BoundaryReader(ABC):
@@ -90,6 +91,9 @@ class BoundaryReader(ABC):
 
     def post_processing(self):
         return None
+
+    def default_data_source(self) -> DataSource:
+        return DataSource.UNDEFINED
 
     # def __str__(self):
     # return (f"{self.start_time} - {self.end_time}")

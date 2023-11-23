@@ -16,6 +16,8 @@ from .read import ForcingReader
 from .. import msg
 from ..aux_funcs import create_time_stamps, u_v_from_speed_dir, expand_area, lon_in_km
 
+from ..data_sources import DataSource
+
 
 class GFS(ForcingReader):
     """Reads wind data of the GFS global forecast"""
@@ -41,6 +43,8 @@ class GFS(ForcingReader):
         grid: Grid,
         start_time: str,
         end_time: str,
+        source: DataSource,
+        folder: str,
         expansion_factor: float = 1.2,
         **kwargs,
     ):

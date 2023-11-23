@@ -11,6 +11,7 @@ from ..grd.grd_mod import Grid
 
 # Import abstract classes
 from .read import OceanCurrentReader
+from ..data_sources import DataSource
 
 # Import aux_funcsiliry functions
 from .. import msg
@@ -58,7 +59,8 @@ class NorKyst800(OceanCurrentReader):
         grid: Grid,
         start_time: str,
         end_time: str,
-        source: str,
+        source: DataSource,
+        folder: str,
         expansion_factor: float,
     ):
         """Reads in all grid points between the given times and at for the given indeces"""

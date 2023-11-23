@@ -6,6 +6,7 @@ from .fvgrid import read_sms_mesh
 # import utm
 from typing import Tuple, Iterable
 import numpy as np
+from ..data_sources import DataSource
 
 
 class TriangReader(ABC):
@@ -30,6 +31,9 @@ class TriangReader(ABC):
         This is called by the TrGrid-object to provide output to the user.
         """
         pass
+
+    def default_data_source(self) -> DataSource:
+        return DataSource.UNDEFINED
 
 
 class TxtReader(TriangReader):

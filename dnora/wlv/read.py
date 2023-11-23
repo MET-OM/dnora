@@ -7,6 +7,8 @@ from ..grd.grd_mod import Grid
 from .. import aux_funcs
 from .. import msg
 
+from ..data_sources import DataSource
+
 
 class WaterLevelReader(ABC):
     """Reads waterlevel data from some source and provide it to the object.
@@ -29,7 +31,13 @@ class DnoraNc(WaterLevelReader):
         self.files = files
 
     def __call__(
-        self, grid, start_time, end_time, expansion_factor: float = 1.2, **kwargs
+        self,
+        grid,
+        start_time,
+        end_time,
+        source: DataSource,
+        expansion_factor: float = 1.2,
+        **kwargs,
     ):
         def _crop(ds):
             if lon is not None:
@@ -67,13 +75,16 @@ class DnoraNc(WaterLevelReader):
 
         return ds.time.values, ds.waterlevel.values, lon, lat, x, y, ds.attrs
 
+    def default_data_source(self) -> DataSource:
+        return DataSource.UNDEFINED
+
 
 class ConstantWaterLevel(WaterLevelReader):
     def __init__(self, waterlevel: float = 1, metadata: dict = None):
         self.waterlevel = waterlevel
         self.metadata = metadata
 
-    def __call__(self, grid, start_time, end_time, **kwargs):
+    def __call__(self, grid, start_time, end_time, source: DataSource, **kwargs):
         time = pd.date_range(start=start_time, end=end_time, freq="H").values
 
         lon = grid.lon(strict=True)

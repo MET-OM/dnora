@@ -131,7 +131,7 @@ class ModelRun:
         name: str,
         dry_run: bool,
         reader: ReaderFunction,
-        source: str,
+        source: DataSource | str,
         folder: str,
     ) -> tuple[ReaderFunction, str]:
         """Sets up readers, names and dry runs porperties for import of object."""
@@ -151,19 +151,27 @@ class ModelRun:
 
         msg.header(reader, f"Importing {obj_type.name}...")
 
-        if folder and source is None:
-            source = "local"
+        if isinstance(source, str):
+            try:
+                source = DataSource[source.upper()]
+            except KeyError as ke:
+                raise ke(
+                    f"source should be 'local' (DataSource.LOCAL), 'internal' (DataSource.INTERNAL), or 'remote' (DataSource.REMOTE), not {source}!"
+                )
 
-        if source in ["internal", "local"]:
+        if folder and source is DataSource.UNDEFINED:
+            source = DataSource.LOCAL
+
+        if source in [DataSource.INTERNAL, DataSource.LOCAL]:
             if folder is None:
                 folder = data_sources(source)
-        elif source == "remote":
+        elif source == DataSource.REMOTE:
             folder = ""
-        else:
-            raise ValueError(
-                f"source should be 'local', 'internal', or 'remote', not {source}!"
-            )
-        return reader, name, DataSource[source.upper()], folder
+
+        if source == DataSource.UNDEFINED:
+            source = reader.default_data_source()
+
+        return reader, name, source, folder
 
     def _setup_point_picker(self, point_picker: PointPicker):
         """Sets up point picker using possible default values."""
@@ -220,7 +228,7 @@ class ModelRun:
         forcing_reader: ForcingReader | None = None,
         name: str | None = None,
         dry_run: bool = False,
-        source: str = None,
+        source: str | DataSource = DataSource.UNDEFINED,
         folder: str = None,
         **kwargs,
     ) -> None:
@@ -270,7 +278,7 @@ class ModelRun:
         point_picker: PointPicker | None = None,
         name: str | None = None,
         dry_run: bool = False,
-        source: str = None,
+        source: str | DataSource = DataSource.UNDEFINED,
         folder: str = None,
         **kwargs,
     ):
@@ -334,7 +342,7 @@ class ModelRun:
         point_picker: PointPicker | None = None,
         name: str | None = None,
         dry_run: bool = False,
-        source: str = None,
+        source: str | DataSource = DataSource.UNDEFINED,
         folder: str = None,
         **kwargs,
     ):
@@ -398,7 +406,7 @@ class ModelRun:
         point_picker: PointPicker | None = None,
         name: str | None = None,
         dry_run: bool = False,
-        source: str = None,
+        source: str | DataSource = DataSource.UNDEFINED,
         folder: str = None,
         **kwargs,
     ):
@@ -458,7 +466,7 @@ class ModelRun:
         waterlevel_reader: WaterLevelReader | None = None,
         name: str | None = None,
         dry_run: bool = False,
-        source: str = None,
+        source: str | DataSource = DataSource.UNDEFINED,
         folder: str = None,
         **kwargs,
     ) -> None:
@@ -502,7 +510,7 @@ class ModelRun:
         oceancurrent_reader: OceanCurrentReader | None = None,
         name: str | None = None,
         dry_run: bool = False,
-        source: str = None,
+        source: str | DataSource = DataSource.UNDEFINED,
         folder: str = None,
         **kwargs,
     ) -> None:
@@ -552,7 +560,7 @@ class ModelRun:
         iceforcing_reader: IceForcingReader | None = None,
         name: str | None = None,
         dry_run: bool = False,
-        source: str = None,
+        source: str | DataSource = DataSource.UNDEFINED,
         folder: str = None,
         **kwargs,
     ) -> None:

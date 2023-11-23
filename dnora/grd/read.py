@@ -12,6 +12,7 @@ from ..aux_funcs import expand_area
 from typing import Union
 
 from ..defaults.default_reader import read_defaults
+from ..data_sources import DataSource
 
 
 class TopoReader(ABC):
@@ -83,6 +84,9 @@ class TopoReader(ABC):
         """
         pass
 
+    def default_data_source(self) -> DataSource:
+        return DataSource.UNDEFINED
+
 
 class ConstantTopo(TopoReader):
     """Creates an empty topography. Called when setting initial spacing."""
@@ -90,7 +94,7 @@ class ConstantTopo(TopoReader):
     def __init__(self, depth: float = 999.0):
         self.depth = float(depth)
 
-    def __call__(self, grid: Union[Grid, UnstrGrid], **kwargs):
+    def __call__(self, grid: Union[Grid, UnstrGrid], source: DataSource, **kwargs):
         """Creates a trivial topography with all water points."""
         topo = np.full(grid.size(), self.depth)
         zone_number, zone_letter = grid.utm()
@@ -121,6 +125,7 @@ class EMODNET(TopoReader):
     def __call__(
         self,
         grid: Union[Grid, UnstrGrid],
+        source: DataSource,
         tile: str = "C5",
         expansion_factor: float = 1.2,
         folder: str = "/lustre/storeB/project/fou/om/WW3/bathy/emodnet2020",
@@ -189,6 +194,7 @@ class KartverketNo50m(TopoReader):
     def __call__(
         self,
         grid: Union[Grid, UnstrGrid],
+        source: DataSource,
         expansion_factor: float = 1.2,
         zone_number: int = 33,
         tile: str = "B1008",
@@ -246,6 +252,7 @@ class GEBCO2021(TopoReader):
     def __call__(
         self,
         grid: Union[Grid, UnstrGrid],
+        source: DataSource,
         expansion_factor: float = 1.2,
         tile: str = "n61.0_s59.0_w4.0_e6.0",
         folder: str = "/lustre/storeB/project/fou/om/WW3/bathy/gebco2021",
@@ -304,7 +311,9 @@ class ForceFeed(TopoReader):
         self.topo = topo
         return
 
-    def __call__(self, grid: Union[Grid, UnstrGrid], **kwargs) -> tuple:
+    def __call__(
+        self, grid: Union[Grid, UnstrGrid], source: DataSource, **kwargs
+    ) -> tuple:
         # Just use the values it was forcefed on initialization
         topo = self.topo
 
@@ -329,6 +338,7 @@ class MshFile(TopoReader):
     def __call__(
         self,
         grid: Union[Grid, UnstrGrid],
+        source: DataSource,
         filename: str,
         expansion_factor: float = 1.2,
         zone_number: int = None,
