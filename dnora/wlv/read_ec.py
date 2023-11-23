@@ -1,13 +1,16 @@
 import numpy as np
 import xarray as xr
 import subprocess
-#from subprocess import call, run
+
+# from subprocess import call, run
 import os, glob
 import cdsapi
+
 # Import objects
 from ..grd.grd_mod import Grid
 
 from scipy.interpolate import griddata
+
 # Import abstract classes
 from .read import WaterLevelReader
 
@@ -15,17 +18,17 @@ from .read import WaterLevelReader
 from .. import msg
 from ..aux_funcs import expand_area, int_list_of_months, int_list_of_years
 import pandas as pd
+from ..data_sources import DataSource
 
 
-
-def download_GTSM_from_cds(start_time, end_time, folder='dnora_wlv_temp') -> str:
+def download_GTSM_from_cds(start_time, end_time, folder="dnora_wlv_temp") -> str:
     """Downloads GTSM model water level data from the Copernicus Climate Data Store for a
     given area and time period"""
     start_time = pd.Timestamp(start_time)
     end_time = pd.Timestamp(end_time)
     c = cdsapi.Client()
 
-    filename = f'{folder}/EC_GTSM_ERA5.tar.gz'
+    filename = f"{folder}/EC_GTSM_ERA5.tar.gz"
     # cds_command_test = {
     #     'product_type': 'reanalysis',
     #     'format': 'netcdf',
@@ -53,40 +56,42 @@ def download_GTSM_from_cds(start_time, end_time, folder='dnora_wlv_temp') -> str
     #     ],
     # }
 
-    years = [f'{y:4.0f}' for y in int_list_of_years(start_time, end_time)]
+    years = [f"{y:4.0f}" for y in int_list_of_years(start_time, end_time)]
     if len(years) == 1:
         years = years[0]
-    months = [f'{m:02.0f}' for m in int_list_of_months(start_time, end_time)]
+    months = [f"{m:02.0f}" for m in int_list_of_months(start_time, end_time)]
     if len(months) == 1:
         months = months[0]
 
-
     cds_command = {
-        'format': 'tgz',
-        'variable': ['total_water_level'],
-        'experiment': 'reanalysis',
-        'temporal_aggregation': 'hourly',
-        'year': years, # 1979-2018
-        'month': months,
+        "format": "tgz",
+        "variable": ["total_water_level"],
+        "experiment": "reanalysis",
+        "temporal_aggregation": "hourly",
+        "year": years,  # 1979-2018
+        "month": months,
     }
 
-
-    c.retrieve('sis-water-level-change-timeseries-cmip6', cds_command, filename)
+    c.retrieve("sis-water-level-change-timeseries-cmip6", cds_command, filename)
     return filename
 
 
 class GTSM_ERA5(WaterLevelReader):
-    """Reads GTSM_ERA5 waterlevel data
-    """
+    """Reads GTSM_ERA5 waterlevel data"""
 
-    def __call__(self, grid: Grid, start_time: str, end_time: str, expansion_factor: float=1.1):
+    def __call__(
+        self,
+        grid: Grid,
+        start_time: str,
+        end_time: str,
+        source: DataSource,
+        expansion_factor: float = 1.1,
+    ):
         """Reads hourly water level from GTSM_ERA5 database"""
 
-        msg.info(
-            f"Getting GTSM/ERA5 water level from {start_time} to {end_time}")
+        msg.info(f"Getting GTSM/ERA5 water level from {start_time} to {end_time}")
 
-
-        temp_folder = 'dnora_wlv_temp'
+        temp_folder = "dnora_wlv_temp"
         if not os.path.isdir(temp_folder):
             os.mkdir(temp_folder)
             print("Creating folder %s..." % temp_folder)
@@ -96,8 +101,11 @@ class GTSM_ERA5(WaterLevelReader):
             os.remove(f)
 
         # Define area to search in
-        lon, lat = expand_area(lon=grid.edges('lon'), lat=grid.edges('lat'), expansion_factor=expansion_factor)
-
+        lon, lat = expand_area(
+            lon=grid.edges("lon"),
+            lat=grid.edges("lat"),
+            expansion_factor=expansion_factor,
+        )
 
         # start_times, end_times = create_monthly_time_stamps(start_time, end_time)
         # wnd_list = []
@@ -105,40 +113,52 @@ class GTSM_ERA5(WaterLevelReader):
         #     msg.plain(f"Reading wind forcing data: {t0}-{t1}")
         #     # Creates file dnora_wnd_tmp/EC_ERA5_YYYY_MM.nc
 
-        out_file = download_GTSM_from_cds(start_time, end_time, folder='dnora_wlv_temp')
+        out_file = download_GTSM_from_cds(start_time, end_time, folder="dnora_wlv_temp")
 
         temppath = os.path.dirname(out_file)
         # first unpack the tar.gz file.
-        nc_file = subprocess.run(['tar', '-ztf', out_file], stdout=subprocess.PIPE).stdout.decode('utf-8').split('\n')[0:-1]
-        nc_file = sorted([ff.strip('\r') for ff in nc_file])
-        #print(nc_file)
-        subprocess.run(['tar', '-xzvf', out_file,'--directory',temppath], stdout=subprocess.PIPE) # Extract tar file
+        nc_file = (
+            subprocess.run(["tar", "-ztf", out_file], stdout=subprocess.PIPE)
+            .stdout.decode("utf-8")
+            .split("\n")[0:-1]
+        )
+        nc_file = sorted([ff.strip("\r") for ff in nc_file])
+        # print(nc_file)
+        subprocess.run(
+            ["tar", "-xzvf", out_file, "--directory", temppath], stdout=subprocess.PIPE
+        )  # Extract tar file
 
         lon_local = np.arange(lon[0], lon[1], 0.1)
         lat_local = np.arange(lat[0], lat[1], 0.1)
-        grid_x, grid_y = np.meshgrid(lon_local, lat_local, indexing='xy')
+        grid_x, grid_y = np.meshgrid(lon_local, lat_local, indexing="xy")
 
         print(nc_file)
         grid_tot = []
         time_tot = []
         for ncfile in nc_file:
-            #print(os.path.join(temppath,nc_file))
-            waterlevel = xr.open_dataset(os.path.join(temppath,ncfile),engine="netcdf4")
-            waterlevel = waterlevel.rename_vars({'station_x_coordinate': 'lon', 'station_y_coordinate': 'lat'})
+            # print(os.path.join(temppath,nc_file))
+            waterlevel = xr.open_dataset(
+                os.path.join(temppath, ncfile), engine="netcdf4"
+            )
+            waterlevel = waterlevel.rename_vars(
+                {"station_x_coordinate": "lon", "station_y_coordinate": "lat"}
+            )
             waterlevel = waterlevel.sel(stations=waterlevel.lon >= lon[0])
             waterlevel = waterlevel.sel(stations=waterlevel.lon <= lon[1])
             waterlevel = waterlevel.sel(stations=waterlevel.lat >= lat[0])
             waterlevel = waterlevel.sel(stations=waterlevel.lat <= lat[1])
 
-            waterlevel = waterlevel.sel(time=slice(start_time,end_time))
-            #grid_x, grid_y = np.mgrid[lon_min:lon_max:100j, lat_min:lat_max:110j]
+            waterlevel = waterlevel.sel(time=slice(start_time, end_time))
+            # grid_x, grid_y = np.mgrid[lon_min:lon_max:100j, lat_min:lat_max:110j]
 
             points = np.array([waterlevel.lon, waterlevel.lat]).T
             time = waterlevel.time
-            grid_z = np.zeros([len(time),len(lat_local), len(lon_local)])
+            grid_z = np.zeros([len(time), len(lat_local), len(lon_local)])
             for i_t, t in enumerate(time):
                 values = waterlevel.waterlevel[i_t, :]
-                grid_z[i_t,:,:] = griddata(points, values, (grid_x, grid_y), method='cubic', fill_value=0.)
+                grid_z[i_t, :, :] = griddata(
+                    points, values, (grid_x, grid_y), method="cubic", fill_value=0.0
+                )
                 # plt.imshow(grid_z[i_t,:,:], extent=(lon_min, lon_max, lat_min, lat_max), origin='lower')
                 # plt.scatter(waterlevel.lon, waterlevel.lat)
                 # plt.colorbar()
@@ -146,8 +166,8 @@ class GTSM_ERA5(WaterLevelReader):
             grid_tot.append(grid_z)
             time_tot.append(time)
 
-        grid_tot = np.concatenate(grid_tot,axis=0)
-        time_tot = np.concatenate(time_tot,axis=0)
+        grid_tot = np.concatenate(grid_tot, axis=0)
+        time_tot = np.concatenate(time_tot, axis=0)
 
         # Finally we put the new gridded data into a dataset
         # waterlevel_gridded = xr.Dataset(
@@ -162,5 +182,13 @@ class GTSM_ERA5(WaterLevelReader):
         #     attrs=dict(description="waterlevel"),
         # )
 
-        #print(waterlevel_gridded)
-        return time, grid_tot, lon_local, lat_local, None, None, dict(description="Waterlevel from GTSM/ERA5")
+        # print(waterlevel_gridded)
+        return (
+            time,
+            grid_tot,
+            lon_local,
+            lat_local,
+            None,
+            None,
+            dict(description="Waterlevel from GTSM/ERA5"),
+        )

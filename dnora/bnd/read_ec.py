@@ -6,6 +6,7 @@ from copy import copy
 from abc import ABC, abstractmethod
 from typing import Tuple
 import pandas as pd
+from .process import RemoveEmpty
 
 # Import abstract classes and needed instances of them
 from .read import BoundaryReader

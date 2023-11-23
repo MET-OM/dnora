@@ -8,6 +8,7 @@ from .. import msg
 import pandas as pd
 import numpy as np
 from geo_skeletons import PointSkeleton
+from ..data_sources import DataSource
 
 
 class ForcingReader(ABC):
@@ -39,6 +40,9 @@ class ForcingReader(ABC):
     def name(self) -> str:
         return type(self).__name__
 
+    def default_data_source(self) -> DataSource:
+        return DataSource.UNDEFINED
+
 
 class ConstantForcing(ForcingReader):
     def __init__(self, u: float = 1, v: float = 2, metadata: dict = None):
@@ -46,7 +50,7 @@ class ConstantForcing(ForcingReader):
         self.v = v
         self.metadata = metadata
 
-    def __call__(self, grid, start_time, end_time, source: str, **kwargs):
+    def __call__(self, grid, start_time, end_time, source: DataSource, **kwargs):
         time = pd.date_range(start=start_time, end=end_time, freq="H").values
 
         lon = grid.lon(strict=True)
@@ -70,7 +74,7 @@ class DnoraNc(ForcingReader):
         grid,
         start_time,
         end_time,
-        source: str,
+        source: DataSource,
         expansion_factor: float = 1.2,
         **kwargs,
     ):

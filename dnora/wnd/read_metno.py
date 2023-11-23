@@ -16,6 +16,8 @@ from .read import ForcingReader
 from .. import msg
 from ..aux_funcs import create_time_stamps, u_v_from_speed_dir, expand_area, lon_in_km
 
+from ..data_sources import DataSource
+
 
 class NORA3(ForcingReader):
     """Reads wind data of the NORA3 hindcast directly from MET Norways servers.
@@ -51,7 +53,7 @@ class NORA3(ForcingReader):
         grid: Grid,
         start_time: str,
         end_time: str,
-        source: str,
+        source: DataSource,
         expansion_factor: float = 1.2,
         **kwargs,
     ):
@@ -193,11 +195,11 @@ class NORA3(ForcingReader):
             + f"{ind:03d}"
             + "_fp.nc"
         )
-        if source == "remote":
+        if source == DataSource.REMOTE:
             return (
                 "https://thredds.met.no/thredds/dodsC/nora3/" + folder + "/" + filename
             )
-        if source == "met":
+        if source == DataSource.INTERNAL:
             return (
                 "/lustre/storeB/project/fou/om/WINDSURFER/HM40h12/netcdf/"
                 + folder
@@ -348,7 +350,7 @@ class MyWave3km(ForcingReader):
             + "_MyWam3km_hindcast.nc"
         )
 
-        if source == "remote":
+        if source == DataSource.REMOTE:
             return (
                 "https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_files/"
                 + time_stamp.strftime("%Y")
@@ -517,7 +519,7 @@ class MEPS(ForcingReader):
             + time_stamp.strftime("%H")
             + "Z.nc"
         )
-        if source == "remote":
+        if source == DataSource.REMOTE:
             return (
                 "https://thredds.met.no/thredds/dodsC/meps25epsarchive/"
                 + time_stamp.strftime("%Y")

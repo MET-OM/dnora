@@ -9,6 +9,8 @@ import xarray as xr
 from .. import aux_funcs
 from .. import msg
 
+from ..data_sources import DataSource
+
 
 class SpectraReader(ABC):
     """Reads boundary spectra from some source and provide it to the object."""
@@ -78,6 +80,9 @@ class SpectraReader(ABC):
     def name(self) -> str:
         return type(self).__name__
 
+    def default_data_source(self) -> DataSource:
+        return DataSource.UNDEFINED
+
 
 class BoundaryToSpectra(SpectraReader):
     """Integrates boundary spectra to omnidairectional spectra"""
@@ -90,7 +95,10 @@ class BoundaryToSpectra(SpectraReader):
         return convert_2d_to_1d(self._boundary._convention)
 
     def get_coordinates(
-        self, grid, start_time: str, source: str
+        self,
+        grid,
+        start_time: str,
+        source: DataSource,
     ) -> tuple[np.ndarray, np.ndarray]:
         return (
             self._boundary.lon(strict=True),
@@ -101,7 +109,7 @@ class BoundaryToSpectra(SpectraReader):
         # return self._boundary.data.lon.values, self._boundary.data.lat.values
 
     def __call__(
-        self, grid, start_time, end_time, inds, source: str, **kwargs
+        self, grid, start_time, end_time, inds, source: DataSource, **kwargs
     ) -> tuple:
         time = (
             self._boundary.time(data_array=True)
@@ -157,12 +165,19 @@ class DnoraNc(SpectraReader):
     def __init__(self, files: str) -> None:
         self.files = files
 
-    def get_coordinates(self, grid, start_time, source) -> tuple:
+    def get_coordinates(
+        self,
+        grid,
+        start_time,
+        source: DataSource,
+    ) -> tuple:
         data = xr.open_dataset(self.files[0]).isel(time=[0])
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(data)
         return lon, lat, x, y
 
-    def __call__(self, grid, start_time, end_time, inds, source, **kwargs) -> tuple:
+    def __call__(
+        self, grid, start_time, end_time, inds, source: DataSource, **kwargs
+    ) -> tuple:
         def _crop(ds):
             return ds.sel(time=slice(start_time, end_time))
 
