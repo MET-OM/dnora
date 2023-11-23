@@ -22,7 +22,7 @@ list_of_placeholders:
   - '#X'
   - '#Y'
 
-ModelRun:
+MODELRUN:
   folder: 'output'
   filename: 'dnorafile'
   dateformat: '%Y%m%dT%H%M'
@@ -99,7 +99,7 @@ WW3:
     folder: 'MyWW3Folder'
     extension: 'nml'
 
-HOS_ocean:
+HOS_OCEAN:
   grid:
     filename: '#Grid_HOS_ocean'
   input_file:
@@ -121,7 +121,7 @@ REEF3D:
     folder: '#Grid_REEF3D'
     extension: 'txt'
 
-Cache:
+CACHE:
   filename: "#ObjectType_#Grid_#Lon0_#Lon1_#Lat0_#Lat1_#T0"
   dateformat: '%Y-%m'
   extension: 'nc'

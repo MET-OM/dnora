@@ -56,6 +56,8 @@ from ..converters import convert_swash_mat_to_netcdf
 from pathlib import Path
 from ..defaults.default_reader import data_sources
 
+from ..exp.exporters import Cacher
+
 ReaderFunction = Union[
     ForcingReader,
     BoundaryReader,
@@ -221,6 +223,42 @@ class ModelRun:
                 )
                 return
             return inds
+
+    def cache(self, obj_type: DnoraObjectType | str) -> None:
+        Cacher(self).export(obj_type)
+
+    def import_forcing2(
+        self,
+        forcing_reader: ForcingReader | None = None,
+        name: str | None = None,
+        dry_run: bool = False,
+        source: str | DataSource = DataSource.UNDEFINED,
+        folder: str = None,
+        **kwargs,
+    ) -> None:
+        forcing_reader, name, source, folder = self._setup_import(
+            DnoraObjectType.Forcing, name, dry_run, forcing_reader, source, folder
+        )
+
+        if self.dry_run():
+            msg.info("Dry run! No forcing will be imported.")
+            return
+
+        coord_dict, data_dict, meta_dict = forcing_reader(
+            grid=self.grid(),
+            start_time=self.start_time(),
+            end_time=self.end_time(),
+            source=source,
+            folder=folder,
+            **kwargs,
+        )
+
+        self[DnoraObjectType.Forcing] = Forcing(name=name, **coord_dict)
+        self.forcing().set_spacing(nx=len(coord_dict["lon"]), ny=len(coord_dict["lat"]))
+
+        for key, value in data_dict.items():
+            self.forcing().set(key, value)
+        self.forcing().set_metadata(meta_dict)
 
     @cached_reader(DnoraObjectType.Forcing, wnd.read.DnoraNc)
     def import_forcing(

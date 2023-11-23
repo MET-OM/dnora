@@ -15,6 +15,8 @@ import re
 from geo_skeletons import GriddedSkeleton
 
 from ..dnora_object_type import DnoraObjectType
+from ..model_formats import ModelFormat
+from ..exp.exporters import Cacher
 
 
 class DummyDnoraObject(GriddedSkeleton):
@@ -97,16 +99,9 @@ def cached_reader(dnora_obj, reader_function):
                     name = given_reader.name()
 
             # FileObject takes names from the dict of objects, so create one here
-            # exec(f"mrun._{dnora_obj.lower()} = {dnora_obj}(name=name)")
-            # mrun._dry_run = dry_run
-            # if not mrun.dry_run():
-            # exec(f"mrun._{dnora_obj.lower()} = DummyDnoraObject(name=name)")
-            try:
-                mrun[dnora_obj] = DummyDnoraObject(name=name)
-            except:
-                breakpoint()
+            mrun[dnora_obj] = DummyDnoraObject(name=name)
             file_object = FileNames(
-                format="Cache",
+                format=ModelFormat.CACHE,
                 obj_type=dnora_obj,
                 model=mrun,
                 edge_object=DnoraObjectType.Grid,
@@ -159,7 +154,7 @@ def cached_reader(dnora_obj, reader_function):
                         )
 
             if write_cache:
-                exec(f"mrun.cache_{dnora_obj.lower()}()")
+                mrun.cache(dnora_obj)
 
         return wrapper
 
