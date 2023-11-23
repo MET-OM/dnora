@@ -60,6 +60,7 @@ class NorKyst800(OceanCurrentReader):
         start_time: str,
         end_time: str,
         source: DataSource,
+        folder: str,
         expansion_factor: float,
     ):
         """Reads in all grid points between the given times and at for the given indeces"""
