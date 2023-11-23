@@ -21,3 +21,4 @@ dependencies:
   - geopy
   - pint
   - python-dotenv
+  - fimex=1.8.1
