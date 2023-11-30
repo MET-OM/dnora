@@ -1,28 +1,28 @@
 from enum import Enum
 
-
-class DnoraObjectType(Enum):
-    ModelRun = "modelrun"
-    Forcing = "forcing"
-    Boundary = "boundary"
-    Grid = "grid"
-    TriGrid = "trigrid"
-    WaveSeries = "waveseries"
-    OceanCurrent = "oceancurrent"
-    WaterLevel = "waterlevel"
-    Spectra = "spectra"
-    IceForcing = "iceforcing"
-    SpectralGrid = "spectral_grid"
-    InputFile = "input_file"
+from grid import Grid, TriGrid
+from spectra import Spectra
+from spectra1d import Spectra1D
+from wind import Wind
+from current import Current
+from waterlevel import WaterLevel
+from ice import Ice
+from waveseries import WaveSeries
 
 
-def object_type_from_string(obj_str: str) -> DnoraObjectType:
-    if isinstance(obj_str, DnoraObjectType):
+class DnoraDataType(Enum):
+    GRID = Grid
+    TRIGRID = TriGrid
+    SPECTRA = Spectra
+    SPECTRA1D = Spectra1D
+    WIND = Wind
+    CURRENT = Current
+    WATERLEVEL = WaterLevel
+    ICE = Ice
+    WAVESERIES = WaveSeries
+
+
+def object_type_from_string(obj_str: str) -> DnoraDataType:
+    if isinstance(obj_str, DnoraDataType):
         return obj_str
-
-    try:
-        obj_type = DnoraObjectType[obj_str]
-        return obj_type
-    except KeyError:
-        types = [o for o in DnoraObjectType if o.value == obj_str]
-        return types[0]
+    return DnoraDataType[obj_str.upper()]

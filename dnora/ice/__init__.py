@@ -1,2 +1,2 @@
-from .ice_mod import IceForcing
+from .ice_mod import Ice
 from . import read
