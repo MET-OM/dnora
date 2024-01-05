@@ -3,6 +3,7 @@ from ..dnora_object_type import DnoraDataType
 from ..data_sources import DataSource
 import pandas as pd
 import numpy as np
+import xarray as xr
 
 
 class ConstantGrid(DataReader):
@@ -47,10 +48,44 @@ class ConstantGrid(DataReader):
         # Create metaparameters based on standard short names
         metaparameter_dict = self.create_metaparameter_dict(data_dict.keys())
 
-        # # If not found, use the metaparameter defined in the object
-        # for key in variables:
-        #     if metaparameter_dict.get(key) is None:
-        #         metaparameter_dict[key] = obj_type.value.meta_dict.get(key)
+        return coord_dict, data_dict, meta_dict, metaparameter_dict
+
+
+class Netcdf(DataReader):
+    def __init__(self, filename: str) -> None:
+        self.filename = filename
+
+    def __call__(
+        self,
+        obj_type: DnoraDataType,
+        grid,
+        start_time,
+        end_time,
+        source: DataSource,
+        folder: str,
+        **kwargs
+    ):
+        ds = xr.open_dataset(self.filename)
+        coord_dict = {}
+        # obj_type.value._coord_manager.added_coords()
+        for c in list(ds.coords):
+            coord_dict[c] = ds.get(c).values
+
+        lons = slice(grid.edges("lon")[0], grid.edges("lon")[-1])
+        lats = slice(grid.edges("lat")[0], grid.edges("lat")[-1])
+        times = slice(start_time, end_time)
+
+        ds = ds.sel(lon=lons, lat=lats, time=times)
+
+        data_dict = {}
+        metaparameter_dict = {}
+        meta_dict = {}
+        for var, meta_var in obj_type.value.meta_dict.items():
+            ds_var = meta_var.find_me_in_ds(ds)
+            ds_data = ds.get(ds_var)
+            if ds_data is not None:
+                data_dict[var] = ds_data.values
+                metaparameter_dict[var] = meta_var
 
         return coord_dict, data_dict, meta_dict, metaparameter_dict
 
@@ -79,7 +114,27 @@ class ConstantPoint(PointDataReader):
     ):
         time = pd.date_range(start=start_time, end=end_time, freq="H").values
 
+        if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
+            freq = np.linspace(0.1, 1, 10)
+        if obj_type == DnoraDataType.SPECTRA:
+            dirs = np.linspace(0, 350, 36).astype(int)
+
         coord_dict = {}
+
+        obj_size = []
+        if "time" in obj_type.value._coord_manager.added_coords():
+            coord_dict["time"] = time
+            obj_size.append(len(time))
+        obj_size.append(len(inds))
+        if "freq" in obj_type.value._coord_manager.added_coords():
+            coord_dict["freq"] = freq
+            obj_size.append(len(freq))
+        if "dirs" in obj_type.value._coord_manager.added_coords():
+            coord_dict["dirs"] = dirs
+            obj_size.append(len(dirs))
+
+        obj_size = tuple(obj_size)
+
         lon_all, lat_all, x_all, y_all = self.get_coordinates(
             grid, start_time, source, ""
         )
@@ -91,12 +146,6 @@ class ConstantPoint(PointDataReader):
             coord_dict["x"] = x_all[inds]
         if y_all is not None:
             coord_dict["y"] = y_all[inds]
-
-        if "time" in obj_type.value._coord_manager.added_coords():
-            coord_dict["time"] = time
-            obj_size = (len(time), len(inds))
-        else:
-            obj_size = (len(inds),)
 
         variables = obj_type.value._coord_manager.added_vars().keys()
 

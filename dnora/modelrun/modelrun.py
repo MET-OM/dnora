@@ -222,9 +222,10 @@ class ModelRun:
                 return
             return inds
 
-    def _import_data(
-        self, obj_type: DnoraDataType, reader, name, source, folder, **kwargs
+    def _read_data(
+        self, obj_type: DnoraDataType, reader, name, source, folder, inds, **kwargs
     ):
+        """Reads data using the reader, creates the objects and sets data and metadata in object"""
         if self.dry_run():
             msg.info("Dry run! No forcing will be imported.")
             return
@@ -236,6 +237,7 @@ class ModelRun:
             end_time=self.end_time(),
             source=source,
             folder=folder,
+            inds=inds,
             **kwargs,
         )
 
@@ -257,6 +259,39 @@ class ModelRun:
 
         self[obj_type] = obj
 
+    def _import_data(
+        self,
+        obj_type: DnoraDataType,
+        name,
+        dry_run,
+        reader,
+        source,
+        folder,
+        mask=None,
+        point_picker=None,
+        **kwargs,
+    ):
+        """Performs import of DNORA object"""
+        reader, name, source, folder = self._setup_import(
+            obj_type, name, dry_run, reader, source, folder
+        )
+
+        if mask is not None:
+            point_picker = self._setup_point_picker(point_picker)
+
+            inds = self._pick_points(
+                reader,
+                point_picker,
+                mask,
+                source,
+                folder,
+                **kwargs,
+            )
+        else:
+            inds = None
+
+        self._read_data(obj_type, reader, name, source, folder, inds, **kwargs)
+
     def cache(self, obj_type: DnoraDataType | str) -> None:
         Cacher(self).export(obj_type)
 
@@ -270,10 +305,10 @@ class ModelRun:
         folder: str = None,
         **kwargs,
     ) -> None:
-        reader, name, source, folder = self._setup_import(
-            DnoraDataType.WIND, name, dry_run, reader, source, folder
+        """Import wind data from a source using the given reader"""
+        self._import_data(
+            DnoraDataType.WIND, name, dry_run, reader, source, folder, **kwargs
         )
-        self._import_data(DnoraDataType.WIND, reader, name, source, folder, **kwargs)
 
     @cached_reader(DnoraDataType.WATERLEVEL, waterlevel.read.DnoraNc)
     def import_waterlevel(
@@ -285,13 +320,58 @@ class ModelRun:
         folder: str = None,
         **kwargs,
     ) -> None:
-        reader, name, source, folder = self._setup_import(
-            DnoraDataType.WATERLEVEL, name, dry_run, reader, source, folder
-        )
+        """Import waterlevel data from a source using the given reader"""
         self._import_data(
-            DnoraDataType.WATERLEVEL, reader, name, source, folder, **kwargs
+            DnoraDataType.WATERLEVEL, name, dry_run, reader, source, folder, **kwargs
         )
 
+    @cached_reader(DnoraDataType.SPECTRA, spectra.read.DnoraNc)
+    def import_spectra(
+        self,
+        reader: SpectraReader | None = None,
+        point_picker: PointPicker | None = None,
+        name: str | None = None,
+        dry_run: bool = False,
+        source: str | DataSource = DataSource.UNDEFINED,
+        folder: str = None,
+        **kwargs,
+    ) -> None:
+        self._import_data(
+            DnoraDataType.SPECTRA,
+            name,
+            dry_run,
+            reader,
+            source,
+            folder,
+            mask=self.grid().sea_mask(),
+            point_picker=point_picker,
+            **kwargs,
+        )
+
+    @cached_reader(DnoraDataType.SPECTRA1D, spectra1d.read.DnoraNc)
+    def import_spectra1d(
+        self,
+        reader: Spectra1DReader | None = None,
+        point_picker: PointPicker | None = None,
+        name: str | None = None,
+        dry_run: bool = False,
+        source: str | DataSource = DataSource.UNDEFINED,
+        folder: str = None,
+        **kwargs,
+    ) -> None:
+        self._import_data(
+            DnoraDataType.SPECTRA1D,
+            name,
+            dry_run,
+            reader,
+            source,
+            folder,
+            mask=self.grid().sea_mask(),
+            point_picker=point_picker,
+            **kwargs,
+        )
+
+    @cached_reader(DnoraDataType.WAVESERIES, current.read.DnoraNc)
     def import_waveseries(
         self,
         reader: WaveSeriesReader | None = None,
@@ -302,23 +382,16 @@ class ModelRun:
         folder: str = None,
         **kwargs,
     ) -> None:
-        reader, name, source, folder = self._setup_import(
-            DnoraDataType.WATERLEVEL, name, dry_run, reader, source, folder
-        )
-
-        point_picker = self._setup_point_picker(point_picker)
-
-        inds = self._pick_points(
+        self._import_data(
+            DnoraDataType.WAVESERIES,
+            name,
+            dry_run,
             reader,
-            point_picker,
-            self.grid().sea_mask(),
             source,
             folder,
+            mask=self.grid().sea_mask(),
+            point_picker=point_picker,
             **kwargs,
-        )
-
-        self._import_data(
-            DnoraDataType.WAVESERIES, reader, name, source, folder, inds=inds, **kwargs
         )
 
     @cached_reader(DnoraDataType.CURRENT, current.read.DnoraNc)
@@ -331,10 +404,9 @@ class ModelRun:
         folder: str = None,
         **kwargs,
     ) -> None:
-        reader, name, source, folder = self._setup_import(
-            DnoraDataType.CURRENT, name, dry_run, reader, source, folder
+        self._import_data(
+            DnoraDataType.CURRENT, name, dry_run, reader, source, folder, **kwargs
         )
-        self._import_data(DnoraDataType.CURRENT, reader, name, source, folder, **kwargs)
 
     @cached_reader(DnoraDataType.ICE, ice.read.DnoraNc)
     def import_ice(
@@ -346,395 +418,9 @@ class ModelRun:
         folder: str = None,
         **kwargs,
     ) -> None:
-        reader, name, source, folder = self._setup_import(
-            DnoraDataType.ICE, name, dry_run, reader, source, folder
+        self._import_data(
+            DnoraDataType.ICE, name, dry_run, reader, source, folder, **kwargs
         )
-        self._import_data(DnoraDataType.ICE, reader, name, source, folder, **kwargs)
-
-    # @cached_reader(DnoraDataType.Forcing, wind.read.DnoraNc)
-    # def import_forcing(
-    #     self,
-    #     forcing_reader: ForcingReader | None = None,
-    #     name: str | None = None,
-    #     dry_run: bool = False,
-    #     source: str | DataSource = DataSource.UNDEFINED,
-    #     folder: str = None,
-    #     **kwargs,
-    # ) -> None:
-    #     """Imports wind forcing.
-
-    #     source = 'remote' (default) / '<folder>' / 'met'
-
-    #     The implementation of this is up to the ForcingReader, and all options might not be functional.
-    #     'met' options will only work in MET Norway internal networks.
-
-    #     To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
-    #     """
-
-    #     forcing_reader, name, source, folder = self._setup_import(
-    #         DnoraDataType.Forcing, name, dry_run, forcing_reader, source, folder
-    #     )
-
-    #     if self.dry_run():
-    #         msg.info("Dry run! No forcing will be imported.")
-    #         return
-
-    #     time, u, v, lon, lat, x, y, attributes = forcing_reader(
-    #         grid=self.grid(),
-    #         start_time=self.start_time(),
-    #         end_time=self.end_time(),
-    #         source=source,
-    #         folder=folder,
-    #         **kwargs,
-    #     )
-
-    #     self[DnoraDataType.Forcing] = Forcing(
-    #         lon=lon, lat=lat, x=x, y=y, time=time, name=name
-    #     )
-    #     x = x or lon
-    #     y = y or lat
-    #     self.forcing().set_spacing(nx=len(x), ny=len(y))
-
-    #     self.forcing().name = name
-    #     self.forcing().set_u(u)
-    #     self.forcing().set_v(v)
-    #     self.forcing().set_metadata(attributes)
-
-    # @cached_reader(DnoraDataType.Boundary, spectra.read.DnoraNc)
-    # def import_boundary(
-    #     self,
-    #     boundary_reader: BoundaryReader | None = None,
-    #     point_picker: PointPicker | None = None,
-    #     name: str | None = None,
-    #     dry_run: bool = False,
-    #     source: str | DataSource = DataSource.UNDEFINED,
-    #     folder: str = None,
-    #     **kwargs,
-    # ):
-    #     """Imports boundary spectra. Which spectra to choose spatically
-    #     are determined by the point_picker.
-
-    #     source = 'remote' / 'internal' / 'local'
-
-    #     If 'folder' is set, then source is assumed to be 'local'
-
-    #     The implementation of this is up to the BoundaryReader, and all options might not be functional.
-
-    #     To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
-    #     """
-
-    #     boundary_reader, name, source, folder = self._setup_import(
-    #         DnoraDataType.Boundary, name, dry_run, boundary_reader, source, folder
-    #     )
-    #     point_picker = self._setup_point_picker(point_picker)
-
-    #     inds = self._pick_points(
-    #         boundary_reader,
-    #         point_picker,
-    #         self.grid().boundary_mask(),
-    #         source,
-    #         folder,
-    #         **kwargs,
-    #     )
-
-    #     if self.dry_run():
-    #         msg.info("Dry run! No boundary spectra will be imported.")
-    #         return
-
-    #     msg.header(boundary_reader, "Loading boundary spectra...")
-
-    #     time, freq, dirs, spec, lon, lat, x, y, metadata = boundary_reader(
-    #         grid=self.grid(),
-    #         start_time=self.start_time(),
-    #         end_time=self.end_time(),
-    #         inds=inds,
-    #         source=source,
-    #         folder=folder,
-    #         **kwargs,
-    #     )
-    #     self[DnoraDataType.Boundary] = Boundary(
-    #         x=x, y=y, lon=lon, lat=lat, time=time, freq=freq, dirs=dirs, name=name
-    #     )
-
-    #     self.boundary().set_spec(spec)
-    #     self.boundary().set_metadata(metadata)
-    #     # E.g. are the spectra oceanic convention etc.
-    #     self.boundary()._mark_convention(boundary_reader.convention())
-
-    #     if boundary_reader.post_processing() is not None:
-    #         self.boundary().process_boundary(boundary_reader.post_processing())
-
-    # @cached_reader(DnoraDataType.Spectra, spectra1d.read.DnoraNc)
-    # def import_spectra(
-    #     self,
-    #     spectral_reader: SpectraReader | None = None,
-    #     point_picker: PointPicker | None = None,
-    #     name: str | None = None,
-    #     dry_run: bool = False,
-    #     source: str | DataSource = DataSource.UNDEFINED,
-    #     folder: str = None,
-    #     **kwargs,
-    # ):
-    #     """Imports spectra. Which spectra to choose spatically
-    #     are determined by the point_picker.
-
-    #     source = 'remote' (default) / '<folder>' / 'met'
-
-    #     The implementation of this is up to the SpectralReader, and all options might not be functional.
-    #     'met' options will only work in MET Norway internal networks.
-
-    #     To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
-    #     """
-    #     spectral_reader, name, source, folder = self._setup_import(
-    #         DnoraDataType.Spectra, name, dry_run, spectral_reader, source, folder
-    #     )
-
-    #     point_picker = self._setup_point_picker(point_picker)
-
-    #     inds = self._pick_points(
-    #         spectral_reader,
-    #         point_picker,
-    #         self.grid().boundary_mask(),
-    #         source,
-    #         folder,
-    #         **kwargs,
-    #     )
-
-    #     if self.dry_run():
-    #         msg.info("Dry run! No spectra will be imported.")
-    #         return
-
-    #     msg.header(spectral_reader, "Loading omnidirectional spectra...")
-    #     time, freq, spec, mdir, spr, lon, lat, x, y, metadata = spectral_reader(
-    #         grid=self.grid(),
-    #         start_time=self.start_time(),
-    #         end_time=self.end_time(),
-    #         inds=inds,
-    #         source=source,
-    #         folder=folder,
-    #         **kwargs,
-    #     )
-
-    #     self[DnoraDataType.Spectra] = Spectra(
-    #         x=x, y=y, lon=lon, lat=lat, time=time, freq=freq, name=name
-    #     )
-
-    #     self.spectra().set_spec(spec)
-    #     self.spectra().set_mdir(mdir)
-    #     self.spectra().set_spr(spr)
-
-    #     self.spectra().set_metadata(metadata)
-
-    #     # E.g. are the spectra oceanic convention etc.
-    #     self.spectra()._mark_convention(spectral_reader.convention())
-
-    # @cached_reader(DnoraDataType.WaveSeries, waveseries.read.DnoraNc)
-    # def import_waveseries(
-    #     self,
-    #     waveseries_reader: WaveSeriesReader | None = None,
-    #     point_picker: PointPicker | None = None,
-    #     name: str | None = None,
-    #     dry_run: bool = False,
-    #     source: str | DataSource = DataSource.UNDEFINED,
-    #     folder: str = None,
-    #     **kwargs,
-    # ):
-    #     waveseries_reader, name, source, folder = self._setup_import(
-    #         DnoraDataType.WaveSeries, name, dry_run, waveseries_reader, source, folder
-    #     )
-
-    #     point_picker = self._setup_point_picker(point_picker)
-
-    #     inds = self._pick_points(
-    #         waveseries_reader,
-    #         point_picker,
-    #         self.grid().boundary_mask(),
-    #         source,
-    #         folder,
-    #         **kwargs,
-    #     )
-
-    #     if self.dry_run():
-    #         msg.info("Dry run! No waveseries will be imported.")
-    #         return
-
-    #     msg.header(waveseries_reader, "Loading wave series data...")
-    #     time, data_dict, lon, lat, x, y, metadata = waveseries_reader(
-    #         grid=self.grid(),
-    #         start_time=self.start_time(),
-    #         end_time=self.end_time(),
-    #         inds=inds,
-    #         source=source,
-    #         folder=folder,
-    #         **kwargs,
-    #     )
-
-    #     self[DnoraDataType.WaveSeries] = WaveSeries(
-    #         x, y, lon, lat, time=time, name=name
-    #     )
-
-    #     for wp, data in data_dict.items():
-    #         self._waveseries = add_datavar(wp.name(), append=True)(
-    #             self.waveseries()
-    #         )  # Creates .hs() etc. methods
-    #         self.waveseries()._update_datavar(wp.name(), data)
-    #         self.waveseries().set_metadata(
-    #             {
-    #                 "name": wp.name(),
-    #                 "unit": f"{wp.unit()}",
-    #                 "standard_name": wp.standard_name(),
-    #             },
-    #             data_array_name=wp.name(),
-    #         )
-
-    #     self.waveseries().set_metadata(metadata)  # Global attributes
-
-    # @cached_reader(DnoraDataType.WaterLevel, waterlevel.read.DnoraNc)
-    # def import_waterlevel(
-    #     self,
-    #     waterlevel_reader: WaterLevelReader | None = None,
-    #     name: str | None = None,
-    #     dry_run: bool = False,
-    #     source: str | DataSource = DataSource.UNDEFINED,
-    #     folder: str = None,
-    #     **kwargs,
-    # ) -> None:
-    #     """Imports waterlevel.
-
-    #     source = 'remote' (default) / '<folder>' / 'met'
-
-    #     The implementation of this is up to the WaterLevelReader, and all options might not be functional.
-    #     'met' options will only work in MET Norway internal networks.
-
-    #     To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
-    #     """
-    #     waterlevel_reader, name, source, folder = self._setup_import(
-    #         DnoraDataType.WaterLevel, name, dry_run, waterlevel_reader, source, folder
-    #     )
-
-    #     if self.dry_run():
-    #         msg.info("Dry run! No water level data will be imported.")
-    #         return
-
-    #     time, waterlevel, lon, lat, x, y, attributes = waterlevel_reader(
-    #         grid=self.grid(),
-    #         start_time=self.start_time(),
-    #         end_time=self.end_time(),
-    #         source=source,
-    #         folder=folder,
-    #         **kwargs,
-    #     )
-    #     self[DnoraDataType.WaterLevel] = WaterLevel(
-    #         lon=lon, lat=lat, x=x, y=y, time=time, name=name
-    #     )
-    #     self.waterlevel().set_spacing(nx=len(x or lon), ny=len(y or lat))
-
-    #     self.waterlevel().name = name
-    #     self.waterlevel().set_waterlevel(waterlevel)
-    #     self.waterlevel().set_metadata(attributes)
-
-    # @cached_reader(DnoraDataType.OceanCurrent, current.read.DnoraNc)
-    # def import_oceancurrent(
-    #     self,
-    #     oceancurrent_reader: OceanCurrentReader | None = None,
-    #     name: str | None = None,
-    #     dry_run: bool = False,
-    #     source: str | DataSource = DataSource.UNDEFINED,
-    #     folder: str = None,
-    #     **kwargs,
-    # ) -> None:
-    #     """Imports waterlevel.
-
-    #     source = 'remote' (default) / '<folder>' / 'met'
-
-    #     The implementation of this is up to the OceanCurrentReader, and all options might not be functional.
-    #     'met' options will only work in MET Norway internal networks.
-
-    #     To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
-    #     """
-    #     oceancurrent_reader, name, source, folder = self._setup_import(
-    #         DnoraDataType.OceanCurrent,
-    #         name,
-    #         dry_run,
-    #         oceancurrent_reader,
-    #         source,
-    #         folder,
-    #     )
-
-    #     if self.dry_run():
-    #         msg.info("Dry run! No ocean current data will be imported.")
-    #         return
-
-    #     time, u, v, lon, lat, x, y, attributes = oceancurrent_reader(
-    #         grid=self.grid(),
-    #         start_time=self.start_time(),
-    #         end_time=self.end_time(),
-    #         source=source,
-    #         folder=folder,
-    #         **kwargs,
-    #     )
-    #     self[DnoraDataType.OceanCurrent] = OceanCurrent(
-    #         lon=lon, lat=lat, x=x, y=y, time=time, name=name
-    #     )
-    #     self.oceancurrent().set_spacing(nx=len(x or lon), ny=len(y or lat))
-
-    #     self.oceancurrent().name = name
-    #     self.oceancurrent().set_u(u)
-    #     self.oceancurrent().set_v(v)
-    #     self.oceancurrent().set_metadata(attributes)
-
-    # @cached_reader(DnoraDataType.IceForcing, ice.read.DnoraNc)
-    # def import_iceforcing(
-    #     self,
-    #     iceforcing_reader: IceForcingReader | None = None,
-    #     name: str | None = None,
-    #     dry_run: bool = False,
-    #     source: str | DataSource = DataSource.UNDEFINED,
-    #     folder: str = None,
-    #     **kwargs,
-    # ) -> None:
-    #     """Imports waterlevel.
-
-    #     source = 'remote' (default) / '<folder>' / 'met'
-
-    #     The implementation of this is up to the WaterLevelReader, and all options might not be functional.
-    #     'met' options will only work in MET Norway internal networks.
-
-    #     To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
-    #     """
-    #     iceforcing_reader, name, source, folder = self._setup_import(
-    #         DnoraDataType.IceForcing, name, dry_run, iceforcing_reader, source, folder
-    #     )
-    #     if self.dry_run():
-    #         msg.info("Dry run! No ice forcing data will be imported.")
-    #         return
-    #     (
-    #         time,
-    #         concentration,
-    #         thickness,
-    #         lon,
-    #         lat,
-    #         x,
-    #         y,
-    #         attributes,
-    #     ) = iceforcing_reader(
-    #         grid=self.grid(),
-    #         start_time=self.start_time(),
-    #         end_time=self.end_time(),
-    #         source=source,
-    #         folder=folder,
-    #         **kwargs,
-    #     )
-    #     self[DnoraDataType.IceForcing] = IceForcing(
-    #         lon=lon, lat=lat, x=x, y=y, time=time, name=name
-    #     )
-
-    #     self.iceforcing().set_spacing(nx=len(x or lon), ny=len(y or lat))
-
-    #     self.iceforcing().name = name
-    #     self.iceforcing().set_concentration(concentration)
-    #     self.iceforcing().set_thickness(thickness)
-    #     self.iceforcing().set_metadata(attributes)
 
     # def boundary_to_spectra(
     #     self,

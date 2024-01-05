@@ -13,6 +13,8 @@ from .. import msg
 from geo_skeletons import PointSkeleton
 from geo_skeletons.decorators import add_time, add_frequency, add_direction, add_datavar
 
+from ..metaparameter.parameters import Efth
+
 
 # @add_mask(name='bad', coords='all', default_value=0)
 @add_datavar(name="spec", coords="all", default_value=0.0)
@@ -20,6 +22,8 @@ from geo_skeletons.decorators import add_time, add_frequency, add_direction, add
 @add_frequency(grid_coord=False)
 @add_time(grid_coord=True)
 class Spectra(PointSkeleton):
+    meta_dict = {"spec": Efth}
+
     def process_boundary(
         self, boundary_processors: list[BoundaryProcessor] | None = None
     ):

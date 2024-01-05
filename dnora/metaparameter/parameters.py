@@ -52,11 +52,34 @@ class DirmSwell(MetaParameter):
     _unit = ureg.deg
 
 
+class Dirm(MetaParameter):
+    _short_name = "dirm"
+    _long_name = "mean_wave_direction"
+    _standard_name = "sea_surface_wave_from_direction"
+    _unit = ureg.deg
+
+
 class Dirp(MetaParameter):
     _short_name = "dirp"
     _long_name = "peak_wave_direction"
     _standard_name = (
         "sea_surface_wave_from_direction_at_variance_spectral_density_maximum"
+    )
+    _unit = ureg.deg
+
+
+class Spr(MetaParameter):
+    _short_name = "spr"
+    _long_name = "wave_directional_spread"
+    _standard_name = "sea_surface_wave_directional_spread"
+    _unit = ureg.deg
+
+
+class SprP(MetaParameter):
+    _short_name = "sprp"
+    _long_name = "peak_wave_directional_spread"
+    _standard_name = (
+        "sea_surface_wave_directional_spread_at_variance_spectral_density_maximum"
     )
     _unit = ureg.deg
 
@@ -132,3 +155,17 @@ class IceThickness(MetaParameter):
     _long_name = "sea_ice_thickness"
     _standard_name = "sea_ice_thickness"
     _unit = ureg.m
+
+
+class Ef(MetaParameter):
+    _short_name = "ef"
+    _long_name = "spectral_density"
+    _standard_name = "sea_surface_wave_variance_spectral_density"
+    _unit = ureg.m * ureg.m * ureg.s
+
+
+class Efth(MetaParameter):
+    _short_name = "efth"
+    _long_name = "directional_spectral_density"
+    _standard_name = "sea_surface_wave_directional_variance_spectral_density"
+    _unit = ureg.m * ureg.m * ureg.s / ureg.rad

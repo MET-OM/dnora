@@ -111,3 +111,14 @@ class MetaParameter(ABC):
             "standard_name": cls.standard_name(alias=alias),
             "unit": str(cls.unit()),
         }
+
+    @classmethod
+    def find_me_in_ds(cls, ds) -> str | None:
+        """Takes an Xarray Dataset and returns name of variable that matches the parameter based on standard_name"""
+        data_vars = list(ds.data_vars)
+
+        for var in data_vars:
+            if ds.get(var).standard_name in cls.standard_aliases():
+                return var
+
+        return None

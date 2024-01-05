@@ -17,6 +17,7 @@ from geo_skeletons.point_skeleton import PointSkeleton
 from geo_skeletons.decorators import add_time, add_frequency, add_datavar
 
 from .process import SpectralProcessor
+from ..metaparameter.parameters import Ef, Dirm, Spr
 
 
 @add_datavar(name="spec", coords="all", default_value=0.0)
@@ -25,6 +26,8 @@ from .process import SpectralProcessor
 @add_frequency(grid_coord=False)
 @add_time(grid_coord=True)
 class Spectra1D(PointSkeleton):
+    meta_dict = {"spec": Ef, "mdir": Dirm, "spr": Spr}
+
     def process_spectra(
         self, spectral_processors: list[SpectralProcessor] | None = None
     ):
