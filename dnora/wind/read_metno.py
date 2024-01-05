@@ -168,18 +168,17 @@ class NORA3(ForcingReader):
         # Go to u and v components
         u, v = u_v_from_speed_dir(wind_forcing.wind_speed, wind_forcing.wind_direction)
 
-        u = u.fillna(0).values
-        v = v.fillna(0).values
-        # u = np.moveaxis(u.values,0,2)
-        # v = np.moveaxis(v.values,0,2)
+        data_dict = {"u": u.fillna(0).values, "v": v.fillna(0).values}
+        coord_dict = {
+            "time": wind_forcing.time.values,
+            "lon": wind_forcing.x.values,
+            "lat": wind_forcing.y.values,
+        }
+        meta_dict = wind_forcing.attrs
 
-        time = wind_forcing.time.values
-        lon = wind_forcing.x.values
-        lat = wind_forcing.y.values
-        x = None
-        y = None
+        metaparameter_dict = {}
 
-        return time, u, v, lon, lat, x, y, wind_forcing.attrs
+        return coord_dict, data_dict, meta_dict, metaparameter_dict
 
     def get_url(
         self, time_stamp_file, time_stamp, first_ind, source: DataSource, folder: str
@@ -383,6 +382,9 @@ class MEPS(ForcingReader):
     The data is from a 2.5 km AROME model.
     """
 
+    def default_data_source(self) -> DataSource:
+        return DataSource.REMOTE
+
     def __init__(
         self,
         stride: int = 6,
@@ -407,7 +409,7 @@ class MEPS(ForcingReader):
         end_time: str,
         source: DataSource,
         folder: str,
-        expansion_factor: float,
+        expansion_factor: float = 1.2,
         **kwargs,
     ):
         """Reads in all boundary spectra between the given times and at for the given indeces"""
@@ -509,20 +511,22 @@ class MEPS(ForcingReader):
 
         wind_forcing = xr.concat(wnd_list, dim="time")
 
-        u = wind_forcing.x_wind_10m.values
-        v = wind_forcing.y_wind_10m.values
-        # u = np.moveaxis(u,0,2)
-        # v = np.moveaxis(v,0,2)
+        data_dict = {
+            "u": wind_forcing.x_wind_10m.values,
+            "v": wind_forcing.y_wind_10m.values,
+        }
+        coord_dict = {
+            "time": wind_forcing.time.values,
+            "lon": wind_forcing.x.values,
+            "lat": wind_forcing.y.values,
+        }
+        meta_dict = wind_forcing.attrs
 
-        time = wind_forcing.time.values
-        lon = wind_forcing.x.values
-        lat = wind_forcing.y.values
-        x = None
-        y = None
+        metaparameter_dict = {}
 
-        return time, u, v, lon, lat, x, y, wind_forcing.attrs
+        return coord_dict, data_dict, meta_dict, metaparameter_dict
 
-    def get_url(self, time_stamp, prefix, source, folder):
+    def get_url(self, time_stamp, prefix, source, folder=""):
         filename = (
             "meps_"
             + prefix

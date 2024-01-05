@@ -4,6 +4,7 @@ from ..data_sources import DataSource
 import pandas as pd
 import numpy as np
 import xarray as xr
+from .. import aux_funcs
 
 
 class ConstantGrid(DataReader):
@@ -66,6 +67,7 @@ class Netcdf(DataReader):
         **kwargs
     ):
         ds = xr.open_mfdataset(self.files)
+        # lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
         coord_dict = {}
         # obj_type.value._coord_manager.added_coords()
         for c in list(ds.coords):
