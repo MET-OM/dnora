@@ -52,8 +52,8 @@ class ConstantGrid(DataReader):
 
 
 class Netcdf(DataReader):
-    def __init__(self, filename: str) -> None:
-        self.filename = filename
+    def __init__(self, files: str) -> None:
+        self.files = files
 
     def __call__(
         self,
@@ -65,7 +65,7 @@ class Netcdf(DataReader):
         folder: str,
         **kwargs
     ):
-        ds = xr.open_dataset(self.filename)
+        ds = xr.open_mfdataset(self.files)
         coord_dict = {}
         # obj_type.value._coord_manager.added_coords()
         for c in list(ds.coords):
@@ -79,7 +79,6 @@ class Netcdf(DataReader):
 
         data_dict = {}
         metaparameter_dict = {}
-        meta_dict = {}
         for var, meta_var in obj_type.value.meta_dict.items():
             ds_var = meta_var.find_me_in_ds(ds)
             ds_data = ds.get(ds_var)
@@ -87,6 +86,7 @@ class Netcdf(DataReader):
                 data_dict[var] = ds_data.values
                 metaparameter_dict[var] = meta_var
 
+        meta_dict = ds.attrs
         return coord_dict, data_dict, meta_dict, metaparameter_dict
 
 

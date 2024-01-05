@@ -76,7 +76,7 @@ def write_monthly_nc_files(
         t1 = f"{month.strftime(f'%Y-%m-{d1}')}"
 
         outfile = file_object.get_filepath(
-            start_time=month, edge_object=DnoraDataType.Grid
+            start_time=month, edge_object=DnoraDataType.GRID
         )
 
         outfile = file_module.clean_filename(outfile)

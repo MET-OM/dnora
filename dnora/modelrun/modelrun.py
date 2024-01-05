@@ -58,6 +58,7 @@ from ..defaults.default_reader import data_sources
 
 from ..export.exporters import Cacher
 
+from ..readers import generic_readers
 
 ReaderFunction = Union[
     ForcingReader,
@@ -295,7 +296,7 @@ class ModelRun:
     def cache(self, obj_type: DnoraDataType | str) -> None:
         Cacher(self).export(obj_type)
 
-    @cached_reader(DnoraDataType.WIND, wind.read.DnoraNc)
+    @cached_reader(DnoraDataType.WIND, generic_readers.Netcdf)
     def import_wind(
         self,
         reader: ForcingReader | None = None,

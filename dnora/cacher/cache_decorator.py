@@ -118,8 +118,8 @@ def cached_reader(dnora_obj, reader_function):
             if files and read_cache:
                 new_kwargs = copy(kwargs)
                 new_kwargs["name"] = name
-                if kwargs.get(f"{dnora_obj.lower()}_reader") is not None:
-                    new_kwargs[f"{dnora_obj.lower()}_reader"] = reader
+                if kwargs.get(f"{dnora_obj.name.lower()}_reader") is not None:
+                    new_kwargs[f"{dnora_obj.name.lower()}_reader"] = reader
                     new_args = args
                 else:
                     new_args = []
@@ -131,7 +131,7 @@ def cached_reader(dnora_obj, reader_function):
                             new_args.append(arg)
                     new_args = tuple(new_args)
 
-                new_kwargs[f"{dnora_obj.lower()}_reader"] = reader
+                new_kwargs[f"{dnora_obj.name.lower()}_reader"] = reader
                 import_method(*new_args, **new_kwargs)
             else:
                 import_method(*args, **kwargs)
