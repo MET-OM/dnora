@@ -1,13 +1,13 @@
 from enum import Enum
 
-from grid import Grid, TriGrid
-from spectra import Spectra
-from spectra1d import Spectra1D
-from wind import Wind
-from current import Current
-from waterlevel import WaterLevel
-from ice import Ice
-from waveseries import WaveSeries
+from .grid import Grid, TriGrid
+from .spectra import Spectra
+from .spectra1d import Spectra1D
+from .wind import Wind
+from .current import Current
+from .waterlevel import WaterLevel
+from .ice import Ice
+from .waveseries import WaveSeries
 
 
 class DnoraDataType(Enum):

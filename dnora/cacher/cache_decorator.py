@@ -14,9 +14,10 @@ import numpy as np
 import re
 from geo_skeletons import GriddedSkeleton
 
-from ..dnora_object_type import DnoraObjectType
+from ..dnora_object_type import DnoraDataType
 from ..model_formats import ModelFormat
-from ..exp.exporters import Cacher
+from ..export.exporters import Cacher
+from ..readers.generic_readers import DataReader
 
 
 class DummyDnoraObject(GriddedSkeleton):
@@ -39,14 +40,12 @@ def cached_reader(dnora_obj, reader_function):
         ):
             def get_reader(args, kwargs):
                 reader = None
-                if kwargs.get(f"{dnora_obj.value}_reader") is not None:
-                    reader = kwargs.get(f"{dnora_obj.value}_reader")
+                if kwargs.get("reader") is not None:
+                    reader = kwargs.get("reader")
                 else:
                     new_args = []
                     for arg in args:
-                        if (
-                            reader_function.__bases__[0] == arg.__class__.__bases__[0]
-                        ):  # HAve we found the e.g. BoundaryReader
+                        if isinstance(arg, DataReader):
                             reader = arg
                 reader = reader or args[0]._get_reader(dnora_obj)
                 return reader
@@ -99,17 +98,19 @@ def cached_reader(dnora_obj, reader_function):
                     name = given_reader.name()
 
             # FileObject takes names from the dict of objects, so create one here
+            if name is None:
+                raise ValueError("Provide a DataReader!")
+
             mrun[dnora_obj] = DummyDnoraObject(name=name)
             file_object = FileNames(
                 format=ModelFormat.CACHE,
                 obj_type=dnora_obj,
                 model=mrun,
-                edge_object=DnoraObjectType.Grid,
+                edge_object=DnoraDataType.GRID,
                 filename=cache_name,
             )
             mrun[dnora_obj] = None
             file_object.create_folder()
-
             files = glob.glob(f"{file_object.get_filepath()[0:-3]}*")
 
             reader = reader_function(files=files)

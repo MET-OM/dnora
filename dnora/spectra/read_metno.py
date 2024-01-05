@@ -8,7 +8,7 @@ from typing import Tuple
 import pandas as pd
 
 # Import abstract classes and needed instances of them
-from .read import BoundaryReader
+from .read import SpectraReader
 from .process import RemoveEmpty
 from ..spectral_conventions import SpectralConvention
 
@@ -18,7 +18,7 @@ from ..aux_funcs import create_time_stamps
 from ..data_sources import DataSource
 
 
-class WAM4km(BoundaryReader):
+class WAM4km(SpectraReader):
     def __init__(
         self,
         ignore_nan: bool = True,
@@ -206,7 +206,7 @@ class WAM4km(BoundaryReader):
             return folder + "/MyWave_wam4_SPC_" + day.strftime("%Y%m%d")
 
 
-class NORA3(BoundaryReader):
+class NORA3(SpectraReader):
     def __init__(
         self,
         stride: int = 24,
@@ -320,7 +320,7 @@ class NORA3(BoundaryReader):
             return folder + "/SPC" + day.strftime("%Y%m%d") + "00.nc"
 
 
-class WW3_4km(BoundaryReader):
+class WW3_4km(SpectraReader):
     def __init__(
         self,
         ignore_nan: bool = True,

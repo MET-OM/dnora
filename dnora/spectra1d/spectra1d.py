@@ -11,7 +11,6 @@ from .process import spectral_processor_for_convention_change
 from ..spectral_conventions import SpectralConvention, convert_2d_to_1d
 
 # Import abstract classes and needed instances of them
-from .read import SpectraReader
 from .. import msg
 
 from geo_skeletons.point_skeleton import PointSkeleton

@@ -14,7 +14,7 @@ import pandas as pd
 from ..data_sources import DataSource
 
 
-class BoundaryReader(ABC):
+class SpectraReader(ABC):
     """Reads boundary spectra from some source and provide it to the object."""
 
     @abstractmethod
@@ -99,7 +99,7 @@ class BoundaryReader(ABC):
     # return (f"{self.start_time} - {self.end_time}")
 
 
-class ConstantBoundary(BoundaryReader):
+class ConstantBoundary(SpectraReader):
     def __init__(
         self,
         spec: float = 1,
@@ -143,7 +143,7 @@ class ConstantBoundary(BoundaryReader):
         return time, freq, dirs, spec, lon, lat, x, y, metadata
 
 
-class DnoraNc(BoundaryReader):
+class DnoraNc(SpectraReader):
     def __init__(self, files: str) -> None:
         self.files = files
 
@@ -180,7 +180,7 @@ class DnoraNc(BoundaryReader):
         )
 
 
-class ForceFeed(BoundaryReader):
+class ForceFeed(SpectraReader):
     def __init__(
         self, time, freq, dirs, spec, lon, lat, convention: SpectralConvention
     ) -> None:
@@ -213,7 +213,7 @@ class ForceFeed(BoundaryReader):
         )
 
 
-class WW3Nc(BoundaryReader):
+class WW3Nc(SpectraReader):
     def __init__(
         self, filename: str = "ww3.%Y%m_spec.nc", folder: str = "", mode: str = "single"
     ):

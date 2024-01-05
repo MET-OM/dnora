@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from copy import copy
-from ..spectra.spectra import Boundary
+from ..spectra.spectra import Spectra
 import numpy as np
 
 from ..spectral_conventions import SpectralConvention
@@ -12,7 +12,7 @@ from .. import msg
 from ..data_sources import DataSource
 
 
-class SpectraReader(ABC):
+class Spectra1DReader(ABC):
     """Reads boundary spectra from some source and provide it to the object."""
 
     def __init__(self):
@@ -84,10 +84,10 @@ class SpectraReader(ABC):
         return DataSource.UNDEFINED
 
 
-class BoundaryToSpectra(SpectraReader):
+class BoundaryToSpectra(Spectra1DReader):
     """Integrates boundary spectra to omnidairectional spectra"""
 
-    def __init__(self, boundary: Boundary) -> None:
+    def __init__(self, boundary: Spectra) -> None:
         self._boundary = copy(boundary)
         # self._boundary._set_convention(SpectralConvention.OCEAN)
 
@@ -158,7 +158,7 @@ class BoundaryToSpectra(SpectraReader):
         return self._boundary.name
 
 
-class DnoraNc(SpectraReader):
+class DnoraNc(Spectra1DReader):
     def __init__(self, files: str) -> None:
         self.files = files
 

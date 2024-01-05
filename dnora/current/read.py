@@ -11,7 +11,7 @@ from geo_skeletons import PointSkeleton
 from ..data_sources import DataSource
 
 
-class OceanCurrentReader(ABC):
+class CurrentReader(ABC):
     """Reads forcing data from some source and provide it to the object.
 
     The area is defined from the Grid object that is passed.
@@ -44,7 +44,7 @@ class OceanCurrentReader(ABC):
         return DataSource.UNDEFINED
 
 
-class ConstantOceanCurrent(OceanCurrentReader):
+class ConstantOceanCurrent(CurrentReader):
     def __init__(self, u: float = 1, v: float = 2, metadata: dict = None):
         self.u = u
         self.v = v
@@ -65,7 +65,7 @@ class ConstantOceanCurrent(OceanCurrentReader):
         return time, u, v, lon, lat, x, y, metadata
 
 
-class DnoraNc(OceanCurrentReader):
+class DnoraNc(CurrentReader):
     def __init__(self, files: str) -> None:
         self.files = files
 

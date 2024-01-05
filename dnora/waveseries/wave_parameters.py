@@ -2,8 +2,7 @@ from abc import ABC, abstractmethod
 import xarray as xr
 import numpy as np
 from ..spectral_conventions import SpectralConvention
-from ..spectra import Boundary
-from ..spectra1d import Spectra
+from ..spectra import Spectra
 from typing import Union
 from pint import UnitRegistry
 
@@ -25,7 +24,7 @@ class WaveParameter(ABC):
     dirm:   Mean direction as a function of frequency [deg]
     spr:    Directional spreading as a function of frequency [deg]
 
-    Boundary xarray Dataset contains the following data:
+    Spectra xarray Dataset contains the following data:
 
     freq:   Frequency
     dirs:   Directions [deg]
@@ -60,8 +59,8 @@ class Moment(WaveParameter):
         self._moment = moment
         pass
 
-    def __call__(self, spec: Union[Spectra, Boundary]) -> np.ndarray:
-        if isinstance(spec, Boundary):
+    def __call__(self, spec: Union[Spectra, Spectra]) -> np.ndarray:
+        if isinstance(spec, Spectra):
             dD = 360 / len(self._moment.dirs())
             ds = dD * np.pi / 180 * spec.ds().sum(dim="dirs")
         else:
@@ -90,9 +89,9 @@ class PowerMoment(WaveParameter):
         self._moment = moment
         self._power = power
 
-    def __call__(self, spec: Union[Spectra, Boundary]) -> np.ndarray:
+    def __call__(self, spec: Union[Spectra, Spectra]) -> np.ndarray:
         # moment = spec
-        if isinstance(spec, Boundary):
+        if isinstance(spec, Spectra):
             dD = 360 / len(spec.dirs())
             ds = dD * np.pi / 180 * spec.ds().sum(dim="dirs")
         else:
@@ -134,7 +133,7 @@ class PowerMoment(WaveParameter):
 class Hs(WaveParameter):
     """Singificant wave height from spectra"""
 
-    def __call__(self, spec: Union[Spectra, Boundary]):
+    def __call__(self, spec: Union[Spectra, Spectra]):
         return 4 * Moment(0)(spec) ** 0.5
 
     def name(self):
@@ -150,7 +149,7 @@ class Hs(WaveParameter):
 class Tm01(WaveParameter):
     """Mean wave period from spectra"""
 
-    def __call__(self, spec: Union[Spectra, Boundary]):
+    def __call__(self, spec: Union[Spectra, Spectra]):
         return Moment(0)(spec) / Moment(1)(spec)
 
     def name(self):
@@ -166,7 +165,7 @@ class Tm01(WaveParameter):
 class Tm_10(WaveParameter):
     """Mean wave period based on inverse moment from spectra"""
 
-    def __call__(self, spec: Union[Spectra, Boundary]):
+    def __call__(self, spec: Union[Spectra, Spectra]):
         return Moment(-1)(spec) / Moment(0)(spec)
 
     def name(self):
@@ -182,7 +181,7 @@ class Tm_10(WaveParameter):
 class Tm02(WaveParameter):
     """Mean wave period based on second moment from spectra"""
 
-    def __call__(self, spec: Union[Spectra, Boundary]):
+    def __call__(self, spec: Union[Spectra, Spectra]):
         return (Moment(0)(spec) / Moment(2)(spec)) ** (0.5)
 
     def name(self):
@@ -198,10 +197,10 @@ class Tm02(WaveParameter):
 class Tp(WaveParameter):
     """Peak period from spectra"""
 
-    def __call__(self, spec: Union[Spectra, Boundary]):
+    def __call__(self, spec: Union[Spectra, Spectra]):
         spec.set_convention(SpectralConvention.MET)
 
-        if isinstance(spec, Boundary):
+        if isinstance(spec, Spectra):
             theta = np.deg2rad(spec.mdir(data_array=True))
             dD = 360 / len(spec.dirs())
             # Normalizing here so that integration over direction becomes summing
@@ -235,7 +234,7 @@ class Tp(WaveParameter):
 class TpI(WaveParameter):
     """Peak period from spectra from integration"""
 
-    def __call__(self, spec: Union[Spectra, Boundary]):
+    def __call__(self, spec: Union[Spectra, Spectra]):
         m_1 = PowerMoment(-1, 10)(spec)
         mask = np.where(m_1 < 0.0000000001)
         m_1[mask] = -999
@@ -256,7 +255,7 @@ class TpI(WaveParameter):
 class Fm(WaveParameter):
     """Mean freqeuncy from spectra"""
 
-    def __call__(self, spec: Union[Spectra, Boundary]):
+    def __call__(self, spec: Union[Spectra, Spectra]):
         m0 = Moment(0)(spec)
         mask = np.where(m0 < 0.0000000001)
         m0[mask] = -999
@@ -274,7 +273,7 @@ class Fm(WaveParameter):
 class Wm(WaveParameter):
     """Mean angular freqeuncy from spectra"""
 
-    def __call__(self, spec: Union[Spectra, Boundary]):
+    def __call__(self, spec: Union[Spectra, Spectra]):
         return (Moment(1)(spec) / Moment(0)(spec)) * 2 * np.pi
 
     def name(self):
@@ -287,7 +286,7 @@ class Wm(WaveParameter):
 class Fc(WaveParameter):
     """Characteristic freqeuncy from spectra"""
 
-    def __call__(self, spec: Union[Spectra, Boundary]):
+    def __call__(self, spec: Union[Spectra, Spectra]):
         return PowerMoment(1, 4)(spec) / PowerMoment(0, 4)(spec)
 
     def name(self):
@@ -300,7 +299,7 @@ class Fc(WaveParameter):
 class Wc(WaveParameter):
     """Characteristic angular freqeuncy from spectra"""
 
-    def __call__(self, spec: Union[Spectra, Boundary]):
+    def __call__(self, spec: Union[Spectra, Spectra]):
         return 2 * np.pi * PowerMoment(1, 4)(spec) / PowerMoment(0, 4)(spec)
 
     def name(self):
@@ -313,7 +312,7 @@ class Wc(WaveParameter):
 class Fp(WaveParameter):
     """Peak frequency from spectra"""
 
-    def __call__(self, spec: Union[Spectra, Boundary]):
+    def __call__(self, spec: Union[Spectra, Spectra]):
         return PowerMoment(1, 10)(spec) / PowerMoment(0, 10)(spec)
 
     def name(self):
@@ -329,7 +328,7 @@ class Fp(WaveParameter):
 class Wp(WaveParameter):
     """Peak angular frequency from spectra"""
 
-    def __call__(self, spec: Union[Spectra, Boundary]):
+    def __call__(self, spec: Union[Spectra, Spectra]):
         return 2 * np.pi * PowerMoment(1, 10)(spec) / PowerMoment(0, 10)(spec)
 
     def name(self):
@@ -345,10 +344,10 @@ class Wp(WaveParameter):
 class Dirm(WaveParameter):
     """Mean wave direction"""
 
-    def __call__(self, spec: Union[Spectra, Boundary]):
+    def __call__(self, spec: Union[Spectra, Spectra]):
         spec.set_convention(SpectralConvention.MET)
 
-        if isinstance(spec, Boundary):
+        if isinstance(spec, Spectra):
             theta = np.deg2rad(spec.mdir(data_array=True))
             dD = 360 / len(spec.dirs())
             # Normalizing here so that integration over direction becomes summing
@@ -385,10 +384,10 @@ class Dirm(WaveParameter):
 class Sprm(WaveParameter):
     """Mean wave spreading"""
 
-    def __call__(self, spec: Union[Spectra, Boundary]):
+    def __call__(self, spec: Union[Spectra, Spectra]):
         m0 = Moment(0)(spec)
 
-        if isinstance(spec, Boundary):
+        if isinstance(spec, Spectra):
             theta = np.deg2rad(spec.dirs())
             dD = 360 / len(spec.dirs())
             # Normalizing here so that integration over direction becomes summing
@@ -425,10 +424,10 @@ class Sprm(WaveParameter):
 class Dirp(WaveParameter):
     """Peak wave direction"""
 
-    def __call__(self, spec: Union[Spectra, Boundary]):
+    def __call__(self, spec: Union[Spectra, Spectra]):
         spec.set_convention(SpectralConvention.MET)
 
-        if isinstance(spec, Boundary):
+        if isinstance(spec, Spectra):
             theta = np.deg2rad(spec.mdir(data_array=True))
             dD = 360 / len(spec.dirs())
             # Normalizing here so that integration over direction becomes summing
@@ -459,7 +458,7 @@ class Dirp(WaveParameter):
 class FF(WaveParameter):
     """Wind speed"""
 
-    def __call__(self, spec: Union[Spectra, Boundary]):
+    def __call__(self, spec: Union[Spectra, Spectra]):
         raise NotImplementedError
 
     def name(self):
@@ -475,7 +474,7 @@ class FF(WaveParameter):
 class DD(WaveParameter):
     """Wind direction"""
 
-    def __call__(self, spec: Union[Spectra, Boundary]):
+    def __call__(self, spec: Union[Spectra, Spectra]):
         raise NotImplementedError
 
     def name(self):

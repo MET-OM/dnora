@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 
 from calendar import monthrange
-from ...dnora_object_type import DnoraObjectType
+from ...dnora_object_type import DnoraDataType
 from ... import file_module
 import os
 
@@ -23,7 +23,7 @@ class GenericWriter(ABC):
         self,
         model: ModelRun,
         file_object: FileNames,
-        obj_type: DnoraObjectType,
+        obj_type: DnoraDataType,
         **kwargs,
     ) -> Union[str, list[str]]:
         pass
@@ -34,7 +34,7 @@ class Null(GenericWriter):
         self,
         model: ModelRun,
         file_object: FileNames,
-        obj_type: DnoraObjectType,
+        obj_type: DnoraDataType,
         **kwargs,
     ) -> str:
         return ""
@@ -45,7 +45,7 @@ class DnoraNc(GenericWriter):
         self,
         model: ModelRun,
         file_object: FileNames,
-        obj_type: DnoraObjectType,
+        obj_type: DnoraDataType,
         **kwargs,
     ) -> list[str]:
         output_files = write_monthly_nc_files(model[obj_type], file_object)
@@ -57,7 +57,7 @@ class DumpToNc(GenericWriter):
         self,
         model: ModelRun,
         file_object: FileNames,
-        obj_type: DnoraObjectType,
+        obj_type: DnoraDataType,
         **kwargs,
     ) -> str:
         output_file = file_object.get_filepath()
@@ -66,7 +66,7 @@ class DumpToNc(GenericWriter):
 
 
 def write_monthly_nc_files(
-    dnora_obj: DnoraObjectType, file_object: FileNames
+    dnora_obj: DnoraDataType, file_object: FileNames
 ) -> list[str]:
     "Writes the data of a DNORA object into montly netcdf-files wh the ames specified by the FileNames instance."
     output_files = []
@@ -76,7 +76,7 @@ def write_monthly_nc_files(
         t1 = f"{month.strftime(f'%Y-%m-{d1}')}"
 
         outfile = file_object.get_filepath(
-            start_time=month, edge_object=DnoraObjectType.Grid
+            start_time=month, edge_object=DnoraDataType.Grid
         )
 
         outfile = file_module.clean_filename(outfile)

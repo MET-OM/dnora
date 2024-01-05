@@ -1,17 +1,16 @@
 import xarray as xr
 import numpy as np
-from copy import copy, deepcopy
+from copy import deepcopy
 import pandas as pd
 from abc import ABC, abstractmethod
 from typing import Union
 from ..grid.grid import Grid
 
 # Import aux_funcsiliry functions
-from .. import file_module
 from .. import msg
 from .. import aux_funcs
 
-# from .conventions import SpectralConvention
+# from .conventions import Spectra1DlConvention
 from .wave_parameters import (
     WaveParameter,
     Dirp,
@@ -24,8 +23,7 @@ from .wave_parameters import (
     Tm02,
     TpI,
 )
-from ..spectra1d import Spectra, process
-from ..spectral_conventions import SpectralConvention
+from ..spectra1d import Spectra1D, process
 
 
 from dnora.waveseries import wave_parameters
@@ -73,7 +71,7 @@ def get_wave_parameter(parameter: Union[str, WaveParameter]) -> WaveParameter:
 
 
 class WaveSeriesReader(ABC):
-    """Reads boundary spectra from some source and provide it to the object."""
+    """Reads boundary Spectra1D from some source and provide it to the object."""
 
     def __init__(self):
         pass
@@ -100,7 +98,7 @@ class WaveSeriesReader(ABC):
     def __call__(
         self, grid, start_time, end_time, inds, source: DataSource, **kwargs
     ) -> tuple:
-        """Reads in the spectra from inds between start_time and end_time.
+        """Reads in the Spectra1D from inds between start_time and end_time.
 
         The variables needed to be returned are:
 
@@ -127,15 +125,15 @@ class WaveSeriesReader(ABC):
 
 
 class SpectraToWaveSeries(WaveSeriesReader):
-    """Integrates spectra to wave series"""
+    """Integrates Spectra1D to wave series"""
 
-    def __init__(self, spectra: Spectra, freq: tuple = (0, 10_000)) -> None:
-        self._spectra = deepcopy(spectra)
+    def __init__(self, Spectra1D: Spectra1D, freq: tuple = (0, 10_000)) -> None:
+        self._Spectra1D = deepcopy(Spectra1D)
         try:
-            self._spectra.process_spectra(process.CutFrequency(freq))
+            self._Spectra1D.process_Spectra1D(process.CutFrequency(freq))
         except AttributeError:
             msg.warning(
-                f"Object {self.name()} does not have a process_spectra method!\nNot cutting any frequencies!"
+                f"Object {self.name()} does not have a process_Spectra1D method!\nNot cutting any frequencies!"
             )
         self._freq = freq
 
@@ -143,12 +141,12 @@ class SpectraToWaveSeries(WaveSeriesReader):
         self, grid, start_time: str, source: DataSource, folder: str
     ) -> tuple[np.ndarray, np.ndarray]:
         return (
-            self._spectra.lon(strict=True),
-            self._spectra.lat(strict=True),
-            self._spectra.x(strict=True),
-            self._spectra.y(strict=True),
+            self._Spectra1D.lon(strict=True),
+            self._Spectra1D.lat(strict=True),
+            self._Spectra1D.x(strict=True),
+            self._Spectra1D.y(strict=True),
         )
-        # lon, lat, x, y = aux_funcs.get_coordinates_from_ds(self._spectra.ds())
+        # lon, lat, x, y = aux_funcs.get_coordinates_from_ds(self._Spectra1D.ds())
         # return lon, lat, x, y
 
     # Hs(), Tp(), Dirp(), TpI(), Dirm(), Sprm(), Tm_10(), Tm01(), Tm02()
@@ -172,33 +170,33 @@ class SpectraToWaveSeries(WaveSeriesReader):
         ],
         **kwargs,
     ) -> tuple:
-        self.name = self._spectra.name
+        self.name = self._Spectra1D.name
         # source = self._boundary.data.source
         time = (
-            self._spectra.time(data_array=True)
+            self._Spectra1D.time(data_array=True)
             .sel(time=slice(start_time, end_time))
             .values
         )
-        lon = self._spectra.lon(strict=True)
-        lat = self._spectra.lat(strict=True)
-        x = self._spectra.x(strict=True)
-        y = self._spectra.y(strict=True)
+        lon = self._Spectra1D.lon(strict=True)
+        lat = self._Spectra1D.lat(strict=True)
+        x = self._Spectra1D.x(strict=True)
+        y = self._Spectra1D.y(strict=True)
 
-        # efth = self._spectra.spec(data_array=True).sel(time=slice(start_time, end_time), inds=inds)
+        # efth = self._Spectra1D.spec(data_array=True).sel(time=slice(start_time, end_time), inds=inds)
 
         data = {}
         for wp in parameters:
             wp = get_wave_parameter(wp)
-            # data[wp] = np.swapaxes(wp(self._spectra),0,1)
-            data[wp] = wp(self._spectra)
-        attrs = self._spectra.ds().attrs
+            # data[wp] = np.swapaxes(wp(self._Spectra1D),0,1)
+            data[wp] = wp(self._Spectra1D)
+        attrs = self._Spectra1D.ds().attrs
         attrs["integration_range"] = f"{self._freq[0]}-{self._freq[-1]} Hz"
         return time, data, lon, lat, x, y, attrs
 
     def name(self) -> str:
-        if self._spectra is None:
+        if self._Spectra1D is None:
             return "EmptyData"
-        return self._spectra.name
+        return self._Spectra1D.name
 
 
 class DnoraNc(WaveSeriesReader):
@@ -219,7 +217,7 @@ class DnoraNc(WaveSeriesReader):
             return ds.sel(time=slice(start_time, end_time))
 
         msg.info(
-            f"Getting boundary spectra from DNORA type netcdf files (e.g. {self.files[0]}) from {start_time} to {end_time}"
+            f"Getting boundary Spectra1D from DNORA type netcdf files (e.g. {self.files[0]}) from {start_time} to {end_time}"
         )
 
         ds = xr.open_mfdataset(self.files, preprocess=_crop, data_vars="minimal")
@@ -387,17 +385,17 @@ class WW3Nc(WaveSeriesReader):
                     self._file_identification_message_printed = True
                 return cropped_ds
             except KeyError:
-                try:  # WW3 Spectral output (get e.g. wind, hs from those files)
+                try:  # WW3 Spectra1Dl output (get e.g. wind, hs from those files)
                     cropped_ds = ds.sel(
                         time=slice(start_time, end_time), station=(inds + 1)
                     ).drop_dims(["frequency", "direction", "string40"])
                     if not self._file_identification_message_printed:
-                        msg.info("Identified file as WW3 spectral output")
+                        msg.info("Identified file as WW3 Spectra1Dl output")
                         self._file_identification_message_printed = True
                     return cropped_ds
                 except:
                     raise KeyError(
-                        "Could not identify the file as a known format (WW3 Unstructured or Spectral output)!"
+                        "Could not identify the file as a known format (WW3 Unstructured or Spectra1Dl output)!"
                     )
 
         import dask

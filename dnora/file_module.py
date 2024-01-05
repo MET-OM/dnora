@@ -8,9 +8,8 @@ from . import msg
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .mdl.mdl_mod import ModelRun
-
-from .dnora_object_type import DnoraObjectType
+    from .modelrun import ModelRun
+    from .dnora_object_type import DnoraDataType
 
 from .model_formats import ModelFormat
 
@@ -23,8 +22,8 @@ class FileNames:
     filename: str = None
     folder: str = None
     dateformat: str = None
-    edge_object: str = DnoraObjectType.Grid
-    time_object: str = DnoraObjectType.ModelRun
+    edge_object: str = None
+    time_object: str = None
 
     def __post_init__(self):
         self._defaults = read_defaults("export_defaults.yml", from_module=True)
@@ -115,12 +114,13 @@ class FileNames:
         unclean_string: str,
         start_time=None,
         end_time=None,
-        edge_object: DnoraObjectType = None,
+        edge_object: DnoraDataType = None,
     ) -> str:
         unclean_string = replace_objects(
             unclean_string, self.model.dict_of_object_names()
         )
         unclean_string = replace_object_type(unclean_string, self.obj_type)
+
         edge_object = self.model[edge_object or self.edge_object]
 
         lon = edge_object.edges("lon", strict=True)
@@ -246,7 +246,7 @@ def replace_xy(filename: str, x: float, y: float) -> str:
 
 
 def replace_objects(
-    filename: str, dict_of_object_names: dict[DnoraObjectType, str]
+    filename: str, dict_of_object_names: dict[DnoraDataType, str]
 ) -> str:
     """Substitutes the strings #{Object} in filename with the name given to
     the object.
@@ -264,9 +264,9 @@ def replace_objects(
     return filename
 
 
-def replace_object_type(filename: str, obj_type: DnoraObjectType) -> str:
+def replace_object_type(filename: str, obj_type: DnoraDataType) -> str:
     "Replaces the #ObjectType tag to e.g. Boundary of Forcing with lowe case"
-    return re.sub(f"#ObjectType", obj_type.value, filename, flags=re.IGNORECASE)
+    return re.sub(f"#ObjectType", obj_type.name.lower(), filename, flags=re.IGNORECASE)
 
 
 def clean_filename(filename: str, list_of_placeholders: list[str] = None) -> str:
@@ -292,9 +292,7 @@ def clean_filename(filename: str, list_of_placeholders: list[str] = None) -> str
     return filename
 
 
-def get_default_value(
-    key: str, obj_type: DnoraObjectType, primary: dict, fallback: dict
-):
+def get_default_value(key: str, obj_type: DnoraDataType, primary: dict, fallback: dict):
     """Get a key (e.g. folder) from the defaults list.
 
     1) Tries Model+dnora_obj specific value (e.g. SWAN-wnd-folder)

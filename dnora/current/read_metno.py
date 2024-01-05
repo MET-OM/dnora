@@ -10,7 +10,7 @@ import time
 from ..grid.grid import Grid
 
 # Import abstract classes
-from .read import OceanCurrentReader
+from .read import CurrentReader
 from ..data_sources import DataSource
 
 # Import aux_funcsiliry functions
@@ -24,7 +24,7 @@ from ..aux_funcs import (
 )
 
 
-class NorKyst800(OceanCurrentReader):
+class NorKyst800(CurrentReader):
     """Reads ocean_current data of the NorKyst800 archieve directly from MET Norways servers.
 
     NorKyst-800 (Norwegian Coast 800m) is a numerical, high-resolution, ocean modelling

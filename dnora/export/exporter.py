@@ -2,45 +2,45 @@ from .. import msg
 from ..file_module import FileNames
 from ..spectral_conventions import SpectralConvention
 from typing import Union
-from .generic.generic_writers import GeneralWritingFunction, DnoraNc, DumpToNc
+from .generic.generic_writers import GenericWriter, DnoraNc, DumpToNc
 from .grid.grid_writers import GridWriter
-from .wind.wind_writers import ForcingWriter
-from .spectra.spectra_writers import BoundaryWriter
-from .spectra1d.spectra1d_writers import SpectralWriter
+from .wind.wind_writers import WindWriter
+from .spectra.spectra_writers import SpectraWriter
+from .spectra1d.spectra1d_writers import Spectra1DWriter
 from .waveseries.waveseries_writers import WaveSeriesWriter
 from .waterlevel.waterlevel_writers import WaterLevelWriter
-from .current.current_writers import OceanCurrentWriter
-from .ice.ice_writers import IceForcingWriter
+from .current.current_writers import CurrentWriter
+from .ice.ice_writers import IceWriter
 from .inputfile.inputfile_writers import InputFileWriter
 
 from .decorators import add_export_method
-from ..dnora_object_type import DnoraObjectType, object_type_from_string
+from ..dnora_object_type import DnoraDataType, object_type_from_string
 from ..model_formats import ModelFormat
 
 WriterFunction = Union[
-    GeneralWritingFunction,
+    GenericWriter,
     GridWriter,
-    ForcingWriter,
-    BoundaryWriter,
-    SpectralWriter,
+    WindWriter,
+    SpectraWriter,
+    Spectra1DWriter,
     WaveSeriesWriter,
     WaterLevelWriter,
-    OceanCurrentWriter,
-    IceForcingWriter,
+    CurrentWriter,
+    IceWriter,
     InputFileWriter,
 ]
 
 
-@add_export_method(DnoraObjectType.Grid)
-@add_export_method(DnoraObjectType.Forcing)
-@add_export_method(DnoraObjectType.Boundary)
-@add_export_method(DnoraObjectType.Spectra)
-@add_export_method(DnoraObjectType.WaveSeries)
-@add_export_method(DnoraObjectType.WaterLevel)
-@add_export_method(DnoraObjectType.OceanCurrent)
-@add_export_method(DnoraObjectType.IceForcing)
+@add_export_method(DnoraDataType.GRID)
+@add_export_method(DnoraDataType.WIND)
+@add_export_method(DnoraDataType.SPECTRA)
+@add_export_method(DnoraDataType.SPECTRA1D)
+@add_export_method(DnoraDataType.WAVESERIES)
+@add_export_method(DnoraDataType.WATERLEVEL)
+@add_export_method(DnoraDataType.CURRENT)
+@add_export_method(DnoraDataType.ICE)
 class DataExporter:
-    _writer_dict = {DnoraObjectType.InputFile: None}
+    _writer_dict = {}
 
     def _get_default_writer(self) -> WriterFunction:
         return DumpToNc()
@@ -48,7 +48,7 @@ class DataExporter:
     def _get_default_format(self) -> str:
         return ModelFormat.MODELRUN
 
-    def _get_writer(self, obj_type: DnoraObjectType) -> WriterFunction:
+    def _get_writer(self, obj_type: DnoraDataType) -> WriterFunction:
         return self._writer_dict.get(obj_type, self._get_default_writer())
 
     def __init__(self, model):
@@ -57,7 +57,7 @@ class DataExporter:
 
     def export(
         self,
-        obj_type: DnoraObjectType | str,
+        obj_type: DnoraDataType | str,
         writer: str = None,
         filename: str = None,
         folder: str = None,
@@ -91,7 +91,7 @@ class DataExporter:
         )
 
     def _setup_export(
-        self, obj_type: DnoraObjectType, writer_function, dry_run: bool
+        self, obj_type: DnoraDataType, writer_function, dry_run: bool
     ) -> WriterFunction:
         self._dry_run = dry_run
 
@@ -107,7 +107,7 @@ class DataExporter:
 
     def _export_object(
         self,
-        obj_type: DnoraObjectType,
+        obj_type: DnoraDataType,
         filename: str,
         folder: str,
         dateformat: str,
@@ -169,7 +169,7 @@ class DataExporter:
         e.g. a file."""
         self._dry_run = dry_run
         input_file_writer = input_file_writer or self._get_writer(
-            DnoraObjectType.InputFile
+            DnoraDataType.InputFile
         )
 
         if input_file_writer is None:
@@ -187,8 +187,8 @@ class DataExporter:
             folder=folder,
             format=format,
             dateformat=dateformat,
-            obj_type=DnoraObjectType.InputFile,
-            edge_object=DnoraObjectType.Grid,
+            obj_type=DnoraDataType.InputFile,
+            edge_object=DnoraDataType.Grid,
         )
         file_object.create_folder()
 
@@ -209,7 +209,7 @@ class DataExporter:
 
         return
 
-    # def __getitem__(self, obj_type: DnoraObjectType):
+    # def __getitem__(self, obj_type: DnoraDataType):
     #     """writer = 'grid_writer, forcing_writer etc."""
     #     return self._get_writer(obj_type)
 

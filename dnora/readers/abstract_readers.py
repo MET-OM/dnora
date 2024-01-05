@@ -1,10 +1,17 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 
 # Import objects
 from ..grid.grid import Grid
 from ..data_sources import DataSource
 from ..spectral_conventions import SpectralConvention
-from ..dnora_object_type import DnoraDataType
+
+from ..metaparameter import metaparameter
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..dnora_object_type import DnoraDataType
 
 
 class DataReader(ABC):
@@ -22,7 +29,7 @@ class DataReader(ABC):
         end_time: str,
         source: DataSource,
         folder: str,
-        **kwargs
+        **kwargs,
     ):
         """Reads in the forcing witih grid and between start_time and end_time.
 
@@ -30,7 +37,8 @@ class DataReader(ABC):
 
         coord_dict: Dictionary containing at least lon/lat or x/y. Can also contain e.g. time
         data_dict:  Dictionary containing the data variables. Key-names depend on object type
-        meta_dict: dict{key, value} will be set as attributes of the xr.Dataset
+        meta_dict: dict{key, value} will be set as attributes of the xr.Dataset. Can be empty.
+        metaparameter_dict: dict{key, values} couples the data variables to a metaparametr. Can be empty.
         """
 
         pass
@@ -40,6 +48,14 @@ class DataReader(ABC):
 
     def default_data_source(self) -> DataSource:
         return DataSource.UNDEFINED
+
+    def create_metaparameter_dict(self, parameter_strings: list[str]):
+        metaparameter_dict = {}
+        for param in parameter_strings:
+            val = metaparameter.get(param)
+            if val is not None:
+                metaparameter_dict[param] = val
+        return metaparameter_dict
 
 
 class PointDataReader(DataReader):
@@ -52,7 +68,7 @@ class PointDataReader(DataReader):
 
         The variables needed to be returned are:
 
-        coord_dict: Dictionary containing at least lon/lat or x/y. Can also contain e.g. time
+        lon_all, lat_all, x_all, y_all
         """
         pass
 
