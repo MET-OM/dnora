@@ -1,1 +1,1 @@
-from .dnora_types import DnoraDataType
+from dnora_types import DnoraDataType

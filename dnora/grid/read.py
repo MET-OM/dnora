@@ -7,12 +7,12 @@ from typing import Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .grid import Grid, UnstrGrid
-from ..aux_funcs import expand_area
+from aux_funcs import expand_area
 
 from typing import Union
 
-from ..defaults.default_reader import read_defaults
-from ..data_sources import DataSource
+from defaults.default_reader import read_defaults
+from data_sources import DataSource
 
 
 class TopoReader(ABC):

@@ -6,18 +6,18 @@ from typing import List
 import pandas as pd
 
 # Import objects
-from ..grid.grid import Grid
+from grid import Grid
 from .process import spectral_processor_for_convention_change
-from ..spectral_conventions import SpectralConvention, convert_2d_to_1d
+from spectral_conventions import SpectralConvention, convert_2d_to_1d
 
 # Import abstract classes and needed instances of them
-from .. import msg
+from dnora import msg
 
-from geo_skeletons.point_skeleton import PointSkeleton
+from geo_skeletons import PointSkeleton
 from geo_skeletons.decorators import add_time, add_frequency, add_datavar
 
 from .process import SpectralProcessor
-from ..metaparameter.parameters import Ef, Dirm, Spr
+from metaparameter.parameters import Ef, Dirm, Spr
 
 
 @add_datavar(name="spec", coords="all", default_value=0.0)

@@ -10,12 +10,12 @@ import pandas as pd
 # Import abstract classes and needed instances of them
 from .read import SpectraReader
 from .process import RemoveEmpty
-from ..spectral_conventions import SpectralConvention
+from spectral_conventions import SpectralConvention
 
 # Import aux_funcsiliry functions
-from .. import msg
-from ..aux_funcs import create_time_stamps
-from ..data_sources import DataSource
+from dnora import msg
+from aux_funcs import create_time_stamps
+from data_sources import DataSource
 
 
 class WAM4km(SpectraReader):

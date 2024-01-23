@@ -1,19 +1,19 @@
 from copy import copy
 
 # Import objects
-from ..spectral_conventions import SpectralConvention
+from spectral_conventions import SpectralConvention
 from .process import boundary_processor_for_convention_change
 
 # Import abstract classes and needed instances of them
 from .process import BoundaryProcessor
 
 # Import default values and aux_funcsiliry functions
-from .. import msg
+from dnora import msg
 
 from geo_skeletons import PointSkeleton
 from geo_skeletons.decorators import add_time, add_frequency, add_direction, add_datavar
 
-from ..metaparameter.parameters import Efth
+from metaparameter.parameters import Efth
 
 
 # @add_mask(name='bad', coords='all', default_value=0)

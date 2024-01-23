@@ -6,7 +6,7 @@ import numpy as np
 from typing import Iterable
 
 # Import aux_funcsiliry functions
-from .. import msg
+from dnora import msg
 
 
 class TriAranger(ABC):

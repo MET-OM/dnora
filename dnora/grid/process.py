@@ -5,7 +5,7 @@ from copy import copy
 import scipy.ndimage as ndimage
 
 # Import aux_funcsility functions
-from .. import msg
+from dnora import msg
 from typing import Union, TYPE_CHECKING
 
 if TYPE_CHECKING:

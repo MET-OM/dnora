@@ -8,14 +8,14 @@ import time
 import cdsapi
 
 # Import objects
-from ..grid.grid import Grid
+from grid import Grid
 
 # Import abstract classes
 from .read import WindReader
 
 # Import aux_funcsiliry functions
-from .. import msg
-from ..aux_funcs import (
+from dnora import msg
+from aux_funcs import (
     expand_area,
     int_list_of_days,
     int_list_of_months,

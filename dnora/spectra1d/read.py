@@ -1,15 +1,15 @@
 from abc import ABC, abstractmethod
 from copy import copy
-from ..spectra.spectra import Spectra
+from dnora.spectra import Spectra
 import numpy as np
 
-from ..spectral_conventions import SpectralConvention
-from ..spectral_conventions import convert_2d_to_1d
+from spectral_conventions import SpectralConvention
+from spectral_conventions import convert_2d_to_1d
 import xarray as xr
-from .. import aux_funcs
-from .. import msg
+from dnora import aux_funcs, msg
 
-from ..data_sources import DataSource
+
+from data_sources import DataSource
 
 
 class Spectra1DReader(ABC):

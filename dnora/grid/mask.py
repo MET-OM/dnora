@@ -3,8 +3,7 @@ from typing import List
 from abc import ABC, abstractmethod
 
 # Import aux_funcsiliry functions
-from .. import msg
-from .. import aux_funcs
+from dnora import msg, aux_funcs
 from geo_skeletons import PointSkeleton
 
 

@@ -2,20 +2,19 @@ from geo_skeletons import GriddedSkeleton, PointSkeleton
 import numpy as np
 import xarray as xr
 from geo_skeletons.decorators import add_mask, add_datavar
-from .. import aux_funcs
-from .. import msg
+
+from dnora import aux_funcs, msg
 from copy import copy
 from .read import TopoReader
 from .mesh import Mesher, Interpolate
 from .process import GridProcessor
-from ..aux_funcs import read_ww3_info
 from pathlib import Path
 from .read_tr import TriangReader
 from .read import MshFile as topo_MshFile
 from .read_tr import MshFile as triang_MshFile
 from .tri_arangers import TriAranger
 from .mesh import Trivial as TrivialMesher
-from ..data_sources import DataSource
+from data_sources import DataSource
 
 
 class GridMethods:
@@ -194,7 +193,16 @@ class Grid(GriddedSkeleton, GridMethods):
         filename = Path(folder) / f"{gridname}_info.txt"
 
         print(filename)
-        lon_min, lon_max, lat_min, lat_max, dlon, dlat, NX, NY = read_ww3_info(filename)
+        (
+            lon_min,
+            lon_max,
+            lat_min,
+            lat_max,
+            dlon,
+            dlat,
+            NX,
+            NY,
+        ) = aux_funcs.read_ww3_info(filename)
 
         filename = Path(folder) / f"{gridname}_bathy.txt"
         topo = np.loadtxt(filename).reshape((NY, NX))

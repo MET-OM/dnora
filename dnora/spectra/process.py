@@ -4,15 +4,15 @@ from abc import ABC, abstractmethod
 from typing import Tuple
 
 # Import aux_funcsiliry functions
-from .. import msg
-from ..aux_funcs import (
+from dnora import msg
+from aux_funcs import (
     interp_spec,
     shift_spec,
     flip_spec,
     check_that_spectra_are_consistent,
 )
 
-from ..spectral_conventions import SpectralConvention
+from spectral_conventions import SpectralConvention
 
 
 class BoundaryProcessor(ABC):

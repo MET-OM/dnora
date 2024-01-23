@@ -1,11 +1,16 @@
+from __future__ import annotations
 from .abstract_readers import DataReader, PointDataReader
-from ..dnora_types import DnoraDataType
-from ..data_sources import DataSource
+from data_sources import DataSource
 import pandas as pd
 import numpy as np
 import xarray as xr
-from .. import aux_funcs
+from dnora import aux_funcs
 from pathlib import Path
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from dnora_types import DnoraDataType
 
 
 class ConstantGrid(DataReader):
@@ -21,7 +26,7 @@ class ConstantGrid(DataReader):
         end_time,
         source: DataSource,
         folder: str,
-        **kwargs
+        **kwargs,
     ):
         time = pd.date_range(start=start_time, end=end_time, freq="H").values
 
@@ -65,7 +70,7 @@ class Netcdf(DataReader):
         end_time,
         source: DataSource,
         folder: str,
-        **kwargs
+        **kwargs,
     ):
         ds = xr.open_mfdataset(Path(folder).joinpath(self.files))
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
@@ -118,7 +123,7 @@ class ConstantPoint(PointDataReader):
         source: DataSource,
         folder: str,
         inds,
-        **kwargs
+        **kwargs,
     ):
         time = pd.date_range(start=start_time, end=end_time, freq="H").values
 

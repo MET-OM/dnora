@@ -3,15 +3,13 @@ import numpy as np
 from copy import copy
 from abc import ABC, abstractmethod
 from typing import Tuple
-from ..grid.grid import Grid
+from grid import Grid
 
 # Import aux_funcsiliry functions
-from .. import file_module
-from .. import msg
-from .. import aux_funcs
-from ..spectral_conventions import SpectralConvention
+from dnora import file_module, msg, aux_funcs
+from spectral_conventions import SpectralConvention
 import pandas as pd
-from ..data_sources import DataSource
+from data_sources import DataSource
 
 
 class SpectraReader(ABC):

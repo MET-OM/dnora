@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 import xarray as xr
 import numpy as np
-from ..spectral_conventions import SpectralConvention
-from ..spectra import Spectra
+from dnora.spectral_conventions import SpectralConvention
+from dnora.spectra import Spectra
 from typing import Union
 from pint import UnitRegistry
 

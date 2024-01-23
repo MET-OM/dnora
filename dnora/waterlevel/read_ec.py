@@ -7,7 +7,7 @@ import os, glob
 import cdsapi
 
 # Import objects
-from ..grid.grid import Grid
+from grid import Grid
 
 from scipy.interpolate import griddata
 
@@ -15,10 +15,10 @@ from scipy.interpolate import griddata
 from .read import WaterLevelReader
 
 # Import aux_funcsiliry functions
-from .. import msg
-from ..aux_funcs import expand_area, int_list_of_months, int_list_of_years
+from dnora import msg
+from aux_funcs import expand_area, int_list_of_months, int_list_of_years
 import pandas as pd
-from ..data_sources import DataSource
+from data_sources import DataSource
 
 
 def download_GTSM_from_cds(start_time, end_time, folder="dnora_wlv_temp") -> str:

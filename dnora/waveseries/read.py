@@ -4,11 +4,10 @@ from copy import deepcopy
 import pandas as pd
 from abc import ABC, abstractmethod
 from typing import Union
-from ..grid.grid import Grid
+from grid import Grid
 
 # Import aux_funcsiliry functions
-from .. import msg
-from .. import aux_funcs
+from dnora import msg, aux_funcs
 
 # from .conventions import Spectra1DlConvention
 from .wave_parameters import (
@@ -23,12 +22,12 @@ from .wave_parameters import (
     Tm02,
     TpI,
 )
-from ..spectra1d import Spectra1D, process
+from dnora.spectra1d import Spectra1D, process
 
 
 from dnora.waveseries import wave_parameters
 import inspect
-from ..data_sources import DataSource
+from data_sources import DataSource
 
 
 def dict_of_wave_parameters():

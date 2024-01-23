@@ -10,20 +10,20 @@ from .process import RemoveEmpty
 
 # Import abstract classes and needed instances of them
 from .read import SpectraReader
-from ..grid import Grid
+from grid import Grid
 import cdsapi
-from ..data_sources import DataSource
+from data_sources import DataSource
 
 # Import aux_funcsiliry functions
-from .. import msg
-from ..aux_funcs import (
+from dnora import msg
+from aux_funcs import (
     create_time_stamps,
     expand_area,
     int_list_of_days,
     int_list_of_months,
     int_list_of_years,
 )
-from ..spectral_conventions import SpectralConvention
+from spectral_conventions import SpectralConvention
 
 
 def renormalize_era5_spec(bnd_spec):

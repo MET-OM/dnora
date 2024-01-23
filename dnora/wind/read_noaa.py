@@ -7,16 +7,16 @@ import os, glob
 import time
 
 # Import objects
-from ..grid.grid import Grid
+from grid import Grid
 
 # Import abstract classes
 from .read import WindReader
 
 # Import aux_funcsiliry functions
-from .. import msg
-from ..aux_funcs import create_time_stamps, u_v_from_speed_dir, expand_area, lon_in_km
+from dnora import msg
+from aux_funcs import create_time_stamps, u_v_from_speed_dir, expand_area, lon_in_km
 
-from ..data_sources import DataSource
+from data_sources import DataSource
 
 
 class GFS(WindReader):

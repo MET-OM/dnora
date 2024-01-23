@@ -6,7 +6,7 @@ from .fvgrid import read_sms_mesh
 # import utm
 from typing import Tuple, Iterable
 import numpy as np
-from ..data_sources import DataSource
+from data_sources import DataSource
 
 
 class TriangReader(ABC):

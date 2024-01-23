@@ -1,13 +1,13 @@
 from enum import Enum
 
-from grid.grid import Grid, TriGrid
-from wind.wind import Wind
-from spectra.spectra import Spectra
-from spectra1d.spectra1d import Spectra1D
-from waveseries.waveseries import WaveSeries
-from waterlevel.waterlevel import WaterLevel
-from current.current import Current
-from ice.ice import Ice
+from grid import Grid, TriGrid
+from wind import Wind
+from spectra import Spectra
+from spectra1d import Spectra1D
+from waveseries import WaveSeries
+from waterlevel import WaterLevel
+from current import Current
+from ice import Ice
 
 from wind.read import WindReader
 from spectra.read import SpectraReader
@@ -17,13 +17,13 @@ from waterlevel.read import WaterLevelReader
 from current.read import CurrentReader
 from ice.read import IceReader
 
-from readers import generic_readers
+from readers import abstract_readers
 from typing import Union
 
 ReaderFunction = Union[
-    generic_readers.DataReader,
-    generic_readers.PointDataReader,
-    generic_readers.SpectralDataReader,
+    abstract_readers.DataReader,
+    abstract_readers.PointDataReader,
+    abstract_readers.SpectralDataReader,
     WindReader,
     SpectraReader,
     Spectra1DReader,

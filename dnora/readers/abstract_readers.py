@@ -2,16 +2,16 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 # Import objects
-from ..grid.grid import Grid
-from ..data_sources import DataSource
-from ..spectral_conventions import SpectralConvention
+from grid import Grid
+from data_sources import DataSource
+from spectral_conventions import SpectralConvention
 
-from ..metaparameter import metaparameter
+from metaparameter import metaparameter
 
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..dnora_object_type import DnoraDataType
+    from ..dnora_types import DnoraDataType
 
 
 class DataReader(ABC):
