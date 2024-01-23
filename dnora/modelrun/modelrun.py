@@ -10,40 +10,12 @@ from typing import Union
 from ..grid.grid import Grid, TriGrid
 
 from ..file_module import FileNames
-from ..dnora_object_type import DnoraDataType
+from ..dnora_types import DnoraDataType
 from ..data_sources import DataSource
 
 # Import abstract classes and needed instances of them
-from ..wind import Wind
-from ..wind.read import ForcingReader
-from .. import wind
-
-from ..spectra import Spectra
-from ..spectra.read import SpectraReader
 from ..pick.point_pickers import PointPicker, NearestGridPoint
-from .. import spectra
-from .. import pick
 
-
-from ..spectra1d import Spectra1D
-from ..spectra1d.read import Spectra1DReader
-from .. import spectra1d
-
-from ..waveseries import WaveSeries
-from ..waveseries.read import WaveSeriesReader, SpectraToWaveSeries
-from .. import waveseries
-
-from ..waterlevel import WaterLevel
-from ..waterlevel.read import WaterLevelReader
-from .. import waterlevel
-
-from ..current import Current
-from ..current.read import CurrentReader
-from .. import current
-
-from ..ice import Ice
-from ..ice.read import IceReader
-from .. import ice
 
 from ..run.model_executers import ModelExecuter
 from ..spectral_grid import SpectralGrid
@@ -60,16 +32,26 @@ from ..export.exporters import Cacher
 
 from ..readers import generic_readers
 
-ReaderFunction = Union[
-    ForcingReader,
+from dnora_types import ReaderFunction, DnoraDataType, DnoraObject
+from dnora_types import (
+    Grid,
+    Wind,
+    Spectra,
+    Spectra1D,
+    WaterLevel,
+    WaveSeries,
+    Current,
+    Ice,
+)
+from dnora_types import (
+    WindReader,
     SpectraReader,
     Spectra1DReader,
-    WaveSeriesReader,
     WaterLevelReader,
+    WaveSeriesReader,
     CurrentReader,
     IceReader,
-]
-
+)
 
 class ModelRun:
     _reader_dict: dict[DnoraDataType:ReaderFunction] = {}
@@ -299,7 +281,7 @@ class ModelRun:
     @cached_reader(DnoraDataType.WIND, generic_readers.Netcdf)
     def import_wind(
         self,
-        reader: ForcingReader | None = None,
+        reader: WindReader | None = None,
         name: str | None = None,
         dry_run: bool = False,
         source: str | DataSource = DataSource.UNDEFINED,
@@ -422,87 +404,6 @@ class ModelRun:
         self._import_data(
             DnoraDataType.ICE, name, dry_run, reader, source, folder, **kwargs
         )
-
-    # def boundary_to_spectra(
-    #     self,
-    #     dry_run: bool = False,
-    #     name: str | None = None,
-    #     write_cache=False,
-    #     **kwargs,
-    # ):
-    #     self._dry_run = dry_run
-    #     if self.boundary() is None:
-    #         msg.warning("No Boundary to convert to Spectra!")
-    #         return
-
-    #     spectral_reader = spectra1d.read.BoundaryToSpectra(self.boundary())
-    #     msg.header(
-    #         spectral_reader,
-    #         "Converting the boundary spectra to omnidirectional spectra...",
-    #     )
-
-    #     name = self.boundary().name
-
-    #     if self.dry_run():
-    #         msg.info("Dry run! No boundary will not be converted to spectra.")
-    #         return
-
-    #     self.import_spectra(
-    #         spectral_reader=spectral_reader,
-    #         point_picker=pick.TrivialPicker(),
-    #         name=name,
-    #         write_cache=write_cache,
-    #         **kwargs,
-    #     )
-
-    # def spectra_to_waveseries(
-    #     self,
-    #     dry_run: bool = False,
-    #     write_cache=False,
-    #     freq: tuple = (0, 10_000),
-    #     **kwargs,
-    # ):
-    #     self._dry_run = dry_run
-    #     if self.spectra() is None:
-    #         msg.warning("No Spectra to convert to WaveSeries!")
-    #         return
-
-    #     name = self.spectra().name
-
-    #     if self.dry_run():
-    #         msg.info("Dry run! No boundary will not be converted to spectra.")
-    #         return
-
-    #     waveseries_reader = SpectraToWaveSeries(self.spectra(), freq)
-    #     msg.header(waveseries_reader, "Converting the spectra to wave series data...")
-
-    #     self.import_waveseries(
-    #         waveseries_reader=waveseries_reader,
-    #         point_picker=pick.TrivialPicker(),
-    #         name=name,
-    #         write_cache=write_cache,
-    #         **kwargs,
-    #     )
-
-    # def boundary_to_waveseries(
-    #     self,
-    #     dry_run: bool = False,
-    #     write_cache=False,
-    #     freq: tuple = (0, 10_000),
-    #     **kwargs,
-    # ):
-    #     self.boundary_to_spectra(dry_run=dry_run, write_cache=write_cache, **kwargs)
-    #     self.spectra_to_waveseries(
-    #         dry_run=dry_run, write_cache=write_cache, freq=freq, **kwargs
-    #     )
-
-    # def set_spectral_grid_from_boundary(self, **kwargs):
-    #     if self.boundary() is None:
-    #         msg.warning("No Boundary exists. Can't set spectral grid.")
-    #         return
-    #     self.set_spectral_grid(
-    #         freq=self.boundary().freq(), dirs=self.boundary().dirs(), **kwargs
-    #     )
 
     def set_spectral_grid_from_spectra(self, **kwargs):
         if self.spectra() is None:
@@ -715,7 +616,7 @@ class ModelRun:
         crop = True: Give the period that is covered by all objects (Forcing etc.)"""
         return self.time(crop_with=crop_with)[-1]
 
-    def __getitem__(self, dnora_obj: DnoraDataType):
+    def __getitem__(self, dnora_obj: DnoraDataType) -> DnoraObject:
         # dnora_str = camel_to_snake(dnora_str)
 
         if dnora_obj is None:
@@ -728,10 +629,10 @@ class ModelRun:
 
         return self._dnora_objects.get(dnora_obj)
 
-    def __setitem__(self, key: DnoraDataType, value: DnoraObject):
+    def __setitem__(self, key: DnoraDataType, value: DnoraObject) -> None:
         self._dnora_objects[key] = value
 
-    def _get_reader(self, obj_type: DnoraDataType):
+    def _get_reader(self, obj_type: DnoraDataType) -> ReaderFunction:
         return self._reader_dict.get(obj_type)
 
     def _get_point_picker(self) -> PointPicker:

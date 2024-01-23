@@ -1,10 +1,11 @@
 from .abstract_readers import DataReader, PointDataReader
-from ..dnora_object_type import DnoraDataType
+from ..dnora_types import DnoraDataType
 from ..data_sources import DataSource
 import pandas as pd
 import numpy as np
 import xarray as xr
 from .. import aux_funcs
+from pathlib import Path
 
 
 class ConstantGrid(DataReader):
@@ -66,18 +67,23 @@ class Netcdf(DataReader):
         folder: str,
         **kwargs
     ):
-        ds = xr.open_mfdataset(self.files)
-        # lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
+        ds = xr.open_mfdataset(Path(folder).joinpath(self.files))
+        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
         coord_dict = {}
         # obj_type.value._coord_manager.added_coords()
-        for c in list(ds.coords):
-            coord_dict[c] = ds.get(c).values
 
-        lons = slice(grid.edges("lon")[0], grid.edges("lon")[-1])
-        lats = slice(grid.edges("lat")[0], grid.edges("lat")[-1])
         times = slice(start_time, end_time)
-
-        ds = ds.sel(lon=lons, lat=lats, time=times)
+        if x is None:
+            lons = slice(grid.edges("lon")[0], grid.edges("lon")[-1])
+            lats = slice(grid.edges("lat")[0], grid.edges("lat")[-1])
+            try:
+                ds = ds.sel(lon=lons, lat=lats, time=times)
+            except:
+                ds = ds.sel(longitude=lons, latitude=lats, time=times)
+        else:
+            xs = slice(grid.edges("x")[0], grid.edges("x")[-1])
+            ys = slice(grid.edges("y")[0], grid.edges("y")[-1])
+            ds = ds.sel(x=xs, y=ys, time=times)
 
         data_dict = {}
         metaparameter_dict = {}

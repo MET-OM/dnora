@@ -12,7 +12,7 @@ from ..data_sources import DataSource
 from ..readers.abstract_readers import DataReader
 
 
-class ForcingReader(ABC):
+class WindReader(ABC):
     """Reads forcing data from some source and provide it to the object.
 
     The area is defined from the Grid object that is passed.
@@ -45,7 +45,7 @@ class ForcingReader(ABC):
         return DataSource.UNDEFINED
 
 
-class DnoraNc(ForcingReader):
+class DnoraNc(WindReader):
     def __init__(self, files: str) -> None:
         self.files = files
 

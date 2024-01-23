@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .modelrun import ModelRun
-    from .dnora_object_type import DnoraDataType
+    from .dnora_types import DnoraDataType
 
 from .model_formats import ModelFormat
 

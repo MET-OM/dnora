@@ -10,7 +10,7 @@ import time
 from ..grid.grid import Grid
 
 # Import abstract classes
-from .read import ForcingReader
+from .read import WindReader
 
 # Import aux_funcsiliry functions
 from .. import msg
@@ -19,7 +19,7 @@ from ..aux_funcs import create_time_stamps, u_v_from_speed_dir, expand_area, lon
 from ..data_sources import DataSource
 
 
-class NORA3(ForcingReader):
+class NORA3(WindReader):
     """Reads wind data of the NORA3 hindcast directly from MET Norways servers.
 
     The NORA3 HARMONIE-AROME high-resolution (ca 3 km) hindcast for the
@@ -219,7 +219,7 @@ class NORA3(ForcingReader):
             return folder + "/" + filename
 
 
-class MyWave3km(ForcingReader):
+class MyWave3km(WindReader):
     """Reads wind data from the MyWave 3km hindcast directly from MET Norways
     servers. You should probably use MetNo_NORA3 because:
 
@@ -376,7 +376,7 @@ class MyWave3km(ForcingReader):
             return folder + "/" + filename
 
 
-class MEPS(ForcingReader):
+class MEPS(WindReader):
     """Reads wind data from MET Norways MEPS forecast.
 
     The data is from a 2.5 km AROME model.

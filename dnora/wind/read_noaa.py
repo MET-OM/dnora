@@ -10,7 +10,7 @@ import time
 from ..grid.grid import Grid
 
 # Import abstract classes
-from .read import ForcingReader
+from .read import WindReader
 
 # Import aux_funcsiliry functions
 from .. import msg
@@ -19,7 +19,7 @@ from ..aux_funcs import create_time_stamps, u_v_from_speed_dir, expand_area, lon
 from ..data_sources import DataSource
 
 
-class GFS(ForcingReader):
+class GFS(WindReader):
     """Reads wind data of the GFS global forecast"""
 
     def __init__(

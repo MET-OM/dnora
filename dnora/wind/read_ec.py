@@ -11,7 +11,7 @@ import cdsapi
 from ..grid.grid import Grid
 
 # Import abstract classes
-from .read import ForcingReader
+from .read import WindReader
 
 # Import aux_funcsiliry functions
 from .. import msg
@@ -120,7 +120,7 @@ def download_era5_from_cds(
     return filename
 
 
-class ERA5(ForcingReader):
+class ERA5(WindReader):
     """Reads ERA5 wind data"""
 
     def __call__(

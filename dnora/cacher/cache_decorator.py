@@ -14,7 +14,7 @@ import numpy as np
 import re
 from geo_skeletons import GriddedSkeleton
 
-from ..dnora_object_type import DnoraDataType
+from ..dnora_types import DnoraDataType
 from ..model_formats import ModelFormat
 from ..export.exporters import Cacher
 from ..readers.generic_readers import DataReader
