@@ -2,13 +2,10 @@ from abc import ABC, abstractmethod
 import xarray as xr
 
 # Import objects
-from grid import Grid
-import aux_funcs, msg
+from dnora.grid import Grid
+from dnora import aux_funcs, msg
 
-import pandas as pd
-import numpy as np
-from geo_skeletons import PointSkeleton
-from data_sources import DataSource
+from dnora.data_sources import DataSource
 from dnora.readers.abstract_readers import DataReader
 
 

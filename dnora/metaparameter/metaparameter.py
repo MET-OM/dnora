@@ -1,32 +1,7 @@
 from abc import ABC, abstractstaticmethod
 import numpy as np
 
-from . import parameters
-import inspect
 from pint import Unit
-
-
-def list_of_parameters() -> list:
-    parameter_list = []
-    for name, obj in inspect.getmembers(parameters):
-        if inspect.isclass(obj):
-            if issubclass(obj, MetaParameter) and not obj == MetaParameter:
-                parameter_list.append(obj)
-    return parameter_list
-
-
-def dict_of_parameters(short: bool = False, alias: bool = False) -> dict:
-    if short:
-        return {c.short_name(): c for c in list_of_parameters()}
-    return {c.standard_name(alias=alias): c for c in list_of_parameters()}
-
-
-def get(key: str):
-    return (
-        dict_of_parameters().get(key)
-        or dict_of_parameters(alias=True).get(key)
-        or dict_of_parameters(short=True).get(key)
-    )
 
 
 class MetaParameter(ABC):

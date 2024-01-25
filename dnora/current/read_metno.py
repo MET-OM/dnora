@@ -1,21 +1,19 @@
-from abc import ABC, abstractmethod
 from copy import copy
 import numpy as np
 import xarray as xr
 from subprocess import call
 import os, glob
-import time
 
 # Import objects
-from grid import Grid
+from dnora.grid import Grid
 
 # Import abstract classes
 from .read import CurrentReader
-from data_sources import DataSource
+from dnora.data_sources import DataSource
 
 # Import aux_funcsiliry functions
 from dnora import msg
-from aux_funcs import (
+from dnora.aux_funcs import (
     create_time_stamps,
     u_v_from_speed_dir,
     expand_area,

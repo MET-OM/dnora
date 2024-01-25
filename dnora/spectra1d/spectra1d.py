@@ -1,14 +1,8 @@
-from abc import ABC, abstractmethod
 from copy import copy
-import numpy as np
-import xarray as xr
-from typing import List
-import pandas as pd
 
 # Import objects
-from grid import Grid
 from .process import spectral_processor_for_convention_change
-from spectral_conventions import SpectralConvention, convert_2d_to_1d
+from dnora.spectral_conventions import SpectralConvention, convert_2d_to_1d
 
 # Import abstract classes and needed instances of them
 from dnora import msg
@@ -17,16 +11,16 @@ from geo_skeletons import PointSkeleton
 from geo_skeletons.decorators import add_time, add_frequency, add_datavar
 
 from .process import SpectralProcessor
-from metaparameter.parameters import Ef, Dirm, Spr
+from dnora.metaparameter.parameters import Ef, Dirm, Spr
 
 
 @add_datavar(name="spec", coords="all", default_value=0.0)
-@add_datavar(name="mdir", coords="all", default_value=0.0)
+@add_datavar(name="dirm", coords="all", default_value=0.0)
 @add_datavar(name="spr", coords="all", default_value=0.0)
 @add_frequency(grid_coord=False)
 @add_time(grid_coord=True)
 class Spectra1D(PointSkeleton):
-    meta_dict = {"spec": Ef, "mdir": Dirm, "spr": Spr}
+    meta_dict = {"spec": Ef, "dirm": Dirm, "spr": Spr}
 
     def process_spectra(
         self, spectral_processors: list[SpectralProcessor] | None = None

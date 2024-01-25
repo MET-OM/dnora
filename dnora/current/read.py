@@ -2,11 +2,11 @@ from abc import ABC, abstractmethod
 import xarray as xr
 
 # Import objects
-from grid import Grid
+from dnora.grid import Grid
 from dnora import msg, aux_funcs
 import pandas as pd
 import numpy as np
-from data_sources import DataSource
+from dnora.data_sources import DataSource
 
 
 class CurrentReader(ABC):

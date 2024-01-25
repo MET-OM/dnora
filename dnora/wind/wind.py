@@ -1,8 +1,8 @@
 from geo_skeletons import GriddedSkeleton
 from geo_skeletons.decorators import add_time, add_datavar
-from aux_funcs import speed_dir_from_u_v
+from dnora.aux_funcs import speed_dir_from_u_v
 
-from metaparameter.parameters import XWind, YWind
+from dnora.metaparameter.parameters import XWind, YWind
 
 
 @add_datavar(name="v", default_value=0.0)

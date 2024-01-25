@@ -4,7 +4,7 @@ from copy import deepcopy
 import pandas as pd
 from abc import ABC, abstractmethod
 from typing import Union
-from grid import Grid
+from dnora.grid import Grid
 
 # Import aux_funcsiliry functions
 from dnora import msg, aux_funcs
@@ -27,7 +27,7 @@ from dnora.spectra1d import Spectra1D, process
 
 from dnora.waveseries import wave_parameters
 import inspect
-from data_sources import DataSource
+from dnora.data_sources import DataSource
 
 
 def dict_of_wave_parameters():

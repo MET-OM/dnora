@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 
 from calendar import monthrange
-from ...dnora_object_type import DnoraDataType
+from ...dnora_types import DnoraDataType
 from ... import file_module
 import os
 

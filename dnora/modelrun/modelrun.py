@@ -3,37 +3,36 @@ from copy import copy
 import pandas as pd
 import numpy as np
 from geo_skeletons import PointSkeleton
-import re
 from typing import Union
 
 # Import objects
-from ..grid.grid import Grid, TriGrid
+from dnora.grid import Grid, TriGrid
 
-from ..file_module import FileNames
-from ..dnora_types import DnoraDataType
-from ..data_sources import DataSource
+from dnora.file_module import FileNames
+from dnora.dnora_types import DnoraDataType
+from dnora.data_sources import DataSource
 
 # Import abstract classes and needed instances of them
-from ..pick.point_pickers import PointPicker, NearestGridPoint
+from dnora.pick.point_pickers import PointPicker, NearestGridPoint
 
 
-from ..run.model_executers import ModelExecuter
-from ..spectral_grid import SpectralGrid
+from dnora.run.model_executers import ModelExecuter
+from dnora.spectral_grid import SpectralGrid
 
 from geo_skeletons.decorators import add_datavar
 
-from .. import msg
-from ..cacher.cache_decorator import cached_reader
-from ..converters import convert_swash_mat_to_netcdf
+from dnora import msg
+from dnora.cacher.cache_decorator import cached_reader
+from dnora.converters import convert_swash_mat_to_netcdf
 from pathlib import Path
-from ..defaults.default_reader import data_sources
+from dnora.defaults.default_reader import data_sources
 
-from ..export.exporters import Cacher
+from dnora.export.exporters import Cacher
 
-from ..readers import generic_readers
+from dnora.readers import generic_readers
 
-from dnora_types import ReaderFunction, DnoraDataType, DnoraObject
-from dnora_types import (
+from dnora.dnora_types import ReaderFunction, DnoraDataType, DnoraObject
+from dnora.dnora_types import (
     Grid,
     Wind,
     Spectra,
@@ -43,7 +42,7 @@ from dnora_types import (
     Current,
     Ice,
 )
-from dnora_types import (
+from dnora.dnora_types import (
     WindReader,
     SpectraReader,
     Spectra1DReader,
@@ -52,6 +51,7 @@ from dnora_types import (
     CurrentReader,
     IceReader,
 )
+
 
 class ModelRun:
     _reader_dict: dict[DnoraDataType:ReaderFunction] = {}
@@ -240,6 +240,9 @@ class ModelRun:
 
         obj.set_metadata(meta_dict)
 
+        if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
+            obj._mark_convention(reader.convention())
+
         self[obj_type] = obj
 
     def _import_data(
@@ -293,7 +296,7 @@ class ModelRun:
             DnoraDataType.WIND, name, dry_run, reader, source, folder, **kwargs
         )
 
-    @cached_reader(DnoraDataType.WATERLEVEL, waterlevel.read.DnoraNc)
+    @cached_reader(DnoraDataType.WATERLEVEL, generic_readers.Netcdf)
     def import_waterlevel(
         self,
         reader: WaterLevelReader | None = None,
@@ -308,7 +311,7 @@ class ModelRun:
             DnoraDataType.WATERLEVEL, name, dry_run, reader, source, folder, **kwargs
         )
 
-    @cached_reader(DnoraDataType.SPECTRA, spectra.read.DnoraNc)
+    @cached_reader(DnoraDataType.SPECTRA, generic_readers.Netcdf)
     def import_spectra(
         self,
         reader: SpectraReader | None = None,
@@ -331,7 +334,7 @@ class ModelRun:
             **kwargs,
         )
 
-    @cached_reader(DnoraDataType.SPECTRA1D, spectra1d.read.DnoraNc)
+    @cached_reader(DnoraDataType.SPECTRA1D, generic_readers.Netcdf)
     def import_spectra1d(
         self,
         reader: Spectra1DReader | None = None,
@@ -354,7 +357,7 @@ class ModelRun:
             **kwargs,
         )
 
-    @cached_reader(DnoraDataType.WAVESERIES, current.read.DnoraNc)
+    @cached_reader(DnoraDataType.WAVESERIES, generic_readers.Netcdf)
     def import_waveseries(
         self,
         reader: WaveSeriesReader | None = None,
@@ -377,7 +380,7 @@ class ModelRun:
             **kwargs,
         )
 
-    @cached_reader(DnoraDataType.CURRENT, current.read.DnoraNc)
+    @cached_reader(DnoraDataType.CURRENT, generic_readers.Netcdf)
     def import_current(
         self,
         reader: CurrentReader | None = None,
@@ -391,7 +394,7 @@ class ModelRun:
             DnoraDataType.CURRENT, name, dry_run, reader, source, folder, **kwargs
         )
 
-    @cached_reader(DnoraDataType.ICE, ice.read.DnoraNc)
+    @cached_reader(DnoraDataType.ICE, generic_readers.Netcdf)
     def import_ice(
         self,
         reader: IceReader | None = None,

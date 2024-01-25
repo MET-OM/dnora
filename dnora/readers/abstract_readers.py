@@ -2,16 +2,15 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 # Import objects
-from grid import Grid
-from data_sources import DataSource
-from spectral_conventions import SpectralConvention
+from dnora.grid import Grid
+from dnora.data_sources import DataSource
+from dnora.spectral_conventions import SpectralConvention
 
-from metaparameter import metaparameter
 
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..dnora_types import DnoraDataType
+    from dnora.dnora_types import DnoraDataType
 
 
 class DataReader(ABC):
@@ -49,14 +48,6 @@ class DataReader(ABC):
     def default_data_source(self) -> DataSource:
         return DataSource.UNDEFINED
 
-    def create_metaparameter_dict(self, parameter_strings: list[str]):
-        metaparameter_dict = {}
-        for param in parameter_strings:
-            val = metaparameter.get(param)
-            if val is not None:
-                metaparameter_dict[param] = val
-        return metaparameter_dict
-
 
 class PointDataReader(DataReader):
     @abstractmethod
@@ -74,7 +65,15 @@ class PointDataReader(DataReader):
 
 
 class SpectralDataReader(PointDataReader):
-    @abstractmethod
+    def post_processing(self):
+        return None
+
+    def set_convention(self, convention: SpectralConvention | str) -> None:
+        if isinstance(convention, str):
+            self._convention = SpectralConvention[convention.upper()]
+        else:
+            self._convention = convention
+
     def convention(self) -> SpectralConvention:
         """Return the convention of the spectra returned to the object.
 
@@ -89,7 +88,7 @@ class SpectralDataReader(PointDataReader):
                     Direction from. North = 0, East = 90.
 
         MATH:     Mathematical convention
-                    Directional vector of type: [90 80 ... 10 0 350 ... 100]
+                    Direction from. North = 0, East = 90.
                     Direction to. North = 90, East = 0.
 
         MATHVEC:  Mathematical convention in vector
@@ -100,7 +99,4 @@ class SpectralDataReader(PointDataReader):
                     Directional vector of type: [90 80 ... 10 0 350 ... 100]
                     Direction to. North = 0, East = 90.
         """
-        pass
-
-    def post_processing(self):
-        return None
+        return self._convention

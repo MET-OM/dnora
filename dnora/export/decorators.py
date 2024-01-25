@@ -1,6 +1,6 @@
 from .generic.generic_writers import DnoraNc
 
-from ..dnora_object_type import DnoraDataType
+from ..dnora_types import DnoraDataType
 from ..model_formats import ModelFormat
 
 

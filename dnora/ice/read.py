@@ -3,9 +3,9 @@ import xarray as xr
 import pandas as pd
 import numpy as np
 
-from grid import Grid
+from dnora.grid import Grid
 from dnora import msg, aux_funcs
-from data_sources import DataSource
+from dnora.data_sources import DataSource
 
 
 class IceReader(ABC):

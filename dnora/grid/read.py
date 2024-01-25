@@ -6,13 +6,13 @@ import numpy as np
 from typing import Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .grid import Grid, UnstrGrid
-from aux_funcs import expand_area
+    from dnora.grid import Grid, TriGrid
+from dnora.aux_funcs import expand_area
 
 from typing import Union
 
-from defaults.default_reader import read_defaults
-from data_sources import DataSource
+from dnora.defaults.default_reader import read_defaults
+from dnora.data_sources import DataSource
 
 
 class TopoReader(ABC):
@@ -29,7 +29,7 @@ class TopoReader(ABC):
         return defaults["internal"]
 
     @abstractmethod
-    def __call__(self, grid: Union[Grid, UnstrGrid], **kwargs):
+    def __call__(self, grid: Union[Grid, TriGrid], **kwargs):
         """Reads the bathymetrical information from a source and returns the data.
 
         !!!! DEPTH VALUES ARE POSITIVE AND EVERYTHING ELSE (including 0)
@@ -95,7 +95,7 @@ class ConstantTopo(TopoReader):
         self.depth = float(depth)
 
     def __call__(
-        self, grid: Union[Grid, UnstrGrid], source: DataSource, folder: str, **kwargs
+        self, grid: Union[Grid, TriGrid], source: DataSource, folder: str, **kwargs
     ):
         """Creates a trivial topography with all water points."""
         topo = np.full(grid.size(), self.depth)
@@ -126,7 +126,7 @@ class EMODNET(TopoReader):
 
     def __call__(
         self,
-        grid: Union[Grid, UnstrGrid],
+        grid: Union[Grid, TriGrid],
         source: DataSource,
         tile: str = "C5",
         expansion_factor: float = 1.2,
@@ -195,7 +195,7 @@ class KartverketNo50m(TopoReader):
 
     def __call__(
         self,
-        grid: Union[Grid, UnstrGrid],
+        grid: Union[Grid, TriGrid],
         source: DataSource,
         expansion_factor: float = 1.2,
         zone_number: int = 33,
@@ -253,7 +253,7 @@ class GEBCO2021(TopoReader):
 
     def __call__(
         self,
-        grid: Union[Grid, UnstrGrid],
+        grid: Union[Grid, TriGrid],
         source: DataSource,
         expansion_factor: float = 1.2,
         tile: str = "n61.0_s59.0_w4.0_e6.0",
@@ -339,7 +339,7 @@ class MshFile(TopoReader):
 
     def __call__(
         self,
-        grid: Union[Grid, UnstrGrid],
+        grid: Union[Grid, TriGrid],
         source: DataSource,
         filename: str,
         expansion_factor: float = 1.2,

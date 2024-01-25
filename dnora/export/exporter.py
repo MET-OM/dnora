@@ -14,7 +14,7 @@ from .ice.ice_writers import IceWriter
 from .inputfile.inputfile_writers import InputFileWriter
 
 from .decorators import add_export_method
-from ..dnora_object_type import DnoraDataType, object_type_from_string
+from ..dnora_types import DnoraDataType, object_type_from_string
 from ..model_formats import ModelFormat
 
 WriterFunction = Union[

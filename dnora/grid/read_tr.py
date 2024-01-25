@@ -4,9 +4,9 @@ from abc import ABC, abstractmethod
 from .fvgrid import read_sms_mesh
 
 # import utm
-from typing import Tuple, Iterable
+from typing import Iterable
 import numpy as np
-from data_sources import DataSource
+from dnora.data_sources import DataSource
 
 
 class TriangReader(ABC):
@@ -17,7 +17,7 @@ class TriangReader(ABC):
         pass
 
     @abstractmethod
-    def __call__(self, filename: str) -> Tuple:
+    def __call__(self, filename: str) -> tuple:
         """Reads the triangular grid.
 
         This method is called from within the TrGrid-object
@@ -44,7 +44,7 @@ class TxtReader(TriangReader):
             self.boundary_points = []
         return
 
-    def __call__(self) -> Tuple:
+    def __call__(self) -> tuple:
         import utm
 
         with open(self.filename, "r") as f:
@@ -81,7 +81,7 @@ class SmsReader(TriangReader):
         self.filename = copy(filename)
         return
 
-    def __call__(self, nodestring_subset: Iterable = None) -> Tuple:
+    def __call__(self, nodestring_subset: Iterable = None) -> tuple:
         """
         Parameters
         ----------
@@ -115,7 +115,7 @@ class MshFile(TriangReader):
         self.zone_letter = zone_letter
         return
 
-    def __call__(self) -> Tuple:
+    def __call__(self) -> tuple:
         import meshio
 
         mesh = meshio.read(self.filename)

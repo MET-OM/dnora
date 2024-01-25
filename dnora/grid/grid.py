@@ -14,7 +14,7 @@ from .read import MshFile as topo_MshFile
 from .read_tr import MshFile as triang_MshFile
 from .tri_arangers import TriAranger
 from .mesh import Trivial as TrivialMesher
-from data_sources import DataSource
+from dnora.data_sources import DataSource
 
 
 class GridMethods:

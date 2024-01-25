@@ -18,7 +18,7 @@ class SpectralConvention(Enum):
 
     """
     Mathematical convention
-    Directional vector of type: [90 80 ... 10 0 350 ... 100]
+    Directional vector monotonically increasing.
     Direction to. North = 90, East = 0."""
     MATH = "math"
 

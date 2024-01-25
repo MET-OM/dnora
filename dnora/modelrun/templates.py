@@ -1,9 +1,9 @@
 # from ..run import model_executers
-from .modelrun import ModelRun
+from dnora.modelrun import ModelRun
 
-from .. import spectra, wind, waterlevel, current, ice
+from dnora import spectra, wind, waterlevel
 
-from ..dnora_object_type import DnoraDataType
+from dnora.dnora_types import DnoraDataType
 
 
 class NORA3(ModelRun):

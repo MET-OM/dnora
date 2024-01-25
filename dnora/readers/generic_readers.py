@@ -1,19 +1,17 @@
-from __future__ import annotations
-from .abstract_readers import DataReader, PointDataReader
-from data_sources import DataSource
+from .abstract_readers import DataReader, SpectralDataReader
+from dnora.data_sources import DataSource
 import pandas as pd
 import numpy as np
 import xarray as xr
 from dnora import aux_funcs
 from pathlib import Path
+from dnora.metaparameter.parameter_funcs import create_metaparameter_dict
+from dnora.dnora_types import DnoraDataType
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from dnora_types import DnoraDataType
+from dnora.spectral_conventions import convert_2d_to_1d, SpectralConvention
 
 
-class ConstantGrid(DataReader):
+class ConstantGriddedData(DataReader):
     def __init__(self, **kwargs):
         """E.g. ConstantGrid(u=1, v=2)"""
         self.values = kwargs
@@ -103,10 +101,28 @@ class Netcdf(DataReader):
         return coord_dict, data_dict, meta_dict, metaparameter_dict
 
 
-class ConstantPoint(PointDataReader):
-    def __init__(self, **kwargs):
-        """E.g. ConstantGrid(u=1, v=2)"""
-        self.values = kwargs
+class ConstantPointData(SpectralDataReader):
+    def __init__(
+        self,
+        fp: float | None = 0.3,
+        dirp: int | None = 0,
+        convention: SpectralConvention | str = SpectralConvention.OCEAN,
+        **kwargs,
+    ):
+        """**kwargs are possible extra coordinates
+        E.g. ConstantGrid(z=np.linspace(0,10,11))
+
+        fp/dirp used when importing spectra only
+        """
+        self.extra_coords = kwargs
+        if self.extra_coords.get("freq") is None:
+            self.extra_coords["freq"] = np.linspace(0.1, 1, 10)
+        if self.extra_coords.get("dirs") is None:
+            self.extra_coords["dirs"] = np.linspace(0, 350, 36)
+
+        self.dirp = dirp
+        self.fp = fp
+        self.provided_convention = convention
 
     def get_coordinates(self, grid, start_time, source, folder):
         lon_all, lat_all = grid.lonlat(strict=True)
@@ -125,26 +141,25 @@ class ConstantPoint(PointDataReader):
         inds,
         **kwargs,
     ):
-        time = pd.date_range(start=start_time, end=end_time, freq="H").values
-
-        if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
-            freq = np.linspace(0.1, 1, 10)
-        if obj_type == DnoraDataType.SPECTRA:
-            dirs = np.linspace(0, 350, 36).astype(int)
-
         coord_dict = {}
 
         obj_size = []
+        # Time is always first coord if exists
         if "time" in obj_type.value._coord_manager.added_coords():
-            coord_dict["time"] = time
-            obj_size.append(len(time))
+            coord_val = self.extra_coords.get(
+                "time", pd.date_range(start=start_time, end=end_time, freq="H").values
+            )
+            coord_dict["time"] = coord_val
+            obj_size.append(len(coord_val))
+
+        # Inds always second (or first if time doesn't exist)
         obj_size.append(len(inds))
-        if "freq" in obj_type.value._coord_manager.added_coords():
-            coord_dict["freq"] = freq
-            obj_size.append(len(freq))
-        if "dirs" in obj_type.value._coord_manager.added_coords():
-            coord_dict["dirs"] = dirs
-            obj_size.append(len(dirs))
+
+        for added_coord in obj_type.value._coord_manager.added_coords():
+            if added_coord != "time":
+                coord_val = self.extra_coords.get(added_coord, np.linspace(1, 100, 100))
+                coord_dict[added_coord] = coord_val
+                obj_size.append(len(coord_val))
 
         obj_size = tuple(obj_size)
 
@@ -160,21 +175,49 @@ class ConstantPoint(PointDataReader):
         if y_all is not None:
             coord_dict["y"] = y_all[inds]
 
+        if self.fp is not None and obj_type in [
+            DnoraDataType.SPECTRA,
+            DnoraDataType.SPECTRA1D,
+        ]:
+            """Set everything except dominant frequency to 0"""
+            non_fp_ind = np.argmin(
+                np.abs(self.extra_coords.get("freq") - self.fp)
+            ) != np.arange(len(self.extra_coords.get("freq")))
+        else:
+            non_fp_ind = np.ones(len(self.extra_coords.get("freq"))).astype(bool)
+
+        if self.dirp is not None and obj_type == DnoraDataType.SPECTRA:
+            """Set everything except dominant direction to 0"""
+            non_dirp_ind = np.argmin(
+                np.abs(self.extra_coords.get("dirs") - self.dirp)
+            ) != np.arange(len(self.extra_coords.get("dirs")))
+        else:
+            non_dirp_ind = np.ones(len(self.extra_coords.get("dirs"))).astype(bool)
+
         variables = obj_type.value._coord_manager.added_vars().keys()
 
         data_dict = {}
         if variables:  # If the object has addeed variables, create those
             for key in variables:
-                val = self.values.get(key)
-                if val is None:
-                    val = kwargs.get(key, 1)
+                val = kwargs.get(key, 1)
                 data_dict[key] = np.full(obj_size, val)
-        else:  # If not, create the ones provided by the user and assume they will be dynamically added
-            for key, val in self.values.items():
-                data_dict[key] = np.full(obj_size, val)
+
+        else:  # If not, create the ones provided by the user and assume they will be dynamically added (if not, they are just dumped)
             for key, val in kwargs.items():
                 data_dict[key] = np.full(obj_size, val)
 
+        for key in data_dict:
+            if obj_type == DnoraDataType.SPECTRA:
+                data_dict[key][:, :, non_fp_ind, :] = 0
+                data_dict[key][:, :, :, non_dirp_ind] = 0
+            elif obj_type == DnoraDataType.SPECTRA1D:
+                data_dict[key][:, :, non_fp_ind] = 0
+
+        if obj_type == DnoraDataType.SPECTRA:
+            self.set_convention(self.provided_convention)
+        if obj_type == DnoraDataType.SPECTRA1D:
+            self.set_convention(convert_2d_to_1d(self.provided_convention))
+
         meta_dict = {}
-        metaparameter_dict = self.create_metaparameter_dict(data_dict.keys())
+        metaparameter_dict = create_metaparameter_dict(data_dict.keys())
         return coord_dict, data_dict, meta_dict, metaparameter_dict

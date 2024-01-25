@@ -1,23 +1,23 @@
 from enum import Enum
 
-from grid import Grid, TriGrid
-from wind import Wind
-from spectra import Spectra
-from spectra1d import Spectra1D
-from waveseries import WaveSeries
-from waterlevel import WaterLevel
-from current import Current
-from ice import Ice
+from dnora.grid import Grid, TriGrid
+from dnora.wind import Wind
+from dnora.spectra import Spectra
+from dnora.spectra1d import Spectra1D
+from dnora.waveseries import WaveSeries
+from dnora.waterlevel import WaterLevel
+from dnora.current import Current
+from dnora.ice import Ice
 
-from wind.read import WindReader
-from spectra.read import SpectraReader
-from spectra1d.read import Spectra1DReader
-from waveseries.read import WaveSeriesReader
-from waterlevel.read import WaterLevelReader
-from current.read import CurrentReader
-from ice.read import IceReader
+from dnora.wind.read import WindReader
+from dnora.spectra.read import SpectraReader
+from dnora.spectra1d.read import Spectra1DReader
+from dnora.waveseries.read import WaveSeriesReader
+from dnora.waterlevel.read import WaterLevelReader
+from dnora.current.read import CurrentReader
+from dnora.ice.read import IceReader
 
-from readers import abstract_readers
+from dnora.readers import abstract_readers
 from typing import Union
 
 ReaderFunction = Union[

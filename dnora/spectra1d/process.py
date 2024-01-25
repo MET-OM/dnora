@@ -1,11 +1,8 @@
 import numpy as np
 from abc import ABC, abstractmethod
 
-# Import aux_funcsiliry functions
-from dnora import msg
-
-from spectral_conventions import SpectralConvention
-from aux_funcs import check_that_spectra_are_consistent
+from dnora.spectral_conventions import SpectralConvention
+from dnora.aux_funcs import check_that_spectra_are_consistent
 
 
 class SpectralProcessor(ABC):

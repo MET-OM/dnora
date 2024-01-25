@@ -2,14 +2,12 @@ import xarray as xr
 import numpy as np
 from copy import copy
 from abc import ABC, abstractmethod
-from typing import Tuple
-from grid import Grid
 
 # Import aux_funcsiliry functions
-from dnora import file_module, msg, aux_funcs
-from spectral_conventions import SpectralConvention
+from dnora import msg, aux_funcs
+from dnora.spectral_conventions import SpectralConvention
 import pandas as pd
-from data_sources import DataSource
+from dnora.data_sources import DataSource
 
 
 class SpectraReader(ABC):
@@ -145,14 +143,14 @@ class DnoraNc(SpectraReader):
     def __init__(self, files: str) -> None:
         self.files = files
 
-    def get_coordinates(self, grid, start_time, source, folder) -> Tuple:
+    def get_coordinates(self, grid, start_time, source, folder) -> tuple:
         data = xr.open_dataset(self.files[0]).isel(time=[0])
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(data)
         return lon, lat, x, y
 
     def __call__(
         self, grid, start_time, end_time, inds, source, folder, **kwargs
-    ) -> Tuple:
+    ) -> tuple:
         def _crop(ds):
             return ds.sel(time=slice(start_time, end_time))
 
@@ -191,12 +189,12 @@ class ForceFeed(SpectraReader):
         self.set_convention(convention)
         return
 
-    def get_coordinates(self, grid, start_time, source, folder) -> Tuple:
+    def get_coordinates(self, grid, start_time, source, folder) -> tuple:
         return copy(self.lon), copy(self.lat)
 
     def __call__(
         self, grid, start_time, end_time, inds, source, folder, **kwargs
-    ) -> Tuple:
+    ) -> tuple:
         # return  copy(self.time), copy(self.freq), copy(self.dirs), np.reshape(self.spec, (len(self.time), len(self.lon), self.spec.shape[0], self.spec.shape[1])), copy(self.lon), copy(self.lat), ''
         return (
             copy(self.time),
@@ -232,7 +230,7 @@ class WW3Nc(SpectraReader):
                 filenames.append(f"{folder}/{file}")
         return filenames
 
-    def get_coordinates(self, grid, start_time, source, folder) -> Tuple:
+    def get_coordinates(self, grid, start_time, source, folder) -> tuple:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         # day = pd.date_range(start_time, start_time,freq='D')
 
@@ -247,7 +245,7 @@ class WW3Nc(SpectraReader):
 
     def __call__(
         self, grid, start_time, end_time, inds, source, folder, **kwargs
-    ) -> Tuple:
+    ) -> tuple:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
 
         msg.info(
@@ -296,7 +294,7 @@ class WW3Nc(SpectraReader):
 #     def convention(self) -> SpectralConvention:
 #         return SpectralConvention.WW3
 
-#     def get_coordinates(self, grid, start_time) -> Tuple:
+#     def get_coordinates(self, grid, start_time) -> tuple:
 #         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
 #         #day = pd.date_range(start_time, start_time,freq='D')
 #         start_times, end_times, file_times = aux_funcs.create_time_stamps(start_time, start_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
@@ -309,7 +307,7 @@ class WW3Nc(SpectraReader):
 
 #         return lon_all, lat_all
 
-#     def __call__(self, grid, start_time, end_time, inds, **kwargs) -> Tuple:
+#     def __call__(self, grid, start_time, end_time, inds, **kwargs) -> tuple:
 #         """Reads in all boundary spectra between the given times and at for the given indeces"""
 #         self.start_time = start_time
 #         self.end_time = end_time

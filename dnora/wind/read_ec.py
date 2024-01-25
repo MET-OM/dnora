@@ -1,21 +1,17 @@
-from abc import ABC, abstractmethod
-from copy import copy
-import numpy as np
 import xarray as xr
-from subprocess import call
+
 import os, glob
-import time
 import cdsapi
 
 # Import objects
-from grid import Grid
+from dnora.grid import Grid
 
 # Import abstract classes
 from .read import WindReader
 
 # Import aux_funcsiliry functions
 from dnora import msg
-from aux_funcs import (
+from dnora.aux_funcs import (
     expand_area,
     int_list_of_days,
     int_list_of_months,

@@ -2,7 +2,7 @@ from .exporter import DataExporter
 from . import grid, spectra, wind, spectra1d, waveseries, waterlevel, inputfile
 from .generic.generic_writers import DnoraNc, Null, DumpToNc
 
-from ..dnora_object_type import DnoraDataType
+from ..dnora_types import DnoraDataType
 from .exporter import WriterFunction
 from ..model_formats import ModelFormat
 

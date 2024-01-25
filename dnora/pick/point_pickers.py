@@ -8,11 +8,11 @@ from geo_skeletons import PointSkeleton
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..grd.grd_mod import Grid, TriGrid
+    from dnora.grid import Grid, TriGrid
 
 # Import aux_funcsiliry functions
-from .. import msg
-from ..aux_funcs import expand_area
+from dnora import msg
+from dnora.aux_funcs import expand_area
 
 
 class PointPicker(ABC):
