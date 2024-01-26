@@ -8,9 +8,6 @@ import os, glob
 # Import objects
 from dnora.grid import Grid
 
-# Import abstract classes
-from .read import WindReader
-
 # Import aux_funcsiliry functions
 from dnora import msg
 from dnora.aux_funcs import (
@@ -21,9 +18,10 @@ from dnora.aux_funcs import (
 )
 
 from dnora.data_sources import DataSource
+from dnora.readers.abstract_readers import DataReader
 
 
-class NORA3(WindReader):
+class NORA3(DataReader):
     """Reads wind data of the NORA3 hindcast directly from MET Norways servers.
 
     The NORA3 HARMONIE-AROME high-resolution (ca 3 km) hindcast for the
@@ -223,7 +221,7 @@ class NORA3(WindReader):
             return folder + "/" + filename
 
 
-class MyWave3km(WindReader):
+class MyWave3km(DataReader):
     """Reads wind data from the MyWave 3km hindcast directly from MET Norways
     servers. You should probably use MetNo_NORA3 because:
 
@@ -348,16 +346,16 @@ class MyWave3km(WindReader):
 
         u = -1 * u.fillna(0)  # *-1 due to ocean convection in WAM!!!
         v = -1 * v.fillna(0)  # *-1 due to ocean convection in WAM!!!
-        # u = np.moveaxis(u.values,0,2)
-        # v = np.moveaxis(v.values,0,2)
 
-        time = wind_forcing.time.values
-        lon = wind_forcing.rlon.values
-        lat = wind_forcing.rlat.values
-        x = None
-        y = None
-
-        return time, u, v, lon, lat, x, y, wind_forcing.attrs
+        data_dict = {"u": u, "v": v}
+        coord_dict = {
+            "time": wind_forcing.time.values,
+            "lon": wind_forcing.rlon.values,
+            "lat": wind_forcing.rlat.values,
+        }
+        meta_dict = wind_forcing.attrs
+        metaparameter_dict = {}
+        return coord_dict, data_dict, meta_dict, metaparameter_dict
 
     def get_url(self, time_stamp, source, folder):
         filename = (
@@ -380,7 +378,7 @@ class MyWave3km(WindReader):
             return folder + "/" + filename
 
 
-class MEPS(WindReader):
+class MEPS(DataReader):
     """Reads wind data from MET Norways MEPS forecast.
 
     The data is from a 2.5 km AROME model.

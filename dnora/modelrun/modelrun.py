@@ -173,14 +173,19 @@ class ModelRun:
     ):
         """Gets the indeces of the point defined by the logical mask with respect to all points available from the reader function."""
         if not self.dry_run():
-            lon_all, lat_all, x_all, y_all = reader.get_coordinates(
+            available_points = reader.get_coordinates(
                 grid=self.grid(),
                 start_time=self.start_time(),
                 source=source,
                 folder=folder,
             )
 
-            all_points = PointSkeleton(lon=lon_all, lat=lat_all, x=x_all, y=y_all)
+            all_points = PointSkeleton(
+                lon=available_points.get("lon"),
+                lat=available_points.get("lat"),
+                x=available_points.get("x"),
+                y=available_points.get("y"),
+            )
 
             if np.all(np.logical_not(mask_of_points)):
                 interest_points = None
@@ -200,7 +205,7 @@ class ModelRun:
 
             if len(inds) < 1:
                 msg.warning(
-                    "PointPicker didn't find any points. Aborting import of boundary."
+                    "PointPicker didn't find any points. Aborting import of data."
                 )
                 return
             return inds
@@ -230,8 +235,11 @@ class ModelRun:
                 obj = add_datavar(key, append=True)(obj)  # Creates .hs() etc. methods
             obj.set(key, value)
 
-            metaparameter = metaparameter_dict.get(key)
+            metaparameter = metaparameter_dict.get(
+                key
+            )  # Check if metaparameter provided by reader
             if metaparameter is None:
+                # DNORA object usually has specified the metaparameters
                 if hasattr(obj_type.value, "meta_dict"):
                     metaparameter = obj_type.value.meta_dict.get(key)
 

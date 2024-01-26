@@ -6,8 +6,6 @@ import cdsapi
 # Import objects
 from dnora.grid import Grid
 
-# Import abstract classes
-from .read import WindReader
 
 # Import aux_funcsiliry functions
 from dnora import msg
@@ -18,6 +16,9 @@ from dnora.aux_funcs import (
     int_list_of_years,
 )
 import pandas as pd
+
+from dnora.data_sources import DataSource
+from dnora.readers.abstract_readers import DataReader
 
 
 def download_era5_from_cds(
@@ -116,7 +117,7 @@ def download_era5_from_cds(
     return filename
 
 
-class ERA5(WindReader):
+class ERA5(DataReader):
     """Reads ERA5 wind data"""
 
     def __call__(
@@ -148,12 +149,21 @@ class ERA5(WindReader):
             start_time, end_time, lon=lon, lat=lat, folder="dnora_wnd_temp"
         )
         wind_forcing = xr.open_dataset(nc_file)
-        wind_forcing = wind_forcing.rename_dims({"longitude": "lon", "latitude": "lat"})
-        wind_forcing = wind_forcing.rename_vars({"longitude": "lon", "latitude": "lat"})
-        wind_forcing = wind_forcing.rename_vars({"u10": "u", "v10": "v"})
+        # wind_forcing = wind_forcing.rename_dims({"longitude": "lon", "latitude": "lat"})
+        # wind_forcing = wind_forcing.rename_vars({"longitude": "lon", "latitude": "lat"})
+        # wind_forcing = wind_forcing.rename_vars({"u10": "u", "v10": "v"})
 
         wind_forcing = wind_forcing.isel(
-            lat=slice(None, None, -1)
+            latitude=slice(None, None, -1)
         )  # ERA5 gives lat as descending
 
-        return wind_forcing
+        coord_dict = {
+            "lon": wind_forcing.longitude.values,
+            "lat": wind_forcing.latitude.values,
+            "time": wind_forcing.time.values,
+        }
+        data_dict = {"u": wind_forcing.u10.values, "v": wind_forcing.v10.values}
+        meta_dict = wind_forcing.attrs
+        metaparameter_dict = {}
+
+        return coord_dict, data_dict, meta_dict, metaparameter_dict

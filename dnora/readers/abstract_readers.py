@@ -34,10 +34,21 @@ class DataReader(ABC):
 
         The variables needed to be returned are:
 
-        coord_dict: Dictionary containing at least lon/lat or x/y. Can also contain e.g. time
-        data_dict:  Dictionary containing the data variables. Key-names depend on object type
-        meta_dict: dict{key, value} will be set as attributes of the xr.Dataset. Can be empty.
-        metaparameter_dict: dict{key, values} couples the data variables to a metaparametr. Can be empty.
+        - coord_dict: Dictionary containing at least lon/lat or x/y. Can also contain e.g. time
+            E.g. coord_dict = {'lon': np_array_of_longitude, 'lat': np_array_of_latitude}
+
+        - data_dict:  Dictionary containing the data variables. Key-names depend on object type
+
+            E.g. data_dict = {'u': np_array_of_u_wind_component, 'v': np_array_of_v_wind_component}
+
+        - meta_dict: dict{key, value} will be set as attributes of the xr.Dataset. Can be empty.
+            E.g. meta_dict = {'model': 'MEPS', 'institute': 'MET Norway'}
+
+        - metaparameter_dict: dict{key, values} couples the data variables to a metaparameter (see dnora.metaparameter.parameters).
+            E.g. metaparameter_dict = {'u': XWind, 'v': YWind}
+        Can be empty and is automatically detected from the attributes of he dnora object class.
+        Only needs to be specified in e.g. WaveSeries where the data variables are not fixed and created dynamically.
+
         """
 
         pass
@@ -52,14 +63,15 @@ class DataReader(ABC):
 class PointDataReader(DataReader):
     @abstractmethod
     def get_coordinates(self, grid, start_time, source, folder):
-        """Return a list of all the available coordinated in the source.
+        """Return a list of ALL the available coordinated in the source.
 
         These are needed fo the PointPicker object to choose the relevant
         point to actually read in.
 
         The variables needed to be returned are:
 
-        lon_all, lat_all, x_all, y_all
+        - coord_dict: Dictionary containing at least lon/lat or x/y.
+            E.g. coord_dict = {'lon': np_array_of_longitude, 'lat': np_array_of_latitude}
         """
         pass
 

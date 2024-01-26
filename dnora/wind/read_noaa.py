@@ -6,9 +6,6 @@ import xarray as xr
 # Import objects
 from dnora.grid import Grid
 
-# Import abstract classes
-from .read import WindReader
-
 # Import aux_funcsiliry functions
 from dnora import msg
 from dnora.aux_funcs import (
@@ -17,9 +14,10 @@ from dnora.aux_funcs import (
 )
 
 from dnora.data_sources import DataSource
+from dnora.readers.abstract_readers import DataReader
 
 
-class GFS(WindReader):
+class GFS(DataReader):
     """Reads wind data of the GFS global forecast"""
 
     def __init__(
@@ -96,16 +94,16 @@ class GFS(WindReader):
         v = wind_forcing.vgrd10m.values
         u = np.moveaxis(u, 0, 2)
         v = np.moveaxis(v, 0, 2)
-        # u = u.fillna(0)
-        # v = v.fillna(0)
+        data_dict = {"u": u, "v": v}
+        coord_dict = {
+            "time": wind_forcing.time.values,
+            "lon": wind_forcing.lon.values,
+            "lat": wind_forcing.lat.values,
+        }
+        meta_dict = wind_forcing.attrs
+        metaparameter_dict = {}
 
-        time = wind_forcing.time.values
-        lon = wind_forcing.lon.values
-        lat = wind_forcing.lat.values
-        x = None
-        y = None
-
-        return time, u, v, lon, lat, x, y, wind_forcing.attrs
+        return coord_dict, data_dict, meta_dict, metaparameter_dict
 
     def get_url(self, time_stamp_file, time_stamp, first_ind) -> str:
         h0 = int(time_stamp_file.hour)
