@@ -11,7 +11,7 @@ class DnoraObjectType(Enum):
     OceanCurrent = "oceancurrent"
     WaterLevel = "waterlevel"
     Spectra = "spectra"
-    IceForcing = "iceforcing"
+    Ice = "ice"
     SpectralGrid = "spectral_grid"
     InputFile = "input_file"
 

@@ -10,7 +10,7 @@ from .spc.spectral_writers import SpectralWriter
 from .wsr.waveseries_writers import WaveSeriesWriter
 from .wlv.waterlevel_writers import WaterLevelWriter
 from .ocr.oceancurrent_writers import OceanCurrentWriter
-from .ice.iceforcing_writers import IceForcingWriter
+from .ice.ice_writers import IceWriter
 from .inp.input_file_writers import InputFileWriter
 
 from .decorators import add_export_method
@@ -26,7 +26,7 @@ WriterFunction = Union[
     WaveSeriesWriter,
     WaterLevelWriter,
     OceanCurrentWriter,
-    IceForcingWriter,
+    IceWriter,
     InputFileWriter,
 ]
 
@@ -38,7 +38,7 @@ WriterFunction = Union[
 @add_export_method(DnoraObjectType.WaveSeries)
 @add_export_method(DnoraObjectType.WaterLevel)
 @add_export_method(DnoraObjectType.OceanCurrent)
-@add_export_method(DnoraObjectType.IceForcing)
+@add_export_method(DnoraObjectType.Ice)
 class DataExporter:
     _writer_dict = {DnoraObjectType.InputFile: None}
 

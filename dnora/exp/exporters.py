@@ -1,5 +1,5 @@
 from .exp_mod import DataExporter
-from . import grd, bnd, wnd, spc, wsr, wlv, inp
+from . import grd, bnd, wnd, spc, wsr, ocr, ice, wlv, inp
 from .general.general_writing_functions import DnoraNc, Null, DumpToNc
 
 from ..dnora_object_type import DnoraObjectType
@@ -26,6 +26,7 @@ class SWAN(DataExporter):
     _writer_dict = {
         DnoraObjectType.Boundary: bnd.SWAN(),
         DnoraObjectType.Forcing: wnd.SWAN(),
+        DnoraObjectType.Ice: ice.SWAN(),
         DnoraObjectType.Grid: grd.SWAN(),
         DnoraObjectType.InputFile: inp.SWAN(),
     }

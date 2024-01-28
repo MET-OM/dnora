@@ -9,7 +9,7 @@ from .. import msg
 from ..data_sources import DataSource
 
 
-class IceForcingReader(ABC):
+class IceReader(ABC):
     """Reads ice forcing data from some source and provide it to the object.
 
     The area is defined from the Grid object that is passed.
@@ -31,7 +31,7 @@ class IceForcingReader(ABC):
         return DataSource.UNDEFINED
 
 
-class DnoraNc(IceForcingReader):
+class DnoraNc(IceReader):
     def __init__(self, files: str) -> None:
         self.files = files
 
@@ -90,7 +90,7 @@ class DnoraNc(IceForcingReader):
         )
 
 
-class ConstantIceForcing(IceForcingReader):
+class ConstantIce(IceReader):
     def __init__(
         self, concentration: float = 0.4, thickness: float = 0.5, metadata: dict = None
     ):

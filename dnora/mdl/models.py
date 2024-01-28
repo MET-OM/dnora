@@ -10,6 +10,7 @@ class NORA3(ModelRun):
     _reader_dict = {
         DnoraObjectType.Boundary: bnd.read_metno.NORA3(),
         DnoraObjectType.Forcing: wnd.read_metno.NORA3(),
+        DnoraObjectType.Ice: ice.read_metno.NORA3(),
     }
 
 

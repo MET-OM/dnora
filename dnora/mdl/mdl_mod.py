@@ -41,8 +41,8 @@ from ..ocr import OceanCurrent
 from ..ocr.read import OceanCurrentReader
 from .. import ocr
 
-from ..ice import IceForcing
-from ..ice.read import IceForcingReader
+from ..ice import Ice
+from ..ice.read import IceReader
 from .. import ice
 
 from ..run.model_executers import ModelExecuter
@@ -65,10 +65,10 @@ ReaderFunction = Union[
     WaveSeriesReader,
     WaterLevelReader,
     OceanCurrentReader,
-    IceForcingReader,
+    IceReader,
 ]
 DnoraObject = Union[
-    Grid, TriGrid, Forcing, Boundary, WaveSeries, WaterLevel, OceanCurrent, IceForcing
+    Grid, TriGrid, Forcing, Boundary, WaveSeries, WaterLevel, OceanCurrent, Ice
 ]
 
 
@@ -552,7 +552,7 @@ class ModelRun:
         folder: str = None,
         **kwargs,
     ) -> None:
-        """Imports waterlevel.
+        """Imports ocean current.
 
         source = 'remote' (default) / '<folder>' / 'met'
 
@@ -592,27 +592,27 @@ class ModelRun:
         self.oceancurrent().set_v(v)
         self.oceancurrent().set_metadata(attributes)
 
-    @cached_reader(DnoraObjectType.IceForcing, ice.read.DnoraNc)
-    def import_iceforcing(
+    @cached_reader(DnoraObjectType.Ice, ice.read.DnoraNc)
+    def import_ice(
         self,
-        iceforcing_reader: IceForcingReader | None = None,
+        ice_reader: IceReader | None = None,
         name: str | None = None,
         dry_run: bool = False,
         source: str | DataSource = DataSource.UNDEFINED,
         folder: str = None,
         **kwargs,
     ) -> None:
-        """Imports waterlevel.
+        """Imports ice.
 
         source = 'remote' (default) / '<folder>' / 'met'
 
-        The implementation of this is up to the WaterLevelReader, and all options might not be functional.
+        The implementation of this is up to the IceReader, and all options might not be functional.
         'met' options will only work in MET Norway internal networks.
 
         To import local netcdf files saved in DNORA format (by write_cache=True), use read_cache=True.
         """
-        iceforcing_reader, name, source, folder = self._setup_import(
-            DnoraObjectType.IceForcing, name, dry_run, iceforcing_reader, source, folder
+        ice_reader, name, source, folder = self._setup_import(
+            DnoraObjectType.Ice, name, dry_run, ice_reader, source, folder
         )
         if self.dry_run():
             msg.info("Dry run! No ice forcing data will be imported.")
@@ -620,13 +620,13 @@ class ModelRun:
         (
             time,
             concentration,
-            thickness,
+            #thickness,
             lon,
             lat,
             x,
             y,
             attributes,
-        ) = iceforcing_reader(
+        ) = ice_reader(
             grid=self.grid(),
             start_time=self.start_time(),
             end_time=self.end_time(),
@@ -634,16 +634,16 @@ class ModelRun:
             folder=folder,
             **kwargs,
         )
-        self[DnoraObjectType.IceForcing] = IceForcing(
+        self[DnoraObjectType.Ice] = Ice(
             lon=lon, lat=lat, x=x, y=y, time=time, name=name
         )
 
-        self.iceforcing().set_spacing(nx=len(x or lon), ny=len(y or lat))
+        self.ice().set_spacing(nx=len(x or lon), ny=len(y or lat))
 
-        self.iceforcing().name = name
-        self.iceforcing().set_concentration(concentration)
-        self.iceforcing().set_thickness(thickness)
-        self.iceforcing().set_metadata(attributes)
+        self.ice().name = name
+        self.ice().set_concentration(concentration)
+        #self.ice().set_thickness(thickness)
+        self.ice().set_metadata(attributes)
 
     def boundary_to_spectra(
         self,
@@ -769,6 +769,7 @@ class ModelRun:
             name=DnoraObjectType.SpectralGrid.value, freq=freq, dirs=dirs
         )
 
+
     def run_model(
         self,
         model_executer: ModelExecuter | None = None,
@@ -859,9 +860,9 @@ class ModelRun:
         """Returns the ocean current object if exists."""
         return self._dnora_objects.get(DnoraObjectType.OceanCurrent)
 
-    def iceforcing(self) -> IceForcing:
-        """Returns the ocean current object if exists."""
-        return self._dnora_objects.get(DnoraObjectType.IceForcing)
+    def ice(self) -> Ice:
+        """Returns the ice object if exists."""
+        return self._dnora_objects.get(DnoraObjectType.Ice)
 
     def spectral_grid(self) -> SpectralGrid:
         """Returns the spectral grid object if exists."""
