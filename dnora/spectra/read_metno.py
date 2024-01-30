@@ -4,7 +4,6 @@ from typing import Tuple
 import pandas as pd
 
 # Import abstract classes and needed instances of them
-from .read import SpectraReader
 from .process import RemoveEmpty
 from dnora.spectral_conventions import SpectralConvention
 
@@ -12,9 +11,10 @@ from dnora.spectral_conventions import SpectralConvention
 from dnora import msg
 from dnora.aux_funcs import create_time_stamps
 from dnora.data_sources import DataSource
+from dnora.readers.abstract_readers import SpectralDataReader
 
 
-class WAM4km(SpectraReader):
+class WAM4km(SpectralDataReader):
     def __init__(
         self,
         ignore_nan: bool = True,
@@ -202,7 +202,7 @@ class WAM4km(SpectraReader):
             return folder + "/MyWave_wam4_SPC_" + day.strftime("%Y%m%d")
 
 
-class NORA3(SpectraReader):
+class NORA3(SpectralDataReader):
     def __init__(
         self,
         stride: int = 24,
@@ -316,7 +316,7 @@ class NORA3(SpectraReader):
             return folder + "/SPC" + day.strftime("%Y%m%d") + "00.nc"
 
 
-class WW3_4km(SpectraReader):
+class WW3_4km(SpectralDataReader):
     def __init__(
         self,
         ignore_nan: bool = True,

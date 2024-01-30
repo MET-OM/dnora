@@ -48,7 +48,7 @@ class Spectra1D(PointSkeleton):
                     )
 
             new_spec, new_dirs, new_freq, new_spr, new_inds = processor(
-                self.spec(), self.mdir(), self.freq(), self.spr(), self.inds()
+                self.spec(), self.dirm(), self.freq(), self.spr(), self.inds()
             )
 
             new_inds = list(new_inds)
@@ -78,7 +78,7 @@ class Spectra1D(PointSkeleton):
                 freq=new_freq,
             )
             self.set_spec(new_spec)
-            self.set_mdir(new_dirs)
+            self.set_dirm(new_dirs)
             self.set_spr(new_spr)
             self.set_metadata(metadata)  # Global attributes
 

@@ -7,7 +7,7 @@ import pandas as pd
 from .process import RemoveEmpty
 
 # Import abstract classes and needed instances of them
-from .read import SpectraReader
+from dnora.readers.abstract_readers import SpectralDataReader
 from dnora.grid import Grid
 import cdsapi
 from dnora.data_sources import DataSource
@@ -79,7 +79,7 @@ def download_era5_from_cds(
     return filename
 
 
-class ERA5(SpectraReader):
+class ERA5(SpectralDataReader):
     def __init__(self, dlon: float = None, dlat: float = None):
         """Default dlon=dlat=0.5. If only dlon given, dlon=dlat and vice versa."""
         if dlon is None and dlat is None:

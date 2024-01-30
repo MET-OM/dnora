@@ -10,268 +10,268 @@ import pandas as pd
 from dnora.data_sources import DataSource
 
 
-class SpectraReader(ABC):
-    """Reads boundary spectra from some source and provide it to the object."""
+# class SpectraReader(ABC):
+#     """Reads boundary spectra from some source and provide it to the object."""
 
-    @abstractmethod
-    def get_coordinates(self, grid, start_time, source, folder):
-        """Return a list of all the available coordinated in the source.
+#     @abstractmethod
+#     def get_coordinates(self, grid, start_time, source, folder):
+#         """Return a list of all the available coordinated in the source.
 
-        These are needed fo the PointPicker object to choose the relevant
-        point to actually read in.
+#         These are needed fo the PointPicker object to choose the relevant
+#         point to actually read in.
 
-        Provide the result as for equally long nump arrays (None for missing values).
-        """
-        return lon, lat, x, y
+#         Provide the result as for equally long nump arrays (None for missing values).
+#         """
+#         return lon, lat, x, y
 
-    @abstractmethod
-    def convention(self) -> SpectralConvention:
-        """Return the convention of the spectra returned to the object.
+#     @abstractmethod
+#     def convention(self) -> SpectralConvention:
+#         """Return the convention of the spectra returned to the object.
 
-        The conventions to choose from are predetermined:
+#         The conventions to choose from are predetermined:
 
-        OCEAN:    Oceanic convention
-                    Directional vector monotonically increasing.
-                    Direction to. North = 0, East = 90.
+#         OCEAN:    Oceanic convention
+#                     Directional vector monotonically increasing.
+#                     Direction to. North = 0, East = 90.
 
-        MET:      Meteorological convention
-                    Directional vector monotonically increasing.
-                    Direction from. North = 0, East = 90.
+#         MET:      Meteorological convention
+#                     Directional vector monotonically increasing.
+#                     Direction from. North = 0, East = 90.
 
-        MATH:     Mathematical convention
-                    Directional vector of type: [90 80 ... 10 0 350 ... 100]
-                    Direction to. North = 90, East = 0.
+#         MATH:     Mathematical convention
+#                     Directional vector of type: [90 80 ... 10 0 350 ... 100]
+#                     Direction to. North = 90, East = 0.
 
-        MATHVEC:  Mathematical convention in vector
-                    Directional vector of type: [90 80 ... 10 0 350 ... 100]
-                    Direction to. North = 90, East = 0.
+#         MATHVEC:  Mathematical convention in vector
+#                     Directional vector of type: [90 80 ... 10 0 350 ... 100]
+#                     Direction to. North = 90, East = 0.
 
-        WW3:      WAVEWATCH III output convention
-                    Directional vector of type: [90 80 ... 10 0 350 ... 100]
-                    Direction to. North = 0, East = 90.
-        """
-        return convention
+#         WW3:      WAVEWATCH III output convention
+#                     Directional vector of type: [90 80 ... 10 0 350 ... 100]
+#                     Direction to. North = 0, East = 90.
+#         """
+#         return convention
 
-    @abstractmethod
-    def __call__(
-        self, grid, start_time, end_time, inds, source, folder, **kwargs
-    ) -> tuple:
-        """Reads in the spectra from inds between start_time and end_time.
+#     @abstractmethod
+#     def __call__(
+#         self, grid, start_time, end_time, inds, source, folder, **kwargs
+#     ) -> tuple:
+#         """Reads in the spectra from inds between start_time and end_time.
 
-        The variables needed to be returned are:
+#         The variables needed to be returned are:
 
-        time:   Time stamps as numpy.datetime64 array
-        freq:   Frequency vector as numpy array
-        dirs:   Directional vector as numpy array
-        spec:   Boundary spectra [time, station, freq, dirs] as numpy array
-        lon:    Longitude vector as numpy array (None if Cartesian)
-        lat:    Latitude vector as numpy array (None if Cartesian)
-        x:    Longitude vector as numpy array (None if Spherical)
-        y:    Latitude vector as numpy array (None if Spherical)
-        metadata: metadata: dict{key, value} will be set as attributes of the xr.Dataset
-        """
+#         time:   Time stamps as numpy.datetime64 array
+#         freq:   Frequency vector as numpy array
+#         dirs:   Directional vector as numpy array
+#         spec:   Boundary spectra [time, station, freq, dirs] as numpy array
+#         lon:    Longitude vector as numpy array (None if Cartesian)
+#         lat:    Latitude vector as numpy array (None if Cartesian)
+#         x:    Longitude vector as numpy array (None if Spherical)
+#         y:    Latitude vector as numpy array (None if Spherical)
+#         metadata: metadata: dict{key, value} will be set as attributes of the xr.Dataset
+#         """
 
-        return time, freq, dirs, spec, lon, lat, x, y, metadata
+#         return time, freq, dirs, spec, lon, lat, x, y, metadata
 
-    def name(self) -> str:
-        return type(self).__name__
+#     def name(self) -> str:
+#         return type(self).__name__
 
-    def set_convention(self, convention: SpectralConvention) -> None:
-        if isinstance(convention, str):
-            self._convention = SpectralConvention[convention.upper()]
-        else:
-            self._convention = convention
+#     def set_convention(self, convention: SpectralConvention) -> None:
+#         if isinstance(convention, str):
+#             self._convention = SpectralConvention[convention.upper()]
+#         else:
+#             self._convention = convention
 
-    def convention(self) -> SpectralConvention:
-        return self._convention
+#     def convention(self) -> SpectralConvention:
+#         return self._convention
 
-    def post_processing(self):
-        return None
+#     def post_processing(self):
+#         return None
 
-    def default_data_source(self) -> DataSource:
-        return DataSource.UNDEFINED
+#     def default_data_source(self) -> DataSource:
+#         return DataSource.UNDEFINED
 
-    # def __str__(self):
-    # return (f"{self.start_time} - {self.end_time}")
-
-
-class ConstantBoundary(SpectraReader):
-    def __init__(
-        self,
-        spec: float = 1,
-        metadata: dict = None,
-        spectral_convention: SpectralConvention = SpectralConvention.OCEAN,
-    ):
-        self.spec = spec
-        self.metadata = metadata
-        self.set_convention(spectral_convention)
-
-    def get_coordinates(self, grid, start_time, source, folder) -> tuple:
-        lon, lat = grid.lonlat(strict=True)
-        x, y = grid.xy(strict=True)
-
-        return lon, lat, x, y
-
-    def __call__(self, grid, start_time, end_time, inds, source, folder, **kwargs):
-        time = pd.date_range(start=start_time, end=end_time, freq="H").values
-        lon, lat = grid.lonlat(strict=True)
-        x, y = grid.xy(strict=True)
-        freq = np.array(range(1, 11)) / 10.0
-
-        if self.convention() in [SpectralConvention.WW3, SpectralConvention.MATHVEC]:
-            dirs = np.mod(np.linspace(90.0, -255.0, 24), 360)
-        else:
-            dirs = np.linspace(0.0, 345.0, 24)
-
-        if self.convention() in [SpectralConvention.MATH, SpectralConvention.MATHVEC]:
-            north = 90
-        elif self.convention() in [SpectralConvention.MET]:
-            north = 180
-        else:
-            north = 0
-        # dirs = np.array(range(0,360,15))
-
-        spec = np.full((len(time), len(inds), len(freq), len(dirs)), 0)
-        north_ind = np.where(dirs == north)[0][0]
-        spec[:, :, :, north_ind] = np.full((len(time), len(inds), len(freq)), self.spec)
-        metadata = {"metadata": "this is a constant boundary"}
-
-        return time, freq, dirs, spec, lon, lat, x, y, metadata
+#     # def __str__(self):
+#     # return (f"{self.start_time} - {self.end_time}")
 
 
-class DnoraNc(SpectraReader):
-    def __init__(self, files: str) -> None:
-        self.files = files
+# class ConstantBoundary(SpectraReader):
+#     def __init__(
+#         self,
+#         spec: float = 1,
+#         metadata: dict = None,
+#         spectral_convention: SpectralConvention = SpectralConvention.OCEAN,
+#     ):
+#         self.spec = spec
+#         self.metadata = metadata
+#         self.set_convention(spectral_convention)
 
-    def get_coordinates(self, grid, start_time, source, folder) -> tuple:
-        data = xr.open_dataset(self.files[0]).isel(time=[0])
-        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(data)
-        return lon, lat, x, y
+#     def get_coordinates(self, grid, start_time, source, folder) -> tuple:
+#         lon, lat = grid.lonlat(strict=True)
+#         x, y = grid.xy(strict=True)
 
-    def __call__(
-        self, grid, start_time, end_time, inds, source, folder, **kwargs
-    ) -> tuple:
-        def _crop(ds):
-            return ds.sel(time=slice(start_time, end_time))
+#         return lon, lat, x, y
 
-        msg.info(
-            f"Getting boundary spectra from DNORA type netcdf files (e.g. {self.files[0]}) from {start_time} to {end_time}"
-        )
-        ds = xr.open_mfdataset(self.files, preprocess=_crop, data_vars="minimal")
-        ds = ds.sel(inds=inds)
-        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
-        if not hasattr(self, "_convention"):
-            self.set_convention(ds.spectral_convention)
+#     def __call__(self, grid, start_time, end_time, inds, source, folder, **kwargs):
+#         time = pd.date_range(start=start_time, end=end_time, freq="H").values
+#         lon, lat = grid.lonlat(strict=True)
+#         x, y = grid.xy(strict=True)
+#         freq = np.array(range(1, 11)) / 10.0
 
-        return (
-            ds.time.values,
-            ds.freq.values,
-            ds.dirs.values,
-            ds.spec.values,
-            lon,
-            lat,
-            x,
-            y,
-            ds.attrs,
-        )
+#         if self.convention() in [SpectralConvention.WW3, SpectralConvention.MATHVEC]:
+#             dirs = np.mod(np.linspace(90.0, -255.0, 24), 360)
+#         else:
+#             dirs = np.linspace(0.0, 345.0, 24)
 
+#         if self.convention() in [SpectralConvention.MATH, SpectralConvention.MATHVEC]:
+#             north = 90
+#         elif self.convention() in [SpectralConvention.MET]:
+#             north = 180
+#         else:
+#             north = 0
+#         # dirs = np.array(range(0,360,15))
 
-class ForceFeed(SpectraReader):
-    def __init__(
-        self, time, freq, dirs, spec, lon, lat, convention: SpectralConvention
-    ) -> None:
-        self.time = copy(time)
-        self.freq = copy(freq)
-        self.dirs = copy(dirs)
-        self.spec = copy(spec)
-        self.lon = copy(lon)
-        self.lat = copy(lat)
-        self.set_convention(convention)
-        return
+#         spec = np.full((len(time), len(inds), len(freq), len(dirs)), 0)
+#         north_ind = np.where(dirs == north)[0][0]
+#         spec[:, :, :, north_ind] = np.full((len(time), len(inds), len(freq)), self.spec)
+#         metadata = {"metadata": "this is a constant boundary"}
 
-    def get_coordinates(self, grid, start_time, source, folder) -> tuple:
-        return copy(self.lon), copy(self.lat)
-
-    def __call__(
-        self, grid, start_time, end_time, inds, source, folder, **kwargs
-    ) -> tuple:
-        # return  copy(self.time), copy(self.freq), copy(self.dirs), np.reshape(self.spec, (len(self.time), len(self.lon), self.spec.shape[0], self.spec.shape[1])), copy(self.lon), copy(self.lat), ''
-        return (
-            copy(self.time),
-            copy(self.freq),
-            copy(self.dirs),
-            copy(self.spec),
-            copy(self.lon),
-            copy(self.lat),
-            None,
-            None,
-            {},
-        )
+#         return time, freq, dirs, spec, lon, lat, x, y, metadata
 
 
-class WW3Nc(SpectraReader):
-    def __init__(
-        self, filename: str = "ww3.%Y%m_spec.nc", folder: str = "", mode: str = "single"
-    ):
-        """Mode can be 'single' (one file), 'monthly'"""
-        self._filename = filename
-        self._mode = mode
-        self._folder = folder
+# class DnoraNc(SpectraReader):
+#     def __init__(self, files: str) -> None:
+#         self.files = files
 
-    def convention(self) -> SpectralConvention:
-        return SpectralConvention.WW3
+#     def get_coordinates(self, grid, start_time, source, folder) -> tuple:
+#         data = xr.open_dataset(self.files[0]).isel(time=[0])
+#         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(data)
+#         return lon, lat, x, y
 
-    def _filenames(self, start_time, end_time, folder):
-        filenames = []
-        if self._mode == "single":
-            filenames.append(f"{folder}/{self._filename}")
-        else:
-            for file in aux_funcs.month_list(start_time, end_time, fmt=self._filename):
-                filenames.append(f"{folder}/{file}")
-        return filenames
+#     def __call__(
+#         self, grid, start_time, end_time, inds, source, folder, **kwargs
+#     ) -> tuple:
+#         def _crop(ds):
+#             return ds.sel(time=slice(start_time, end_time))
 
-    def get_coordinates(self, grid, start_time, source, folder) -> tuple:
-        """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
-        # day = pd.date_range(start_time, start_time,freq='D')
+#         msg.info(
+#             f"Getting boundary spectra from DNORA type netcdf files (e.g. {self.files[0]}) from {start_time} to {end_time}"
+#         )
+#         ds = xr.open_mfdataset(self.files, preprocess=_crop, data_vars="minimal")
+#         ds = ds.sel(inds=inds)
+#         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
+#         if not hasattr(self, "_convention"):
+#             self.set_convention(ds.spectral_convention)
 
-        data = xr.open_dataset(
-            self._filenames(start_time, start_time, folder=self._folder)[0]
-        ).isel(time=[0])
+#         return (
+#             ds.time.values,
+#             ds.freq.values,
+#             ds.dirs.values,
+#             ds.spec.values,
+#             lon,
+#             lat,
+#             x,
+#             y,
+#             ds.attrs,
+#         )
 
-        lon_all = data.longitude.values[0]
-        lat_all = data.latitude.values[0]
 
-        return lon_all, lat_all, None, None
+# class ForceFeed(SpectraReader):
+#     def __init__(
+#         self, time, freq, dirs, spec, lon, lat, convention: SpectralConvention
+#     ) -> None:
+#         self.time = copy(time)
+#         self.freq = copy(freq)
+#         self.dirs = copy(dirs)
+#         self.spec = copy(spec)
+#         self.lon = copy(lon)
+#         self.lat = copy(lat)
+#         self.set_convention(convention)
+#         return
 
-    def __call__(
-        self, grid, start_time, end_time, inds, source, folder, **kwargs
-    ) -> tuple:
-        """Reads in all boundary spectra between the given times and at for the given indeces"""
+#     def get_coordinates(self, grid, start_time, source, folder) -> tuple:
+#         return copy(self.lon), copy(self.lat)
 
-        msg.info(
-            f"Getting boundary spectra from WW3 netcdf files from {start_time} to {end_time}"
-        )
+#     def __call__(
+#         self, grid, start_time, end_time, inds, source, folder, **kwargs
+#     ) -> tuple:
+#         # return  copy(self.time), copy(self.freq), copy(self.dirs), np.reshape(self.spec, (len(self.time), len(self.lon), self.spec.shape[0], self.spec.shape[1])), copy(self.lon), copy(self.lat), ''
+#         return (
+#             copy(self.time),
+#             copy(self.freq),
+#             copy(self.dirs),
+#             copy(self.spec),
+#             copy(self.lon),
+#             copy(self.lat),
+#             None,
+#             None,
+#             {},
+#         )
 
-        def _crop(ds):
-            """
-            EMODNET tiles overlap by two cells on each boundary.
-            """
-            return ds.sel(time=slice(start_time, end_time), station=(inds + 1))
 
-        import dask
+# class WW3Nc(SpectraReader):
+#     def __init__(
+#         self, filename: str = "ww3.%Y%m_spec.nc", folder: str = "", mode: str = "single"
+#     ):
+#         """Mode can be 'single' (one file), 'monthly'"""
+#         self._filename = filename
+#         self._mode = mode
+#         self._folder = folder
 
-        with dask.config.set(**{"array.slicing.split_large_chunks": True}):
-            with xr.open_mfdataset(
-                self._filenames(start_time, end_time, self._folder), preprocess=_crop
-            ) as ds:
-                time = ds.time.values
-                freq = ds.frequency.values
-                dirs = ds.direction.values
-                spec = ds.efth.values
-                lon = ds.longitude.values[0, :]
-                lat = ds.latitude.values[0, :]
+#     def convention(self) -> SpectralConvention:
+#         return SpectralConvention.WW3
 
-                return time, freq, dirs, spec, lon, lat, None, None, ds.attrs
+#     def _filenames(self, start_time, end_time, folder):
+#         filenames = []
+#         if self._mode == "single":
+#             filenames.append(f"{folder}/{self._filename}")
+#         else:
+#             for file in aux_funcs.month_list(start_time, end_time, fmt=self._filename):
+#                 filenames.append(f"{folder}/{file}")
+#         return filenames
+
+#     def get_coordinates(self, grid, start_time, source, folder) -> tuple:
+#         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
+#         # day = pd.date_range(start_time, start_time,freq='D')
+
+#         data = xr.open_dataset(
+#             self._filenames(start_time, start_time, folder=self._folder)[0]
+#         ).isel(time=[0])
+
+#         lon_all = data.longitude.values[0]
+#         lat_all = data.latitude.values[0]
+
+#         return lon_all, lat_all, None, None
+
+#     def __call__(
+#         self, grid, start_time, end_time, inds, source, folder, **kwargs
+#     ) -> tuple:
+#         """Reads in all boundary spectra between the given times and at for the given indeces"""
+
+#         msg.info(
+#             f"Getting boundary spectra from WW3 netcdf files from {start_time} to {end_time}"
+#         )
+
+#         def _crop(ds):
+#             """
+#             EMODNET tiles overlap by two cells on each boundary.
+#             """
+#             return ds.sel(time=slice(start_time, end_time), station=(inds + 1))
+
+#         import dask
+
+#         with dask.config.set(**{"array.slicing.split_large_chunks": True}):
+#             with xr.open_mfdataset(
+#                 self._filenames(start_time, end_time, self._folder), preprocess=_crop
+#             ) as ds:
+#                 time = ds.time.values
+#                 freq = ds.frequency.values
+#                 dirs = ds.direction.values
+#                 spec = ds.efth.values
+#                 lon = ds.longitude.values[0, :]
+#                 lat = ds.latitude.values[0, :]
+
+#                 return time, freq, dirs, spec, lon, lat, None, None, ds.attrs
 
 
 # class File_WW3Nc(BoundaryReader):

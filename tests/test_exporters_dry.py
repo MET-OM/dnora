@@ -1,80 +1,85 @@
-from dnora import grd, wnd, bnd, spc, wsr, mdl, pick, exp, run
+from dnora import (
+    grid,
+    pick,
+    spectra,
+    wind,
+    spectra1d,
+    waveseries,
+    export,
+    modelrun,
+)
 import pytest
 
 
 @pytest.fixture(scope="session")
 def model():
-    grid = grd.Grid(lon=(10, 20), lat=(60, 65))
-    grid = grd.Grid(lon=5, lat=60)
-    model = mdl.ModelRun(grid=grid, dry_run=True)
+    # grid = grd.Grid(lon=(10, 20), lat=(60, 65))
+    area = grid.Grid(lon=5, lat=60)
+    model = modelrun.ModelRun(grid=area, dry_run=True)
 
-    model.import_boundary(bnd.read_metno.NORA3(), pick.Area())
-    model.import_forcing(wnd.read_metno.NORA3())
-    model.import_spectra(
-        spc.read.BoundaryToSpectra(model.boundary()), point_picker=pick.TrivialPicker()
+    model.import_spectra(spectra.read_metno.NORA3(), pick.Area())
+    model.import_wind(wind.read_metno.NORA3())
+    model.import_spectra1d(
+        spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.TrivialPicker()
     )
-    model.spectra_to_waveseries()
-
+    model.import_waveseries(
+        waveseries.read.SpectraToWaveSeries(model.spectra1d()),
+        point_picker=pick.TrivialPicker(),
+    )
     return model
 
 
 def test_dnora(model):
-    exporter = exp.DataExporter(model)
-    exporter.export_boundary()
-    exporter.export_forcing()
+    exporter = export.DataExporter(model)
     exporter.export_spectra()
+    exporter.export_wind()
+    exporter.export_spectra1d()
     exporter.export_waveseries()
 
 
 def test_cache(model):
-    exporter = exp.Cacher(model)
-    exporter.export_boundary()
-    exporter.export_forcing()
+    exporter = export.Cacher(model)
     exporter.export_spectra()
+    exporter.export_wind()
+    exporter.export_spectra1d()
     exporter.export_waveseries()
-    exporter.write_input_file()
 
 
 def test_swan(model):
-    exporter = exp.SWAN(model)
-    exporter.export_boundary()
-    exporter.export_forcing()
+    exporter = export.SWAN(model)
     exporter.export_spectra()
+    exporter.export_wind()
+    exporter.export_spectra1d()
     exporter.export_waveseries()
-    exporter.write_input_file()
 
 
 def test_ww3(model):
-    exporter = exp.WW3(model)
-    exporter.export_boundary()
-    exporter.export_forcing()
+    exporter = export.WW3(model)
     exporter.export_spectra()
+    exporter.export_wind()
+    exporter.export_spectra1d()
     exporter.export_waveseries()
-    exporter.write_input_file()
 
 
-def test_ww3(model):
-    exporter = exp.HOS_ocean(model)
-    exporter.export_boundary()
-    exporter.export_forcing()
+def test_hos(model):
+    exporter = export.HOS_Ocean(model)
     exporter.export_spectra()
+    exporter.export_wind()
+    exporter.export_spectra1d()
     exporter.export_waveseries()
-    exporter.write_input_file()
 
 
-def test_ww3(model):
-    exporter = exp.REEF3D(model)
-    exporter.export_boundary()
-    exporter.export_forcing()
+def test_reef3d(model):
+    exporter = export.REEF3D(model)
     exporter.export_spectra()
+    exporter.export_wind()
+    exporter.export_spectra1d()
     exporter.export_waveseries()
-    exporter.write_input_file()
 
 
-def test_ww3(model):
-    exporter = exp.SWASH(model)
-    exporter.export_boundary()
-    exporter.export_forcing()
+def test_swash(model):
+    exporter = export.SWASH(model)
     exporter.export_spectra()
+    exporter.export_wind()
+    exporter.export_spectra1d()
     exporter.export_waveseries()
-    exporter.write_input_file()

@@ -5,7 +5,7 @@ import os
 import yaml
 from dnora import file_module
 
-from dnora.dnora_object_type import DnoraObjectType
+from dnora.dnora_types import DnoraDataType, DnoraFileType
 
 with open("data/defaults.yml", "r") as file:
     defaults = yaml.safe_load(file)
@@ -15,51 +15,51 @@ class GetDefaultValues(unittest.TestCase):
     def test_filename(self):
         filename = file_module.get_default_value(
             key="filename",
-            obj_type=DnoraObjectType.Boundary,
+            obj_type=DnoraDataType.SPECTRA,
             primary=defaults["SWAN"],
-            fallback=defaults["ModelRun"],
+            fallback=defaults["MODELRUN"],
         )
-        self.assertEqual(filename, "spec#Boundary#Grid#T0#T1")
+        self.assertEqual(filename, "spec#SPECTRA#GRID#T0#T1")
 
         filename = file_module.get_default_value(
             key="filename",
-            obj_type=DnoraObjectType.Spectra,
+            obj_type=DnoraDataType.SPECTRA1D,
             primary=defaults["SWAN"],
-            fallback=defaults["ModelRun"],
+            fallback=defaults["MODELRUN"],
         )
-        self.assertEqual(filename, "spec1d_#Spectra_#Grid_#T0-#T1")
+        self.assertEqual(filename, "spec1d_#SPECTRA1D_#GRID_#T0-#T1")
 
     def test_folder(self):
         filename = file_module.get_default_value(
             key="folder",
-            obj_type=DnoraObjectType.Grid,
+            obj_type=DnoraDataType.GRID,
             primary=defaults["REEF3D"],
-            fallback=defaults["ModelRun"],
+            fallback=defaults["MODELRUN"],
         )
-        self.assertEqual(filename, "output")
+        self.assertEqual(filename, "#GRID_REEF3D")
 
         filename = file_module.get_default_value(
             key="folder",
-            obj_type=DnoraObjectType.InputFile,
-            primary=defaults["REEF3D"],
-            fallback=defaults["ModelRun"],
+            obj_type=DnoraFileType.INPUTFILE,
+            primary=defaults["HOS_OCEAN"],
+            fallback=defaults["MODELRUN"],
         )
         self.assertEqual(filename, "MyHOS_oceanFolder")
 
     def test_dateformat(self):
         filename = file_module.get_default_value(
             key="dateformat",
-            obj_type=DnoraObjectType.Forcing,
+            obj_type=DnoraDataType.WIND,
             primary=defaults["SWAN"],
-            fallback=defaults["ModelRun"],
+            fallback=defaults["MODELRUN"],
         )
         self.assertEqual(filename, "%Y%m%d")
 
         filename = file_module.get_default_value(
             key="dateformat",
-            obj_type=DnoraObjectType.Forcing,
+            obj_type=DnoraDataType.WIND,
             primary=defaults["WW3"],
-            fallback=defaults["ModelRun"],
+            fallback=defaults["MODELRUN"],
         )
         self.assertEqual(filename, "%Y%m%dT%H%M")
 
@@ -128,28 +128,28 @@ class Clean(unittest.TestCase):
 
     def test_grid(self):
         filename = file_module.clean_filename(
-            filename="filename_#Grid",
+            filename="filename_#GRID",
             list_of_placeholders=defaults["list_of_placeholders"],
         )
         self.assertEqual(filename, "filename")
 
     def test_boundary(self):
         filename = file_module.clean_filename(
-            filename="filename_#Boundary",
+            filename="filename_#SPECTRA",
             list_of_placeholders=defaults["list_of_placeholders"],
         )
         self.assertEqual(filename, "filename")
 
     def test_spectra(self):
         filename = file_module.clean_filename(
-            filename="filename_#Spectra",
+            filename="filename_#SPECTRA1D",
             list_of_placeholders=defaults["list_of_placeholders"],
         )
         self.assertEqual(filename, "filename")
 
     def test_forcing(self):
         filename = file_module.clean_filename(
-            filename="filename_#Forcing",
+            filename="filename_#WIND",
             list_of_placeholders=defaults["list_of_placeholders"],
         )
         self.assertEqual(filename, "filename")
@@ -218,19 +218,19 @@ class Clean(unittest.TestCase):
 
     def test_combinations(self):
         filename = file_module.clean_filename(
-            filename="filename_#Lon_#Grid#BoundarySaveThis#Forcing__",
+            filename="filename_#Lon_#GRID#SPECTRASaveThis#WIND__",
             list_of_placeholders=defaults["list_of_placeholders"],
         )
         self.assertEqual(filename, "filename_SaveThis")
 
         filename = file_module.clean_filename(
-            filename="filename_#Lon_#T0-#T1#Grid#BoundarySaveThis#Forcing__",
+            filename="filename_#Lon_#T0-#T1#GRID#SPECTRASaveThis#WIND__",
             list_of_placeholders=defaults["list_of_placeholders"],
         )
         self.assertEqual(filename, "filename_SaveThis")
 
         filename = file_module.clean_filename(
-            filename="filename_#Lon_#T0-#T1#Grid#BoundarySaveThisE#Lon#Forcing__",
+            filename="filename_#Lon_#T0-#T1#GRID#SPECTRASaveThisE#Lon#WIND__",
             list_of_placeholders=defaults["list_of_placeholders"],
         )
         self.assertEqual(filename, "filename_SaveThis")
@@ -239,19 +239,16 @@ class Clean(unittest.TestCase):
 class ReplaceObjects(unittest.TestCase):
     def test_all(self):
         dict_of_object_names = {
-            DnoraObjectType.ModelRun: "TestModel",
-            DnoraObjectType.Grid: "Sulafjorden",
-            DnoraObjectType.Boundary: "NORA3",
-            DnoraObjectType.Forcing: "MEPS",
-            DnoraObjectType.Spectra: "FromBoundary",
+            DnoraDataType.GRID: "Sulafjorden",
+            DnoraDataType.SPECTRA: "NORA3",
+            DnoraDataType.WIND: "MEPS",
+            DnoraDataType.SPECTRA1D: "FromBoundary",
         }
         filename = file_module.replace_objects(
-            "file_#Gird_#ModelRun_#Grid_#Boundary_#Forcing_#Spectra",
+            "file_#GIRD_#GRID_#SPECTRA_#WIND_#SPECTRA1D",
             dict_of_object_names,
         )
-        self.assertEqual(
-            filename, "file_#Gird_TestModel_Sulafjorden_NORA3_MEPS_FromBoundary"
-        )
+        self.assertEqual(filename, "file_#GIRD_Sulafjorden_NORA3_MEPS_FromBoundary")
 
 
 class ReplaceLonLat(unittest.TestCase):
@@ -275,9 +272,9 @@ class ReplaceTime(unittest.TestCase):
         self.assertEqual(filename, "file_2020")
 
         filename = file_module.replace_times(
-            "file_#T0_#Grid_#T1", "%Y-%m-%d", ["2020-06-05 05:00"]
+            "file_#T0_#GRID_#T1", "%Y-%m-%d", ["2020-06-05 05:00"]
         )
-        self.assertEqual(filename, "file_2020-06-05_#Grid_#T1")
+        self.assertEqual(filename, "file_2020-06-05_#GRID_#T1")
 
     def test_both(self):
         filename = file_module.replace_times(
@@ -291,9 +288,9 @@ class ReplaceTime(unittest.TestCase):
         self.assertEqual(filename, "file_2020")
 
         filename = file_module.replace_times(
-            "file_#T0_#Grid_#T1", "%Y-%m-%d", ["2020-06-05 05:00", "2020-07-05 05:00"]
+            "file_#T0_#GRID_#T1", "%Y-%m-%d", ["2020-06-05 05:00", "2020-07-05 05:00"]
         )
-        self.assertEqual(filename, "file_2020-06-05_#Grid_2020-07-05")
+        self.assertEqual(filename, "file_2020-06-05_#GRID_2020-07-05")
 
 
 class AddPrefix(unittest.TestCase):

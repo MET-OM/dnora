@@ -11,10 +11,9 @@ from .waveseries.waveseries_writers import WaveSeriesWriter
 from .waterlevel.waterlevel_writers import WaterLevelWriter
 from .current.current_writers import CurrentWriter
 from .ice.ice_writers import IceWriter
-from .inputfile.inputfile_writers import InputFileWriter
 
 from .decorators import add_export_method
-from ..dnora_types import DnoraDataType, object_type_from_string
+from ..dnora_types import DnoraDataType, object_type_from_string, DnoraFileType
 from ..model_formats import ModelFormat
 
 WriterFunction = Union[
@@ -27,7 +26,6 @@ WriterFunction = Union[
     WaterLevelWriter,
     CurrentWriter,
     IceWriter,
-    InputFileWriter,
 ]
 
 
@@ -48,7 +46,7 @@ class DataExporter:
     def _get_default_format(self) -> str:
         return ModelFormat.MODELRUN
 
-    def _get_writer(self, obj_type: DnoraDataType) -> WriterFunction:
+    def _get_writer(self, obj_type: DnoraDataType | DnoraFileType) -> WriterFunction:
         return self._writer_dict.get(obj_type, self._get_default_writer())
 
     def __init__(self, model):
@@ -149,69 +147,6 @@ class DataExporter:
 
         for file in output_files:
             msg.to_file(file)
-
-    def write_input_file(
-        self,
-        input_file_writer: InputFileWriter = None,
-        filename=None,
-        folder=None,
-        dateformat=None,
-        format: str = None,
-        grid_path: str = None,
-        forcing_path: str = None,
-        boundary_path: str = None,
-        start_time: str = None,
-        end_time: str = None,
-        dry_run=False,
-        **kwargs,
-    ) -> None:
-        """Writes the grid data in the Grid-object to an external source,
-        e.g. a file."""
-        self._dry_run = dry_run
-        input_file_writer = input_file_writer or self._get_writer(
-            DnoraDataType.InputFile
-        )
-
-        if input_file_writer is None:
-            msg.info("No InputFileWriter defines. Won't do anything.")
-            return
-
-        msg.header(input_file_writer, "Writing model input file...")
-
-        # Controls generation of file names using the proper defaults etc.
-        format = format or self._get_default_format()
-
-        file_object = FileNames(
-            model=self.model,
-            filename=filename,
-            folder=folder,
-            format=format,
-            dateformat=dateformat,
-            obj_type=DnoraDataType.InputFile,
-            edge_object=DnoraDataType.Grid,
-        )
-        file_object.create_folder()
-
-        if self.dry_run():
-            msg.info("Dry run! No files will be written.")
-            output_files = [file_object.get_filepath()]
-        else:
-            # Write the grid using the InputFileWriter object
-            output_files = input_file_writer(
-                self.model, file_object, self.exported_to, **kwargs
-            )
-            if type(output_files) is not list:
-                output_files = [output_files]
-
-        if self.dry_run():
-            for file in output_files:
-                msg.to_file(file)
-
-        return
-
-    # def __getitem__(self, obj_type: DnoraDataType):
-    #     """writer = 'grid_writer, forcing_writer etc."""
-    #     return self._get_writer(obj_type)
 
     def dry_run(self) -> bool:
         return self._dry_run or self.model.dry_run()

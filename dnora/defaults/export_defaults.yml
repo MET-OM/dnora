@@ -1,10 +1,7 @@
 list_of_placeholders:
-  - '#Grid'
-  - '#Forcing'
-  - '#Boundary'
-  - '#Spectra'
-  - '#WaveSeries'
-  - '#ObjectType'
+  - '#ModelRun'
+  - '#DataType'
+  - '#ObjectName'
   - '#T0'
   - '#T1'
   - 'E#Lon'
@@ -29,27 +26,27 @@ MODELRUN:
   extension: 'nc'
   grid:
     folder: 'output'
-    filename: 'grid_#Grid'
+    filename: 'grid_#GRID'
     dateformat: '%Y%m%dT%H%M'
-  forcing:
+  wind:
     folder: 'output'
-    filename: 'wind_#Forcing_#Grid_#T0-#T1'
-    dateformat: '%Y%m%dT%H%M'
-  boundary:
-    folder: 'output'
-    filename: 'spec2d_#Boundary_#Grid_#T0-#T1'
+    filename: 'wind_#FORCING_#GRID_#T0-#T1'
     dateformat: '%Y%m%dT%H%M'
   spectra:
     folder: 'output'
-    filename: 'spec1d_#Spectra_#Grid_#T0-#T1'
+    filename: 'spec2d_#SPECTRA_#GRID_#T0-#T1'
+    dateformat: '%Y%m%dT%H%M'
+  spectra1d:
+    folder: 'output'
+    filename: 'spec1d_#SPECTRA1D_#GRID_#T0-#T1'
     dateformat: '%Y%m%dT%H%M'
   waveseries:
     folder: 'output'
-    filename: 'waveseries_#WaveSeries_#Grid_#T0-#T1'
+    filename: 'waveseries_#WAVESERIES_#GRID_#T0-#T1'
     dateformat: '%Y%m%dT%H%M'
   input_file:
     folder: 'output'
-    filename: 'inputfile_#Grid_#Forcing_#Boundary_#Spectra_#T0_#T1_#Lon_#Lat'
+    filename: 'inputfile_#GRID_#FORCING_#BOUNDARY_#SPECTRA_#T0_#T1_#Lon_#Lat'
     dateformat: '%Y%m%dT%H%M'
     extension: 'txt'
 
@@ -58,41 +55,41 @@ SWAN:
   folder: 'MySWANFolder'
   extension: 'asc'
   grid:
-    filename: '#Grid_SWAN'
+    filename: '#GRID_SWAN'
     extension: 'bot'
-  forcing:
-    filename: 'wind#Forcing#Grid#T0_#T1'
-  boundary:
-    filename: 'spec#Boundary#Grid#T0#T1'
+  wind:
+    filename: 'wind#WIND#GRID#T0_#T1'
+  spectra:
+    filename: 'spec#SPECTRA#GRID#T0#T1'
   input_file:
-    filename: 'input_#T0_#Grid'
-    folder: '#Grid_SWAN'
+    filename: 'input_#T0_#GRID'
+    folder: '#GRID_SWAN'
     extension: 'swn'
 
 SWASH:
   dateformat: '%Y%m%d'
   extension: 'asc'
   grid:
-    filename: '#Grid_SWASH'
+    filename: '#GRID_SWASH'
     extension: 'bot'
-  forcing:
-    filename: 'wind#Forcing#Grid#T0_#T1'
-  boundary:
-    filename: 'spec#Boundary#Grid#T0#T1'
+  wind:
+    filename: 'wind#WIND#GRID#T0_#T1'
+  spectra:
+    filename: 'spec#SPECTRA#GRID#T0#T1'
   input_file:
-    filename: 'input_#T0_#T1_#Grid'
-    folder: '#Grid_SWASH'
+    filename: 'input_#T0_#T1_#GRID'
+    folder: '#GRID_SWASH'
     extension: 'sws'
 
 WW3:
   grid:
-    filename: '#Grid'
+    filename: '#GRID'
     extension: 'txt'
-  boundary:
-    filename: 'ww3_spec_E#LonN#Lat_#Boundary_#Grid_#T0-#T1'
+  spectra:
+    filename: 'ww3_spec_E#LonN#Lat_#SPECTRA_#GRID_#T0-#T1'
     extension: 'nc'
-  forcing:
-    filename: 'wind_#Forcing_#Grid_#T0-#T1'
+  wind:
+    filename: 'wind_#WIND_#GRID_#T0-#T1'
     extension: 'nc'
   input_file:
     filename: ''
@@ -101,7 +98,7 @@ WW3:
 
 HOS_OCEAN:
   grid:
-    filename: '#Grid_HOS_ocean'
+    filename: '#GRID_HOS_ocean'
   input_file:
     filename: 'input_HOS'
     folder: MyHOS_oceanFolder'
@@ -110,26 +107,19 @@ HOS_OCEAN:
 REEF3D:
   grid:
     filename: 'geo'
-    folder: '#Grid_REEF3D'
+    folder: '#GRID_REEF3D'
     extension: 'dat'
-  spectra:
+  spectra1d:
     filename: 'spectrum-file'
-    folder: '#Grid_REEF3D'
+    folder: '#GRID_REEF3D'
     extension: 'dat'
   input_file:
     filename: 'ctrl'
-    folder: '#Grid_REEF3D'
+    folder: '#GRID_REEF3D'
     extension: 'txt'
 
 CACHE:
-  filename: "#ObjectType_#Grid_#Lon0_#Lon1_#Lat0_#Lat1_#T0"
+  filename: "#DataType_#GRID_#Lon0_#Lon1_#Lat0_#Lat1_#T0"
   dateformat: '%Y-%m'
   extension: 'nc'
-  boundary:
-    folder: "#ObjectType_cache/#Boundary"
-  forcing:
-    folder: "#ObjectType_cache/#Forcing"
-  spectra:
-    folder: "#ObjectType_cache/#Spectra"
-  waveseries:
-    folder: "#ObjectType_cache/#WaveSeries"
+  folder: "#DataType_cache/#ObjectName"

@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .modelrun import ModelRun
-    from .dnora_types import DnoraDataType
-
+    from .dnora_types import DnoraObject
+from dnora.dnora_types import DnoraDataType
 from .model_formats import ModelFormat
 
 
@@ -116,6 +116,12 @@ class FileNames:
         end_time=None,
         edge_object: DnoraDataType = None,
     ) -> str:
+        unclean_string = replace_object_type_name(
+            unclean_string, self.model[self.obj_type]
+        )
+
+        unclean_string = replace_modelrun_name(unclean_string, self.model.name)
+
         unclean_string = replace_objects(
             unclean_string, self.model.dict_of_object_names()
         )
@@ -257,9 +263,7 @@ def replace_objects(
 
     for obj_type, obj_name in dict_of_object_names.items():
         if obj_name is not None:
-            filename = re.sub(
-                f"#{obj_type.name}", obj_name, filename, flags=re.IGNORECASE
-            )
+            filename = re.sub(f"#{obj_type.name}", obj_name, filename, 1)
 
     return filename
 
@@ -269,16 +273,33 @@ def replace_object_type(filename: str, obj_type: DnoraDataType) -> str:
     return re.sub(f"#ObjectType", obj_type.name.lower(), filename, flags=re.IGNORECASE)
 
 
+def replace_object_type_name(filename: str, obj: DnoraObject) -> str:
+    "Replaces the #ObjectName tag with name of primary object"
+    if obj is None:
+        return filename
+    return re.sub(f"#ObjectName", obj.name.lower(), filename)
+
+
+def replace_modelrun_name(filename: str, modelrun_name: str) -> str:
+    "Replaces the #ModelRun tag with name of primary object"
+    return re.sub(f"#ModelRun", modelrun_name.lower(), filename)
+
+
 def clean_filename(filename: str, list_of_placeholders: list[str] = None) -> str:
     """Cleans out the file name from possible used placeholders, e.g. #Grid
     as given in the list.
 
     Also removes multiple underscores '___' etc.
     """
+
     if list_of_placeholders is None:
         list_of_placeholders = read_defaults("export_defaults.yml", from_module=True)[
             "list_of_placeholders"
         ]
+
+    list_of_placeholders = list_of_placeholders + [
+        f"#{obj.name}" for obj in DnoraDataType
+    ]
 
     for s in list_of_placeholders:
         filename = re.sub(s, "", filename)
@@ -302,7 +323,7 @@ def get_default_value(key: str, obj_type: DnoraDataType, primary: dict, fallback
     3) Returns ModelRun defaults (e.g. ModulRun-wnd-folder)
     """
 
-    obj_str = obj_type.value
+    obj_str = obj_type.name.lower()
 
     # Try dnora_obj specific fallback name
     fallback_name = None

@@ -96,7 +96,7 @@ class ConstantGriddedData(DataReader):
         meta_dict = {}
 
         # Create metaparameters based on standard short names
-        metaparameter_dict = self.create_metaparameter_dict(data_dict.keys())
+        metaparameter_dict = create_metaparameter_dict(data_dict.keys())
 
         return coord_dict, data_dict, meta_dict, metaparameter_dict
 
@@ -163,17 +163,15 @@ class ConstantPointData(SpectralDataReader):
 
         obj_size = tuple(obj_size)
 
-        lon_all, lat_all, x_all, y_all = self.get_coordinates(
-            grid, start_time, source, ""
-        )
-        if lon_all is not None:
-            coord_dict["lon"] = lon_all[inds]
-        if lat_all is not None:
-            coord_dict["lat"] = lat_all[inds]
-        if x_all is not None:
-            coord_dict["x"] = x_all[inds]
-        if y_all is not None:
-            coord_dict["y"] = y_all[inds]
+        all_coordinates = self.get_coordinates(grid, start_time, source, "")
+        if all_coordinates.get("lon") is not None:
+            coord_dict["lon"] = all_coordinates.get("lon")[inds]
+        if all_coordinates.get("lat") is not None:
+            coord_dict["lat"] = all_coordinates.get("lat")[inds]
+        if all_coordinates.get("x") is not None:
+            coord_dict["x"] = all_coordinates.get("x")[inds]
+        if all_coordinates.get("y") is not None:
+            coord_dict["y"] = all_coordinates.get("y")[inds]
 
         if self.fp is not None and obj_type in [
             DnoraDataType.SPECTRA,
@@ -184,7 +182,7 @@ class ConstantPointData(SpectralDataReader):
                 np.abs(self.extra_coords.get("freq") - self.fp)
             ) != np.arange(len(self.extra_coords.get("freq")))
         else:
-            non_fp_ind = np.ones(len(self.extra_coords.get("freq"))).astype(bool)
+            non_fp_ind = np.zeros(len(self.extra_coords.get("freq"))).astype(bool)
 
         if self.dirp is not None and obj_type == DnoraDataType.SPECTRA:
             """Set everything except dominant direction to 0"""
@@ -192,7 +190,7 @@ class ConstantPointData(SpectralDataReader):
                 np.abs(self.extra_coords.get("dirs") - self.dirp)
             ) != np.arange(len(self.extra_coords.get("dirs")))
         else:
-            non_dirp_ind = np.ones(len(self.extra_coords.get("dirs"))).astype(bool)
+            non_dirp_ind = np.zeros(len(self.extra_coords.get("dirs"))).astype(bool)
 
         variables = obj_type.value._coord_manager.added_vars().keys()
 

@@ -1,25 +1,40 @@
-from dnora import grd, mdl, bnd, pick
+from dnora.grid import Grid
+from dnora import modelrun, pick
 import numpy as np
 
-def test_import_constant_spectra_one_point():
-    grid = grd.Grid(lon=5, lat=60)
-    model = mdl.ModelRun(grid, start_time = '2020-01-01 00:00', end_time='2020-01-02 00:00')
-    
-    model.import_boundary(bnd.read.ConstantBoundary(), point_picker=pick.TrivialPicker())
-    model.boundary_to_spectra()
-  
-    assert model.spectra().size() == (25,1,10)
+from dnora.readers.generic_readers import ConstantPointData
 
-    np.testing.assert_almost_equal(np.max(model.spectra().spec()), np.max(model.boundary().spec())*(model.boundary().dd())*np.pi/180)
+
+def test_import_constant_spectra_one_point():
+    grid = Grid(lon=5, lat=60)
+    model = modelrun.ModelRun(
+        grid, start_time="2020-01-01 00:00", end_time="2020-01-02 00:00"
+    )
+
+    model.import_spectra(ConstantPointData(), point_picker=pick.TrivialPicker())
+    model.spectra_to_1d()
+
+    assert model.spectra1d().size() == (25, 1, 10)
+
+    np.testing.assert_almost_equal(
+        np.max(model.spectra1d().spec()),
+        np.max(model.spectra().spec()) * (model.spectra().dd()) * np.pi / 180,
+    )
+
 
 def test_import_constant_spectra():
-    grid = grd.Grid(lon=(5,6), lat=(60,61))
-    grid.set_spacing(nx=5,ny=10)
+    grid = Grid(lon=(5, 6), lat=(60, 61))
+    grid.set_spacing(nx=5, ny=10)
 
-    model = mdl.ModelRun(grid, start_time = '2020-01-01 00:00', end_time='2020-01-02 00:00')
-    
-    model.import_boundary(bnd.read.ConstantBoundary(), point_picker=pick.TrivialPicker())
-    model.boundary_to_spectra()
-    assert model.spectra().size() == (25,50,10)
-    
-    np.testing.assert_almost_equal(np.max(model.spectra().spec()), np.max(model.boundary().spec())*(model.boundary().dd())*np.pi/180)
+    model = modelrun.ModelRun(
+        grid, start_time="2020-01-01 00:00", end_time="2020-01-02 00:00"
+    )
+
+    model.import_spectra(ConstantPointData(), point_picker=pick.TrivialPicker())
+    model.spectra_to_1d()
+    assert model.spectra1d().size() == (25, 50, 10)
+
+    np.testing.assert_almost_equal(
+        np.max(model.spectra1d().spec()),
+        np.max(model.spectra().spec()) * (model.spectra().dd()) * np.pi / 180,
+    )

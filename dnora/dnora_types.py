@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, auto
 
 from dnora.grid import Grid, TriGrid
 from dnora.wind import Wind
@@ -10,9 +10,6 @@ from dnora.current import Current
 from dnora.ice import Ice
 
 from dnora.wind.read import WindReader
-from dnora.spectra.read import SpectraReader
-from dnora.spectra1d.read import Spectra1DReader
-from dnora.waveseries.read import WaveSeriesReader
 from dnora.waterlevel.read import WaterLevelReader
 from dnora.current.read import CurrentReader
 from dnora.ice.read import IceReader
@@ -25,9 +22,6 @@ ReaderFunction = Union[
     abstract_readers.PointDataReader,
     abstract_readers.SpectralDataReader,
     WindReader,
-    SpectraReader,
-    Spectra1DReader,
-    WaveSeriesReader,
     WaterLevelReader,
     CurrentReader,
     IceReader,
@@ -49,13 +43,19 @@ DnoraObject = Union[
 class DnoraDataType(Enum):
     GRID = Grid
     TRIGRID = TriGrid
+    SPECTRA1D = (
+        Spectra1D  # Spectra1D needs to be before Spectra because of flename creation
+    )
     SPECTRA = Spectra
-    SPECTRA1D = Spectra1D
     WIND = Wind
     CURRENT = Current
     WATERLEVEL = WaterLevel
     ICE = Ice
     WAVESERIES = WaveSeries
+
+
+class DnoraFileType(Enum):
+    INPUTFILE = auto()
 
 
 def object_type_from_string(obj_str: str) -> DnoraDataType:

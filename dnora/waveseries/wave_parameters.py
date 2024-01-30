@@ -3,6 +3,7 @@ import xarray as xr
 import numpy as np
 from dnora.spectral_conventions import SpectralConvention
 from dnora.spectra import Spectra
+from dnora.spectra1d import Spectra1D
 from typing import Union
 from pint import UnitRegistry
 
@@ -59,7 +60,7 @@ class Moment(WaveParameter):
         self._moment = moment
         pass
 
-    def __call__(self, spec: Union[Spectra, Spectra]) -> np.ndarray:
+    def __call__(self, spec: Union[Spectra, Spectra1D]) -> np.ndarray:
         if isinstance(spec, Spectra):
             dD = 360 / len(self._moment.dirs())
             ds = dD * np.pi / 180 * spec.ds().sum(dim="dirs")
@@ -100,8 +101,6 @@ class PowerMoment(WaveParameter):
         ds = (ds.spec**self._power * (ds.freq**self._moment)).integrate(
             coord="freq"
         )
-        # breakpoint()
-        # moment = self._format_dataset(moment, spec)
 
         return ds.values
 
@@ -201,7 +200,7 @@ class Tp(WaveParameter):
         spec.set_convention(SpectralConvention.MET)
 
         if isinstance(spec, Spectra):
-            theta = np.deg2rad(spec.mdir(data_array=True))
+            theta = np.deg2rad(spec.dirm(data_array=True))
             dD = 360 / len(spec.dirs())
             # Normalizing here so that integration over direction becomes summing
             efth = dD * np.pi / 180 * spec.spec(data_array=True)
@@ -212,7 +211,7 @@ class Tp(WaveParameter):
             dirs = np.rad2deg(np.arctan2(s1, c1))
         else:
             efth = spec.spec(data_array=True)
-            dirs = spec.mdir(data_array=True)
+            dirs = spec.dirm(data_array=True)
 
         inds = efth.argmax(dim="freq")
 
@@ -348,7 +347,7 @@ class Dirm(WaveParameter):
         spec.set_convention(SpectralConvention.MET)
 
         if isinstance(spec, Spectra):
-            theta = np.deg2rad(spec.mdir(data_array=True))
+            theta = np.deg2rad(spec.dirm(data_array=True))
             dD = 360 / len(spec.dirs())
             # Normalizing here so that integration over direction becomes summing
             efth = dD * np.pi / 180 * spec.spec(data_array=True)
@@ -356,7 +355,7 @@ class Dirm(WaveParameter):
             c1 = (np.cos(theta) * efth).sum(dim="dirs")  # Function of frequency
             s1 = (np.sin(theta) * efth).sum(dim="dirs")
         else:
-            theta = np.deg2rad(spec.mdir(data_array=True))
+            theta = np.deg2rad(spec.dirm(data_array=True))
 
             c1 = np.cos(theta) * spec.spec(data_array=True)  # Function of frequency
             s1 = np.sin(theta) * spec.spec(data_array=True)
@@ -428,7 +427,7 @@ class Dirp(WaveParameter):
         spec.set_convention(SpectralConvention.MET)
 
         if isinstance(spec, Spectra):
-            theta = np.deg2rad(spec.mdir(data_array=True))
+            theta = np.deg2rad(spec.dirm(data_array=True))
             dD = 360 / len(spec.dirs())
             # Normalizing here so that integration over direction becomes summing
             efth = dD * np.pi / 180 * spec.spec(data_array=True)
@@ -439,7 +438,7 @@ class Dirp(WaveParameter):
             dirs = np.rad2deg(np.arctan2(s1, c1))
         else:
             efth = spec.spec(data_array=True)
-            dirs = spec.mdir(data_array=True)
+            dirs = spec.dirm(data_array=True)
 
         inds = efth.argmax(dim="freq")
 

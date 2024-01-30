@@ -10,85 +10,85 @@ from dnora import aux_funcs, msg
 
 
 from dnora.data_sources import DataSource
+from dnora.readers.abstract_readers import SpectralDataReader
+
+# class Spectra1DReader(ABC):
+#     """Reads boundary spectra from some source and provide it to the object."""
+
+#     def __init__(self):
+#         pass
+
+#     @abstractmethod
+#     def get_coordinates(self, grid, start_time: str, source: str):
+#         """Return a list of all the available coordinated in the source.
+
+#         These are needed fo the PointPicker object to choose the relevant
+#         point to actually read in.
+
+#         Provide the result as four equally long nump arrays.
+#         return lon, lat, x, y
+#         """
+#         pass
+
+#     @abstractmethod
+#     def convention(self) -> SpectralConvention:
+#         """Return the convention of the spectra returned to the object.
+
+#         The conventions to choose from are predetermined:
+
+#         OCEAN:    Oceanic convention
+#                     Direction to. North = 0, East = 90.
+
+#         MET:      Meteorological convention
+#                     Direction from. North = 0, East = 90.
+
+#         MATH:     Mathematical convention
+#                     Direction to. North = 90, East = 0.
+#         """
+#         pass
+
+#     @abstractmethod
+#     def __call__(
+#         self, grid, start_time, end_time, inds, source: str, **kwargs
+#     ) -> tuple:
+#         """Reads in the spectra from inds between start_time and end_time.
+
+#         The variables needed to be returned are:
+
+#         time:   Time stamps as numpy.datetime64 array
+#         freq:   Frequency vector as numpy array
+#         spec:   Sectra [time, station, freq] as numpy array
+#         dirm:   Mean direction as numpy array [None if not calculated]
+#         spr:    Spreading as a numpy array [None if not calcultated]
+#         lon:    Longitude vector as numpy array
+#         lat:    Latitude vector as numpy array
+#         source: Source of the data as String
+
+#         return time, freq, spec, mdir, spr, lon, lat, x, y, source
+#         """
+#         pass
+
+#     def set_convention(self, convention: SpectralConvention) -> None:
+#         if isinstance(convention, str):
+#             self._convention = convert_2d_to_1d(SpectralConvention[convention.upper()])
+#         else:
+#             self._convention = convert_2d_to_1d(convention)
+
+#     def convention(self) -> SpectralConvention:
+#         return self._convention
+
+#     def name(self) -> str:
+#         return type(self).__name__
+
+#     def default_data_source(self) -> DataSource:
+#         return DataSource.UNDEFINED
 
 
-class Spectra1DReader(ABC):
-    """Reads boundary spectra from some source and provide it to the object."""
-
-    def __init__(self):
-        pass
-
-    @abstractmethod
-    def get_coordinates(self, grid, start_time: str, source: str):
-        """Return a list of all the available coordinated in the source.
-
-        These are needed fo the PointPicker object to choose the relevant
-        point to actually read in.
-
-        Provide the result as four equally long nump arrays.
-        return lon, lat, x, y
-        """
-        pass
-
-    @abstractmethod
-    def convention(self) -> SpectralConvention:
-        """Return the convention of the spectra returned to the object.
-
-        The conventions to choose from are predetermined:
-
-        OCEAN:    Oceanic convention
-                    Direction to. North = 0, East = 90.
-
-        MET:      Meteorological convention
-                    Direction from. North = 0, East = 90.
-
-        MATH:     Mathematical convention
-                    Direction to. North = 90, East = 0.
-        """
-        pass
-
-    @abstractmethod
-    def __call__(
-        self, grid, start_time, end_time, inds, source: str, **kwargs
-    ) -> tuple:
-        """Reads in the spectra from inds between start_time and end_time.
-
-        The variables needed to be returned are:
-
-        time:   Time stamps as numpy.datetime64 array
-        freq:   Frequency vector as numpy array
-        spec:   Sectra [time, station, freq] as numpy array
-        dirm:   Mean direction as numpy array [None if not calculated]
-        spr:    Spreading as a numpy array [None if not calcultated]
-        lon:    Longitude vector as numpy array
-        lat:    Latitude vector as numpy array
-        source: Source of the data as String
-
-        return time, freq, spec, mdir, spr, lon, lat, x, y, source
-        """
-        pass
-
-    def set_convention(self, convention: SpectralConvention) -> None:
-        if isinstance(convention, str):
-            self._convention = convert_2d_to_1d(SpectralConvention[convention.upper()])
-        else:
-            self._convention = convert_2d_to_1d(convention)
-
-    def convention(self) -> SpectralConvention:
-        return self._convention
-
-    def name(self) -> str:
-        return type(self).__name__
-
-    def default_data_source(self) -> DataSource:
-        return DataSource.UNDEFINED
-
-
-class BoundaryToSpectra(Spectra1DReader):
+class SpectraTo1D(SpectralDataReader):
     """Integrates boundary spectra to omnidairectional spectra"""
 
-    def __init__(self, boundary: Spectra) -> None:
-        self._boundary = copy(boundary)
+    def __init__(self, spectra: Spectra) -> None:
+        self._boundary = copy(spectra)
         # self._boundary._set_convention(SpectralConvention.OCEAN)
 
     def convention(self):
@@ -96,13 +96,14 @@ class BoundaryToSpectra(Spectra1DReader):
 
     def get_coordinates(
         self, grid, start_time: str, source: DataSource, folder: str
-    ) -> tuple[np.ndarray, np.ndarray]:
-        return (
-            self._boundary.lon(strict=True),
-            self._boundary.lat(strict=True),
-            self._boundary.x(strict=True),
-            self._boundary.y(strict=True),
-        )
+    ) -> dict[str : np.ndarray]:
+        all_points = {
+            "lon": self._boundary.lon(strict=True),
+            "lat": self._boundary.lat(strict=True),
+            "x": self._boundary.x(strict=True),
+            "y": self._boundary.y(strict=True),
+        }
+        return all_points
         # return self._boundary.data.lon.values, self._boundary.data.lat.values
 
     def __call__(
@@ -150,7 +151,18 @@ class BoundaryToSpectra(Spectra1DReader):
         mdir = np.mod(thetam.values * 180 / np.pi, 360)
         spec = ef.values
 
-        return time, freq, spec, mdir, spr, lon, lat, x, y, self._boundary.ds().attrs
+        coord_dict = {
+            "lon": lon,
+            "lat": lat,
+            "x": x,
+            "y": y,
+            "time": time,
+            "freq": freq,
+        }
+        data_dict = {"spec": spec, "dirm": mdir, "spr": spr}
+        meta_dict = self._boundary.ds().attrs
+        metaparameter_dict = {}
+        return coord_dict, data_dict, meta_dict, metaparameter_dict
 
     def name(self):
         if self._boundary is None:
@@ -158,40 +170,40 @@ class BoundaryToSpectra(Spectra1DReader):
         return self._boundary.name
 
 
-class DnoraNc(Spectra1DReader):
-    def __init__(self, files: str) -> None:
-        self.files = files
+# class DnoraNc(Spectra1DReader):
+#     def __init__(self, files: str) -> None:
+#         self.files = files
 
-    def get_coordinates(
-        self, grid, start_time, source: DataSource, folder: str
-    ) -> tuple:
-        data = xr.open_dataset(self.files[0]).isel(time=[0])
-        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(data)
-        return lon, lat, x, y
+#     def get_coordinates(
+#         self, grid, start_time, source: DataSource, folder: str
+#     ) -> tuple:
+#         data = xr.open_dataset(self.files[0]).isel(time=[0])
+#         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(data)
+#         return lon, lat, x, y
 
-    def __call__(
-        self, grid, start_time, end_time, inds, source: DataSource, **kwargs
-    ) -> tuple:
-        def _crop(ds):
-            return ds.sel(time=slice(start_time, end_time))
+#     def __call__(
+#         self, grid, start_time, end_time, inds, source: DataSource, **kwargs
+#     ) -> tuple:
+#         def _crop(ds):
+#             return ds.sel(time=slice(start_time, end_time))
 
-        msg.info(
-            f"Getting boundary spectra from DNORA type netcdf files (e.g. {self.files[0]}) from {start_time} to {end_time}"
-        )
-        ds = xr.open_mfdataset(self.files, preprocess=_crop, data_vars="minimal")
-        ds = ds.sel(inds=inds)
-        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
-        if not hasattr(self, "_convention"):
-            self.set_convention(ds.spectral_convention)
-        return (
-            ds.time.values,
-            ds.freq.values,
-            ds.spec.values,
-            ds.mdir.values,
-            ds.spr.values,
-            lon,
-            lat,
-            x,
-            y,
-            ds.attrs,
-        )
+#         msg.info(
+#             f"Getting boundary spectra from DNORA type netcdf files (e.g. {self.files[0]}) from {start_time} to {end_time}"
+#         )
+#         ds = xr.open_mfdataset(self.files, preprocess=_crop, data_vars="minimal")
+#         ds = ds.sel(inds=inds)
+#         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
+#         if not hasattr(self, "_convention"):
+#             self.set_convention(ds.spectral_convention)
+#         return (
+#             ds.time.values,
+#             ds.freq.values,
+#             ds.spec.values,
+#             ds.mdir.values,
+#             ds.spr.values,
+#             lon,
+#             lat,
+#             x,
+#             y,
+#             ds.attrs,
+#         )

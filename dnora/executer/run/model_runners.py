@@ -2,7 +2,7 @@ from subprocess import Popen
 from abc import ABC, abstractmethod
 
 
-class ModelExecuter(ABC):
+class ModelRunner(ABC):
     """Runs the model."""
 
     def __init__(self, model):
@@ -28,7 +28,7 @@ class ModelExecuter(ABC):
         return
 
 
-class SWAN(ModelExecuter):
+class SWAN(ModelRunner):
     def __init__(self):
         return
 
@@ -44,7 +44,7 @@ class SWAN(ModelExecuter):
         return
 
 
-class SWASH(ModelExecuter):
+class SWASH(ModelRunner):
     def __init__(self):
         pass
 
@@ -58,7 +58,7 @@ class SWASH(ModelExecuter):
         p.wait()
 
 
-class HOS_ocean(ModelExecuter):
+class HOS_ocean(ModelRunner):
     def __init__(self):
         return
 
@@ -72,7 +72,7 @@ class HOS_ocean(ModelExecuter):
         p.wait()
 
 
-class REEF3D(ModelExecuter):
+class REEF3D(ModelRunner):
     def __init__(self, nproc=1):
         self.nproc = nproc
         return

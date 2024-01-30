@@ -1,8 +1,8 @@
 from .exporter import DataExporter
-from . import grid, spectra, wind, spectra1d, waveseries, waterlevel, inputfile
+from . import grid, spectra, wind, spectra1d, waveseries, waterlevel
 from .generic.generic_writers import DnoraNc, Null, DumpToNc
 
-from ..dnora_types import DnoraDataType
+from ..dnora_types import DnoraDataType, DnoraFileType
 from .exporter import WriterFunction
 from ..model_formats import ModelFormat
 
@@ -27,7 +27,6 @@ class SWAN(DataExporter):
         DnoraDataType.SPECTRA: spectra.SWAN(),
         DnoraDataType.WIND: wind.SWAN(),
         DnoraDataType.GRID: grid.SWAN(),
-        # DnoraDataType.InputFile: inputfile.SWAN(),
     }
 
     def _get_default_format(self):
@@ -39,7 +38,6 @@ class SWASH(DataExporter):
         DnoraDataType.SPECTRA: spectra.SWAN(),
         DnoraDataType.WIND: wind.SWAN(),
         DnoraDataType.GRID: grid.SWAN(),
-        # DnoraDataType.InputFile: inputfile.SWASH(),
     }
 
     def _get_default_format(self):
@@ -52,26 +50,20 @@ class WW3(DataExporter):
         DnoraDataType.WIND: wind.WW3(),
         DnoraDataType.GRID: grid.WW3(),
         DnoraDataType.TRIGRID: grid.WW3Triangular(),
-        # DnoraDataType.InputFile: inputfile.WW3(),
     }
 
     def _get_default_format(self):
         return ModelFormat.WW3
 
 
-class HOS_ocean(DataExporter):
-    _writer_dict = {
-        # DnoraDataType.InputFile: inputfile.HOS_ocean(),
-    }
-
+class HOS_Ocean(DataExporter):
     def _get_default_format(self):
-        return ModelFormat.HOS_Ocean
+        return ModelFormat.HOS_OCEAN
 
 
 class REEF3D(DataExporter):
     _writer_dict = {
         DnoraDataType.SPECTRA1D: spectra1d.REEF3D(),
-        # DnoraDataType.InputFile: inputfile.REEF3D(),
     }
 
     def _get_default_format(self):

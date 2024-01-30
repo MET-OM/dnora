@@ -9,23 +9,27 @@ from typing import Union
 from dnora.grid import Grid, TriGrid
 
 from dnora.file_module import FileNames
-from dnora.dnora_types import DnoraDataType
+from dnora.dnora_types import DnoraDataType, DnoraFileType
 from dnora.data_sources import DataSource
 
 # Import abstract classes and needed instances of them
 from dnora.pick.point_pickers import PointPicker, NearestGridPoint
 
 
-from dnora.run.model_executers import ModelExecuter
 from dnora.spectral_grid import SpectralGrid
 
 from geo_skeletons.decorators import add_datavar
 
 from dnora import msg
 from dnora.cacher.cache_decorator import cached_reader
-from dnora.converters import convert_swash_mat_to_netcdf
+
 from pathlib import Path
 from dnora.defaults.default_reader import data_sources
+
+from dnora.spectra1d.read import SpectraTo1D
+from dnora.waveseries.read import SpectraToWaveSeries
+
+from dnora.pick import TrivialPicker
 
 from dnora.export.exporters import Cacher
 
@@ -44,10 +48,7 @@ from dnora.dnora_types import (
 )
 from dnora.dnora_types import (
     WindReader,
-    SpectraReader,
-    Spectra1DReader,
     WaterLevelReader,
-    WaveSeriesReader,
     CurrentReader,
     IceReader,
 )
@@ -416,6 +417,70 @@ class ModelRun:
             DnoraDataType.ICE, name, dry_run, reader, source, folder, **kwargs
         )
 
+    def spectra_to_1d(
+        self,
+        dry_run: bool = False,
+        name: str | None = None,
+        write_cache=False,
+        **kwargs,
+    ):
+        self._dry_run = dry_run
+        if self.spectra() is None:
+            msg.warning("No Spectra to convert to Spectra!")
+            return
+
+        spectral_reader = SpectraTo1D(self.spectra())
+        msg.header(
+            spectral_reader,
+            "Converting the boundary spectra to omnidirectional spectra...",
+        )
+
+        name = self.spectra().name
+
+        if self.dry_run():
+            msg.info("Dry run! No boundary will not be converted to spectra.")
+            return
+
+        self.import_spectra1d(
+            reader=spectral_reader,
+            point_picker=TrivialPicker(),
+            name=name,
+            write_cache=write_cache,
+            **kwargs,
+        )
+
+    def spectra_to_waveseries(
+        self,
+        dry_run: bool = False,
+        write_cache=False,
+        freq: tuple = (0, 10_000),
+        **kwargs,
+    ):
+        self._dry_run = dry_run
+        if self.spectra1d() is None:
+            if self.spectra() is not None:
+                self.spectra_to_1d(dry_run=dry_run, write_cache=write_cache, **kwargs)
+            else:
+                msg.warning("No Spectra to convert to WaveSeries!")
+                return
+
+        name = self.spectra1d().name
+
+        if self.dry_run():
+            msg.info("Dry run! No boundary will not be converted to spectra.")
+            return
+
+        waveseries_reader = SpectraToWaveSeries(self.spectra1d(), freq)
+        msg.header(waveseries_reader, "Converting the spectra to wave series data...")
+
+        self.import_waveseries(
+            reader=waveseries_reader,
+            point_picker=TrivialPicker(),
+            name=name,
+            write_cache=write_cache,
+            **kwargs,
+        )
+
     def set_spectral_grid_from_spectra(self, **kwargs):
         if self.spectra() is None:
             msg.warning("No Spectra exists. Can't set spectral grid.")
@@ -458,64 +523,6 @@ class ModelRun:
         self[DnoraDataType.SpectralGrid] = SpectralGrid(
             name=DnoraDataType.SpectralGrid.value, freq=freq, dirs=dirs
         )
-
-    def run_model(
-        self,
-        model_executer: ModelExecuter | None = None,
-        input_file: str | None = None,
-        folder: str | None = None,
-        dateformat: str | None = None,
-        dry_run: bool = False,
-        mat_to_nc: bool = False,
-    ) -> None:
-        """Run the model."""
-        self._dry_run = dry_run
-        model_executer = model_executer or self._get_model_executer()
-        if model_executer is None:
-            raise Exception("Define a ModelExecuter!")
-
-        # We always assume that the model is located in the folder the input
-        # file was written to
-
-        # Option 1) Use user provided
-        # Option 2) Use knowledge of where has been exported
-        # Option 3) Use default values to guess where is has previously been exported
-        exported_path = Path(self.exported_to(DnoraDataType.InputFile)[0])
-        primary_file = input_file or exported_path.name
-        primary_folder = folder  # or str(exported_path.parent)
-
-        # if hasattr(self, "_input_file_writer"):
-        #     extension = input_file_extension or self._input_file_writer._extension()
-        # else:
-        #     extension = input_file_extension or "swn"
-
-        file_object = FileNames(
-            model=self,
-            filename=primary_file,
-            folder=primary_folder,
-            dateformat=dateformat,
-            obj_type=DnoraDataType.InputFile,
-            edge_object=DnoraDataType.Grid,
-        )
-
-        msg.header(model_executer, "Running model...")
-        msg.plain(f"Using input file: {file_object.get_filepath()}")
-        if not self.dry_run():
-            model_executer(
-                input_file=file_object.filename(), model_folder=file_object.folder()
-            )
-        else:
-            msg.info("Dry run! Model will not run.")
-        if mat_to_nc:
-            input_file = f"{file_object.folder()}/{self.grid().name}.mat"
-            output_file = f"{file_object.folder()}/{self.grid().name}.nc"
-            convert_swash_mat_to_netcdf(
-                input_file=input_file,
-                output_file=output_file,
-                lon=self.grid().lon_edges(),
-                lat=self.grid().lat_edges(),
-                dt=1,
-            )
 
     def dry_run(self):
         """Checks if method or global ModelRun dryrun is True."""
@@ -571,9 +578,7 @@ class ModelRun:
         """{'Boundary': 'NORA3'} etc."""
         dict_of_object_names = {}
         for obj_type in DnoraDataType:
-            if self[obj_type] is None:
-                dict_of_object_names[obj_type] = None
-            else:
+            if self[obj_type] is not None:
                 dict_of_object_names[obj_type] = self[obj_type].name
         return dict_of_object_names
 

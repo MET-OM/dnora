@@ -110,6 +110,7 @@ def cached_reader(dnora_obj, reader_function):
                 filename=cache_name,
             )
             mrun[dnora_obj] = None
+
             file_object.create_folder()
             files = glob.glob(f"{file_object.get_filepath()[0:-3]}*")
 
