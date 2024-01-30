@@ -12,7 +12,7 @@ from dnora.grid import Grid
 from scipy.interpolate import griddata
 
 # Import abstract classes
-from .read import WaterLevelReader
+from dnora.readers.abstract_readers import DataReader
 
 # Import aux_funcsiliry functions
 from dnora import msg
@@ -76,7 +76,7 @@ def download_GTSM_from_cds(start_time, end_time, folder="dnora_wlv_temp") -> str
     return filename
 
 
-class GTSM_ERA5(WaterLevelReader):
+class GTSM_ERA5(DataReader):
     """Reads GTSM_ERA5 waterlevel data"""
 
     def __call__(

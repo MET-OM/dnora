@@ -8,7 +8,7 @@ import os, glob
 from dnora.grid import Grid
 
 # Import abstract classes
-from .read import CurrentReader
+from dnora.readers.abstract_readers import DataReader
 from dnora.data_sources import DataSource
 
 # Import aux_funcsiliry functions
@@ -22,7 +22,7 @@ from dnora.aux_funcs import (
 )
 
 
-class NorKyst800(CurrentReader):
+class NorKyst800(DataReader):
     """Reads ocean_current data of the NorKyst800 archieve directly from MET Norways servers.
 
     NorKyst-800 (Norwegian Coast 800m) is a numerical, high-resolution, ocean modelling

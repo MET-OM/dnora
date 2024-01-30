@@ -9,7 +9,6 @@ from typing import Union
 from dnora.grid import Grid, TriGrid
 
 from dnora.file_module import FileNames
-from dnora.dnora_types import DnoraDataType, DnoraFileType
 from dnora.data_sources import DataSource
 
 # Import abstract classes and needed instances of them
@@ -34,6 +33,11 @@ from dnora.pick import TrivialPicker
 from dnora.export.exporters import Cacher
 
 from dnora.readers import generic_readers
+from dnora.readers.abstract_readers import (
+    DataReader,
+    PointDataReader,
+    SpectralDataReader,
+)
 
 from dnora.dnora_types import ReaderFunction, DnoraDataType, DnoraObject
 from dnora.dnora_types import (
@@ -45,12 +49,6 @@ from dnora.dnora_types import (
     WaveSeries,
     Current,
     Ice,
-)
-from dnora.dnora_types import (
-    WindReader,
-    WaterLevelReader,
-    CurrentReader,
-    IceReader,
 )
 
 
@@ -76,20 +74,15 @@ class ModelRun:
         self._dnora_objects: dict[DnoraDataType:DnoraObject] = {
             DnoraDataType.GRID: grid,
         }
-        # self._consistency_check(
-        #     objects_to_ignore_get=[
-        #         DnoraDataType.ModelRun,
-        #         DnoraDataType.TriGrid,
-        #         DnoraDataType.InputFile,
-        #     ],
-        #     objects_to_ignore_import=[
-        #         DnoraDataType.ModelRun,
-        #         DnoraDataType.Grid,
-        #         DnoraDataType.SpectralGrid,
-        #         DnoraDataType.TriGrid,
-        #         DnoraDataType.InputFile,
-        #     ],
-        # )
+        self._consistency_check(
+            objects_to_ignore_get=[
+                DnoraDataType.TRIGRID,
+            ],
+            objects_to_ignore_import=[
+                DnoraDataType.GRID,
+                DnoraDataType.TRIGRID,
+            ],
+        )
 
     def _consistency_check(
         self, objects_to_ignore_get: list[str], objects_to_ignore_import: list[str]
@@ -97,15 +90,15 @@ class ModelRun:
         """Checks that the class contains the proper import and getter methods. This is a safety feature in case more object types are added."""
         for obj_type in DnoraDataType:
             if obj_type not in objects_to_ignore_get:
-                if not hasattr(self, obj_type.value):
+                if not hasattr(self, obj_type.name.lower()):
                     raise SyntaxError(
-                        f"No getter method self.{obj_type.value}() defined for object {obj_type.name}!"
+                        f"No getter method self.{obj_type.name.lower()}() defined for object {obj_type.name}!"
                     )
 
             if obj_type not in objects_to_ignore_import:
-                if not hasattr(self, f"import_{obj_type.value}"):
+                if not hasattr(self, f"import_{obj_type.name.lower()}"):
                     raise SyntaxError(
-                        f"No import method self.import_{obj_type.value}() defined for object {obj_type.name}!"
+                        f"No import method self.import_{obj_type.name.lower()}() defined for object {obj_type.name}!"
                     )
 
     def _setup_import(
@@ -139,7 +132,7 @@ class ModelRun:
                 source = DataSource[source.upper()]
             except KeyError as ke:
                 raise ke(
-                    f"source should be 'local' (DataSource.LOCAL), 'internal' (DataSource.INTERNAL), or 'remote' (DataSource.REMOTE), not {source}!"
+                    f"source should be 'local' (DataSource.LOCAL), 'internal' (DataSource.INTERNAL), 'remote' (DataSource.REMOTE),  or 'undefined' (DataSource.UNDEFINED), not {source}!"
                 )
 
         if folder and source is DataSource.UNDEFINED:
@@ -293,7 +286,7 @@ class ModelRun:
     @cached_reader(DnoraDataType.WIND, generic_readers.Netcdf)
     def import_wind(
         self,
-        reader: WindReader | None = None,
+        reader: DataReader | None = None,
         name: str | None = None,
         dry_run: bool = False,
         source: str | DataSource = DataSource.UNDEFINED,
@@ -308,7 +301,7 @@ class ModelRun:
     @cached_reader(DnoraDataType.WATERLEVEL, generic_readers.Netcdf)
     def import_waterlevel(
         self,
-        reader: WaterLevelReader | None = None,
+        reader: DataReader | None = None,
         name: str | None = None,
         dry_run: bool = False,
         source: str | DataSource = DataSource.UNDEFINED,
@@ -323,7 +316,7 @@ class ModelRun:
     @cached_reader(DnoraDataType.SPECTRA, generic_readers.Netcdf)
     def import_spectra(
         self,
-        reader: SpectraReader | None = None,
+        reader: SpectralDataReader | None = None,
         point_picker: PointPicker | None = None,
         name: str | None = None,
         dry_run: bool = False,
@@ -346,7 +339,7 @@ class ModelRun:
     @cached_reader(DnoraDataType.SPECTRA1D, generic_readers.Netcdf)
     def import_spectra1d(
         self,
-        reader: Spectra1DReader | None = None,
+        reader: SpectralDataReader | None = None,
         point_picker: PointPicker | None = None,
         name: str | None = None,
         dry_run: bool = False,
@@ -369,7 +362,7 @@ class ModelRun:
     @cached_reader(DnoraDataType.WAVESERIES, generic_readers.Netcdf)
     def import_waveseries(
         self,
-        reader: WaveSeriesReader | None = None,
+        reader: PointDataReader | None = None,
         point_picker: PointPicker | None = None,
         name: str | None = None,
         dry_run: bool = False,
@@ -392,7 +385,7 @@ class ModelRun:
     @cached_reader(DnoraDataType.CURRENT, generic_readers.Netcdf)
     def import_current(
         self,
-        reader: CurrentReader | None = None,
+        reader: DataReader | None = None,
         name: str | None = None,
         dry_run: bool = False,
         source: str | DataSource = DataSource.UNDEFINED,
@@ -406,7 +399,7 @@ class ModelRun:
     @cached_reader(DnoraDataType.ICE, generic_readers.Netcdf)
     def import_ice(
         self,
-        reader: IceReader | None = None,
+        reader: DataReader | None = None,
         name: str | None = None,
         dry_run: bool = False,
         source: str | DataSource = DataSource.UNDEFINED,

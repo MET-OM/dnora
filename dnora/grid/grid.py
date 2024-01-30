@@ -5,7 +5,6 @@ from geo_skeletons.decorators import add_mask, add_datavar
 
 from dnora import aux_funcs, msg
 from copy import copy
-from .read import TopoReader
 from .mesh import Mesher, Interpolate
 from .process import GridProcessor
 from pathlib import Path
@@ -15,6 +14,7 @@ from .read_tr import MshFile as triang_MshFile
 from .tri_arangers import TriAranger
 from .mesh import Trivial as TrivialMesher
 from dnora.data_sources import DataSource
+from dnora.readers.abstract_readers import DataReader
 
 
 class GridMethods:
@@ -52,7 +52,7 @@ class GridMethods:
 
     def import_topo(
         self,
-        topo_reader: TopoReader,
+        topo_reader: DataReader,
         source: str | DataSource = DataSource.UNDEFINED,
         folder: str = None,
         **kwargs,
@@ -85,7 +85,7 @@ class GridMethods:
             or self.edges("lon", native=True)[1] > self.raw().edges(self.x_str)[1]
         ):
             msg.warning(
-                f"The data gotten from the TopoReader doesn't cover the grid in the {self.x_str} direction. Grid: {self.edges('lon', native=True)}, imported topo: {self.raw().edges(self.x_str)}"
+                f"The data gotten from the DataReader doesn't cover the grid in the {self.x_str} direction. Grid: {self.edges('lon', native=True)}, imported topo: {self.raw().edges(self.x_str)}"
             )
 
         if (
@@ -93,7 +93,7 @@ class GridMethods:
             or self.edges("lat", native=True)[1] > self.raw().edges(self.y_str)[1]
         ):
             msg.warning(
-                f"The data gotten from the TopoReader doesn't cover the grid in the {self.y_str} direction. Grid: {self.edges('lat', native=True)}, imported topo: {self.raw().edges(self.y_str)}"
+                f"The data gotten from the DataReader doesn't cover the grid in the {self.y_str} direction. Grid: {self.edges('lat', native=True)}, imported topo: {self.raw().edges(self.y_str)}"
             )
 
         if zone_number is not None:
