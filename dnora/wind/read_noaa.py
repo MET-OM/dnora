@@ -20,6 +20,9 @@ from dnora.readers.abstract_readers import DataReader
 class GFS(DataReader):
     """Reads wind data of the GFS global forecast"""
 
+    def default_data_source(self) -> DataSource:
+        return DataSource.REMOTE
+
     def __init__(
         self,
         stride: int = 6,

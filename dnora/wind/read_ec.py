@@ -120,6 +120,9 @@ def download_era5_from_cds(
 class ERA5(DataReader):
     """Reads ERA5 wind data"""
 
+    def default_data_source(self) -> DataSource:
+        return DataSource.REMOTE
+
     def __call__(
         self,
         grid: Grid,
