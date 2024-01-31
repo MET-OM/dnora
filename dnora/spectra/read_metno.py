@@ -29,7 +29,7 @@ class WAM4km(SpectralDataReader):
         self.lead_time = copy(lead_time)
         self.last_file = copy(last_file)
 
-    def convention(self) -> str:
+    def convention(self) -> SpectralConvention:
         return SpectralConvention.OCEAN
 
     def default_data_source(self) -> DataSource:
@@ -40,7 +40,7 @@ class WAM4km(SpectralDataReader):
 
     def get_coordinates(
         self, grid, start_time, source: DataSource, folder: str
-    ) -> Tuple:
+    ) -> dict:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
 
         start_times, end_times, file_times = create_time_stamps(
@@ -55,10 +55,8 @@ class WAM4km(SpectralDataReader):
 
         data = xr.open_dataset(url).isel(time=[0])
 
-        lon_all = data.longitude.values[0]
-        lat_all = data.latitude.values[0]
-
-        return lon_all, lat_all, None, None
+        all_points = {"lon": data.longitude.values[0], "lat": data.latitude.values[0]}
+        return all_points
 
     def __call__(
         self,
@@ -69,7 +67,7 @@ class WAM4km(SpectralDataReader):
         source: DataSource,
         folder: str,
         **kwargs,
-    ) -> Tuple:
+    ) -> tuple[dict]:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time
@@ -135,15 +133,19 @@ class WAM4km(SpectralDataReader):
         msg.info("Merging dataset together (this might take a while)...")
         bnd = xr.concat(bnd_list, dim="time").squeeze("y")
 
-        time = bnd.time.values
-        freq = bnd.freq.values
-        dirs = bnd.direction.values
-        spec = bnd.SPEC.values
-        # spec = np.moveaxis(spec,1,0) # time, inds ... -> inds, time, ...
-        lon = bnd.longitude.values
-        lat = bnd.latitude.values
+        coord_dict = {
+            "time": bnd.time.values,
+            "lon": bnd.longitude.values,
+            "lat": bnd.latitude.values,
+            " freq": bnd.freq.values,
+            "dirs": bnd.direction.values,
+        }
+        data_dict = {"spec": bnd.SPEC.values}
 
-        return time, freq, dirs, spec, lon, lat, None, None, bnd.attrs
+        meta_dict = bnd.attrs
+        metaparameter_dict = {}
+
+        return coord_dict, data_dict, meta_dict, metaparameter_dict
 
     def file_is_consistent(self, this_ds, bnd_list, url) -> bool:
         if this_ds is None:
@@ -215,7 +217,7 @@ class NORA3(SpectralDataReader):
         self.lead_time = copy(lead_time)
         self.last_file = copy(last_file)
 
-    def convention(self) -> str:
+    def convention(self) -> SpectralConvention:
         return SpectralConvention.OCEAN
 
     def default_data_source(self) -> DataSource:
@@ -223,7 +225,7 @@ class NORA3(SpectralDataReader):
 
     def get_coordinates(
         self, grid, start_time, source: DataSource, folder: str
-    ) -> Tuple:
+    ) -> dict:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         start_times, end_times, file_times = create_time_stamps(
             start_time,
@@ -236,10 +238,8 @@ class NORA3(SpectralDataReader):
         url = self.get_url(file_times[0], source, folder)
         data = xr.open_dataset(url).isel(time=[0])
 
-        lon_all = data.longitude.values[0]
-        lat_all = data.latitude.values[0]
-
-        return lon_all, lat_all, None, None
+        all_points = {"lon": data.longitude.values[0], "lat": data.latitude.values[0]}
+        return all_points
 
     def __call__(
         self,
@@ -250,7 +250,7 @@ class NORA3(SpectralDataReader):
         source: DataSource,
         folder: str,
         **kwargs,
-    ) -> Tuple:
+    ) -> tuple[dict]:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time
@@ -279,16 +279,18 @@ class NORA3(SpectralDataReader):
             bnd_list.append(this_ds)
         bnd = xr.concat(bnd_list, dim="time").squeeze("y")
 
-        time = bnd.time.values
-        freq = bnd.freq.values
-        dirs = bnd.direction.values
-        spec = bnd.SPEC.values
-        # spec = np.moveaxis(spec,1,0) # time, inds ... -> inds, time, ...
-        lon = bnd.longitude.values[0, :]
-        lat = bnd.latitude.values[0, :]
-        bnd.attrs.pop("direction_convention")
-
-        return time, freq, dirs, spec, lon, lat, None, None, bnd.attrs
+        coord_dict = {
+            "lon": bnd.longitude.values[0, :],
+            "lat": bnd.latitude.values[0, :],
+            "time": bnd.time.values,
+            "freq": bnd.freq.values,
+            "dirs": bnd.direction.values,
+        }
+        data_dict = {"spec": bnd.SPEC.values}
+        meta_dict = bnd.attrs
+        meta_dict.pop("direction_convention")
+        metaparameter_dict = {}
+        return coord_dict, data_dict, meta_dict, metaparameter_dict
 
     @staticmethod
     def get_url(day, source: str, folder: str) -> str:
@@ -338,7 +340,7 @@ class WW3_4km(SpectralDataReader):
         )
         return
 
-    def convention(self) -> str:
+    def convention(self) -> SpectralConvention:
         return SpectralConvention.OCEAN
 
     def post_processing(self):
@@ -347,7 +349,7 @@ class WW3_4km(SpectralDataReader):
     def default_data_source(self) -> DataSource:
         return DataSource.REMOTE
 
-    def get_coordinates(self, start_time, source: DataSource, folder: str) -> Tuple:
+    def get_coordinates(self, start_time, source: DataSource, folder: str) -> dict:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
 
         start_times, end_times, file_times = create_time_stamps(
@@ -362,14 +364,13 @@ class WW3_4km(SpectralDataReader):
 
         data = xr.open_dataset(url).isel(time=[0])
 
-        lon_all = data.longitude.values[0]
-        lat_all = data.latitude.values[0]
+        all_points = {"lon": data.longitude.values[0], "lat": data.latitude.values[0]}
 
-        return lon_all, lat_all
+        return all_points
 
     def __call__(
         self, start_time, end_time, inds, source: DataSource, folder: str
-    ) -> Tuple:
+    ) -> tuple[dict]:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
         self.end_time = end_time
@@ -427,23 +428,28 @@ class WW3_4km(SpectralDataReader):
 
             # We are now out of the while loop
             if this_ds is not None:
-                msg.from_file(url_or_cache)
+                msg.from_file(url)
                 bnd_list.append(this_ds)
                 this_ds = None
 
         msg.info("Merging dataset together (this might take a while)...")
         bnd = xr.concat(bnd_list, dim="time").squeeze("y")
 
-        time = bnd.time.values
-        freq = bnd.freq.values
-        dirs = bnd.direction.values
-        spec = bnd.SPEC.values
-        lon = bnd.longitude.values
-        lat = bnd.latitude.values
+        coord_dict = {
+            "lon": bnd.longitude.values,
+            "lat": bnd.latitude.values,
+            "time": bnd.time.values,
+            "freq": bnd.freq.values,
+            "dirs": bnd.direction.values,
+        }
 
-        source = f"{bnd.title}, {'Norwegian Meterological Institute'}"
+        data_dict = {"spec": bnd.SPEC.values}
 
-        return time, freq, dirs, spec, lon, lat, None, None, source
+        meta_dict = bnd.attrs
+
+        metaparameter_dict = {}
+
+        return coord_dict, data_dict, meta_dict, metaparameter_dict
 
     def file_is_consistent(self, this_ds, bnd_list, url) -> bool:
         if this_ds is None:
@@ -473,8 +479,7 @@ class WW3_4km(SpectralDataReader):
 
         return True
 
-    @staticmethod
-    def get_url(day, source, folder):
+    def get_url(self, day, source, folder):
         if source == DataSource.REMOTE:
             url = (
                 "https://thredds.met.no/thredds/dodsC/ww3_4km_archive_files/"

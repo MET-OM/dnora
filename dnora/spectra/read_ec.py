@@ -103,7 +103,7 @@ class ERA5(SpectralDataReader):
 
     def get_coordinates(
         self, grid, start_time, source: DataSource, folder: str
-    ) -> Tuple:
+    ) -> dict:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         # point_list = self.get_restricted_area()._point_list()
         # lon_all = point_list[:,0]
@@ -120,7 +120,7 @@ class ERA5(SpectralDataReader):
         self._given_grid.set_spacing(dlon=self.dlon, dlat=self.dlat)
         lon_all, lat_all = self._given_grid.lonlat()
 
-        return lon_all, lat_all, None, None
+        return {"lat": lat_all, "lon": lon_all}
 
     def __call__(
         self,
@@ -131,7 +131,7 @@ class ERA5(SpectralDataReader):
         source: DataSource,
         folder: str,
         **kwargs,
-    ) -> Tuple:
+    ) -> tuple[dict]:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         msg.info(f"Getting ERA5 boundary spectra from {start_time} to {end_time}")
 
@@ -186,11 +186,14 @@ class ERA5(SpectralDataReader):
         dirs = bnd_spec.direction.values
         time = bnd_spec.time.values
 
-        attributes = {"source": "ECMWF-ERA5 from Copernicus Climate Data Store"}
-
         # Inds given by point picker
         lon = lon[inds]
         lat = lat[inds]
         spec = spec[:, inds, :, :]
 
-        return time, freq, dirs, spec, lon, lat, None, None, attributes
+        coord_dict = {"lon": lon, "lat": lat, "time": time, "freq": freq, "dirs": dirs}
+        data_dict = {"spec": spec}
+        meta_dict = {"source": "ECMWF-ERA5 from Copernicus Climate Data Store"}
+        metaparameter_dict = {}
+
+        return coord_dict, data_dict, meta_dict, metaparameter_dict
