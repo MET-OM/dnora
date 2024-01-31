@@ -2,7 +2,7 @@ from .. import msg
 from ..file_module import FileNames
 from ..spectral_conventions import SpectralConvention
 from typing import Union
-from .generic.generic_writers import GenericWriter, DnoraNc, DumpToNc
+from .generic.generic_writers import GenericWriter, Netcdf
 from .grid.grid_writers import GridWriter
 from .wind.wind_writers import WindWriter
 from .spectra.spectra_writers import SpectraWriter
@@ -41,13 +41,17 @@ class DataExporter:
     _writer_dict = {}
 
     def _get_default_writer(self) -> WriterFunction:
-        return DumpToNc()
+        return Netcdf()
 
     def _get_default_format(self) -> str:
         return ModelFormat.MODELRUN
 
     def _get_writer(self, obj_type: DnoraDataType | DnoraFileType) -> WriterFunction:
         return self._writer_dict.get(obj_type, self._get_default_writer())
+
+    def _get_spectral_convention(self) -> SpectralConvention:
+        """Used only if method is not defined, such as for GeneralWritingFunctions that just dump everything to montly netcdf-files."""
+        return SpectralConvention.OCEAN
 
     def __init__(self, model):
         self.model = model
@@ -150,7 +154,3 @@ class DataExporter:
 
     def dry_run(self) -> bool:
         return self._dry_run or self.model.dry_run()
-
-    def _get_spectral_convention(self) -> SpectralConvention:
-        """Used only if method is not defined, such as for GeneralWritingFunctions that just dump everything to montly netcdf-files."""
-        return SpectralConvention.OCEAN

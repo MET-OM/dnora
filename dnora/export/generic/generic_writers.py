@@ -10,12 +10,15 @@ if TYPE_CHECKING:
 
 
 from calendar import monthrange
-from ...dnora_types import DnoraDataType
-from ... import file_module
+from dnora.dnora_types import DnoraDataType
+from dnora import file_module
 import os
+import numpy as np
+import pandas as pd
+from dnora import msg
 
 
-class GenericWriter(ABC):
+class DataWriter(ABC):
     """General writing function that can be used for several objects"""
 
     @abstractmethod
@@ -29,7 +32,7 @@ class GenericWriter(ABC):
         pass
 
 
-class Null(GenericWriter):
+class Null(DataWriter):
     def __call__(
         self,
         model: ModelRun,
@@ -40,19 +43,10 @@ class Null(GenericWriter):
         return ""
 
 
-class DnoraNc(GenericWriter):
-    def __call__(
-        self,
-        model: ModelRun,
-        file_object: FileNames,
-        obj_type: DnoraDataType,
-        **kwargs,
-    ) -> list[str]:
-        output_files = write_monthly_nc_files(model[obj_type], file_object)
-        return output_files
+class Netcdf(DataWriter):
+    def __init__(self, monthly_files: bool = False):
+        self._monthly_files = monthly_files
 
-
-class DumpToNc(GenericWriter):
     def __call__(
         self,
         model: ModelRun,
@@ -60,9 +54,13 @@ class DumpToNc(GenericWriter):
         obj_type: DnoraDataType,
         **kwargs,
     ) -> str:
-        output_file = file_object.get_filepath()
-        model[obj_type].ds().to_netcdf(output_file)
-        return output_file
+        if self._monthly_files:
+            output_files = write_monthly_nc_files(model[obj_type], file_object)
+        else:
+            output_files = file_object.get_filepath()
+            model[obj_type].ds().to_netcdf(output_files)
+
+        return output_files
 
 
 def write_monthly_nc_files(
@@ -86,3 +84,49 @@ def write_monthly_nc_files(
 
         output_files.append(outfile)
     return output_files
+
+
+class SWAN(DataWriter):
+    """Writes wind forcing data to SWAN ascii format."""
+
+    # The names of the variables could in theory be read from the object class itself (obj_type.value._coord_manager.added_vars().keys())
+    # We prefer to be explicit here, since then we are 100% sure that the order is correct
+    _datavars = {
+        DnoraDataType.WIND: ["u", "v"],
+        DnoraDataType.WATERLEVEL: ["eta"],
+        DnoraDataType.ICE: ["concentration"],
+        DnoraDataType.CURRENT: ["u", "v"],
+    }
+
+    def __call__(
+        self, model: ModelRun, file_object: FileNames, obj_type: DnoraDataType, **kwargs
+    ) -> list[str]:
+        filename = file_object.get_filepath()
+        data = model[obj_type]
+        if data is None:
+            msg.warning(f"Can't find any {obj_type.name} data!! Aborting...")
+            return ""
+
+        days = data.days(datetime=False)
+        with open(filename, "w") as file_out:
+            ct = 0
+            for day in days:
+                msg.plain(day)
+                times = data.time(time=slice(day, day))
+                for n in range(len(times)):
+                    time_stamp = (
+                        pd.to_datetime(times[n]).strftime("%Y%m%d.%H%M%S") + "\n"
+                    )
+
+                    if self._datavars.get(obj_type) is None:
+                        msg.warning(
+                            f"Don't know how to write {obj_type.name} in SWAN format! Aborting..."
+                        )
+                        return ""
+                    for var in self._datavars.get(obj_type):
+                        file_out.write(time_stamp)
+                        np.savetxt(file_out, data.get(var)[ct, :, :] * 1000, fmt="%i")
+
+                    ct += 1
+
+        return filename
