@@ -1,28 +1,26 @@
 from __future__ import annotations  # For TYPE_CHECKING
 
 import numpy as np
-from abc import ABC, abstractmethod
 import netCDF4
-import re
 
 # Import abstract classes and needed instances of them
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ...modelrun.modelrun import ModelRun
-    from ...file_module import FileNames
+    from dnora.modelrun.modelrun import ModelRun
+    from dnora.file_module import FileNames
 
-# Import default values and aux_funcsiliry functions
-from ... import msg
-from ... import file_module
+from dnora.dnora_types import DnoraDataType
+from dnora import msg
+from dnora import file_module
+from .data_writers import DataWriter
+from dnora.spectral_conventions import SpectralConvention
 
-from ...spectral_conventions import SpectralConvention
 
-
-class BoundaryWriter(ABC):
+class SpectraWriter(DataWriter):
     """Writes the boundary spectra to a certain file format.
 
-    This object is provided to the .export_boundary() method.
+    This object is provided to the .export_spectra() method.
     """
 
     _convention = None
@@ -56,29 +54,23 @@ class BoundaryWriter(ABC):
             self._convention = SpectralConvention[self._convention.upper()]
         return self._convention
 
-    @abstractmethod
-    def __call__(
-        self, model: ModelRun, file_object: FileNames, **kwargs
-    ) -> Union[str, list[str]]:
-        """Write the data from the Spectra object and returns the file and
-        folder where data were written."""
-        pass
 
-
-class WW3(BoundaryWriter):
+class WW3(SpectraWriter):
     def __init__(
         self, convention=SpectralConvention.WW3, one_file: bool = True
     ) -> None:
         self.one_file = one_file
         self._convention = convention
 
-    def __call__(self, model: ModelRun, file_object: FileNames, **kwargs) -> list[str]:
+    def __call__(
+        self, model: ModelRun, file_object: FileNames, obj_type: DnoraDataType, **kwargs
+    ) -> list[str]:
         msg.info("Writing WAVEWATCH-III netcdf-output")
-        boundary = model.boundary()
+        boundary = model.spectra()
 
         if self.one_file:
             filename = file_object.get_filepath()
-            if len(boundary.x()) == 1:
+            if len(boundary.inds()) == 1:
                 # Uses $Lon $Lat
                 filename = file_module.replace_lonlat(
                     filename, lon=boundary.lon()[0], lat=boundary.lat()[0]
@@ -254,13 +246,18 @@ class WW3(BoundaryWriter):
         return
 
 
-class SWAN(BoundaryWriter):
+class SWAN(SpectraWriter):
     def convention(self) -> SpectralConvention:
         """Convention of spectra"""
         return SpectralConvention.MET
 
     def __call__(
-        self, model: ModelRun, file_object: FileNames, factor: float = 1e-4, **kwargs
+        self,
+        model: ModelRun,
+        file_object: FileNames,
+        obj_type: DnoraDataType,
+        factor: float = 1e-4,
+        **kwargs,
     ) -> str:
         filename = file_object.get_filepath()
         boundary = model.boundary()

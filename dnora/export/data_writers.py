@@ -5,8 +5,8 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
-    from ...modelrun.modelrun import ModelRun
-    from ...file_module import FileNames
+    from dnora.modelrun.modelrun import ModelRun
+    from dnora.file_module import FileNames
 
 
 from calendar import monthrange

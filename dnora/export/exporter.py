@@ -1,35 +1,22 @@
 from .. import msg
 from ..file_module import FileNames
-from ..spectral_conventions import SpectralConvention
+from dnora.spectral_conventions import SpectralConvention
 from typing import Union
-from .generic.generic_writers import GenericWriter, Netcdf
-from .grid.grid_writers import GridWriter
-from .wind.wind_writers import WindWriter
-from .spectra.spectra_writers import SpectraWriter
-from .spectra1d.spectra1d_writers import Spectra1DWriter
-from .waveseries.waveseries_writers import WaveSeriesWriter
-from .waterlevel.waterlevel_writers import WaterLevelWriter
-from .current.current_writers import CurrentWriter
-from .ice.ice_writers import IceWriter
+from .data_writers import DataWriter, Netcdf
+from .spectra_writers import SpectraWriter
 
 from .decorators import add_export_method
 from ..dnora_types import DnoraDataType, object_type_from_string, DnoraFileType
 from ..model_formats import ModelFormat
 
 WriterFunction = Union[
-    GenericWriter,
-    GridWriter,
-    WindWriter,
+    DataWriter,
     SpectraWriter,
-    Spectra1DWriter,
-    WaveSeriesWriter,
-    WaterLevelWriter,
-    CurrentWriter,
-    IceWriter,
 ]
 
 
 @add_export_method(DnoraDataType.GRID)
+@add_export_method(DnoraDataType.TRIGRID)
 @add_export_method(DnoraDataType.WIND)
 @add_export_method(DnoraDataType.SPECTRA)
 @add_export_method(DnoraDataType.SPECTRA1D)

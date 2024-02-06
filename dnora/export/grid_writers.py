@@ -2,60 +2,53 @@ from __future__ import annotations  # For TYPE_CHECKING
 
 import numpy as np
 from copy import copy
-from abc import ABC, abstractmethod
-import utm
+from .data_writers import DataWriter
 
 # Import objects
 from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
-    from ...modelrun.modelrun import ModelRun
-    from ...file_module import FileNames
+    from dnora.modelrun.modelrun import ModelRun
+    from dnora.file_module import FileNames
 
-from ... import msg
-from ... import file_module
-
-
-class GridWriter(ABC):
-    """Abstract class for writing the Grid-object's data to files to be Used
-    by the wave models.
-    """
-
-    @abstractmethod
-    def __call__(
-        self, model: ModelRun, file_object: FileNames, **kwargs
-    ) -> Union[str, list[str]]:
-        """Write the data from the Spectra object and returns the file and
-        folder where data were written."""
-        pass
+from dnora import msg
+from dnora import file_module
+from dnora.dnora_types import DnoraDataType
 
 
-# class BoundaryPoints(GridWriter):
-#     """Writes boundary points from unsutructured grid."""
-#     def __call__(self, model: ModelRun, file_object: FileNames, include_index: bool=False, **kwargs) -> list[str]:
-#         output_file = file_object.get_filepath(extension='txt')
-#         grid = model.grid()
+class SWAN(DataWriter):
+    """Writes the grid to SWAN format."""
 
-#         with open(output_file,'w') as f:
-#             if include_index and hasattr(grid, 'boundary_inds'):
-#                 for n in range(len(grid.boundary_points())):
-#                     # Going from python 0-indexing to node 1-indexing
-#                     f.write(f'{grid.boundary_inds()[n]+1:.0f} {grid.boundary_points()[n,0]:13.10f} {grid.boundary_points()[n,1]:13.10f}\n')
-#             else:
-#                 for n in range(len(grid.boundary_points())):
-#                     f.write(f'{grid.boundary_points()[n,0]:13.10f} {grid.boundary_points()[n,1]:13.10f}\n')
-#         print(output_file)
-#         return output_file
+    def __call__(self, model: ModelRun, file_object: FileNames, **kwargs) -> str:
+        filename = file_object.get_filepath()
+        grid = model.grid()
+
+        mask_out = np.ones(grid.topo().shape)
+        mask_out[grid.land_sea_mask()] = 0
+        if grid.boundary_mask().size > 0:
+            msg.info(
+                f"Setting {sum(sum(np.logical_and(grid.boundary_mask(), grid.land_sea_mask()))):d} boundary points in grid..."
+            )
+            mask_out[np.logical_and(grid.boundary_mask(), grid.land_sea_mask())] = 2
+
+        # output_file = grid.filename(filestring=filestring, extension='bot')
+
+        # msg.to_file(output_path)
+        np.savetxt(filename, grid.topo(), delimiter="\t", fmt="%1.2f")
+
+        return filename
 
 
-class WW3(GridWriter):
+class WW3(DataWriter):
     """Writes the grid to WAVEWATCH III format."""
 
     def __init__(self, matrix=False) -> None:
         self.matrix = matrix
         return
 
-    def __call__(self, model: ModelRun, file_object: FileNames, **kwargs) -> list[str]:
+    def __call__(
+        self, model: ModelRun, file_object: FileNames, obj_type: DnoraDataType, **kwargs
+    ) -> list[str]:
         filename = file_object.get_filepath()
         grid = model.grid()
 
@@ -99,10 +92,12 @@ class WW3(GridWriter):
         return output_files
 
 
-class WW3Triangular(GridWriter):
+class WW3Triangular(DataWriter):
     """Writes the grid to WAVEWATCH III unstructured format."""
 
-    def __call__(self, model: ModelRun, file_object: FileNames, **kwargs) -> str:
+    def __call__(
+        self, model: ModelRun, file_object: FileNames, obj_type: DnoraDataType, **kwargs
+    ) -> str:
         filename = file_object.get_filepath(extension="msh")
         grid = model.grid()
         output_file = file_module.add_suffix(filename, "bathy")
@@ -168,36 +163,14 @@ class WW3Triangular(GridWriter):
         return output_file
 
 
-class SWAN(GridWriter):
-    """Writes the grid to SWAN format."""
-
-    def __call__(self, model: ModelRun, file_object: FileNames, **kwargs) -> str:
-        filename = file_object.get_filepath()
-        grid = model.grid()
-
-        mask_out = np.ones(grid.topo().shape)
-        mask_out[grid.land_sea_mask()] = 0
-        if grid.boundary_mask().size > 0:
-            msg.info(
-                f"Setting {sum(sum(np.logical_and(grid.boundary_mask(), grid.land_sea_mask()))):d} boundary points in grid..."
-            )
-            mask_out[np.logical_and(grid.boundary_mask(), grid.land_sea_mask())] = 2
-
-        # output_file = grid.filename(filestring=filestring, extension='bot')
-
-        # msg.to_file(output_path)
-        np.savetxt(filename, grid.topo(), delimiter="\t", fmt="%1.2f")
-
-        return filename
-
-
-class Xyz(GridWriter):
+class Xyz(DataWriter):
     """Writes the grid to Xyz-format."""
 
     def __call__(
         self,
         model: ModelRun,
         file_object: FileNames,
+        obj_type: DnoraDataType,
         use_raw: bool = False,
         cartesian: bool = False,
         **kwargs,
@@ -234,11 +207,16 @@ class Xyz(GridWriter):
         return filename
 
 
-class REEF3D(GridWriter):
+class REEF3D(DataWriter):
     """Writes the grid to Xyz-format in relative Cartesian grid."""
 
     def __call__(
-        self, model: ModelRun, file_object: FileNames, use_raw: bool = False, **kwargs
+        self,
+        model: ModelRun,
+        file_object: FileNames,
+        obj_type: DnoraDataType,
+        use_raw: bool = False,
+        **kwargs,
     ) -> str:
         filename = file_object.get_filepath()
 

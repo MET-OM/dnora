@@ -1,8 +1,7 @@
 from .exporter import DataExporter
-from . import grid, spectra, wind, spectra1d, waveseries, waterlevel
-from .generic import generic_writers
+from . import data_writers, grid_writers, spectra_writers, spectra1d_writers
 
-from dnora.dnora_types import DnoraDataType, DnoraFileType
+from dnora.dnora_types import DnoraDataType
 from .exporter import WriterFunction
 from dnora.model_formats import ModelFormat
 
@@ -11,12 +10,12 @@ class NullExporter(DataExporter):
     _writer_dict = {}
 
     def _get_default_writer(self) -> WriterFunction:
-        return generic_writers.Null()
+        return data_writers.Null()
 
 
 class Cacher(DataExporter):
     def _get_default_writer(self) -> WriterFunction:
-        return generic_writers.Netcdf(monthly_files=True)
+        return data_writers.Netcdf(monthly_files=True)
 
     def _get_default_format(self) -> str:
         return ModelFormat.CACHE
@@ -24,12 +23,12 @@ class Cacher(DataExporter):
 
 class SWAN(DataExporter):
     _writer_dict = {
-        DnoraDataType.SPECTRA: spectra.SWAN(),
-        DnoraDataType.WIND: generic_writers.SWAN(),
-        DnoraDataType.WATERLEVEL: generic_writers.SWAN(),
-        DnoraDataType.CURRENT: generic_writers.SWAN(),
-        DnoraDataType.ICE: generic_writers.SWAN(),
-        DnoraDataType.GRID: grid.SWAN(),
+        DnoraDataType.SPECTRA: spectra_writers.SWAN(),
+        DnoraDataType.WIND: data_writers.SWAN(),
+        DnoraDataType.WATERLEVEL: data_writers.SWAN(),
+        DnoraDataType.CURRENT: data_writers.SWAN(),
+        DnoraDataType.ICE: data_writers.SWAN(),
+        DnoraDataType.GRID: grid_writers.SWAN(),
     }
 
     def _get_default_format(self):
@@ -38,9 +37,9 @@ class SWAN(DataExporter):
 
 class SWASH(DataExporter):
     _writer_dict = {
-        DnoraDataType.SPECTRA: spectra.SWAN(),
-        DnoraDataType.WIND: wind.SWAN(),
-        DnoraDataType.GRID: grid.SWAN(),
+        DnoraDataType.SPECTRA: spectra_writers.SWAN(),
+        DnoraDataType.WIND: data_writers.SWAN(),
+        DnoraDataType.GRID: grid_writers.SWAN(),
     }
 
     def _get_default_format(self):
@@ -49,10 +48,10 @@ class SWASH(DataExporter):
 
 class WW3(DataExporter):
     _writer_dict = {
-        DnoraDataType.SPECTRA: spectra.WW3(),
-        DnoraDataType.WIND: generic_writers.Netcdf(monthly_files=True),
-        DnoraDataType.GRID: grid.WW3(),
-        DnoraDataType.TRIGRID: grid.WW3Triangular(),
+        DnoraDataType.SPECTRA: spectra_writers.WW3(),
+        DnoraDataType.WIND: data_writers.Netcdf(monthly_files=True),
+        DnoraDataType.GRID: grid_writers.WW3(),
+        DnoraDataType.TRIGRID: grid_writers.WW3Triangular(),
     }
 
     def _get_default_format(self):
@@ -66,7 +65,7 @@ class HOS_Ocean(DataExporter):
 
 class REEF3D(DataExporter):
     _writer_dict = {
-        DnoraDataType.SPECTRA1D: spectra1d.REEF3D(),
+        DnoraDataType.SPECTRA1D: spectra1d_writers.REEF3D(),
     }
 
     def _get_default_format(self):
