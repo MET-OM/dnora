@@ -44,7 +44,7 @@ MODELRUN:
     folder: 'output'
     filename: 'waveseries_#WAVESERIES_#GRID_#T0-#T1'
     dateformat: '%Y%m%dT%H%M'
-  input_file:
+  input:
     folder: 'output'
     filename: 'inputfile_#GRID_#FORCING_#BOUNDARY_#SPECTRA_#T0_#T1_#Lon_#Lat'
     dateformat: '%Y%m%dT%H%M'
@@ -61,7 +61,7 @@ SWAN:
     filename: 'wind#WIND#GRID#T0_#T1'
   spectra:
     filename: 'spec#SPECTRA#GRID#T0#T1'
-  input_file:
+  input:
     filename: 'input_#T0_#GRID'
     folder: '#GRID_SWAN'
     extension: 'swn'
@@ -76,7 +76,7 @@ SWASH:
     filename: 'wind#WIND#GRID#T0_#T1'
   spectra:
     filename: 'spec#SPECTRA#GRID#T0#T1'
-  input_file:
+  input:
     filename: 'input_#T0_#T1_#GRID'
     folder: '#GRID_SWASH'
     extension: 'sws'
@@ -91,7 +91,7 @@ WW3:
   wind:
     filename: 'wind_#WIND_#GRID_#T0-#T1'
     extension: 'nc'
-  input_file:
+  input:
     filename: ''
     folder: 'MyWW3Folder'
     extension: 'nml'
@@ -99,7 +99,7 @@ WW3:
 HOS_OCEAN:
   grid:
     filename: '#GRID_HOS_ocean'
-  input_file:
+  input:
     filename: 'input_HOS'
     folder: MyHOS_oceanFolder'
     extension: 'dat'
@@ -113,7 +113,7 @@ REEF3D:
     filename: 'spectrum-file'
     folder: '#GRID_REEF3D'
     extension: 'dat'
-  input_file:
+  input:
     filename: 'ctrl'
     folder: '#GRID_REEF3D'
     extension: 'txt'
