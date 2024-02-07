@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from copy import copy
-import os
 import numpy as np
 import pandas as pd
 
@@ -10,17 +8,11 @@ import pandas as pd
 from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
-    # from ...wnd.wnd_mod import Forcing
-    # from ...grd.grd_mod import Grid
-    # from ...bnd.bnd_mod import Boundary
-    # from ...spc.spc_mod import Spectra
-    # from ...wsr.wsr_mod import WaveSeries
-    from ...modelrun.modelrun import ModelRun
-    from ...file_module import FileNames
+    from dnora.modelrun.modelrun import ModelRun
+    from dnora.file_module import FileNames
 
-from ...aux_funcs import create_swan_segment_coords
-from ... import msg
-from ... import file_module
+from dnora.aux_funcs import create_swan_segment_coords
+from dnora import msg, file_module
 
 from .ww3_functions import (
     ww3_grid,

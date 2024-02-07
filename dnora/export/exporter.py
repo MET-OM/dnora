@@ -6,7 +6,12 @@ from .data_writers import DataWriter, Netcdf
 from .spectra_writers import SpectraWriter
 
 from .decorators import add_export_method
-from ..dnora_types import DnoraDataType, object_type_from_string, DnoraFileType
+from dnora.dnora_types import (
+    DnoraDataType,
+    data_type_from_string,
+    DnoraFileType,
+    file_type_from_string,
+)
 from ..model_formats import ModelFormat
 
 WriterFunction = Union[
@@ -47,7 +52,7 @@ class DataExporter:
     def export(
         self,
         obj_type: DnoraDataType | str,
-        writer: str = None,
+        writer: WriterFunction = None,
         filename: str = None,
         folder: str = None,
         dateformat: str = None,
@@ -55,7 +60,7 @@ class DataExporter:
         dry_run=False,
         **kwargs,
     ) -> None:
-        obj_type = object_type_from_string(obj_type)
+        obj_type = data_type_from_string(obj_type)
         writer_function = self._setup_export(obj_type, writer, dry_run)
 
         if not self.dry_run():
@@ -134,7 +139,7 @@ class DataExporter:
                 output_files = [output_files]
 
         # Store name and location where file was written
-        self.exported_to[obj_type] = output_files
+        self.exported_to[file_type_from_string(obj_type.name)] = output_files
 
         for file in output_files:
             msg.to_file(file)

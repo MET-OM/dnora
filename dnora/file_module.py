@@ -4,31 +4,32 @@ from .defaults import read_defaults
 from dataclasses import dataclass
 import pandas as pd
 import re
-from . import msg
+from dnora import msg
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .modelrun import ModelRun
-    from .dnora_types import DnoraObject
-from dnora.dnora_types import DnoraDataType
+    from dnora.modelrun import ModelRun
+    from dnora.dnora_types import DnoraObject
+from dnora.dnora_types import DnoraDataType, DnoraFileType
 from .model_formats import ModelFormat
 
 
 @dataclass
 class FileNames:
-    obj_type: str
-    format: str = None
-    model: ModelRun = None
+    model: ModelRun
+    obj_type: DnoraDataType | DnoraFileType = None
+    format: ModelFormat = ModelFormat.MODELRUN
     filename: str = None
     folder: str = None
     dateformat: str = None
-    edge_object: str = None
-    time_object: str = None
+    edge_object: DnoraDataType = None
+    time_object: DnoraDataType = None
+    start_time: str = None
+    end_time: str = None
 
     def __post_init__(self):
         self._defaults = read_defaults("export_defaults.yml", from_module=True)
 
-        self.format = self.format or ModelFormat.MODELRUN
         self.fallback = self._defaults[ModelFormat.MODELRUN.name]
         self.primary = self._defaults[self.format.name]
 
@@ -36,9 +37,13 @@ class FileNames:
             self.edge_object = self.obj_type
 
     def get_start_time(self):
+        if self.start_time is not None:
+            return self.start_time
         return self.model.start_time(crop_with=self.time_object)
 
     def get_end_time(self):
+        if self.end_time is not None:
+            return self.end_time
         return self.model.end_time(crop_with=self.time_object)
 
     def get_dateformat(self) -> str:
@@ -53,7 +58,7 @@ class FileNames:
         end_time: str = None,
         key: str = "filename",
         clean: bool = True,
-        edge_object: str = None,
+        edge_object: DnoraDataType = None,
     ) -> str:
         if self.filename is not None:
             filename = self.filename
@@ -63,6 +68,7 @@ class FileNames:
             )
         start_time = start_time or self.get_start_time()
         end_time = end_time or self.get_end_time()
+        edge_object = edge_object or self.edge_object
 
         filename = self.replace_placeholders(
             filename, start_time, end_time, edge_object=edge_object
@@ -112,13 +118,15 @@ class FileNames:
     def replace_placeholders(
         self,
         unclean_string: str,
-        start_time=None,
-        end_time=None,
+        start_time: str = None,
+        end_time: str = None,
         edge_object: DnoraDataType = None,
     ) -> str:
-        unclean_string = replace_object_type_name(
-            unclean_string, self.model[self.obj_type]
-        )
+
+        if isinstance(self.obj_type, DnoraDataType):
+            unclean_string = replace_object_type_name(
+                unclean_string, self.model[self.obj_type]
+            )
 
         unclean_string = replace_modelrun_name(unclean_string, self.model.name)
 

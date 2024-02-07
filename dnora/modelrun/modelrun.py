@@ -39,7 +39,12 @@ from dnora.readers.abstract_readers import (
     SpectralDataReader,
 )
 
-from dnora.dnora_types import ReaderFunction, DnoraDataType, DnoraObject
+from dnora.dnora_types import (
+    ReaderFunction,
+    DnoraDataType,
+    DnoraObject,
+    data_type_from_string,
+)
 from dnora.dnora_types import (
     Grid,
     Wind,
@@ -492,9 +497,7 @@ class ModelRun:
     ):
         """Sets spectral grid for model run. Will be used to write input files."""
         if freq is None:
-            freq = np.array(
-                [freq0 * finc**n for n in np.linspace(0, nfreq - 1, nfreq)]
-            )
+            freq = np.array([freq0 * finc**n for n in np.linspace(0, nfreq - 1, nfreq)])
         if len(freq) < nfreq:
             start_freq = freq[-1]
             add_freq = np.array(
@@ -557,9 +560,9 @@ class ModelRun:
     #     """Returns the spectral grid object if exists."""
     #     return self._dnora_objects.get(DnoraDataType.SpectralGrid)
 
-    def input_file(self) -> None:
-        """Only defined to have method for all objects"""
-        return None
+    # def input_file(self) -> None:
+    #     """Only defined to have method for all objects"""
+    #     return None
 
     def list_of_objects(
         self,
@@ -590,7 +593,7 @@ class ModelRun:
         ).get_filepath()
         return self._exported_to.get(obj_type, default_name)
 
-    def time(self, crop_with: list[str] = None):
+    def time(self, crop_with: list[DnoraDataType | str] = None):
         """Returns times of ModelRun
         crop_with = ['Forcing', 'Boundary'] gives time period covered by those objects
         crop_with = 'all' crops with all objects"""
@@ -605,7 +608,7 @@ class ModelRun:
                 crop_with = self.list_of_object_strings()
 
             for obj_str in crop_with:
-                dnora_obj = self[obj_str]
+                dnora_obj = self[data_type_from_string(obj_str)]
                 if dnora_obj is not None:
                     time = dnora_obj.time()
                     if time[0] is not None:
@@ -625,18 +628,21 @@ class ModelRun:
         crop = True: Give the period that is covered by all objects (Forcing etc.)"""
         return self.time(crop_with=crop_with)[-1]
 
-    def __getitem__(self, dnora_obj: DnoraDataType) -> DnoraObject:
-        # dnora_str = camel_to_snake(dnora_str)
+    def __getitem__(self, obj_type: DnoraDataType) -> DnoraObject:
+        try:
+            obj_type = data_type_from_string(obj_type)
+        except:
+            pass
 
-        if dnora_obj is None:
+        if obj_type is None:
             return self
-        if dnora_obj == DnoraDataType.TRIGRID:
+        if obj_type == DnoraDataType.TRIGRID:
             if type(self.grid()) == TriGrid:
                 return self.grid()
             else:
                 return None
 
-        return self._dnora_objects.get(dnora_obj)
+        return self._dnora_objects.get(obj_type)
 
     def __setitem__(self, key: DnoraDataType, value: DnoraObject) -> None:
         self._dnora_objects[key] = value

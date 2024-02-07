@@ -6,7 +6,7 @@ from dnora.model_formats import ModelFormat
 
 from dnora.converters import convert_swash_mat_to_netcdf
 
-from .run import ModelRunner
+from .model_runners import ModelRunner
 from pathlib import Path
 
 
@@ -30,10 +30,10 @@ class ModelExecuter:
     def write_input_file(
         self,
         input_file_writer: InputFileWriter = None,
-        filename=None,
-        folder=None,
-        dateformat=None,
-        format: str = None,
+        filename: str = None,
+        folder: str = None,
+        dateformat: str = None,
+        format: ModelFormat = ModelFormat.MODELRUN,
         grid_path: str = None,
         forcing_path: str = None,
         boundary_path: str = None,
@@ -62,7 +62,7 @@ class ModelExecuter:
             folder=folder,
             format=format,
             dateformat=dateformat,
-            obj_type=DnoraFileType.INPUTFILE,
+            obj_type=DnoraFileType.INPUT,
             edge_object=DnoraDataType.GRID,
         )
         file_object.create_folder()
@@ -70,6 +70,8 @@ class ModelExecuter:
         if self.dry_run():
             msg.info("Dry run! No files will be written.")
             output_files = [file_object.get_filepath()]
+            for file in output_files:
+                msg.to_file(file)
         else:
             # Write the grid using the InputFileWriter object
             output_files = input_file_writer(
@@ -78,9 +80,7 @@ class ModelExecuter:
             if type(output_files) is not list:
                 output_files = [output_files]
 
-        if self.dry_run():
-            for file in output_files:
-                msg.to_file(file)
+        self.exported_to[DnoraFileType.INPUT] = output_files
 
         return
 
@@ -105,7 +105,7 @@ class ModelExecuter:
         # Option 1) Use user provided
         # Option 2) Use knowledge of where has been exported
         # Option 3) Use default values to guess where is has previously been exported
-        exported_path = Path(self.model.exported_to(DnoraFileType.INPUTFILE)[0])
+        exported_path = Path(self.model.exported_to(DnoraFileType.INPUT)[0])
         primary_file = input_file or exported_path.name
         primary_folder = folder  # or str(exported_path.parent)
 
@@ -119,7 +119,7 @@ class ModelExecuter:
             filename=primary_file,
             folder=primary_folder,
             dateformat=dateformat,
-            obj_type=DnoraFileType.INPUTFILE,
+            obj_type=DnoraFileType.INPUT,
             edge_object=DnoraDataType.GRID,
         )
 

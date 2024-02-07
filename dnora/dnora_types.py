@@ -46,10 +46,24 @@ class DnoraDataType(Enum):
 
 
 class DnoraFileType(Enum):
-    INPUTFILE = auto()
+    GRID = auto()
+    SPECTRA1D = auto()
+    SPECTRA = auto()
+    WIND = auto()
+    CURRENT = auto()
+    WATERLEVEL = auto()
+    ICE = auto()
+    WAVESERIES = auto()
+    INPUT = auto()
 
 
-def object_type_from_string(obj_str: str) -> DnoraDataType:
+def data_type_from_string(obj_str: str | DnoraDataType) -> DnoraDataType:
     if isinstance(obj_str, DnoraDataType):
         return obj_str
     return DnoraDataType[obj_str.upper()]
+
+
+def file_type_from_string(obj_str: str | DnoraFileType) -> DnoraFileType:
+    if isinstance(obj_str, DnoraFileType):
+        return obj_str
+    return DnoraFileType[obj_str.upper()]
