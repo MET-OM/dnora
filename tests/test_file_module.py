@@ -40,7 +40,7 @@ class GetDefaultValues(unittest.TestCase):
 
         filename = file_module.get_default_value(
             key="folder",
-            obj_type=DnoraFileType.INPUTFILE,
+            obj_type=DnoraFileType.INPUT,
             primary=defaults["HOS_OCEAN"],
             fallback=defaults["MODELRUN"],
         )
