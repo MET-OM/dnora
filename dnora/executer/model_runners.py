@@ -1,5 +1,8 @@
 from subprocess import Popen
 from abc import ABC, abstractmethod
+from dnora.file_module import FileNames
+from dnora.model_formats import ModelFormat
+from .post_processors import PostProcessor, SwashMatToNc, HosOceanToNc
 
 
 class ModelRunner(ABC):
@@ -10,18 +13,17 @@ class ModelRunner(ABC):
 
     @abstractmethod
     def _preferred_format(self) -> str:
-        """For the file format using defauts.py, e.g. SWAN or WW3"""
+        """For the file format using defauts.py, e.g. ModelFormat.SWAN"""
         return
+
+    def post_processors(self) -> list[PostProcessor]:
+        return []
 
     @abstractmethod
     def __call__(
         self,
         input_file: str = None,
-        folder: str = None,
-        dateformat: str = None,
-        input_file_extension: str = None,
-        dry_run: bool = False,
-        mat_to_nc: bool = False,
+        model_folder: str = None,
     ) -> None:
         """Runs the model executable"""
 
@@ -34,7 +36,7 @@ class SWAN(ModelRunner):
 
     def _preferred_format(self) -> str:
         """For generation of file name."""
-        return "SWAN"
+        return ModelFormat.SWAN
 
     def __call__(self, input_file: str, model_folder: str) -> None:
         print("Running SWAN----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>")
@@ -50,11 +52,17 @@ class SWASH(ModelRunner):
 
     def _preferred_format(self) -> str:
         """For generation of file name."""
-        return "SWASH"
+        return ModelFormat.SWASH
 
-    def __call__(self, input_file: str, model_folder: str) -> None:
+    def _post_processors(self) -> list[PostProcessor]:
+        return [SwashMatToNc()]
+
+    def __call__(self, file_object: FileNames, mat_to_nc: bool = True) -> None:
         print("Running SWASH----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>")
-        p = Popen(["swashrun", "-input", input_file], cwd=model_folder)
+        p = Popen(
+            ["swashrun", "-input", file_object.get_filename()],
+            cwd=file_object.get_folder(),
+        )
         p.wait()
 
 
@@ -64,7 +72,10 @@ class HOS_ocean(ModelRunner):
 
     def _preferred_format(self) -> str:
         """For generation of file name."""
-        return "HOS_ocean"
+        return ModelFormat.HOS_OCEAN
+
+    def post_processors(self) -> list[PostProcessor]:
+        return [HosOceanToNc()]
 
     def __call__(self, input_file: str, model_folder: str) -> None:
         print("Running HOS_ocean------------------->>>>>>>>>>>>>>>>>>>>>>>>>>")
@@ -77,9 +88,9 @@ class REEF3D(ModelRunner):
         self.nproc = nproc
         return
 
-    def _preferred_format(self) -> str:
+    def preferred_format(self) -> str:
         """For generation of file name."""
-        return "REEF3D"
+        return ModelFormat.REEF3D
 
     def __call__(self, input_file: str, model_folder: str) -> None:
         p = Popen(["DiveMESH"], cwd=model_folder)

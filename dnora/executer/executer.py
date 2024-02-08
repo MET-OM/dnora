@@ -4,8 +4,7 @@ from dnora import msg
 from dnora.file_module import FileNames
 from dnora.model_formats import ModelFormat
 
-from dnora.converters import convert_swash_mat_to_netcdf
-
+from .post_processors import PostProcessor
 from .model_runners import ModelRunner
 from pathlib import Path
 
@@ -86,17 +85,18 @@ class ModelExecuter:
 
     def run_model(
         self,
-        model_executer: ModelRunner | None = None,
+        model_runner: ModelRunner | None = None,
         input_file: str | None = None,
         folder: str | None = None,
         dateformat: str | None = None,
+        post_processors: list[PostProcessor] | None = None,
         dry_run: bool = False,
-        mat_to_nc: bool = False,
+        **kwargs,
     ) -> None:
         """Run the model."""
         self._dry_run = dry_run
-        model_executer = model_executer or self._get_model_runner()
-        if model_executer is None:
+        model_runner = model_runner or self._get_model_runner()
+        if model_runner is None:
             raise Exception("Define a ModelRunner!")
 
         # We always assume that the model is located in the folder the input
@@ -109,11 +109,6 @@ class ModelExecuter:
         primary_file = input_file or exported_path.name
         primary_folder = folder  # or str(exported_path.parent)
 
-        # if hasattr(self, "_input_file_writer"):
-        #     extension = input_file_extension or self._input_file_writer._extension()
-        # else:
-        #     extension = input_file_extension or "swn"
-
         file_object = FileNames(
             model=self.model,
             filename=primary_file,
@@ -123,21 +118,20 @@ class ModelExecuter:
             edge_object=DnoraDataType.GRID,
         )
 
-        msg.header(model_executer, "Running model...")
+        msg.header(model_runner, "Running model...")
         msg.plain(f"Using input file: {file_object.get_filepath()}")
         if not self.dry_run():
-            model_executer(
-                input_file=file_object.filename(), model_folder=file_object.folder()
+            model_runner(
+                file_object=file_object,
+                model_folder=folder,
+                **kwargs,
             )
+
+            post_processors = post_processors or model_runner.post_processors()
+
+            if post_processors:
+                for post_processor in post_processors:
+                    print(post_processor)
+                    post_processor(self.model, file_object, **kwargs)
         else:
             msg.info("Dry run! Model will not run.")
-        if mat_to_nc:
-            input_file = f"{file_object.folder()}/{self.grid().name}.mat"
-            output_file = f"{file_object.folder()}/{self.grid().name}.nc"
-            convert_swash_mat_to_netcdf(
-                input_file=input_file,
-                output_file=output_file,
-                lon=self.grid().lon_edges(),
-                lat=self.grid().lat_edges(),
-                dt=1,
-            )
