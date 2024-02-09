@@ -42,8 +42,10 @@ from dnora.readers.abstract_readers import (
 from dnora.dnora_types import (
     ReaderFunction,
     DnoraDataType,
+    DnoraFileType,
     DnoraObject,
     data_type_from_string,
+    file_type_from_string,
 )
 from dnora.dnora_types import (
     Grid,
@@ -72,7 +74,8 @@ class ModelRun:
         self.name = copy(name)
         self._grid = copy(grid)
         self._time = pd.date_range(start_time, end_time, freq="H")
-        self._exported_to: dict[DnoraDataType : list[str]] = {}
+        self._data_exported_to: dict[DnoraDataType : list[str]] = {}
+        self._input_file_exported_to: dict[DnoraFileType : list[str]] = {}
         self._global_dry_run = dry_run
         self._dry_run = False  # Set by methods
 
@@ -578,20 +581,35 @@ class ModelRun:
                 dict_of_object_names[obj_type] = self[obj_type].name
         return dict_of_object_names
 
-    def exported_to(self, obj_type: DnoraDataType) -> str:
+    def data_exported_to(self, obj_type: DnoraDataType | str) -> str:
         """Returns the path the object (e.g. grid) was exported to.
 
         If object has not been exported, the default filename is returned as
         a best guess
         """
-
+        obj_type = data_type_from_string(obj_type)
         if self[obj_type] is None:
             return [""]
 
         default_name = FileNames(
             model=self, format=self._get_default_format(), obj_type=obj_type
         ).get_filepath()
-        return self._exported_to.get(obj_type, default_name)
+        return self._data_exported_to.get(obj_type, default_name)
+
+    def input_file_exported_to(self, file_type: DnoraFileType | str) -> str:
+        """Returns the path the object (e.g. grid) was exported to.
+
+        If object has not been exported, the default filename is returned as
+        a best guess
+        """
+        file_type = file_type_from_string(file_type)
+        if self[file_type] is None:
+            return [""]
+
+        default_name = FileNames(
+            model=self, format=self._get_default_format(), obj_type=file_type
+        ).get_filepath()
+        return self._input_file_exported_to.get(file_type, default_name)
 
     def time(self, crop_with: list[DnoraDataType | str] = None):
         """Returns times of ModelRun
@@ -647,7 +665,8 @@ class ModelRun:
     def __setitem__(self, key: DnoraDataType, value: DnoraObject) -> None:
         self._dnora_objects[key] = value
 
-    def _get_reader(self, obj_type: DnoraDataType) -> ReaderFunction:
+    def _get_reader(self, obj_type: DnoraDataType | str) -> ReaderFunction:
+        obj_type = data_type_from_string(obj_type)
         return self._reader_dict.get(obj_type)
 
     def _get_point_picker(self) -> PointPicker:

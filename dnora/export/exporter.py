@@ -47,7 +47,6 @@ class DataExporter:
 
     def __init__(self, model):
         self.model = model
-        self.exported_to = {}
 
     def export(
         self,
@@ -139,7 +138,9 @@ class DataExporter:
                 output_files = [output_files]
 
         # Store name and location where file was written
-        self.exported_to[file_type_from_string(obj_type.name)] = output_files
+        self.model._data_exported_to[data_type_from_string(obj_type.name)] = (
+            output_files
+        )
 
         for file in output_files:
             msg.to_file(file)
