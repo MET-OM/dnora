@@ -12,21 +12,11 @@ from dnora.aux_funcs import expand_area
 from typing import Union
 
 from dnora.defaults.default_reader import read_defaults
-from dnora.data_sources import DataSource
+from dnora.dnora_types import DataSource
 
 
 class TopoReader(ABC):
     """Abstract class for reading the bathymetry."""
-
-    def local(self) -> str:
-        """Returns the default local folder"""
-        defaults = read_defaults("data_sources.yml", from_module=True)
-        return defaults["local"]
-
-    def internal(self) -> str:
-        """Returns the default internal folder"""
-        defaults = read_defaults("data_sources.yml", from_module=True)
-        return defaults["internal"]
 
     @abstractmethod
     def __call__(self, grid: Union[Grid, TriGrid], **kwargs):
@@ -67,10 +57,7 @@ class TopoReader(ABC):
         """
         return (
             topo,
-            topo_lon,
-            topo_lat,
-            topo_x,
-            topo_y,
+            coord_dict,
             zone_number,
             zone_letter,
             metadata,
@@ -85,7 +72,7 @@ class TopoReader(ABC):
         pass
 
     def default_data_source(self) -> DataSource:
-        return DataSource.UNDEFINED
+        return DataSource.LOCAL
 
 
 class ConstantTopo(TopoReader):
@@ -100,13 +87,15 @@ class ConstantTopo(TopoReader):
         """Creates a trivial topography with all water points."""
         topo = np.full(grid.size(), self.depth)
         zone_number, zone_letter = grid.utm()
-
+        coord_dict = {
+            "lon": grid.lon(strict=True),
+            "lat": grid.lat(strict=True),
+            "x": grid.x(strict=True),
+            "y": grid.y(strict=True),
+        }
         return (
             topo,
-            grid.lon(strict=True),
-            grid.lat(strict=True),
-            grid.x(strict=True),
-            grid.y(strict=True),
+            coord_dict,
             zone_number,
             zone_letter,
             {"source": type(self).__name__},
@@ -130,11 +119,12 @@ class EMODNET(TopoReader):
         source: DataSource,
         tile: str = "C5",
         expansion_factor: float = 1.2,
-        folder: str = "/lustre/storeB/project/fou/om/WW3/bathy/emodnet2020",
-        year: int = 2020,
+        folder: str = None,
+        year: int = 2022,
         **kwargs,
     ) -> tuple:
-        self.source = f"{folder}/{tile}_{year}.nc"
+
+        self.folder = f"{folder}/EMODNET{year}/{tile}_{year}.nc"
         # Area is expanded a bit to not get in trouble in the meshing stage
         # when we interpoolate or filter
         lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
@@ -148,24 +138,21 @@ class EMODNET(TopoReader):
         import dask
 
         with dask.config.set(**{"array.slicing.split_large_chunks": True}):
-            with xr.open_mfdataset(self.source, preprocess=_crop) as ds:
+            with xr.open_mfdataset(self.folder, preprocess=_crop) as ds:
                 ds = ds.sel(lon=slice(lon[0], lon[1]), lat=slice(lat[0], lat[1]))
                 topo = -1 * ds.elevation.values
-                topo_lon = ds.lon.values
-                topo_lat = ds.lat.values
+                coord_dict = {"lon": ds.lon.values, "lat": ds.lat.values}
+
                 return (
                     topo,
-                    topo_lon,
-                    topo_lat,
-                    None,
-                    None,
+                    coord_dict,
                     None,
                     None,
                     {"source": f"EMODNET{year:.0f}"},
                 )
 
     def __str__(self):
-        return f"Reading EMODNET topography from {self.source}."
+        return f"Reading EMODNET topography from {self.folder}."
 
 
 class KartverketNo50m(TopoReader):

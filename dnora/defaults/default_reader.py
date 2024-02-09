@@ -1,7 +1,14 @@
+from __future__ import annotations
 from pathlib import Path
 import yaml
 from dotenv import load_dotenv
 import os
+import sys
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from dnora.data_sources import DataSource
+    from dnora.dnora_types import DnoraDataType
 
 
 def read_defaults(filename: str, from_module: bool = False):
@@ -15,20 +22,9 @@ def read_defaults(filename: str, from_module: bool = False):
     return default_values
 
 
-def data_sources(data_source: str) -> str:
-    data_source = data_source.lower()
-    if data_source.lower() not in ["local", "internal"]:
-        raise KeyError(
-            f"data_source should be 'local' or 'internal', not {data_source}!"
-        )
-    load_dotenv()
-    defaults = read_defaults("data_sources.yml", from_module=True)
+def read_environment_variable(obj_type: DnoraDataType, data_source: DataSource) -> str:
 
-    folder = os.getenv(f"DNORA_{data_source.upper()}") or defaults[data_source]
+    load_dotenv(f"{sys.path[0]}/.env")
+    value = os.getenv(f"DNORA_{obj_type.name}_PATH_{data_source.name}")
 
-    if data_source == "internal" and not folder:
-        raise Exception(
-            "You haven't set an internal location. Set DNORA_INTERNAL in your Linux environment or .env file!"
-        )
-
-    return folder
+    return value

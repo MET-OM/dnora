@@ -28,7 +28,7 @@ from dnora.spectra1d import Spectra1D, process
 from dnora.readers.abstract_readers import PointDataReader
 from dnora.waveseries import wave_parameters
 import inspect
-from dnora.data_sources import DataSource
+from dnora.dnora_types import DataSource
 
 
 def dict_of_wave_parameters():

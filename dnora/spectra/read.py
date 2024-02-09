@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from dnora import msg, aux_funcs
 from dnora.spectral_conventions import SpectralConvention
 import pandas as pd
-from dnora.data_sources import DataSource
+from dnora.dnora_types import DataSource
 
 
 # class ForceFeed(SpectraReader):

@@ -9,7 +9,7 @@ from typing import Union
 from dnora.grid import Grid, TriGrid
 
 from dnora.file_module import FileNames
-from dnora.data_sources import DataSource
+from dnora.dnora_types import DataSource
 
 # Import abstract classes and needed instances of them
 from dnora.pick.point_pickers import PointPicker, NearestGridPoint
@@ -22,8 +22,6 @@ from geo_skeletons.decorators import add_datavar
 from dnora import msg
 from dnora.cacher.cache_decorator import cached_reader
 
-from pathlib import Path
-from dnora.defaults.default_reader import data_sources
 
 from dnora.spectra1d.read import SpectraTo1D
 from dnora.waveseries.read import SpectraToWaveSeries
@@ -40,14 +38,12 @@ from dnora.readers.abstract_readers import (
 )
 
 from dnora.dnora_types import (
-    ReaderFunction,
     DnoraDataType,
     DnoraFileType,
-    DnoraObject,
     data_type_from_string,
     file_type_from_string,
 )
-from dnora.dnora_types import (
+from .object_type_manager import (
     Grid,
     Wind,
     Spectra,
@@ -56,7 +52,11 @@ from dnora.dnora_types import (
     WaveSeries,
     Current,
     Ice,
+    DnoraObject,
+    dnora_objects,
 )
+
+from dnora.readers.abstract_readers import ReaderFunction
 
 
 class ModelRun:
@@ -231,7 +231,7 @@ class ModelRun:
             **kwargs,
         )
 
-        obj = obj_type.value(name=name, **coord_dict)
+        obj = dnora_objects.get(obj_type)(name=name, **coord_dict)
         for key, value in data_dict.items():
             if obj.get(key) is None:
                 obj = add_datavar(key, append=True)(obj)  # Creates .hs() etc. methods

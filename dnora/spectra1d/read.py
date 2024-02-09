@@ -9,7 +9,7 @@ import xarray as xr
 from dnora import aux_funcs, msg
 
 
-from dnora.data_sources import DataSource
+from dnora.dnora_types import DataSource
 from dnora.readers.abstract_readers import SpectralDataReader
 
 

@@ -3,11 +3,11 @@ from abc import ABC, abstractmethod
 
 # Import objects
 
-from dnora.data_sources import DataSource
+from dnora.dnora_types import DataSource
 from dnora.spectral_conventions import SpectralConvention
 
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from dnora.dnora_types import DnoraDataType
@@ -113,3 +113,10 @@ class SpectralDataReader(PointDataReader):
                     Direction to. North = 0, East = 90.
         """
         return self._convention
+
+
+ReaderFunction = Union[
+    DataReader,
+    PointDataReader,
+    SpectralDataReader,
+]

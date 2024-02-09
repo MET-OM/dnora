@@ -1,14 +1,15 @@
 from .abstract_readers import DataReader, SpectralDataReader
-from dnora.data_sources import DataSource
+
 import pandas as pd
 import numpy as np
 import xarray as xr
 from dnora import aux_funcs
 from pathlib import Path
 from dnora.metaparameter.parameter_funcs import create_metaparameter_dict
-from dnora.dnora_types import DnoraDataType
-
+from dnora.dnora_types import DnoraDataType, DataSource
 from dnora.spectral_conventions import convert_2d_to_1d, SpectralConvention
+
+from dnora.modelrun.object_type_manager import dnora_objects
 
 
 class Netcdf(DataReader):
@@ -45,7 +46,7 @@ class Netcdf(DataReader):
 
         data_dict = {}
         metaparameter_dict = {}
-        for var, meta_var in obj_type.value.meta_dict.items():
+        for var, meta_var in dnora_objects.get(obj_type).meta_dict.items():
             ds_var = meta_var.find_me_in_ds(ds)
             ds_data = ds.get(ds_var)
             if ds_data is not None:
@@ -78,13 +79,13 @@ class ConstantGriddedData(DataReader):
         coord_dict["lat"] = grid.lat(strict=True)
         coord_dict["x"] = grid.x(strict=True)
         coord_dict["y"] = grid.y(strict=True)
-        if "time" in obj_type.value._coord_manager.added_coords():
+        if "time" in dnora_objects.get(obj_type)._coord_manager.added_coords():
             coord_dict["time"] = time
             obj_size = (len(time), grid.ny(), grid.nx())
         else:
             obj_size = grid.size()
 
-        variables = obj_type.value._coord_manager.added_vars().keys()
+        variables = dnora_objects.get(obj_type)._coord_manager.added_vars().keys()
 
         data_dict = {}
         for key in variables:
@@ -145,7 +146,7 @@ class ConstantPointData(SpectralDataReader):
 
         obj_size = []
         # Time is always first coord if exists
-        if "time" in obj_type.value._coord_manager.added_coords():
+        if "time" in dnora_objects.get(obj_type)._coord_manager.added_coords():
             coord_val = self.extra_coords.get(
                 "time", pd.date_range(start=start_time, end=end_time, freq="H").values
             )
@@ -155,7 +156,7 @@ class ConstantPointData(SpectralDataReader):
         # Inds always second (or first if time doesn't exist)
         obj_size.append(len(inds))
 
-        for added_coord in obj_type.value._coord_manager.added_coords():
+        for added_coord in dnora_objects.get(obj_type)._coord_manager.added_coords():
             if added_coord != "time":
                 coord_val = self.extra_coords.get(added_coord, np.linspace(1, 100, 100))
                 coord_dict[added_coord] = coord_val
@@ -192,7 +193,7 @@ class ConstantPointData(SpectralDataReader):
         else:
             non_dirp_ind = np.zeros(len(self.extra_coords.get("dirs"))).astype(bool)
 
-        variables = obj_type.value._coord_manager.added_vars().keys()
+        variables = dnora_objects.get(obj_type)._coord_manager.added_vars().keys()
 
         data_dict = {}
         if variables:  # If the object has addeed variables, create those

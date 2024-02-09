@@ -2,8 +2,19 @@
 from dnora.modelrun import ModelRun
 
 from dnora import spectra, wind, waterlevel
-
+from dnora.readers.generic_readers import ConstantGriddedData, ConstantPointData
 from dnora.dnora_types import DnoraDataType
+
+
+class Constant(ModelRun):
+    _reader_dict = {
+        DnoraDataType.WIND: ConstantGriddedData(),
+        DnoraDataType.SPECTRA: ConstantPointData(),
+        DnoraDataType.SPECTRA1D: ConstantPointData(),
+        DnoraDataType.ICE: ConstantGriddedData(),
+        DnoraDataType.WATERLEVEL: ConstantGriddedData(),
+        DnoraDataType.CURRENT: ConstantGriddedData(),
+    }
 
 
 class NORA3(ModelRun):

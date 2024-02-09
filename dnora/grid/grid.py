@@ -13,8 +13,11 @@ from .read import MshFile as topo_MshFile
 from .read_tr import MshFile as triang_MshFile
 from .tri_arangers import TriAranger
 from .mesh import Trivial as TrivialMesher
-from dnora.data_sources import DataSource
 from dnora.readers.abstract_readers import DataReader
+
+from dnora.dnora_types import DnoraDataType, DataSource, data_source_from_string
+
+from dnora.defaults import read_environment_variable
 
 
 class GridMethods:
@@ -53,18 +56,28 @@ class GridMethods:
     def import_topo(
         self,
         topo_reader: DataReader,
-        source: str | DataSource = DataSource.UNDEFINED,
+        source: str | DataSource = None,
         folder: str = None,
         **kwargs,
     ) -> None:
         """Reads the raw bathymetrical data."""
+        source = source or topo_reader.default_data_source()
+        source = data_source_from_string(source)
 
+        folder = folder or read_environment_variable(DnoraDataType.GRID, source)
         msg.header(topo_reader, "Importing topography...")
 
-        topo, lon, lat, x, y, zone_number, zone_letter, metadata = topo_reader(
+        topo, coord_dict, zone_number, zone_letter, metadata = topo_reader(
             self, source=source, folder=folder, **kwargs
         )
         print(topo_reader)
+
+        lon, lat, x, y = (
+            coord_dict.get("lon"),
+            coord_dict.get("lat"),
+            coord_dict.get("x"),
+            coord_dict.get("y"),
+        )
 
         if 0 in topo.shape:
             msg.warning(
