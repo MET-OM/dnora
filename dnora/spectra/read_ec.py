@@ -98,11 +98,14 @@ class ERA5(SpectralDataReader):
     def convention(self) -> str:
         return SpectralConvention.OCEAN
 
+    def default_data_source(self) -> DataSource:
+        return DataSource.REMOTE
+
     def post_processing(self):
         return RemoveEmpty()
 
     def get_coordinates(
-        self, grid, start_time, source: DataSource, folder: str
+        self, grid, start_time, source: DataSource, folder: str, **kwargs
     ) -> dict:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         # point_list = self.get_restricted_area()._point_list()
@@ -127,9 +130,9 @@ class ERA5(SpectralDataReader):
         grid,
         start_time,
         end_time,
-        inds,
         source: DataSource,
         folder: str,
+        inds,
         **kwargs,
     ) -> tuple[dict]:
         """Reads in all boundary spectra between the given times and at for the given indeces"""

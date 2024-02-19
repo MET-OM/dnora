@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from typing import Union
 from dnora.grid import Grid
 from dnora.metaparameter.parameter_funcs import create_metaparameter_dict
+from pathlib import Path
 
 # Import aux_funcsiliry functions
 from dnora import msg, aux_funcs
@@ -24,11 +25,11 @@ from .wave_parameters import (
     TpI,
 )
 from dnora.spectra1d import Spectra1D, process
-
+from dnora.aux_funcs import get_url
 from dnora.readers.abstract_readers import PointDataReader
 from dnora.waveseries import wave_parameters
 import inspect
-from dnora.dnora_types import DataSource
+from dnora.dnora_types import DataSource, DnoraDataType
 
 
 def dict_of_wave_parameters():
@@ -183,23 +184,45 @@ class E39(PointDataReader):
         else:
             return self._buoy_dict()[self._loc]
 
+    def _folder_filename(
+        self, source: DataSource, folder: str, filename: str
+    ) -> tuple[str]:
+        if source == DataSource.REMOTE:
+            folder = "https://thredds.met.no/thredds/dodsC/obs/buoy-svv-e39/%Y/%m"
+        if filename is None:
+            filename = f"%Y%m_E39_{self.loc()}_{self._mode}.nc"
+        return folder, filename
+
     def get_coordinates(
-        self, grid, start_time, source: DataSource, folder: str
+        self, grid, start_time, source: DataSource, folder: str, filename: str = None
     ) -> tuple:
         start_time = pd.to_datetime(start_time)
-        url = self.get_url(start_time, self.loc(), source)
+        folder, filename = self._folder_filename(source, folder, filename)
+        url = get_url(folder, filename, start_time)
         ds = xr.open_dataset(url).isel(time=[0])
         return {"lon": ds.longitude.values, "lat": ds.latitude.values}
 
     def __call__(
-        self, grid, start_time, end_time, inds, source: DataSource, **kwargs
+        self,
+        obj_type: DnoraDataType,
+        grid: Grid,
+        start_time: str,
+        end_time: str,
+        inds: list[int],
+        source: DataSource,
+        folder: str,
+        filename: str = None,
+        **kwargs,
     ) -> tuple:
         # loc = np.array(self._buoys())[inds][0]
+
+        folder, filename = self._folder_filename(source, folder, filename)
+
         months = aux_funcs.month_list(start_time, end_time)
 
         ds_list = []
         for month in months:
-            url = self.get_url(pd.to_datetime(month), self.loc(), source)
+            url = get_url(folder, filename, month)
             ds_list.append(xr.open_dataset(url))
         ds = xr.concat(ds_list, dim="time").sel(time=slice(start_time, end_time))
         ds["lon"] = np.nanmedian(ds.longitude.values)
@@ -220,21 +243,6 @@ class E39(PointDataReader):
         meta_dict = ds.attrs
 
         return coord_dict, data_dict, meta_dict, metaparameter_dict
-
-    def get_url(self, month, loc, source) -> str:
-        if source == DataSource.REMOTE:
-            return (
-                "https://thredds.met.no/thredds/dodsC/obs/buoy-svv-e39/"
-                + month.strftime("%Y")
-                + "/"
-                + month.strftime("%m")
-                + "/"
-                + month.strftime("%Y")
-                + month.strftime("%m")
-                + "_E39_"
-                + loc
-                + f"_{self._mode}.nc"
-            )
 
 
 # class WW3Nc(WaveSeriesReader):

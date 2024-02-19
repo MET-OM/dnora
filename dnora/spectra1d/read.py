@@ -1,13 +1,8 @@
-from abc import ABC, abstractmethod
 from copy import copy
 from dnora.spectra import Spectra
 import numpy as np
 
-from dnora.spectral_conventions import SpectralConvention, convert_2d_to_1d
-
-import xarray as xr
-from dnora import aux_funcs, msg
-
+from dnora.spectral_conventions import convert_2d_to_1d
 
 from dnora.dnora_types import DataSource
 from dnora.readers.abstract_readers import SpectralDataReader
@@ -24,7 +19,7 @@ class SpectraTo1D(SpectralDataReader):
         return convert_2d_to_1d(self._boundary._convention)
 
     def get_coordinates(
-        self, grid, start_time: str, source: DataSource, folder: str
+        self, grid, start_time: str, source: DataSource, folder: str, **kwargs
     ) -> dict[str : np.ndarray]:
         all_points = {
             "lon": self._boundary.lon(strict=True),

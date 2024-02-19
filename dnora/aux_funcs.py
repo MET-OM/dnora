@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 from scipy import interpolate
 import geopy.distance
+from pathlib import Path
+import calendar
 
 
 def distance_2points(lat1, lon1, lat2, lon2) -> float:
@@ -141,6 +143,21 @@ def int_list_of_days(start_time, end_time):
     day0 = min(pd.to_datetime(pd.Series(day_list(start_time, end_time))).dt.day)
     day1 = max(pd.to_datetime(pd.Series(day_list(start_time, end_time))).dt.day)
     return np.linspace(day0, day1, day1 - day0 + 1).astype(int)
+
+
+def create_monthly_stamps(start_time: str, end_time: str) -> tuple:
+    months = month_list(start_time, end_time)
+    start_times = []
+    end_times = []
+    for n, month in enumerate(months):
+        n_of_days = calendar.monthrange(
+            pd.to_datetime(month).year, pd.to_datetime(month).month
+        )[1]
+
+        start_times[n] = pd.to_datetime(month)
+        end_times[n] = pd.to_datetime(month) + pd.Timedelta(hours=(n_of_days * 24 - 1))
+
+    return pd.to_datetime(start_times), pd.to_datetime(end_times)
 
 
 def create_time_stamps(
@@ -559,3 +576,13 @@ def pyfimex(
     if ensemble_member == True:
         extra.reduceDimensionStartEnd("ensemble_member", 1, 1)
     pyfi.createFileWriter(extra, "netcdf", output_file)
+
+
+def get_url(
+    folder: str, filename: str, time_stamp: pd.DatetimeIndex | str = None
+) -> str:
+    if time_stamp is not None:
+        time_stamp = pd.to_datetime(time_stamp)
+        filename = time_stamp.strftime(filename)
+        folder = time_stamp.strftime(folder)
+    return Path(folder).joinpath(filename)

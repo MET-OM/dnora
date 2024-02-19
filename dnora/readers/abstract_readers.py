@@ -63,7 +63,7 @@ class DataReader(ABC):
 
 class PointDataReader(DataReader):
     @abstractmethod
-    def get_coordinates(self, grid, start_time, source, folder):
+    def get_coordinates(self, grid, start_time, source, folder, **kwargs):
         """Return a list of ALL the available coordinated in the source.
 
         These are needed fo the PointPicker object to choose the relevant

@@ -9,7 +9,6 @@ from typing import Union
 from dnora.grid import Grid, TriGrid
 
 from dnora.file_module import FileNames
-from dnora.dnora_types import DataSource
 
 # Import abstract classes and needed instances of them
 from dnora.pick.point_pickers import PointPicker, NearestGridPoint
@@ -22,7 +21,7 @@ from geo_skeletons.decorators import add_datavar
 from dnora import msg
 from dnora.cacher.cache_decorator import cached_reader
 
-
+from dnora.defaults import read_environment_variable
 from dnora.spectra1d.read import SpectraTo1D
 from dnora.waveseries.read import SpectraToWaveSeries
 
@@ -42,6 +41,7 @@ from dnora.dnora_types import (
     DnoraFileType,
     data_type_from_string,
     file_type_from_string,
+    DataSource,
 )
 from .object_type_manager import (
     Grid,
@@ -146,14 +146,18 @@ class ModelRun:
         if folder and source is DataSource.UNDEFINED:
             source = DataSource.LOCAL
 
-        if source in [DataSource.INTERNAL, DataSource.LOCAL]:
-            if folder is None:
-                folder = data_sources(source)
-        elif source == DataSource.REMOTE:
-            folder = ""
-
         if source == DataSource.UNDEFINED:
             source = reader.default_data_source()
+
+        if source in [DataSource.INTERNAL, DataSource.LOCAL]:
+            if folder is None:
+                folder = read_environment_variable(
+                    obj_type=obj_type, data_source=source
+                )
+        elif source == DataSource.REMOTE:
+            folder = None
+
+        folder = folder or ""
 
         return reader, name, source, folder
 
@@ -180,6 +184,7 @@ class ModelRun:
                 start_time=self.start_time(),
                 source=source,
                 folder=folder,
+                **kwargs,
             )
 
             all_points = PointSkeleton(

@@ -15,10 +15,10 @@ from dnora.dnora_types import DataSource
 from dnora import msg
 from dnora.aux_funcs import (
     create_time_stamps,
-    u_v_from_speed_dir,
     expand_area,
     lon_in_km,
     pyfimex,
+    get_url,
 )
 
 
@@ -52,6 +52,15 @@ class NorKyst800(DataReader):
         self.program = program
         return
 
+    def _folder_filename(
+        self, source: DataSource, folder: str, filename: str
+    ) -> tuple[str]:
+        if source == DataSource.REMOTE:
+            folder = "https://thredds.met.no/thredds/dodsC/sea/norkyst800mv0_1h"
+        if filename is None:
+            filename = "NorKyst-800m_ZDEPTHS_his.an.%Y%m%d00.nc"
+        return folder, filename
+
     def __call__(
         self,
         grid: Grid,
@@ -60,6 +69,8 @@ class NorKyst800(DataReader):
         source: DataSource,
         folder: str,
         expansion_factor: float,
+        filename: str = None,
+        **kwargs,
     ):
         """Reads in all grid points between the given times and at for the given indeces"""
         self.start_time = start_time
@@ -104,7 +115,8 @@ class NorKyst800(DataReader):
         ocr_list = []
         print("Apply >>> " + self.program)
         for n in range(len(file_times)):
-            url = self.get_url(file_times[n])
+            folder, filename = self._folder_filename(source, folder, filename)
+            url = get_url(folder, filename, file_times[n])
 
             msg.from_file(url)
             msg.plain(
@@ -189,11 +201,3 @@ class NorKyst800(DataReader):
             y,
             ds.attrs,
         )
-
-    @staticmethod
-    def get_url(time_stamp):
-        filename = (
-            "NorKyst-800m_ZDEPTHS_his.an." + time_stamp.strftime("%Y%m%d") + "00.nc"
-        )
-        url = "https://thredds.met.no/thredds/dodsC/sea/norkyst800mv0_1h/" + filename
-        return url

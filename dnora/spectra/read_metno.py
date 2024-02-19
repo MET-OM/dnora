@@ -12,6 +12,7 @@ from dnora import msg
 from dnora.aux_funcs import create_time_stamps
 from dnora.dnora_types import DataSource
 from dnora.readers.abstract_readers import SpectralDataReader
+from dnora.aux_funcs import get_url
 
 
 class WAM4km(SpectralDataReader):
@@ -23,11 +24,11 @@ class WAM4km(SpectralDataReader):
         last_file: str = "",
         lead_time: int = 0,
     ) -> None:
-        self.ignore_nan = copy(ignore_nan)
-        self.stride = copy(stride)
-        self.hours_per_file = copy(hours_per_file)
-        self.lead_time = copy(lead_time)
-        self.last_file = copy(last_file)
+        self.ignore_nan = ignore_nan
+        self.stride = stride
+        self.hours_per_file = hours_per_file
+        self.lead_time = lead_time
+        self.last_file = last_file
 
     def convention(self) -> SpectralConvention:
         return SpectralConvention.OCEAN
@@ -38,8 +39,25 @@ class WAM4km(SpectralDataReader):
     def post_processing(self):
         return RemoveEmpty()
 
+    def _folder_filename(
+        self, source: DataSource, folder: str, filename: str
+    ) -> tuple[str]:
+        if source == DataSource.REMOTE:
+            folder = (
+                "https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/%Y/%m"
+            )
+        if filename is None:
+            filename = f"MyWave_wam4_SPC_%Y%m%dT%HZ.nc"
+        return folder, filename
+
     def get_coordinates(
-        self, grid, start_time, source: DataSource, folder: str
+        self,
+        grid,
+        start_time,
+        source: DataSource,
+        folder: str,
+        filename: str = None,
+        **kwargs,
     ) -> dict:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
 
@@ -51,7 +69,8 @@ class WAM4km(SpectralDataReader):
             last_file=self.last_file,
             lead_time=self.lead_time,
         )
-        url = self.get_url(file_times[0], source)
+        folder, filename = self._folder_filename(source, folder, filename)
+        url = self.get_url(folder, filename, file_times[0])
 
         data = xr.open_dataset(url).isel(time=[0])
 
@@ -63,9 +82,10 @@ class WAM4km(SpectralDataReader):
         grid,
         start_time,
         end_time,
-        inds,
         source: DataSource,
         folder: str,
+        inds,
+        filename: str = None,
         **kwargs,
     ) -> tuple[dict]:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
@@ -92,7 +112,8 @@ class WAM4km(SpectralDataReader):
             ct = 1
             keep_trying = True
             while keep_trying:
-                url = self.get_url(file_time, source)
+                folder, filename = self._folder_filename(source, folder, filename)
+                url = self.get_url(folder, filename, file_time)
 
                 try:
                     with xr.open_dataset(url) as f:
@@ -175,34 +196,6 @@ class WAM4km(SpectralDataReader):
 
         return True
 
-    @staticmethod
-    def get_url(day, source: DataSource, folder: str):
-        if source == DataSource.REMOTE:
-            return (
-                "https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/"
-                + day.strftime("%Y")
-                + "/"
-                + day.strftime("%m")
-                + "/"
-                + day.strftime("%d")
-                + "/MyWave_wam4_SPC_"
-                + day.strftime("%Y%m%d")
-                + "T"
-                + day.strftime("%H")
-                + "Z.nc"
-            )
-        if source == DataSource.INTERNAL:
-            return (
-                f"{folder}/xxxxxxxxx/"
-                + day.strftime("%Y")
-                + "/"
-                + day.strftime("%m")
-                + "/MyWave_wam4_SPC_"
-                + day.strftime("%Y%m%d")
-            )
-        else:
-            return folder + "/MyWave_wam4_SPC_" + day.strftime("%Y%m%d")
-
 
 class NORA3(SpectralDataReader):
     def __init__(
@@ -223,8 +216,25 @@ class NORA3(SpectralDataReader):
     def default_data_source(self) -> DataSource:
         return DataSource.REMOTE
 
+    def _folder_filename(
+        self, source: DataSource, folder: str, filename: str
+    ) -> tuple[str]:
+        if source == DataSource.REMOTE:
+            folder = "https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/%Y/%m"
+        elif source == DataSource.INTERNAL:
+            folder = get_url(folder, "WINDSURFER/mw3hindcast/spectra")
+        if filename is None:
+            filename = "SPC_%Y%m%d00.nc"
+        return folder, filename
+
     def get_coordinates(
-        self, grid, start_time, source: DataSource, folder: str
+        self,
+        grid,
+        start_time,
+        source: DataSource,
+        folder: str,
+        filename: str = None,
+        **kwargs,
     ) -> dict:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         start_times, end_times, file_times = create_time_stamps(
@@ -235,7 +245,8 @@ class NORA3(SpectralDataReader):
             last_file=self.last_file,
             lead_time=self.lead_time,
         )
-        url = self.get_url(file_times[0], source, folder)
+        folder, filename = self._folder_filename(source, folder, filename)
+        url = self.get_url(folder, filename, file_times[0])
         data = xr.open_dataset(url).isel(time=[0])
 
         all_points = {"lon": data.longitude.values[0], "lat": data.latitude.values[0]}
@@ -246,9 +257,10 @@ class NORA3(SpectralDataReader):
         grid,
         start_time,
         end_time,
-        inds,
         source: DataSource,
         folder: str,
+        inds,
+        filename: str = None,
         **kwargs,
     ) -> tuple[dict]:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
@@ -269,7 +281,8 @@ class NORA3(SpectralDataReader):
         )
         bnd_list = []
         for n in range(len(file_times)):
-            url = self.get_url(file_times[n], source, folder)
+            folder, filename = self._folder_filename(source, folder, filename)
+            url = self.get_url(folder, filename, file_times[n])
             msg.from_file(url)
             msg.plain(f"Reading boundary spectra: {start_times[n]}-{end_times[n]}")
             with xr.open_dataset(url) as f:
@@ -291,31 +304,6 @@ class NORA3(SpectralDataReader):
         meta_dict.pop("direction_convention")
         metaparameter_dict = {}
         return coord_dict, data_dict, meta_dict, metaparameter_dict
-
-    @staticmethod
-    def get_url(day, source: str, folder: str) -> str:
-        if source == DataSource.REMOTE:
-            return (
-                "https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/"
-                + day.strftime("%Y")
-                + "/"
-                + day.strftime("%m")
-                + "/SPC"
-                + day.strftime("%Y%m%d")
-                + "00.nc"
-            )
-        if source == DataSource.INTERNAL:
-            return (
-                f"{folder}WINDSURFER/mw3hindcast/spectra/"
-                + day.strftime("%Y")
-                + "/"
-                + day.strftime("%m")
-                + "/SPC"
-                + day.strftime("%Y%m%d")
-                + "00.nc"
-            )
-        else:
-            return folder + "/SPC" + day.strftime("%Y%m%d") + "00.nc"
 
 
 class WW3_4km(SpectralDataReader):
@@ -349,7 +337,23 @@ class WW3_4km(SpectralDataReader):
     def default_data_source(self) -> DataSource:
         return DataSource.REMOTE
 
-    def get_coordinates(self, start_time, source: DataSource, folder: str) -> dict:
+    def _folder_filename(
+        self, source: DataSource, folder: str, filename: str
+    ) -> tuple[str]:
+        if source == DataSource.REMOTE:
+            folder = "https://thredds.met.no/thredds/dodsC/ww3_4km_archive_files/%Y/%m"
+        if filename is None:
+            filename = f"ww3_4km_spec_%Y%m%dT%HZ.nc"
+        return folder, filename
+
+    def get_coordinates(
+        self,
+        start_time,
+        source: DataSource,
+        folder: str,
+        filename: str = None,
+        **kwargs,
+    ) -> dict:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
 
         start_times, end_times, file_times = create_time_stamps(
@@ -360,7 +364,8 @@ class WW3_4km(SpectralDataReader):
             last_file=self.last_file,
             lead_time=self.lead_time,
         )
-        url = self.get_url(file_times[0], source, folder)
+        folder, filename = self._folder_filename(source, folder, filename)
+        url = self.get_url(folder, filename, file_times[0])
 
         data = xr.open_dataset(url).isel(time=[0])
 
@@ -369,7 +374,15 @@ class WW3_4km(SpectralDataReader):
         return all_points
 
     def __call__(
-        self, start_time, end_time, inds, source: DataSource, folder: str
+        self,
+        grid,
+        start_time,
+        end_time,
+        source: DataSource,
+        folder: str,
+        inds,
+        filename: str = None,
+        **kwargs,
     ) -> tuple[dict]:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         self.start_time = start_time
@@ -395,7 +408,8 @@ class WW3_4km(SpectralDataReader):
             ct = 1
             keep_trying = True
             while keep_trying:
-                url = self.get_url(file_time, source, folder)
+                folder, filename = self._folder_filename(source, folder, filename)
+                url = self.get_url(folder, filename, file_time)
                 try:
                     with xr.open_dataset(url) as f:
                         this_ds = f.sel(
@@ -478,54 +492,3 @@ class WW3_4km(SpectralDataReader):
             return False
 
         return True
-
-    def get_url(self, day, source, folder):
-        if source == DataSource.REMOTE:
-            url = (
-                "https://thredds.met.no/thredds/dodsC/ww3_4km_archive_files/"
-                + day.strftime("%Y")
-                + "/"
-                + day.strftime("%m")
-                + "/"
-                + day.strftime("%d")
-                + "/ww3_4km_"
-                + self.tile
-                + "_SPC_"
-                + day.strftime("%Y%m%d")
-                + "T"
-                + day.strftime("%H")
-                + "Z.nc"
-            )
-        elif source == DataSource.INTERNAL:
-            url = (
-                f"{folder}/xxxxx/"
-                + +day.strftime("%Y")
-                + "/"
-                + day.strftime("%m")
-                + "/"
-                + day.strftime("%d")
-                + "/ww3_4km_"
-                + self.tile
-                + "_SPC_"
-                + day.strftime("%Y%m%d")
-                + "T"
-                + day.strftime("%H")
-                + "Z.nc"
-            )
-        else:
-            url = (
-                f"{folder}/"
-                + +day.strftime("%Y")
-                + "/"
-                + day.strftime("%m")
-                + "/"
-                + day.strftime("%d")
-                + "/ww3_4km_"
-                + self.tile
-                + "_SPC_"
-                + day.strftime("%Y%m%d")
-                + "T"
-                + day.strftime("%H")
-                + "Z.nc"
-            )
-        return url

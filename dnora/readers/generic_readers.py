@@ -13,7 +13,10 @@ from dnora.modelrun.object_type_manager import dnora_objects
 
 
 class Netcdf(DataReader):
-    def __init__(self, files: str) -> None:
+    def default_data_source(self) -> DataSource:
+        return DataSource.LOCAL
+
+    def __init__(self, files: list[str] = None):
         self.files = files
 
     def __call__(
@@ -24,9 +27,17 @@ class Netcdf(DataReader):
         end_time,
         source: DataSource,
         folder: str,
+        filename: list[str] = None,
         **kwargs,
     ):
-        ds = xr.open_mfdataset(Path(folder).joinpath(self.files))
+
+        filename = filename or self.files
+
+        if filename is None:
+            raise ValueError("Provide at least one filename!")
+        elif not isinstance(filename, list):
+            filename = [filename]
+        ds = xr.open_mfdataset(Path(folder).joinpath(filename))
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
         coord_dict = {}
         # obj_type.value._coord_manager.added_coords()
@@ -125,7 +136,7 @@ class ConstantPointData(SpectralDataReader):
         self.fp = fp
         self.provided_convention = convention
 
-    def get_coordinates(self, grid, start_time, source, folder):
+    def get_coordinates(self, grid, start_time, source, folder, **kwargs):
         lon_all, lat_all = grid.lonlat(strict=True)
         x_all, y_all = grid.xy(strict=True)
 

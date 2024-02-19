@@ -7,8 +7,7 @@ import sys
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from dnora.data_sources import DataSource
-    from dnora.dnora_types import DnoraDataType
+    from dnora.dnora_types import DnoraDataType, DataSource
 
 
 def read_defaults(filename: str, from_module: bool = False):
@@ -25,6 +24,7 @@ def read_defaults(filename: str, from_module: bool = False):
 def read_environment_variable(obj_type: DnoraDataType, data_source: DataSource) -> str:
 
     load_dotenv(f"{sys.path[0]}/.env")
-    value = os.getenv(f"DNORA_{obj_type.name}_PATH_{data_source.name}")
-
+    value = os.getenv(f"DNORA_{data_source.name}_{obj_type.name}_PATH")
+    if value is None:
+        value = os.getenv(f"DNORA_{data_source.name}")
     return value
