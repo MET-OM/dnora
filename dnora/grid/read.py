@@ -208,14 +208,8 @@ class KartverketNo50m(TopoReader):
         topo_x = topo_x[mask]
         topo_y = topo_y[mask]
         topo = z[mask]
-        coord_dict = {'x': topo_x, 'y': topo_y}
-        return (
-            topo,
-            coord_dict
-            zone_number,
-            "W",
-            {"source": "Kartverket50m"},
-        )
+        coord_dict = {"x": topo_x, "y": topo_y}
+        return topo, coord_dict, zone_number, "W", {"source": "Kartverket50m"}
 
     def __str__(self):
         return f"Reading Kartverket topography from {self.source}."
@@ -267,7 +261,7 @@ class GEBCO(TopoReader):
         topo_lon = ds.lon.values.astype(float)
         topo_lat = ds.lat.values.astype(float)
 
-        coord_dict = {'lon': topo_lon, 'lat': topo_lat}
+        coord_dict = {"lon": topo_lon, "lat": topo_lat}
 
         return topo, coord_dict, None, None, {"source": f"GEBCO{year}"}
 
