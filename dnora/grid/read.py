@@ -3,7 +3,7 @@ from __future__ import annotations
 import xarray as xr
 from abc import ABC, abstractmethod
 import numpy as np
-from typing import Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from dnora.grid import Grid, TriGrid
@@ -18,7 +18,7 @@ class TopoReader(ABC):
     """Abstract class for reading the bathymetry."""
 
     @abstractmethod
-    def __call__(self, grid: Union[Grid, TriGrid], **kwargs):
+    def __call__(self, grid: Union[Grid, TriGrid], source: DataSource, **kwargs):
         """Reads the bathymetrical information from a source and returns the data.
 
         !!!! DEPTH VALUES ARE POSITIVE AND EVERYTHING ELSE (including 0)
@@ -53,7 +53,7 @@ class TopoReader(ABC):
         ----
 
         This method is called from within the Grid-object
-        """
+
         return (
             topo,
             coord_dict,
@@ -61,6 +61,7 @@ class TopoReader(ABC):
             zone_letter,
             metadata,
         )
+        """
 
     @abstractmethod
     def __str__(self):
@@ -299,7 +300,7 @@ class ForceFeed(TopoReader):
         return
 
     def __call__(
-        self, grid: Union[Grid, UnstrGrid], source: DataSource, **kwargs
+        self, grid: Union[Grid, TriGrid], source: DataSource, **kwargs
     ) -> tuple:
         # Just use the values it was forcefed on initialization
         topo = self.topo

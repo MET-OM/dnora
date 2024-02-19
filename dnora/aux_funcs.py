@@ -5,6 +5,7 @@ import geopy.distance
 from pathlib import Path
 import calendar
 import re
+import os
 
 
 def distance_2points(lat1, lon1, lat2, lon2) -> float:
