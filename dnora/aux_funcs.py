@@ -4,6 +4,7 @@ from scipy import interpolate
 import geopy.distance
 from pathlib import Path
 import calendar
+import re
 
 
 def distance_2points(lat1, lon1, lat2, lon2) -> float:
@@ -149,13 +150,15 @@ def create_monthly_stamps(start_time: str, end_time: str) -> tuple:
     months = month_list(start_time, end_time)
     start_times = []
     end_times = []
-    for n, month in enumerate(months):
+    for month in months:
         n_of_days = calendar.monthrange(
             pd.to_datetime(month).year, pd.to_datetime(month).month
         )[1]
 
-        start_times[n] = pd.to_datetime(month)
-        end_times[n] = pd.to_datetime(month) + pd.Timedelta(hours=(n_of_days * 24 - 1))
+        start_times.append(pd.to_datetime(month))
+        end_times.append(
+            pd.to_datetime(month) + pd.Timedelta(hours=(n_of_days * 24 - 1))
+        )
 
     return pd.to_datetime(start_times), pd.to_datetime(end_times)
 
@@ -585,4 +588,6 @@ def get_url(
         time_stamp = pd.to_datetime(time_stamp)
         filename = time_stamp.strftime(filename)
         folder = time_stamp.strftime(folder)
-    return Path(folder).joinpath(filename)
+    url = Path(folder).joinpath(filename)
+    url = re.sub(f"https:/", "https://", str(url), 1)
+    return url

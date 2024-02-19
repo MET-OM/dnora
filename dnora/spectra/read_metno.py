@@ -224,7 +224,7 @@ class NORA3(SpectralDataReader):
         elif source == DataSource.INTERNAL:
             folder = get_url(folder, "WINDSURFER/mw3hindcast/spectra")
         if filename is None:
-            filename = "SPC_%Y%m%d00.nc"
+            filename = "SPC%Y%m%d00.nc"
         return folder, filename
 
     def get_coordinates(
@@ -245,8 +245,9 @@ class NORA3(SpectralDataReader):
             last_file=self.last_file,
             lead_time=self.lead_time,
         )
+
         folder, filename = self._folder_filename(source, folder, filename)
-        url = self.get_url(folder, filename, file_times[0])
+        url = get_url(folder, filename, file_times[0])
         data = xr.open_dataset(url).isel(time=[0])
 
         all_points = {"lon": data.longitude.values[0], "lat": data.latitude.values[0]}
@@ -282,7 +283,7 @@ class NORA3(SpectralDataReader):
         bnd_list = []
         for n in range(len(file_times)):
             folder, filename = self._folder_filename(source, folder, filename)
-            url = self.get_url(folder, filename, file_times[n])
+            url = get_url(folder, filename, file_times[n])
             msg.from_file(url)
             msg.plain(f"Reading boundary spectra: {start_times[n]}-{end_times[n]}")
             with xr.open_dataset(url) as f:

@@ -39,6 +39,9 @@ class NORA3(DataReader):
     DOI: 10.1175/JAMC-D-21-0029.1
     """
 
+    def default_data_source(self) -> DataSource:
+        return DataSource.REMOTE
+
     def _folder_filename(
         self, source: DataSource, folder: str, filename: str
     ) -> tuple[str]:
@@ -49,7 +52,7 @@ class NORA3(DataReader):
         elif source == DataSource.INTERNAL:
             folder = get_url(folder, "NORA3/atmosphere/atm_hourly")
         if filename is None:
-            filename = "arome3km_1hr_%Y%M.nc"
+            filename = "arome3km_1hr_%Y%m.nc"
         return folder, filename
 
     def __call__(
@@ -87,12 +90,13 @@ class NORA3(DataReader):
 
         wnd_list = []
         print("Apply >>> " + program)
-        for t0, t1 in zip(start_times, end_times):
-            folder, filename = self._folder_filename(source, folder, filename)
+        for n, (t0, t1) in enumerate(zip(start_times, end_times)):
+            folder, filename = self._folder_filename(source, folder, filename=None)
             url = get_url(folder, filename, t0)
             msg.from_file(url)
             nc_fimex = f"dnora_wnd_temp/wind_{n:04.0f}_MetNo_NORA3.nc"
             # Apply pyfimex or fimex
+
             if program == "pyfimex":
                 pyfimex(
                     input_file=url,
@@ -102,7 +106,7 @@ class NORA3(DataReader):
                     yAxisValues=np.arange(lat[0], lat[1] + dlat, dlat),
                     selectVariables=["wind_speed", "wind_direction"],
                     reduceTime_start=t0.strftime("%Y-%m-%dT%H:%M:%S"),
-                    reduceTime_end=t1_end.strftime("%Y-%m-%dT%H:%M:%S"),
+                    reduceTime_end=t1.strftime("%Y-%m-%dT%H:%M:%S"),
                 )
             elif program == "fimex":
                 fimex_command = [

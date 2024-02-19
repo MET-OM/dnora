@@ -7,11 +7,10 @@ from typing import Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from dnora.grid import Grid, TriGrid
-from dnora.aux_funcs import expand_area
+from dnora.aux_funcs import expand_area, get_url
 
 from typing import Union
 
-from dnora.defaults.default_reader import read_defaults
 from dnora.dnora_types import DataSource
 
 
@@ -124,7 +123,8 @@ class EMODNET(TopoReader):
         **kwargs,
     ) -> tuple:
 
-        self.folder = f"{folder}/EMODNET{year}/{tile}_{year}.nc"
+        folder = get_url(folder, f"EMODNET{year}")
+        self.files = get_url(folder, f"{tile}_{year}.nc")
         # Area is expanded a bit to not get in trouble in the meshing stage
         # when we interpoolate or filter
         lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
@@ -138,7 +138,7 @@ class EMODNET(TopoReader):
         import dask
 
         with dask.config.set(**{"array.slicing.split_large_chunks": True}):
-            with xr.open_mfdataset(self.folder, preprocess=_crop) as ds:
+            with xr.open_mfdataset(self.files, preprocess=_crop) as ds:
                 ds = ds.sel(lon=slice(lon[0], lon[1]), lat=slice(lat[0], lat[1]))
                 topo = -1 * ds.elevation.values
                 coord_dict = {"lon": ds.lon.values, "lat": ds.lat.values}
@@ -152,7 +152,7 @@ class EMODNET(TopoReader):
                 )
 
     def __str__(self):
-        return f"Reading EMODNET topography from {self.folder}."
+        return f"Reading EMODNET topography from {self.files}."
 
 
 class KartverketNo50m(TopoReader):
@@ -167,35 +167,31 @@ class KartverketNo50m(TopoReader):
     Contributed by: https://github.com/emiliebyer
     """
 
-    def __init__(
-        self,
-        expansion_factor: float = 1.2,
-        zone_number: int = 33,
-        tile: str = "B1008",
-        folder: str = "/lustre/storeB/project/fou/om/WW3/bathy/kartverket_50m_x_50m",
-    ) -> Tuple:
-        self.source = f"{folder}/{tile}_grid50_utm{zone_number}.xyz"
-        self.expansion_factor = expansion_factor
-        self.zone_number = zone_number
-
-        return
+    def _folder(self, source: DataSource, folder: str):
+        if source == DataSource.INTERNAL:
+            return get_url(folder, "kartverket_50m_x_50m")
+        else:
+            return get_url(folder, "KartverketNo50m")
 
     def __call__(
         self,
         grid: Union[Grid, TriGrid],
         source: DataSource,
+        folder: str,
         expansion_factor: float = 1.2,
         zone_number: int = 33,
         tile: str = "B1008",
-        folder: str = "/lustre/storeB/project/fou/om/WW3/bathy/kartverket_50m_x_50m",
         **kwargs,
     ) -> tuple:
         # Area is expanded a bit to not get in trouble in the meshing stage
         # when we interpoolate or filter
-        self.source = f"{folder}/{tile}_grid50_utm{zone_number}.xyz"
-        x, y = expand_area(grid.edges("x"), grid.edges("y"), self.expansion_factor)
 
-        print(f"Expansion factor: {self.expansion_factor}")
+        folder = self._folder(source, folder)
+
+        self.source = get_url(folder, f"{tile}_grid50_utm{zone_number}.xyz")
+        x, y = expand_area(grid.edges("x"), grid.edges("y"), expansion_factor)
+
+        print(f"Expansion factor: {expansion_factor}")
 
         import dask.dataframe as dd
 
@@ -212,13 +208,10 @@ class KartverketNo50m(TopoReader):
         topo_x = topo_x[mask]
         topo_y = topo_y[mask]
         topo = z[mask]
-
+        coord_dict = {'x': topo_x, 'y': topo_y}
         return (
             topo,
-            None,
-            None,
-            topo_x,
-            topo_y,
+            coord_dict
             zone_number,
             "W",
             {"source": "Kartverket50m"},
@@ -228,7 +221,7 @@ class KartverketNo50m(TopoReader):
         return f"Reading Kartverket topography from {self.source}."
 
 
-class GEBCO2021(TopoReader):
+class GEBCO(TopoReader):
     """Reads the GEBCO_2021 gridded bathymetric data set.
     A global terrain model for ocean and land,
     providing elevation data, in meters, on a 15 arc-second interval grid.
@@ -238,16 +231,25 @@ class GEBCO2021(TopoReader):
     Contributed by: https://github.com/emiliebyer
     """
 
+    def _folder(self, source: DataSource, folder: str, year: int):
+        if source == DataSource.INTERNAL:
+            return get_url(folder, f"gebco{year}")
+        else:
+            return get_url(folder, f"GEBCO{year}")
+
     def __call__(
         self,
         grid: Union[Grid, TriGrid],
         source: DataSource,
+        folder: str,
         expansion_factor: float = 1.2,
         tile: str = "n61.0_s59.0_w4.0_e6.0",
-        folder: str = "/lustre/storeB/project/fou/om/WW3/bathy/gebco2021",
+        year: int = 2021,
         **kwargs,
     ) -> tuple:
-        self.source = f"{folder}/gebco_2021_{tile}.nc"
+
+        folder = self._folder(source, folder, year)
+        self.source = get_url(folder, f"gebco_2021_{tile}.nc")
         # Area is expanded a bit to not get in trouble in the meshing stage
         # when we interpoolate or filter
 
@@ -265,10 +267,12 @@ class GEBCO2021(TopoReader):
         topo_lon = ds.lon.values.astype(float)
         topo_lat = ds.lat.values.astype(float)
 
-        return topo, topo_lon, topo_lat, None, None, None, None, {"source": "GEBCO2021"}
+        coord_dict = {'lon': topo_lon, 'lat': topo_lat}
+
+        return topo, coord_dict, None, None, {"source": f"GEBCO{year}"}
 
     def __str__(self):
-        return f"Reading GEBCO2021 topography from {self.source}."
+        return f"Reading GEBCO topography from {self.source}."
 
 
 # class Merge(TopoReader):
