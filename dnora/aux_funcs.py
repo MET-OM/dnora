@@ -160,7 +160,8 @@ def create_monthly_stamps(start_time: str, end_time: str) -> tuple:
         end_times.append(
             pd.to_datetime(month) + pd.Timedelta(hours=(n_of_days * 24 - 1))
         )
-
+    start_times[0] = np.max([start_times[0], pd.to_datetime(start_time)])
+    end_times[-1] = np.min([end_times[-1], pd.to_datetime(end_time)])
     return pd.to_datetime(start_times), pd.to_datetime(end_times)
 
 

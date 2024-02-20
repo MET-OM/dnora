@@ -94,9 +94,11 @@ class NORA3(DataReader):
             folder, filename = self._folder_filename(source, folder, filename=None)
             url = get_url(folder, filename, t0)
             msg.from_file(url)
+            msg.plain(
+                f"Reading wind: {t0.strftime('%Y-%m-%d %H:%M:00')}-{t1.strftime('%Y-%m-%d %H:%M:00')}"
+            )
             nc_fimex = f"dnora_wnd_temp/wind_{n:04.0f}_MetNo_NORA3.nc"
             # Apply pyfimex or fimex
-
             if program == "pyfimex":
                 pyfimex(
                     input_file=url,
