@@ -19,6 +19,8 @@ from dnora.dnora_types import DnoraDataType, DataSource, data_source_from_string
 
 from dnora.defaults import read_environment_variable
 
+from pathlib import Path
+
 
 class GridMethods:
     @classmethod
@@ -44,14 +46,18 @@ class GridMethods:
         return grid
 
     @classmethod
-    def from_netcdf(cls, filename: str):
-        ds = xr.open_dataset(filename)
+    def from_netcdf(cls, filename: str, folder: str = ""):
+        filepath = Path(folder).joinpath(filename)
+        msg.from_file(filepath)
+        ds = xr.open_dataset(filepath)
         grid = cls.from_ds(ds, topo_var_name="topo")
         return grid
 
-    def export_grid(self, filename: str = "dnora_grid") -> None:
+    def to_netcdf(self, filename: str = "dnora_grid.nc", folder: str = "") -> None:
         """Exports grid to netcdf file"""
-        self.ds().to_netcdf(filename + ".nc")
+        filepath = Path(folder).joinpath(filename)
+        msg.to_file(filepath)
+        self.ds().to_netcdf(filepath)
 
     def import_topo(
         self,
@@ -217,9 +223,9 @@ class Grid(GriddedSkeleton, GridMethods):
             NY,
         ) = aux_funcs.read_ww3_info(filename)
 
-        filename = Path(folder) / f"{gridname}_bathy.txt"
+        filename = Path(folder).joinpath(f"{gridname}_bathy.txt")
         topo = np.loadtxt(filename).reshape((NY, NX))
-        filename = Path(folder) / f"{gridname}_mapsta.txt"
+        filename = Path(folder).joinpath(f"{gridname}_mapsta.txt")
         mask = (
             np.loadtxt(filename).reshape((NY, NX)) == 2
         )  # Boundary points given as value 2
@@ -254,7 +260,8 @@ class Grid(GriddedSkeleton, GridMethods):
 
         return np.ceil(self.ny() / abs_diff).astype(int)
 
-    from .read import MshFile as topo_MshFile
+
+# from .read import MshFile as topo_MshFile
 
 
 @add_datavar(name="topo", default_value=999.0)
