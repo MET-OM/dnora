@@ -18,6 +18,7 @@ from .model_formats import ModelFormat
 class FileNames:
     model: ModelRun
     obj_type: DnoraDataType | DnoraFileType = None
+    obj_name: str = None
     format: ModelFormat = ModelFormat.MODELRUN
     filename: str = None
     folder: str = None
@@ -35,6 +36,10 @@ class FileNames:
 
         if self.edge_object is None:
             self.edge_object = self.obj_type
+
+        if self.obj_name is None and self.obj_type is not None:
+            if self.model[self.obj_type] is not None:
+                self.obj_name = self.model[self.obj_type].name
 
     def get_start_time(self):
         if self.start_time is not None:
@@ -77,6 +82,8 @@ class FileNames:
         extension = extension or get_default_value(
             "extension", self.obj_type, self.primary, self.fallback
         )
+        if clean:
+            filename = clean_filename(filename)
         if filename == "":
             return filename
         if extension is None:
@@ -89,8 +96,11 @@ class FileNames:
         folder = self.folder or get_default_value(
             key, self.obj_type, self.primary, self.fallback
         )
+        folder = str(Path(self.replace_placeholders(folder, edge_object=edge_object)))
 
-        return str(Path(self.replace_placeholders(folder, edge_object=edge_object)))
+        if clean:
+            folder = clean_filename(folder)
+        return folder
 
     def get_filepath(
         self,
@@ -103,9 +113,14 @@ class FileNames:
     ) -> str:
         return add_folder_to_filename(
             self.get_filename(
-                extension, start_time, end_time, edge_object=edge_object, key=key
+                extension,
+                start_time,
+                end_time,
+                edge_object=edge_object,
+                key=key,
+                clean=clean,
             ),
-            self.get_folder(edge_object=edge_object),
+            self.get_folder(edge_object=edge_object, clean=clean),
         )
 
     def create_folder(self, key: str = "folder", edge_object: str = None) -> None:
@@ -123,10 +138,7 @@ class FileNames:
         edge_object: DnoraDataType = None,
     ) -> str:
 
-        if isinstance(self.obj_type, DnoraDataType):
-            unclean_string = replace_object_type_name(
-                unclean_string, self.model[self.obj_type]
-            )
+        unclean_string = replace_object_type_name(unclean_string, self.obj_name)
 
         unclean_string = replace_modelrun_name(unclean_string, self.model.name)
 
@@ -268,7 +280,6 @@ def replace_objects(
     e.g. #Grid_#Forcing_file.txt, [Grid(..., name="Sula"), Forcing(..., name='NORA3')]
         -> Sula_NORA3_file.txt
     """
-
     for obj_type, obj_name in dict_of_object_names.items():
         if obj_name is not None:
             filename = re.sub(f"#{obj_type.name}", obj_name, filename, 1)
@@ -277,15 +288,15 @@ def replace_objects(
 
 
 def replace_object_type(filename: str, obj_type: DnoraDataType) -> str:
-    "Replaces the #ObjectType tag to e.g. Boundary of Forcing with lowe case"
-    return re.sub(f"#ObjectType", obj_type.name.lower(), filename, flags=re.IGNORECASE)
+    "Replaces the #DataType tag to e.g. Boundary of Forcing with lowe case"
+    return re.sub(f"#DataType", obj_type.name.lower(), filename, flags=re.IGNORECASE)
 
 
-def replace_object_type_name(filename: str, obj: DnoraObject) -> str:
+def replace_object_type_name(filename: str, obj_name: str) -> str:
     "Replaces the #ObjectName tag with name of primary object"
-    if obj is None:
+    if obj_name is None:
         return filename
-    return re.sub(f"#ObjectName", obj.name.lower(), filename)
+    return re.sub(f"#ObjectName", obj_name.lower(), filename)
 
 
 def replace_modelrun_name(filename: str, modelrun_name: str) -> str:

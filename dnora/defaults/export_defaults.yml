@@ -119,7 +119,7 @@ REEF3D:
     extension: 'txt'
 
 CACHE:
-  filename: "#DataType_#GRID_#Lon0_#Lon1_#Lat0_#Lat1_#T0"
+  filename: "#DataType_#Lon0_#Lon1_#Lat0_#Lat1_#T0"
   dateformat: '%Y-%m'
   extension: 'nc'
   folder: "#DataType_cache/#ObjectName"

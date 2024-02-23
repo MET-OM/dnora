@@ -5,37 +5,26 @@
 # from ..wlv import WaterLevel
 # from ..ocr import OceanCurrent
 from ..file_module import FileNames
-import glob, os
+import glob
 from copy import copy
-from calendar import monthrange
 from .. import msg
 import pandas as pd
 import numpy as np
 import re
-from geo_skeletons import GriddedSkeleton
 
-from ..dnora_types import DnoraDataType
-from ..model_formats import ModelFormat
-from ..export.templates import Cacher
-from ..readers.generic_readers import DataReader
+from dnora.dnora_types import DnoraDataType
+from dnora.model_formats import ModelFormat
+from dnora.readers.generic_readers import DataReader
 
 
-class DummyDnoraObject(GriddedSkeleton):
-    """Created as a placeholder for the real object to have the .name interface for creating filenames."""
-
-    def __init__(self, name: str):
-        super().__init__(x=0, y=0, name=name)
-
-
-def cached_reader(dnora_obj, reader_function):
-    def outer_wrapper(import_method):
+def cached_reader(obj_type: DnoraDataType, reader_function: DataReader):
+    def outer_wrapper(import_method):  # import_method is e.g. modelrun.import_spectra()
         def wrapper(
             *args,
             cache_name: str = None,
             read_cache: bool = False,
             write_cache: bool = False,
             patch: bool = False,
-            dry_run: bool = False,
             **kwargs,
         ):
             def get_reader(args, kwargs):
@@ -43,11 +32,11 @@ def cached_reader(dnora_obj, reader_function):
                 if kwargs.get("reader") is not None:
                     reader = kwargs.get("reader")
                 else:
-                    new_args = []
+                    # new_args = []
                     for arg in args:
                         if isinstance(arg, DataReader):
                             reader = arg
-                reader = reader or args[0]._get_reader(dnora_obj)
+                reader = reader or args[0]._get_reader(obj_type)
                 return reader
 
             def determine_patch_periods():
@@ -55,7 +44,7 @@ def cached_reader(dnora_obj, reader_function):
                 adter reading cached data"""
 
                 # This is not optimal, but seems to work
-                times = mrun.dict_of_objects().get(dnora_obj).time()
+                times = mrun.dict_of_objects().get(obj_type).time()
                 dt = times[1] - times[0]
                 wanted_times = pd.date_range(
                     start=mrun.start_time(), end=mrun.end_time(), freq=dt
@@ -96,31 +85,31 @@ def cached_reader(dnora_obj, reader_function):
                 given_reader = get_reader(args, kwargs)
                 if given_reader is not None:
                     name = given_reader.name()
-
-            # FileObject takes names from the dict of objects, so create one here
             if name is None:
                 raise ValueError("Provide a DataReader!")
 
-            mrun[dnora_obj] = DummyDnoraObject(name=name)
             file_object = FileNames(
                 format=ModelFormat.CACHE,
-                obj_type=dnora_obj,
+                obj_type=obj_type,
+                obj_name=name,
                 model=mrun,
                 edge_object=DnoraDataType.GRID,
                 filename=cache_name,
             )
-            mrun[dnora_obj] = None
 
-            file_object.create_folder()
+            create_folder = (
+                not (kwargs.get("dry_run", False) or mrun.dry_run()) and write_cache
+            )
+            if create_folder:
+                file_object.create_folder()
             files = glob.glob(f"{file_object.get_filepath()[0:-3]}*")
-
             reader = reader_function(files=files)
 
             if files and read_cache:
                 new_kwargs = copy(kwargs)
                 new_kwargs["name"] = name
-                if kwargs.get(f"{dnora_obj.name.lower()}_reader") is not None:
-                    new_kwargs[f"{dnora_obj.name.lower()}_reader"] = reader
+                if kwargs.get(f"{obj_type.name.lower()}_reader") is not None:
+                    new_kwargs[f"{obj_type.name.lower()}_reader"] = reader
                     new_args = args
                 else:
                     new_args = []
@@ -132,7 +121,7 @@ def cached_reader(dnora_obj, reader_function):
                             new_args.append(arg)
                     new_args = tuple(new_args)
 
-                new_kwargs[f"{dnora_obj.name.lower()}_reader"] = reader
+                new_kwargs[f"{obj_type.name.lower()}_reader"] = reader
                 import_method(*new_args, **new_kwargs)
             else:
                 import_method(*args, **kwargs)
@@ -149,14 +138,14 @@ def cached_reader(dnora_obj, reader_function):
                         mrun_temp.start_time = t0
                         mrun_temp.end_time = t1
                         exec(
-                            f"mrun_temp.import_{dnora_obj.lower()}(*temp_args, **kwargs)"
+                            f"mrun_temp.import_{obj_type.lower()}(*temp_args, **kwargs)"
                         )
-                        mrun.dict_of_objects().get(dnora_obj)._absorb_object(
-                            mrun_temp.dict_of_objects().get(dnora_obj), "time"
+                        mrun.dict_of_objects().get(obj_type)._absorb_object(
+                            mrun_temp.dict_of_objects().get(obj_type), "time"
                         )
 
             if write_cache:
-                mrun.cache(dnora_obj)
+                mrun.cache(obj_type)
 
         return wrapper
 
