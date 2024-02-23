@@ -1,4 +1,4 @@
-from .abstract_readers import DataReader, SpectralDataReader
+from .abstract_readers import PointDataReader, DataReader, SpectralDataReader
 
 import pandas as pd
 import numpy as np
@@ -10,6 +10,73 @@ from dnora.dnora_types import DnoraDataType, DataSource
 from dnora.spectral_conventions import convert_2d_to_1d, SpectralConvention
 
 from dnora.modelrun.object_type_manager import dnora_objects
+from dnora.aux_funcs import get_url
+from dnora import msg
+
+
+class PointNetcdf(SpectralDataReader):
+    def default_data_source(self) -> DataSource:
+        return DataSource.LOCAL
+
+    def __init__(self, files: list[str] = None):
+        self.files = files
+
+    def get_coordinates(
+        self, grid, start_time, source, folder, filename: list[str] = None, **kwargs
+    ):
+        filename = filename or self.files
+        if filename is None:
+            raise ValueError("Provide at least one filename!")
+        filepath = get_url(folder, filename, get_list=True)
+        ds = xr.open_dataset(filepath[0])
+        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
+        self.set_convention(ds.attrs.get("spectral_convention", "ocean"))
+        return {"lon": lon, "lat": lat, "x": x, "y": y}
+
+    def __call__(
+        self,
+        obj_type: DnoraDataType,
+        grid,
+        start_time,
+        end_time,
+        source: DataSource,
+        folder: str,
+        inds: list[int],
+        filename: list[str] = None,
+        **kwargs,
+    ):
+
+        filename = filename or self.files
+
+        if filename is None:
+            raise ValueError("Provide at least one filename!")
+        filepath = get_url(folder, filename, get_list=True)
+        ds = xr.open_mfdataset(filepath)
+        for fn in filepath:
+            msg.from_file(fn)
+        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
+
+        times = slice(start_time, end_time)
+
+        ds = ds.sel(inds=inds, time=times)
+
+        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
+        coord_dict = {"x": x, "y": y, "lon": lon, "lat": lat}
+        for c in list(ds.coords):
+            if c not in ["inds"]:
+                coord_dict[c] = ds.get(c).values
+
+        data_dict = {}
+        metaparameter_dict = {}
+        for var, meta_var in dnora_objects.get(obj_type).meta_dict.items():
+            ds_var = meta_var.find_me_in_ds(ds)
+            ds_data = ds.get(ds_var)
+            if ds_data is not None:
+                data_dict[var] = ds_data.values
+                metaparameter_dict[var] = meta_var
+
+        meta_dict = ds.attrs
+        return coord_dict, data_dict, meta_dict, metaparameter_dict
 
 
 class Netcdf(DataReader):
@@ -35,12 +102,11 @@ class Netcdf(DataReader):
 
         if filename is None:
             raise ValueError("Provide at least one filename!")
-        elif not isinstance(filename, list):
-            filename = [filename]
-        ds = xr.open_mfdataset(Path(folder).joinpath(filename))
+        filepath = get_url(folder, filename, get_list=True)
+        ds = xr.open_mfdataset(filepath)
+        for fn in filepath:
+            msg.from_file(fn)
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
-        coord_dict = {}
-        # obj_type.value._coord_manager.added_coords()
 
         times = slice(start_time, end_time)
         if x is None:
@@ -55,6 +121,12 @@ class Netcdf(DataReader):
             ys = slice(grid.edges("y")[0], grid.edges("y")[-1])
             ds = ds.sel(x=xs, y=ys, time=times)
 
+        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
+        coord_dict = {"x": x, "y": y, "lon": lon, "lat": lat}
+
+        for c in list(ds.coords):
+            if c not in ["lon", "lat", "longitudes", "latitudes"]:
+                coord_dict[c] = ds.get(c).values
         data_dict = {}
         metaparameter_dict = {}
         for var, meta_var in dnora_objects.get(obj_type).meta_dict.items():

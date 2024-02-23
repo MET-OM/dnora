@@ -584,12 +584,23 @@ def pyfimex(
 
 
 def get_url(
-    folder: str, filename: str, time_stamp: pd.DatetimeIndex | str = None
+    folder: str,
+    filename: str,
+    time_stamp: pd.DatetimeIndex | str = None,
+    get_list: bool = False,
 ) -> str:
+    if not isinstance(filename, list):
+        filename = [filename]
     if time_stamp is not None:
         time_stamp = pd.to_datetime(time_stamp)
-        filename = time_stamp.strftime(filename)
+        filename = [time_stamp.strftime(fn) for fn in filename]
         folder = time_stamp.strftime(folder)
-    url = Path(folder).joinpath(filename)
-    url = re.sub(f"https:/", "https://", str(url), 1)
-    return url
+    url = []
+    for fn in filename:
+        url_temp = Path(folder).joinpath(fn)
+        url_temp = re.sub(f"https:/", "https://", str(url_temp), 1)
+        url.append(url_temp)
+    if len(url) == 1 and not get_list:
+        return url[0]
+    else:
+        return url

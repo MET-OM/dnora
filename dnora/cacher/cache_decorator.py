@@ -44,7 +44,7 @@ def cached_reader(obj_type: DnoraDataType, reader_function: DataReader):
                 adter reading cached data"""
 
                 # This is not optimal, but seems to work
-                times = mrun.dict_of_objects().get(obj_type).time()
+                times = mrun[obj_type].time()
                 dt = times[1] - times[0]
                 wanted_times = pd.date_range(
                     start=mrun.start_time(), end=mrun.end_time(), freq=dt
@@ -100,6 +100,7 @@ def cached_reader(obj_type: DnoraDataType, reader_function: DataReader):
             create_folder = (
                 not (kwargs.get("dry_run", False) or mrun.dry_run()) and write_cache
             )
+
             if create_folder:
                 file_object.create_folder()
             files = glob.glob(f"{file_object.get_filepath()[0:-3]}*")
@@ -108,8 +109,8 @@ def cached_reader(obj_type: DnoraDataType, reader_function: DataReader):
             if files and read_cache:
                 new_kwargs = copy(kwargs)
                 new_kwargs["name"] = name
-                if kwargs.get(f"{obj_type.name.lower()}_reader") is not None:
-                    new_kwargs[f"{obj_type.name.lower()}_reader"] = reader
+                if kwargs.get("reader") is not None:
+                    new_kwargs["reader"] = reader
                     new_args = args
                 else:
                     new_args = []
@@ -121,7 +122,7 @@ def cached_reader(obj_type: DnoraDataType, reader_function: DataReader):
                             new_args.append(arg)
                     new_args = tuple(new_args)
 
-                new_kwargs[f"{obj_type.name.lower()}_reader"] = reader
+                new_kwargs["reader"] = reader
                 import_method(*new_args, **new_kwargs)
             else:
                 import_method(*args, **kwargs)
@@ -140,9 +141,7 @@ def cached_reader(obj_type: DnoraDataType, reader_function: DataReader):
                         exec(
                             f"mrun_temp.import_{obj_type.lower()}(*temp_args, **kwargs)"
                         )
-                        mrun.dict_of_objects().get(obj_type)._absorb_object(
-                            mrun_temp.dict_of_objects().get(obj_type), "time"
-                        )
+                        mrun[obj_type]._absorb_object(mrun_temp[obj_type], "time")
 
             if write_cache:
                 mrun.cache(obj_type)

@@ -342,9 +342,11 @@ class WW3_4km(SpectralDataReader):
         self, source: DataSource, folder: str, filename: str
     ) -> tuple[str]:
         if source == DataSource.REMOTE:
-            folder = "https://thredds.met.no/thredds/dodsC/ww3_4km_archive_files/%Y/%m"
+            folder = (
+                "https://thredds.met.no/thredds/dodsC/ww3_4km_archive_files/%Y/%m/%d"
+            )
         if filename is None:
-            filename = f"ww3_4km_spec_%Y%m%dT%HZ.nc"
+            filename = f"ww3_4km_POI_SPC_%Y%m%dT%HZ.nc"
         return folder, filename
 
     def get_coordinates(
@@ -366,7 +368,7 @@ class WW3_4km(SpectralDataReader):
             lead_time=self.lead_time,
         )
         folder, filename = self._folder_filename(source, folder, filename)
-        url = self.get_url(folder, filename, file_times[0])
+        url = get_url(folder, filename, file_times[0])
 
         data = xr.open_dataset(url).isel(time=[0])
 
@@ -410,7 +412,7 @@ class WW3_4km(SpectralDataReader):
             keep_trying = True
             while keep_trying:
                 folder, filename = self._folder_filename(source, folder, filename)
-                url = self.get_url(folder, filename, file_time)
+                url = get_url(folder, filename, file_time)
                 try:
                     with xr.open_dataset(url) as f:
                         this_ds = f.sel(

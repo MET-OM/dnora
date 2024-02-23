@@ -26,6 +26,30 @@ from dnora.readers.abstract_readers import DataReader
 import calendar
 
 
+def create_fimex_xy_strings(
+    lon: tuple[float, float], lat: tuple[float, float], resolution_in_km: float
+) -> tuple[str, str]:
+    # Set resolution
+    dlat = resolution_in_km / 111
+    mean_lon_in_km = (lon_in_km(lat[0]) + lon_in_km(lat[-1])) * 0.5
+    dlon = resolution_in_km / mean_lon_in_km
+
+    if len(np.unique(lon)) == 1:
+        x_str = str(lon[0])
+    else:
+        if lon[1] < lon[0] + dlon:
+            lon = (lon[0] - dlon, lon[0] + dlon)
+        x_str = str(lon[0]) + "," + str(lon[0] + dlon) + ",...," + str(lon[-1])
+    if len(np.unique(lat)) == 1:
+        y_str = str(lat[0])
+    else:
+        if lat[1] < lat[0] + dlat:
+            lat = (lat[0] - dlat, lat[0] + dlat)
+        y_str = str(lat[0]) + "," + str(lat[0] + dlat) + ",...," + str(lat[-1])
+
+    return x_str, y_str
+
+
 class NORA3(DataReader):
     """Reads wind data (from monthly files 'arome3km_1hr_YYYYMM.nc') of the NORA3 hindcast directly from MET Norways servers.
 
@@ -388,44 +412,25 @@ class MEPS(DataReader):
         except:
             self._prefix = "subset"
 
-        # Set resolution to about 2.5 km
-        dlat = 2.5 / 111
-        mean_lon_in_km = (
-            lon_in_km(grid.edges("lat")[0]) + lon_in_km(grid.edges("lat")[-1])
-        ) * 0.5
-        dlon = 2.5 / mean_lon_in_km
-
         # Define area to search in
         lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
 
+        x_str, y_str = create_fimex_xy_strings(lon, lat, resolution_in_km=2.5)
         wnd_list = []
         for n in range(len(file_times)):
             msg.plain(f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
 
             nc_fimex = f"dnora_wnd_temp/wind_{n:04.0f}_MetNo_MEPS.nc"
-            folder, filename = self.get_url(source, folder, filename)
+            folder, filename = self._folder_filename(source, folder, filename)
             url = get_url(folder, filename, file_times[n])
             msg.from_file(url)
-
             fimex_command = [
                 "fimex",
                 "--input.file=" + url,
                 "--interpolate.method=bilinear",
                 "--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0",
-                "--interpolate.xAxisValues="
-                + str(lon[0])
-                + ","
-                + str(lon[0] + dlon)
-                + ",...,"
-                + str(lon[1])
-                + "",
-                "--interpolate.yAxisValues="
-                + str(lat[0])
-                + ","
-                + str(lat[0] + dlat)
-                + ",...,"
-                + str(lat[1])
-                + "",
+                "--interpolate.xAxisValues=" + x_str + "",
+                "--interpolate.yAxisValues=" + y_str + "",
                 "--interpolate.xAxisUnit=degree",
                 "--interpolate.yAxisUnit=degree",
                 "--process.rotateVector.all",

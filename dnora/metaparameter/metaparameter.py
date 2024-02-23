@@ -93,7 +93,8 @@ class MetaParameter(ABC):
         data_vars = list(ds.data_vars)
 
         for var in data_vars:
-            if ds.get(var).standard_name in cls.standard_aliases():
-                return var
+            if hasattr(ds.get(var), "standard_name"):
+                if ds.get(var).standard_name in cls.standard_aliases():
+                    return var
 
         return None

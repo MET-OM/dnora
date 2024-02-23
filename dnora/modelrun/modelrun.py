@@ -237,18 +237,20 @@ class ModelRun:
         )
 
         obj = dnora_objects.get(obj_type)(name=name, **coord_dict)
+
         for key, value in data_dict.items():
             if obj.get(key) is None:
                 obj = add_datavar(key, append=True)(obj)  # Creates .hs() etc. methods
-            obj.set(key, value)
+            obj.set(key, value, allow_reshape=True)
 
             metaparameter = metaparameter_dict.get(
                 key
             )  # Check if metaparameter provided by reader
+
             if metaparameter is None:
                 # DNORA object usually has specified the metaparameters
-                if hasattr(obj_type.value, "meta_dict"):
-                    metaparameter = obj_type.value.meta_dict.get(key)
+                if hasattr(obj, "meta_dict"):
+                    metaparameter = obj.meta_dict.get(key)
 
             if metaparameter is not None:
                 obj.set_metadata(metaparameter.meta_dict(), data_array_name=key)
@@ -326,7 +328,7 @@ class ModelRun:
             DnoraDataType.WATERLEVEL, name, dry_run, reader, source, folder, **kwargs
         )
 
-    @cached_reader(DnoraDataType.SPECTRA, generic_readers.Netcdf)
+    @cached_reader(DnoraDataType.SPECTRA, generic_readers.PointNetcdf)
     def import_spectra(
         self,
         reader: SpectralDataReader | None = None,
@@ -349,7 +351,7 @@ class ModelRun:
             **kwargs,
         )
 
-    @cached_reader(DnoraDataType.SPECTRA1D, generic_readers.Netcdf)
+    @cached_reader(DnoraDataType.SPECTRA1D, generic_readers.PointNetcdf)
     def import_spectra1d(
         self,
         reader: SpectralDataReader | None = None,
@@ -372,7 +374,7 @@ class ModelRun:
             **kwargs,
         )
 
-    @cached_reader(DnoraDataType.WAVESERIES, generic_readers.Netcdf)
+    @cached_reader(DnoraDataType.WAVESERIES, generic_readers.PointNetcdf)
     def import_waveseries(
         self,
         reader: PointDataReader | None = None,
