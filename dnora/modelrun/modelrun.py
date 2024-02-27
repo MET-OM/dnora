@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from geo_skeletons import PointSkeleton
 from typing import Union
+import os
 
 # Import objects
 from dnora.grid import Grid, TriGrid
@@ -28,7 +29,7 @@ from dnora.waveseries.read import SpectraToWaveSeries
 from dnora.pick import TrivialPicker
 
 from dnora.export.templates import Cacher
-
+from dnora.aux_funcs import get_url
 from dnora.readers import generic_readers
 from dnora.readers.abstract_readers import (
     DataReader,
@@ -159,6 +160,11 @@ class ModelRun:
 
         folder = folder or ""
 
+        if folder and source == DataSource.LOCAL:
+            if not os.path.exists(os.path.expanduser(folder)):
+                os.mkdir(folder)
+            if not os.path.exists(get_url(folder, reader.name())):
+                os.mkdir(get_url(folder, reader.name()))
         return reader, name, source, folder
 
     def _setup_point_picker(self, point_picker: PointPicker):

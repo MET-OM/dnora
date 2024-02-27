@@ -14,7 +14,7 @@ from .read_tr import MshFile as triang_MshFile
 from .tri_arangers import TriAranger
 from .mesh import Trivial as TrivialMesher
 from dnora.readers.abstract_readers import DataReader
-
+import os
 from dnora.dnora_types import DnoraDataType, DataSource, data_source_from_string
 
 from dnora.defaults import read_environment_variable
@@ -71,6 +71,11 @@ class GridMethods:
         source = data_source_from_string(source)
 
         folder = folder or read_environment_variable(DnoraDataType.GRID, source)
+        if folder and source == DataSource.LOCAL:
+            if not os.path.exists(os.path.expanduser(folder)):
+                os.mkdir(folder)
+            if not os.path.exists(aux_funcs.get_url(folder, topo_reader.name())):
+                os.mkdir(aux_funcs.get_url(folder, topo_reader.name()))
         msg.header(topo_reader, "Importing topography...")
 
         topo, coord_dict, zone_number, zone_letter, metadata = topo_reader(

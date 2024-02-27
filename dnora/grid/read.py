@@ -8,10 +8,15 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from dnora.grid import Grid, TriGrid
 from dnora.aux_funcs import expand_area, get_url
-
+from dnora import msg
 from typing import Union
-
+import os
 from dnora.dnora_types import DataSource
+import dask
+from pathlib import Path
+
+# from dnora.defaults import read_environment_variable
+from .emodnet_functions import find_tile, get_covering_tiles, download_tile
 
 
 class TopoReader(ABC):
@@ -74,6 +79,9 @@ class TopoReader(ABC):
     def default_data_source(self) -> DataSource:
         return DataSource.LOCAL
 
+    def name(self) -> str:
+        return type(self).__name__
+
 
 class ConstantTopo(TopoReader):
     """Creates an empty topography. Called when setting initial spacing."""
@@ -108,35 +116,58 @@ class ConstantTopo(TopoReader):
 class EMODNET(TopoReader):
     """Reads bathymetry from multiple EMODNET tiles in netcdf format.
 
-    For reading several files at once, supply the 'tile' argument with a glob pattern, e.g. 'C*'.
-
     Contributed by: https://github.com/poplarShift
     """
+
+    @staticmethod
+    def _get_files(folder, tiles, year):
+        fn = []
+        for tile in tiles:
+            fn.append(f"{tile}_{year}.nc")
+
+        return get_url(folder, fn, get_list=True)
 
     def __call__(
         self,
         grid: Union[Grid, TriGrid],
         source: DataSource,
-        tile: str = "C5",
         expansion_factor: float = 1.2,
         folder: str = None,
         year: int = 2022,
         **kwargs,
     ) -> tuple:
 
-        folder = get_url(folder, f"EMODNET{year}")
-        self.files = get_url(folder, f"{tile}_{year}.nc")
+        folder = get_url(folder, f"EMODNET/{year:.0f}")
         # Area is expanded a bit to not get in trouble in the meshing stage
         # when we interpoolate or filter
         lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
+
+        # Identefy tiles:
+        tile_nw = find_tile(lon[0], lat[1])
+        tile_se = find_tile(lon[1], lat[0])
+        if not tile_nw or not tile_se:
+            msg.error(f"Area not coverd by EMODNET!!!")
+            return
+        self.tiles = get_covering_tiles(tile_se=tile_se, tile_nw=tile_nw)
+
+        self.files = self._get_files(folder, self.tiles, year)
+        # Check if tiles exist locally
+        tiles_to_download = []
+        for file in self.files:
+            if not os.path.isfile(file):
+                tiles_to_download.append(Path(file).name[0:2])
+
+        if tiles_to_download:
+            if not os.path.exists(folder):
+                os.mkdir(folder)
+            for tile in tiles_to_download:
+                download_tile(tile=tile, year=year, folder=folder)
 
         def _crop(ds):
             """
             EMODNET tiles overlap by two cells on each boundary.
             """
             return ds.isel(lon=slice(2, -2), lat=slice(2, -2))
-
-        import dask
 
         with dask.config.set(**{"array.slicing.split_large_chunks": True}):
             with xr.open_mfdataset(self.files, preprocess=_crop) as ds:
@@ -168,11 +199,8 @@ class KartverketNo50m(TopoReader):
     Contributed by: https://github.com/emiliebyer
     """
 
-    def _folder(self, source: DataSource, folder: str):
-        if source == DataSource.INTERNAL:
-            return get_url(folder, "kartverket_50m_x_50m")
-        else:
-            return get_url(folder, "KartverketNo50m")
+    def _folder(self, folder: str):
+        return get_url(folder, "KartverketNo50m")
 
     def __call__(
         self,
@@ -187,7 +215,7 @@ class KartverketNo50m(TopoReader):
         # Area is expanded a bit to not get in trouble in the meshing stage
         # when we interpoolate or filter
 
-        folder = self._folder(source, folder)
+        folder = self._folder(folder)
 
         self.source = get_url(folder, f"{tile}_grid50_utm{zone_number}.xyz")
         x, y = expand_area(grid.edges("x"), grid.edges("y"), expansion_factor)
@@ -226,11 +254,8 @@ class GEBCO(TopoReader):
     Contributed by: https://github.com/emiliebyer
     """
 
-    def _folder(self, source: DataSource, folder: str, year: int):
-        if source == DataSource.INTERNAL:
-            return get_url(folder, f"gebco{year}")
-        else:
-            return get_url(folder, f"GEBCO{year}")
+    def _folder(self, folder: str, year: int):
+        return get_url(folder, f"GEBCO/{year}")
 
     def __call__(
         self,
@@ -243,8 +268,8 @@ class GEBCO(TopoReader):
         **kwargs,
     ) -> tuple:
 
-        folder = self._folder(source, folder, year)
-        self.source = get_url(folder, f"gebco_2021_{tile}.nc")
+        folder = self._folder(folder, year)
+        self.source = get_url(folder, f"gebco_{year}_{tile}.nc")
         # Area is expanded a bit to not get in trouble in the meshing stage
         # when we interpoolate or filter
 

@@ -601,6 +601,6 @@ def get_url(
         url_temp = re.sub(f"https:/", "https://", str(url_temp), 1)
         url.append(url_temp)
     if len(url) == 1 and not get_list:
-        return url[0]
+        return os.path.expanduser(url[0])
     else:
-        return url
+        return [os.path.expanduser(u) for u in url]
