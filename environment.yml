@@ -22,3 +22,4 @@ dependencies:
   - pint
   - python-dotenv
   - fimex=1.8.1
+  - progressbar
