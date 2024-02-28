@@ -61,12 +61,17 @@ class GridMethods:
 
     def import_topo(
         self,
-        topo_reader: DataReader,
+        topo_reader: DataReader = None,
         source: str | DataSource = None,
         folder: str = None,
         **kwargs,
     ) -> None:
         """Reads the raw bathymetrical data."""
+        topo_reader = self._default_reader or topo_reader
+        if topo_reader is None:
+            raise ValueError("Define a DataReader!")
+        msg.header(topo_reader, "Importing topography...")
+
         source = source or topo_reader.default_data_source()
         source = data_source_from_string(source)
 
@@ -76,7 +81,6 @@ class GridMethods:
                 os.mkdir(folder)
             if not os.path.exists(aux_funcs.get_url(folder, topo_reader.name())):
                 os.mkdir(aux_funcs.get_url(folder, topo_reader.name()))
-        msg.header(topo_reader, "Importing topography...")
 
         topo, coord_dict, zone_number, zone_letter, metadata = topo_reader(
             self, source=source, folder=folder, **kwargs
@@ -210,6 +214,8 @@ class GridMethods:
 @add_mask(name="output", coords="grid", default_value=0)
 @add_mask(name="sea", coords="grid", default_value=1, opposite_name="land")
 class Grid(GriddedSkeleton, GridMethods):
+    _default_reader = None
+
     @classmethod
     def from_ww3_grid(cls, gridname: str, folder: str = ""):
         """Recreate a WW3 grid object based on the _info, _bathy and _mapsta files"""
@@ -242,11 +248,6 @@ class Grid(GriddedSkeleton, GridMethods):
 
         return grid
 
-    # def __init__(self, x=None, y=None, lon=None, lat=None, name="LonelyGrid", **kwargs):
-    #     if np.all([a is None for a in [x, y, lon, lat]]):
-    #         x, y = 0, 0
-    #     super().__init__(x, y, lon, lat, name, **kwargs)
-
     def boundary_nx(self) -> int:
         """Return approximate number of grid points in the longitude direction"""
         abs_diff = np.abs(np.diff(np.where(self.boundary_mask())))
@@ -264,9 +265,6 @@ class Grid(GriddedSkeleton, GridMethods):
         abs_diff = np.median(abs_diff[abs_diff > 0]).astype(int)
 
         return np.ceil(self.ny() / abs_diff).astype(int)
-
-
-# from .read import MshFile as topo_MshFile
 
 
 @add_datavar(name="topo", default_value=999.0)
