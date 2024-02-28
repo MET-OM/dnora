@@ -2,19 +2,18 @@ from copy import copy
 from functools import reduce
 from abc import ABC, abstractmethod
 from .fvgrid import read_sms_mesh
+import meshio
 
-# import utm
 from typing import Iterable
 import numpy as np
 from dnora.dnora_types import DataSource
 
+from dnora.aux_funcs import get_url, get_coordinates_from_ds
+import xarray as xr
+
 
 class TriangReader(ABC):
     """Abstract class for reading the triangular object."""
-
-    @abstractmethod
-    def __init__(self):
-        pass
 
     @abstractmethod
     def __call__(self, filename: str) -> tuple:
@@ -36,6 +35,33 @@ class TriangReader(ABC):
         return DataSource.UNDEFINED
 
 
+class NetcdfTriangReader(TriangReader):
+    def __call__(
+        self,
+        source: DataSource,
+        folder: str,
+        filename: str = None,
+        utm: tuple[int, str] = (None, None),
+    ) -> tuple:
+        self.filename = filename
+
+        ds = xr.open_dataset(get_url(folder, filename))
+        coord_dict = get_coordinates_from_ds(ds, return_dict=True)
+        tri = ds.triangles.values
+        edge_nodes = ds.inds.values[ds.boundary_mask.values.astype(bool)]
+        utm = (None, None)
+        return (
+            tri,
+            coord_dict,
+            edge_nodes,
+            utm[0],
+            utm[1],
+        )
+
+    def __str__(self):
+        return f"Reading triangular grid from Msh-file {self.filename}."
+
+
 class TxtReader(TriangReader):
     def __init__(self, filename: str, boundary_points=None):
         self.filename = copy(filename)
@@ -45,8 +71,6 @@ class TxtReader(TriangReader):
         return
 
     def __call__(self) -> tuple:
-        import utm
-
         with open(self.filename, "r") as f:
             nr_of_nodes = int(f.readline())
             nodes = np.array(range(nr_of_nodes)).astype(int)
@@ -77,11 +101,12 @@ class TxtReader(TriangReader):
 
 
 class SmsReader(TriangReader):
-    def __init__(self, filename: str):
-        self.filename = copy(filename)
-        return
-
-    def __call__(self, nodestring_subset: Iterable = None) -> tuple:
+    def __call__(
+        self,
+        filename: str,
+        utm: tuple[int, str] = (33, "W"),
+        nodestring_subset: Iterable = None,
+    ) -> tuple:
         """
         Parameters
         ----------
@@ -91,33 +116,38 @@ class SmsReader(TriangReader):
 
         The read_sms_mesh-function is taken directly from the PyFVCOM package
         https://github.com/pwcazenave/pyfvcom"""
-
-        import utm
-
+        self.filename = filename
+        self.umt = utm
         tri, nodes, X, Y, Z, types, nodeStrings = read_sms_mesh(
             self.filename, nodestrings=True
         )
-        lat, lon = utm.to_latlon(X, Y, 33, zone_letter="W", strict=False)
+        # lat, lon = utm.to_latlon(X, Y, utm[0], zone_letter=utm[1], strict=False)
 
         if nodestring_subset is not None:
             nodeStrings = [nodeStrings[i] for i in nodestring_subset]
         nodeStrings = reduce(lambda x, y: x + y, nodeStrings)
-        return tri, nodes, lon, lat, types, nodeStrings
+
+        return (
+            tri,
+            {"x": X, "y": Y},
+            nodeStrings,
+            utm[0],
+            utm[1],
+        )
 
     def __str__(self):
-        return "Reading triangular grid from SMS-file."
+        return f"Reading triangular grid from SMS-file {self.filename} assuming UTM {self.utm}"
 
 
-class MshFile(TriangReader):
-    def __init__(self, filename: str, zone_number: int = None, zone_letter: str = "W"):
-        self.filename = copy(filename)
-        self.zone_number = zone_number
-        self.zone_letter = zone_letter
-        return
-
-    def __call__(self) -> tuple:
-        import meshio
-
+class MshReader(TriangReader):
+    def __call__(
+        self,
+        source: DataSource,
+        folder: str,
+        filename: str = None,
+        utm: tuple[int, str] = (None, None),
+    ) -> tuple:
+        self.filename = filename
         mesh = meshio.read(self.filename)
 
         for cell in mesh.cells:
@@ -130,26 +160,21 @@ class MshFile(TriangReader):
         y = mesh.points[:, 1]
         # Z = mesh.points[:,2]
 
-        types = None  # This is not used in DNORA and I have no idea what it is
-        nodes = np.array((range(len(mesh.points[:, 0]))))
+        # types = None  # This is not used in DNORA and I have no idea what it is
+        # nodes = np.array((range(len(mesh.points[:, 0]))))
 
-        if self.zone_number is None:
-            return tri, nodes, x, y, None, None, types, nodeStrings, None, None
+        if utm[0] is None:
+            coord_dict = {"lon": x, "lat": y}
         else:
-            return (
-                tri,
-                nodes,
-                None,
-                None,
-                x,
-                y,
-                types,
-                nodeStrings,
-                self.zone_number,
-                self.zone_letter,
-            )
+            coord_dict = {"x": x, "y": y}
 
-        # return tri, nodes, lon, lat, types, nodeStrings
+        return (
+            tri,
+            coord_dict,
+            nodeStrings,
+            utm[0],
+            utm[1],
+        )
 
     def __str__(self):
-        return "Reading triangular grid from Msh-file."
+        return f"Reading triangular grid from Msh-file {self.filename}."

@@ -25,6 +25,6 @@ WAVEWATCH III.
 Copyright 2021, Konstantinos Christakos and Jan-Victor Björkqvist, MET Norway
 """
 
-from .grid import Grid, UnstrGrid, TriGrid
+from .grid import Grid, TriGrid
 from . import mask, read, process, mesh, tri_arangers
 from .templates import *

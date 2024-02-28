@@ -14,6 +14,8 @@ import os
 from dnora.dnora_types import DataSource
 import dask
 from pathlib import Path
+import meshio
+from dnora.aux_funcs import get_coordinates_from_ds
 
 # from dnora.defaults import read_environment_variable
 from .emodnet_functions import find_tile, get_covering_tiles, download_tile
@@ -352,24 +354,26 @@ class MshFile(TopoReader):
         self,
         grid: Union[Grid, TriGrid],
         source: DataSource,
-        filename: str,
+        folder: str,
+        filename: str = None,
         expansion_factor: float = 1.2,
-        zone_number: int = None,
-        zone_letter: str = "W",
+        utm: tuple[int, str] = (None, None),
     ) -> tuple:
         self.filename = filename
-        import meshio
-
         mesh = meshio.read(filename)
 
         topo_x = mesh.points[:, 0]
         topo_y = mesh.points[:, 1]
         topo = mesh.points[:, 2]
 
-        if self.zone_number is None:
-            xedges, yedges = expand_area(self.lon(), self.lat(), expansion_factor)
+        if utm[0] is None:
+            xedges, yedges = expand_area(
+                grid.edges("lon"), grid.edges("lat"), expansion_factor
+            )
         else:
-            xedges, yedges = expand_area(self.x(), self.y(), expansion_factor)
+            xedges, yedges = expand_area(
+                grid.edges("x"), grid.edges("y"), expansion_factor
+            )
 
         mask1 = np.logical_and(topo_x >= xedges[0], topo_x <= xedges[1])
         mask2 = np.logical_and(topo_y >= yedges[0], topo_y <= yedges[1])
@@ -377,28 +381,49 @@ class MshFile(TopoReader):
         topo_x = topo_x[mask]
         topo_y = topo_y[mask]
         topo = topo[mask]
-        if self.zone_number is None:
-            return (
-                topo,
-                topo_x,
-                topo_y,
-                None,
-                None,
-                None,
-                None,
-                {"source": self.filename},
+        if utm[0] is None:
+            msg.plain(
+                f"No utm-zone, e.g. utm=(33,'W'), provided. Assuming data in {self.filename} is in lon-lat!"
             )
+            coord_dict = {"lon": topo_x, "lat": topo_y}
         else:
-            return (
-                topo,
-                None,
-                None,
-                topo_x,
-                topo_y,
-                zone_number,
-                zone_letter,
-                {"source": self.filename},
-            )
+            coord_dict = {"x": topo_x, "y": topo_y}
+
+        return (
+            topo,
+            coord_dict,
+            utm[0],
+            utm[1],
+            {"source": self.filename},
+        )
 
     def __str__(self):
         return f"Reading topography from {self.filename}."
+
+
+class NetcdfTopoReader(TopoReader):
+    def __call__(
+        self,
+        grid: Union[Grid, TriGrid],
+        source: DataSource,
+        folder: str,
+        filename: str = None,
+        expansion_factor: float = 1.2,
+        utm: tuple[int, str] = (None, None),
+    ) -> tuple:
+        self.filename = filename
+
+        ds = xr.open_dataset(get_url(folder, filename))
+        coord_dict = get_coordinates_from_ds(ds, return_dict=True)
+        topo = ds.topo.values
+        utm = (None, None)
+        return (
+            topo,
+            coord_dict,
+            utm[0],
+            utm[1],
+            {"source": self.filename},
+        )
+
+    def __str__(self):
+        return f"Reading triangular grid from Netcdf-file {self.filename}."

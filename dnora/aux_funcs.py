@@ -55,7 +55,7 @@ def domain_size_in_km(
     return km_x, km_y
 
 
-def get_coordinates_from_ds(ds) -> tuple:
+def get_coordinates_from_ds(ds, return_dict: bool = False) -> tuple:
     """Determins if an xarray dataset is cartesian (x,y) or spherical (lon,lat)
     and returns the vecotrs (None for the ones that are not defined).
 
@@ -65,22 +65,29 @@ def get_coordinates_from_ds(ds) -> tuple:
         ds = ds.isel(time=0)
 
     if hasattr(ds, "lon") and hasattr(ds, "lat"):
-        return np.squeeze(ds.lon.values), np.squeeze(ds.lat.values), None, None
+        lon, lat = np.squeeze(ds.lon.values), np.squeeze(ds.lat.values)
+        x, y = None, None
 
     if hasattr(ds, "longitude") and hasattr(ds, "latitude"):
-        return (
-            np.squeeze(ds.longitude.values),
-            np.squeeze(ds.latitude.values),
-            None,
-            None,
+        lon, lat = np.squeeze(ds.longitude.values), np.squeeze(ds.latitude.values)
+        x, y = None, None
+    if hasattr(ds, "x") and hasattr(ds, "y"):
+        x, y = np.squeeze(ds.x.values), np.squeeze(ds.y.values)
+        lon, lat = None, None
+
+    if all_none([x, y, lon, lat]):
+        raise AttributeError(
+            "Dataset doesn't have a combination of lon(gitude)/lat(itude) or x/y!"
         )
 
-    if hasattr(ds, "x") and hasattr(ds, "y"):
-        return None, None, np.squeeze(ds.x.values), np.squeeze(ds.y.values)
+    if return_dict:
+        return {"lon": lon, "lat": lat, "x": x, "y": y}
+    else:
+        return lon, lat, x, y
 
-    raise AttributeError(
-        "Dataset doesn't have a combination of lon(gitude)/lat(itude) or x/y!"
-    )
+
+def all_none(val) -> bool:
+    return not [a for a in val if a is not None]
 
 
 def is_gridded(data: np.ndarray, lon: np.ndarray, lat: np.ndarray) -> bool:

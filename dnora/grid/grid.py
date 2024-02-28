@@ -1,16 +1,15 @@
 from geo_skeletons import GriddedSkeleton, PointSkeleton
 import numpy as np
 import xarray as xr
-from geo_skeletons.decorators import add_mask, add_datavar
+from geo_skeletons.decorators import add_mask, add_datavar, add_coord
 
 from dnora import aux_funcs, msg
 from copy import copy
 from .mesh import Mesher, Interpolate
 from .process import GridProcessor
 from pathlib import Path
-from .read_tr import TriangReader
-from .read import MshFile as topo_MshFile
-from .read_tr import MshFile as triang_MshFile
+from .read import MshFile as topo_MshFile, NetcdfTopoReader
+from .read_tr import MshReader, TriangReader, NetcdfTriangReader
 from .tri_arangers import TriAranger
 from .mesh import Trivial as TrivialMesher
 from dnora.readers.abstract_readers import DataReader
@@ -106,7 +105,7 @@ class GridMethods:
             y = y or lat
             self._raw.set_spacing(nx=len(x), ny=len(y))
         else:
-            self._raw = UnstrGrid(lon=lon, lat=lat, x=x, y=y)
+            self._raw = UnstrTopo(lon=lon, lat=lat, x=x, y=y)
 
         if (
             self.edges("lon", native=True)[0] < self.raw().edges(self.x_str)[0]
@@ -267,54 +266,75 @@ class Grid(GriddedSkeleton, GridMethods):
         return np.ceil(self.ny() / abs_diff).astype(int)
 
 
-@add_datavar(name="topo", default_value=999.0)
-@add_mask(name="boundary", coords="grid", default_value=0)
-@add_mask(name="output", coords="grid", default_value=0)
-@add_mask(name="sea", coords="grid", default_value=1, opposite_name="land")
-class UnstrGrid(PointSkeleton, GridMethods):
+@add_datavar(name="topo", default_value=999.0, coords="grid")
+class UnstrTopo(PointSkeleton, GridMethods):
+    _default_reader = None
     pass
 
 
-class TriGrid(UnstrGrid):
+@add_datavar(name="triangles", coords="gridpoint")
+@add_datavar(name="topo", default_value=999.0, coords="grid")
+@add_coord(name="corner", grid_coord=False)
+@add_coord(name="ntriang", grid_coord=False)
+@add_mask(name="boundary", coords="grid", default_value=0)
+@add_mask(name="output", coords="grid", default_value=0)
+@add_mask(name="sea", coords="grid", default_value=1, opposite_name="land")
+class TriGrid(PointSkeleton, GridMethods):
+    _default_reader = None
+
     @classmethod
-    def from_msh(cls, filename: str, name: str = "LonelyGrid"):
-        tri_grid = cls(name=name)
-        tri_grid.import_triang(triang_MshFile(filename))
-        tri_grid.import_topo(topo_MshFile(filename))
-        tri_grid.mesh_grid(TrivialMesher())
-
-        return tri_grid
-
-    def __init__(self, x=None, y=None, lon=None, lat=None, name="LonelyGrid"):
-        self.name = name
-        # Only initialize if x, y, lon, lat given
-        if [a for a in (x, y, lon, lat) if a is not None]:
-            self._init_structure(x, y, lon, lat)
-
-    def import_triang(self, triang_reader: TriangReader):
-        """Reads a triangular mesh."""
+    def generate(
+        cls,
+        triang_reader: TriangReader,
+        folder: str = "",
+        name: str = "LonelyGrid",
+        **kwargs,
+    ):
         (
             tri,
-            nodes,
-            lon,
-            lat,
-            x,
-            y,
-            types,
+            coord_dict,
             edge_nodes,
             zone_number,
             zone_letter,
-        ) = triang_reader()
+        ) = triang_reader(source=DataSource.LOCAL, folder=folder, **kwargs)
 
-        self._init_structure(x, y, lon, lat)
-
-        self.set_utm(zone_number, zone_letter)
+        tri_grid = cls(
+            x=coord_dict.get("x"),
+            y=coord_dict.get("y"),
+            lon=coord_dict.get("lon"),
+            lat=coord_dict.get("lat"),
+            name=name,
+            ntriang=range(tri.shape[0]),
+            corner=range(3),
+        )
+        if zone_number is not None:
+            tri_grid.set_utm((zone_number, zone_letter))
         edge_nodes = np.array(edge_nodes)
         edge_nodes = edge_nodes.astype(int)
-        self._update_boundary(edge_nodes)
-        self._tri = tri
-        # self._nodes = nodes # These are now in self.inds()
-        self._types = types  # ???
+        tri_grid._update_boundary(edge_nodes)
+        tri_grid.set_triangles(tri)
+        return tri_grid
+
+    @classmethod
+    def from_msh(cls, filename: str, read_topo: bool = True, **kwargs):
+        tri_grid = cls.generate(triang_reader=MshReader(), filename=filename, **kwargs)
+
+        if read_topo:
+            tri_grid.import_topo(topo_MshFile(), filename=filename)
+            tri_grid.mesh_grid(TrivialMesher())
+
+        return tri_grid
+
+    @classmethod
+    def from_netcdf(cls, filename: str, read_topo: bool = True, **kwargs):
+        tri_grid = cls.generate(
+            triang_reader=NetcdfTriangReader(), filename=filename, **kwargs
+        )
+
+        if read_topo:
+            tri_grid.import_topo(NetcdfTopoReader(), filename=filename, **kwargs)
+            tri_grid.mesh_grid(TrivialMesher(), **kwargs)
+        return tri_grid
 
     def arange_triangulation(self, tri_aranger: TriAranger) -> None:
         print(tri_aranger)
@@ -328,10 +348,18 @@ class TriGrid(UnstrGrid):
 
         x, y = self.xy(strict=True)
         lon, lat = self.lonlat(strict=True)
-        self._init_structure(x=x, y=y, lon=lon, lat=lat)
+        self._init_structure(
+            x=x,
+            y=y,
+            lon=lon,
+            lat=lat,
+            name=self.name,
+            ntriang=range(tri.shape[0]),
+            corner=range(3),
+        )
 
         self._update_boundary(bnd_nodes)
-        self._tri = tri
+        self.set_triangles(tri)
 
     def _update_boundary(self, boundary_inds):
         mask = np.array([ind in boundary_inds for ind in self.inds()])
