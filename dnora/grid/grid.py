@@ -11,8 +11,9 @@ from pathlib import Path
 
 from dnora.readers.abstract_readers import DataReader
 from dnora.dnora_types import DataSource
-
+import matplotlib.pyplot as plt
 from .topo import import_topo
+import cmocean.cm
 
 
 @add_datavar(name="topo", default_value=999.0)
@@ -61,6 +62,23 @@ class Grid(GriddedSkeleton):
         grid.set_boundary_mask(mask)
 
         return grid
+
+    def plot(self) -> None:
+        vmin, vmax = np.min(self.topo()), np.max(self.topo())
+        if vmax - vmin < 20:
+            levels = np.linspace(vmin, vmax, np.floor(vmax - vmin + 1).astype(int))
+        else:
+            levels = np.linspace(vmin, vmax, 11)
+        xx, yy = np.meshgrid(self.lon(native=True), self.lat(native=True))
+
+        if len(levels) > 1:
+            cont = plt.contourf(xx, yy, self.topo(), cmap=cmocean.cm.deep)
+
+        cbar = plt.colorbar(cont, label=f"Water depth [m]")
+        plt.xlabel(self.x_str)
+        plt.ylabel(self.y_str)
+
+        plt.show()
 
     def import_topo(
         self,

@@ -13,11 +13,14 @@ from .read_tr import MshReader, TriangReader
 from .tri_arangers import TriAranger
 from .mesh import Trivial as TrivialMesher
 from dnora.readers.abstract_readers import DataReader
-
+import cmocean.cm
 from dnora.dnora_types import DataSource
 
 from pathlib import Path
 from .topo import import_topo
+
+import matplotlib.pyplot as plt
+import matplotlib.tri as mtri
 
 
 @add_datavar(name="triangles", coords="gridpoint")
@@ -128,6 +131,27 @@ class TriGrid(PointSkeleton):
 
         obj.set_topo(topo)
         obj.set_sea_mask(self.topo() > 0)
+
+    def plot(self) -> None:
+        vmin, vmax = np.min(self.topo()), np.max(self.topo())
+        if vmax - vmin < 20:
+            levels = np.linspace(vmin, vmax, np.floor(vmax - vmin + 1).astype(int))
+        else:
+            levels = np.linspace(vmin, vmax, 11)
+
+        tri = mtri.Triangulation(
+            self.lon(native=True), self.lat(native=True), triangles=self.triangles()
+        )
+
+        if len(levels) > 1:
+            cont = plt.tricontourf(
+                tri, self.topo(), cmap=cmocean.cm.deep, levels=levels
+            )
+        cbar = plt.colorbar(cont, label=f"Water depth [m]")
+        plt.xlabel(self.x_str)
+        plt.ylabel(self.y_str)
+
+        plt.show()
 
     def arange_triangulation(self, tri_aranger: TriAranger) -> None:
         print(tri_aranger)

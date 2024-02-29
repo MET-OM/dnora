@@ -4,6 +4,9 @@ import xarray as xr
 from abc import ABC, abstractmethod
 import numpy as np
 from typing import TYPE_CHECKING
+import json
+from urllib.request import urlopen
+import re
 
 if TYPE_CHECKING:
     from dnora.grid import Grid, TriGrid
@@ -258,6 +261,47 @@ class KartverketNo50m(DataReader):
 
 
 class GEBCO(DataReader):
+    def __call__(
+        self,
+        obj_type: DnoraDataType,
+        grid: Union[Grid, TriGrid],
+        start_time,
+        end_time,
+        source: DataSource,
+        folder: str,
+        expansion_factor: float = 1.2,
+        tile: str = "n61.0_s59.0_w4.0_e6.0",
+        year: int = 2023,
+        **kwargs,
+    ) -> tuple:
+
+        lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
+        # url = f'https://api.odb.ntu.edu.tw/gebco?mode=zonly&sample=1&jsonsrc={"type":"Polygon","coordinates":[[[{lon[0]},[{lat[1]}]],[{lon[1]},{lat[1]}],[{lon[1]},{lon[0]}],[{lon[0]},{lat[0]}],[{lon[0]},{lat[1]}]]]}'
+        url = 'https://api.odb.ntu.edu.tw/gebco?mode=zonly&sample=1&jsonsrc={"type":"Polygon","coordinates":[[[LON0,LAT1],[LON1,LAT1],[LON1,LAT0],[LON0,LAT0],[LON0,LAT1]]]}'
+        url = re.sub("LON0", f"{lon[0]:.2f}", url)
+        url = re.sub("LON1", f"{lon[1]:.2f}", url)
+        url = re.sub("LAT0", f"{lat[0]:.2f}", url)
+        url = re.sub("LAT1", f"{lat[1]:.2f}", url)
+        msg.from_file(url)
+        response = urlopen(url)
+
+        data = json.loads(response.read())
+
+        # Negative valies and NaN's are land
+        topo = -1 * np.array(data["z"])
+
+        topo_lon = np.array(data["longitude"])
+        topo_lat = np.array(data["latitude"])
+
+        coord_dict = {"lon": topo_lon, "lat": topo_lat}
+        data_dict = {"topo": topo}
+        meta_dict = {"source": f"GEBCO2023", "through": "https://api.odb.ntu.edu.tw/"}
+        metaparameter_dict = {}
+
+        return coord_dict, data_dict, meta_dict, metaparameter_dict
+
+
+class GEBCOold(DataReader):
     """Reads the GEBCO_2021 gridded bathymetric data set.
     A global terrain model for ocean and land,
     providing elevation data, in meters, on a 15 arc-second interval grid.
