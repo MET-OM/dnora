@@ -35,72 +35,72 @@ class TriangReader(ABC):
         return DataSource.UNDEFINED
 
 
-class NetcdfTriangReader(TriangReader):
-    def __call__(
-        self,
-        source: DataSource,
-        folder: str,
-        filename: str = None,
-        utm: tuple[int, str] = (None, None),
-    ) -> tuple:
-        self.filename = filename
+# class NetcdfTriangReader(TriangReader):
+#     def __call__(
+#         self,
+#         source: DataSource,
+#         folder: str,
+#         filename: str = None,
+#         utm: tuple[int, str] = (None, None),
+#     ) -> tuple:
+#         self.filename = filename
 
-        ds = xr.open_dataset(get_url(folder, filename))
-        coord_dict = get_coordinates_from_ds(ds, return_dict=True)
-        tri = ds.triangles.values
-        edge_nodes = ds.inds.values[ds.boundary_mask.values.astype(bool)]
-        utm = (None, None)
-        return (
-            tri,
-            coord_dict,
-            edge_nodes,
-            utm[0],
-            utm[1],
-        )
+#         ds = xr.open_dataset(get_url(folder, filename))
+#         coord_dict = get_coordinates_from_ds(ds, return_dict=True)
+#         tri = ds.triangles.values
+#         edge_nodes = ds.inds.values[ds.boundary_mask.values.astype(bool)]
+#         utm = (None, None)
+#         return (
+#             tri,
+#             coord_dict,
+#             edge_nodes,
+#             utm[0],
+#             utm[1],
+#         )
 
-    def __str__(self):
-        return f"Reading triangular grid from Msh-file {self.filename}."
-
-
-class TxtReader(TriangReader):
-    def __init__(self, filename: str, boundary_points=None):
-        self.filename = copy(filename)
-        self.boundary_points = boundary_points
-        if self.boundary_points is None:
-            self.boundary_points = []
-        return
-
-    def __call__(self) -> tuple:
-        with open(self.filename, "r") as f:
-            nr_of_nodes = int(f.readline())
-            nodes = np.array(range(nr_of_nodes)).astype(int)
-            x = np.full(nodes.shape, 0).astype(float)
-            y = np.full(nodes.shape, 0).astype(float)
-            for n in nodes:
-                x[n], y[n] = np.array(f.readline().split(" ")).astype(float)
-            nr_of_triangs = int(f.readline())
-            tri = np.full((nr_of_triangs, 3), 0)
-
-            for n in range(nr_of_triangs):
-                tri[n, :] = np.fliplr(np.array([f.readline().split(" ")]).astype(int))[
-                    0
-                ]
-                # tri[n,:] = np.array([f.readline().split(' ')]).astype(int)[0]
-
-        # tri, nodes, x, y, Z, types, nodeStrings = read_sms_mesh(self.filename, nodestrings=True)
-        # lat, lon = utm.to_latlon(x, y, 33, zone_letter = 'W', strict = False)
-        nodeStrings = np.array(self.boundary_points)
-        types = None
-        # if nodestring_subset is not None:
-        #    nodeStrings = [nodeStrings[i] for i in nodestring_subset]
-        # nodeStrings = reduce(lambda x, y: x+y, nodeStrings)
-        return tri, nodes, None, None, x, y, types, nodeStrings, 33, "W"
-
-    def __str__(self):
-        return "Reading triangular grid from Txt-file."
+#     def __str__(self):
+#         return f"Reading triangular grid from Msh-file {self.filename}."
 
 
-class SmsReader(TriangReader):
+# class TxtReader(TriangReader):
+#     def __init__(self, filename: str, boundary_points=None):
+#         self.filename = copy(filename)
+#         self.boundary_points = boundary_points
+#         if self.boundary_points is None:
+#             self.boundary_points = []
+#         return
+
+#     def __call__(self) -> tuple:
+#         with open(self.filename, "r") as f:
+#             nr_of_nodes = int(f.readline())
+#             nodes = np.array(range(nr_of_nodes)).astype(int)
+#             x = np.full(nodes.shape, 0).astype(float)
+#             y = np.full(nodes.shape, 0).astype(float)
+#             for n in nodes:
+#                 x[n], y[n] = np.array(f.readline().split(" ")).astype(float)
+#             nr_of_triangs = int(f.readline())
+#             tri = np.full((nr_of_triangs, 3), 0)
+
+#             for n in range(nr_of_triangs):
+#                 tri[n, :] = np.fliplr(np.array([f.readline().split(" ")]).astype(int))[
+#                     0
+#                 ]
+#                 # tri[n,:] = np.array([f.readline().split(' ')]).astype(int)[0]
+
+#         # tri, nodes, x, y, Z, types, nodeStrings = read_sms_mesh(self.filename, nodestrings=True)
+#         # lat, lon = utm.to_latlon(x, y, 33, zone_letter = 'W', strict = False)
+#         nodeStrings = np.array(self.boundary_points)
+#         types = None
+#         # if nodestring_subset is not None:
+#         #    nodeStrings = [nodeStrings[i] for i in nodestring_subset]
+#         # nodeStrings = reduce(lambda x, y: x+y, nodeStrings)
+#         return tri, nodes, None, None, x, y, types, nodeStrings, 33, "W"
+
+#     def __str__(self):
+#         return "Reading triangular grid from Txt-file."
+
+
+class SmsFileTri(TriangReader):
     def __call__(
         self,
         filename: str,

@@ -6,7 +6,8 @@ import numpy as np
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from dnora.grid import Grid, TriGrid
+    from dnora.grid import Grid
+    from dnora.trigrid import TriGrid
 from dnora.aux_funcs import expand_area, get_url
 from dnora import msg
 from typing import Union
@@ -16,106 +17,108 @@ import dask
 from pathlib import Path
 import meshio
 from dnora.aux_funcs import get_coordinates_from_ds
+from dnora.readers.abstract_readers import DataReader
 
 # from dnora.defaults import read_environment_variable
 from .emodnet_functions import find_tile, get_covering_tiles, download_tile
 
 
-class TopoReader(ABC):
-    """Abstract class for reading the bathymetry."""
+# class TopoReader(ABC):
+#     """Abstract class for reading the bathymetry."""
 
-    @abstractmethod
-    def __call__(self, grid: Union[Grid, TriGrid], source: DataSource, **kwargs):
-        """Reads the bathymetrical information from a source and returns the data.
+#     @abstractmethod
+#     def __call__(self, grid: Union[Grid, TriGrid], source: DataSource, **kwargs):
+#         """Reads the bathymetrical information from a source and returns the data.
 
-        !!!! DEPTH VALUES ARE POSITIVE AND EVERYTHING ELSE (including 0)
-        IS INTERPRETED AS LAND.
+#         !!!! DEPTH VALUES ARE POSITIVE AND EVERYTHING ELSE (including 0)
+#         IS INTERPRETED AS LAND.
 
-        LON, LAT IN WGS84
+#         LON, LAT IN WGS84
 
-        X, Y IN UTM !!!
-
-
-
-        Two format options are available:
-
-        1) Matrix, where lon, lat or x, y are vectors and topo is the
-        corresponding matrix.
-
-        The dimensions and orientation of the bathymetry array that is returned to
-        the object should be:
-
-        rows = latitude and colums = longitude (i.e.) shape = (nr_lat, nr_lon).
-
-        North = [-1,:]
-        South = [0,:]
-        East = [:,-1]
-        West = [:,0]
-
-        2) Xyz, where topo, lon, lat, x, y are all vectors with the same length.
-
-        topo_x, topo_y, zone_number, zone_letter None in spherical data
-        topo_lon, topo_lat None in cartesian data
-
-        ----
-
-        This method is called from within the Grid-object
-
-        return (
-            topo,
-            coord_dict,
-            zone_number,
-            zone_letter,
-            metadata,
-        )
-        """
-
-    @abstractmethod
-    def __str__(self):
-        """Describes what topography is read and from where.
-
-        This is called by the Grid-object to provide output to the user.
-        """
-        pass
-
-    def default_data_source(self) -> DataSource:
-        return DataSource.LOCAL
-
-    def name(self) -> str:
-        return type(self).__name__
+#         X, Y IN UTM !!!
 
 
-class ConstantTopo(TopoReader):
-    """Creates an empty topography. Called when setting initial spacing."""
+#         Two format options are available:
 
-    def __init__(self, depth: float = 999.0):
-        self.depth = float(depth)
+#         1) Matrix, where lon, lat or x, y are vectors and topo is the
+#         corresponding matrix.
 
-    def __call__(
-        self, grid: Union[Grid, TriGrid], source: DataSource, folder: str, **kwargs
-    ):
-        """Creates a trivial topography with all water points."""
-        topo = np.full(grid.size(), self.depth)
-        zone_number, zone_letter = grid.utm()
-        coord_dict = {
-            "lon": grid.lon(strict=True),
-            "lat": grid.lat(strict=True),
-            "x": grid.x(strict=True),
-            "y": grid.y(strict=True),
-        }
-        return (
-            topo,
-            coord_dict,
-            zone_number,
-            zone_letter,
-            {"source": type(self).__name__},
-        )
+#         The dimensions and orientation of the bathymetry array that is returned to
+#         the object should be:
 
-    def __str__(self):
-        return f"Creating an constant topography with depth values {self.depth}."
+#         rows = latitude and colums = longitude (i.e.) shape = (nr_lat, nr_lon).
+
+#         North = [-1,:]
+#         South = [0,:]
+#         East = [:,-1]
+#         West = [:,0]
+
+#         2) Xyz, where topo, lon, lat, x, y are all vectors with the same length.
+
+#         topo_x, topo_y, zone_number, zone_letter None in spherical data
+#         topo_lon, topo_lat None in cartesian data
+
+#         ----
+
+#         This method is called from within the Grid-object
+
+#         return (
+#             topo,
+#             coord_dict,
+#             zone_number,
+#             zone_letter,
+#             metadata,
+#         )
+#         """
+
+#     @abstractmethod
+#     def __str__(self):
+#         """Describes what topography is read and from where.
+
+#         This is called by the Grid-object to provide output to the user.
+#         """
+#         pass
+
+#     def default_data_source(self) -> DataSource:
+#         return DataSource.LOCAL
+
+#     def name(self) -> str:
+#         return type(self).__name__
 
 
-class EMODNET(TopoReader):
+# class ConstantTopo(DataReader):
+#     """Creates an empty topography. Called when setting initial spacing."""
+
+#     def __init__(self, depth: float = 999.0):
+#         self.depth = float(depth)
+
+#     def __call__(
+#         self, grid: Union[Grid, TriGrid], source: DataSource, folder: str, **kwargs
+#     ):
+#         """Creates a trivial topography with all water points."""
+#         topo = np.full(grid.size(), self.depth)
+#         zone_number, zone_letter = grid.utm()
+#         coord_dict = {
+#             "lon": grid.lon(strict=True),
+#             "lat": grid.lat(strict=True),
+#             "x": grid.x(strict=True),
+#             "y": grid.y(strict=True),
+#         }
+#         data_dict = {
+#             "topo": topo,
+#             "zone_number": zone_number,
+#             "zone_letter": zone_letter,
+#         }
+#         meta_dict = {"source": type(self).__name__}
+#         metaparameter_dict = {}
+
+#         return coord_dict, data_dict, meta_dict, metaparameter_dict
+
+#     def __str__(self):
+#         return f"Creating an constant topography with depth values {self.depth}."
+
+
+class EMODNET(DataReader):
     """Reads bathymetry from multiple EMODNET tiles in netcdf format.
 
     Contributed by: https://github.com/poplarShift
@@ -177,19 +180,17 @@ class EMODNET(TopoReader):
                 topo = -1 * ds.elevation.values
                 coord_dict = {"lon": ds.lon.values, "lat": ds.lat.values}
 
-                return (
-                    topo,
-                    coord_dict,
-                    None,
-                    None,
-                    {"source": f"EMODNET{year:.0f}"},
-                )
+                data_dict = {"topo": topo}
+                meta_dict = {"source": f"EMODNET{year:.0f}"}
+                metaparameter_dict = {}
+
+                return coord_dict, data_dict, meta_dict, metaparameter_dict
 
     def __str__(self):
         return f"Reading EMODNET topography from {self.files}."
 
 
-class KartverketNo50m(TopoReader):
+class KartverketNo50m(DataReader):
     """Reads data from Kartverket bathymetry.
 
     High resolution bathymetry dataset for the whole Norwegian Coast.
@@ -239,14 +240,19 @@ class KartverketNo50m(TopoReader):
         topo_x = topo_x[mask]
         topo_y = topo_y[mask]
         topo = z[mask]
+
         coord_dict = {"x": topo_x, "y": topo_y}
-        return topo, coord_dict, zone_number, "W", {"source": "Kartverket50m"}
+        data_dict = {"topo": topo, "zone_number": zone_number, "zone_letter": "W"}
+        meta_dict = {"source": "Kartverket50m"}
+        metaparameter_dict = {}
+
+        return coord_dict, data_dict, meta_dict, metaparameter_dict
 
     def __str__(self):
         return f"Reading Kartverket topography from {self.source}."
 
 
-class GEBCO(TopoReader):
+class GEBCO(DataReader):
     """Reads the GEBCO_2021 gridded bathymetric data set.
     A global terrain model for ocean and land,
     providing elevation data, in meters, on a 15 arc-second interval grid.
@@ -290,8 +296,11 @@ class GEBCO(TopoReader):
         topo_lat = ds.lat.values.astype(float)
 
         coord_dict = {"lon": topo_lon, "lat": topo_lat}
+        data_dict = {"topo": topo}
+        meta_dict = {"source": f"GEBCO{year}"}
+        metaparameter_dict = {}
 
-        return topo, coord_dict, None, None, {"source": f"GEBCO{year}"}
+        return coord_dict, data_dict, meta_dict, metaparameter_dict
 
     def __str__(self):
         return f"Reading GEBCO topography from {self.source}."
@@ -319,35 +328,35 @@ class GEBCO(TopoReader):
 #         return("Merging data from several grids.")
 
 
-class ForceFeed(TopoReader):
-    """Simply passes on the data it was fed upon initialization"""
+# class ForceFeed(TopoReader):
+#     """Simply passes on the data it was fed upon initialization"""
 
-    def __init__(self, topo):
-        self.topo = topo
-        return
+#     def __init__(self, topo):
+#         self.topo = topo
+#         return
 
-    def __call__(
-        self, grid: Union[Grid, TriGrid], source: DataSource, **kwargs
-    ) -> tuple:
-        # Just use the values it was forcefed on initialization
-        topo = self.topo
+#     def __call__(
+#         self, grid: Union[Grid, TriGrid], source: DataSource, **kwargs
+#     ) -> tuple:
+#         # Just use the values it was forcefed on initialization
+#         topo = self.topo
 
-        return (
-            topo,
-            grid.lon(strict=True),
-            grid.lat(strict=True),
-            grid.x(strict=True),
-            grid.y(strict=True),
-            None,
-            None,
-            {"source": "ForceFeed"},
-        )
+#         return
+#             topo,
+#             grid.lon(strict=True),
+#             grid.lat(strict=True),
+#             grid.x(strict=True),
+#             grid.y(strict=True),
+#             None,
+#             None,
+#             {"source": "ForceFeed"},
+#         )
 
-    def __str__(self):
-        return "Passing on the topography I was initialized with."
+#     def __str__(self):
+#         return "Passing on the topography I was initialized with."
 
 
-class MshFile(TopoReader):
+class MshFile(DataReader):
     """Reads topography data from msh-file"""
 
     def __call__(
@@ -357,7 +366,8 @@ class MshFile(TopoReader):
         folder: str,
         filename: str = None,
         expansion_factor: float = 1.2,
-        utm: tuple[int, str] = (None, None),
+        zone_number: int = None,
+        zone_letter: str = None,
     ) -> tuple:
         self.filename = filename
         mesh = meshio.read(filename)
@@ -366,7 +376,7 @@ class MshFile(TopoReader):
         topo_y = mesh.points[:, 1]
         topo = mesh.points[:, 2]
 
-        if utm[0] is None:
+        if zone_number is None or zone_letter is None:
             xedges, yedges = expand_area(
                 grid.edges("lon"), grid.edges("lat"), expansion_factor
             )
@@ -381,49 +391,23 @@ class MshFile(TopoReader):
         topo_x = topo_x[mask]
         topo_y = topo_y[mask]
         topo = topo[mask]
-        if utm[0] is None:
+        if zone_number is None or zone_letter is None:
             msg.plain(
-                f"No utm-zone, e.g. utm=(33,'W'), provided. Assuming data in {self.filename} is in lon-lat!"
+                f"No utm-zone, e.g. zone_number=33, zone_letter='W', provided. Assuming data in {self.filename} is in lon-lat!"
             )
             coord_dict = {"lon": topo_x, "lat": topo_y}
         else:
             coord_dict = {"x": topo_x, "y": topo_y}
 
-        return (
-            topo,
-            coord_dict,
-            utm[0],
-            utm[1],
-            {"source": self.filename},
-        )
+        data_dict = {
+            "topo": topo,
+            "zone_number": zone_number,
+            "zone_letter": zone_letter,
+        }
+        meta_dict = {"source": self.filename}
+        metaparameter_dict = {}
+
+        return coord_dict, data_dict, meta_dict, metaparameter_dict
 
     def __str__(self):
         return f"Reading topography from {self.filename}."
-
-
-class NetcdfTopoReader(TopoReader):
-    def __call__(
-        self,
-        grid: Union[Grid, TriGrid],
-        source: DataSource,
-        folder: str,
-        filename: str = None,
-        expansion_factor: float = 1.2,
-        utm: tuple[int, str] = (None, None),
-    ) -> tuple:
-        self.filename = filename
-
-        ds = xr.open_dataset(get_url(folder, filename))
-        coord_dict = get_coordinates_from_ds(ds, return_dict=True)
-        topo = ds.topo.values
-        utm = (None, None)
-        return (
-            topo,
-            coord_dict,
-            utm[0],
-            utm[1],
-            {"source": self.filename},
-        )
-
-    def __str__(self):
-        return f"Reading triangular grid from Netcdf-file {self.filename}."

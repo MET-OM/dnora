@@ -1,7 +1,10 @@
-name: dnora
+name: dnora2
 channels:
   - conda-forge
 dependencies:
+  - pip
+  - pip:
+    - geo-skeletons==0.9.9
   - python=>3.9
   - matplotlib>=3.1
   - numpy>=1.17

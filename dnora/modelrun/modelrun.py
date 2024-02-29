@@ -5,6 +5,7 @@ import numpy as np
 from geo_skeletons import PointSkeleton
 from typing import Union
 import os
+from dnora.metaparameter.parameter_funcs import set_metaparameters_in_object
 
 # Import objects
 from dnora.grid import Grid, TriGrid
@@ -74,7 +75,7 @@ class ModelRun:
     ):
         self.name = copy(name)
         self._grid = copy(grid)
-        self._time = pd.date_range(start_time, end_time, freq="H")
+        self._time = pd.date_range(start_time, end_time, freq="h")
         self._data_exported_to: dict[DnoraDataType : list[str]] = {}
         self._input_file_exported_to: dict[DnoraFileType : list[str]] = {}
         self._global_dry_run = dry_run
@@ -249,17 +250,7 @@ class ModelRun:
                 obj = add_datavar(key, append=True)(obj)  # Creates .hs() etc. methods
             obj.set(key, value, allow_reshape=True)
 
-            metaparameter = metaparameter_dict.get(
-                key
-            )  # Check if metaparameter provided by reader
-
-            if metaparameter is None:
-                # DNORA object usually has specified the metaparameters
-                if hasattr(obj, "meta_dict"):
-                    metaparameter = obj.meta_dict.get(key)
-
-            if metaparameter is not None:
-                obj.set_metadata(metaparameter.meta_dict(), data_array_name=key)
+        obj = set_metaparameters_in_object(obj, metaparameter_dict, data_dict)
 
         obj.set_metadata(meta_dict)
 
@@ -646,7 +637,7 @@ class ModelRun:
                         t0 = pd.to_datetime([t0, time[0]]).max()
                     if time[-1] is not None:
                         t1 = pd.to_datetime([t1, time[-1]]).min()
-        time = pd.date_range(t0, t1, freq="H")
+        time = pd.date_range(t0, t1, freq="h")
         return time[:: len(time) - 1]
 
     def start_time(self, crop_with: list[str] = None):

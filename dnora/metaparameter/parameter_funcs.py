@@ -33,3 +33,20 @@ def create_metaparameter_dict(parameter_strings: list[str]):
         if val is not None:
             metaparameter_dict[param] = val
     return metaparameter_dict
+
+
+def set_metaparameters_in_object(obj, metaparameter_dict, data_dict):
+    for key, value in data_dict.items():
+        metaparameter = metaparameter_dict.get(
+            key
+        )  # Check if metaparameter provided by reader
+
+        if metaparameter is None:
+            # DNORA object usually has specified the metaparameters
+            if hasattr(obj, "meta_dict"):
+                metaparameter = obj.meta_dict.get(key)
+
+        if metaparameter is not None:
+            obj.set_metadata(metaparameter.meta_dict(), data_array_name=key)
+
+    return obj

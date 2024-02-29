@@ -155,7 +155,6 @@ class ConstantGriddedData(DataReader):
         folder: str,
         **kwargs,
     ):
-        time = pd.date_range(start=start_time, end=end_time, freq="H").values
 
         coord_dict = {}
         coord_dict["lon"] = grid.lon(strict=True)
@@ -163,10 +162,11 @@ class ConstantGriddedData(DataReader):
         coord_dict["x"] = grid.x(strict=True)
         coord_dict["y"] = grid.y(strict=True)
         if "time" in dnora_objects.get(obj_type)._coord_manager.added_coords():
+            time = pd.date_range(start=start_time, end=end_time, freq="h").values
             coord_dict["time"] = time
             obj_size = (len(time), grid.ny(), grid.nx())
         else:
-            obj_size = grid.size()
+            obj_size = grid.size(coords="grid")
 
         variables = dnora_objects.get(obj_type)._coord_manager.added_vars().keys()
 
@@ -231,7 +231,7 @@ class ConstantPointData(SpectralDataReader):
         # Time is always first coord if exists
         if "time" in dnora_objects.get(obj_type)._coord_manager.added_coords():
             coord_val = self.extra_coords.get(
-                "time", pd.date_range(start=start_time, end=end_time, freq="H").values
+                "time", pd.date_range(start=start_time, end=end_time, freq="h").values
             )
             coord_dict["time"] = coord_val
             obj_size.append(len(coord_val))

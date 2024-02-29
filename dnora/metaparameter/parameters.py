@@ -4,6 +4,13 @@ import pint
 ureg = pint.UnitRegistry()
 
 
+class WaterDepth(MetaParameter):
+    _short_name = "depth"
+    _long_name = "water_depth"
+    _standard_name = "sea_floor_depth_below_sea_surface"
+    _unit = ureg.m
+
+
 class Hs(MetaParameter):
     _short_name = "hs"
     _long_name = "significant_wave_height"

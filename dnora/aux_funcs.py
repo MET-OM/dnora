@@ -222,7 +222,7 @@ def create_time_stamps(
     file_times = pd.date_range(
         start=start_stamp - pd.DateOffset(hours=h0),
         end=end_stamp - pd.DateOffset(hours=h1),
-        freq=f"{stride}H",
+        freq=f"{stride}h",
     )
 
     # FIND START AND END TIMES
