@@ -128,6 +128,9 @@ class EMODNET(DataReader):
     Contributed by: https://github.com/poplarShift
     """
 
+    def default_data_source(self) -> DataSource:
+        return DataSource.LOCAL
+
     @staticmethod
     def _get_files(folder, tiles, year):
         fn = []
@@ -209,6 +212,9 @@ class KartverketNo50m(DataReader):
     Contributed by: https://github.com/emiliebyer
     """
 
+    def default_data_source(self) -> DataSource:
+        return DataSource.LOCAL
+
     def _folder(self, folder: str):
         return get_url(folder, "KartverketNo50m")
 
@@ -261,6 +267,10 @@ class KartverketNo50m(DataReader):
 
 
 class GEBCO(DataReader):
+
+    def default_data_source(self) -> DataSource:
+        return DataSource.LOCAL
+
     def __call__(
         self,
         obj_type: DnoraDataType,
@@ -410,6 +420,9 @@ class GEBCOold(DataReader):
 
 class MshFile(DataReader):
     """Reads topography data from msh-file"""
+
+    def default_data_source(self) -> DataSource:
+        return DataSource.LOCAL
 
     def __call__(
         self,

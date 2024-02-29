@@ -42,7 +42,12 @@ def import_topo(
     source = source or topo_reader.default_data_source()
     source = data_source_from_string(source)
 
-    folder = folder or read_environment_variable(DnoraDataType.GRID, source)
+    if folder is None:
+        folder = read_environment_variable(DnoraDataType.GRID, source)
+
+    if folder is None:
+        folder = ""
+
     if folder and source == DataSource.LOCAL:
         if not os.path.exists(os.path.expanduser(folder)):
             os.mkdir(folder)
