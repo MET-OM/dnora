@@ -6,8 +6,8 @@ import numpy as np
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from dnora.grid import Grid
-    from dnora.trigrid import TriGrid
+    from dnora.grid import Grid, TriGrid
+
 from dnora.aux_funcs import expand_area, get_url
 from dnora import msg
 from typing import Union
@@ -18,6 +18,7 @@ from pathlib import Path
 import meshio
 from dnora.aux_funcs import get_coordinates_from_ds
 from dnora.readers.abstract_readers import DataReader
+from dnora.dnora_types import DnoraDataType
 
 # from dnora.defaults import read_environment_variable
 from .emodnet_functions import find_tile, get_covering_tiles, download_tile
@@ -134,7 +135,10 @@ class EMODNET(DataReader):
 
     def __call__(
         self,
+        obj_type: DnoraDataType,
         grid: Union[Grid, TriGrid],
+        start_time,
+        end_time,
         source: DataSource,
         expansion_factor: float = 1.2,
         folder: str = None,
@@ -207,6 +211,7 @@ class KartverketNo50m(DataReader):
 
     def __call__(
         self,
+        obj_type: DnoraDataType,
         grid: Union[Grid, TriGrid],
         source: DataSource,
         folder: str,
@@ -267,7 +272,10 @@ class GEBCO(DataReader):
 
     def __call__(
         self,
+        obj_type: DnoraDataType,
         grid: Union[Grid, TriGrid],
+        start_time,
+        end_time,
         source: DataSource,
         folder: str,
         expansion_factor: float = 1.2,
@@ -361,7 +369,10 @@ class MshFile(DataReader):
 
     def __call__(
         self,
+        obj_type: DnoraDataType,
         grid: Union[Grid, TriGrid],
+        start_time,
+        end_time,
         source: DataSource,
         folder: str,
         filename: str = None,
