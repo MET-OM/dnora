@@ -4,7 +4,7 @@ channels:
 dependencies:
   - pip
   - pip:
-    - geo-skeletons==0.9.9
+    - geo-skeletons==0.9.10
   - python=>3.9
   - matplotlib>=3.1
   - numpy>=1.17
