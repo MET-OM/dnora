@@ -4,6 +4,8 @@ list_of_placeholders:
   - '#ObjectName'
   - '#T0'
   - '#T1'
+  - '#FT0'
+  - '#FT1'
   - 'E#Lon'
   - 'N#Lat'
   - '#Lon0'
@@ -23,6 +25,9 @@ MODELRUN:
   folder: 'output'
   filename: 'dnorafile'
   dateformat: '%Y%m%dT%H%M'
+  dateformat_folder: '%Y'
+  coord_format: '010.7f'
+  cartesian_coord_format: '04.1f'
   extension: 'nc'
   grid:
     folder: 'output'
@@ -46,7 +51,7 @@ MODELRUN:
     dateformat: '%Y%m%dT%H%M'
   input:
     folder: 'output'
-    filename: 'inputfile_#GRID_#FORCING_#BOUNDARY_#SPECTRA_#T0_#T1_#Lon_#Lat'
+    filename: 'inputfile_#GRID_#FORCING_#BOUNDARY_#SPECTRA_#T0_#T1_#LON_#LAT'
     dateformat: '%Y%m%dT%H%M'
     extension: 'txt'
 
@@ -119,7 +124,9 @@ REEF3D:
     extension: 'txt'
 
 CACHE:
-  filename: "#DataType_#Lon0_#Lon1_#Lat0_#Lat1_#T0"
-  dateformat: '%Y-%m'
+  filename: "#ObjectName_#DataType_#LAT0N_#LON0E_#T0"
+  dateformat: '%Y-%m-%d'
+  dateformat_folder: '%Y/%m'
+  coord_format: '03.0f'
   extension: 'nc'
-  folder: "#DataType_cache/#ObjectName"
+  folder: "#DataType_cache/#ObjectName/#FT0"
