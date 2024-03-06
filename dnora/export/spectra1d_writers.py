@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from dnora.file_module import FileNames
 
 from .spectra_writers import SpectraWriter
-from dnora.dnora_types import DnoraDataType
+from dnora.dnora_type_manager.dnora_types import DnoraDataType
 
 
 class REEF3D(SpectraWriter):

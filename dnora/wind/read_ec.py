@@ -17,7 +17,7 @@ from dnora.aux_funcs import (
 )
 import pandas as pd
 
-from dnora.dnora_types import DataSource
+from dnora.dnora_type_manager.data_sources import DataSource
 from dnora.readers.abstract_readers import DataReader
 
 

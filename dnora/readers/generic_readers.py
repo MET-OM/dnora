@@ -6,10 +6,11 @@ import xarray as xr
 from dnora import aux_funcs
 from pathlib import Path
 from dnora.metaparameter.parameter_funcs import create_metaparameter_dict
-from dnora.dnora_types import DnoraDataType, DataSource
+from dnora.dnora_type_manager.dnora_types import DnoraDataType
+from dnora.dnora_type_manager.data_sources import DataSource
 from dnora.spectral_conventions import convert_2d_to_1d, SpectralConvention
 
-from dnora.modelrun.object_type_manager import dnora_objects
+from dnora.dnora_type_manager.dnora_objects import dnora_objects
 from dnora.aux_funcs import get_url, expand_area
 from dnora import msg
 
@@ -158,12 +159,11 @@ class ConstantGriddedData(DataReader):
         folder: str,
         **kwargs,
     ):
-
-        coord_dict = {}
-        coord_dict["lon"] = grid.lon(strict=True)
-        coord_dict["lat"] = grid.lat(strict=True)
-        coord_dict["x"] = grid.x(strict=True)
-        coord_dict["y"] = grid.y(strict=True)
+        coord_dict = grid.coord_dict(strict=True)
+        # coord_dict["lon"] = grid.lon(strict=True)
+        # coord_dict["lat"] = grid.lat(strict=True)
+        # coord_dict["x"] = grid.x(strict=True)
+        # coord_dict["y"] = grid.y(strict=True)
         if "time" in dnora_objects.get(obj_type)._coord_manager.added_coords():
             time = pd.date_range(start=start_time, end=end_time, freq="h").values
             coord_dict["time"] = time

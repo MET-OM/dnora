@@ -7,7 +7,7 @@ import sys
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from dnora.dnora_types import DnoraDataType, DataSource
+    from dnora_type_manager.dnora_types import DnoraDataType, DataSource
 
 
 def read_defaults(filename: str, from_module: bool = False):

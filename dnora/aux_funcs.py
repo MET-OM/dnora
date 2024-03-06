@@ -179,6 +179,7 @@ def create_time_stamps(
     hours_per_file: int = 0,
     last_file: str = "",
     lead_time: int = 0,
+    offset: int = 0,
 ) -> tuple:
     """Create time stamps to read in blocks of wind forcing from files.
     Options
@@ -192,6 +193,7 @@ def create_time_stamps(
     hours_per_file: Try to read this many hours from the last file. Only used
                     if last_file is given, and only meaningful if hours_per_file
                     is different from stride.
+    offset:         if runs are e.g. 06 and 12, utse offset=6, stride=12
     Returns
     start_times:    Pandas DatetimeIndex with the start times.
     end_times:      Pandas DatetimeIndex with the end times.
@@ -217,8 +219,8 @@ def create_time_stamps(
         end_stamp = pd.Timestamp(end_time) - pd.DateOffset(hours=lead_time)
 
     # How many ours to remove if files are e.g. 00, 06, 12 and we request output from 01-08
-    h0 = int(start_stamp.hour) % stride
-    h1 = int(end_stamp.hour) % stride
+    h0 = int(start_stamp.hour) % stride + offset
+    h1 = int(end_stamp.hour) % stride + offset
     file_times = pd.date_range(
         start=start_stamp - pd.DateOffset(hours=h0),
         end=end_stamp - pd.DateOffset(hours=h1),

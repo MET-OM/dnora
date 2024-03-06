@@ -3,14 +3,14 @@ from abc import ABC, abstractmethod
 
 # Import objects
 
-from dnora.dnora_types import DataSource
+from dnora.dnora_type_manager.data_sources import DataSource
 from dnora.spectral_conventions import SpectralConvention
 
 
 from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
-    from dnora.dnora_types import DnoraDataType
+    from dnora_type_manager.dnora_types import DnoraDataType
     from dnora.grid import Grid
 
 

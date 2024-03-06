@@ -10,7 +10,7 @@ from .process import GridProcessor
 from pathlib import Path
 
 from dnora.readers.abstract_readers import DataReader
-from dnora.dnora_types import DataSource
+from dnora.dnora_type_manager.data_sources import DataSource
 import matplotlib.pyplot as plt
 from .topo import import_topo
 import cmocean.cm
@@ -184,3 +184,11 @@ class Grid(GriddedSkeleton):
         )
 
         return dt
+
+    def coord_dict(self, strict: bool = True):
+        return {
+            "lon": self.lon(strict=strict),
+            "lat": self.lat(strict=strict),
+            "x": self.x(strict=strict),
+            "y": self.y(strict=strict),
+        }

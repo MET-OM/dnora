@@ -1,4 +1,4 @@
-from dnora.dnora_types import DnoraDataType
+from .dnora_types import DnoraDataType
 from typing import Union
 
 from dnora.grid import Grid, TriGrid

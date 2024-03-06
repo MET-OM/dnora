@@ -9,7 +9,7 @@ from dnora.grid import Grid
 
 # Import abstract classes
 from dnora.readers.abstract_readers import DataReader
-from dnora.dnora_types import DataSource
+from dnora.dnora_type_manager.data_sources import DataSource
 
 # Import aux_funcsiliry functions
 from dnora import msg

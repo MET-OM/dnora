@@ -2,10 +2,10 @@ from __future__ import annotations  # For TYPE_CHECKING
 from copy import copy
 import pandas as pd
 import numpy as np
-from geo_skeletons import PointSkeleton
-from typing import Union
+
+from typing import Union, TYPE_CHECKING
 import os
-from dnora.metaparameter.parameter_funcs import set_metaparameters_in_object
+
 
 # Import objects
 from dnora.grid import Grid, TriGrid
@@ -14,11 +14,10 @@ from dnora.file_module import FileNames
 
 # Import abstract classes and needed instances of them
 from dnora.pick.point_pickers import PointPicker, NearestGridPoint
-
+from dnora.importer import DataImporter
 
 from dnora.spectral_grid import SpectralGrid
 
-from geo_skeletons.decorators import add_datavar
 
 from dnora import msg
 from dnora.cacher.cache_decorator import cached_reader
@@ -38,27 +37,28 @@ from dnora.readers.abstract_readers import (
     SpectralDataReader,
 )
 
-from dnora.dnora_types import (
+from dnora.dnora_type_manager.dnora_types import (
     DnoraDataType,
     DnoraFileType,
     data_type_from_string,
     file_type_from_string,
-    DataSource,
 )
-from .object_type_manager import (
-    Grid,
-    Wind,
-    Spectra,
-    Spectra1D,
-    WaterLevel,
-    WaveSeries,
-    Current,
-    Ice,
-    DnoraObject,
-    dnora_objects,
-)
+from dnora.dnora_type_manager.data_sources import DataSource
 
-from dnora.readers.abstract_readers import ReaderFunction
+if TYPE_CHECKING:
+    from dnora.dnora_type_manager.dnora_objects import (
+        Grid,
+        Wind,
+        Spectra,
+        Spectra1D,
+        WaterLevel,
+        WaveSeries,
+        Current,
+        Ice,
+        DnoraObject,
+    )
+
+    from dnora.readers.abstract_readers import ReaderFunction
 
 
 class ModelRun:
@@ -73,15 +73,15 @@ class ModelRun:
         name: str = "AnonymousModelRun",
         dry_run: bool = False,
     ):
-        self.name = copy(name)
-        self._grid = copy(grid)
+        self.name = name
+        self._grid = grid
         self._time = pd.date_range(start_time, end_time, freq="h")
-        self._data_exported_to: dict[DnoraDataType : list[str]] = {}
-        self._input_file_exported_to: dict[DnoraFileType : list[str]] = {}
+        self._data_exported_to: dict[DnoraDataType, list[str]] = {}
+        self._input_file_exported_to: dict[DnoraFileType, list[str]] = {}
         self._global_dry_run = dry_run
         self._dry_run = False  # Set by methods
 
-        self._dnora_objects: dict[DnoraDataType:DnoraObject] = {
+        self._dnora_objects: dict[DnoraDataType, DnoraObject] = {
             DnoraDataType.GRID: grid,
         }
         self._consistency_check(
@@ -127,10 +127,9 @@ class ModelRun:
         reader = reader or self._get_reader(obj_type)
         if reader is None:
             raise Exception(f"Define a {obj_type.name}Reader!")
-        try:
-            name = name or reader.name()
-        except:
-            breakpoint()
+
+        name = name or reader.name()
+
         if name is None:
             raise ValueError(
                 f"Provide either a name or a {obj_type.name}Reader that will then define the name!"
@@ -176,97 +175,6 @@ class ModelRun:
             raise Exception("Define a PointPicker!")
         return point_picker
 
-    def _pick_points(
-        self,
-        reader: ReaderFunction,
-        point_picker: PointPicker,
-        mask_of_points: np.ndarray[bool],
-        source: str,
-        folder: str,
-        **kwargs,
-    ):
-        """Gets the indeces of the point defined by the logical mask with respect to all points available from the reader function."""
-        if not self.dry_run():
-            available_points = reader.get_coordinates(
-                grid=self.grid(),
-                start_time=self.start_time(),
-                source=source,
-                folder=folder,
-                **kwargs,
-            )
-
-            all_points = PointSkeleton(
-                lon=available_points.get("lon"),
-                lat=available_points.get("lat"),
-                x=available_points.get("x"),
-                y=available_points.get("y"),
-            )
-
-            if np.all(np.logical_not(mask_of_points)):
-                interest_points = None
-            else:
-                interest_points = PointSkeleton.from_skeleton(
-                    self.grid(), mask=mask_of_points
-                )
-
-            msg.header(point_picker, "Choosing points to import...")
-            inds = point_picker(
-                grid=self.grid(),
-                all_points=all_points,
-                selected_points=interest_points,
-                fast=True,
-                **kwargs,
-            )
-
-            if len(inds) < 1:
-                msg.warning(
-                    "PointPicker didn't find any points. Aborting import of data."
-                )
-                return
-            return inds
-
-    @staticmethod
-    def _read_data(
-        obj_type: DnoraDataType,
-        reader: Union[DataReader, SpectralDataReader],
-        grid: Grid,
-        start_time: str,
-        end_time: str,
-        name: str,
-        source: DnoraDataType,
-        folder: str,
-        inds: list[int] = None,
-        **kwargs,
-    ) -> DnoraObject:
-        """Reads data using the reader, creates the objects and sets data and metadata in object"""
-
-        coord_dict, data_dict, meta_dict, metaparameter_dict = reader(
-            obj_type=obj_type,
-            grid=grid,
-            start_time=pd.to_datetime(start_time),
-            end_time=pd.to_datetime(end_time),
-            source=source,
-            folder=folder,
-            inds=inds,
-            **kwargs,
-        )
-
-        obj = dnora_objects.get(obj_type)(name=name, **coord_dict)
-
-        for key, value in data_dict.items():
-            if obj.get(key) is None:
-                obj = add_datavar(key, append=True)(obj)  # Creates .hs() etc. methods
-            obj.set(key, value, allow_reshape=True)
-
-        obj = set_metaparameters_in_object(obj, metaparameter_dict, data_dict)
-
-        obj.set_metadata(meta_dict)
-
-        if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
-            obj._mark_convention(reader.convention())
-
-        return obj
-
     def _import_data(
         self,
         obj_type: DnoraDataType,
@@ -275,49 +183,33 @@ class ModelRun:
         reader,
         source,
         folder,
-        mask=None,
+        point_mask=None,
         point_picker=None,
         **kwargs,
     ):
-        """Performs import of DNORA object"""
+        """Performs import and returns DNORA object"""
         reader, name, source, folder = self._setup_import(
             obj_type, name, dry_run, reader, source, folder
         )
 
-        if mask is not None:
-            point_picker = self._setup_point_picker(point_picker)
+        point_picker = self._setup_point_picker(point_picker)
 
-            inds = self._pick_points(
-                reader,
-                point_picker,
-                mask,
-                source,
-                folder,
-                **kwargs,
-            )
-        else:
-            inds = None
-
-        if self.dry_run():
-            msg.info("Dry run! No forcing will be imported.")
-            return
-
-        obj = self._read_data(
-            obj_type,
-            reader,
-            self.grid(),
-            self.start_time(),
-            self.end_time(),
-            name,
-            source,
-            folder,
-            inds,
+        data_importer = DataImporter()
+        obj = data_importer.import_data(
+            grid=self.grid(),
+            start_time=self.start_time(),
+            end_time=self.end_time(),
+            obj_type=obj_type,
+            name=name,
+            dry_run=self.dry_run(),
+            reader=reader,
+            source=source,
+            folder=folder,
+            point_picker=point_picker,
+            point_mask=point_mask,
             **kwargs,
         )
         self[obj_type] = obj
-
-    def cache(self, obj_type: DnoraDataType | str) -> None:
-        Cacher(self).export(obj_type)
 
     @cached_reader(DnoraDataType.WIND, generic_readers.Netcdf)
     def import_wind(
@@ -360,6 +252,7 @@ class ModelRun:
         folder: str = None,
         **kwargs,
     ) -> None:
+
         self._import_data(
             DnoraDataType.SPECTRA,
             name,
@@ -383,6 +276,7 @@ class ModelRun:
         folder: str = None,
         **kwargs,
     ) -> None:
+
         self._import_data(
             DnoraDataType.SPECTRA1D,
             name,
@@ -406,6 +300,7 @@ class ModelRun:
         folder: str = None,
         **kwargs,
     ) -> None:
+
         self._import_data(
             DnoraDataType.WAVESERIES,
             name,
@@ -428,6 +323,7 @@ class ModelRun:
         folder: str = None,
         **kwargs,
     ) -> None:
+
         self._import_data(
             DnoraDataType.CURRENT, name, dry_run, reader, source, folder, **kwargs
         )
@@ -442,6 +338,7 @@ class ModelRun:
         folder: str = None,
         **kwargs,
     ) -> None:
+
         self._import_data(
             DnoraDataType.ICE, name, dry_run, reader, source, folder, **kwargs
         )
@@ -450,7 +347,6 @@ class ModelRun:
         self,
         dry_run: bool = False,
         name: str | None = None,
-        write_cache=False,
         **kwargs,
     ):
         self._dry_run = dry_run
@@ -474,21 +370,19 @@ class ModelRun:
             reader=spectral_reader,
             point_picker=TrivialPicker(),
             name=name,
-            write_cache=write_cache,
             **kwargs,
         )
 
     def spectra_to_waveseries(
         self,
         dry_run: bool = False,
-        write_cache=False,
         freq: tuple = (0, 10_000),
         **kwargs,
     ):
         self._dry_run = dry_run
         if self.spectra1d() is None:
             if self.spectra() is not None:
-                self.spectra_to_1d(dry_run=dry_run, write_cache=write_cache, **kwargs)
+                self.spectra_to_1d(dry_run=dry_run, **kwargs)
             else:
                 msg.warning("No Spectra to convert to WaveSeries!")
                 return
@@ -506,7 +400,6 @@ class ModelRun:
             reader=waveseries_reader,
             point_picker=TrivialPicker(),
             name=name,
-            write_cache=write_cache,
             **kwargs,
         )
 
@@ -699,6 +592,14 @@ class ModelRun:
 
     def _get_point_picker(self) -> PointPicker:
         return self._point_picker
+
+    @classmethod
+    def empty_copy(cls, grid: Grid, start_time: str, end_time: str):
+        return cls(
+            grid=grid,
+            start_time=start_time,
+            end_time=end_time,
+        )
 
 
 # def camel_to_snake(string: str) -> str:

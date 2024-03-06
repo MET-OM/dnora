@@ -13,7 +13,7 @@ from dnora.aux_funcs import (
     expand_area,
 )
 
-from dnora.dnora_types import DataSource
+from dnora.dnora_type_manager.data_sources import DataSource
 from dnora.readers.abstract_readers import DataReader
 
 

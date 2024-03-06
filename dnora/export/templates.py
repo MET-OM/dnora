@@ -1,7 +1,7 @@
 from .exporter import DataExporter
 from . import data_writers, grid_writers, spectra_writers, spectra1d_writers
 
-from dnora.dnora_types import DnoraDataType
+from dnora.dnora_type_manager.dnora_types import DnoraDataType
 from .exporter import WriterFunction
 from dnora.model_formats import ModelFormat
 
@@ -14,8 +14,10 @@ class NullExporter(DataExporter):
 
 
 class Cacher(DataExporter):
+    _silent = False
+
     def _get_default_writer(self) -> WriterFunction:
-        return data_writers.Netcdf()
+        return data_writers.Netcdf(daily_files=True)
 
     def _get_default_format(self) -> str:
         return ModelFormat.CACHE

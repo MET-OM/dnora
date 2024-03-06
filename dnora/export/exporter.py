@@ -6,11 +6,10 @@ from .data_writers import DataWriter, Netcdf
 from .spectra_writers import SpectraWriter
 
 from .decorators import add_export_method
-from dnora.dnora_types import (
+from dnora.dnora_type_manager.dnora_types import (
     DnoraDataType,
     data_type_from_string,
     DnoraFileType,
-    file_type_from_string,
 )
 from ..model_formats import ModelFormat
 
@@ -31,6 +30,7 @@ WriterFunction = Union[
 @add_export_method(DnoraDataType.ICE)
 class DataExporter:
     _writer_dict = {}
+    _silent = False
 
     def _get_default_writer(self) -> WriterFunction:
         return Netcdf()
@@ -113,10 +113,11 @@ class DataExporter:
             msg.info(f"No {obj_type.name} data exists. Won't export anything.")
             return
 
-        msg.header(
-            writer_function,
-            f"Writing {obj_type.name} data from {self.model[obj_type].name}",
-        )
+        if not self._silent:
+            msg.header(
+                writer_function,
+                f"Writing {obj_type.name} data from {self.model[obj_type].name}",
+            )
 
         format = format or self._get_default_format()
         file_object = FileNames(
@@ -128,7 +129,8 @@ class DataExporter:
             dateformat=dateformat,
         )
         if self.dry_run():
-            msg.info("Dry run! No files will be written.")
+            if not self._silent:
+                msg.info("Dry run! No files will be written.")
             output_files = [file_object.get_filepath()]
         else:
             # Write the object using the WriterFunction
@@ -143,7 +145,8 @@ class DataExporter:
         )
 
         for file in output_files:
-            msg.to_file(file)
+            if not self._silent:
+                msg.to_file(file)
 
     def dry_run(self) -> bool:
         return self._dry_run or self.model.dry_run()

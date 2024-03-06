@@ -1,14 +1,17 @@
 from geo_skeletons import GriddedSkeleton, PointSkeleton
 from geo_skeletons.decorators import add_datavar, add_mask
 from dnora.readers.abstract_readers import DataReader
-from dnora.dnora_types import DataSource, data_source_from_string, DnoraDataType
+from dnora.dnora_type_manager.data_sources import (
+    DataSource,
+    data_source_from_string,
+)
 from dnora import msg, aux_funcs
 from dnora.defaults import read_environment_variable
 import os
 
 from dnora.metaparameter.parameter_funcs import set_metaparameters_in_object
 from dnora.metaparameter import WaterDepth
-from dnora.dnora_types import DnoraDataType
+from dnora.dnora_type_manager.dnora_types import DnoraDataType
 
 
 @add_mask(name="sea", coords="grid", default_value=1, opposite_name="land")

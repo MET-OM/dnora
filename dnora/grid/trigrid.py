@@ -14,7 +14,7 @@ from .tri_arangers import TriAranger
 from .mesh import Trivial as TrivialMesher
 from dnora.readers.abstract_readers import DataReader
 import cmocean.cm
-from dnora.dnora_types import DataSource
+from dnora.dnora_type_manager.data_sources import DataSource
 
 from pathlib import Path
 from .topo import import_topo
@@ -212,3 +212,11 @@ class TriGrid(PointSkeleton):
         )
 
         return dt
+
+    def coord_dict(self, strict: bool = True):
+        return {
+            "lon": self.lon(strict=strict),
+            "lat": self.lat(strict=strict),
+            "x": self.x(strict=strict),
+            "y": self.y(strict=strict),
+        }

@@ -1,5 +1,5 @@
 from .inputfile.inputfile_writers import InputFileWriter
-from dnora.dnora_types import DnoraFileType, DnoraDataType
+from dnora_type_manager.dnora_types import DnoraFileType, DnoraDataType
 from dnora import msg
 from dnora.file_module import FileNames
 from dnora.model_formats import ModelFormat
@@ -7,7 +7,7 @@ from dnora.model_formats import ModelFormat
 from .post_processors import PostProcessor
 from .model_runners import ModelRunner
 from pathlib import Path
-from dnora.dnora_types import file_type_from_string
+from dnora.dnora_type_manager.dnora_types import file_type_from_string
 
 
 class ModelExecuter:

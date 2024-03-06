@@ -1,15 +1,3 @@
-import xarray as xr
-import numpy as np
-from copy import copy
-from abc import ABC, abstractmethod
-
-# Import aux_funcsiliry functions
-from dnora import msg, aux_funcs
-from dnora.spectral_conventions import SpectralConvention
-import pandas as pd
-from dnora.dnora_types import DataSource
-
-
 # class ForceFeed(SpectraReader):
 #     def __init__(
 #         self, time, freq, dirs, spec, lon, lat, convention: SpectralConvention

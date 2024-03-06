@@ -4,7 +4,7 @@ import numpy as np
 
 from dnora.spectral_conventions import convert_2d_to_1d
 
-from dnora.dnora_types import DataSource
+from dnora.dnora_type_manager.data_sources import DataSource
 from dnora.readers.abstract_readers import SpectralDataReader
 
 

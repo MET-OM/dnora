@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 
 from calendar import monthrange
-from dnora.dnora_types import DnoraDataType
+from dnora.dnora_type_manager.dnora_types import DnoraDataType
 from dnora import file_module
 import os
 import numpy as np
@@ -44,8 +44,9 @@ class Null(DataWriter):
 
 
 class Netcdf(DataWriter):
-    def __init__(self, monthly_files: bool = False):
+    def __init__(self, monthly_files: bool = False, daily_files: bool = False):
         self._monthly_files = monthly_files
+        self._daily_files = daily_files
 
     def __call__(
         self,
@@ -54,8 +55,12 @@ class Netcdf(DataWriter):
         obj_type: DnoraDataType,
         **kwargs,
     ) -> str:
+        if self._monthly_files and self._daily_files:
+            raise ValueError(f"Choose montly_files OR daily_files!")
         if self._monthly_files:
             output_files = write_monthly_nc_files(model[obj_type], file_object)
+        elif self._daily_files:
+            output_files = write_daily_nc_files(model[obj_type], file_object)
         else:
             output_files = file_object.get_filepath()
             model[obj_type].ds().to_netcdf(output_files)
@@ -73,9 +78,25 @@ def write_monthly_nc_files(
         d1 = monthrange(int(month.strftime("%Y")), int(month.strftime("%m")))[1]
         t1 = f"{month.strftime(f'%Y-%m-{d1}')}"
 
-        outfile = file_object.get_filepath(
-            start_time=month, edge_object=DnoraDataType.GRID
-        )
+        outfile = file_object.get_filepath(start_time=month)
+
+        outfile = file_module.clean_filename(outfile)
+        if os.path.exists(outfile):
+            os.remove(outfile)
+        dnora_obj.ds().sel(time=slice(t0, t1)).to_netcdf(outfile)
+
+        output_files.append(outfile)
+    return output_files
+
+
+def write_daily_nc_files(dnora_obj: DnoraDataType, file_object: FileNames) -> list[str]:
+    "Writes the data of a DNORA object into daily netcdf-files wh the ames specified by the FileNames instance."
+    output_files = []
+    for day in dnora_obj.days():
+        t0 = f"{day.strftime('%Y-%m-%d 00:00')}"
+        t1 = f"{day.strftime(f'%Y-%m-%d 23:59')}"
+
+        outfile = file_object.get_filepath(start_time=day)
 
         outfile = file_module.clean_filename(outfile)
         if os.path.exists(outfile):

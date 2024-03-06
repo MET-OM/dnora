@@ -1,10 +1,9 @@
-from abc import ABC, abstractmethod
 from copy import copy
 import numpy as np
 import xarray as xr
 from subprocess import call
 import os, glob
-import pandas as pd
+
 
 # Import objects
 from dnora.grid import Grid
@@ -21,7 +20,7 @@ from dnora.aux_funcs import (
     create_monthly_stamps,
 )
 
-from dnora.dnora_types import DataSource
+from dnora.dnora_type_manager.data_sources import DataSource
 from dnora.readers.abstract_readers import DataReader
 import calendar
 
@@ -71,7 +70,7 @@ class NORA3(DataReader):
     ) -> tuple[str]:
         if source == DataSource.REMOTE:
             folder = (
-                "https://thredds.met.no/thredds/dodsC/nora3wavesubset_files/atm_hourly"
+                "https://thredds.met.no/thredds/dodsC/nora3_subset_atmos/atm_hourly"
             )
         elif source == DataSource.INTERNAL:
             folder = get_url(folder, "NORA3/atmosphere/atm_hourly")

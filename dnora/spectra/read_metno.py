@@ -10,7 +10,7 @@ from dnora.spectral_conventions import SpectralConvention
 # Import aux_funcsiliry functions
 from dnora import msg
 from dnora.aux_funcs import create_time_stamps
-from dnora.dnora_types import DataSource
+from dnora.dnora_type_manager.data_sources import DataSource
 from dnora.readers.abstract_readers import SpectralDataReader
 from dnora.aux_funcs import get_url
 

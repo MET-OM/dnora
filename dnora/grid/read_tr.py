@@ -6,9 +6,7 @@ import meshio
 
 from typing import Iterable
 import numpy as np
-from dnora.dnora_types import DataSource
-
-from dnora.aux_funcs import get_url, get_coordinates_from_ds
+from dnora.dnora_type_manager.data_sources import DataSource
 import xarray as xr
 
 

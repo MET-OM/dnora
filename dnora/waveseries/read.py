@@ -29,7 +29,8 @@ from dnora.aux_funcs import get_url
 from dnora.readers.abstract_readers import PointDataReader
 from dnora.waveseries import wave_parameters
 import inspect
-from dnora.dnora_types import DataSource, DnoraDataType
+from dnora.dnora_type_manager.dnora_types import DnoraDataType
+from dnora.dnora_type_manager.data_sources import DataSource
 
 
 def dict_of_wave_parameters():
