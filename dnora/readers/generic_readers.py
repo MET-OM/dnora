@@ -10,7 +10,7 @@ from dnora.dnora_types import DnoraDataType, DataSource
 from dnora.spectral_conventions import convert_2d_to_1d, SpectralConvention
 
 from dnora.modelrun.object_type_manager import dnora_objects
-from dnora.aux_funcs import get_url
+from dnora.aux_funcs import get_url, expand_area
 from dnora import msg
 
 
@@ -95,6 +95,7 @@ class Netcdf(DataReader):
         source: DataSource,
         folder: str,
         filename: list[str] = None,
+        expansion_factor=1.0,
         **kwargs,
     ):
 
@@ -104,22 +105,23 @@ class Netcdf(DataReader):
             raise ValueError("Provide at least one filename!")
         filepath = get_url(folder, filename, get_list=True)
         ds = xr.open_mfdataset(filepath)
+
         for fn in filepath:
             msg.from_file(fn)
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
 
         times = slice(start_time, end_time)
         if x is None:
-            lons = slice(grid.edges("lon")[0], grid.edges("lon")[-1])
-            lats = slice(grid.edges("lat")[0], grid.edges("lat")[-1])
+            lons, lats = expand_area(
+                grid.edges("lon"), grid.edges("lat"), expansion_factor
+            )
             try:
-                ds = ds.sel(lon=lons, lat=lats, time=times)
+                ds = ds.sel(lon=slice(*lons), lat=slice(*lats), time=times)
             except:
-                ds = ds.sel(longitude=lons, latitude=lats, time=times)
+                ds = ds.sel(longitude=slice(*lons), latitude=slice(*lats), time=times)
         else:
-            xs = slice(grid.edges("x")[0], grid.edges("x")[-1])
-            ys = slice(grid.edges("y")[0], grid.edges("y")[-1])
-            ds = ds.sel(x=xs, y=ys, time=times)
+            xs, ys = expand_area(grid.edges("x"), grid.edges("y"), expansion_factor)
+            ds = ds.sel(x=slice(*xs), y=slice(*ys), time=times)
 
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
         coord_dict = {"x": x, "y": y, "lon": lon, "lat": lat}
@@ -137,6 +139,7 @@ class Netcdf(DataReader):
                 metaparameter_dict[var] = meta_var
 
         meta_dict = ds.attrs
+
         return coord_dict, data_dict, meta_dict, metaparameter_dict
 
 

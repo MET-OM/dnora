@@ -44,12 +44,14 @@ class FileNames:
     def get_start_time(self):
         if self.start_time is not None:
             return self.start_time
-        return self.model.start_time(crop_with=self.time_object)
+        time_object = self.time_object or "all"
+        return self.model.start_time(crop_with=time_object)
 
     def get_end_time(self):
         if self.end_time is not None:
             return self.end_time
-        return self.model.end_time(crop_with=self.time_object)
+        time_object = self.time_object or "all"
+        return self.model.end_time(crop_with=time_object)
 
     def get_dateformat(self) -> str:
         return self.dateformat or get_default_value(

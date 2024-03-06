@@ -127,9 +127,10 @@ class ModelRun:
         reader = reader or self._get_reader(obj_type)
         if reader is None:
             raise Exception(f"Define a {obj_type.name}Reader!")
-
-        name = name or reader.name()
-
+        try:
+            name = name or reader.name()
+        except:
+            breakpoint()
         if name is None:
             raise ValueError(
                 f"Provide either a name or a {obj_type.name}Reader that will then define the name!"
@@ -224,19 +225,26 @@ class ModelRun:
                 return
             return inds
 
+    @staticmethod
     def _read_data(
-        self, obj_type: DnoraDataType, reader, name, source, folder, inds, **kwargs
-    ):
+        obj_type: DnoraDataType,
+        reader: Union[DataReader, SpectralDataReader],
+        grid: Grid,
+        start_time: str,
+        end_time: str,
+        name: str,
+        source: DnoraDataType,
+        folder: str,
+        inds: list[int] = None,
+        **kwargs,
+    ) -> DnoraObject:
         """Reads data using the reader, creates the objects and sets data and metadata in object"""
-        if self.dry_run():
-            msg.info("Dry run! No forcing will be imported.")
-            return
 
         coord_dict, data_dict, meta_dict, metaparameter_dict = reader(
             obj_type=obj_type,
-            grid=self.grid(),
-            start_time=self.start_time(),
-            end_time=self.end_time(),
+            grid=grid,
+            start_time=pd.to_datetime(start_time),
+            end_time=pd.to_datetime(end_time),
             source=source,
             folder=folder,
             inds=inds,
@@ -257,7 +265,7 @@ class ModelRun:
         if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
             obj._mark_convention(reader.convention())
 
-        self[obj_type] = obj
+        return obj
 
     def _import_data(
         self,
@@ -290,7 +298,23 @@ class ModelRun:
         else:
             inds = None
 
-        self._read_data(obj_type, reader, name, source, folder, inds, **kwargs)
+        if self.dry_run():
+            msg.info("Dry run! No forcing will be imported.")
+            return
+
+        obj = self._read_data(
+            obj_type,
+            reader,
+            self.grid(),
+            self.start_time(),
+            self.end_time(),
+            name,
+            source,
+            folder,
+            inds,
+            **kwargs,
+        )
+        self[obj_type] = obj
 
     def cache(self, obj_type: DnoraDataType | str) -> None:
         Cacher(self).export(obj_type)
@@ -627,7 +651,7 @@ class ModelRun:
                 crop_with = [crop_with]
 
             if "all" in crop_with:
-                crop_with = self.list_of_object_strings()
+                crop_with = DnoraDataType
 
             for obj_str in crop_with:
                 dnora_obj = self[data_type_from_string(obj_str)]
