@@ -118,6 +118,8 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
                 # Import data from original source only
                 mrun_cacher._import_data(**kwargs_cache)
 
+            mrun_cacher[obj_type].name = name
+
             ## Write data if necessary
             if write_cache:
                 msg.header(
