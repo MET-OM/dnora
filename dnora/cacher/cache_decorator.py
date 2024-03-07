@@ -144,7 +144,7 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
             }
 
             final_object = final_object.sel(**slice_dict)
-
+            final_object.name = name
             mrun[obj_type] = final_object
 
             msg.header("<<< CACHE", "Exiting caching mode <<<")
