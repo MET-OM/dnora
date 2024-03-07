@@ -163,7 +163,7 @@ class FileNames:
         folder = Path(self.get_folder())
 
         if not folder.is_dir():
-            msg.plain(f"Creating folder {str(folder)}")
+            msg.process(f"Creating folder {str(folder)}")
             folder.mkdir(parents=True)
 
     def replace_placeholders(

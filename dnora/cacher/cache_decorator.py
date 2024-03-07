@@ -16,6 +16,7 @@ from .caching_functions import (
     patch_cached_data,
     write_data_to_cache,
 )
+from dnora import msg
 
 
 def get_kwargs(func, args, kwargs) -> dict:
@@ -55,6 +56,7 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
                 import_method(**kwargs)
                 return
 
+            msg.header(">>> CACHE", "Entering caching mode >>>")
             ### Helper objects
             ### -------------------------------------------------------------
             # This name will be used in the folders
@@ -98,7 +100,7 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
                     grid,
                     start_time,
                     end_time,
-                ) = expand_area_to_tiles(tiles)
+                ) = expand_area_to_tiles(tiles, grid.dlon(), grid.dlat())
 
             ## Reading of the data starts here
             mrun_cacher = mrun.empty_copy(
@@ -118,7 +120,12 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
 
             ## Write data if necessary
             if write_cache:
+                msg.header(
+                    "Netcdf (DataWriter)",
+                    f"Writing {obj_type.name} data from {name}",
+                )
                 write_data_to_cache(mrun_cacher, tiles, obj_type)
+                msg.to_multifile(tiles.covering_files())
 
             ## Crop final object to the desired area since it might have been exanded to tiles
             final_object = mrun_cacher[obj_type]
@@ -137,6 +144,8 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
             final_object = final_object.sel(**slice_dict)
 
             mrun[obj_type] = final_object
+
+            msg.header("<<< CACHE", "Exiting caching mode <<<")
 
         return wrapper
 

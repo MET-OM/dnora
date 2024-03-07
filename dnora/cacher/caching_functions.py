@@ -2,7 +2,6 @@ import numpy as np
 from dnora.export import Cacher
 from dnora.dnora_type_manager.data_sources import DataSource
 from copy import copy
-from dnora import msg
 from dnora.grid import Grid
 
 
@@ -17,11 +16,11 @@ def dont_proceed_with_caching(read_cache, write_cache, given_reader, kwargs):
     return dont_proceed
 
 
-def expand_area_to_tiles(tiles):
+def expand_area_to_tiles(tiles, dlon, dlat):
     """Expands in time and space to cover full daily tiles"""
     lon, lat = tiles.spatial_extent(tiles.covering_files())
     grid = Grid(lon=lon, lat=lat)
-    # grid.set_spacing(dlon=mrun.grid().dlon(), dlat=mrun.grid().dlat())
+    grid.set_spacing(dlon=dlon, dlat=dlat)
     # Gives full days
     start_time, end_time = tiles.temporal_extent(tiles.covering_files())
 
@@ -31,7 +30,6 @@ def expand_area_to_tiles(tiles):
 def read_data_from_cache(mrun_cacher, tiles, cache_reader, kwargs_cache):
     """Read all possible data from cached files"""
     if tiles.relevant_files():
-        msg.info(f"Cacher: Reading what we can from cached files...")
         kwargs_read_cache = copy(kwargs_cache)
         kwargs_read_cache["reader"] = cache_reader(files=tiles.relevant_files())
         kwargs_read_cache["source"] = DataSource.LOCAL

@@ -86,17 +86,3 @@ def blank():
 
 def process(msg):
     print(f">>> {msg} <<<")
-
-
-def templates(code):
-    if code == "no_spacing":
-        info("No information about grid spacing exists")
-        advice(
-            "First set spacing with .set_spacing(dlon, dlat) or .set_spacing(dm) (in metres)"
-        )
-    elif code == "no_topo":
-        info("No topography exists")
-        advice("First load topography with .import_topo(topography_reader)")
-    elif code == "no_mask":
-        info("No land-sea mask exists")
-        advice("First load topography with .import_topo(topography_reader)")
