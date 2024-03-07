@@ -50,7 +50,6 @@ class DataImporter:
                     self.grid(), mask=point_mask
                 )
 
-            msg.header(point_picker, "Choosing points to import...")
             inds = point_picker(
                 grid=self.grid(),
                 all_points=all_points,
@@ -126,6 +125,7 @@ class DataImporter:
         """Imports data using DataReader and creates and returns a DNORA object"""
 
         if point_mask is not None:
+            msg.header(point_picker, "Choosing points to import...")
             inds = self._pick_points(
                 reader,
                 point_picker,
@@ -137,8 +137,14 @@ class DataImporter:
         else:
             inds = None
 
+        msg.header(reader, f"Importing {obj_type.name}...")
+        msg.plain(
+            f"Area: {grid.x_str}: {grid.edges('lon',native=True)}, {grid.y_str}: {grid.edges('lat',native=True)}"
+        )
+        msg.plain(f"{start_time} - {end_time}")
+
         if dry_run:
-            msg.info("Dry run! No forcing will be imported.")
+            msg.info("Dry run! No data will be imported.")
             return
 
         obj = self._read_data_and_create_object(

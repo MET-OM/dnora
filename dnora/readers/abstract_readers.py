@@ -20,6 +20,10 @@ class DataReader(ABC):
     The area is defined from the Grid object that is passed.
     """
 
+    def _dont_cache_me(self) -> bool:
+        """Set to True for readers that acually create the data instead of reading it from a pre-defined source"""
+        return False
+
     @abstractmethod
     def __call__(
         self,
@@ -56,6 +60,9 @@ class DataReader(ABC):
 
     def name(self) -> str:
         return type(self).__name__
+
+    def __str__(self) -> str:
+        return self.name()
 
     def default_data_source(self) -> DataSource:
         return DataSource.UNDEFINED

@@ -14,7 +14,7 @@ class NullExporter(DataExporter):
 
 
 class Cacher(DataExporter):
-    _silent = False
+    _silent = True
 
     def _get_default_writer(self) -> WriterFunction:
         return data_writers.Netcdf(daily_files=True)

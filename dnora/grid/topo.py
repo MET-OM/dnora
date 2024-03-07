@@ -67,8 +67,6 @@ def import_topo(
         **kwargs,
     )
 
-    print(topo_reader)
-
     lon, lat, x, y = (
         coord_dict.get("lon"),
         coord_dict.get("lat"),

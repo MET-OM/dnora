@@ -107,8 +107,7 @@ class Netcdf(DataReader):
         filepath = get_url(folder, filename, get_list=True)
         ds = xr.open_mfdataset(filepath)
 
-        for fn in filepath:
-            msg.from_file(fn)
+        msg.from_multifile(filepath)
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
 
         times = slice(start_time, end_time)

@@ -135,8 +135,6 @@ class ModelRun:
                 f"Provide either a name or a {obj_type.name}Reader that will then define the name!"
             )
 
-        msg.header(reader, f"Importing {obj_type.name}...")
-
         if isinstance(source, str):
             try:
                 source = DataSource[source.upper()]
@@ -349,27 +347,19 @@ class ModelRun:
         name: str | None = None,
         **kwargs,
     ):
-        self._dry_run = dry_run
         if self.spectra() is None:
             msg.warning("No Spectra to convert to Spectra!")
             return
 
         spectral_reader = SpectraTo1D(self.spectra())
-        msg.header(
-            spectral_reader,
-            "Converting the boundary spectra to omnidirectional spectra...",
-        )
 
         name = self.spectra().name
-
-        if self.dry_run():
-            msg.info("Dry run! No boundary will not be converted to spectra.")
-            return
 
         self.import_spectra1d(
             reader=spectral_reader,
             point_picker=TrivialPicker(),
             name=name,
+            dry_run=dry_run,
             **kwargs,
         )
 
@@ -379,7 +369,6 @@ class ModelRun:
         freq: tuple = (0, 10_000),
         **kwargs,
     ):
-        self._dry_run = dry_run
         if self.spectra1d() is None:
             if self.spectra() is not None:
                 self.spectra_to_1d(dry_run=dry_run, **kwargs)
@@ -389,17 +378,13 @@ class ModelRun:
 
         name = self.spectra1d().name
 
-        if self.dry_run():
-            msg.info("Dry run! No boundary will not be converted to spectra.")
-            return
-
         waveseries_reader = SpectraToWaveSeries(self.spectra1d(), freq)
-        msg.header(waveseries_reader, "Converting the spectra to wave series data...")
 
         self.import_waveseries(
             reader=waveseries_reader,
             point_picker=TrivialPicker(),
             name=name,
+            dry_run=dry_run,
             **kwargs,
         )
 

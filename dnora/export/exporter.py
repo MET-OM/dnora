@@ -1,5 +1,5 @@
-from .. import msg
-from ..file_module import FileNames
+from dnora import msg
+from dnora.file_module import FileNames
 from dnora.spectral_conventions import SpectralConvention
 from typing import Union
 from .data_writers import DataWriter, Netcdf
@@ -143,10 +143,8 @@ class DataExporter:
         self.model._data_exported_to[data_type_from_string(obj_type.name)] = (
             output_files
         )
-
-        for file in output_files:
-            if not self._silent:
-                msg.to_file(file)
+        if not self._silent:
+            msg.to_multifile(output_files)
 
     def dry_run(self) -> bool:
         return self._dry_run or self.model.dry_run()
