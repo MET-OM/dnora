@@ -6,7 +6,6 @@ from dnora.dnora_type_manager.dnora_types import DnoraDataType
 from dnora.model_formats import ModelFormat
 from dnora.readers.generic_readers import DataReader
 from inspect import getcallargs
-
 from dnora.pick import Area
 from .tiles import TileObject
 from .caching_functions import (
@@ -51,8 +50,9 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
             given_reader = kwargs.get("reader") or mrun._get_reader(obj_type)
             if given_reader is None:
                 raise ValueError("Provide a DataReader!")
+            strategy = given_reader._caching_strategy()
 
-            if dont_proceed_with_caching(read_cache, write_cache, given_reader, kwargs):
+            if dont_proceed_with_caching(read_cache, write_cache, strategy, kwargs):
                 import_method(**kwargs)
                 return
 
@@ -113,7 +113,14 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
                     mrun_cacher, tiles, cache_reader, kwargs_cache
                 )
                 # Patch from original source
-                mrun_cacher = patch_cached_data(mrun_cacher, tiles, kwargs_cache)
+                if tiles.additional_files():
+                    msg.blank()
+                    msg.process(
+                        f"Applying {strategy.name} caching strategy in patching."
+                    )
+                    mrun_cacher = patch_cached_data(
+                        mrun_cacher, tiles, kwargs_cache, strategy
+                    )
             else:
                 # Import data from original source only
                 mrun_cacher._import_data(**kwargs_cache)

@@ -32,6 +32,12 @@ class ERA5(ModelRun):
     }
 
 
+class NOAA(ModelRun):
+    _reader_dict = {
+        DnoraDataType.WIND: wind.read_noaa.GFS(),
+    }
+
+
 class WAM4km(ModelRun):
     _reader_dict = {
         DnoraDataType.SPECTRA: spectra.read_metno.WAM4km(),

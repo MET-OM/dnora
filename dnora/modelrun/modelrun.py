@@ -29,7 +29,7 @@ from dnora.waveseries.read import SpectraToWaveSeries
 from dnora.pick import TrivialPicker
 
 from dnora.export.templates import Cacher
-from dnora.aux_funcs import get_url
+from dnora.aux_funcs import get_url, get_first_file
 from dnora.readers import generic_readers
 from dnora.readers.abstract_readers import (
     DataReader,
@@ -68,19 +68,25 @@ class ModelRun:
     def __init__(
         self,
         grid: Grid | None = None,
-        start_time: str = "1970-01-01T00:00",
-        end_time: str = "2030-12-31T23:59",
-        name: str = "AnonymousModelRun",
+        start_time: str = None,
+        end_time: str = None,
         dry_run: bool = False,
     ):
-        self.name = name
         self._grid = grid
+        if start_time is None:
+            start_time = pd.Timestamp.now().strftime("%Y-%m-%d %H:00")
+        if end_time is None:
+            end_time = (pd.to_datetime(start_time) + pd.Timedelta(hours=240)).strftime(
+                "%Y-%m-%d %H:00"
+            )
+
         self._time = pd.date_range(start_time, end_time, freq="h")
         self._data_exported_to: dict[DnoraDataType, list[str]] = {}
         self._input_file_exported_to: dict[DnoraFileType, list[str]] = {}
         self._global_dry_run = dry_run
         self._dry_run = False  # Set by methods
-
+        self._source = DataSource.UNDEFINED
+        self._reference_time = None
         self._dnora_objects: dict[DnoraDataType, DnoraObject] = {
             DnoraDataType.GRID: grid,
         }
@@ -147,6 +153,9 @@ class ModelRun:
             source = DataSource.LOCAL
 
         if source == DataSource.UNDEFINED:
+            source = self._source  # Internal mode might have been activated
+
+        if source == DataSource.UNDEFINED:
             source = reader.default_data_source()
 
         if source in [DataSource.INTERNAL, DataSource.LOCAL]:
@@ -192,11 +201,30 @@ class ModelRun:
 
         point_picker = self._setup_point_picker(point_picker)
 
+        if self.forecast_mode():
+            if hasattr(reader, "hours_per_file"):
+                start_time = self._reference_time
+                kwargs["lead_time"] = kwargs.get("lead_time", self._lead_time)
+                kwargs["last_file"] = kwargs.get(
+                    "last_file",
+                    get_first_file(
+                        start_time, reader.stride, lead_time=kwargs.get("lead_time")
+                    ),
+                )
+                kwargs["lead_time"] = kwargs.get("lead_time", self._lead_time)
+                end_time = min(
+                    kwargs.get("last_file")
+                    + pd.Timedelta(hours=reader.hours_per_file - 1),
+                    self.end_time(),
+                )
+        else:
+            start_time, end_time = self.start_time(), self.end
+
         data_importer = DataImporter()
         obj = data_importer.import_data(
             grid=self.grid(),
-            start_time=self.start_time(),
-            end_time=self.end_time(),
+            start_time=start_time,
+            end_time=end_time,
             obj_type=obj_type,
             name=name,
             dry_run=self.dry_run(),
@@ -540,7 +568,8 @@ class ModelRun:
                     if time[-1] is not None:
                         t1 = pd.to_datetime([t1, time[-1]]).min()
         time = pd.date_range(t0, t1, freq="h")
-        return time[:: len(time) - 1]
+        return time
+        # return time[:: len(time) - 1]
 
     def start_time(self, crop_with: list[str] = None):
         """Returns start time of ModelRun
@@ -578,13 +607,54 @@ class ModelRun:
     def _get_point_picker(self) -> PointPicker:
         return self._point_picker
 
-    @classmethod
-    def empty_copy(cls, grid: Grid, start_time: str, end_time: str):
-        return cls(
-            grid=grid,
-            start_time=start_time,
-            end_time=end_time,
+    def activate_internal_mode(self, folder: str = None) -> None:
+        self._activate_mode(DataSource.INTERNAL, folder)
+
+    def activate_remote_mode(self) -> None:
+        self._activate_mode(DataSource.REMOTE, folder=None)
+
+    def activate_local_mode(self, folder: str = None) -> None:
+        self._activate_mode(DataSource.LOCAL, folder)
+
+    def _activate_mode(self, source: DataSource, folder: str):
+        self._source = source
+        if folder is not None:
+            os.environ[f"DNORA_{source.name}_PATH"] = folder
+
+    def deactivate_source_mode(self) -> None:
+        self._source = DataSource.UNDEFINED
+
+    def activate_forecast_mode(
+        self, reference_time: str = None, lead_time: int = 0
+    ) -> None:
+        reference_time = reference_time or self.start_time()
+        self._reference_time = pd.to_datetime(reference_time)
+        self._lead_time = lead_time
+        msg.info(f"Activating forecast mode with reference time {reference_time}")
+
+    def deactivate_forecast_mode(self) -> None:
+        self._reference_time = None
+        msg.info(f"Deactivating forecast mode")
+
+    def forecast_mode(self) -> None:
+        return self._reference_time is not None
+
+    def empty_copy(
+        self,
+        grid: Grid = None,
+        start_time: str = None,
+        end_time: str = None,
+        source: DataSource = None,
+    ):
+        new_model = type(self)(
+            grid=grid or self.grid(),
+            start_time=start_time or self.start_time(),
+            end_time=end_time or self.end_time(),
         )
+        new_model._source = source or self._source
+        new_model._dry_run = self._dry_run
+        new_model._global_dry_run = self._global_dry_run
+        return new_model
 
 
 # def camel_to_snake(string: str) -> str:

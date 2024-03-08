@@ -92,8 +92,6 @@ class NORA3(DataReader):
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         start_times, end_times = create_monthly_stamps(start_time, end_time)
 
-        msg.info(f"Getting wind forcing from NORA3 from {start_time} to {end_time}")
-
         temp_folder = "dnora_wnd_temp"
         if not os.path.isdir(temp_folder):
             os.mkdir(temp_folder)
@@ -112,7 +110,7 @@ class NORA3(DataReader):
         dlon = 3 / mean_lon_in_km
 
         wnd_list = []
-        print("Apply >>> " + program)
+        msg.process(f"Applying {program}")
         for n, (t0, t1) in enumerate(zip(start_times, end_times)):
             folder, filename = self._folder_filename(source, folder, filename=None)
             url = get_url(folder, filename, t0)
@@ -343,8 +341,6 @@ class MEPS(DataReader):
         self,
         stride: int = 6,
         hours_per_file: int = 67,
-        last_file: str = "",
-        lead_time: int = 0,
     ):
         """The data is currently in 6 hourly files. Do not change the default
         setting unless you have a good reason to do so.
@@ -352,8 +348,6 @@ class MEPS(DataReader):
 
         self.stride = copy(stride)
         self.hours_per_file = copy(hours_per_file)
-        self.lead_time = copy(lead_time)
-        self.last_file = copy(last_file)
         return
 
     def _folder_filename(
@@ -374,6 +368,8 @@ class MEPS(DataReader):
         folder: str,
         expansion_factor: float = 1.2,
         filename: str = None,
+        last_file: str = "",
+        lead_time: int = 0,
         **kwargs,
     ):
         """Reads in all boundary spectra between the given times and at for the given indeces"""
@@ -385,13 +381,10 @@ class MEPS(DataReader):
             end_time,
             self.stride,
             self.hours_per_file,
-            self.last_file,
-            self.lead_time,
+            last_file,
+            lead_time,
         )
 
-        msg.info(
-            f"Getting wind forcing from MEPS from {self.start_time} to {self.end_time}"
-        )
         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
         temp_folder = "dnora_wnd_temp"
         if not os.path.isdir(temp_folder):

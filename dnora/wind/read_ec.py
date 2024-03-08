@@ -20,6 +20,8 @@ import pandas as pd
 from dnora.dnora_type_manager.data_sources import DataSource
 from dnora.readers.abstract_readers import DataReader
 
+from dnora.cacher.caching_strategies import CachingStrategy
+
 
 def download_era5_from_cds(
     start_time, end_time, lon, lat, folder="dnora_wnd_temp"
@@ -122,6 +124,9 @@ class ERA5(DataReader):
 
     def default_data_source(self) -> DataSource:
         return DataSource.REMOTE
+
+    def _caching_strategy(self) -> CachingStrategy:
+        return CachingStrategy.SinglePatch
 
     def __call__(
         self,

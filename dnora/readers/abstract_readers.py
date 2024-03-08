@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Union
 if TYPE_CHECKING:
     from dnora_type_manager.dnora_types import DnoraDataType
     from dnora.grid import Grid
+from dnora.cacher.caching_strategies import CachingStrategy
 
 
 class DataReader(ABC):
@@ -20,9 +21,9 @@ class DataReader(ABC):
     The area is defined from the Grid object that is passed.
     """
 
-    def _dont_cache_me(self) -> bool:
-        """Set to True for readers that acually create the data instead of reading it from a pre-defined source"""
-        return False
+    def _caching_strategy(self) -> CachingStrategy:
+        """Defines what caching strategy to use"""
+        return CachingStrategy.PatchInTime
 
     @abstractmethod
     def __call__(

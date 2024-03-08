@@ -95,39 +95,6 @@ class TileObject:
             lat.append((int(latstr[0:3]), int(latstr[0:3]) + self.tile_res))
         return lon, lat
 
-    def determine_patch_period(self, single_patch: bool) -> list[tuple]:
-        all_lon, all_lat = self.lonlat(self.covering_files())
-
-        number_of_spatial_tiles = len(
-            np.unique(
-                [f"{la[0]:03.0f}N{lo[0]:03.0f}E" for lo, la in zip(all_lon, all_lat)]
-            )
-        )
-        all_year, all_month, all_day = self.times(self.covering_files())
-        year, month, day = self.times(self.relevant_files())
-        patch_dates = []
-
-        for y, m, d in zip(all_year, all_month, all_day):
-            tiles_for_day = sum(
-                np.logical_and(
-                    np.logical_and(np.array(year) == y, np.array(month) == m),
-                    np.array(day) == d,
-                )
-            )
-            # If even one tile is missing for that day, we will read the day for all area
-            if tiles_for_day < number_of_spatial_tiles:
-                patch_dates.append(f"{y:04.0f}-{m:02.0f}-{d:02.0f}")
-
-        if not patch_dates:
-            return patch_dates
-
-        patch_dates = pd.to_datetime(patch_dates)
-
-        if single_patch:
-            return [(min(patch_dates), max(patch_dates) + pd.Timedelta(hours=23.99))]
-        else:
-            return [(start, start + pd.Timedelta(hours=23.99)) for start in patch_dates]
-
 
 def create_tiles(area, start_time, end_time, expansion_factor):
     tile_res = 5  # degrees

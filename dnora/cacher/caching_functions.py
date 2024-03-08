@@ -3,13 +3,15 @@ from dnora.export import Cacher
 from dnora.dnora_type_manager.data_sources import DataSource
 from copy import copy
 from dnora.grid import Grid
+from .caching_strategies import caching_strategies, CachingStrategy
+from dnora import msg
 
 
-def dont_proceed_with_caching(read_cache, write_cache, given_reader, kwargs):
+def dont_proceed_with_caching(read_cache, write_cache, strategy, kwargs):
     """Checks if there is any reason not to proceed with the cahcing process"""
     dont_proceed = False
     dont_proceed = dont_proceed or (not (read_cache or write_cache))
-    dont_proceed = dont_proceed or given_reader._dont_cache_me()
+    dont_proceed = dont_proceed or strategy == CachingStrategy.DontCacheMe
     dont_proceed = dont_proceed or (
         kwargs.get("dry_run", False) or kwargs.get("self").dry_run()
     )
@@ -37,25 +39,41 @@ def read_data_from_cache(mrun_cacher, tiles, cache_reader, kwargs_cache):
     return mrun_cacher
 
 
-def patch_cached_data(mrun_cacher, tiles, kwargs_cache):
+def patch_cached_data(mrun_cacher, tiles, kwargs_cache, strategy: CachingStrategy):
     """Patch data not found in the cached files from the original source"""
-    if tiles.additional_files():
-        patch_dates = tiles.determine_patch_period(single_patch=True)
-        obj_type = kwargs_cache.get("obj_type")
-        for patch_date in patch_dates:
-            mrun_patch = mrun_cacher.empty_copy(
-                grid=mrun_cacher.grid(),
-                start_time=patch_date[0],
-                end_time=patch_date[1],
-            )
 
-            mrun_patch._import_data(**kwargs_cache)
+    strategy_func = caching_strategies.get(strategy)
+    if strategy_func is None:
+        msg.info(
+            f"Caching strategy {strategy.name} not implemented! Reverting to SinglePatch."
+        )
+        strategy_func = caching_strategies.get(CachingStrategy.SinglePatch)
+    patch_dates, patch_lon, patch_lat, patch_dimension = strategy_func(tiles)
+    obj_type = kwargs_cache.get("obj_type")
 
-            ## Merge patch together with what was found in the cached
-            if mrun_cacher[obj_type] is None:
-                mrun_cacher[obj_type] = mrun_patch[obj_type]
-            else:
-                mrun_cacher[obj_type].absorb(mrun_patch[obj_type], "time")
+    for patch_date, lon, lat in zip(patch_dates, patch_lon, patch_lat):
+        grid_lon = (
+            max(lon[0], mrun_cacher.grid().edges("lon")[0]),
+            min(lon[1], mrun_cacher.grid().edges("lon")[1]),
+        )
+        grid_lat = (
+            max(lat[0], mrun_cacher.grid().edges("lat")[0]),
+            min(lat[1], mrun_cacher.grid().edges("lat")[1]),
+        )
+        grid = Grid(lon=grid_lon, lat=grid_lat)
+        mrun_patch = mrun_cacher.empty_copy(
+            grid=grid,
+            start_time=patch_date[0],
+            end_time=patch_date[1],
+        )
+
+        mrun_patch._import_data(**kwargs_cache)
+
+        ## Merge patch together with what was found in the cached
+        if mrun_cacher[obj_type] is None:
+            mrun_cacher[obj_type] = mrun_patch[obj_type]
+        else:
+            mrun_cacher[obj_type].absorb(mrun_patch[obj_type], patch_dimension)
 
     return mrun_cacher
 

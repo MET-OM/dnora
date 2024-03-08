@@ -8,10 +8,7 @@ from dnora.grid import Grid
 
 # Import aux_funcsiliry functions
 from dnora import msg
-from dnora.aux_funcs import (
-    create_time_stamps,
-    expand_area,
-)
+from dnora.aux_funcs import create_time_stamps, expand_area, get_url
 
 from dnora.dnora_type_manager.data_sources import DataSource
 from dnora.readers.abstract_readers import DataReader
@@ -38,6 +35,15 @@ class GFS(DataReader):
         self.hours_per_file = copy(hours_per_file)
         self.lead_time = copy(lead_time)
         self.last_file = copy(last_file)
+
+    def _folder_filename(
+        self, source: DataSource, folder: str, filename: str
+    ) -> tuple[str]:
+        if source == DataSource.REMOTE:
+            folder = "https://nomads.ncep.noaa.gov/dods/gfs_0p25_1hr/gfs%Y%m%d"
+        if filename is None:
+            filename = "gfs_0p25_1hr_%Hz"
+        return folder, filename
 
     def __call__(
         self,
@@ -73,8 +79,8 @@ class GFS(DataReader):
 
         wnd_list = []
         for n in range(len(file_times)):
-            url = self.get_url(file_times[n], start_times[n], first_ind=self.lead_time)
-
+            folder, filename = self._folder_filename(source, folder, filename=None)
+            url = get_url(folder, filename, file_times[n])
             msg.from_file(url)
             msg.plain(f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
 

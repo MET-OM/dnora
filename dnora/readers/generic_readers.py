@@ -1,3 +1,4 @@
+from dnora.cacher.caching_strategies import CachingStrategy
 from .abstract_readers import PointDataReader, DataReader, SpectralDataReader
 
 import pandas as pd
@@ -147,6 +148,9 @@ class ConstantGriddedData(DataReader):
     def __init__(self, **kwargs):
         """E.g. ConstantGrid(u=1, v=2)"""
         self.values = kwargs
+
+    def _caching_strategy(self) -> CachingStrategy:
+        return CachingStrategy.DontCacheMe
 
     def __call__(
         self,
