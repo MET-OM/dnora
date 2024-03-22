@@ -19,7 +19,9 @@ class DataImporter:
 
     def _pick_points(
         self,
+        grid: Grid,
         reader: ReaderFunction,
+        start_time: str,
         point_picker: PointPicker,
         point_mask: np.ndarray[bool],
         source: str,
@@ -27,43 +29,38 @@ class DataImporter:
         **kwargs,
     ):
         """Gets the indeces of the point defined by the logical mask with respect to all points available from the reader function."""
-        if not self.dry_run():
-            available_points = reader.get_coordinates(
-                grid=self.grid(),
-                start_time=self.start_time(),
-                source=source,
-                folder=folder,
-                **kwargs,
-            )
+        available_points = reader.get_coordinates(
+            grid=grid,
+            start_time=start_time,
+            source=source,
+            folder=folder,
+            **kwargs,
+        )
 
-            all_points = PointSkeleton(
-                lon=available_points.get("lon"),
-                lat=available_points.get("lat"),
-                x=available_points.get("x"),
-                y=available_points.get("y"),
-            )
+        all_points = PointSkeleton(
+            lon=available_points.get("lon"),
+            lat=available_points.get("lat"),
+            x=available_points.get("x"),
+            y=available_points.get("y"),
+        )
 
-            if np.all(np.logical_not(point_mask)):
-                interest_points = None
-            else:
-                interest_points = PointSkeleton.from_skeleton(
-                    self.grid(), mask=point_mask
-                )
+        if np.all(np.logical_not(point_mask)):
+            interest_points = None
+        else:
+            interest_points = PointSkeleton.from_skeleton(grid, mask=point_mask)
 
-            inds = point_picker(
-                grid=self.grid(),
-                all_points=all_points,
-                selected_points=interest_points,
-                fast=True,
-                **kwargs,
-            )
+        inds = point_picker(
+            grid=grid,
+            all_points=all_points,
+            selected_points=interest_points,
+            fast=True,
+            **kwargs,
+        )
 
-            if len(inds) < 1:
-                msg.warning(
-                    "PointPicker didn't find any points. Aborting import of data."
-                )
-                return
-            return inds
+        if len(inds) < 1:
+            msg.warning("PointPicker didn't find any points. Aborting import of data.")
+            return
+        return inds
 
     @staticmethod
     def _read_data_and_create_object(
@@ -124,10 +121,15 @@ class DataImporter:
     ) -> DnoraObject:
         """Imports data using DataReader and creates and returns a DNORA object"""
 
+        if dry_run:
+            msg.info("Dry run! No data will be imported.")
+
         if point_mask is not None:
             msg.header(point_picker, "Choosing points to import...")
             inds = self._pick_points(
+                grid,
                 reader,
+                start_time,
                 point_picker,
                 point_mask,
                 source,

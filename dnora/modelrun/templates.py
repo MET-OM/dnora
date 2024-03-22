@@ -14,6 +14,7 @@ class Constant(ModelRun):
         DnoraDataType.ICE: ConstantGriddedData(),
         DnoraDataType.WATERLEVEL: ConstantGriddedData(),
         DnoraDataType.CURRENT: ConstantGriddedData(),
+        DnoraDataType.WAVESERIES: ConstantPointData(),
     }
 
 

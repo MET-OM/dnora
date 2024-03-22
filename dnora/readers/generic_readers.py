@@ -14,6 +14,7 @@ from dnora.spectral_conventions import convert_2d_to_1d, SpectralConvention
 from dnora.dnora_type_manager.dnora_objects import dnora_objects
 from dnora.aux_funcs import get_url, expand_area
 from dnora import msg
+from .constant_funcs import create_constant_data_dict, print_constant_values
 
 
 class PointNetcdf(SpectralDataReader):
@@ -147,7 +148,7 @@ class Netcdf(DataReader):
 class ConstantGriddedData(DataReader):
     def __init__(self, **kwargs):
         """E.g. ConstantGrid(u=1, v=2)"""
-        self.values = kwargs
+        self.extra_vars = kwargs
 
     def _caching_strategy(self) -> CachingStrategy:
         return CachingStrategy.DontCacheMe
@@ -160,28 +161,35 @@ class ConstantGriddedData(DataReader):
         end_time,
         source: DataSource,
         folder: str,
+        time: list[str] = None,
+        dt: int = None,
         **kwargs,
     ):
+        self.extra_vars.update(kwargs)
+        kwargs.update(self.extra_vars)
+
         coord_dict = grid.coord_dict(strict=True)
-        # coord_dict["lon"] = grid.lon(strict=True)
-        # coord_dict["lat"] = grid.lat(strict=True)
-        # coord_dict["x"] = grid.x(strict=True)
-        # coord_dict["y"] = grid.y(strict=True)
+
         if "time" in dnora_objects.get(obj_type)._coord_manager.added_coords():
-            time = pd.date_range(start=start_time, end=end_time, freq="h").values
-            coord_dict["time"] = time
-            obj_size = (len(time), grid.ny(), grid.nx())
+            time_coord = pd.date_range(start=start_time, end=end_time, freq="h").values
+            coord_dict["time"] = time_coord
+            obj_size = (len(time_coord), grid.ny(), grid.nx())
         else:
+            time_coord = None
             obj_size = grid.size(coords="grid")
 
         variables = dnora_objects.get(obj_type)._coord_manager.added_vars().keys()
+        if kwargs.get("inds", "N/A") != "N/A":
+            del kwargs["inds"]
 
-        data_dict = {}
-        for key in variables:
-            val = self.values.get(key)
-            if val is None:
-                val = kwargs.get(key, 1)
-            data_dict[key] = np.full(obj_size, val)
+        if dt is not None:
+            time = pd.date_range(start_time, end_time, freq=f"{dt}h")
+
+        data_dict = create_constant_data_dict(
+            variables, kwargs, obj_size, start_time, end_time, time
+        )
+
+        print_constant_values(data_dict, obj_type, time_coord)
 
         meta_dict = {}
 
@@ -229,6 +237,8 @@ class ConstantPointData(SpectralDataReader):
         source: DataSource,
         folder: str,
         inds,
+        time=None,
+        dt=None,
         **kwargs,
     ):
         coord_dict = {}
@@ -236,12 +246,13 @@ class ConstantPointData(SpectralDataReader):
         obj_size = []
         # Time is always first coord if exists
         if "time" in dnora_objects.get(obj_type)._coord_manager.added_coords():
-            coord_val = self.extra_coords.get(
+            time_coord = self.extra_coords.get(
                 "time", pd.date_range(start=start_time, end=end_time, freq="h").values
             )
-            coord_dict["time"] = coord_val
-            obj_size.append(len(coord_val))
-
+            coord_dict["time"] = time_coord
+            obj_size.append(len(time_coord))
+        else:
+            time_coord = None
         # Inds always second (or first if time doesn't exist)
         obj_size.append(len(inds))
 
@@ -284,16 +295,10 @@ class ConstantPointData(SpectralDataReader):
 
         variables = dnora_objects.get(obj_type)._coord_manager.added_vars().keys()
 
-        data_dict = {}
-        if variables:  # If the object has addeed variables, create those
-            for key in variables:
-                val = kwargs.get(key, 1)
-                data_dict[key] = np.full(obj_size, val)
-
-        else:  # If not, create the ones provided by the user and assume they will be dynamically added (if not, they are just dumped)
-            for key, val in kwargs.items():
-                data_dict[key] = np.full(obj_size, val)
-
+        data_dict = create_constant_data_dict(
+            variables, kwargs, obj_size, start_time, end_time, time
+        )
+        print_constant_values(data_dict, obj_type, time_coord)
         for key in data_dict:
             if obj_type == DnoraDataType.SPECTRA:
                 data_dict[key][:, :, non_fp_ind, :] = 0

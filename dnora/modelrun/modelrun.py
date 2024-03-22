@@ -218,7 +218,7 @@ class ModelRun:
                     self.end_time(),
                 )
         else:
-            start_time, end_time = self.start_time(), self.end
+            start_time, end_time = self.start_time(), self.end_time()
 
         data_importer = DataImporter()
         obj = data_importer.import_data(
@@ -286,7 +286,7 @@ class ModelRun:
             reader,
             source,
             folder,
-            mask=self.grid().sea_mask(),
+            point_mask=self.grid().sea_mask(),
             point_picker=point_picker,
             **kwargs,
         )
@@ -310,7 +310,7 @@ class ModelRun:
             reader,
             source,
             folder,
-            mask=self.grid().sea_mask(),
+            point_mask=self.grid().sea_mask(),
             point_picker=point_picker,
             **kwargs,
         )
@@ -334,7 +334,7 @@ class ModelRun:
             reader,
             source,
             folder,
-            mask=self.grid().sea_mask(),
+            point_mask=self.grid().sea_mask(),
             point_picker=point_picker,
             **kwargs,
         )
@@ -608,15 +608,15 @@ class ModelRun:
         return self._point_picker
 
     def activate_internal_mode(self, folder: str = None) -> None:
-        self._activate_mode(DataSource.INTERNAL, folder)
+        self._activate_source_mode(DataSource.INTERNAL, folder)
 
     def activate_remote_mode(self) -> None:
-        self._activate_mode(DataSource.REMOTE, folder=None)
+        self._activate_source_mode(DataSource.REMOTE, folder=None)
 
     def activate_local_mode(self, folder: str = None) -> None:
-        self._activate_mode(DataSource.LOCAL, folder)
+        self._activate_source_mode(DataSource.LOCAL, folder)
 
-    def _activate_mode(self, source: DataSource, folder: str):
+    def _activate_source_mode(self, source: DataSource, folder: str):
         self._source = source
         if folder is not None:
             os.environ[f"DNORA_{source.name}_PATH"] = folder
