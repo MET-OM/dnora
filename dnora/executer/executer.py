@@ -1,5 +1,5 @@
 from .inputfile.inputfile_writers import InputFileWriter
-from dnora_type_manager.dnora_types import DnoraFileType, DnoraDataType
+from dnora.type_manager.dnora_types import DnoraFileType, DnoraDataType
 from dnora import msg
 from dnora.file_module import FileNames
 from dnora.model_formats import ModelFormat
