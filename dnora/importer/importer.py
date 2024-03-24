@@ -121,23 +121,24 @@ class DataImporter:
     ) -> DnoraObject:
         """Imports data using DataReader and creates and returns a DNORA object"""
 
+        msg.header(point_picker, "Choosing points to import...")
         if dry_run:
             msg.info("Dry run! No data will be imported.")
-
-        if point_mask is not None:
-            msg.header(point_picker, "Choosing points to import...")
-            inds = self._pick_points(
-                grid,
-                reader,
-                start_time,
-                point_picker,
-                point_mask,
-                source,
-                folder,
-                **kwargs,
-            )
         else:
-            inds = None
+            if point_mask is not None:
+
+                inds = self._pick_points(
+                    grid,
+                    reader,
+                    start_time,
+                    point_picker,
+                    point_mask,
+                    source,
+                    folder,
+                    **kwargs,
+                )
+            else:
+                inds = None
 
         msg.header(reader, f"Importing {obj_type.name}...")
         msg.plain(

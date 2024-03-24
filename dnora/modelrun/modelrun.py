@@ -71,6 +71,7 @@ class ModelRun:
         start_time: str = None,
         end_time: str = None,
         dry_run: bool = False,
+        name: str = "DnoraModelRun",
     ):
         self._grid = grid
         if start_time is None:
@@ -87,6 +88,7 @@ class ModelRun:
         self._dry_run = False  # Set by methods
         self._source = DataSource.UNDEFINED
         self._reference_time = None
+        self.name = name
         self._dnora_objects: dict[DnoraDataType, DnoraObject] = {
             DnoraDataType.GRID: grid,
         }

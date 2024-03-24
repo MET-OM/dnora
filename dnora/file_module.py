@@ -284,7 +284,7 @@ def replace_lonlat(filename: str, lon: float, lat: float, fmt: str) -> str:
         if lat[1] is not None:
             filename = re.sub("#LAT1", f"{lat[1]:{fmt}}", filename)
     else:
-        if lon is not None:
+        if lat is not None:
             filename = re.sub("#LAT", f"{lat:{fmt}}", filename)
 
     return filename
