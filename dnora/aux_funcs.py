@@ -219,8 +219,8 @@ def create_time_stamps(
         end_stamp = pd.Timestamp(end_time) - pd.DateOffset(hours=lead_time)
 
     # How many ours to remove if files are e.g. 00, 06, 12 and we request output from 01-08
-    h0 = int(start_stamp.hour) % stride + offset
-    h1 = int(end_stamp.hour) % stride + offset
+    h0 = int(start_stamp.hour - offset) % stride
+    h1 = int(end_stamp.hour - offset) % stride
     file_times = pd.date_range(
         start=start_stamp - pd.DateOffset(hours=h0),
         end=end_stamp - pd.DateOffset(hours=h1),
