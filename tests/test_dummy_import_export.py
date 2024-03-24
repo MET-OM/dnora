@@ -8,7 +8,7 @@ from dnora.spectral_conventions import SpectralConvention
 import numpy as np
 
 from dnora.readers.generic_readers import ConstantGriddedData, ConstantPointData
-from dnora.dnora_types import DnoraDataType
+from dnora.dnora_type_manager.dnora_types import DnoraDataType
 
 
 def get_freq_and_dir_vector(math=False):

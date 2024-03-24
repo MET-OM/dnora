@@ -5,7 +5,7 @@ import os
 import yaml
 from dnora import file_module
 
-from dnora.dnora_types import DnoraDataType, DnoraFileType
+from dnora.dnora_type_manager.dnora_types import DnoraDataType, DnoraFileType
 
 with open("data/defaults.yml", "r") as file:
     defaults = yaml.safe_load(file)
@@ -254,43 +254,92 @@ class ReplaceObjects(unittest.TestCase):
 class ReplaceLonLat(unittest.TestCase):
     def test_all(self):
         filename = file_module.replace_lonlat(
-            "file_#Lon_#ModelRun_#Lat", lon=5.3, lat=60.2222
+            "file_#LON_#ModelRun_#LAT", lon=5.3, lat=60.2222, fmt="010.7f"
         )
         self.assertEqual(filename, "file_05.3000000_#ModelRun_60.2222000")
 
 
 class ReplaceTime(unittest.TestCase):
     def test_empty(self):
-        filename = file_module.replace_times("file_#T0", "%Y", [])
+        filename = file_module.replace_times(
+            "file_#T0", dateformat="%Y", dateformat_folder="", times=[]
+        )
         self.assertEqual(filename, "file_#T0")
 
     def test_T0(self):
-        filename = file_module.replace_times("file_#T1", "%Y", ["2020-06-05 05:00"])
+        filename = file_module.replace_times(
+            "file_#T1",
+            dateformat="%Y",
+            dateformat_folder="",
+            times=["2020-06-05 05:00"],
+        )
         self.assertEqual(filename, "file_#T1")
 
-        filename = file_module.replace_times("file_#T0", "%Y", ["2020-06-05 05:00"])
+        filename = file_module.replace_times(
+            "file_#T0",
+            dateformat="%Y",
+            dateformat_folder="",
+            times=["2020-06-05 05:00"],
+        )
         self.assertEqual(filename, "file_2020")
 
         filename = file_module.replace_times(
-            "file_#T0_#GRID_#T1", "%Y-%m-%d", ["2020-06-05 05:00"]
+            "file_#T0_#GRID_#T1",
+            dateformat="%Y-%m-%d",
+            dateformat_folder="",
+            times=["2020-06-05 05:00"],
         )
         self.assertEqual(filename, "file_2020-06-05_#GRID_#T1")
 
     def test_both(self):
         filename = file_module.replace_times(
-            "file_#T1", "%Y-%m-%d %H:%M", ["2020-06-05 05:01", "2020-07-05 05:01"]
+            "file_#T1",
+            dateformat="%Y-%m-%d %H:%M",
+            dateformat_folder="",
+            times=["2020-06-05 05:01", "2020-07-05 05:01"],
         )
         self.assertEqual(filename, "file_2020-07-05 05:01")
 
         filename = file_module.replace_times(
-            "file_#T0", "%Y", ["2020-06-05 05:00", "2020-07-05 05:00"]
+            "file_#T0",
+            dateformat="%Y",
+            dateformat_folder="",
+            times=["2020-06-05 05:00", "2020-07-05 05:00"],
         )
         self.assertEqual(filename, "file_2020")
 
         filename = file_module.replace_times(
-            "file_#T0_#GRID_#T1", "%Y-%m-%d", ["2020-06-05 05:00", "2020-07-05 05:00"]
+            "file_#T0_#GRID_#T1",
+            dateformat="%Y-%m-%d",
+            dateformat_folder="",
+            times=["2020-06-05 05:00", "2020-07-05 05:00"],
         )
         self.assertEqual(filename, "file_2020-06-05_#GRID_2020-07-05")
+
+    def test_folder(self):
+        filename = file_module.replace_times(
+            "#FT0/file_#T1",
+            dateformat="%Y-%m-%d %H:%M",
+            dateformat_folder="%Y",
+            times=["2020-06-05 05:01", "2020-07-05 05:01"],
+        )
+        self.assertEqual(filename, "2020/file_2020-07-05 05:01")
+
+        filename = file_module.replace_times(
+            "#FT0/file_#T0",
+            dateformat="%Y-%m-%d",
+            dateformat_folder="%Y/%m",
+            times=["2020-06-05 05:00", "2020-07-05 05:00"],
+        )
+        self.assertEqual(filename, "2020/06/file_2020-06-05")
+
+        filename = file_module.replace_times(
+            "#FT1/file_#T0_#GRID_#T1",
+            dateformat="%Y-%m-%d",
+            dateformat_folder="%Y-%m",
+            times=["2020-06-05 05:00", "2020-07-05 05:00"],
+        )
+        self.assertEqual(filename, "2020-07/file_2020-06-05_#GRID_2020-07-05")
 
 
 class AddPrefix(unittest.TestCase):

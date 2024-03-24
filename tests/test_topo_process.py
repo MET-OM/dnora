@@ -37,6 +37,7 @@ def test_import_land():
     grid.set_spacing(nx=10, ny=10)
     topo_reader = ConstantGriddedData(topo=0.0)
     grid.import_topo(topo_reader)
+
     np.testing.assert_array_almost_equal(grid.raw().topo().mean(), 0)
     grid.mesh_grid()
     np.testing.assert_array_almost_equal(grid.topo().mean(), 0)

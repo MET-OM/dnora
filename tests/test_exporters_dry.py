@@ -16,7 +16,6 @@ def model():
     # grid = grd.Grid(lon=(10, 20), lat=(60, 65))
     area = grid.Grid(lon=5, lat=60)
     model = modelrun.ModelRun(grid=area, dry_run=True)
-
     model.import_spectra(spectra.read_metno.NORA3(), pick.Area())
     model.import_wind(wind.read_metno.NORA3())
     model.import_spectra1d(
