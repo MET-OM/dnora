@@ -98,6 +98,11 @@ class DataImporter:
         obj = set_metaparameters_in_object(obj, metaparameter_dict, data_dict)
 
         obj.set_metadata(meta_dict)
+        if (
+            meta_dict.get("zone_number") is not None
+            and meta_dict.get("zone_letter") is not None
+        ):
+            obj.set_utm((meta_dict.get("zone_number"), meta_dict.get("zone_letter")))
 
         if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
             obj._mark_convention(reader.convention())

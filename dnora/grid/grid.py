@@ -126,7 +126,7 @@ class Grid(GriddedSkeleton):
         print(grid_processor)
 
         obj.set_topo(topo)
-        obj.set_sea_mask(self.topo() > 0)
+        obj.set_sea_mask(obj.topo() > 0)
 
     def set_boundary_points(self, mask_setter) -> None:
         boundary_mask = mask_setter(self)

@@ -33,6 +33,20 @@ import matplotlib.tri as mtri
 class TriGrid(PointSkeleton):
     _default_reader = None
 
+    def __init__(
+        self,
+        x=None,
+        y=None,
+        lon=None,
+        lat=None,
+        ntriang=range(1),
+        corner=range(3),
+        **kwargs,
+    ):
+        super().__init__(
+            x=x, y=y, lon=lon, lat=lat, ntriang=ntriang, corner=corner, **kwargs
+        )
+
     @classmethod
     def generate(
         cls,
@@ -130,7 +144,7 @@ class TriGrid(PointSkeleton):
         print(grid_processor)
 
         obj.set_topo(topo)
-        obj.set_sea_mask(self.topo() > 0)
+        obj.set_sea_mask(obj.topo() > 0)
 
     def plot(self) -> None:
         vmin, vmax = np.min(self.topo()), np.max(self.topo())

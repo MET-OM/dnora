@@ -19,19 +19,19 @@ def print_constant_values(
             msg.plain(f"Setting {key}={value} for {obj_type.name}")
 
 
-def create_constant_array(val, obj_size, start_time, end_time, time):
+def create_constant_array(val, time, obj_size, time_vec):
+    """Creates a constnat array based on an iterable value and iterable start times"""
     if not isinstance(val, Iterable):
         return np.full(obj_size, val)
     else:
 
         val_array = np.full(obj_size, 0)
         assert len(val) == len(time)
-    time_vec = pd.date_range(start_time, end_time, freq="h")
     time = pd.to_datetime(time)
     for n, t in enumerate(time):
         if t < time_vec[0] or t > time_vec[-1]:
             msg.warning(
-                f"Given time {t} is outside ModelRun time range {start_time} - {end_time}!"
+                f"Given time {t} is outside ModelRun time range {time_vec[0].strftime('%Y-%m-%d %H:%M')} - {time_vec[-1].strftime('%Y-%m-%d %H:%M')}!"
             )
         mask = time_vec >= t
         val_array[mask, ...] = val[n]
@@ -57,30 +57,3 @@ def decode_constant_array(val_array, time_vec):
     val[n + 1] = mean_var[ind + 1]
 
     return val, pd.to_datetime(time)
-
-
-def create_constant_data_dict(
-    obj_data_vars: list[str],
-    import_kwargs: dict[str, float],
-    obj_size: tuple[int],
-    start_time: pd.Timestamp,
-    end_time: pd.Timestamp,
-    time: pd.DatetimeIndex,
-) -> dict:
-    """Creates  dictinoary of data constant variables based on objects data variables and keywords provided by user."""
-    data_dict = {}
-    good_kwargs = set(dict_of_parameters(short=True).keys()).intersection(import_kwargs)
-    explicit_kwargs = set(import_kwargs.get("vars", {}).keys())
-    obj_data_vars = set(obj_data_vars)
-
-    data_vars = obj_data_vars.union(explicit_kwargs).union(good_kwargs)
-
-    for key in data_vars:
-        val = import_kwargs.get(key, None)
-        if val is None:
-            val = import_kwargs.get("vars", {}).get(key, 1)
-
-        data_dict[key] = create_constant_array(
-            val, obj_size, start_time, end_time, time
-        )
-    return data_dict
