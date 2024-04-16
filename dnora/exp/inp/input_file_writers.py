@@ -5,6 +5,7 @@ from copy import copy
 import os
 import numpy as np
 import pandas as pd
+from dnora.dnora_object_type import DnoraObjectType
 
 # Import objects
 from typing import TYPE_CHECKING, Union
@@ -65,16 +66,18 @@ class SWAN(InputFileWriter):
         calib_wcap: float = 0.5000e-04,
         use_wind: bool = True,
         use_ocr: bool = False,
-        use_ice: bool = False,
+        use_ice: bool = True,
         **kwargs,
     ) -> str:
         forcing = model.forcing()
         ice = model.ice()
+        factor_ice = 0.01
         ocr = model.oceancurrent()
         grid = model.grid()
-        grid_path = exported_files["grid"][-1]
-        forcing_path = exported_files["forcing"][-1]
-        boundary_path = exported_files["boundary"][-1]
+        grid_path = exported_files[DnoraObjectType.Grid][-1]
+        forcing_path = exported_files[DnoraObjectType.Forcing][-1]
+        ice_path = exported_files[DnoraObjectType.Ice][-1]
+        boundary_path = exported_files[DnoraObjectType.Boundary][-1]
 
         filename = file_object.get_filepath()
 
@@ -88,8 +91,8 @@ class SWAN(InputFileWriter):
             use_wind = False
 
         # Define start and end times of model run
-        DATE_START = model.time(crop=True)[0]
-        DATE_END = model.time(crop=True)[-1]
+        DATE_START = model.time()[0]
+        DATE_END = model.time()[-1]
         STR_START = DATE_START.strftime("%Y%m%d.%H%M%S")
         STR_END = DATE_END.strftime("%Y%m%d.%H%M%S")
 
@@ -99,12 +102,15 @@ class SWAN(InputFileWriter):
         delta_Xf = np.round(np.abs(forcing.lon()[-1] - forcing.lon()[0]), 5)
         delta_Yf = np.round(np.abs(forcing.lat()[-1] - forcing.lat()[0]), 5)
 
+        delta_Xi = np.round(np.abs(ice.lon()[-1] - ice.lon()[0]), 5)
+        delta_Yi = np.round(np.abs(ice.lat()[-1] - ice.lat()[0]), 5)
+
         factor_wind = calib_wind * 0.001
 
         with open(filename, "w") as file_out:
             file_out.write("$************************HEADING************************\n")
             file_out.write("$ \n")
-            file_out.write(" PROJ '" + grid.name() + "' 'T24' \n")
+            file_out.write(" PROJ '" + grid.name + "' 'T24' \n")
             file_out.write("$ \n")
             file_out.write("$*******************MODEL INPUT*************************\n")
             file_out.write("$ \n")
@@ -150,7 +156,7 @@ class SWAN(InputFileWriter):
             file_out.write("$ \n")
 
             lons, lats = create_swan_segment_coords(
-                grid.boundary_mask(), grid.lon_edges(), grid.lat_edges()
+                grid.boundary_mask(), grid.edges('lon'), grid.edges('lat')
             )
             bound_string = "BOUNDSPEC SEGMENT XY"
             for lon, lat in zip(lons, lats):
@@ -177,7 +183,8 @@ class SWAN(InputFileWriter):
                     + str((delta_Yf / (forcing.ny() - 1)).round(6))
                     + " NONSTATIONARY "
                     + STR_START
-                    + f" {forcing.dt():.0f} HR "
+#                    + f" {forcing.dt():.0f} HR "
+                    + f" {(forcing.time()[1]-forcing.time()[0]).total_seconds()/3600:.0f} HR "
                     + STR_END
                     + "\n"
                 )
@@ -203,12 +210,13 @@ class SWAN(InputFileWriter):
                     + " "
                     + str(ice.ny() - 1)
                     + " "
-                    + str((delta_Xf / (ice.nx() - 1)).round(6))
+                    + str((delta_Xi / (ice.nx() - 1)).round(6))
                     + " "
-                    + str((delta_Yf / (ice.ny() - 1)).round(6))
+                    + str((delta_Yi / (ice.ny() - 1)).round(6))
                     + " NONSTATIONARY "
                     + STR_START
-                    + f" {ice.dt():.0f} HR "
+#                    + f" {ice.dt():.0f} HR "
+                    + f" {(ice.time()[1]-ice.time()[0]).total_seconds()/3600:.0f} HR "
                     + STR_END
                     + "\n"
                 )
@@ -216,8 +224,8 @@ class SWAN(InputFileWriter):
                     "READINP AICE "
                     + str(factor_ice)
                     + "  '"
-                    + forcing_path.split("/")[-1]
-                    + "' 3 0 0 1 FREE \n"
+                    + ice_path.split("/")[-1]
+                    + " \n"
                 )
                 file_out.write("$ \n")
             else:
@@ -239,7 +247,7 @@ class SWAN(InputFileWriter):
                     + str((delta_Yf / (ocr.ny() - 1)).round(6))
                     + " NONSTATIONARY "
                     + STR_START
-                    + f" {ice.dt():.0f} HR "
+                    + f" {ocr.dt():.0f} HR "
                     + STR_END
                     + "\n"
                 )
@@ -265,7 +273,7 @@ class SWAN(InputFileWriter):
             forcing_folder = "/".join(temp_list[0:-1])
             file_out.write(
                 "BLOCK 'COMPGRID' HEAD '"
-                + grid.name()
+                + grid.name
                 + "_"
                 + STR_START.split(".")[0]
                 + ".nc"

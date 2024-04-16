@@ -40,10 +40,11 @@ class WW3(IceWriter):
 class SWAN(IceWriter):
     """Writes ice data to SWAN ascii format."""
 
-    def __call__(self, model: ModelRun, file_object: FileNames, **kwargs) -> list[str]:
+    def __call__(self, model: ModelRun, file_object: FileNames, object_type, **kwargs) -> list[str]:
         filename = file_object.get_filepath()
         ice = model.ice()
-        breakpoint()
+        ice.concentration = np.nan_to_num(ice.concentration(),nan=0)
+
 
         days = ice.days(datetime=False)
         with open(filename, "w") as file_out:
@@ -57,7 +58,7 @@ class SWAN(IceWriter):
                         pd.to_datetime(times[n]).strftime("%Y%m%d.%H%M%S") + "\n"
                     )
                     file_out.write(time_stamp)
-                    np.savetxt(file_out, ice.sic()[ct, :, :] * 1000, fmt="%i")
+                    np.savetxt(file_out, ice.concentration[ct, :, :]*100, fmt="%1.2f")
                     ct += 1
 
         return filename

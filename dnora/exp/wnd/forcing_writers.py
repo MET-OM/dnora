@@ -49,7 +49,7 @@ class WW3(ForcingWriter):
 class SWAN(ForcingWriter):
     """Writes wind forcing data to SWAN ascii format."""
 
-    def __call__(self, model: ModelRun, file_object: FileNames, **kwargs) -> list[str]:
+    def __call__(self, model: ModelRun, file_object: FileNames, object_type, **kwargs) -> list[str]:
         filename = file_object.get_filepath()
         forcing = model.forcing()
 

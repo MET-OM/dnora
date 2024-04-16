@@ -171,17 +171,17 @@ class WW3Triangular(GridWriter):
 class SWAN(GridWriter):
     """Writes the grid to SWAN format."""
 
-    def __call__(self, model: ModelRun, file_object: FileNames, **kwargs) -> str:
+    def __call__(self, model: ModelRun, file_object: FileNames, obj_type, **kwargs) -> str:
         filename = file_object.get_filepath()
         grid = model.grid()
 
         mask_out = np.ones(grid.topo().shape)
-        mask_out[grid.land_sea_mask()] = 0
+        mask_out[grid.land_mask()] = 0
         if grid.boundary_mask().size > 0:
             msg.info(
-                f"Setting {sum(sum(np.logical_and(grid.boundary_mask(), grid.land_sea_mask()))):d} boundary points in grid..."
+                f"Setting {sum(sum(np.logical_and(grid.boundary_mask(), grid.land_mask()))):d} boundary points in grid..."
             )
-            mask_out[np.logical_and(grid.boundary_mask(), grid.land_sea_mask())] = 2
+            mask_out[np.logical_and(grid.boundary_mask(), grid.land_mask())] = 2
 
         # output_file = grid.filename(filestring=filestring, extension='bot')
 

@@ -33,4 +33,5 @@ class WW3_4km(ModelRun):
     _reader_dict = {
         DnoraObjectType.Boundary: bnd.read_metno.WW3_4km(),
         DnoraObjectType.Forcing: wnd.read_metno.MEPS(),
+        DnoraObjectType.Forcing: ice.read_metno.Barents25(),
     }

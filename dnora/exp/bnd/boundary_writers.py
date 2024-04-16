@@ -260,7 +260,7 @@ class SWAN(BoundaryWriter):
         return SpectralConvention.MET
 
     def __call__(
-        self, model: ModelRun, file_object: FileNames, factor: float = 1e-4, **kwargs
+        self, model: ModelRun, file_object: FileNames, obj_type, factor: float = 1e-4, **kwargs
     ) -> str:
         filename = file_object.get_filepath()
         boundary = model.boundary()

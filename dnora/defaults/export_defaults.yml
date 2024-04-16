@@ -62,6 +62,8 @@ SWAN:
     extension: 'bot'
   forcing:
     filename: 'wind#Forcing#Grid#T0_#T1'
+  ice:
+    filename: 'ice#Forcing#Grid#T0_#T1'
   boundary:
     filename: 'spec#Boundary#Grid#T0#T1'
   input_file:
