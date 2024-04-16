@@ -1,6 +1,6 @@
 from dnora import grid, modelrun
 import numpy as np
-from dnora.readers.generic_readers import ConstantGriddedData
+from dnora.readers.generic_readers import ConstantData
 
 
 def test_import_constant_forcing_one_point():
@@ -9,7 +9,7 @@ def test_import_constant_forcing_one_point():
         area, start_time="2020-01-01 00:00", end_time="2020-01-02 00:00"
     )
 
-    model.import_wind(ConstantGriddedData(), u=1.0, v=2.0)
+    model.import_wind(ConstantData(), u=1.0, v=2.0)
 
     assert model.wind().size() == (25, 1, 1)
 
@@ -27,9 +27,9 @@ def test_import_constant_forcing():
         area, start_time="2020-01-01 00:00", end_time="2020-01-02 00:00"
     )
 
-    model.import_wind(ConstantGriddedData(), u=1.0, v=2.0)
+    model.import_wind(ConstantData(), u=1.0, v=2.0)
 
-    model.import_wind(ConstantGriddedData(), u=1.0, v=2.0)
+    model.import_wind(ConstantData(), u=1.0, v=2.0)
 
     assert model.wind().size() == (25, 10, 5)
 

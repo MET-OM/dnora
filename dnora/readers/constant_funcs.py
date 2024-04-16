@@ -1,5 +1,3 @@
-from dnora.metaparameter.parameter_funcs import dict_of_parameters
-
 from dnora import msg
 from collections.abc import Iterable
 import pandas as pd

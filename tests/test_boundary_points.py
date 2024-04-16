@@ -15,6 +15,7 @@ class IdentifyBnd(unittest.TestCase):
     def test_all_edges(self):
         grid = Grid(lon=(0, 1), lat=(0, 1))
         grid.set_spacing(nx=4, ny=4)
+
         grid.set_boundary_points(Edges(edges=["N", "W", "S", "E"]))
 
         self.assertEqual(
@@ -215,7 +216,7 @@ class FullPipeline(unittest.TestCase):
         grid.set_spacing(nx=4, ny=5)
 
         lons, lats = create_swan_segment_coords(
-            grid.boundary_mask(), grid.edges("lon"), grid.edges("lat")
+            grid.boundary_mask(empty=True), grid.edges("lon"), grid.edges("lat")
         )
         self.assertEqual(np.array_equal(lons, np.array([])), True)
         self.assertEqual(np.array_equal(lats, np.array([])), True)
@@ -226,7 +227,7 @@ class FullPipeline(unittest.TestCase):
         grid.set_boundary_points(Edges(edges=["W", "E"]))
 
         lons, lats = create_swan_segment_coords(
-            grid.boundary_mask(), grid.edges("lon"), grid.edges("lat")
+            grid.boundary_mask(Empty=True), grid.edges("lon"), grid.edges("lat")
         )
         self.assertEqual(np.array_equal(lons, np.array([])), True)
         self.assertEqual(np.array_equal(lats, np.array([])), True)

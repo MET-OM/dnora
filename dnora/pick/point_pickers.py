@@ -84,11 +84,6 @@ class Area(PointPicker):
         expansion_factor: float = 1.5,
         **kwargs,
     ) -> np.ndarray:
-        if grid._skeleton_empty():
-            msg.info(
-                "Grid is empty, no no points can be found for the area covering the grid!"
-            )
-            return np.array([])
 
         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
 

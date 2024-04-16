@@ -5,7 +5,7 @@ import pandas as pd
 from abc import ABC, abstractmethod
 from typing import Union
 from dnora.grid import Grid
-from dnora.metaparameter.parameter_funcs import create_metaparameter_dict
+import geo_parameters as gp
 from pathlib import Path
 
 # Import aux_funcsiliry functions
@@ -105,7 +105,6 @@ class SpectraToWaveSeries(PointDataReader):
         source: str,
         parameters: list[str] = [
             Hs(),
-            Tp(),
             Dirp(),
             TpI(),
             Dirm(),
@@ -132,7 +131,7 @@ class SpectraToWaveSeries(PointDataReader):
             wp = get_wave_parameter(wp)
             data_dict[wp.name()] = wp(self._Spectra1D)
 
-        metaparameter_dict = create_metaparameter_dict(data_dict.keys())
+        metaparameter_dict = gp.dict_of_parameters(data_dict.keys())
 
         meta_dict = self._Spectra1D.ds().attrs
         meta_dict["integration_range"] = f"{self._freq[0]}-{self._freq[-1]} Hz"

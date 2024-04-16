@@ -11,7 +11,7 @@ from geo_skeletons import PointSkeleton
 from geo_skeletons.decorators import add_time, add_frequency, add_datavar
 
 from .process import SpectralProcessor
-from dnora.metaparameter.parameters import Ef, Dirm, Spr
+import geo_parameters as gp
 
 
 @add_datavar(name="spec", coords="all", default_value=0.0)
@@ -20,7 +20,7 @@ from dnora.metaparameter.parameters import Ef, Dirm, Spr
 @add_frequency(grid_coord=False)
 @add_time(grid_coord=True)
 class Spectra1D(PointSkeleton):
-    meta_dict = {"spec": Ef, "dirm": Dirm, "spr": Spr}
+    meta_dict = {"spec": gp.wave.Ef, "dirm": gp.wave.Dirm, "spr": gp.wave.Spr}
 
     def process_spectra(
         self, spectral_processors: list[SpectralProcessor] | None = None

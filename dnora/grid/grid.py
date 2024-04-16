@@ -15,11 +15,21 @@ import matplotlib.pyplot as plt
 from .topo import import_topo
 import cmocean.cm
 
+import geo_parameters as gp
 
-@add_datavar(name="topo", default_value=999.0)
+
 @add_mask(name="boundary", coords="grid", default_value=0)
 @add_mask(name="output", coords="grid", default_value=0)
-@add_mask(name="sea", coords="grid", default_value=1, opposite_name="land")
+@add_mask(
+    name="sea",
+    coords="grid",
+    default_value=1,
+    opposite_name="land",
+    triggered_by="topo",
+    valid_range=(0, None),
+    range_inclusive=False,
+)
+@add_datavar(gp.ocean.WaterDepth("topo"), default_value=999.0)
 class Grid(GriddedSkeleton):
     _default_reader = None
 
@@ -107,9 +117,8 @@ class Grid(GriddedSkeleton):
         print(mesher)
 
         self.set_topo(topo)
-        self.set_sea_mask(self.topo() > 0)
         self.set_metadata(self.raw().metadata())
-        self.set_metadata(self.raw().ds().topo.attrs, data_array_name="topo")
+        self.set_metadata(self.raw().ds().topo.attrs, name="topo")
 
     def process_grid(
         self, grid_processor: GridProcessor = None, raw: bool = False, **kwargs
@@ -126,7 +135,6 @@ class Grid(GriddedSkeleton):
         print(grid_processor)
 
         obj.set_topo(topo)
-        obj.set_sea_mask(obj.topo() > 0)
 
     def set_boundary_points(self, mask_setter) -> None:
         boundary_mask = mask_setter(self)

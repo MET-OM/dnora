@@ -42,7 +42,7 @@ class Clear(MaskSetter):
         pass
 
     def __call__(self, grid):
-        mask_size = grid.sea_mask().shape
+        mask_size = grid.shape("topo")
         return np.full(mask_size, False)
 
     def __str__(self):
@@ -70,7 +70,7 @@ class LonLat(MaskSetter):
             lon=self._points.lon(), lat=self._points.lat(), fast=True
         )
 
-        mask = np.full(grid.sea_mask().shape, False)
+        mask = np.full(grid.shape("topo"), False)
 
         if grid.is_gridded():
             mask[ind_dict.get("inds_y"), ind_dict.get("inds_x")] = True
@@ -95,7 +95,7 @@ class XY(MaskSetter):
             lon=self._points.y(), lat=self._points.y(), fast=True
         )
 
-        mask = np.full(grid.sea_mask().shape, False)
+        mask = np.full(grid.shape("topo"), False)
 
         if grid.is_gridded():
             mask[ind_dict.get("inds_y"), ind_dict.get("inds_x")] = True
@@ -128,7 +128,7 @@ class Edges(MaskSetter):
         return
 
     def __call__(self, grid):
-        mask_size = grid.sea_mask().shape
+        mask_size = grid.shape("topo")
 
         if mask_size == (1, 1):
             return np.full(mask_size, True)
@@ -164,7 +164,7 @@ class MidPoint(MaskSetter):
         self.edges = [edge.upper() for edge in edges]
 
     def __call__(self, grid):
-        mask_size = grid.sea_mask().shape
+        mask_size = grid.shape("topo")
         if mask_size == (1, 1):
             return np.full(mask_size, True)
 
@@ -172,24 +172,26 @@ class MidPoint(MaskSetter):
         ny = np.round(mask_size[0] / 2).astype(int)
         nx = np.round(mask_size[1] / 2).astype(int)
 
+        sea_mask = grid.sea_mask()
+
         # --------- North boundary ----------
         if "N" in self.edges:
-            edge = grid.sea_mask()[-1, :]
+            edge = sea_mask[-1, :]
             nx = np.round(np.median(np.where(edge))).astype(int)
             mask[-1, nx] = True
         ## --------- South boundary ----------
         if "S" in self.edges:
-            edge = grid.sea_mask()[0, :]
+            edge = sea_mask[0, :]
             nx = np.round(np.median(np.where(edge))).astype(int)
             mask[0, nx] = True
         ## --------- East boundary ----------
         if "E" in self.edges:
-            edge = grid.sea_mask()[:, -1]
+            edge = sea_mask[:, -1]
             ny = np.round(np.median(np.where(edge))).astype(int)
             mask[ny, -1] = True
         ## --------- West boundary ----------
         if "W" in self.edges:
-            edge = grid.sea_mask()[:, 0]
+            edge = sea_mask[:, 0]
             ny = np.round(np.median(np.where(edge))).astype(int)
             mask[ny, 0] = True
 

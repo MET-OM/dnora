@@ -2,7 +2,7 @@ from dnora.grid import Grid
 from dnora import modelrun, current
 import numpy as np
 
-from dnora.readers.generic_readers import ConstantGriddedData
+from dnora.readers.generic_readers import ConstantData
 
 
 def test_import_constant_current_one_point():
@@ -11,7 +11,7 @@ def test_import_constant_current_one_point():
         grid, start_time="2020-01-01 00:00", end_time="2020-01-02 00:00"
     )
 
-    model.import_current(ConstantGriddedData(), u=1, v=2)
+    model.import_current(ConstantData(), u=1, v=2)
 
     assert model.current().size() == (25, 1, 1)
 
@@ -35,7 +35,7 @@ def test_import_constant_current():
         grid, start_time="2020-01-01 00:00", end_time="2020-01-02 00:00"
     )
 
-    model.import_current(ConstantGriddedData(), u=1, v=2)
+    model.import_current(ConstantData(), u=1, v=2)
 
     assert model.current().size() == (25, 10, 5)
 

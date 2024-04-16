@@ -1,12 +1,11 @@
 from dnora.cacher.caching_strategies import CachingStrategy
 from .abstract_readers import PointDataReader, DataReader, SpectralDataReader
-from dnora.metaparameter.parameter_funcs import dict_of_parameters
+import geo_parameters as gp
 import pandas as pd
 import numpy as np
 import xarray as xr
 from dnora import aux_funcs
 from pathlib import Path
-from dnora.metaparameter.parameter_funcs import create_metaparameter_dict
 from dnora.dnora_type_manager.dnora_types import DnoraDataType
 from dnora.dnora_type_manager.data_sources import DataSource
 from dnora.spectral_conventions import convert_2d_to_1d, SpectralConvention
@@ -224,22 +223,29 @@ class ConstantData(SpectralDataReader):
         """
 
         def non_fp_inds():
-            if self.fp is not None and obj_type in [
+            if self._default_peak_values.get("freq") is not None and obj_type in [
                 DnoraDataType.SPECTRA,
                 DnoraDataType.SPECTRA1D,
             ]:
                 """Set everything except dominant frequency to 0"""
                 non_fp_ind = np.argmin(
-                    np.abs(coord_dict.get("freq") - self.fp)
+                    np.abs(
+                        coord_dict.get("freq") - self._default_peak_values.get("freq")
+                    )
                 ) != np.arange(len(coord_dict.get("freq")))
                 return non_fp_ind
             return None
 
         def non_dirp_inds():
-            if self.dirp is not None and obj_type == DnoraDataType.SPECTRA:
+            if (
+                self._default_peak_values.get("dirs") is not None
+                and obj_type == DnoraDataType.SPECTRA
+            ):
                 """Set everything except dominant direction to 0"""
                 non_dirp_ind = np.argmin(
-                    np.abs(coord_dict.get("dirs") - self.dirp)
+                    np.abs(
+                        coord_dict.get("dirs") - self._default_peak_values.get("dirs")
+                    )
                 ) != np.arange(len(coord_dict.get("dirs")))
                 return non_dirp_ind
             return None
@@ -277,7 +283,7 @@ class ConstantData(SpectralDataReader):
 
         # Get values for data variables
         dnora_obj = dnora_objects.get(obj_type)
-        breakpoint()
+
         data_val_dict = create_datvar_val_dict(
             kwargs,
             default_values=self._default_var_values,
@@ -297,7 +303,7 @@ class ConstantData(SpectralDataReader):
         meta_dict = {"zone_number": zone_number, "zone_letter": zone_letter}
 
         # Create metaparameters based on standard short names
-        metaparameter_dict = create_metaparameter_dict(data_dict.keys())
+        metaparameter_dict = gp.parameter_funcs.create_parameter_dict(data_dict.keys())
 
         return coord_dict, data_dict, meta_dict, metaparameter_dict
 
@@ -558,9 +564,9 @@ def calculate_spatial_coords(coord_dict, obj_size, grid, obj_type, force_type):
         else:
             x, y = grid.x(native=True), grid.y(native=True)
             x_str, y_str = grid.x_str, grid.y_str
+
         obj_size.append(len(y))
         obj_size.append(len(x))
-
     else:
         """If object is gridded, but grid is not, keep approximate number of points"""
         ny = np.ceil(np.sqrt(grid.ny())).astype(int)

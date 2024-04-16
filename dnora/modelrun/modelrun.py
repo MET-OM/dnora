@@ -25,7 +25,7 @@ from dnora.cacher.cache_decorator import cached_reader
 from dnora.defaults import read_environment_variable
 from dnora.spectra1d.read import SpectraTo1D
 from dnora.waveseries.read import SpectraToWaveSeries
-
+from dnora.spectral_conventions import SpectralConvention
 from dnora.pick import TrivialPicker
 
 from dnora.export.templates import Cacher
@@ -336,7 +336,7 @@ class ModelRun:
             reader,
             source,
             folder,
-            point_mask=self.grid().sea_mask(),
+            point_mask=self.grid().sea_mask(squeeze=False),
             point_picker=point_picker,
             **kwargs,
         )
@@ -407,7 +407,7 @@ class ModelRun:
                 return
 
         name = self.spectra1d().name
-
+        self.spectra1d().set_convention(SpectralConvention.MET)
         waveseries_reader = SpectraToWaveSeries(self.spectra1d(), freq)
 
         self.import_waveseries(

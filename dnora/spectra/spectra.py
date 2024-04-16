@@ -13,7 +13,7 @@ from dnora import msg
 from geo_skeletons import PointSkeleton
 from geo_skeletons.decorators import add_time, add_frequency, add_direction, add_datavar
 
-from dnora.metaparameter.parameters import Efth
+import geo_parameters as gp
 
 
 # @add_mask(name='bad', coords='all', default_value=0)
@@ -22,7 +22,7 @@ from dnora.metaparameter.parameters import Efth
 @add_frequency(grid_coord=False)
 @add_time(grid_coord=True)
 class Spectra(PointSkeleton):
-    meta_dict = {"spec": Efth}
+    meta_dict = {"spec": gp.wave.Efth}
 
     def process_boundary(
         self, boundary_processors: list[BoundaryProcessor] | None = None

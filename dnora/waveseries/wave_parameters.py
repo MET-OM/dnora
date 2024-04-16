@@ -98,9 +98,7 @@ class PowerMoment(WaveParameter):
         else:
             ds = spec.ds()
 
-        ds = (ds.spec**self._power * (ds.freq**self._moment)).integrate(
-            coord="freq"
-        )
+        ds = (ds.spec**self._power * (ds.freq**self._moment)).integrate(coord="freq")
 
         return ds.values
 
@@ -203,14 +201,14 @@ class Tp(WaveParameter):
             theta = np.deg2rad(spec.dirm(data_array=True))
             dD = 360 / len(spec.dirs())
             # Normalizing here so that integration over direction becomes summing
-            efth = dD * np.pi / 180 * spec.spec(data_array=True)
+            efth = dD * np.pi / 180 * spec.spec(data_array=True, dask=False)
 
             c1 = (np.cos(theta) * efth).sum(dim="dirs")  # Function of frequency
             s1 = (np.sin(theta) * efth).sum(dim="dirs")
             efth = efth.sum(dim="dirs")
             dirs = np.rad2deg(np.arctan2(s1, c1))
         else:
-            efth = spec.spec(data_array=True)
+            efth = spec.spec(data_array=True, dask=False)
             dirs = spec.dirm(data_array=True)
 
         inds = efth.argmax(dim="freq")
@@ -343,7 +341,7 @@ class Wp(WaveParameter):
 class Dirm(WaveParameter):
     """Mean wave direction"""
 
-    def __call__(self, spec: Union[Spectra, Spectra]):
+    def __call__(self, spec: Union[Spectra, Spectra1D]):
         spec.set_convention(SpectralConvention.MET)
 
         if isinstance(spec, Spectra):
@@ -430,14 +428,14 @@ class Dirp(WaveParameter):
             theta = np.deg2rad(spec.dirm(data_array=True))
             dD = 360 / len(spec.dirs())
             # Normalizing here so that integration over direction becomes summing
-            efth = dD * np.pi / 180 * spec.spec(data_array=True)
+            efth = dD * np.pi / 180 * spec.spec(data_array=True, dask=False)
 
             c1 = (np.cos(theta) * efth).sum(dim="dirs")  # Function of frequency
             s1 = (np.sin(theta) * efth).sum(dim="dirs")
             efth = efth.sum(dim="dirs")
             dirs = np.rad2deg(np.arctan2(s1, c1))
         else:
-            efth = spec.spec(data_array=True)
+            efth = spec.spec(data_array=True, dask=False)
             dirs = spec.dirm(data_array=True)
 
         inds = efth.argmax(dim="freq")

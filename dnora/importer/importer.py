@@ -10,7 +10,7 @@ from geo_skeletons import PointSkeleton
 from geo_skeletons.decorators import add_datavar
 from dnora.dnora_type_manager.dnora_objects import DnoraObject, Grid, dnora_objects
 import numpy as np
-from dnora.metaparameter.parameter_funcs import set_metaparameters_in_object
+from dnora.aux_funcs import set_metaparameters_in_object
 import pandas as pd
 from typing import Union
 
@@ -45,7 +45,10 @@ class DataImporter:
         )
 
         if np.all(np.logical_not(point_mask)):
-            interest_points = None
+            msg.warning(
+                "None of the points set to interest points! Aborting import of data."
+            )
+            return
         else:
             interest_points = PointSkeleton.from_skeleton(grid, mask=point_mask)
 

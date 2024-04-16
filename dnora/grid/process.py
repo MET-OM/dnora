@@ -103,9 +103,9 @@ class SetMaxDepth(GridProcessor):
         deep_points = data > self.depth
 
         new_data = copy(data)
-        new_data[
-            np.logical_and(deep_points, grid.sea_mask())
-        ] = self.depth  # Don't touch land points
+        new_data[np.logical_and(deep_points, grid.sea_mask())] = (
+            self.depth
+        )  # Don't touch land points
         msg.plain(
             f"Affected {np.count_nonzero(np.logical_and(deep_points, grid.sea_mask()))} points"
         )
@@ -127,6 +127,7 @@ class SetConstantDepth(GridProcessor):
         **kwargs,
     ):
         new_data = np.full(grid.size(), self.depth)
+
         new_data[grid.land_mask()] = np.nan  # Don't touch land points
         msg.plain(f"Affected {np.count_nonzero(grid.sea_mask())} points")
         return new_data

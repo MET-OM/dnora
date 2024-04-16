@@ -44,9 +44,11 @@ class Interpolate(Mesher):
 
     def __call__(self, data, lon, lat, lonQ, latQ, method: str = "nearest"):
         self.method = method
-        data[
-            np.logical_not(data > 0)
-        ] = 0  # Keeping land points as nan lets the shoreline creep out
+        data[np.logical_not(data > 0)] = (
+            0  # Keeping land points as nan lets the shoreline creep out
+        )
+        if hasattr(data, "chunks"):
+            data = data.compute()
         M = np.column_stack((data, lon, lat))
         meshed_data = griddata(M[:, 1:], M[:, 0], (lonQ, latQ), method=self.method)
 

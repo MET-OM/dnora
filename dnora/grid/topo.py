@@ -9,15 +9,15 @@ from dnora import msg, aux_funcs
 from dnora.defaults import read_environment_variable
 import os
 
-from dnora.metaparameter.parameter_funcs import set_metaparameters_in_object
-from dnora.metaparameter import WaterDepth
+from dnora.aux_funcs import set_metaparameters_in_object
+import geo_parameters as gp
 from dnora.dnora_type_manager.dnora_types import DnoraDataType
 
 
 @add_mask(name="sea", coords="grid", default_value=1, opposite_name="land")
 @add_datavar(name="topo", default_value=999.0, coords="grid")
 class GriddedTopo(GriddedSkeleton):
-    meta_dict = {"topo": WaterDepth}
+    meta_dict = {"topo": gp.ocean.WaterDepth}
     _default_reader = None
     pass
 
@@ -25,7 +25,7 @@ class GriddedTopo(GriddedSkeleton):
 @add_mask(name="sea", coords="grid", default_value=1, opposite_name="land")
 @add_datavar(name="topo", default_value=999.0, coords="grid")
 class PointTopo(PointSkeleton):
-    meta_dict = {"topo": WaterDepth}
+    meta_dict = {"topo": gp.ocean.WaterDepth}
     _default_reader = None
     pass
 
@@ -111,5 +111,6 @@ def import_topo(
     topo_grid.set_topo(topo)
     topo_grid = set_metaparameters_in_object(topo_grid, metaparameter_dict, data_dict)
     topo_grid.set_metadata(meta_dict)
+    topo_grid.set_sea_mask(topo_grid.topo() > 0)
 
     return topo_grid

@@ -21,15 +21,24 @@ from .topo import import_topo
 
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
+import geo_parameters as gp
 
 
 @add_datavar(name="triangles", coords="gridpoint")
-@add_datavar(name="topo", default_value=999.0, coords="grid")
 @add_coord(name="corner", grid_coord=False)
 @add_coord(name="ntriang", grid_coord=False)
 @add_mask(name="boundary", coords="grid", default_value=0)
 @add_mask(name="output", coords="grid", default_value=0)
-@add_mask(name="sea", coords="grid", default_value=1, opposite_name="land")
+@add_mask(
+    name="sea",
+    coords="grid",
+    default_value=1,
+    opposite_name="land",
+    triggered_by="topo",
+    valid_range=(0, None),
+    range_inclusive=False,
+)
+@add_datavar(gp.ocean.WaterDepth("topo"), default_value=999.0, coords="grid")
 class TriGrid(PointSkeleton):
     _default_reader = None
 
@@ -125,9 +134,9 @@ class TriGrid(PointSkeleton):
         print(mesher)
 
         self.set_topo(topo)
-        self.set_sea_mask(self.topo() > 0)
+
         self.set_metadata(self.raw().metadata())
-        self.set_metadata(self.raw().ds().topo.attrs, data_array_name="topo")
+        self.set_metadata(self.raw().ds().topo.attrs, name="topo")
 
     def process_grid(
         self, grid_processor: GridProcessor = None, raw: bool = False, **kwargs
@@ -144,7 +153,6 @@ class TriGrid(PointSkeleton):
         print(grid_processor)
 
         obj.set_topo(topo)
-        obj.set_sea_mask(obj.topo() > 0)
 
     def plot(self) -> None:
         vmin, vmax = np.min(self.topo()), np.max(self.topo())

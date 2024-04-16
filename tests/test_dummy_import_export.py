@@ -7,7 +7,7 @@ from dnora import (
 from dnora.spectral_conventions import SpectralConvention
 import numpy as np
 
-from dnora.readers.generic_readers import ConstantGriddedData, ConstantPointData
+from dnora.readers.generic_readers import ConstantData
 from dnora.dnora_type_manager.dnora_types import DnoraDataType
 
 
@@ -26,7 +26,6 @@ def find_north_from_dirs(dirs, north):
 
 def find_north_from_spec(spec):
     spec = spec[0, 0, 0, :]
-
     return np.where(spec == 1)[0][0]
 
 
@@ -36,10 +35,10 @@ def test_import_export():
     end_time = "2020-02-01 00:00:00"
     model = modelrun.ModelRun(grid=grid, start_time=start_time, end_time=end_time)
 
-    model.import_wind(ConstantGriddedData())
-    model.import_spectra(ConstantPointData(), point_picker=pick.TrivialPicker())
+    model.import_wind(ConstantData())
+    model.import_spectra(ConstantData(), point_picker=pick.TrivialPicker())
     model.spectra_to_waveseries()
-    model.import_waterlevel(ConstantGriddedData())
+    model.import_waterlevel(ConstantData())
 
     for obj_type in [
         DnoraDataType.WIND,
@@ -65,7 +64,7 @@ def test_conventions():
     model = modelrun.ModelRun(grid=grid, start_time=start_time, end_time=end_time)
     # Import constant spectra in oceanic convention with one component going north
     model.import_spectra(
-        ConstantPointData(fp=None, convention=SpectralConvention.OCEAN),
+        ConstantData(peaks={"freq": None}, convention=SpectralConvention.OCEAN),
         point_picker=pick.TrivialPicker(),
     )
 
@@ -76,16 +75,21 @@ def test_conventions():
     np.testing.assert_array_almost_equal(model.spectra().dirs(), D)
     np.testing.assert_array_almost_equal(model.spectra().freq(), f)
     np.testing.assert_array_almost_equal(
-        find_north_from_dirs(D, 0), find_north_from_spec(model.spectra().spec())
+        find_north_from_dirs(D, 0),
+        find_north_from_spec(model.spectra().spec(dask=False)),
     )
 
     # Check 1D spectra convention
     model.spectra_to_1d()
     assert model.spectra1d().convention() == SpectralConvention.OCEAN
-    mdir = int(np.median(model.spectra1d().dirm()))
+    mdir = int(np.median(model.spectra1d().dirm(dask=False)))
     assert mdir == 0
+
     model.spectra_to_waveseries()  # Converts sepctra to MET before feeding into WaveSeries
-    mdir = int(np.median(model.waveseries().dirm()))
+
+    mdir = int(np.median(model.spectra1d().dirm(dask=False)))
+    assert mdir == 180
+    mdir = int(np.median(model.waveseries().dirm(dask=False)))
     assert mdir == 180
 
     # Meteorological convention
@@ -94,15 +98,16 @@ def test_conventions():
     np.testing.assert_array_almost_equal(model.spectra().dirs(), D)
     np.testing.assert_array_almost_equal(model.spectra().freq(), f)
     np.testing.assert_array_almost_equal(
-        find_north_from_dirs(D, 180), find_north_from_spec(model.spectra().spec())
+        find_north_from_dirs(D, 180),
+        find_north_from_spec(model.spectra().spec(dask=False)),
     )
 
     model.spectra_to_1d()
     assert model.spectra1d().convention() == SpectralConvention.MET
-    mdir = int(np.median(model.spectra1d().dirm()))
+    mdir = int(np.median(model.spectra1d().dirm(dask=False)))
     assert mdir == 180
     model.spectra_to_waveseries()
-    mdir = int(np.median(model.waveseries().dirm()))
+    mdir = int(np.median(model.waveseries().dirm(dask=False)))
     assert mdir == 180
 
     # Mathematical convention (directional vector still starts from 0!)
@@ -111,15 +116,16 @@ def test_conventions():
     np.testing.assert_array_almost_equal(model.spectra().dirs(), D)
     np.testing.assert_array_almost_equal(model.spectra().freq(), f)
     np.testing.assert_array_almost_equal(
-        find_north_from_dirs(D, 90), find_north_from_spec(model.spectra().spec())
+        find_north_from_dirs(D, 90),
+        find_north_from_spec(model.spectra().spec(dask=False)),
     )
 
     model.spectra_to_1d()
     assert model.spectra1d().convention() == SpectralConvention.MATH
-    mdir = int(np.median(model.spectra1d().dirm()))
+    mdir = int(np.median(model.spectra1d().dirm(dask=False)))
     assert mdir == 90
     model.spectra_to_waveseries()
-    mdir = int(np.median(model.waveseries().dirm()))
+    mdir = int(np.median(model.waveseries().dirm(dask=False)))
     assert mdir == 180
 
     f, D = get_freq_and_dir_vector(math=True)
@@ -129,15 +135,16 @@ def test_conventions():
     np.testing.assert_array_almost_equal(model.spectra().dirs(), D)
     np.testing.assert_array_almost_equal(model.spectra().freq(), f)
     np.testing.assert_array_almost_equal(
-        find_north_from_dirs(D, 0), find_north_from_spec(model.spectra().spec())
+        find_north_from_dirs(D, 0),
+        find_north_from_spec(model.spectra().spec(dask=False)),
     )
 
     model.spectra_to_1d()
     assert model.spectra1d().convention() == SpectralConvention.OCEAN
-    mdir = int(np.median(model.spectra1d().dirm()))
+    mdir = int(np.median(model.spectra1d().dirm(dask=False)))
     assert mdir == 0
     model.spectra_to_waveseries()
-    mdir = int(np.median(model.waveseries().dirm()))
+    mdir = int(np.median(model.waveseries().dirm(dask=False)))
     assert mdir == 180
 
     # MATHVEC convention (MAthematical and vector starts from 90 downwards)
@@ -146,12 +153,13 @@ def test_conventions():
     np.testing.assert_array_almost_equal(model.spectra().dirs(), D)
     np.testing.assert_array_almost_equal(model.spectra().freq(), f)
     np.testing.assert_array_almost_equal(
-        find_north_from_dirs(D, 90), find_north_from_spec(model.spectra().spec())
+        find_north_from_dirs(D, 90),
+        find_north_from_spec(model.spectra().spec(dask=False)),
     )
 
     model.spectra_to_1d()
     assert model.spectra1d().convention() == SpectralConvention.MATH
-    mdir = int(np.median(model.spectra1d().dirm()))
+    mdir = int(np.median(model.spectra1d().dirm(dask=False)))
     assert mdir == 90
-    mdir = int(np.median(model.waveseries().dirm()))
+    mdir = int(np.median(model.waveseries().dirm(dask=False)))
     assert mdir == 180

@@ -1,6 +1,6 @@
 from dnora.grid import Grid
 from dnora import modelrun
-from dnora.readers.generic_readers import ConstantGriddedData
+from dnora.readers.generic_readers import ConstantData
 import numpy as np
 
 
@@ -10,7 +10,7 @@ def test_import_constant_waterlevel_one_point():
         grid, start_time="2020-01-01 00:00", end_time="2020-01-02 00:00"
     )
 
-    model.import_waterlevel(ConstantGriddedData(), eta=1.0)
+    model.import_waterlevel(ConstantData(), eta=1.0)
 
     assert model.waterlevel().size() == (25, 1, 1)
 
@@ -25,7 +25,7 @@ def test_import_constant_waterlevel():
         grid, start_time="2020-01-01 00:00", end_time="2020-01-02 00:00"
     )
 
-    model.import_waterlevel(ConstantGriddedData(), eta=1.0)
+    model.import_waterlevel(ConstantData(), eta=1.0)
 
     assert model.waterlevel().size() == (25, 10, 5)
 
