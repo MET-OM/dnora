@@ -13,6 +13,7 @@ import numpy as np
 from dnora.aux_funcs import set_metaparameters_in_object
 import pandas as pd
 from typing import Union
+import geo_parameters as gp
 
 
 class DataImporter:
@@ -80,7 +81,7 @@ class DataImporter:
     ) -> DnoraObject:
         """Reads data using the reader, creates the objects and sets data and metadata in object"""
 
-        coord_dict, data_dict, meta_dict, metaparameter_dict = reader(
+        coord_dict, data_dict, meta_dict = reader(
             obj_type=obj_type,
             grid=grid,
             start_time=pd.to_datetime(start_time),
@@ -92,13 +93,41 @@ class DataImporter:
         )
 
         obj = dnora_objects.get(obj_type)(name=name, **coord_dict)
-
+        existing_vars = obj.data_vars() + obj.magnitudes() + obj.directions()
         for key, value in data_dict.items():
-            if obj.get(key) is None:
-                obj = add_datavar(key, append=True)(obj)  # Creates .hs() etc. methods
-            obj.set(key, value, allow_reshape=True)
+            # Give (name[str], parmater[gp]) or (name[str], None) is values is a str
+            name, param = gp.decode(key)
 
-        obj = set_metaparameters_in_object(obj, metaparameter_dict, data_dict)
+            # Only a string identifier was given, e.g. 'hs'
+            if param is None:
+                # Can we find it in the class? Otherwise add it
+                if name not in existing_vars:
+                    obj.add_datavar(name)
+                obj.set(name, value)
+                continue
+
+            # If the geo-parameter has been initialized with a name, use primarily that
+            if gp.is_gp_instance(param):
+                if param.name not in existing_vars:
+                    obj.add_datavar(param)  # Getting metadata by adding a geo-parameter
+                obj.set(param.name, value)
+                continue
+
+            # If parameter is not initiated, try to find it, and otherwise create a new one
+            names = obj.from_cf(param.standard_name()) + obj.from_cf(
+                param.standard_name(alias=True)
+            )
+            names = list(set(names))  # Remove duplicates
+
+            if len(names) > 1:
+                raise KeyError(
+                    f"The standard_name '{param.standard_name()} of class {param.__name__} matches several variables: {names}'. Try specifying with e.g. {param.__name__}('{names[0]}') "
+                )
+            elif len(names) == 0:
+                # The parameter doesn't exist, so lets create it dynamically
+                obj.add_datavar(param)
+            obj.set(names[0], value)
+            continue
 
         obj.set_metadata(meta_dict)
         if (
@@ -107,8 +136,10 @@ class DataImporter:
         ):
             obj.set_utm((meta_dict.get("zone_number"), meta_dict.get("zone_letter")))
 
-        if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
+        try:
             obj._mark_convention(reader.convention())
+        except AttributeError:
+            pass
 
         return obj
 
