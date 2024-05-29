@@ -2,11 +2,9 @@ name: dnora2
 channels:
   - conda-forge
 dependencies:
-  - pip
-  - pip:
-    - geo-skeletons==0.9.12
+  - geo-skeletons==0.15.6
+  - geo-parameters
   - python=>3.9
-  - matplotlib>=3.1
   - numpy>=1.17
   - scipy>=1.7
   - netcdf4
@@ -14,15 +12,9 @@ dependencies:
   - xarray=>0.20.1
   - meshio
   - pip
-  - utm
-  - dask
   - pytest
   - pytest-cov
-  - cmocean
-  - cartopy
   - cdsapi
-  - geopy
-  - pint
   - python-dotenv
   - fimex=1.8.1
   - progressbar
