@@ -1,5 +1,5 @@
 import unittest
-from dnora import spectra
+import dnora
 import numpy as np
 from copy import copy
 from dnora.spectral_conventions import SpectralConvention
@@ -38,7 +38,7 @@ def loop_conventions(list_of_conventions, S, D):
     for n in range(len(list_of_conventions) - 1):
         cur_c = list_of_conventions[n]
         wan_c = list_of_conventions[n + 1]
-        bnd_processor = spectra.process.boundary_processor_for_convention_change(
+        bnd_processor = dnora.spectra.process.boundary_processor_for_convention_change(
             current_convention=cur_c, wanted_convention=wan_c
         )
         if not isinstance(bnd_processor, list):
@@ -57,9 +57,11 @@ class BoundarySpectralConventionsOcean(unittest.TestCase):
             D = np.arange(0, 360, dD)
             S = np.array([np.arange(0, 36, dD / 10), np.arange(0, 36, dD / 10)])
             inds = np.array(range(S.shape[0]))
-            bnd_processor = spectra.process.boundary_processor_for_convention_change(
-                current_convention=SpectralConvention.OCEAN,
-                wanted_convention=SpectralConvention.MET,
+            bnd_processor = (
+                dnora.spectra.process.boundary_processor_for_convention_change(
+                    current_convention=SpectralConvention.OCEAN,
+                    wanted_convention=SpectralConvention.MET,
+                )
             )
             Snew, Dnew, _, _ = bnd_processor(
                 spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds
@@ -77,9 +79,11 @@ class BoundarySpectralConventionsOcean(unittest.TestCase):
             S = np.array([np.arange(0, 36, dD / 10), np.arange(0, 36, dD / 10)])
             inds = np.array(range(S.shape[0]))
 
-            bnd_processor = spectra.process.boundary_processor_for_convention_change(
-                current_convention=SpectralConvention.OCEAN,
-                wanted_convention=SpectralConvention.WW3,
+            bnd_processor = (
+                dnora.spectra.process.boundary_processor_for_convention_change(
+                    current_convention=SpectralConvention.OCEAN,
+                    wanted_convention=SpectralConvention.WW3,
+                )
             )
             Snew, Dnew, _, _ = bnd_processor(
                 spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds
@@ -101,9 +105,11 @@ class BoundarySpectralConventionsOcean(unittest.TestCase):
             S = np.array([np.arange(0, 36, dD / 10), np.arange(0, 36, dD / 10)])
             inds = np.array(range(S.shape[0]))
 
-            bnd_processor = spectra.process.boundary_processor_for_convention_change(
-                current_convention=SpectralConvention.OCEAN,
-                wanted_convention=SpectralConvention.MATH,
+            bnd_processor = (
+                dnora.spectra.process.boundary_processor_for_convention_change(
+                    current_convention=SpectralConvention.OCEAN,
+                    wanted_convention=SpectralConvention.MATH,
+                )
             )
             Snew, Dnew, _, _ = bnd_processor(
                 spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds
@@ -121,9 +127,11 @@ class BoundarySpectralConventionsOcean(unittest.TestCase):
             S = np.array([np.arange(0, 36, dD / 10), np.arange(0, 36, dD / 10)])
             inds = np.array(range(S.shape[0]))
 
-            bnd_processor = spectra.process.boundary_processor_for_convention_change(
-                current_convention=SpectralConvention.OCEAN,
-                wanted_convention=SpectralConvention.MATHVEC,
+            bnd_processor = (
+                dnora.spectra.process.boundary_processor_for_convention_change(
+                    current_convention=SpectralConvention.OCEAN,
+                    wanted_convention=SpectralConvention.MATHVEC,
+                )
             )
             Snew, Dnew, _, _ = bnd_processor(
                 spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds
@@ -149,9 +157,11 @@ class BoundarySpectralConventionsWW3(unittest.TestCase):
             )
             inds = np.array(range(S.shape[0]))
 
-            bnd_processor = spectra.process.boundary_processor_for_convention_change(
-                current_convention=SpectralConvention.WW3,
-                wanted_convention=SpectralConvention.OCEAN,
+            bnd_processor = (
+                dnora.spectra.process.boundary_processor_for_convention_change(
+                    current_convention=SpectralConvention.WW3,
+                    wanted_convention=SpectralConvention.OCEAN,
+                )
             )
             Snew, Dnew, _, _ = bnd_processor(
                 spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds
@@ -178,9 +188,11 @@ class BoundarySpectralConventionsWW3(unittest.TestCase):
             )
             inds = np.array(range(S.shape[0]))
 
-            bnd_processor = spectra.process.boundary_processor_for_convention_change(
-                current_convention=SpectralConvention.WW3,
-                wanted_convention=SpectralConvention.MET,
+            bnd_processor = (
+                dnora.spectra.process.boundary_processor_for_convention_change(
+                    current_convention=SpectralConvention.WW3,
+                    wanted_convention=SpectralConvention.MET,
+                )
             )
             Snew = copy(S)
             Dnew = copy(D)
@@ -208,9 +220,11 @@ class BoundarySpectralConventionsWW3(unittest.TestCase):
             )
             inds = np.array(range(S.shape[0]))
 
-            bnd_processor = spectra.process.boundary_processor_for_convention_change(
-                current_convention=SpectralConvention.WW3,
-                wanted_convention=SpectralConvention.MATH,
+            bnd_processor = (
+                dnora.spectra.process.boundary_processor_for_convention_change(
+                    current_convention=SpectralConvention.WW3,
+                    wanted_convention=SpectralConvention.MATH,
+                )
             )
             if not isinstance(bnd_processor, list):
                 bnd_processor = [bnd_processor]
@@ -241,9 +255,11 @@ class BoundarySpectralConventionsWW3(unittest.TestCase):
             )
             inds = np.array(range(S.shape[0]))
 
-            bnd_processor = spectra.process.boundary_processor_for_convention_change(
-                current_convention=SpectralConvention.WW3,
-                wanted_convention=SpectralConvention.MATHVEC,
+            bnd_processor = (
+                dnora.spectra.process.boundary_processor_for_convention_change(
+                    current_convention=SpectralConvention.WW3,
+                    wanted_convention=SpectralConvention.MATHVEC,
+                )
             )
             if not isinstance(bnd_processor, list):
                 bnd_processor = [bnd_processor]
@@ -277,9 +293,11 @@ class BoundarySpectralConventionsMet(unittest.TestCase):
             )
             inds = np.array(range(S.shape[0]))
 
-            bnd_processor = spectra.process.boundary_processor_for_convention_change(
-                current_convention=SpectralConvention.MET,
-                wanted_convention=SpectralConvention.OCEAN,
+            bnd_processor = (
+                dnora.spectra.process.boundary_processor_for_convention_change(
+                    current_convention=SpectralConvention.MET,
+                    wanted_convention=SpectralConvention.OCEAN,
+                )
             )
             Snew, Dnew, _, _ = bnd_processor(
                 spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds
@@ -302,9 +320,11 @@ class BoundarySpectralConventionsMet(unittest.TestCase):
             )
             inds = np.array(range(S.shape[0]))
 
-            bnd_processor = spectra.process.boundary_processor_for_convention_change(
-                current_convention=SpectralConvention.MET,
-                wanted_convention=SpectralConvention.WW3,
+            bnd_processor = (
+                dnora.spectra.process.boundary_processor_for_convention_change(
+                    current_convention=SpectralConvention.MET,
+                    wanted_convention=SpectralConvention.WW3,
+                )
             )
             Snew = copy(S)
             Dnew = copy(D)
@@ -335,9 +355,11 @@ class BoundarySpectralConventionsMet(unittest.TestCase):
             )
             inds = np.array(range(S.shape[0]))
 
-            bnd_processor = spectra.process.boundary_processor_for_convention_change(
-                current_convention=SpectralConvention.MET,
-                wanted_convention=SpectralConvention.MATH,
+            bnd_processor = (
+                dnora.spectra.process.boundary_processor_for_convention_change(
+                    current_convention=SpectralConvention.MET,
+                    wanted_convention=SpectralConvention.MATH,
+                )
             )
             Snew = copy(S)
             Dnew = copy(D)
@@ -364,9 +386,11 @@ class BoundarySpectralConventionsMet(unittest.TestCase):
             )
             inds = np.array(range(S.shape[0]))
 
-            bnd_processor = spectra.process.boundary_processor_for_convention_change(
-                current_convention=SpectralConvention.MET,
-                wanted_convention=SpectralConvention.MATHVEC,
+            bnd_processor = (
+                dnora.spectra.process.boundary_processor_for_convention_change(
+                    current_convention=SpectralConvention.MET,
+                    wanted_convention=SpectralConvention.MATHVEC,
+                )
             )
             Snew = copy(S)
             Dnew = copy(D)
@@ -401,9 +425,11 @@ class BoundarySpectralConventionsMath(unittest.TestCase):
             )
             inds = np.array(range(S.shape[0]))
 
-            bnd_processor = spectra.process.boundary_processor_for_convention_change(
-                current_convention=SpectralConvention.MATH,
-                wanted_convention=SpectralConvention.OCEAN,
+            bnd_processor = (
+                dnora.spectra.process.boundary_processor_for_convention_change(
+                    current_convention=SpectralConvention.MATH,
+                    wanted_convention=SpectralConvention.OCEAN,
+                )
             )
 
             Snew, Dnew, _, _ = bnd_processor(
@@ -427,9 +453,11 @@ class BoundarySpectralConventionsMath(unittest.TestCase):
             )
             inds = np.array(range(S.shape[0]))
 
-            bnd_processor = spectra.process.boundary_processor_for_convention_change(
-                current_convention=SpectralConvention.MATH,
-                wanted_convention=SpectralConvention.WW3,
+            bnd_processor = (
+                dnora.spectra.process.boundary_processor_for_convention_change(
+                    current_convention=SpectralConvention.MATH,
+                    wanted_convention=SpectralConvention.WW3,
+                )
             )
 
             Snew = copy(S)
@@ -457,9 +485,11 @@ class BoundarySpectralConventionsMath(unittest.TestCase):
             )
             inds = np.array(range(S.shape[0]))
 
-            bnd_processor = spectra.process.boundary_processor_for_convention_change(
-                current_convention=SpectralConvention.MATH,
-                wanted_convention=SpectralConvention.MET,
+            bnd_processor = (
+                dnora.spectra.process.boundary_processor_for_convention_change(
+                    current_convention=SpectralConvention.MATH,
+                    wanted_convention=SpectralConvention.MET,
+                )
             )
 
             Snew = copy(S)
@@ -484,9 +514,11 @@ class BoundarySpectralConventionsMath(unittest.TestCase):
             )
             inds = np.array(range(S.shape[0]))
 
-            bnd_processor = spectra.process.boundary_processor_for_convention_change(
-                current_convention=SpectralConvention.MATH,
-                wanted_convention=SpectralConvention.MATHVEC,
+            bnd_processor = (
+                dnora.spectra.process.boundary_processor_for_convention_change(
+                    current_convention=SpectralConvention.MATH,
+                    wanted_convention=SpectralConvention.MATHVEC,
+                )
             )
 
             Snew = copy(S)
@@ -514,9 +546,11 @@ class BoundarySpectralConventionsMathVec(unittest.TestCase):
             S = np.array([np.arange(0, 36, dD / 10), np.arange(0, 36, dD / 10)])
             inds = np.array(range(S.shape[0]))
 
-            bnd_processor = spectra.process.boundary_processor_for_convention_change(
-                current_convention=SpectralConvention.MATHVEC,
-                wanted_convention=SpectralConvention.OCEAN,
+            bnd_processor = (
+                dnora.spectra.process.boundary_processor_for_convention_change(
+                    current_convention=SpectralConvention.MATHVEC,
+                    wanted_convention=SpectralConvention.OCEAN,
+                )
             )
             Snew, Dnew, _, _ = bnd_processor(
                 spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds
@@ -533,9 +567,11 @@ class BoundarySpectralConventionsMathVec(unittest.TestCase):
             S = np.array([np.arange(0, 36, dD / 10), np.arange(0, 36, dD / 10)])
             inds = np.array(range(S.shape[0]))
 
-            bnd_processor = spectra.process.boundary_processor_for_convention_change(
-                current_convention=SpectralConvention.MATHVEC,
-                wanted_convention=SpectralConvention.MET,
+            bnd_processor = (
+                dnora.spectra.process.boundary_processor_for_convention_change(
+                    current_convention=SpectralConvention.MATHVEC,
+                    wanted_convention=SpectralConvention.MET,
+                )
             )
 
             Snew = copy(S)
@@ -559,9 +595,11 @@ class BoundarySpectralConventionsMathVec(unittest.TestCase):
             S = np.array([np.arange(0, 36, dD / 10), np.arange(0, 36, dD / 10)])
             inds = np.array(range(S.shape[0]))
 
-            bnd_processor = spectra.process.boundary_processor_for_convention_change(
-                current_convention=SpectralConvention.MATHVEC,
-                wanted_convention=SpectralConvention.WW3,
+            bnd_processor = (
+                dnora.spectra.process.boundary_processor_for_convention_change(
+                    current_convention=SpectralConvention.MATHVEC,
+                    wanted_convention=SpectralConvention.WW3,
+                )
             )
 
             Snew = copy(S)
@@ -583,9 +621,11 @@ class BoundarySpectralConventionsMathVec(unittest.TestCase):
             S = np.array([np.arange(0, 36, dD / 10), np.arange(0, 36, dD / 10)])
             inds = np.array(range(S.shape[0]))
 
-            bnd_processor = spectra.process.boundary_processor_for_convention_change(
-                current_convention=SpectralConvention.MATHVEC,
-                wanted_convention=SpectralConvention.MATH,
+            bnd_processor = (
+                dnora.spectra.process.boundary_processor_for_convention_change(
+                    current_convention=SpectralConvention.MATHVEC,
+                    wanted_convention=SpectralConvention.MATH,
+                )
             )
 
             Snew = copy(S)

@@ -2,7 +2,7 @@ name: dnora2
 channels:
   - conda-forge
 dependencies:
-  - geo-skeletons==0.15.6
+  - geo-skeletons
   - geo-parameters
   - python=>3.9
   - numpy>=1.17
@@ -18,3 +18,5 @@ dependencies:
   - python-dotenv
   - fimex=1.8.1
   - progressbar
+  - matplotlib
+  - cmocean

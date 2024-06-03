@@ -17,7 +17,7 @@ import geo_parameters as gp
 
 
 # @add_mask(name='bad', coords='all', default_value=0)
-@add_datavar(gp.wave.Efth("spec"), coords="all", default_value=0.0)
+@add_datavar(gp.wave.Efth("spec"), coord_group="all", default_value=0.0)
 @add_direction(grid_coord=False)
 @add_frequency(grid_coord=False)
 @add_time(grid_coord=True)

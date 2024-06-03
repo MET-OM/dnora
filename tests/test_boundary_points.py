@@ -1,4 +1,5 @@
 import unittest
+import dnora
 from dnora.grid import Grid
 from dnora.grid.mask import Edges
 from dnora.aux_funcs import (

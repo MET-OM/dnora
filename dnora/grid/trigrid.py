@@ -24,21 +24,21 @@ import matplotlib.tri as mtri
 import geo_parameters as gp
 
 
-@add_datavar(name="triangles", coords="gridpoint")
+@add_datavar(name="triangles", coord_group="gridpoint")
 @add_coord(name="corner", grid_coord=False)
 @add_coord(name="ntriang", grid_coord=False)
-@add_mask(name="boundary", coords="grid", default_value=0)
-@add_mask(name="output", coords="grid", default_value=0)
+@add_mask(name="boundary", coord_group="grid", default_value=0)
+@add_mask(name="output", coord_group="grid", default_value=0)
 @add_mask(
     name="sea",
-    coords="grid",
+    coord_group="grid",
     default_value=1,
     opposite_name="land",
     triggered_by="topo",
     valid_range=(0, None),
     range_inclusive=False,
 )
-@add_datavar(gp.ocean.WaterDepth("topo"), default_value=999.0, coords="grid")
+@add_datavar(gp.ocean.WaterDepth("topo"), default_value=999.0, coord_group="grid")
 class TriGrid(PointSkeleton):
     _default_reader = None
 

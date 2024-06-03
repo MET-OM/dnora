@@ -18,11 +18,11 @@ import cmocean.cm
 import geo_parameters as gp
 
 
-@add_mask(name="boundary", coords="grid", default_value=0)
-@add_mask(name="output", coords="grid", default_value=0)
+@add_mask(name="boundary", coord_group="grid", default_value=0)
+@add_mask(name="output", coord_group="grid", default_value=0)
 @add_mask(
     name="sea",
-    coords="grid",
+    coord_group="grid",
     default_value=1,
     opposite_name="land",
     triggered_by="topo",

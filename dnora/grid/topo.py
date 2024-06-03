@@ -14,16 +14,16 @@ import geo_parameters as gp
 from dnora.dnora_type_manager.dnora_types import DnoraDataType
 
 
-@add_mask(name="sea", coords="grid", default_value=1, opposite_name="land")
-@add_datavar(name="topo", default_value=999.0, coords="grid")
+@add_mask(name="sea", coord_group="grid", default_value=1, opposite_name="land")
+@add_datavar(name="topo", default_value=999.0, coord_group="grid")
 class GriddedTopo(GriddedSkeleton):
     meta_dict = {"topo": gp.ocean.WaterDepth}
     _default_reader = None
     pass
 
 
-@add_mask(name="sea", coords="grid", default_value=1, opposite_name="land")
-@add_datavar(name="topo", default_value=999.0, coords="grid")
+@add_mask(name="sea", coord_group="grid", default_value=1, opposite_name="land")
+@add_datavar(name="topo", default_value=999.0, coord_group="grid")
 class PointTopo(PointSkeleton):
     meta_dict = {"topo": gp.ocean.WaterDepth}
     _default_reader = None
