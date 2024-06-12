@@ -48,7 +48,7 @@ class SpectraTo1D(SpectralDataReader):
         dD = 360 / len(self._boundary.dirs())
 
         efth = (
-            self._boundary.spec(data_array=True).sel(
+            self._boundary.spec(data_array=True, squeeze=False).sel(
                 time=slice(start_time, end_time), inds=inds
             )
             * dD
@@ -77,8 +77,8 @@ class SpectraTo1D(SpectralDataReader):
         }
         data_dict = {"spec": spec, "dirm": mdir, "spr": spr}
         meta_dict = self._boundary.ds().attrs
-        metaparameter_dict = {}
-        return coord_dict, data_dict, meta_dict, metaparameter_dict
+
+        return coord_dict, data_dict, meta_dict
 
     def name(self):
         if self._boundary is None:

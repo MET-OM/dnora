@@ -93,7 +93,9 @@ class DataImporter:
         )
 
         obj = dnora_objects.get(obj_type)(name=name, **coord_dict)
-        existing_vars = obj.data_vars() + obj.magnitudes() + obj.directions()
+        existing_vars = (
+            obj.core.data_vars() + obj.core.magnitudes() + obj.core.directions()
+        )
         for key, value in data_dict.items():
             # Give (name[str], parmater[gp]) or (name[str], None) is values is a str
             name, param = gp.decode(key)
@@ -129,12 +131,12 @@ class DataImporter:
             obj.set(names[0], value)
             continue
 
-        obj.set_metadata(meta_dict)
+        obj.meta.set(meta_dict)
         if (
             meta_dict.get("zone_number") is not None
             and meta_dict.get("zone_letter") is not None
         ):
-            obj.set_utm((meta_dict.get("zone_number"), meta_dict.get("zone_letter")))
+            obj.utm.set((meta_dict.get("zone_number"), meta_dict.get("zone_letter")))
 
         try:
             obj._mark_convention(reader.convention())

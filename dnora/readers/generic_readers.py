@@ -144,12 +144,12 @@ class Netcdf(DataReader):
             ds_var = meta_var.find_me_in_ds(ds)
             ds_data = ds.get(ds_var)
             if ds_data is not None:
-                data_dict[var] = ds_data.values
-                metaparameter_dict[var] = meta_var
+                data_dict[meta_var] = ds_data.values
+                # metaparameter_dict[var] = meta_var
 
         meta_dict = ds.attrs
 
-        return coord_dict, data_dict, meta_dict, metaparameter_dict
+        return coord_dict, data_dict, meta_dict
 
 
 class ConstantData(SpectralDataReader):
@@ -253,7 +253,7 @@ class ConstantData(SpectralDataReader):
         coord_dict = {}
 
         # Determine size of the object to create
-        object_coords = dnora_objects.get(obj_type)._coord_manager.added_coords()
+        object_coords = dnora_objects.get(obj_type).core.coords("nonspatial")
         obj_size = []
 
         # Time is first if exists
@@ -287,7 +287,7 @@ class ConstantData(SpectralDataReader):
         data_val_dict = create_datvar_val_dict(
             kwargs,
             default_values=self._default_var_values,
-            object_vars=dnora_obj._coord_manager.added_vars().keys(),
+            object_vars=dnora_obj.core.data_vars(),
         )
         data_dict = {}
         non_fp_ind = non_fp_inds()
@@ -298,14 +298,15 @@ class ConstantData(SpectralDataReader):
                 data_dict[key][:, :, non_fp_ind, ...] = 0
             elif non_dirp_ind is not None:
                 data_dict[key][:, :, :, non_dirp_ind] = 0
+
         print_constant_values(data_dict, obj_type, time_vec)
 
         meta_dict = {"zone_number": zone_number, "zone_letter": zone_letter}
 
         # Create metaparameters based on standard short names
-        metaparameter_dict = gp.parameter_funcs.create_parameter_dict(data_dict.keys())
+        # metaparameter_dict = gp.parameter_funcs.create_parameter_dict(data_dict.keys())
 
-        return coord_dict, data_dict, meta_dict, metaparameter_dict
+        return coord_dict, data_dict, meta_dict
 
 
 # class ConstantGriddedData(DataReader):
@@ -538,7 +539,6 @@ def create_datvar_val_dict(kwargs, default_values, object_vars):
 def calculate_spatial_coords(coord_dict, obj_size, grid, obj_type, force_type):
     """Determines coords and their length while accounting for that either the object or the grid might be gridded or not."""
     obj_gridded = issubclass(dnora_objects.get(obj_type), GriddedSkeleton)
-
     if not obj_gridded:
         """If object is not gridded, just define it at each grid point"""
         if force_type == "spherical":
@@ -549,7 +549,7 @@ def calculate_spatial_coords(coord_dict, obj_size, grid, obj_type, force_type):
             x_str, y_str = "x", "y"
         else:
             x, y = grid.xy(native=True)
-            x_str, y_str = grid.x_str, grid.y_str
+            x_str, y_str = grid.core.x_str, grid.core.y_str
 
         obj_size.append(len(y))
 
@@ -563,10 +563,11 @@ def calculate_spatial_coords(coord_dict, obj_size, grid, obj_type, force_type):
             x_str, y_str = "x", "y"
         else:
             x, y = grid.x(native=True), grid.y(native=True)
-            x_str, y_str = grid.x_str, grid.y_str
+            x_str, y_str = grid.core.x_str, grid.core.y_str
 
         obj_size.append(len(y))
         obj_size.append(len(x))
+
     else:
         """If object is gridded, but grid is not, keep approximate number of points"""
         ny = np.ceil(np.sqrt(grid.ny())).astype(int)
@@ -589,7 +590,7 @@ def calculate_spatial_coords(coord_dict, obj_size, grid, obj_type, force_type):
             y_edge = grid.edges("y", native=True)
             x = np.linspace(x_edge[0], x_edge[1], nx)
             y = np.linspace(y_edge[0], y_edge[1], nx)
-            x_str, y_str = grid.x_str, grid.y_str
+            x_str, y_str = grid.core.x_str, grid.core.y_str
 
         obj_size.append(ny)
         obj_size.append(nx)

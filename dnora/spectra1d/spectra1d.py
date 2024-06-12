@@ -67,7 +67,7 @@ class Spectra1D(PointSkeleton):
                         f"ind = {ind}, {self.x_str} = {lon[ind]}, {self.y_str} = {lat[ind]}"
                     )
 
-            metadata = self.metadata()
+            metadata = self.meta.get()
 
             self._init_structure(
                 x=self.x(strict=True),
@@ -80,7 +80,7 @@ class Spectra1D(PointSkeleton):
             self.set_spec(new_spec)
             self.set_dirm(new_dirs)
             self.set_spr(new_spr)
-            self.set_metadata(metadata)  # Global attributes
+            self.meta.set(metadata)  # Global attributes
 
             # Set new convention if the processor changed it
             new_convention = processor._convention_out()
@@ -110,7 +110,7 @@ class Spectra1D(PointSkeleton):
     def _mark_convention(self, convention: SpectralConvention) -> None:
         """Marks new convention in metadata etc. but does nothing to the spectra"""
         self._convention = convention
-        self.set_metadata({"spectral_convention": self.convention().value}, append=True)
+        self.meta.append({"spectral_convention": self.convention().value})
         print(f"Spectral convention is now: {self.convention()}")
 
     def convention(self) -> SpectralConvention | None:
