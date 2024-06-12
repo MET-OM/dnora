@@ -181,7 +181,7 @@ class DataImporter:
 
         msg.header(reader, f"Importing {obj_type.name}...")
         msg.plain(
-            f"Area: {grid.x_str}: {grid.edges('lon',native=True)}, {grid.y_str}: {grid.edges('lat',native=True)}"
+            f"Area: {grid.core.x_str}: {grid.edges('lon',native=True)}, {grid.core.y_str}: {grid.edges('lat',native=True)}"
         )
         msg.plain(f"{start_time} - {end_time}")
 
