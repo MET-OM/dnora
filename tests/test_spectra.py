@@ -21,7 +21,7 @@ def test_import_constant_spectra_one_point():
         np.sum(
             model.spectra().spec(time="2020-01-01 00:00", dask=True)
             * model.spectra().dd(angular=True),
-            axis=2,
+            axis=1,
         ),
     )
 

@@ -345,21 +345,22 @@ class Dirm(WaveParameter):
         spec.set_convention(SpectralConvention.MET)
 
         if isinstance(spec, Spectra):
-            theta = np.deg2rad(spec.dirm(data_array=True))
+            theta = np.deg2rad(spec.dirm(data_array=True, squeeze=False))
             dD = 360 / len(spec.dirs())
             # Normalizing here so that integration over direction becomes summing
-            efth = dD * np.pi / 180 * spec.spec(data_array=True)
+            efth = dD * np.pi / 180 * spec.spec(data_array=True, squeeze=False)
 
             c1 = (np.cos(theta) * efth).sum(dim="dirs")  # Function of frequency
             s1 = (np.sin(theta) * efth).sum(dim="dirs")
         else:
-            theta = np.deg2rad(spec.dirm(data_array=True))
+            theta = np.deg2rad(spec.dirm(data_array=True, squeeze=False))
 
-            c1 = np.cos(theta) * spec.spec(data_array=True)  # Function of frequency
-            s1 = np.sin(theta) * spec.spec(data_array=True)
+            c1 = np.cos(theta) * spec.spec(
+                data_array=True, squeeze=False
+            )  # Function of frequency
+            s1 = np.sin(theta) * spec.spec(data_array=True, squeeze=False)
 
         m0 = Moment(0)(spec)
-
         a1m = c1.integrate(coord="freq") / m0  # Mean parameters
         b1m = s1.integrate(coord="freq") / m0
 
@@ -401,7 +402,10 @@ class Sprm(WaveParameter):
 
         else:
             sprm = (
-                (spec.spr() ** 2 * spec.spec(data_array=True)).integrate(coord="freq")
+                (
+                    spec.spr(squeeze=False) ** 2
+                    * spec.spec(data_array=True, squeeze=False)
+                ).integrate(coord="freq")
                 / m0
             ) ** 0.5
 
@@ -428,19 +432,20 @@ class Dirp(WaveParameter):
             theta = np.deg2rad(spec.dirm(data_array=True))
             dD = 360 / len(spec.dirs())
             # Normalizing here so that integration over direction becomes summing
-            efth = dD * np.pi / 180 * spec.spec(data_array=True, dask=False)
+            efth = (
+                dD * np.pi / 180 * spec.spec(data_array=True, dask=False, squeeze=False)
+            )
 
             c1 = (np.cos(theta) * efth).sum(dim="dirs")  # Function of frequency
             s1 = (np.sin(theta) * efth).sum(dim="dirs")
             efth = efth.sum(dim="dirs")
             dirs = np.rad2deg(np.arctan2(s1, c1))
         else:
-            efth = spec.spec(data_array=True, dask=False)
-            dirs = spec.dirm(data_array=True)
+            efth = spec.spec(data_array=True, dask=False, squeeze=False)
+            dirs = spec.dirm(data_array=True, squeeze=False)
 
         inds = efth.argmax(dim="freq")
-
-        return dirs[:, :, inds].values
+        return dirs[:, :, inds].data
 
     def name(self):
         return "dirp"
