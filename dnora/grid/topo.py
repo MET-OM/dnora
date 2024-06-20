@@ -57,7 +57,7 @@ def import_topo(
         if not os.path.exists(aux_funcs.get_url(folder, topo_reader.name())):
             os.mkdir(aux_funcs.get_url(folder, topo_reader.name()))
 
-    coord_dict, data_dict, meta_dict, metaparameter_dict = topo_reader(
+    coord_dict, data_dict, meta_dict = topo_reader(
         obj_type=DnoraDataType.GRID,
         grid=grid,
         start_time=None,
@@ -90,27 +90,27 @@ def import_topo(
         topo_grid = PointTopo(lon=lon, lat=lat, x=x, y=y)
 
     if (
-        grid.edges("lon", native=True)[0] < topo_grid.edges(grid.x_str)[0]
-        or grid.edges("lon", native=True)[1] > topo_grid.edges(grid.x_str)[1]
+        grid.edges("lon", native=True)[0] < topo_grid.edges(grid.core.x_str)[0]
+        or grid.edges("lon", native=True)[1] > topo_grid.edges(grid.core.x_str)[1]
     ):
         msg.warning(
-            f"The data gotten from the DataReader doesn't cover the grid in the {grid.x_str} direction. Grid: {grid.edges('lon', native=True)}, imported topo: {topo_grid.edges(grid.x_str)}"
+            f"The data gotten from the DataReader doesn't cover the grid in the {grid.core.x_str} direction. Grid: {grid.edges('lon', native=True)}, imported topo: {topo_grid.edges(grid.core.x_str)}"
         )
 
     if (
-        grid.edges("lat", native=True)[0] < topo_grid.edges(grid.y_str)[0]
-        or grid.edges("lat", native=True)[1] > topo_grid.edges(grid.y_str)[1]
+        grid.edges("lat", native=True)[0] < topo_grid.edges(grid.core.y_str)[0]
+        or grid.edges("lat", native=True)[1] > topo_grid.edges(grid.core.y_str)[1]
     ):
         msg.warning(
-            f"The data gotten from the DataReader doesn't cover the grid in the {grid.y_str} direction. Grid: {grid.edges('lat', native=True)}, imported topo: {topo_grid.edges(grid.y_str)}"
+            f"The data gotten from the DataReader doesn't cover the grid in the {grid.core.y_str} direction. Grid: {grid.edges('lat', native=True)}, imported topo: {topo_grid.edges(grid.core.y_str)}"
         )
 
     if zone_number is not None:
         topo_grid.set_utm((zone_number, zone_letter))
 
     topo_grid.set_topo(topo)
-    topo_grid = set_metaparameters_in_object(topo_grid, metaparameter_dict, data_dict)
-    topo_grid.set_metadata(meta_dict)
+    # topo_grid = set_metaparameters_in_object(topo_grid, metaparameter_dict, data_dict)
+    topo_grid.meta.set(meta_dict)
     topo_grid.set_sea_mask(topo_grid.topo() > 0)
 
     return topo_grid

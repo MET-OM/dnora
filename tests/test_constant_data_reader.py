@@ -8,12 +8,12 @@ import pandas as pd
 def test_gridded_data_on_gridded_grid_cartesian():
     grid = Grid(x=(0, 10), y=(10, 20))
     grid.set_spacing(nx=20, ny=30)
-    grid.set_utm((34, "V"))
+    grid.utm.set((34, "V"))
     reader = ConstantData()
     start_time = "2020-01-01 00:00"
     end_time = "2020-01-01 23:00"
 
-    coord_dict, data_dict, meta_dict, metaparameter_dict = reader(
+    coord_dict, data_dict, meta_dict = reader(
         DnoraDataType.GRID,
         grid,
         start_time,
@@ -32,7 +32,6 @@ def test_gridded_data_on_gridded_grid_cartesian():
     np.testing.assert_almost_equal(data_dict.get("topo"), 1.0)
 
     assert meta_dict == {"zone_number": 34, "zone_letter": "V"}
-    assert metaparameter_dict == {}
 
 
 def test_gridded_data_on_gridded_grid_sperical():
@@ -43,7 +42,7 @@ def test_gridded_data_on_gridded_grid_sperical():
     hours = 24
     end_time = pd.to_datetime(start_time) + pd.Timedelta(hours=hours - 1)
 
-    coord_dict, data_dict, meta_dict, metaparameter_dict = reader(
+    coord_dict, data_dict, meta_dict = reader(
         DnoraDataType.WIND,
         grid,
         start_time,
@@ -67,7 +66,6 @@ def test_gridded_data_on_gridded_grid_sperical():
     np.testing.assert_almost_equal(data_dict.get("u"), 2.0)
     np.testing.assert_almost_equal(data_dict.get("v"), 5.0)
     assert meta_dict == {"zone_number": None, "zone_letter": None}
-    assert metaparameter_dict == {}
 
 
 def test_point_data_on_gridded_grid_cartesian():
@@ -78,7 +76,7 @@ def test_point_data_on_gridded_grid_cartesian():
     hours = 24
     end_time = pd.to_datetime(start_time) + pd.Timedelta(hours=hours - 1)
 
-    coord_dict, data_dict, meta_dict, metaparameter_dict = reader(
+    coord_dict, data_dict, meta_dict = reader(
         DnoraDataType.SPECTRA1D,
         grid,
         start_time,
@@ -102,7 +100,6 @@ def test_point_data_on_gridded_grid_cartesian():
     # np.testing.assert_almost_equal(data_dict.get("v"), 5.0)
 
     assert meta_dict == {"zone_number": None, "zone_letter": None}
-    assert len(metaparameter_dict.keys()) == 2
 
 
 def test_point_data_on_gridded_grid_spherical():
@@ -113,7 +110,7 @@ def test_point_data_on_gridded_grid_spherical():
     hours = 24
     end_time = pd.to_datetime(start_time) + pd.Timedelta(hours=hours - 1)
 
-    coord_dict, data_dict, meta_dict, metaparameter_dict = reader(
+    coord_dict, data_dict, meta_dict = reader(
         DnoraDataType.SPECTRA1D,
         grid,
         start_time,
@@ -137,17 +134,16 @@ def test_point_data_on_gridded_grid_spherical():
     # np.testing.assert_almost_equal(data_dict.get("v"), 5.0)
 
     assert meta_dict == {"zone_number": None, "zone_letter": None}
-    assert len(metaparameter_dict.keys()) == 2
 
 
 def test_gridded_data_on_point_grid_cartesian():
     grid = TriGrid(x=np.linspace(0, 10, 11), y=np.linspace(10, 20, 11))
-    grid.set_utm((32, "W"))
+    grid.utm.set((32, "W"))
     reader = ConstantData(vars={"eta": -5.0})
     start_time = "2020-01-01 00:00"
     end_time = "2020-01-01 23:00"
 
-    coord_dict, data_dict, meta_dict, metaparameter_dict = reader(
+    coord_dict, data_dict, meta_dict = reader(
         DnoraDataType.WATERLEVEL,
         grid,
         start_time,
@@ -167,7 +163,6 @@ def test_gridded_data_on_point_grid_cartesian():
     np.testing.assert_almost_equal(data_dict.get("eta"), -5.0)
 
     assert meta_dict == {"zone_number": 32, "zone_letter": "W"}
-    assert len(metaparameter_dict.keys()) == 1
 
 
 def test_point_data_on_point_grid_sperical():
@@ -180,7 +175,7 @@ def test_point_data_on_point_grid_sperical():
     start_time = "2020-01-01 00:00"
     end_time = "2020-01-01 23:00"
 
-    coord_dict, data_dict, meta_dict, metaparameter_dict = reader(
+    coord_dict, data_dict, meta_dict = reader(
         DnoraDataType.SPECTRA,
         grid,
         start_time,
@@ -201,18 +196,17 @@ def test_point_data_on_point_grid_sperical():
     np.testing.assert_almost_equal(data_dict.get("spec"), 0.1)
 
     assert meta_dict == {"zone_number": None, "zone_letter": None}
-    # assert len(metaparameter_dict.keys()) == 1
 
 
 def test_gridded_data_on_gridded_grid_force_spherical():
     grid = Grid(x=(0, 10), y=(10, 20))
-    grid.set_utm((33, "W"))
+    grid.utm.set((33, "W"))
     grid.set_spacing(nx=20, ny=30)
     reader = ConstantData()
     start_time = "2020-01-01 00:00"
     end_time = "2020-01-01 23:00"
 
-    coord_dict, data_dict, meta_dict, metaparameter_dict = reader(
+    coord_dict, data_dict, meta_dict = reader(
         DnoraDataType.GRID,
         grid,
         start_time,
@@ -232,7 +226,6 @@ def test_gridded_data_on_gridded_grid_force_spherical():
     np.testing.assert_almost_equal(data_dict.get("topo"), 1.0)
 
     assert meta_dict == {"zone_number": None, "zone_letter": None}
-    assert metaparameter_dict == {}
 
 
 def test_point_data_on_gridded_grid_force_cartesian():
@@ -243,7 +236,7 @@ def test_point_data_on_gridded_grid_force_cartesian():
     hours = 24
     end_time = pd.to_datetime(start_time) + pd.Timedelta(hours=hours - 1)
 
-    coord_dict, data_dict, meta_dict, metaparameter_dict = reader(
+    coord_dict, data_dict, meta_dict = reader(
         DnoraDataType.SPECTRA1D,
         grid,
         start_time,
@@ -267,5 +260,7 @@ def test_point_data_on_gridded_grid_force_cartesian():
     np.testing.assert_almost_equal(data_dict.get("spec"), 2.0)
     # np.testing.assert_almost_equal(data_dict.get("v"), 5.0)
 
-    assert meta_dict == {"zone_number": grid.utm()[0], "zone_letter": grid.utm()[1]}
-    assert len(metaparameter_dict.keys()) == 2
+    assert meta_dict == {
+        "zone_number": grid.utm.zone()[0],
+        "zone_letter": grid.utm.zone()[1],
+    }

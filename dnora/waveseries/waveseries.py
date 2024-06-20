@@ -7,8 +7,4 @@ from copy import deepcopy
 @add_mask(name="buoy", coord_group="grid", default_value=1)
 @add_time(grid_coord=False)
 class WaveSeries(PointSkeleton):
-    def __init__(self, x=None, y=None, lon=None, lat=None, **kwargs):
-        super().__init__(x, y, lon, lat, **kwargs)
-        self._coord_manager = deepcopy(
-            WaveSeries._coord_manager
-        )  # We are dynamically adding data variables to the instance
+    pass

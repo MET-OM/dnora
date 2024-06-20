@@ -599,7 +599,7 @@ def calculate_spatial_coords(coord_dict, obj_size, grid, obj_type, force_type):
     coord_dict[y_str] = y
 
     if x_str == "x":
-        zone_number, zone_letter = grid.utm()
+        zone_number, zone_letter = grid.utm.zone()
     else:
         zone_number, zone_letter = None, None
 

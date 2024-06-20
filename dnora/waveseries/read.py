@@ -131,14 +131,12 @@ class SpectraToWaveSeries(PointDataReader):
             wp = get_wave_parameter(wp)
             data_dict[wp.name()] = wp(self._Spectra1D)
 
-        metaparameter_dict = gp.dict_of_parameters(data_dict.keys())
-
         meta_dict = self._Spectra1D.ds().attrs
         meta_dict["integration_range"] = f"{self._freq[0]}-{self._freq[-1]} Hz"
 
         coord_dict = {"lon": lon, "lat": lat, "x": x, "y": y, "time": time}
 
-        return coord_dict, data_dict, meta_dict, metaparameter_dict
+        return coord_dict, data_dict, meta_dict
 
     def name(self) -> str:
         if self._Spectra1D is None:
@@ -237,12 +235,11 @@ class E39(PointDataReader):
                     data_dict[get_wave_parameter(dnora_var)] = np.swapaxes(
                         np.expand_dims(ds.get(var).values, axis=1), 0, 1
                     )
-        metaparameter_dict = create_metaparameter_dict(data_dict.keys())
 
         coord_dict = {"time": ds.time.values, "lon": lon, "lat": lat}
         meta_dict = ds.attrs
 
-        return coord_dict, data_dict, meta_dict, metaparameter_dict
+        return coord_dict, data_dict, meta_dict
 
 
 # class WW3Nc(WaveSeriesReader):

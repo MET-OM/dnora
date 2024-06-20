@@ -135,8 +135,8 @@ class TriGrid(PointSkeleton):
 
         self.set_topo(topo)
 
-        self.set_metadata(self.raw().metadata())
-        self.set_metadata(self.raw().ds().topo.attrs, name="topo")
+        self.meta.set(self.raw().meta.get())
+        self.meta.set(self.raw().ds().topo.attrs, name="topo")
 
     def process_grid(
         self, grid_processor: GridProcessor = None, raw: bool = False, **kwargs

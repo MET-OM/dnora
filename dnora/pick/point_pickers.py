@@ -88,7 +88,7 @@ class Area(PointPicker):
         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
 
         # Define area to search in
-        if grid.is_cartesian():
+        if grid.core.is_cartesian():
             number, zone = grid.utm()
             all_points.set_utm(number, zone)
             x, y = expand_area(grid.edges("x"), grid.edges("y"), expansion_factor)
