@@ -13,7 +13,7 @@ def test_model_one_point():
     )
 
     model.import_waveseries(
-        waveseries.read.SpectraToWaveSeries(model.spectra1d()),
+        waveseries.read.Spectra1DToWaveSeries(model.spectra1d()),
         point_picker=pick.TrivialPicker(),
     )
 
@@ -45,7 +45,7 @@ def test_model_one_area():
         spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.TrivialPicker()
     )
     model.import_waveseries(
-        waveseries.read.SpectraToWaveSeries(model.spectra1d()),
+        waveseries.read.Spectra1DToWaveSeries(model.spectra1d()),
         point_picker=pick.TrivialPicker(),
     )
     exe = executer.SWAN(model)
@@ -65,7 +65,7 @@ def test_model_gridded():
         spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.TrivialPicker()
     )
     model.import_waveseries(
-        waveseries.read.SpectraToWaveSeries(model.spectra1d()),
+        waveseries.read.Spectra1DToWaveSeries(model.spectra1d()),
         point_picker=pick.TrivialPicker(),
     )
 
@@ -85,7 +85,7 @@ def test_model_one_point_cartesian():
         spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.TrivialPicker()
     )
     model.import_waveseries(
-        waveseries.read.SpectraToWaveSeries(model.spectra1d()),
+        waveseries.read.Spectra1DToWaveSeries(model.spectra1d()),
         point_picker=pick.TrivialPicker(),
     )
 
@@ -105,7 +105,7 @@ def test_model_one_area_cartesian():
         spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.TrivialPicker()
     )
     model.import_waveseries(
-        waveseries.read.SpectraToWaveSeries(model.spectra1d()),
+        waveseries.read.Spectra1DToWaveSeries(model.spectra1d()),
         point_picker=pick.TrivialPicker(),
     )
     exe = executer.SWAN(model)
@@ -125,7 +125,7 @@ def test_model_gridded_cartesian():
         spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.TrivialPicker()
     )
     model.import_waveseries(
-        waveseries.read.SpectraToWaveSeries(model.spectra1d()),
+        waveseries.read.Spectra1DToWaveSeries(model.spectra1d()),
         point_picker=pick.TrivialPicker(),
     )
     exe = executer.SWAN(model)

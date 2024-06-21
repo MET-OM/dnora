@@ -22,7 +22,7 @@ def model():
         spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.TrivialPicker()
     )
     model.import_waveseries(
-        waveseries.read.SpectraToWaveSeries(model.spectra1d()),
+        waveseries.read.Spectra1DToWaveSeries(model.spectra1d()),
         point_picker=pick.TrivialPicker(),
     )
     return model
