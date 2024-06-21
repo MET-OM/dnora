@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from dnora.wave_parameters.parameters import get_function
-
+from dnora.spectral_conventions import SpectralConvention
 import geo_parameters as gp
 
 
@@ -16,6 +16,9 @@ def spec1d():
     freq = np.linspace(0.1, 1, 10)
     spec = Spectra1D(lon=0, lat=0, freq=freq, time=time)
     spec.set_spec(2)
+    spec.set_dirm(0)
+    spec.set_spr(30)
+    spec._mark_convention(SpectralConvention.OCEAN)
     return spec
 
 
@@ -23,9 +26,13 @@ def spec1d():
 def spec():
     time = pd.date_range(start="2020-01-01 00:00", end="2020-01-02 00:00", freq="1h")
     freq = np.linspace(0.1, 1, 10)
-    dirs = np.linspace(0, 355, 36)
-    spec = Spectra1D(lon=0, lat=0, freq=freq, time=time, dirs=dirs)
-    spec.set_spec(2)
+    dirs = np.linspace(0, 350, 36)
+    spec = Spectra(lon=0, lat=0, freq=freq, time=time, dirs=dirs)
+    spec_val = np.zeros(spec.shape("spec"))
+
+    spec_val[:, :, :, 9] = 2 / spec.dd(angular=True)
+    spec.set_spec(spec_val)
+    spec._mark_convention(SpectralConvention.OCEAN)
     return spec
 
 
@@ -38,6 +45,7 @@ def test_m0(spec1d, spec):
     np.testing.assert_almost_equal(np.mean(m0), mom0)
 
     m0 = func(spec)
+
     np.testing.assert_almost_equal(np.mean(m0), mom0)
 
 
@@ -94,8 +102,8 @@ def test_tm02(spec1d, spec):
     m0 = np.sum(val * spec1d.freq() ** 0) * spec1d.df()
     tm02_1d = func02(spec1d)
     tm02 = func02(spec)
-    np.testing.assert_almost_equal(np.mean(tm02_1d), m0 / m2)
-    np.testing.assert_almost_equal(np.mean(tm02), m0 / m2)
+    np.testing.assert_almost_equal(np.mean(tm02_1d), np.sqrt(m0 / m2))
+    np.testing.assert_almost_equal(np.mean(tm02), np.sqrt(m0 / m2))
 
 
 def test_tm_10(spec1d, spec):
@@ -108,3 +116,28 @@ def test_tm_10(spec1d, spec):
     tm_10 = func_10(spec)
     np.testing.assert_almost_equal(np.mean(tm_10_1d), m_1 / m0)
     np.testing.assert_almost_equal(np.mean(tm_10), m_1 / m0)
+
+
+def test_dirm(spec, spec1d):
+    func = get_function(gp.wave.Dirm)
+    assert func is not None
+    dirm = func(spec)
+    np.testing.assert_almost_equal(np.mean(dirm), 270)
+    dirm = func(spec1d)
+    np.testing.assert_almost_equal(np.mean(dirm), 180)
+
+    func = get_function(gp.wave.DirmTo)
+    assert func is not None
+    dirm = func(spec)
+    np.testing.assert_almost_equal(np.mean(dirm), 90)
+    dirm = func(spec1d)
+    np.testing.assert_almost_equal(np.mean(dirm), 0)
+
+
+def test_sprm(spec, spec1d):
+    func = get_function(gp.wave.Spr)
+    assert func is not None
+    sprm = func(spec)
+    np.testing.assert_almost_equal(np.mean(sprm), 0, decimal=5)
+    sprm = func(spec1d)
+    np.testing.assert_almost_equal(np.mean(sprm), 30, decimal=5)

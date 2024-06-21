@@ -61,6 +61,7 @@ class Spectra1DToWaveSeries(PointDataReader):
             gp.wave.Tm01,
             gp.wave.Tm02,
             gp.wave.Tm_10,
+            gp.wave.Dirm,
         ],
         **kwargs,
     ) -> tuple:

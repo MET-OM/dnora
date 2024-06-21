@@ -94,6 +94,12 @@ class Spectra1D(PointSkeleton):
 
     def set_convention(self, convention: SpectralConvention) -> None:
         """Processes spectra to new directional spectral convention and updates metadata."""
+        if self.convention() is None:
+            msg.info(
+                "set_convention changes the convention AND the data. No convention is currently set. Use _mark_convention to define a convention without touching the data."
+            )
+            return
+
         spectral_processor = spectral_processor_for_convention_change(
             current_convention=self.convention(),
             wanted_convention=convert_2d_to_1d(convention),
