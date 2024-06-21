@@ -10,25 +10,6 @@ from pint import UnitRegistry
 ureg = UnitRegistry()
 ureg.default_format = "~S"
 
-import geo_parameters as gp
-from typing import Union
-
-from functools import partial
-
-
-def moment(spec: Union[Spectra, Spectra1D], moment: float) -> xr.Dataset:
-    if isinstance(spec, Spectra):
-        dD = 360 / len(self._moment.dirs())
-        ds = dD * np.pi / 180 * spec.ds().sum(dim="dirs")
-    else:
-        ds = spec.ds()
-
-    ds = (ds.spec * (ds.freq**moment)).integrate(coord="freq")
-    return ds.data
-
-
-dict_of_functions = {gp.wave.M0: partial(moment, moment=0)}
-
 
 class WaveParameter(ABC):
     """Calculates a wave parameter from spectra xarray
