@@ -131,6 +131,55 @@ def sprm(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
     return sprm.data
 
 
+def fp(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
+    if isinstance(spec, Spectra):
+        dD = 360 / len(spec.dirs())
+        ds = dD * np.pi / 180 * spec.ds().sum(dim="dirs")
+    else:
+        ds = spec.ds()
+    inds = ds.spec.argmax(dim="freq")
+    # To inherit DataArray to make slicing work
+    freqs = ds.spec
+    freqs.data = np.tile(spec.freq(), [spec.shape("spec")[0], spec.shape("spec")[1], 1])
+    fp = freqs[:, :, inds]
+    return fp.data
+
+
+def tp(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
+    fpeak = fp(spec)
+    return 1 / fpeak
+
+
+def dirp(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
+    if isinstance(spec, Spectra):
+        c1, s1 = cos_sin(spec)
+        # efth normalization is wrong, but since it is just a constant it won't affect argmax
+        efth = spec.spec(data_array=True, dask=False, squeeze=False).sum(dim="dirs")
+        dirs = np.rad2deg(np.arctan2(s1, c1))
+    else:
+        efth = spec.spec(data_array=True, dask=False, squeeze=False)
+        dirs = spec.dirm(data_array=True, squeeze=False)
+
+    inds = efth.argmax(dim="freq")
+
+    dirs = dirs[:, :, inds].data
+    mask = dirs < 0
+    dirs[mask] = dirs[mask] + 360
+    return dirs
+
+
+def dirp_from(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
+    if spec.convention() is not None:
+        spec.set_convention(SpectralConvention.MET)
+    return dirp(spec)
+
+
+def dirp_to(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
+    if spec.convention() is not None:
+        spec.set_convention(SpectralConvention.OCEAN)
+    return dirp(spec)
+
+
 def get_function(param: gp.metaparameter.MetaParameter) -> callable:
     return dict_of_functions.get(param.standard_name)
 
@@ -147,7 +196,10 @@ dict_of_functions = {
     gp.wave.Tm01.standard_name: tm01,
     gp.wave.Tm02.standard_name: tm02,
     gp.wave.Tm_10.standard_name: tm_10,
+    gp.wave.Tp.standard_name: tp,
     gp.wave.Dirm.standard_name: dirm_from,
     gp.wave.DirmTo.standard_name: dirm_to,
     gp.wave.Spr.standard_name: sprm,
+    gp.wave.Dirp.standard_name: dirp_from,
+    gp.wave.DirpTo.standard_name: dirp_to,
 }

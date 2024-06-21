@@ -36,6 +36,41 @@ def spec():
     return spec
 
 
+@pytest.fixture
+def spec1dmono():
+    time = pd.date_range(start="2020-01-01 00:00", end="2020-01-02 00:00", freq="1h")
+    freq = np.linspace(0.1, 1, 10)
+    spec = Spectra1D(lon=0, lat=0, freq=freq, time=time)
+    spec_val = np.zeros(spec.shape("spec"))
+    spec_val[:, :, 2] = 2
+    spec.set_spec(spec_val)
+
+    dirm_val = np.zeros(spec.shape("spec"))
+    dirm_val[:, :, 2] = 0
+    spec.set_dirm(dirm_val)
+
+    spr_val = np.zeros(spec.shape("spec"))
+    spr_val[:, :, 2] = 30
+    spec.set_spr(spr_val)
+
+    spec._mark_convention(SpectralConvention.OCEAN)
+    return spec
+
+
+@pytest.fixture
+def specmono():
+    time = pd.date_range(start="2020-01-01 00:00", end="2020-01-02 00:00", freq="1h")
+    freq = np.linspace(0.1, 1, 10)
+    dirs = np.linspace(0, 350, 36)
+    spec = Spectra(lon=0, lat=0, freq=freq, time=time, dirs=dirs)
+    spec_val = np.zeros(spec.shape("spec"))
+
+    spec_val[:, :, 2, 9] = 2 / spec.dd(angular=True)
+    spec.set_spec(spec_val)
+    spec._mark_convention(SpectralConvention.OCEAN)
+    return spec
+
+
 def test_m0(spec1d, spec):
     func = get_function(gp.wave.M0)
     assert func is not None
@@ -82,7 +117,7 @@ def test_hs(spec1d, spec):
     np.testing.assert_almost_equal(np.mean(hs), hsig)
 
 
-def test_tm01(spec1d, spec):
+def test_tm01(spec1d, spec, spec1dmono, specmono):
     func01 = get_function(gp.wave.Tm01)
     assert func01 is not None
     val = np.mean(spec1d.spec())
@@ -93,8 +128,13 @@ def test_tm01(spec1d, spec):
     np.testing.assert_almost_equal(np.mean(tm01_1d), m0 / m1)
     np.testing.assert_almost_equal(np.mean(tm01), m0 / m1)
 
+    tm_01_1d = func01(spec1dmono)
+    tm_01 = func01(specmono)
+    np.testing.assert_almost_equal(tm_01_1d, 1 / 0.3)
+    np.testing.assert_almost_equal(tm_01, 1 / 0.3)
 
-def test_tm02(spec1d, spec):
+
+def test_tm02(spec1d, spec, spec1dmono, specmono):
     func02 = get_function(gp.wave.Tm02)
     assert func02 is not None
     val = np.mean(spec1d.spec())
@@ -105,8 +145,13 @@ def test_tm02(spec1d, spec):
     np.testing.assert_almost_equal(np.mean(tm02_1d), np.sqrt(m0 / m2))
     np.testing.assert_almost_equal(np.mean(tm02), np.sqrt(m0 / m2))
 
+    tm_02_1d = func02(spec1dmono)
+    tm_02 = func02(specmono)
+    np.testing.assert_almost_equal(tm_02_1d, 1 / 0.3)
+    np.testing.assert_almost_equal(tm_02, 1 / 0.3)
 
-def test_tm_10(spec1d, spec):
+
+def test_tm_10(spec1d, spec, spec1dmono, specmono):
     func_10 = get_function(gp.wave.Tm_10)
     assert func_10 is not None
     val = np.mean(spec1d.spec())
@@ -117,8 +162,13 @@ def test_tm_10(spec1d, spec):
     np.testing.assert_almost_equal(np.mean(tm_10_1d), m_1 / m0)
     np.testing.assert_almost_equal(np.mean(tm_10), m_1 / m0)
 
+    tm_10_1d = func_10(spec1dmono)
+    tm_10 = func_10(specmono)
+    np.testing.assert_almost_equal(tm_10_1d, 1 / 0.3)
+    np.testing.assert_almost_equal(tm_10, 1 / 0.3)
 
-def test_dirm(spec, spec1d):
+
+def test_dirm(spec, spec1d, specmono, spec1dmono):
     func = get_function(gp.wave.Dirm)
     assert func is not None
     dirm = func(spec)
@@ -133,11 +183,56 @@ def test_dirm(spec, spec1d):
     dirm = func(spec1d)
     np.testing.assert_almost_equal(np.mean(dirm), 0)
 
+    dirm = func(specmono)
+    np.testing.assert_almost_equal(np.mean(dirm), 90)
+    dirm = func(spec1dmono)
+    np.testing.assert_almost_equal(np.mean(dirm), 0)
 
-def test_sprm(spec, spec1d):
+
+def test_sprm(spec, spec1d, specmono, spec1dmono):
     func = get_function(gp.wave.Spr)
     assert func is not None
     sprm = func(spec)
     np.testing.assert_almost_equal(np.mean(sprm), 0, decimal=5)
     sprm = func(spec1d)
     np.testing.assert_almost_equal(np.mean(sprm), 30, decimal=5)
+
+    sprm = func(specmono)
+    np.testing.assert_almost_equal(np.mean(sprm), 0)
+    sprm = func(spec1dmono)
+    np.testing.assert_almost_equal(np.mean(sprm), 30)
+
+
+# def test_fp(spec1dmono):
+#     func = get_function(gp.wave.Fp)
+#     assert func is not None
+#     fp = func(spec1dmono)
+#     np.testing.assert_almost_equal(fp, 0.3, decimal=5)
+
+
+def test_tp(spec1dmono, specmono):
+    func = get_function(gp.wave.Tp)
+    assert func is not None
+    tp = func(spec1dmono)
+    np.testing.assert_almost_equal(tp, 1 / 0.3, decimal=5)
+
+    tp = func(specmono)
+    np.testing.assert_almost_equal(tp, 1 / 0.3, decimal=5)
+
+
+def test_dirp(spec1dmono, specmono):
+    func = get_function(gp.wave.Dirp)
+    assert func is not None
+    dirp = func(spec1dmono)
+    np.testing.assert_almost_equal(dirp, 180, decimal=5)
+
+    dirp = func(specmono)
+    np.testing.assert_almost_equal(dirp, 270, decimal=5)
+
+    func = get_function(gp.wave.DirpTo)
+    assert func is not None
+    dirp = func(spec1dmono)
+    np.testing.assert_almost_equal(dirp, 0, decimal=5)
+
+    dirp = func(specmono)
+    np.testing.assert_almost_equal(dirp, 90, decimal=5)
