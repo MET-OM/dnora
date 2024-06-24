@@ -116,7 +116,7 @@ class DataImporter:
                 continue
 
             # If parameter is not initiated, try to find it, and otherwise create a new one
-            names = obj.from_cf(param.standard_name()) + obj.from_cf(
+            names = obj.find_cf(param.standard_name()) + obj.find_cf(
                 param.standard_name(alias=True)
             )
             names = list(set(names))  # Remove duplicates
@@ -128,6 +128,8 @@ class DataImporter:
             elif len(names) == 0:
                 # The parameter doesn't exist, so lets create it dynamically
                 obj.add_datavar(param)
+                names = [param.name]
+
             obj.set(names[0], value)
             continue
 

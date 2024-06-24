@@ -12,18 +12,9 @@ from pathlib import Path
 from dnora import msg, aux_funcs
 
 # from .conventions import Spectra1DlConvention
-from .wave_parameters import (
-    WaveParameter,
-    Dirp,
-    Tp,
-    Hs,
-    Tm01,
-    Dirm,
-    Sprm,
-    Tm_10,
-    Tm02,
-    TpI,
-)
+import geo_parameters as gp
+from geo_parameters.metaparameter import MetaParameter
+
 from dnora.spectra1d import Spectra1D, process
 from dnora.aux_funcs import get_url
 from dnora.readers.abstract_readers import PointDataReader
@@ -31,48 +22,10 @@ from dnora.waveseries import wave_parameters
 import inspect
 from dnora.dnora_type_manager.dnora_types import DnoraDataType
 from dnora.dnora_type_manager.data_sources import DataSource
+from dnora.wave_parameters.parameters import get_function
 
 
-def dict_of_wave_parameters():
-    list_of_members = inspect.getmembers(wave_parameters)
-    dict_of_wps = {}
-    for member in list_of_members:
-        if inspect.isclass(member[1]):
-            try:
-                wps = [member[1]()]
-            except:
-                wps = None
-
-            if wps is None:
-                try:
-                    wps = []
-                    for n in np.linspace(-10, 10, 41):
-                        wps.append(member[1](n))
-                except:
-                    wps = None
-
-            if wps is None:
-                try:
-                    wps = []
-                    for n in np.linspace(-10, 10, 41):
-                        for m in np.linspace(-10, 10, 41):
-                            wps.append(member[1](n, m))
-                except:
-                    wps = None
-
-            if wps is not None and isinstance(wps[0], WaveParameter):
-                for wp in wps:
-                    dict_of_wps[wp.name()] = wp
-    return dict_of_wps
-
-
-def get_wave_parameter(parameter: Union[str, WaveParameter]) -> WaveParameter:
-    if isinstance(parameter, str):
-        return dict_of_wave_parameters().get(parameter.lower())
-    return parameter
-
-
-class SpectraToWaveSeries(PointDataReader):
+class Spectra1DToWaveSeries(PointDataReader):
     """Integrates Spectra1D to wave series"""
 
     def __init__(self, Spectra1D: Spectra1D, freq: tuple = (0, 10_000)) -> None:
@@ -103,15 +56,12 @@ class SpectraToWaveSeries(PointDataReader):
         end_time,
         inds,
         source: str,
-        parameters: list[str] = [
-            Hs(),
-            Dirp(),
-            TpI(),
-            Dirm(),
-            Sprm(),
-            Tm_10(),
-            Tm01(),
-            Tm02(),
+        parameters: list[MetaParameter] = [
+            gp.wave.Hs,
+            gp.wave.Tm01,
+            gp.wave.Tm02,
+            gp.wave.Tm_10,
+            gp.wave.Dirm,
         ],
         **kwargs,
     ) -> tuple:
@@ -128,8 +78,8 @@ class SpectraToWaveSeries(PointDataReader):
 
         data_dict = {}
         for wp in parameters:
-            wp = get_wave_parameter(wp)
-            data_dict[wp.name()] = wp(self._Spectra1D)
+            func = get_function(wp)
+            data_dict[wp] = func(self._Spectra1D)
 
         meta_dict = self._Spectra1D.ds().attrs
         meta_dict["integration_range"] = f"{self._freq[0]}-{self._freq[-1]} Hz"

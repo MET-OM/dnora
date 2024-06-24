@@ -95,6 +95,12 @@ class Spectra(PointSkeleton):
 
     def set_convention(self, convention: SpectralConvention) -> None:
         """Processes boundary to new directional spectral convention and updates metadata."""
+        if self.convention() is None:
+            msg.info(
+                "set_convention changes the convention AND the data. No convention is currently set. Use _mark_convention to define a convention without touching the data."
+            )
+            return
+
         boundary_processor = boundary_processor_for_convention_change(
             current_convention=self.convention(), wanted_convention=convention
         )
