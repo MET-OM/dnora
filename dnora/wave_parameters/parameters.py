@@ -91,6 +91,24 @@ def tm_10(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
     return m_1 / m0
 
 
+def fm(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
+    func0 = get_function(gp.wave.M0)
+    func1 = get_function(gp.wave.M1)
+    m0 = func0(spec)
+    m1 = func1(spec)
+    return m1 / m0
+
+
+def wp(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
+    func = get_function(gp.wave.Fp)
+    return 2 * np.pi * func(spec)
+
+
+def wm(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
+    func = get_function(gp.wave.Fm)
+    return 2 * np.pi * func(spec)
+
+
 def dirm(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
     a1m, b1m = first_fourier_coefficients(spec)
     thetam = np.arctan2(b1m, a1m)
@@ -197,6 +215,10 @@ dict_of_functions = {
     gp.wave.Tm02.standard_name: tm02,
     gp.wave.Tm_10.standard_name: tm_10,
     gp.wave.Tp.standard_name: tp,
+    gp.wave.Fp.standard_name: fp,
+    gp.wave.Fm.standard_name: fm,
+    gp.wave.Wp.standard_name: wp,
+    gp.wave.Wm.standard_name: wm,
     gp.wave.Dirm.standard_name: dirm_from,
     gp.wave.DirmTo.standard_name: dirm_to,
     gp.wave.Spr.standard_name: sprm,

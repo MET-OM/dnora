@@ -203,11 +203,40 @@ def test_sprm(spec, spec1d, specmono, spec1dmono):
     np.testing.assert_almost_equal(np.mean(sprm), 30)
 
 
-# def test_fp(spec1dmono):
-#     func = get_function(gp.wave.Fp)
-#     assert func is not None
-#     fp = func(spec1dmono)
-#     np.testing.assert_almost_equal(fp, 0.3, decimal=5)
+def test_fp(spec1dmono, specmono):
+    func = get_function(gp.wave.Fp)
+    assert func is not None
+    fp = func(spec1dmono)
+    np.testing.assert_almost_equal(fp, 0.3, decimal=5)
+    fp = func(specmono)
+    np.testing.assert_almost_equal(fp, 0.3, decimal=5)
+
+
+def test_fm(spec1dmono, specmono):
+    func = get_function(gp.wave.Fm)
+    assert func is not None
+    fm = func(spec1dmono)
+    np.testing.assert_almost_equal(fm, 0.3, decimal=5)
+    fm = func(specmono)
+    np.testing.assert_almost_equal(fm, 0.3, decimal=5)
+
+
+def test_wp(spec1dmono, specmono):
+    func = get_function(gp.wave.Wp)
+    assert func is not None
+    wp = func(spec1dmono)
+    np.testing.assert_almost_equal(wp, 2 * np.pi * 0.3, decimal=5)
+    wp = func(specmono)
+    np.testing.assert_almost_equal(wp, 2 * np.pi * 0.3, decimal=5)
+
+
+def test_wm(spec1dmono, specmono):
+    func = get_function(gp.wave.Wm)
+    assert func is not None
+    wm = func(spec1dmono)
+    np.testing.assert_almost_equal(wm, 2 * np.pi * 0.3, decimal=5)
+    wm = func(specmono)
+    np.testing.assert_almost_equal(wm, 2 * np.pi * 0.3, decimal=5)
 
 
 def test_tp(spec1dmono, specmono):
