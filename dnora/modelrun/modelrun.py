@@ -44,6 +44,7 @@ from dnora.dnora_type_manager.dnora_types import (
     file_type_from_string,
 )
 from dnora.dnora_type_manager.data_sources import DataSource
+from calendar import monthrange
 
 if TYPE_CHECKING:
     from dnora.dnora_type_manager.dnora_objects import (
@@ -60,6 +61,45 @@ if TYPE_CHECKING:
 
     from dnora.readers.abstract_readers import ReaderFunction
 
+from typing import Optional
+
+
+def start_and_end_time_of_run(
+    start_time: Optional[str],
+    end_time: Optional[str],
+    year: Optional[int],
+    month: Optional[int],
+    hotstart_hour: bool,
+) -> tuple[str, str]:
+    """Determined the start and end time of the model run:
+
+    If year is given, start is 01 January 00:00 and end is 31 December 23:00
+    If month is given, start if 01 of month to last of month
+
+    If hotstart_hour = True, then
+    year is 01 January 00:00 to 01 January next year 00:00
+    month is 01 month 00:00 to 01 next month 00:00"""
+    if year is not None:
+        year = int(year)
+        if month is None:
+            start_time = f"{year}-01-01 00:00"
+            end_time = f"{year}-12-31 23:00"
+        else:
+            start_time = f"{year}-{month}-01 00:00"
+            nofdays = monthrange(year, month)[1]
+            end_time = f"{year}-{month}-{nofdays} 23:00"
+
+        if hotstart_hour:
+            end_time = pd.to_datetime(end_time) + pd.Timedelta(hours=1)
+
+    if start_time is None:
+        start_time = pd.Timestamp.now().strftime("%Y-%m-%d %H:00")
+    if end_time is None:
+        end_time = (pd.to_datetime(start_time) + pd.Timedelta(hours=240)).strftime(
+            "%Y-%m-%d %H:00"
+        )
+    return start_time, end_time
+
 
 class ModelRun:
     _reader_dict: dict[DnoraDataType:ReaderFunction] = {}
@@ -70,17 +110,16 @@ class ModelRun:
         grid: Grid | None = None,
         start_time: str = None,
         end_time: str = None,
+        year: int = None,
+        month: int = None,
+        hotstart_hour: bool = False,
         dry_run: bool = False,
         name: str = "DnoraModelRun",
     ):
         self._grid = grid
-        if start_time is None:
-            start_time = pd.Timestamp.now().strftime("%Y-%m-%d %H:00")
-        if end_time is None:
-            end_time = (pd.to_datetime(start_time) + pd.Timedelta(hours=240)).strftime(
-                "%Y-%m-%d %H:00"
-            )
-
+        start_time, end_time = start_and_end_time_of_run(
+            start_time, end_time, year, month, hotstart_hour
+        )
         self._time = pd.date_range(start_time, end_time, freq="h")
         self._data_exported_to: dict[DnoraDataType, list[str]] = {}
         self._input_file_exported_to: dict[DnoraFileType, list[str]] = {}
@@ -632,6 +671,12 @@ class ModelRun:
         reference_time = reference_time or self.start_time()
         self._reference_time = pd.to_datetime(reference_time)
         self._lead_time = lead_time
+        if lead_time > 0:
+            self._time = pd.date_range(
+                reference_time,
+                pd.to_datetime(reference_time) + pd.Timedelta(hours=lead_time),
+                freq="h",
+            )
         msg.info(f"Activating forecast mode with reference time {reference_time}")
 
     def deactivate_forecast_mode(self) -> None:
@@ -657,7 +702,3 @@ class ModelRun:
         new_model._dry_run = self._dry_run
         new_model._global_dry_run = self._global_dry_run
         return new_model
-
-
-# def camel_to_snake(string: str) -> str:
-#     return re.sub(r"(?<!^)(?=[A-Z])", "_", string).lower()
