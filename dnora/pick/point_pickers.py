@@ -58,6 +58,7 @@ class NearestGridPoint(PointPicker):
             return np.array([])
 
         lon, lat = selected_points.lonlat()
+
         # Go through all points where we want output and find the nearest available point
         ind_dict = all_points.yank_point(lon=lon, lat=lat, fast=fast, unique=True)
         inds = []
