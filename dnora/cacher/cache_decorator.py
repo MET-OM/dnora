@@ -16,6 +16,7 @@ from .caching_functions import (
     write_data_to_cache,
 )
 from dnora import msg
+from geo_skeletons import PointSkeleton
 
 
 def get_kwargs(func, args, kwargs) -> dict:
@@ -48,6 +49,8 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
             mrun = kwargs.get("self")
 
             given_reader = kwargs.get("reader") or mrun._get_reader(obj_type)
+            given_point_picker = kwargs.get("point_picker") or mrun._get_point_picker()
+
             if given_reader is None:
                 raise ValueError("Provide a DataReader!")
             strategy = given_reader._caching_strategy()
@@ -101,7 +104,6 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
                     start_time,
                     end_time,
                 ) = expand_area_to_tiles(tiles, grid.dlon(), grid.dlat())
-
             ## Reading of the data starts here
             mrun_cacher = mrun.empty_copy(
                 grid=grid,
@@ -128,6 +130,7 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
             mrun_cacher[obj_type].name = name
 
             ## Write data if necessary
+
             if write_cache:
                 msg.header(
                     "Netcdf (DataWriter)",
@@ -137,21 +140,35 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
                 msg.to_multifile(tiles.covering_files())
 
             ## Crop final object to the desired area since it might have been exanded to tiles
+
             final_object = mrun_cacher[obj_type]
-            lon, lat = expand_area(
-                grid.edges("lon", native=True),
-                grid.edges("lat", native=True),
-                expansion_factor=kwargs.get("expansion_factor", 1.0),
-            )
 
-            slice_dict = {
-                "time": slice(mrun.start_time(), mrun.end_time()),
-                grid.x_str: slice(*lon),
-                grid.y_str: slice(*lat),
-            }
+            if final_object.is_gridded():
+                slice_dict = {
+                    grid.core.x_str: slice(*lon),
+                    grid.core.y_str: slice(*lat),
+                }
+                lon, lat = expand_area(
+                    grid.edges("lon", native=True),
+                    grid.edges("lat", native=True),
+                    expansion_factor=kwargs.get("expansion_factor", 1.0),
+                )
+            else:
+                # Get the wanted points from the exanded area using the original PointPicker
+                inds = given_point_picker(
+                    grid=mrun.grid(),
+                    all_points=PointSkeleton.from_skeleton(mrun_cacher[obj_type]),
+                    selected_points=PointSkeleton.from_skeleton(
+                        mrun.grid(), mask=mrun.grid().sea_mask()
+                    ),
+                    expansion_factor=kwargs.get("expansion_factor", 1.0),
+                )
+                slice_dict = {"inds": inds}
 
+            slice_dict["time"] = slice(mrun.start_time(), mrun.end_time())
             final_object = final_object.sel(**slice_dict)
             final_object.name = name
+
             mrun[obj_type] = final_object
 
             msg.header("<<< CACHE", "Exiting caching mode <<<")

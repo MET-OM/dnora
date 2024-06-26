@@ -247,7 +247,7 @@ class ModelRun:
         )
 
         point_picker = self._setup_point_picker(point_picker)
-
+        point_mask = point_mask or self.grid().sea_mask()
         if self.forecast_mode():
             if hasattr(reader, "hours_per_file"):
                 start_time = self._reference_time

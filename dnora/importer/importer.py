@@ -52,7 +52,10 @@ class DataImporter:
         search_grid = Grid(
             lat=(slat[0] - 3, slat[1] + 3), lon=(slon[0] - 6, slon[1] + 6)
         )
-        search_inds = Area()(search_grid, all_points, expansion_factor=1)
+        if not isinstance(point_picker, Area):
+            search_inds = Area()(search_grid, all_points, expansion_factor=1)
+        else:
+            search_inds = all_points.inds()
 
         if np.all(np.logical_not(point_mask)):
             msg.warning(
@@ -193,6 +196,11 @@ class DataImporter:
                 inds = None
 
         msg.header(reader, f"Importing {obj_type.name}...")
+        if not dnora_objects.get(obj_type).is_gridded() and inds is None:
+            msg.info(
+                "No point_mask is provided, but it is needed to import a non-gridded object!"
+            )
+            return
         msg.plain(
             f"Area: {grid.core.x_str}: {grid.edges('lon',native=True)}, {grid.core.y_str}: {grid.edges('lat',native=True)}"
         )
