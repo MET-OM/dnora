@@ -5,7 +5,7 @@ from dnora.readers.abstract_readers import (
 )
 from dnora.dnora_type_manager.dnora_types import DnoraDataType
 from dnora import msg
-from dnora.pick import PointPicker
+from dnora.pick import PointPicker, Area
 from geo_skeletons import PointSkeleton
 from geo_skeletons.decorators import add_datavar
 from dnora.dnora_type_manager.dnora_objects import DnoraObject, Grid, dnora_objects
@@ -44,12 +44,15 @@ class DataImporter:
             x=available_points.get("x"),
             y=available_points.get("y"),
         )
+
+        ## Only take points that are reasonable close to the wanted grid
+        ## This speeds up the searcg considerably, especially if we have points over 84 lat
+        ## since then the fast cartesian searhc is not possible
         slon, slat = grid.edges("lon"), grid.edges("lat")
         search_grid = Grid(
             lat=(slat[0] - 3, slat[1] + 3), lon=(slon[0] - 6, slon[1] + 6)
         )
-        search_inds = 
-        breakpoint()
+        search_inds = Area()(search_grid, all_points, expansion_factor=1)
 
         if np.all(np.logical_not(point_mask)):
             msg.warning(
@@ -61,7 +64,7 @@ class DataImporter:
 
         inds = point_picker(
             grid=grid,
-            all_points=all_points,
+            all_points=all_points.sel(inds=search_inds),
             selected_points=interest_points,
             fast=True,
             **kwargs,
@@ -70,7 +73,7 @@ class DataImporter:
         if len(inds) < 1:
             msg.warning("PointPicker didn't find any points. Aborting import of data.")
             return
-        return inds
+        return search_inds[inds]
 
     @staticmethod
     def _read_data_and_create_object(
