@@ -197,6 +197,5 @@ class ERA5(SpectralDataReader):
         coord_dict = {"lon": lon, "lat": lat, "time": time, "freq": freq, "dirs": dirs}
         data_dict = {"spec": spec}
         meta_dict = {"source": "ECMWF-ERA5 from Copernicus Climate Data Store"}
-        metaparameter_dict = {}
 
-        return coord_dict, data_dict, meta_dict, metaparameter_dict
+        return coord_dict, data_dict, meta_dict

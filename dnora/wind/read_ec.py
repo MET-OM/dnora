@@ -172,6 +172,5 @@ class ERA5(DataReader):
         }
         data_dict = {"u": wind_forcing.u10.values, "v": wind_forcing.v10.values}
         meta_dict = wind_forcing.attrs
-        metaparameter_dict = {}
 
-        return coord_dict, data_dict, meta_dict, metaparameter_dict
+        return coord_dict, data_dict, meta_dict

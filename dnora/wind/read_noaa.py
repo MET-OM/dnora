@@ -110,9 +110,8 @@ class GFS(DataReader):
             "lat": wind_forcing.lat.values,
         }
         meta_dict = wind_forcing.attrs
-        metaparameter_dict = {}
 
-        return coord_dict, data_dict, meta_dict, metaparameter_dict
+        return coord_dict, data_dict, meta_dict
 
     def get_url(self, time_stamp_file, time_stamp, first_ind) -> str:
         h0 = int(time_stamp_file.hour)

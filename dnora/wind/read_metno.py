@@ -176,9 +176,7 @@ class NORA3(DataReader):
         }
         meta_dict = wind_forcing.attrs
 
-        metaparameter_dict = {}
-
-        return coord_dict, data_dict, meta_dict, metaparameter_dict
+        return coord_dict, data_dict, meta_dict
 
 
 class MyWave3km(DataReader):
@@ -324,8 +322,8 @@ class MyWave3km(DataReader):
             "lat": wind_forcing.rlat.values,
         }
         meta_dict = wind_forcing.attrs
-        metaparameter_dict = {}
-        return coord_dict, data_dict, meta_dict, metaparameter_dict
+
+        return coord_dict, data_dict, meta_dict
 
 
 class MEPS(DataReader):
@@ -462,9 +460,7 @@ class MEPS(DataReader):
         }
         meta_dict = wind_forcing.attrs
 
-        metaparameter_dict = {}
-
-        return coord_dict, data_dict, meta_dict, metaparameter_dict
+        return coord_dict, data_dict, meta_dict
 
 
 class NORA3_fp(DataReader):
@@ -619,9 +615,7 @@ class NORA3_fp(DataReader):
         }
         meta_dict = wind_forcing.attrs
 
-        metaparameter_dict = {}
-
-        return coord_dict, data_dict, meta_dict, metaparameter_dict
+        return coord_dict, data_dict, meta_dict
 
     def get_url(
         self, time_stamp_file, time_stamp, first_ind, source: DataSource, folder: str

@@ -164,9 +164,8 @@ class WAM4km(SpectralDataReader):
         data_dict = {"spec": bnd.SPEC.values}
 
         meta_dict = bnd.attrs
-        metaparameter_dict = {}
 
-        return coord_dict, data_dict, meta_dict, metaparameter_dict
+        return coord_dict, data_dict, meta_dict
 
     def file_is_consistent(self, this_ds, bnd_list, url) -> bool:
         if this_ds is None:
@@ -303,8 +302,7 @@ class NORA3(SpectralDataReader):
         data_dict = {"spec": bnd.SPEC.values}
         meta_dict = bnd.attrs
         meta_dict.pop("direction_convention")
-        metaparameter_dict = {}
-        return coord_dict, data_dict, meta_dict, metaparameter_dict
+        return coord_dict, data_dict, meta_dict
 
 
 class WW3_4km(SpectralDataReader):
@@ -464,9 +462,7 @@ class WW3_4km(SpectralDataReader):
 
         meta_dict = bnd.attrs
 
-        metaparameter_dict = {}
-
-        return coord_dict, data_dict, meta_dict, metaparameter_dict
+        return coord_dict, data_dict, meta_dict
 
     def file_is_consistent(self, this_ds, bnd_list, url) -> bool:
         if this_ds is None:
