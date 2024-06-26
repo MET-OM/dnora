@@ -69,6 +69,7 @@ def start_and_end_time_of_run(
     end_time: Optional[str],
     year: Optional[int],
     month: Optional[int],
+    day: Optional[int],
     hotstart_hour: bool,
 ) -> tuple[str, str]:
     """Determined the start and end time of the model run:
@@ -85,9 +86,13 @@ def start_and_end_time_of_run(
             start_time = f"{year}-01-01 00:00"
             end_time = f"{year}-12-31 23:00"
         else:
-            start_time = f"{year}-{month}-01 00:00"
-            nofdays = monthrange(year, month)[1]
-            end_time = f"{year}-{month}-{nofdays} 23:00"
+            if day is None:
+                start_time = f"{year}-{month}-01 00:00"
+                nofdays = monthrange(year, month)[1]
+                end_time = f"{year}-{month}-{nofdays} 23:00"
+            else:
+                start_time = f"{year}-{month}-{day} 00:00"
+                end_time = f"{year}-{month}-{day} 23:00"
 
         if hotstart_hour:
             end_time = pd.to_datetime(end_time) + pd.Timedelta(hours=1)
@@ -112,13 +117,14 @@ class ModelRun:
         end_time: str = None,
         year: int = None,
         month: int = None,
+        day: int = None,
         hotstart_hour: bool = False,
         dry_run: bool = False,
         name: str = "DnoraModelRun",
     ):
         self._grid = grid
         start_time, end_time = start_and_end_time_of_run(
-            start_time, end_time, year, month, hotstart_hour
+            start_time, end_time, year, month, day, hotstart_hour
         )
         self._time = pd.date_range(start_time, end_time, freq="h")
         self._data_exported_to: dict[DnoraDataType, list[str]] = {}
