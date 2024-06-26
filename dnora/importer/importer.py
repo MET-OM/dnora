@@ -44,6 +44,12 @@ class DataImporter:
             x=available_points.get("x"),
             y=available_points.get("y"),
         )
+        slon, slat = grid.edges("lon"), grid.edges("lat")
+        search_grid = Grid(
+            lat=(slat[0] - 3, slat[1] + 3), lon=(slon[0] - 6, slon[1] + 6)
+        )
+        search_inds = 
+        breakpoint()
 
         if np.all(np.logical_not(point_mask)):
             msg.warning(
