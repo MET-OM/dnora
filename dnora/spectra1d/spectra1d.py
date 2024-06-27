@@ -14,9 +14,9 @@ from .process import SpectralProcessor
 import geo_parameters as gp
 
 
-@add_datavar(name="spec", coord_group="all", default_value=0.0)
-@add_datavar(name="dirm", coord_group="all", default_value=0.0)
-@add_datavar(name="spr", coord_group="all", default_value=0.0)
+@add_datavar(name=gp.wave.Ef("spec"), coord_group="all", default_value=0.0)
+@add_datavar(name=gp.wave.Dirm("dirm"), coord_group="all", default_value=0.0)
+@add_datavar(name=gp.wave.Spr("spr"), coord_group="all", default_value=0.0)
 @add_frequency(grid_coord=False)
 @add_time(grid_coord=True)
 class Spectra1D(PointSkeleton):

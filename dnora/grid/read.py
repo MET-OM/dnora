@@ -25,7 +25,6 @@ from dnora.dnora_type_manager.dnora_types import DnoraDataType
 # from dnora.defaults import read_environment_variable
 from .emodnet_functions import find_tile, get_covering_tiles, download_tile
 
-
 # class TopoReader(ABC):
 #     """Abstract class for reading the bathymetry."""
 
@@ -173,7 +172,9 @@ class EMODNET(DataReader):
 
         if tiles_to_download:
             if not os.path.exists(folder):
-                os.mkdir(folder)
+                if not os.path.isdir(folder):
+                    msg.plain(f"Creating folder {folder}")
+                os.makedirs(folder)
             for tile in tiles_to_download:
                 download_tile(tile=tile, year=year, folder=folder)
 
@@ -191,9 +192,8 @@ class EMODNET(DataReader):
 
                 data_dict = {"topo": topo}
                 meta_dict = {"source": f"EMODNET{year:.0f}"}
-                metaparameter_dict = {}
 
-                return coord_dict, data_dict, meta_dict, metaparameter_dict
+                return coord_dict, data_dict, meta_dict
 
     def __str__(self):
         return f"Reading EMODNET topography from {self.files}."
@@ -257,9 +257,8 @@ class KartverketNo50m(DataReader):
         coord_dict = {"x": topo_x, "y": topo_y}
         data_dict = {"topo": topo, "zone_number": zone_number, "zone_letter": "W"}
         meta_dict = {"source": "Kartverket50m"}
-        metaparameter_dict = {}
 
-        return coord_dict, data_dict, meta_dict, metaparameter_dict
+        return coord_dict, data_dict, meta_dict
 
     def __str__(self):
         return f"Reading Kartverket topography from {self.source}."
@@ -305,9 +304,8 @@ class GEBCO(DataReader):
         coord_dict = {"lon": topo_lon, "lat": topo_lat}
         data_dict = {"topo": topo}
         meta_dict = {"source": f"GEBCO2023", "through": "https://api.odb.ntu.edu.tw/"}
-        metaparameter_dict = {}
 
-        return coord_dict, data_dict, meta_dict, metaparameter_dict
+        return coord_dict, data_dict, meta_dict
 
 
 class GEBCOold(DataReader):
@@ -472,9 +470,8 @@ class MshFile(DataReader):
             "zone_letter": zone_letter,
         }
         meta_dict = {"source": self.filename}
-        metaparameter_dict = {}
 
-        return coord_dict, data_dict, meta_dict, metaparameter_dict
+        return coord_dict, data_dict, meta_dict
 
     def __str__(self):
         return f"Reading topography from {self.filename}."

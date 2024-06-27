@@ -247,7 +247,8 @@ class ModelRun:
         )
 
         point_picker = self._setup_point_picker(point_picker)
-        point_mask = point_mask or self.grid().sea_mask()
+        if point_mask is None:
+            point_mask = self.grid().sea_mask()
         if self.forecast_mode():
             if hasattr(reader, "hours_per_file"):
                 start_time = self._reference_time
@@ -643,6 +644,9 @@ class ModelRun:
                 return None
 
         return self._dnora_objects.get(obj_type)
+
+    def get(self, obj_type: DnoraDataType) -> DnoraObject:
+        return self.__getitem__(obj_type)
 
     def __setitem__(self, key: DnoraDataType, value: DnoraObject) -> None:
         self._dnora_objects[key] = value

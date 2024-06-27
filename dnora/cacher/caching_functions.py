@@ -98,7 +98,11 @@ def write_data_to_cache(mrun_cacher, tiles, obj_type):
         )
         ind_lon = np.where(lon_mask)[0]
         ind_lat = np.where(lat_mask)[0]
-        cropped_obj = cropped_obj.isel(lon=ind_lon, lat=ind_lat)
+        if cropped_obj.is_gridded():
+            cropped_obj = cropped_obj.isel(lon=ind_lon, lat=ind_lat)
+        else:
+            sel_inds = np.array(list(set(ind_lon) & set(ind_lat)))
+            cropped_obj = cropped_obj.isel(inds=sel_inds)
         cropped_obj.name = mrun_cacher[obj_type].name
         mrun_write_tile[obj_type] = cropped_obj
         exporter = Cacher(mrun_write_tile)  # Writes daily files
