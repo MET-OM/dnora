@@ -26,7 +26,7 @@ from dnora.defaults import read_environment_variable
 from dnora.spectra1d.read import SpectraTo1D
 from dnora.waveseries.read import Spectra1DToWaveSeries
 from dnora.spectral_conventions import SpectralConvention
-from dnora.pick import TrivialPicker
+from dnora.pick import Trivial
 
 from dnora.export.templates import Cacher
 from dnora.aux_funcs import get_url, get_first_file
@@ -215,11 +215,11 @@ class ModelRun:
 
         folder = folder or ""
 
-        if folder and source == DataSource.LOCAL:
-            if not os.path.exists(os.path.expanduser(folder)):
-                os.mkdir(folder)
-            if not os.path.exists(get_url(folder, reader.name())):
-                os.mkdir(get_url(folder, reader.name()))
+        # if folder and source == DataSource.LOCAL:
+        #     if not os.path.exists(os.path.expanduser(folder)):
+        #         os.mkdir(folder)
+        #     if not os.path.exists(get_url(folder, reader.name())):
+        #         os.mkdir(get_url(folder, reader.name()))
         return reader, name, source, folder
 
     def _setup_point_picker(self, point_picker: PointPicker):
@@ -433,7 +433,7 @@ class ModelRun:
 
         self.import_spectra1d(
             reader=spectral_reader,
-            point_picker=TrivialPicker(),
+            point_picker=Trivial(),
             name=name,
             dry_run=dry_run,
             **kwargs,
@@ -458,7 +458,7 @@ class ModelRun:
 
         self.import_waveseries(
             reader=waveseries_reader,
-            point_picker=TrivialPicker(),
+            point_picker=Trivial(),
             name=name,
             dry_run=dry_run,
             **kwargs,

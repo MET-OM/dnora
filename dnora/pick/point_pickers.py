@@ -30,7 +30,7 @@ class PointPicker(ABC):
         pass
 
 
-class TrivialPicker(PointPicker):
+class Trivial(PointPicker):
     """Choose all the points in the list."""
 
     def __call__(

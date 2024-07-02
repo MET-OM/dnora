@@ -101,6 +101,9 @@ class Spectra(PointSkeleton):
             )
             return
 
+        if isinstance(convention, str):
+            convention = SpectralConvention[convention.upper()]
+
         boundary_processor = boundary_processor_for_convention_change(
             current_convention=self.convention(), wanted_convention=convention
         )

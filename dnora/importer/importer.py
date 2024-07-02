@@ -5,7 +5,7 @@ from dnora.readers.abstract_readers import (
 )
 from dnora.dnora_type_manager.dnora_types import DnoraDataType
 from dnora import msg
-from dnora.pick import PointPicker, Area
+from dnora.pick import PointPicker, Area, NearestGridPoint
 from geo_skeletons import PointSkeleton
 from geo_skeletons.decorators import add_datavar
 from dnora.dnora_type_manager.dnora_objects import DnoraObject, Grid, dnora_objects
@@ -52,7 +52,7 @@ class DataImporter:
         search_grid = Grid(
             lat=(slat[0] - 3, slat[1] + 3), lon=(slon[0] - 6, slon[1] + 6)
         )
-        if not isinstance(point_picker, Area):
+        if isinstance(point_picker, NearestGridPoint):
             search_inds = Area()(search_grid, all_points, expansion_factor=1)
         else:
             search_inds = all_points.inds()
