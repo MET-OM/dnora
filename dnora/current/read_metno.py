@@ -52,11 +52,14 @@ class NorKyst800(DataReader):
         self.program = program
         return
 
+    def default_data_source(self) -> DataSource:
+        return DataSource.REMOTE
+
     def _folder_filename(
         self, source: DataSource, folder: str, filename: str
     ) -> tuple[str]:
         if source == DataSource.REMOTE:
-            folder = "https://thredds.met.no/thredds/dodsC/sea/norkyst800mv0_1h"
+            folder = "https://thredds.met.no/thredds/dodsC/fou-hi/norkyst800m-1h"
         if filename is None:
             filename = "NorKyst-800m_ZDEPTHS_his.an.%Y%m%d00.nc"
         return folder, filename
@@ -68,7 +71,7 @@ class NorKyst800(DataReader):
         end_time: str,
         source: DataSource,
         folder: str,
-        expansion_factor: float,
+        expansion_factor: float = 1.2,
         filename: str = None,
         **kwargs,
     ):
@@ -99,13 +102,7 @@ class NorKyst800(DataReader):
             os.remove(f)
 
         # Define area to search in
-        lon_min, lon_max, lat_min, lat_max = expand_area(
-            min(grid.lon()),
-            max(grid.lon()),
-            min(grid.lat()),
-            max(grid.lat()),
-            expansion_factor,
-        )
+        lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
 
         # Setting resolution to roughly 0.8 km
         dlat = 0.8 / 111
@@ -124,14 +121,15 @@ class NorKyst800(DataReader):
             )
 
             nc_fimex = f"dnora_ocr_temp/ocean_current_{n:04.0f}_MetNo_Norkyst800.nc"
+            breakpoint()
             # Apply pyfimex or fimex
             if self.program == "pyfimex":
                 pyfimex(
                     input_file=url,
                     output_file=nc_fimex,
                     projString="+proj=latlong +ellps=sphere +a=6371000 +e=0",
-                    xAxisValues=np.arange(lon_min, lon_max + dlon, dlon),
-                    yAxisValues=np.arange(lat_min, lat_max + dlat, dlat),
+                    xAxisValues=np.arange(lon[0], lon[1] + dlon, dlon),
+                    yAxisValues=np.arange(lat[0], lat[1] + dlat, dlat),
                     selectVariables=["u", "v"],
                     reduceTime_start=start_times[n].strftime("%Y-%m-%dT%H:%M:%S"),
                     reduceTime_end=end_times[n].strftime("%Y-%m-%dT%H:%M:%S"),
@@ -143,18 +141,18 @@ class NorKyst800(DataReader):
                     "--interpolate.method=bilinear",
                     "--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0",
                     "--interpolate.xAxisValues="
-                    + str(lon_min)
+                    + str(lon[0])
                     + ","
-                    + str(lon_min + dlon)
+                    + str(lon[0] + dlon)
                     + ",...,"
-                    + str(lon_max)
+                    + str(lon[1])
                     + "",
                     "--interpolate.yAxisValues="
-                    + str(lat_min)
+                    + str(lat[0])
                     + ","
-                    + str(lat_min + dlat)
+                    + str(lat[0] + dlat)
                     + ",...,"
-                    + str(lat_max)
+                    + str(lat[1])
                     + "",
                     "--interpolate.xAxisUnit=degree",
                     "--interpolate.yAxisUnit=degree",
@@ -185,19 +183,15 @@ class NorKyst800(DataReader):
         # Select depth = 0 m
         ds = ds.sel(depth=0)
 
-        ds["u"] = ds["u"].fillna(0)
-        ds["v"] = ds["v"].fillna(0)
+        # ds["u"] = ds["u"].fillna(0)
+        # ds["v"] = ds["v"].fillna(0)
+        breakpoint()
+        data_dict = {"u": ds.u.fillna(0).data, "v": ds.v.fillna(0).data}
+        coord_dict = {
+            "time": ds.time.data,
+            "lon": ds.x.data,
+            "lat": ds.y.data,
+        }
+        meta_dict = wind_forcing.attrs
 
-        # oceancurrent_forcing = oceancurrent_forcing.transpose("time", "lat", "lon")
-        x = None
-        y = None
-        return (
-            ds.time.values,
-            ds.u.values,
-            ds.v.values,
-            ds.X.values,
-            ds.Y.values,
-            x,
-            y,
-            ds.attrs,
-        )
+        return coord_dict, data_dict, meta_dict
