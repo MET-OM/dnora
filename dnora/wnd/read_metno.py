@@ -491,6 +491,6 @@ class NORA3(ForcingReader):
     def get_url(self, time_stamp, source):
         filename = 'arome3km_1hr_' +time_stamp.strftime('%Y')+ time_stamp.strftime('%m')+'.nc'
         if source=='thredds':
-           return 'https://thredds.met.no/thredds/dodsC/nora3wavesubset_files/atm_hourly/'+filename
+           return 'https://thredds.met.no/thredds/dodsC/nora3_subset_atmos/atm_hourly/'+filename
         if source=='lustre':
            return '/lustre/storeB/project/fou/om/NORA3/equinor/atm_hourly/' + filename
