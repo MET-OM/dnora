@@ -114,18 +114,6 @@ class E39(PointDataReader):
             "G": "G_Halsafjorden",
         }
 
-    def _convert_var(self, var: str) -> str:
-        var_dict = {
-            "Hm0": "hs",
-            "tm02": "tm02",
-            "tp": "tp",
-            "tm01": "tm01",
-            "mdir": "dirm",
-            "WindSpeed": "ff",
-            "WindDirection": "dd",
-        }  # , 'thtp': 'dirp'}
-        return var_dict.get(var)
-
     def loc(self) -> list[str]:
         if len(self._loc) > 2:
             return self._loc
@@ -180,9 +168,14 @@ class E39(PointDataReader):
         data_dict = {}
         for var in ds.data_vars:
             if var not in ["lon", "lat", "longitude", "latitude", "x", "y"]:
-                dnora_var = self._convert_var(var)
-                if dnora_var is not None:
-                    data_dict[get_wave_parameter(dnora_var)] = np.swapaxes(
+                if hasattr(ds[var], "standard_name"):
+                    meta_param = gp.get(
+                        ds[var].standard_name
+                    )  # Find geo-parameter based on standard name
+                else:
+                    meta_param = None
+                if meta_param is not None:
+                    data_dict[meta_param] = np.swapaxes(
                         np.expand_dims(ds.get(var).values, axis=1), 0, 1
                     )
 
