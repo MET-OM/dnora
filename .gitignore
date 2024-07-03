@@ -162,3 +162,15 @@ cython_debug/
 .vscode/*
 tests/.vscode/*
 dnora/.vscode/*
+
+
+# Dnora v1 folders
+bnd/
+wnd/
+ocr/
+mdl/
+trg/
+grd/
+dnplot/
+spc/
+wlv/
