@@ -59,7 +59,10 @@ class NorKyst800(DataReader):
         self, source: DataSource, folder: str, filename: str
     ) -> tuple[str]:
         if source == DataSource.REMOTE:
-            folder = "https://thredds.met.no/thredds/dodsC/fou-hi/norkyst800m-1h"
+            if self.start_time.year < 2018:
+                folder = "https://thredds.met.no/thredds/dodsC/sea/norkyst800mv0_1h/"
+            else:
+                folder = "https://thredds.met.no/thredds/dodsC/fou-hi/norkyst800m-1h"
         if filename is None:
             filename = "NorKyst-800m_ZDEPTHS_his.an.%Y%m%d00.nc"
         return folder, filename
@@ -91,7 +94,7 @@ class NorKyst800(DataReader):
         msg.info(
             f"Getting ocean_current forcing from Norkyst800 from {self.start_time} to {self.end_time}"
         )
-
+        msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
         temp_folder = "dnora_ocr_temp"
         if not os.path.isdir(temp_folder):
             os.mkdir(temp_folder)
@@ -121,7 +124,6 @@ class NorKyst800(DataReader):
             )
 
             nc_fimex = f"dnora_ocr_temp/ocean_current_{n:04.0f}_MetNo_Norkyst800.nc"
-            breakpoint()
             # Apply pyfimex or fimex
             if self.program == "pyfimex":
                 pyfimex(
@@ -185,13 +187,13 @@ class NorKyst800(DataReader):
 
         # ds["u"] = ds["u"].fillna(0)
         # ds["v"] = ds["v"].fillna(0)
-        breakpoint()
+
         data_dict = {"u": ds.u.fillna(0).data, "v": ds.v.fillna(0).data}
         coord_dict = {
             "time": ds.time.data,
-            "lon": ds.x.data,
-            "lat": ds.y.data,
+            "lon": ds.X.data,
+            "lat": ds.Y.data,
         }
-        meta_dict = wind_forcing.attrs
+        meta_dict = ds.attrs
 
         return coord_dict, data_dict, meta_dict
