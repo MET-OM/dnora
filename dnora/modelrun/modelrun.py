@@ -122,6 +122,8 @@ class ModelRun:
         dry_run: bool = False,
         name: str = "DnoraModelRun",
     ):
+        if grid is None:
+            grid = Grid(lon=0, lat=0)
         self._grid = grid
         start_time, end_time = start_and_end_time_of_run(
             start_time, end_time, year, month, day, hotstart_hour
