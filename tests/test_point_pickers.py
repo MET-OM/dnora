@@ -20,7 +20,7 @@ def all_points(grid):
 
 
 def test_trivial_picker(grid, all_points):
-    inds = pick.TrivialPicker()(grid, all_points)
+    inds = pick.Trivial()(grid, all_points)
     np.testing.assert_array_almost_equal(inds, all_points.inds())
 
 

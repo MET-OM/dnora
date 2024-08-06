@@ -19,11 +19,11 @@ def model():
     model.import_spectra(spectra.read_metno.NORA3(), pick.Area())
     model.import_wind(wind.read_metno.NORA3())
     model.import_spectra1d(
-        spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.TrivialPicker()
+        spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.Trivial()
     )
     model.import_waveseries(
         waveseries.read.Spectra1DToWaveSeries(model.spectra1d()),
-        point_picker=pick.TrivialPicker(),
+        point_picker=pick.Trivial(),
     )
     return model
 

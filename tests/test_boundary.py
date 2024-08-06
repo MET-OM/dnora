@@ -10,7 +10,7 @@ def test_import_constant_boundary_one_point():
         grid, start_time="2020-01-01 00:00", end_time="2020-01-02 00:00"
     )
 
-    model.import_spectra(ConstantData(), point_picker=pick.TrivialPicker())
+    model.import_spectra(ConstantData(), point_picker=pick.Trivial())
 
     assert model.spectra().size() == (25, 1, 10, 36)
 
@@ -26,7 +26,7 @@ def test_import_constant_boundary():
         grid, start_time="2020-01-01 00:00", end_time="2020-01-02 00:00"
     )
 
-    model.import_spectra(ConstantData(), point_picker=pick.TrivialPicker())
+    model.import_spectra(ConstantData(), point_picker=pick.Trivial())
 
     assert model.spectra().size() == (25, 50, 10, 36)
 

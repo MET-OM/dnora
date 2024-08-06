@@ -176,37 +176,36 @@ class DataImporter:
     ) -> DnoraObject:
         """Imports data using DataReader and creates and returns a DNORA object"""
 
-        if dry_run:
-            msg.info("Dry run! No data will be imported.")
-        else:
-            if point_mask is not None and not dnora_objects.get(obj_type).is_gridded():
-                msg.header(point_picker, "Choosing points to import...")
-                inds = self._pick_points(
-                    grid,
-                    reader,
-                    start_time,
-                    point_picker,
-                    point_mask,
-                    source,
-                    folder,
-                    **kwargs,
-                )
-            else:
-                inds = None
-
-        msg.header(reader, f"Importing {obj_type.name}...")
-        if not dnora_objects.get(obj_type).is_gridded() and inds is None:
-            msg.info(
-                "No point_mask is provided, but it is needed to import a non-gridded object!"
-            )
-            return
         msg.plain(
             f"Area: {grid.core.x_str}: {grid.edges('lon',native=True)}, {grid.core.y_str}: {grid.edges('lat',native=True)}"
         )
         msg.plain(f"{start_time} - {end_time}")
 
+        msg.header(reader, f"Importing {obj_type.name}...")
+
         if dry_run:
             msg.info("Dry run! No data will be imported.")
+            return
+
+        if point_mask is not None and not dnora_objects.get(obj_type).is_gridded():
+            msg.header(point_picker, "Choosing points to import...")
+            inds = self._pick_points(
+                grid,
+                reader,
+                start_time,
+                point_picker,
+                point_mask,
+                source,
+                folder,
+                **kwargs,
+            )
+        else:
+            inds = None
+
+        if not dnora_objects.get(obj_type).is_gridded() and inds is None:
+            msg.info(
+                "No point_mask is provided, but it is needed to import a non-gridded object!"
+            )
             return
 
         obj = self._read_data_and_create_object(

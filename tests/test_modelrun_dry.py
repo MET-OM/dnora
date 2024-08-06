@@ -9,12 +9,12 @@ def test_model_one_point():
     model.import_spectra(spectra.read_metno.NORA3(), pick.Area())
     model.import_wind(wind.read_metno.NORA3())
     model.import_spectra1d(
-        spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.TrivialPicker()
+        spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.Trivial()
     )
 
     model.import_waveseries(
         waveseries.read.Spectra1DToWaveSeries(model.spectra1d()),
-        point_picker=pick.TrivialPicker(),
+        point_picker=pick.Trivial(),
     )
 
     DNORA = export.DataExporter(model)
@@ -42,11 +42,11 @@ def test_model_one_area():
     model.import_spectra(spectra.read_metno.NORA3(), pick.Area())
     model.import_wind(wind.read_metno.NORA3())
     model.import_spectra1d(
-        spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.TrivialPicker()
+        spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.Trivial()
     )
     model.import_waveseries(
         waveseries.read.Spectra1DToWaveSeries(model.spectra1d()),
-        point_picker=pick.TrivialPicker(),
+        point_picker=pick.Trivial(),
     )
     exe = executer.SWAN(model)
     exe.write_input_file()
@@ -62,11 +62,11 @@ def test_model_gridded():
     model.import_spectra(spectra.read_metno.NORA3(), pick.Area())
     model.import_wind(wind.read_metno.NORA3())
     model.import_spectra1d(
-        spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.TrivialPicker()
+        spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.Trivial()
     )
     model.import_waveseries(
         waveseries.read.Spectra1DToWaveSeries(model.spectra1d()),
-        point_picker=pick.TrivialPicker(),
+        point_picker=pick.Trivial(),
     )
 
     exe = executer.SWAN(model)
@@ -82,11 +82,11 @@ def test_model_one_point_cartesian():
     model.import_spectra(spectra.read_metno.NORA3(), pick.Area())
     model.import_wind(wind.read_metno.NORA3())
     model.import_spectra1d(
-        spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.TrivialPicker()
+        spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.Trivial()
     )
     model.import_waveseries(
         waveseries.read.Spectra1DToWaveSeries(model.spectra1d()),
-        point_picker=pick.TrivialPicker(),
+        point_picker=pick.Trivial(),
     )
 
     exe = executer.SWAN(model)
@@ -102,11 +102,11 @@ def test_model_one_area_cartesian():
     model.import_spectra(spectra.read_metno.NORA3(), pick.Area())
     model.import_wind(wind.read_metno.NORA3())
     model.import_spectra1d(
-        spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.TrivialPicker()
+        spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.Trivial()
     )
     model.import_waveseries(
         waveseries.read.Spectra1DToWaveSeries(model.spectra1d()),
-        point_picker=pick.TrivialPicker(),
+        point_picker=pick.Trivial(),
     )
     exe = executer.SWAN(model)
     exe.write_input_file()
@@ -122,11 +122,11 @@ def test_model_gridded_cartesian():
     model.import_spectra(spectra.read_metno.NORA3(), pick.Area())
     model.import_wind(wind.read_metno.NORA3())
     model.import_spectra1d(
-        spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.TrivialPicker()
+        spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.Trivial()
     )
     model.import_waveseries(
         waveseries.read.Spectra1DToWaveSeries(model.spectra1d()),
-        point_picker=pick.TrivialPicker(),
+        point_picker=pick.Trivial(),
     )
     exe = executer.SWAN(model)
     exe.write_input_file()
