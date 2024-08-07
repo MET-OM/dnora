@@ -14,7 +14,7 @@ dependencies:
   - pip
   - pytest
   - pytest-cov
-  - cdsapi
+  - cdsapi>=0.7.0
   - python-dotenv
   - fimex=1.8.1
   - progressbar

@@ -264,7 +264,7 @@ class MyWave3km(DataReader):
 
         wnd_list = []
         for n in range(len(file_times)):
-            folder, filename = self._folder_filename(source, folder, filename)
+            folder, filename = self._folder_filename(source, folder, filename=None)
             url = get_url(folder, filename, file_times[n])
 
             msg.from_file(url)
@@ -315,11 +315,11 @@ class MyWave3km(DataReader):
         u = -1 * u.fillna(0)  # *-1 due to ocean convection in WAM!!!
         v = -1 * v.fillna(0)  # *-1 due to ocean convection in WAM!!!
 
-        data_dict = {"u": u, "v": v}
+        data_dict = {"u": u.data, "v": v.data}
         coord_dict = {
-            "time": wind_forcing.time.values,
-            "lon": wind_forcing.rlon.values,
-            "lat": wind_forcing.rlat.values,
+            "time": wind_forcing.time.data,
+            "lon": wind_forcing.rlon.data,
+            "lat": wind_forcing.rlat.data,
         }
         meta_dict = wind_forcing.attrs
 
@@ -546,7 +546,11 @@ class NORA3_fp(DataReader):
         wnd_list = []
         for n in range(len(file_times)):
             url = self.get_url(
-                file_times[n], start_times[n], first_ind=self.lead_time, source=source
+                file_times[n],
+                start_times[n],
+                first_ind=self.lead_time,
+                source=source,
+                folder=folder,
             )
             msg.from_file(url)
             msg.plain(f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
@@ -607,11 +611,11 @@ class NORA3_fp(DataReader):
         # Go to u and v components
         u, v = u_v_from_speed_dir(wind_forcing.wind_speed, wind_forcing.wind_direction)
 
-        data_dict = {"u": u.fillna(0).values, "v": v.fillna(0).values}
+        data_dict = {"u": u.fillna(0).data, "v": v.fillna(0).data}
         coord_dict = {
-            "time": wind_forcing.time.values,
-            "lon": wind_forcing.x.values,
-            "lat": wind_forcing.y.values,
+            "time": wind_forcing.time.data,
+            "lon": wind_forcing.x.data,
+            "lat": wind_forcing.y.data,
         }
         meta_dict = wind_forcing.attrs
 
@@ -626,7 +630,7 @@ class NORA3_fp(DataReader):
         ).strftime("%H")
         ind = int((time_stamp.hour - first_ind) % 6) + first_ind
         filename = (
-            +time_stamp_file.strftime("fc%Y%m%d")
+            time_stamp_file.strftime("fc%Y%m%d")
             + (time_stamp_file - np.timedelta64(h0, "h")).strftime("%H")
             + f"_{ind:03d}_fp.nc"
         )

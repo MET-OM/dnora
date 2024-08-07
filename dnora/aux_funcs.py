@@ -621,6 +621,8 @@ def get_url(
     for fn in filename:
         url_temp = Path(folder).joinpath(fn)
         url_temp = re.sub(f"https:/", "https://", str(url_temp), 1)
+        url_temp = re.sub(f"http:/", "http://", str(url_temp), 1)
+        url_temp = re.sub(f"ftp:/", "ftp://", str(url_temp), 1)
         url.append(url_temp)
     if len(url) == 1 and not get_list:
         return os.path.expanduser(url[0])

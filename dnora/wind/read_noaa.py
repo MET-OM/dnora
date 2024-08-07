@@ -1,7 +1,8 @@
-from copy import copy
 import numpy as np
 import xarray as xr
-
+import pandas as pd
+from datetime import timedelta
+import dask
 
 # Import objects
 from dnora.grid import Grid
@@ -31,16 +32,16 @@ class GFS(DataReader):
         setting unless you have a good reason to do so.
         """
 
-        self.stride = copy(stride)
-        self.hours_per_file = copy(hours_per_file)
-        self.lead_time = copy(lead_time)
-        self.last_file = copy(last_file)
+        self.stride = stride
+        self.hours_per_file = hours_per_file
+        self.lead_time = lead_time
+        self.last_file = last_file
 
     def _folder_filename(
         self, source: DataSource, folder: str, filename: str
     ) -> tuple[str]:
         if source == DataSource.REMOTE:
-            folder = "https://nomads.ncep.noaa.gov/dods/gfs_0p25_1hr/gfs%Y%m%d"
+            folder = "http://nomads.ncep.noaa.gov:80/dods/gfs_0p25_1hr/gfs%Y%m%d"
         if filename is None:
             filename = "gfs_0p25_1hr_%Hz"
         return folder, filename
@@ -81,46 +82,43 @@ class GFS(DataReader):
         for n in range(len(file_times)):
             folder, filename = self._folder_filename(source, folder, filename=None)
             url = get_url(folder, filename, file_times[n])
-            msg.from_file(url)
             msg.plain(f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
+            msg.from_file(url)
 
-            import dask
+            # with dask.config.set(**{"array.slicing.split_large_chunks": True}):
+            #     with xr.open_dataset(url, decode_times=False) as ds:
 
-            with dask.config.set(**{"array.slicing.split_large_chunks": True}):
-                with xr.open_dataset(url) as ds:
-                    ds["time"] = ds.time.dt.round("H")
-                    ds = ds.sel(
-                        time=slice(start_times[n], end_times[n]),
-                        lon=slice(lon[0], lon[1]),
-                        lat=slice(lat[0], lat[1]),
-                    )[["lon", "lat", "time", "ugrd10m", "vgrd10m"]]
+            ds = xr.open_dataset(url, decode_times=False)
 
+            t0 = pd.to_datetime(
+                ds.time.minimum[-4:] + " " + ds.time.minimum[3:8]
+            ) + timedelta(hours=int(ds.time.minimum[:2]))
+            t1 = pd.to_datetime(
+                ds.time.maximum[-4:] + " " + ds.time.maximum[3:8]
+            ) + timedelta(hours=int(ds.time.maximum[:2]))
+
+            # ds["time"] = ds.time.dt.round("H")
+            ds["time"] = pd.date_range(t0, t1, freq="1h")
+
+            ds = ds.sel(
+                time=slice(start_times[n], end_times[n]),
+                lon=slice(lon[0], lon[1]),
+                lat=slice(lat[0], lat[1]),
+            )[["lon", "lat", "time", "ugrd10m", "vgrd10m"]]
             wnd_list.append(ds)
 
         wind_forcing = xr.concat(wnd_list, dim="time")
 
-        u = wind_forcing.ugrd10m.values
-        v = wind_forcing.vgrd10m.values
-        u = np.moveaxis(u, 0, 2)
-        v = np.moveaxis(v, 0, 2)
+        u = wind_forcing.ugrd10m.data
+        v = wind_forcing.vgrd10m.data
+        # u = np.moveaxis(u, 0, 2)
+        # v = np.moveaxis(v, 0, 2)
         data_dict = {"u": u, "v": v}
         coord_dict = {
-            "time": wind_forcing.time.values,
-            "lon": wind_forcing.lon.values,
-            "lat": wind_forcing.lat.values,
+            "time": wind_forcing.time.data,
+            "lon": wind_forcing.lon.data,
+            "lat": wind_forcing.lat.data,
         }
         meta_dict = wind_forcing.attrs
 
         return coord_dict, data_dict, meta_dict
-
-    def get_url(self, time_stamp_file, time_stamp, first_ind) -> str:
-        h0 = int(time_stamp_file.hour)
-        folder = "gfs" + time_stamp_file.strftime("%Y%m%d")
-        filename = f"gfs_0p25_1hr_{h0:02.0f}z"
-
-        return (
-            "http://nomads.ncep.noaa.gov:80/dods/gfs_0p25_1hr/"
-            + folder
-            + "/"
-            + filename
-        )
