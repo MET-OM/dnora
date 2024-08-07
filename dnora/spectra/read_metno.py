@@ -344,7 +344,7 @@ class WW3_4km(SpectralDataReader):
                 "https://thredds.met.no/thredds/dodsC/ww3_4km_archive_files/%Y/%m/%d"
             )
         if filename is None:
-            filename = f"ww3_4km_POI_SPC_%Y%m%dT%HZ.nc"
+            filename = f"ww3_4km_{self.tile}_SPC_%Y%m%dT%HZ.nc"
         return folder, filename
 
     def get_coordinates(
