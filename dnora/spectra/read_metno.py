@@ -44,7 +44,7 @@ class WAM4km(SpectralDataReader):
     ) -> tuple[str]:
         if source == DataSource.REMOTE:
             folder = (
-                "https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/%Y/%m"
+                "https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/%Y/%m/%d"
             )
         if filename is None:
             filename = f"MyWave_wam4_SPC_%Y%m%dT%HZ.nc"
@@ -70,7 +70,7 @@ class WAM4km(SpectralDataReader):
             lead_time=self.lead_time,
         )
         folder, filename = self._folder_filename(source, folder, filename)
-        url = self.get_url(folder, filename, file_times[0])
+        url = get_url(folder, filename, file_times[0])
 
         data = xr.open_dataset(url).isel(time=[0])
 
@@ -113,7 +113,7 @@ class WAM4km(SpectralDataReader):
             keep_trying = True
             while keep_trying:
                 folder, filename = self._folder_filename(source, folder, filename)
-                url = self.get_url(folder, filename, file_time)
+                url = get_url(folder, filename, file_time)
 
                 try:
                     with xr.open_dataset(url) as f:
@@ -158,7 +158,7 @@ class WAM4km(SpectralDataReader):
             "time": bnd.time.values,
             "lon": bnd.longitude.values,
             "lat": bnd.latitude.values,
-            " freq": bnd.freq.values,
+            "freq": bnd.freq.values,
             "dirs": bnd.direction.values,
         }
         data_dict = {"spec": bnd.SPEC.values}
