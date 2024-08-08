@@ -207,7 +207,7 @@ class ModelRun:
         if source == DataSource.UNDEFINED:
             source = reader.default_data_source()
 
-        if source in [DataSource.INTERNAL, DataSource.LOCAL]:
+        if source in [DataSource.INTERNAL, DataSource.LOCAL, DataSource.IMMUTABLE]:
             if folder is None:
                 folder = read_environment_variable(
                     obj_type=obj_type, data_source=source

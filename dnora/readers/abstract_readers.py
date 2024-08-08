@@ -21,7 +21,8 @@ class DataReader(ABC):
     The area is defined from the Grid object that is passed.
     """
 
-    def _caching_strategy(self) -> CachingStrategy:
+    @staticmethod
+    def _caching_strategy() -> CachingStrategy:
         """Defines what caching strategy to use"""
         return CachingStrategy.PatchInTime
 
