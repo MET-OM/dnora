@@ -15,7 +15,9 @@ from dnora.dnora_type_manager.data_sources import DataSource
 from dnora.readers.abstract_readers import SpectralDataReader
 from dnora.aux_funcs import get_url
 
-from dataclasses import dataclass
+
+from dnora.readers.ds_read_functions import read_ds_list, read_first_ds, create_dicts
+from dnora.readers.file_structure import FileStructure
 
 # mapping dnora variable name to the variable name found in MET Norway wave model netcdf's
 VAR_MAPPING = {
@@ -26,144 +28,6 @@ VAR_MAPPING = {
     "dirs": "direction",
     "freq": "freq",
 }
-
-
-@dataclass
-class FileStructure:
-    stride: int
-    hours_per_file: int
-    lead_time: int = 0
-    last_file: str = ""
-    offset: int = 0
-
-    def create_time_stamps(self, start_time: str, end_time: str):
-        start_times, end_times, file_times = create_time_stamps(
-            start_time,
-            end_time,
-            stride=self.stride,
-            hours_per_file=self.hours_per_file,
-            last_file=self.last_file,
-            lead_time=self.lead_time,
-            offset=self.offset,
-        )
-        return start_times, end_times, file_times
-
-
-def get_first_ds(
-    file_structure: FileStructure, start_time: str, folder: str, filename: str
-) -> xr.Dataset:
-    start_times, end_times, file_times = file_structure.create_time_stamps(
-        start_time, start_time
-    )
-    url = get_url(folder, filename, file_times[0])
-    ds = xr.open_dataset(url).isel(time=[0])
-
-    return ds
-
-
-def read_one_ds(
-    start_time: str,
-    end_time: str,
-    file_times: list[str],
-    urls: list[str],
-    hours_per_file: int,
-    n: int,
-    inds: np.ndarray,
-    data_vars: list[str],
-    expected_lon: np.ndarray,
-    expected_lat: np.ndarray,
-) -> tuple[xr.Dataset, str]:
-    """This functions reads one Dataset and crops it.
-    If the expected file is not found, it goes to the previous one nad reads data with a longer lead time.
-
-    This function can be used for e.g. forecast data where we have overlapping data in time in different files
-    """
-
-    file_time = file_times[n]
-    ct = 1
-    keep_trying = True
-    try_next_file = False
-    while keep_trying:
-
-        try:
-            url = urls[n]
-            with xr.open_dataset(url) as f:
-                ds = f.sel(
-                    time=slice(start_time, end_time),
-                    x=inds + 1,
-                )[data_vars].copy()
-                if file_is_consistent(ds, expected_lon, expected_lat, url):
-                    try_next_file = False
-                    keep_trying = False
-                else:
-                    try_next_file = True
-        except OSError:
-            try_next_file = True
-
-        if try_next_file:
-            if data_left_to_try_with(hours_per_file, n, ct, file_times, end_times):
-                file_time = file_times[n - ct]
-                ct += 1
-            else:
-                ds = None
-                keep_trying = False
-
-    return ds, url
-
-
-def read_ds_list(
-    start_time: str,
-    end_time: str,
-    inds,
-    data_vars,
-    folder: str,
-    filename: str,
-    file_structure: FileStructure,
-) -> list[xr.Dataset]:
-    start_times, end_times, file_times = file_structure.create_time_stamps(
-        start_time, end_time
-    )
-    urls = [get_url(folder, filename, file_time) for file_time in file_times]
-    ds_list = []
-    expected_lon, expected_lat = None, None
-    for n in range(len(file_times)):
-        msg.plain(f"Reading data for: {start_times[n]}-{end_times[n]}")
-
-        ds, url = read_one_ds(
-            start_times[n],
-            end_times[n],
-            file_times,
-            urls,
-            file_structure.hours_per_file,
-            n,
-            inds,
-            data_vars,
-            expected_lon,
-            expected_lat,
-        )
-
-        if ds is not None:
-            msg.from_file(url)
-            if not ds_list:
-                expected_lon = ds.longitude.values
-                expected_lat = ds.latitude.values
-            ds_list.append(ds)
-
-    return ds_list
-
-
-def create_dicts(ds):
-    coord_dict = {
-        "time": ds[VAR_MAPPING["time"]].values.squeeze(),
-        "lon": ds[VAR_MAPPING["lon"]].values.squeeze(),
-        "lat": ds[VAR_MAPPING["lat"]].values.squeeze(),
-        "freq": ds[VAR_MAPPING["freq"]].values.squeeze(),
-        "dirs": ds[VAR_MAPPING["dirs"]].values.squeeze(),
-    }
-    data_dict = {"spec": ds[VAR_MAPPING["spec"]].data}
-
-    meta_dict = ds.attrs
-    return coord_dict, data_dict, meta_dict
 
 
 class WAM4km(SpectralDataReader):
@@ -209,7 +73,7 @@ class WAM4km(SpectralDataReader):
     ) -> dict:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         folder, filename = self._folder_filename(source, folder, filename)
-        ds = get_first_ds(self.file_structure, start_time, folder, filename)
+        ds = read_first_ds(self.file_structure, start_time, folder, filename)
 
         all_points = {"lon": ds.longitude.values[0], "lat": ds.latitude.values[0]}
         return all_points
@@ -239,7 +103,7 @@ class WAM4km(SpectralDataReader):
         msg.info("Merging dataset together (this might take a while)...")
         bnd = xr.concat(bnd_list, dim="time").squeeze("y")
 
-        coord_dict, data_dict, meta_dict = create_dicts(bnd)
+        coord_dict, data_dict, meta_dict = create_dicts(bnd, VAR_MAPPING)
 
         return coord_dict, data_dict, meta_dict
 
@@ -284,7 +148,7 @@ class NORA3(SpectralDataReader):
     ) -> dict:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         folder, filename = self._folder_filename(source, folder, filename)
-        ds = get_first_ds(self.file_structure, start_time, folder, filename)
+        ds = read_first_ds(self.file_structure, start_time, folder, filename)
 
         all_points = {"lon": ds.longitude.values[0], "lat": ds.latitude.values[0]}
         return all_points
@@ -321,7 +185,7 @@ class NORA3(SpectralDataReader):
         # Longitude and latitude defined over time also
         bnd["longitude"] = bnd.longitude[0, :]
         bnd["latitude"] = bnd.latitude[0, :]
-        coord_dict, data_dict, meta_dict = create_dicts(bnd)
+        coord_dict, data_dict, meta_dict = create_dicts(bnd, VAR_MAPPING)
         meta_dict.pop("direction_convention")
 
         return coord_dict, data_dict, meta_dict
@@ -374,7 +238,7 @@ class WW3_4km(SpectralDataReader):
     ) -> dict:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         folder, filename = self._folder_filename(source, folder, filename)
-        ds = get_first_ds(self.file_structure, start_time, folder, filename)
+        ds = read_first_ds(self.file_structure, start_time, folder, filename)
 
         all_points = {"lon": ds.longitude.values[0], "lat": ds.latitude.values[0]}
         return all_points
@@ -406,7 +270,7 @@ class WW3_4km(SpectralDataReader):
         msg.info("Merging dataset together (this might take a while)...")
         bnd = xr.concat(bnd_list, dim="time").squeeze("y")
 
-        coord_dict, data_dict, meta_dict = create_dicts(bnd)
+        coord_dict, data_dict, meta_dict = create_dicts(bnd, VAR_MAPPING)
 
         return coord_dict, data_dict, meta_dict
 
@@ -461,7 +325,7 @@ class WAM3(SpectralDataReader):
     ) -> dict:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         folder, filename = self._folder_filename(source, folder, filename)
-        ds = get_first_ds(self.file_structure, start_time, folder, filename)
+        ds = read_first_ds(self.file_structure, start_time, folder, filename)
 
         all_points = {"lon": ds.longitude.values[0], "lat": ds.latitude.values[0]}
         return all_points
@@ -491,7 +355,7 @@ class WAM3(SpectralDataReader):
         msg.info("Merging dataset together (this might take a while)...")
         bnd = xr.concat(bnd_list, dim="time").squeeze("y")
 
-        coord_dict, data_dict, meta_dict = create_dicts(bnd)
+        coord_dict, data_dict, meta_dict = create_dicts(bnd, VAR_MAPPING)
         return coord_dict, data_dict, meta_dict
 
 
@@ -555,7 +419,7 @@ class WAM800(SpectralDataReader):
     ) -> dict:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         folder, filename = self._folder_filename(source, folder, filename)
-        ds = get_first_ds(self.file_structure, start_time, folder, filename)
+        ds = read_first_ds(self.file_structure, start_time, folder, filename)
 
         all_points = {"lon": ds.longitude.values[0], "lat": ds.latitude.values[0]}
         return all_points
@@ -586,42 +450,5 @@ class WAM800(SpectralDataReader):
         msg.info("Merging dataset together (this might take a while)...")
         bnd = xr.concat(bnd_list, dim="time").squeeze("y")
 
-        coord_dict, data_dict, meta_dict = create_dicts(bnd)
+        coord_dict, data_dict, meta_dict = create_dicts(bnd, VAR_MAPPING)
         return coord_dict, data_dict, meta_dict
-
-
-def data_left_to_try_with(hours_per_file, n, ct, file_times, end_times) -> bool:
-    """Checks if we can go back one file and still have data covering the entire period.
-
-    E.g. Each files conains 72 hours but we want to read in 6 hour chunks.
-    If one ifle is missing we can use hours 7-12 in the previous file etc."""
-    if n - ct < 0:
-        return False
-
-    if pd.Timestamp(end_times[n]) - pd.Timestamp(file_times[n - ct]) > pd.Timedelta(
-        hours_per_file, "hours"
-    ):
-        return False
-
-    return True
-
-
-def file_is_consistent(
-    ds: xr.Dataset, expected_lon: np.ndarray, expected_lat: np.ndarray, url: str
-) -> bool:
-    """Checks if dataset is consistent with the expected points"""
-    if ds is None:
-        msg.plain(f"SKIPPING, file not found: {url}")
-        return False
-
-    if (
-        expected_lon is None  # always trust the first file that is read
-        or (  # for the rest, check for consistency with first file
-            (ds[VAR_MAPPING["lon"]] == expected_lon).all()
-            and (ds[VAR_MAPPING["lat"]] == expected_lat).all()
-        )
-    ):
-        return True
-
-    msg.plain(f"SKIPPING, file inconsistent: {url}")
-    return False

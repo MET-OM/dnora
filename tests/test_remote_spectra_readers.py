@@ -36,6 +36,7 @@ def test_ww3_4km(grid, timevec):
     assert np.all(model.spectra().time() == timevec)
 
 
+# For some reason the lon/lat is not the same as in the immutable directory and we can't find any points?
 # @pytest.mark.remote
 # def test_wam3(grid, timevec):
 #     today = datetime.today() - timedelta(days=2)
