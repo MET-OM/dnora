@@ -3,7 +3,7 @@ import numpy as np
 import xarray as xr
 from subprocess import call
 import os, glob
-
+import pandas as pd
 
 # Import objects
 from dnora.grid import Grid
@@ -16,37 +16,35 @@ from dnora.aux_funcs import (
     expand_area,
     lon_in_km,
     get_url,
-    pyfimex,
     create_monthly_stamps,
 )
 
 from dnora.dnora_type_manager.data_sources import DataSource
+from dnora.dnora_type_manager.dnora_types import DnoraDataType
 from dnora.readers.abstract_readers import DataReader
+from dnora.readers.fimex_functions import ds_fimex_read
 import calendar
 
 
-def create_fimex_xy_strings(
-    lon: tuple[float, float], lat: tuple[float, float], resolution_in_km: float
-) -> tuple[str, str]:
-    # Set resolution
-    dlat = resolution_in_km / 111
-    mean_lon_in_km = (lon_in_km(lat[0]) + lon_in_km(lat[-1])) * 0.5
-    dlon = resolution_in_km / mean_lon_in_km
+NORA3_VAR_MAPPING = {
+    "lon": "longitude",
+    "lat": "latitude",
+    "time": "time",
+    "u": "wind_speed",
+    "v": "wind_direction",
+}
 
-    if len(np.unique(lon)) == 1:
-        x_str = str(lon[0])
-    else:
-        if lon[1] < lon[0] + dlon:
-            lon = (lon[0] - dlon, lon[0] + dlon)
-        x_str = str(lon[0]) + "," + str(lon[0] + dlon) + ",...," + str(lon[-1])
-    if len(np.unique(lat)) == 1:
-        y_str = str(lat[0])
-    else:
-        if lat[1] < lat[0] + dlat:
-            lat = (lat[0] - dlat, lat[0] + dlat)
-        y_str = str(lat[0]) + "," + str(lat[0] + dlat) + ",...," + str(lat[-1])
 
-    return x_str, y_str
+def setup_temp_dir(data_type: DnoraDataType, reader_name: str) -> None:
+    """Sets up a temporery directory for fimex files and cleans out possible old files"""
+    temp_folder = f"dnora_{data_type.name.lower()}_temp"
+    if not os.path.isdir(temp_folder):
+        os.mkdir(temp_folder)
+        print("Creating folder %s..." % temp_folder)
+
+    msg.plain("Removing old files from temporary folder...")
+    for f in glob.glob(f"dnora_{data_type.name.lower()}_temp/{reader_name}*.nc"):
+        os.remove(f)
 
 
 class NORA3(DataReader):
@@ -65,18 +63,24 @@ class NORA3(DataReader):
     def default_data_source(self) -> DataSource:
         return DataSource.REMOTE
 
-    def _folder_filename(
-        self, source: DataSource, folder: str, filename: str
-    ) -> tuple[str]:
+    def _folder(
+        self,
+        folder: str,
+        source: DataSource,
+    ) -> str:
         if source == DataSource.REMOTE:
-            folder = (
+            folder = folder or (
                 "https://thredds.met.no/thredds/dodsC/nora3_subset_atmos/atm_hourly"
             )
         elif source == DataSource.INTERNAL:
             folder = get_url(folder, "NORA3/atmosphere/atm_hourly")
+
+        return folder
+
+    def _filename(self, filename: str, source: DataSource) -> str:
         if filename is None:
             filename = "arome3km_1hr_%Y%m.nc"
-        return folder, filename
+        return filename
 
     def __call__(
         self,
@@ -85,6 +89,7 @@ class NORA3(DataReader):
         end_time: str,
         source: DataSource,
         folder: str,
+        filename: str,
         expansion_factor: float = 1.2,
         program: str = "pyfimex",
         **kwargs,
@@ -92,78 +97,34 @@ class NORA3(DataReader):
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         start_times, end_times = create_monthly_stamps(start_time, end_time)
 
-        temp_folder = "dnora_wnd_temp"
-        if not os.path.isdir(temp_folder):
-            os.mkdir(temp_folder)
-            print("Creating folder %s..." % temp_folder)
-
-        msg.plain("Removing old files from temporary folder...")
-        for f in glob.glob("dnora_wnd_temp/*MetNo_NORA3.nc"):
-            os.remove(f)
-
+        setup_temp_dir(DnoraDataType.WIND, self.name())
         # Define area to search in
         lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
 
-        # Setting resolution to roughly 3 km
-        dlat = 3 / 111
-        mean_lon_in_km = (lon_in_km(grid.lat()[0]) + lon_in_km(grid.lat()[-1])) * 0.5
-        dlon = 3 / mean_lon_in_km
-
         wnd_list = []
         msg.process(f"Applying {program}")
-        for n, (t0, t1) in enumerate(zip(start_times, end_times)):
-            folder, filename = self._folder_filename(source, folder, filename=None)
+        resolution_in_km = 3
+        for t0, t1 in zip(start_times, end_times):
+            folder = self._folder(folder, source)
+            filename = self._filename(filename, source)
             url = get_url(folder, filename, t0)
             msg.from_file(url)
             msg.plain(
                 f"Reading wind: {t0.strftime('%Y-%m-%d %H:%M:00')}-{t1.strftime('%Y-%m-%d %H:%M:00')}"
             )
-            nc_fimex = f"dnora_wnd_temp/wind_{n:04.0f}_MetNo_NORA3.nc"
-            # Apply pyfimex or fimex
-            if program == "pyfimex":
-                pyfimex(
-                    input_file=url,
-                    output_file=nc_fimex,
-                    projString="+proj=latlong +ellps=sphere +a=6371000 +e=0",
-                    xAxisValues=np.arange(lon[0], lon[1] + dlon, dlon),
-                    yAxisValues=np.arange(lat[0], lat[1] + dlat, dlat),
-                    selectVariables=["wind_speed", "wind_direction"],
-                    reduceTime_start=t0.strftime("%Y-%m-%dT%H:%M:%S"),
-                    reduceTime_end=t1.strftime("%Y-%m-%dT%H:%M:%S"),
-                )
-            elif program == "fimex":
-                fimex_command = [
-                    "fimex",
-                    "--input.file=" + url,
-                    "--interpolate.method=bilinear",
-                    "--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0",
-                    "--interpolate.xAxisValues="
-                    + str(lon[0])
-                    + ","
-                    + str(lon[0] + dlon)
-                    + ",...,"
-                    + str(lon[1])
-                    + "",
-                    "--interpolate.yAxisValues="
-                    + str(lat[0])
-                    + ","
-                    + str(lat[0] + dlat)
-                    + ",...,"
-                    + str(lat[1])
-                    + "",
-                    "--interpolate.xAxisUnit=degree",
-                    "--interpolate.yAxisUnit=degree",
-                    "--process.rotateVector.all",
-                    "--extract.selectVariables=wind_speed",
-                    "--extract.selectVariables=wind_direction",
-                    "--extract.reduceTime.start=" + t0.strftime("%Y-%m-%dT%H:%M:%S"),
-                    "--extract.reduceTime.end=" + t1.strftime("%Y-%m-%dT%H:%M:%S"),
-                    "--process.rotateVector.direction=latlon",
-                    "--output.file=" + nc_fimex,
-                ]
-                call(fimex_command)
-            wnd_list.append(xr.open_dataset(nc_fimex).squeeze())
-
+            ds = ds_fimex_read(
+                t0,
+                t1,
+                url,
+                lon,
+                lat,
+                resolution_in_km,
+                ["wind_speed", "wind_direction"],
+                DnoraDataType.WIND,
+                self.name(),
+                program=program,
+            )
+            wnd_list.append(ds)
         wind_forcing = xr.concat(wnd_list, dim="time")
         # Go to u and v components
         u, v = u_v_from_speed_dir(wind_forcing.wind_speed, wind_forcing.wind_direction)
@@ -256,11 +217,7 @@ class MyWave3km(DataReader):
         lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
 
         # Setting resolution to roughly 3 km
-        dlat = 3 / 111
-        mean_lon_in_km = (
-            lon_in_km(grid.edges("lat")[0]) + lon_in_km(grid.edges("lat")[-1])
-        ) * 0.5
-        dlon = 3 / mean_lon_in_km
+        x_str, y_str = create_fimex_xy_strings(lon, lat, resolution_in_km=3)
 
         wnd_list = []
         for n in range(len(file_times)):
@@ -277,20 +234,8 @@ class MyWave3km(DataReader):
                 "--input.file=" + url,
                 "--interpolate.method=bilinear",
                 "--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0",
-                "--interpolate.xAxisValues="
-                + str(lon[0])
-                + ","
-                + str(lon[0] + dlon)
-                + ",...,"
-                + str(lon[1])
-                + "",
-                "--interpolate.yAxisValues="
-                + str(lat[0])
-                + ","
-                + str(lat[0] + dlat)
-                + ",...,"
-                + str(lat[1])
-                + "",
+                "--interpolate.xAxisValues=" + x_str + "",
+                "--interpolate.yAxisValues=" + y_str + "",
                 "--interpolate.xAxisUnit=degree",
                 "--interpolate.yAxisUnit=degree",
                 "--process.rotateVector.all",
@@ -303,7 +248,17 @@ class MyWave3km(DataReader):
                 "--process.rotateVector.direction=latlon",
                 "--output.file=" + nc_fimex,
             ]
-
+            fimex_command_new = create_fimex_command(
+                nc_fimex,
+                url,
+                start_times[n],
+                end_times[n],
+                lon,
+                lat,
+                resolution_in_km=3,
+                variables=["ff", "dd"],
+            )
+            assert fimex_command == fimex_command_new
             call(fimex_command)
             wnd_list.append(xr.open_dataset(nc_fimex).squeeze())
 
@@ -435,7 +390,18 @@ class MEPS(DataReader):
                 "--process.rotateVector.direction=latlon",
                 "--output.file=" + nc_fimex,
             ]
+            fimex_command_new = create_fimex_command(
+                nc_fimex,
+                url,
+                start_times[n],
+                end_times[n],
+                lon,
+                lat,
+                resolution_in_km=2.5,
+                variables=["x_wind_10m", "y_wind_10m", "latitude", "longitude"],
+            )
 
+            assert fimex_command == fimex_command_new
             if self._prefix == "subset":
                 fimex_command.insert(
                     -2, "--extract.reduceDimension.name=ensemble_member"
@@ -495,6 +461,32 @@ class NORA3_fp(DataReader):
         self.lead_time = copy(lead_time)
         self.last_file = copy(last_file)
 
+    def _folder(
+        self,
+        folder: str,
+        time_stamp_file,
+        source: DataSource,
+    ) -> str:
+        if source == DataSource.REMOTE:
+            h0 = int(time_stamp_file.hour) % 6
+            subfolder = time_stamp_file.strftime("%Y/%m/%d/") + (
+                time_stamp_file - np.timedelta64(h0, "h")
+            ).strftime("%H")
+            folder = "https://thredds.met.no/thredds/dodsC/nora3/" + subfolder
+
+        return folder
+
+    def _filename(self, filename: str, time_stamp_file, time_stamp, first_ind) -> str:
+        h0 = int(time_stamp_file.hour) % 6
+        ind = int((time_stamp.hour - first_ind) % 6) + first_ind
+        filename = (
+            time_stamp_file.strftime("fc%Y%m%d")
+            + (time_stamp_file - np.timedelta64(h0, "h")).strftime("%H")
+            + f"_{ind:03d}_fp.nc"
+        )
+
+        return filename
+
     def __call__(
         self,
         grid: Grid,
@@ -502,6 +494,7 @@ class NORA3_fp(DataReader):
         end_time: str,
         source: DataSource,
         folder: str,
+        filename: str,
         expansion_factor: float = 1.2,
         **kwargs,
     ):
@@ -537,21 +530,16 @@ class NORA3_fp(DataReader):
         lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
 
         # Set resolution to about 3 km
-        dlat = 3 / 111
-        mean_lon_in_km = (
-            lon_in_km(grid.edges("lat")[0]) + lon_in_km(grid.edges("lat")[1])
-        ) * 0.5
-        dlon = 3 / mean_lon_in_km
+        x_str, y_str = create_fimex_xy_strings(lon, lat, resolution_in_km=3)
 
         wnd_list = []
         for n in range(len(file_times)):
-            url = self.get_url(
-                file_times[n],
-                start_times[n],
-                first_ind=self.lead_time,
-                source=source,
-                folder=folder,
+            folder = self._folder(folder, file_times[n], source)
+            filename = self._filename(
+                filename, file_times[n], start_times[n], first_ind=self.lead_time
             )
+            url = get_url(folder, filename)
+
             msg.from_file(url)
             msg.plain(f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
 
@@ -562,20 +550,8 @@ class NORA3_fp(DataReader):
                 "--input.file=" + url,
                 "--interpolate.method=bilinear",
                 "--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0",
-                "--interpolate.xAxisValues="
-                + str(lon[0])
-                + ","
-                + str(lon[0] + dlon)
-                + ",...,"
-                + str(lon[1])
-                + "",
-                "--interpolate.yAxisValues="
-                + str(lat[0])
-                + ","
-                + str(lat[0] + dlat)
-                + ",...,"
-                + str(lat[1])
-                + "",
+                "--interpolate.xAxisValues=" + x_str + "",
+                "--interpolate.yAxisValues=" + y_str + "",
                 "--interpolate.xAxisUnit=degree",
                 "--interpolate.yAxisUnit=degree",
                 "--process.rotateVector.all",
@@ -588,6 +564,17 @@ class NORA3_fp(DataReader):
                 "--process.rotateVector.direction=latlon",
                 "--output.file=" + nc_fimex,
             ]
+            fimex_command_new = create_fimex_command(
+                nc_fimex,
+                url,
+                start_times[n],
+                end_times[n],
+                lon,
+                lat,
+                resolution_in_km=3,
+                variables=["wind_speed", "wind_direction"],
+            )
+            assert fimex_command == fimex_command_new
             # read_success = False
             # for ct in range(5):  # try 6 times
             #     try:
@@ -620,28 +607,3 @@ class NORA3_fp(DataReader):
         meta_dict = wind_forcing.attrs
 
         return coord_dict, data_dict, meta_dict
-
-    def get_url(
-        self, time_stamp_file, time_stamp, first_ind, source: DataSource, folder: str
-    ) -> str:
-        h0 = int(time_stamp_file.hour) % 6
-        subfolder = time_stamp_file.strftime("%Y/%m/%d/") + (
-            time_stamp_file - np.timedelta64(h0, "h")
-        ).strftime("%H")
-        ind = int((time_stamp.hour - first_ind) % 6) + first_ind
-        filename = (
-            time_stamp_file.strftime("fc%Y%m%d")
-            + (time_stamp_file - np.timedelta64(h0, "h")).strftime("%H")
-            + f"_{ind:03d}_fp.nc"
-        )
-        if source == DataSource.REMOTE:
-            folder = get_url("https://thredds.met.no/thredds/dodsC/nora3/", subfolder)
-            return get_url(folder, filename)
-
-        if source == DataSource.INTERNAL:
-            folder = get_url(folder, "aaaaa")
-            folder = get_url(folder, subfolder)
-            return get_url(folder, filename)
-        else:
-            folder = get_url(folder, subfolder)
-            return get_url(folder, filename)

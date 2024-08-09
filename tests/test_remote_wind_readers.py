@@ -17,7 +17,7 @@ def timevec():
 @pytest.mark.remote
 def test_nora3(grid, timevec):
     model = dn.modelrun.ModelRun(grid, year=2022, month=4, day=1)
-    model.import_wind(dn.wind.read_metno.NORA3())
+    model.import_wind(dn.wind.read_metno.NORA3(), program="fimex")
     assert np.all(model.wind().time() == timevec)
 
 

@@ -27,6 +27,7 @@ class DataImporter:
         point_mask: np.ndarray[bool],
         source: str,
         folder: str,
+        filename: str,
         **kwargs,
     ):
         """Gets the indeces of the point defined by the logical mask with respect to all points available from the reader function."""
@@ -35,6 +36,7 @@ class DataImporter:
             start_time=start_time,
             source=source,
             folder=folder,
+            filename=filename,
             **kwargs,
         )
 
@@ -88,6 +90,7 @@ class DataImporter:
         name: str,
         source: DnoraDataType,
         folder: str,
+        filename: str,
         inds: list[int] = None,
         **kwargs,
     ) -> DnoraObject:
@@ -100,6 +103,7 @@ class DataImporter:
             end_time=pd.to_datetime(end_time),
             source=source,
             folder=folder,
+            filename=filename,
             inds=inds,
             **kwargs,
         )
@@ -169,7 +173,8 @@ class DataImporter:
         dry_run,
         reader,
         source,
-        folder,
+        folder: str,
+        filename: str,
         point_mask=None,
         point_picker=None,
         **kwargs,
@@ -197,6 +202,7 @@ class DataImporter:
                 point_mask,
                 source,
                 folder,
+                filename,
                 **kwargs,
             )
         else:
@@ -217,6 +223,7 @@ class DataImporter:
             name,
             source,
             folder,
+            filename,
             inds,
             **kwargs,
         )

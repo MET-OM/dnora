@@ -26,17 +26,19 @@ def read_one_ds(
     urls: list[str],
     hours_per_file: int,
     n: int,
-    inds: np.ndarray,
-    data_vars: list[str],
     expected_lon: np.ndarray,
     expected_lat: np.ndarray,
     lon_str: str,
     lat_str: str,
+    ds_creator_function: callable,
 ) -> tuple[xr.Dataset, str]:
     """This functions reads one Dataset and crops it.
     If the expected file is not found, it goes to the previous one nad reads data with a longer lead time.
 
     This function can be used for e.g. forecast data where we have overlapping data in time in different files
+
+    ds_creator_fuction takes arguments (start_time, end_time, url) and returns an xr.Dataset
+    The ds_creator_function might use normal xarray or e.g. fimex and is therefore injected as a callable
     """
 
     file_time = file_times[n]
@@ -47,18 +49,14 @@ def read_one_ds(
 
         try:
             url = urls[n]
-            with xr.open_dataset(url) as f:
-                ds = f.sel(
-                    time=slice(start_time, end_time),
-                    x=inds + 1,
-                )[data_vars].copy()
-                if file_is_consistent(
-                    ds, expected_lon, expected_lat, url, lon_str, lat_str
-                ):
-                    try_next_file = False
-                    keep_trying = False
-                else:
-                    try_next_file = True
+            ds = ds_creator_function(start_time, end_time, url)
+            if file_is_consistent(
+                ds, expected_lon, expected_lat, url, lon_str, lat_str
+            ):
+                try_next_file = False
+                keep_trying = False
+            else:
+                try_next_file = True
         except OSError:
             try_next_file = True
 
@@ -74,19 +72,17 @@ def read_one_ds(
 
 
 def read_ds_list(
-    start_time: str,
-    end_time: str,
-    inds,
-    data_vars,
+    start_times: pd.DatetimeIndex,
+    end_times: pd.DatetimeIndex,
+    file_times: pd.DatetimeIndex,
     folder: str,
     filename: str,
-    file_structure: FileStructure,
+    ds_creator_function: callable,
+    hours_per_file: int = None,
     lon_str: str = "longitude",
     lat_str: str = "latitude",
 ) -> list[xr.Dataset]:
-    start_times, end_times, file_times = file_structure.create_time_stamps(
-        start_time, end_time
-    )
+
     urls = [get_url(folder, filename, file_time) for file_time in file_times]
     ds_list = []
     expected_lon, expected_lat = None, None
@@ -98,14 +94,13 @@ def read_ds_list(
             end_times[n],
             file_times,
             urls,
-            file_structure.hours_per_file,
+            hours_per_file,
             n,
-            inds,
-            data_vars,
             expected_lon,
             expected_lat,
             lon_str,
             lat_str,
+            ds_creator_function,
         )
 
         if ds is not None:
@@ -137,6 +132,10 @@ def data_left_to_try_with(hours_per_file, n, ct, file_times, end_times) -> bool:
 
     E.g. Each files conains 72 hours but we want to read in 6 hour chunks.
     If one ifle is missing we can use hours 7-12 in the previous file etc."""
+    # Structure is not defined. E.g. if we have montly files and know we don't have any overlap
+    if hours_per_file is None:
+        return False
+
     if n - ct < 0:
         return False
 

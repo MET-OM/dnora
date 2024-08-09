@@ -195,33 +195,37 @@ class ModelRun:
                 source = DataSource[source.upper()]
             except KeyError as ke:
                 raise ke(
-                    f"source should be 'local' (DataSource.LOCAL), 'internal' (DataSource.INTERNAL), 'remote' (DataSource.REMOTE),  or 'undefined' (DataSource.UNDEFINED), not {source}!"
+                    f"source should be 'local' (DataSource.LOCAL), 'internal' (DataSource.INTERNAL), 'immutable' (DataSource.IMMUTABLE), 'remote' (DataSource.REMOTE),  or 'undefined' (DataSource.UNDEFINED), not {source}!"
                 )
 
+        # If a folder is given but no source, assume we are given a local folder
         if folder and source is DataSource.UNDEFINED:
             source = DataSource.LOCAL
 
+        # Might have been set by .activate_internal_mode() etc.
         if source == DataSource.UNDEFINED:
-            source = self._source  # Internal mode might have been activated
+            source = self._source
 
+        # If still nothing, use the source that is preferreb by the reader
         if source == DataSource.UNDEFINED:
             source = reader.default_data_source()
 
-        if source in [DataSource.INTERNAL, DataSource.LOCAL, DataSource.IMMUTABLE]:
-            if folder is None:
-                folder = read_environment_variable(
-                    obj_type=obj_type, data_source=source
-                )
-        elif source == DataSource.REMOTE:
-            folder = None
+        # If we cant find a source (and folder was not given), we have to abort
+        if source == DataSource.UNDEFINED:
+            raise ValueError(
+                f"Could not determine a source since it is still UNDEFINED. 1) give 'folder' as a keyword, 2) give 'source' as a keyword, 3) acitvate a mode e.g. 'activate_remote_mode' or 4) use a reader with a defined default mode."
+            )
 
-        folder = folder or ""
+        # If we have some local or internal source, try to get the folder
+        if source not in [DataSource.UNDEFINED, DataSource.REMOTE] and folder is None:
+            folder = read_environment_variable(obj_type=obj_type, data_source=source)
 
-        # if folder and source == DataSource.LOCAL:
-        #     if not os.path.exists(os.path.expanduser(folder)):
-        #         os.mkdir(folder)
-        #     if not os.path.exists(get_url(folder, reader.name())):
-        #         os.mkdir(get_url(folder, reader.name()))
+        # All other sources always requires a folder
+        if folder is None and source not in [DataSource.REMOTE]:
+            raise ValueError(
+                f"'folder' is not set for source {source.name}: 1) give 'folder' as a keyword or 2) set the environmental variable DNORA_{source.name}_PATH."
+            )
+
         return reader, name, source, folder
 
     def _setup_point_picker(self, point_picker: PointPicker):
@@ -239,6 +243,7 @@ class ModelRun:
         reader,
         source,
         folder,
+        filename,
         point_mask=None,
         point_picker=None,
         **kwargs,
@@ -281,6 +286,7 @@ class ModelRun:
             reader=reader,
             source=source,
             folder=folder,
+            filename=filename,
             point_picker=point_picker,
             point_mask=point_mask,
             **kwargs,
@@ -294,12 +300,20 @@ class ModelRun:
         name: str | None = None,
         dry_run: bool = False,
         source: str | DataSource = DataSource.UNDEFINED,
-        folder: str = None,
+        folder: str | None = None,
+        filename: str | None = None,
         **kwargs,
     ) -> None:
         """Import wind data from a source using the given reader"""
         self._import_data(
-            DnoraDataType.WIND, name, dry_run, reader, source, folder, **kwargs
+            DnoraDataType.WIND,
+            name,
+            dry_run,
+            reader,
+            source,
+            folder,
+            filename,
+            **kwargs,
         )
 
     @cached_reader(DnoraDataType.WATERLEVEL, generic_readers.Netcdf)
@@ -309,12 +323,20 @@ class ModelRun:
         name: str | None = None,
         dry_run: bool = False,
         source: str | DataSource = DataSource.UNDEFINED,
-        folder: str = None,
+        folder: str | None = None,
+        filename: str | None = None,
         **kwargs,
     ) -> None:
         """Import waterlevel data from a source using the given reader"""
         self._import_data(
-            DnoraDataType.WATERLEVEL, name, dry_run, reader, source, folder, **kwargs
+            DnoraDataType.WATERLEVEL,
+            name,
+            dry_run,
+            reader,
+            source,
+            folder,
+            filename,
+            **kwargs,
         )
 
     @cached_reader(DnoraDataType.SPECTRA, generic_readers.PointNetcdf)
@@ -325,7 +347,8 @@ class ModelRun:
         name: str | None = None,
         dry_run: bool = False,
         source: str | DataSource = DataSource.UNDEFINED,
-        folder: str = None,
+        folder: str | None = None,
+        filename: str | None = None,
         **kwargs,
     ) -> None:
 
@@ -336,6 +359,7 @@ class ModelRun:
             reader,
             source,
             folder,
+            filename,
             point_mask=self.grid().sea_mask(),
             point_picker=point_picker,
             **kwargs,
@@ -349,7 +373,8 @@ class ModelRun:
         name: str | None = None,
         dry_run: bool = False,
         source: str | DataSource = DataSource.UNDEFINED,
-        folder: str = None,
+        folder: str | None = None,
+        filename: str | None = None,
         **kwargs,
     ) -> None:
 
@@ -360,6 +385,7 @@ class ModelRun:
             reader,
             source,
             folder,
+            filename,
             point_mask=self.grid().sea_mask(),
             point_picker=point_picker,
             **kwargs,
@@ -373,7 +399,8 @@ class ModelRun:
         name: str | None = None,
         dry_run: bool = False,
         source: str | DataSource = DataSource.UNDEFINED,
-        folder: str = None,
+        folder: str | None = None,
+        filename: str | None = None,
         **kwargs,
     ) -> None:
 
@@ -384,6 +411,7 @@ class ModelRun:
             reader,
             source,
             folder,
+            filename,
             point_mask=self.grid().sea_mask(squeeze=False),
             point_picker=point_picker,
             **kwargs,
@@ -396,12 +424,20 @@ class ModelRun:
         name: str | None = None,
         dry_run: bool = False,
         source: str | DataSource = DataSource.UNDEFINED,
-        folder: str = None,
+        folder: str | None = None,
+        filename: str | None = None,
         **kwargs,
     ) -> None:
 
         self._import_data(
-            DnoraDataType.CURRENT, name, dry_run, reader, source, folder, **kwargs
+            DnoraDataType.CURRENT,
+            name,
+            dry_run,
+            reader,
+            source,
+            folder,
+            filename,
+            **kwargs,
         )
 
     @cached_reader(DnoraDataType.ICE, generic_readers.Netcdf)
@@ -411,12 +447,13 @@ class ModelRun:
         name: str | None = None,
         dry_run: bool = False,
         source: str | DataSource = DataSource.UNDEFINED,
-        folder: str = None,
+        folder: str | None = None,
+        filename: str | None = None,
         **kwargs,
     ) -> None:
 
         self._import_data(
-            DnoraDataType.ICE, name, dry_run, reader, source, folder, **kwargs
+            DnoraDataType.ICE, name, dry_run, reader, source, folder, filename, **kwargs
         )
 
     def spectra_to_1d(
@@ -662,6 +699,9 @@ class ModelRun:
 
     def activate_internal_mode(self, folder: str = None) -> None:
         self._activate_source_mode(DataSource.INTERNAL, folder)
+
+    def activate_immutable_mode(self, folder: str = None) -> None:
+        self._activate_source_mode(DataSource.IMMUTABLE, folder)
 
     def activate_remote_mode(self) -> None:
         self._activate_source_mode(DataSource.REMOTE, folder=None)
