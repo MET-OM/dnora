@@ -163,6 +163,7 @@ cython_debug/
 tests/.vscode/*
 dnora/.vscode/*
 tests/dnora_wind_temp/*
+tests/dnora_current_temp/*
 
 # Dnora v1 folders
 bnd/
