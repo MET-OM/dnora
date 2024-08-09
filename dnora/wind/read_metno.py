@@ -4,6 +4,8 @@ import xarray as xr
 from subprocess import call
 import os, glob
 import pandas as pd
+from functools import partial
+from dnora.readers.file_structure import FileStructure
 
 # Import objects
 from dnora.grid import Grid
@@ -23,28 +25,8 @@ from dnora.dnora_type_manager.data_sources import DataSource
 from dnora.dnora_type_manager.dnora_types import DnoraDataType
 from dnora.readers.abstract_readers import DataReader
 from dnora.readers.fimex_functions import ds_fimex_read
+from dnora.readers.ds_read_functions import read_ds_list, setup_temp_dir
 import calendar
-
-
-NORA3_VAR_MAPPING = {
-    "lon": "longitude",
-    "lat": "latitude",
-    "time": "time",
-    "u": "wind_speed",
-    "v": "wind_direction",
-}
-
-
-def setup_temp_dir(data_type: DnoraDataType, reader_name: str) -> None:
-    """Sets up a temporery directory for fimex files and cleans out possible old files"""
-    temp_folder = f"dnora_{data_type.name.lower()}_temp"
-    if not os.path.isdir(temp_folder):
-        os.mkdir(temp_folder)
-        print("Creating folder %s..." % temp_folder)
-
-    msg.plain("Removing old files from temporary folder...")
-    for f in glob.glob(f"dnora_{data_type.name.lower()}_temp/{reader_name}*.nc"):
-        os.remove(f)
 
 
 class NORA3(DataReader):
@@ -60,27 +42,14 @@ class NORA3(DataReader):
     DOI: 10.1175/JAMC-D-21-0029.1
     """
 
+    _default_folders = {
+        DataSource.REMOTE: "https://thredds.met.no/thredds/dodsC/nora3_subset_atmos/atm_hourly",
+        DataSource.INTERNAL: "NORA3/atmosphere/atm_hourly",
+    }
+    _default_filename = "arome3km_1hr_%Y%m.nc"
+
     def default_data_source(self) -> DataSource:
         return DataSource.REMOTE
-
-    def _folder(
-        self,
-        folder: str,
-        source: DataSource,
-    ) -> str:
-        if source == DataSource.REMOTE:
-            folder = folder or (
-                "https://thredds.met.no/thredds/dodsC/nora3_subset_atmos/atm_hourly"
-            )
-        elif source == DataSource.INTERNAL:
-            folder = get_url(folder, "NORA3/atmosphere/atm_hourly")
-
-        return folder
-
-    def _filename(self, filename: str, source: DataSource) -> str:
-        if filename is None:
-            filename = "arome3km_1hr_%Y%m.nc"
-        return filename
 
     def __call__(
         self,
@@ -95,37 +64,37 @@ class NORA3(DataReader):
         **kwargs,
     ):
         """Reads in all boundary spectra between the given times and at for the given indeces"""
+        folder = self._folder(folder, source)
+        filename = self._filename(filename, source)
+
         start_times, end_times = create_monthly_stamps(start_time, end_time)
+        file_times = start_times
 
         setup_temp_dir(DnoraDataType.WIND, self.name())
         # Define area to search in
         lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
 
-        wnd_list = []
         msg.process(f"Applying {program}")
-        resolution_in_km = 3
-        for t0, t1 in zip(start_times, end_times):
-            folder = self._folder(folder, source)
-            filename = self._filename(filename, source)
-            url = get_url(folder, filename, t0)
-            msg.from_file(url)
-            msg.plain(
-                f"Reading wind: {t0.strftime('%Y-%m-%d %H:%M:00')}-{t1.strftime('%Y-%m-%d %H:%M:00')}"
-            )
-            ds = ds_fimex_read(
-                t0,
-                t1,
-                url,
-                lon,
-                lat,
-                resolution_in_km,
-                ["wind_speed", "wind_direction"],
-                DnoraDataType.WIND,
-                self.name(),
-                program=program,
-            )
-            wnd_list.append(ds)
-        wind_forcing = xr.concat(wnd_list, dim="time")
+        ds_creator_function = partial(
+            ds_fimex_read,
+            lon=lon,
+            lat=lat,
+            resolution_in_km=3,
+            data_vars=["wind_speed", "wind_direction"],
+            data_type=DnoraDataType.WIND,
+            name=self.name(),
+            program=program,
+        )
+        wind_list = read_ds_list(
+            start_times,
+            end_times,
+            file_times,
+            folder,
+            filename,
+            ds_creator_function,
+        )
+
+        wind_forcing = xr.concat(wind_list, dim="time")
         # Go to u and v components
         u, v = u_v_from_speed_dir(wind_forcing.wind_speed, wind_forcing.wind_direction)
 
@@ -148,6 +117,11 @@ class MyWave3km(DataReader):
     from the wave model output. This means that model land points have no data.
     """
 
+    _default_folders = {
+        DataSource.REMOTE: "https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_files/%Y/%m",
+    }
+    _default_filename = "%Y%m%d_MyWam3km_hindcast.nc"
+
     def default_data_source(self) -> DataSource:
         return DataSource.REMOTE
 
@@ -162,20 +136,13 @@ class MyWave3km(DataReader):
         setting unless you have a good reason to do so.
         """
 
-        self.stride = copy(stride)
-        self.hours_per_file = copy(hours_per_file)
-        self.lead_time = copy(lead_time)
-        self.last_file = copy(last_file)
+        self.file_structure = FileStructure(
+            stride=stride,
+            hours_per_file=hours_per_file,
+            last_file=last_file,
+            lead_time=lead_time,
+        )
         return
-
-    def _folder_filename(
-        self, source: DataSource, folder: str, filename: str
-    ) -> tuple[str]:
-        if source == DataSource.REMOTE:
-            folder = "https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_files/%Y/%m"
-        if filename is None:
-            filename = "%Y%m%d_MyWam3km_hindcast.nc"
-        return folder, filename
 
     def __call__(
         self,
@@ -184,85 +151,44 @@ class MyWave3km(DataReader):
         end_time: str,
         source: DataSource,
         folder: str,
+        filename: str,
         expansion_factor: float = 1.2,
+        program: str = "pyfimex",
         **kwargs,
     ):
         """Reads in all boundary spectra between the given times and at for the given indeces"""
-        self.start_time = start_time
-        self.end_time = end_time
+        folder = self._folder(folder, source)
+        filename = self._filename(filename, source)
 
-        start_times, end_times, file_times = create_time_stamps(
-            start_time,
-            end_time,
-            self.stride,
-            self.hours_per_file,
-            self.last_file,
-            self.lead_time,
+        start_times, end_times, file_times = self.file_structure.create_time_stamps(
+            start_time, end_time
         )
 
-        msg.info(
-            f"Getting wind forcing from MEPS from {self.start_time} to {self.end_time}"
-        )
-        msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
-        temp_folder = "dnora_wnd_temp"
-        if not os.path.isdir(temp_folder):
-            os.mkdir(temp_folder)
-            print("Creating folder %s..." % temp_folder)
-
-        msg.plain("Removing old files from temporary folder...")
-        for f in glob.glob("dnora_wnd_temp/*MetNo_MyWave3km.nc"):
-            os.remove(f)
-
+        setup_temp_dir(DnoraDataType.WIND, self.name())
         # Define area to search in
         lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
 
-        # Setting resolution to roughly 3 km
-        x_str, y_str = create_fimex_xy_strings(lon, lat, resolution_in_km=3)
+        msg.process(f"Applying {program}")
+        ds_creator_function = partial(
+            ds_fimex_read,
+            lon=lon,
+            lat=lat,
+            resolution_in_km=3,
+            data_vars=["ff", "dd"],
+            data_type=DnoraDataType.WIND,
+            name=self.name(),
+            program=program,
+        )
+        wind_list = read_ds_list(
+            start_times,
+            end_times,
+            file_times,
+            folder,
+            filename,
+            ds_creator_function,
+        )
 
-        wnd_list = []
-        for n in range(len(file_times)):
-            folder, filename = self._folder_filename(source, folder, filename=None)
-            url = get_url(folder, filename, file_times[n])
-
-            msg.from_file(url)
-            msg.plain(f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
-
-            nc_fimex = f"dnora_wnd_temp/wind_{n:04.0f}_MetNo_MyWave3km.nc"
-
-            fimex_command = [
-                "fimex",
-                "--input.file=" + url,
-                "--interpolate.method=bilinear",
-                "--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0",
-                "--interpolate.xAxisValues=" + x_str + "",
-                "--interpolate.yAxisValues=" + y_str + "",
-                "--interpolate.xAxisUnit=degree",
-                "--interpolate.yAxisUnit=degree",
-                "--process.rotateVector.all",
-                "--extract.selectVariables=ff",
-                "--extract.selectVariables=dd",
-                "--extract.reduceTime.start="
-                + start_times[n].strftime("%Y-%m-%dT%H:%M:%S"),
-                "--extract.reduceTime.end="
-                + end_times[n].strftime("%Y-%m-%dT%H:%M:%S"),
-                "--process.rotateVector.direction=latlon",
-                "--output.file=" + nc_fimex,
-            ]
-            fimex_command_new = create_fimex_command(
-                nc_fimex,
-                url,
-                start_times[n],
-                end_times[n],
-                lon,
-                lat,
-                resolution_in_km=3,
-                variables=["ff", "dd"],
-            )
-            assert fimex_command == fimex_command_new
-            call(fimex_command)
-            wnd_list.append(xr.open_dataset(nc_fimex).squeeze())
-
-        wind_forcing = xr.concat(wnd_list, dim="time")
+        wind_forcing = xr.concat(wind_list, dim="time")
 
         # Go to u and v components
         u, v = u_v_from_speed_dir(wind_forcing.ff, wind_forcing.dd)  # factor 1000
@@ -287,6 +213,10 @@ class MEPS(DataReader):
     The data is from a 2.5 km AROME model.
     """
 
+    _default_folders = {
+        DataSource.REMOTE: "https://thredds.met.no/thredds/dodsC/meps25epsarchive/%Y/%m/%d",
+    }
+
     def default_data_source(self) -> DataSource:
         return DataSource.REMOTE
 
@@ -294,23 +224,21 @@ class MEPS(DataReader):
         self,
         stride: int = 6,
         hours_per_file: int = 67,
+        lead_time: int = 0,
+        last_file: str = "",
     ):
         """The data is currently in 6 hourly files. Do not change the default
         setting unless you have a good reason to do so.
         """
 
-        self.stride = copy(stride)
-        self.hours_per_file = copy(hours_per_file)
-        return
+        self.file_structure = FileStructure(
+            stride=stride,
+            hours_per_file=hours_per_file,
+            last_file=last_file,
+            lead_time=lead_time,
+        )
 
-    def _folder_filename(
-        self, source: DataSource, folder: str, filename: str
-    ) -> tuple[str]:
-        if source == DataSource.REMOTE:
-            folder = "https://thredds.met.no/thredds/dodsC/meps25epsarchive/%Y/%m/%d"
-        if filename is None:
-            filename = f"meps_{self._prefix}_2_5km_%Y%m%dT%HZ.nc"
-        return folder, filename
+        return
 
     def __call__(
         self,
@@ -319,23 +247,14 @@ class MEPS(DataReader):
         end_time: str,
         source: DataSource,
         folder: str,
+        filename: str,
         expansion_factor: float = 1.2,
-        filename: str = None,
-        last_file: str = "",
-        lead_time: int = 0,
+        program: str = "pyfimex",
         **kwargs,
     ):
         """Reads in all boundary spectra between the given times and at for the given indeces"""
-        self.start_time = start_time
-        self.end_time = end_time
-
-        start_times, end_times, file_times = create_time_stamps(
-            start_time,
-            end_time,
-            self.stride,
-            self.hours_per_file,
-            last_file,
-            lead_time,
+        start_times, end_times, file_times = self.file_structure.create_time_stamps(
+            start_time, end_time
         )
 
         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
@@ -349,71 +268,52 @@ class MEPS(DataReader):
             os.remove(f)
 
         # Check weather to use 'det' or 'subset' files
-        self._prefix = "det"
-        folder, filename = self._folder_filename(source, folder, filename)
+        self._default_filename = f"meps_det_2_5km_%Y%m%dT%HZ.nc"
+        folder = self._folder(folder, source)
+        filename = self._filename(filename, source)
         url = get_url(folder, filename, file_times[0])
+
         try:
             xr.open_dataset(url)
+            extra_fimex_commands = []
         except:
-            self._prefix = "subset"
+            self._default_filename = f"meps_subset_2_5km_%Y%m%dT%HZ.nc"
+            extra_fimex_commands = [
+                "--extract.reduceDimension.name=ensemble_member",
+                "--extract.reduceDimension.start=1",
+                "--extract.reduceDimension.end=1",
+            ]
 
+        folder = self._folder(folder, source)
+        filename = self._filename(filename, source)
+        url = get_url(folder, filename, file_times[0])
+
+        setup_temp_dir(DnoraDataType.WIND, self.name())
         # Define area to search in
         lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
 
-        x_str, y_str = create_fimex_xy_strings(lon, lat, resolution_in_km=2.5)
-        wnd_list = []
-        for n in range(len(file_times)):
-            msg.plain(f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
+        msg.process(f"Applying {program}")
+        ds_creator_function = partial(
+            ds_fimex_read,
+            lon=lon,
+            lat=lat,
+            resolution_in_km=3,
+            data_vars=["x_wind_10m", "y_wind_10m"],
+            data_type=DnoraDataType.WIND,
+            name=self.name(),
+            program=program,
+            extra_commands=extra_fimex_commands,
+        )
+        wind_list = read_ds_list(
+            start_times,
+            end_times,
+            file_times,
+            folder,
+            filename,
+            ds_creator_function,
+        )
 
-            nc_fimex = f"dnora_wnd_temp/wind_{n:04.0f}_MetNo_MEPS.nc"
-            folder, filename = self._folder_filename(source, folder, filename)
-            url = get_url(folder, filename, file_times[n])
-            msg.from_file(url)
-            fimex_command = [
-                "fimex",
-                "--input.file=" + url,
-                "--interpolate.method=bilinear",
-                "--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0",
-                "--interpolate.xAxisValues=" + x_str + "",
-                "--interpolate.yAxisValues=" + y_str + "",
-                "--interpolate.xAxisUnit=degree",
-                "--interpolate.yAxisUnit=degree",
-                "--process.rotateVector.all",
-                "--extract.selectVariables=x_wind_10m",
-                "--extract.selectVariables=y_wind_10m",
-                "--extract.selectVariables=latitude",
-                "--extract.selectVariables=longitude",
-                "--extract.reduceTime.start="
-                + start_times[n].strftime("%Y-%m-%dT%H:%M:%S"),
-                "--extract.reduceTime.end="
-                + end_times[n].strftime("%Y-%m-%dT%H:%M:%S"),
-                "--process.rotateVector.direction=latlon",
-                "--output.file=" + nc_fimex,
-            ]
-            fimex_command_new = create_fimex_command(
-                nc_fimex,
-                url,
-                start_times[n],
-                end_times[n],
-                lon,
-                lat,
-                resolution_in_km=2.5,
-                variables=["x_wind_10m", "y_wind_10m", "latitude", "longitude"],
-            )
-
-            assert fimex_command == fimex_command_new
-            if self._prefix == "subset":
-                fimex_command.insert(
-                    -2, "--extract.reduceDimension.name=ensemble_member"
-                )
-                fimex_command.insert(-2, "--extract.reduceDimension.start=1")
-                fimex_command.insert(-2, "--extract.reduceDimension.end=1")
-
-            call(fimex_command)
-
-            wnd_list.append(xr.open_dataset(nc_fimex).squeeze())
-
-        wind_forcing = xr.concat(wnd_list, dim="time")
+        wind_forcing = xr.concat(wind_list, dim="time")
 
         data_dict = {
             "u": wind_forcing.x_wind_10m.values,

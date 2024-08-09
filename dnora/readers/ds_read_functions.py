@@ -2,9 +2,10 @@ import xarray as xr
 import pandas as pd
 import numpy as np
 from .file_structure import FileStructure
-
+import os, glob
 from dnora.aux_funcs import get_url
 from dnora import msg
+from dnora.dnora_type_manager.dnora_types import DnoraDataType
 
 
 def read_first_ds(
@@ -26,11 +27,8 @@ def read_one_ds(
     urls: list[str],
     hours_per_file: int,
     n: int,
-    expected_lon: np.ndarray,
-    expected_lat: np.ndarray,
-    lon_str: str,
-    lat_str: str,
-    ds_creator_function: callable,
+    expected_shape: tuple[int],
+    ds_creator_function: callable = None,
 ) -> tuple[xr.Dataset, str]:
     """This functions reads one Dataset and crops it.
     If the expected file is not found, it goes to the previous one nad reads data with a longer lead time.
@@ -50,14 +48,15 @@ def read_one_ds(
         try:
             url = urls[n]
             ds = ds_creator_function(start_time, end_time, url)
-            if file_is_consistent(
-                ds, expected_lon, expected_lat, url, lon_str, lat_str
-            ):
+            if not file_is_consistent(ds, expected_shape):
+                msg.plain(f"SKIPPING, file inconsistent: {url}")
+                try_next_file = True
+            else:
                 try_next_file = False
                 keep_trying = False
-            else:
-                try_next_file = True
+
         except OSError:
+            msg.plain(f"SKIPPING, file not found: {url}")
             try_next_file = True
 
         if try_next_file:
@@ -79,13 +78,16 @@ def read_ds_list(
     filename: str,
     ds_creator_function: callable,
     hours_per_file: int = None,
-    lon_str: str = "longitude",
-    lat_str: str = "latitude",
 ) -> list[xr.Dataset]:
+    """Reads a list of xr.Datasets using the time stamps and folder/filename given.
+
+    If one file is missing, the function tries to patch if the files have overlap (if hours_per_file is given).
+    the ds_creator function takes arguments (start_time, end_time, url) and returns an xr.Dataset.
+    """
 
     urls = [get_url(folder, filename, file_time) for file_time in file_times]
     ds_list = []
-    expected_lon, expected_lat = None, None
+    expected_shape = None
     for n in range(len(file_times)):
         msg.plain(f"Reading data for: {start_times[n]}-{end_times[n]}")
 
@@ -96,18 +98,15 @@ def read_ds_list(
             urls,
             hours_per_file,
             n,
-            expected_lon,
-            expected_lat,
-            lon_str,
-            lat_str,
+            expected_shape,
             ds_creator_function,
         )
 
         if ds is not None:
             msg.from_file(url)
             if not ds_list:
-                expected_lon = ds[lon_str].values
-                expected_lat = ds[lat_str].values
+                keys = list(ds.sizes.keys())
+                expected_shape = tuple([ds[var].size for var in keys])
             ds_list.append(ds)
 
     return ds_list
@@ -149,23 +148,29 @@ def data_left_to_try_with(hours_per_file, n, ct, file_times, end_times) -> bool:
 
 def file_is_consistent(
     ds: xr.Dataset,
-    expected_lon: np.ndarray,
-    expected_lat: np.ndarray,
-    url: str,
-    lon_str: str,
-    lat_str: str,
+    expected_shape: tuple[int],
 ) -> bool:
     """Checks if dataset is consistent with the expected points"""
-    if ds is None:
-        msg.plain(f"SKIPPING, file not found: {url}")
-        return False
 
     # always trust the first file that is read
-    if expected_lon is None:
+    if expected_shape is None:
         return True
 
-    if (ds[lon_str] == expected_lon).all() and (ds[lat_str] == expected_lat).all():
+    keys = list(ds.sizes.keys())
+    given_shape = tuple([ds[var].size for var in keys])
+    if given_shape == expected_shape:
         return True
     else:
-        msg.plain(f"SKIPPING, file inconsistent: {url}")
         return False
+
+
+def setup_temp_dir(data_type: DnoraDataType, reader_name: str) -> None:
+    """Sets up a temporery directory for fimex files and cleans out possible old files"""
+    temp_folder = f"dnora_{data_type.name.lower()}_temp"
+    if not os.path.isdir(temp_folder):
+        os.mkdir(temp_folder)
+        print("Creating folder %s..." % temp_folder)
+
+    msg.plain("Removing old files from temporary folder...")
+    for f in glob.glob(f"dnora_{data_type.name.lower()}_temp/{reader_name}*.nc"):
+        os.remove(f)

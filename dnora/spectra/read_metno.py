@@ -41,6 +41,11 @@ def ds_xarray_read(start_time, end_time, url, inds, data_vars):
 
 
 class WAM4km(SpectralDataReader):
+    _default_folders = {
+        DataSource.REMOTE: "https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/%Y/%m/%d",
+    }
+    _default_filename = "MyWave_wam4_SPC_%Y%m%dT%HZ.nc"
+
     def __init__(
         self,
         stride: int = 6,
@@ -49,7 +54,10 @@ class WAM4km(SpectralDataReader):
         lead_time: int = 0,
     ) -> None:
         self.file_structure = FileStructure(
-            stride=stride, hours_per_file=hours_per_file, last_file=last_file
+            stride=stride,
+            hours_per_file=hours_per_file,
+            last_file=last_file,
+            lead_time=lead_time,
         )
 
     def convention(self) -> SpectralConvention:
@@ -60,18 +68,6 @@ class WAM4km(SpectralDataReader):
 
     def post_processing(self):
         return RemoveEmpty()
-
-    def _folder(self, folder: str, source: DataSource) -> str:
-        if source == DataSource.REMOTE:
-            folder = (
-                "https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/%Y/%m/%d"
-            )
-        return folder
-
-    def _filename(self, filename: str, source: DataSource) -> str:
-        if filename is None:
-            filename = f"MyWave_wam4_SPC_%Y%m%dT%HZ.nc"
-        return filename
 
     def get_coordinates(
         self,
@@ -130,6 +126,12 @@ class WAM4km(SpectralDataReader):
 
 
 class NORA3(SpectralDataReader):
+    _default_folders = {
+        DataSource.REMOTE: "https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/%Y/%m",
+        DataSource.INTERNAL: "WINDSURFER/mw3hindcast/spectra/%Y/%m",
+    }
+    _default_filename = "SPC%Y%m%d00.nc"
+
     def __init__(
         self,
         stride: int = 24,
@@ -138,7 +140,10 @@ class NORA3(SpectralDataReader):
         lead_time: int = 0,
     ) -> None:
         self.file_structure = FileStructure(
-            stride=stride, hours_per_file=hours_per_file, last_file=last_file
+            stride=stride,
+            hours_per_file=hours_per_file,
+            last_file=last_file,
+            lead_time=lead_time,
         )
 
     def convention(self) -> SpectralConvention:
@@ -146,22 +151,6 @@ class NORA3(SpectralDataReader):
 
     def default_data_source(self) -> DataSource:
         return DataSource.REMOTE
-
-    def _folder(self, folder: str, source: DataSource) -> str:
-        if source == DataSource.REMOTE:
-            folder = (
-                folder
-                or "https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/%Y/%m"
-            )
-        elif source == DataSource.INTERNAL:
-            folder = get_url(folder, "WINDSURFER/mw3hindcast/spectra/%Y/%m")
-
-        return folder
-
-    def _filename(eself, filename: str, source: DataSource) -> str:
-        if filename is None:
-            filename = "SPC%Y%m%d00.nc"
-        return filename
 
     def get_coordinates(
         self,
@@ -227,6 +216,12 @@ class NORA3(SpectralDataReader):
 
 
 class WW3_4km(SpectralDataReader):
+
+    _default_folders = {
+        DataSource.REMOTE: "https://thredds.met.no/thredds/dodsC/ww3_4km_archive_files/%Y/%m/%d",
+        DataSource.IMMUTABLE: "DNMI_WAVE/%Y/%m/%d",
+    }
+
     def __init__(
         self,
         stride: int = 6,
@@ -236,9 +231,13 @@ class WW3_4km(SpectralDataReader):
         tile="POI",
     ) -> None:
         self.file_structure = FileStructure(
-            stride=stride, hours_per_file=hours_per_file, last_file=last_file
+            stride=stride,
+            hours_per_file=hours_per_file,
+            last_file=last_file,
+            lead_time=lead_time,
         )
         self.tile = tile
+        self._default_filename = f"ww3_4km_{self.tile}_SPC_%Y%m%dT%HZ.nc"
 
     def convention(self) -> SpectralConvention:
         return SpectralConvention.OCEAN
@@ -248,20 +247,6 @@ class WW3_4km(SpectralDataReader):
 
     def default_data_source(self) -> DataSource:
         return DataSource.REMOTE
-
-    def _folder(self, folder: str, source: DataSource) -> str:
-        if source == DataSource.REMOTE:
-            folder = folder or (
-                "https://thredds.met.no/thredds/dodsC/ww3_4km_archive_files/%Y/%m/%d"
-            )
-        elif source == DataSource.IMMUTABLE:
-            folder = get_url(folder, "DNMI_WAVE/%Y/%m/%d")
-        return folder
-
-    def _filename(self, filename: str, source: DataSource) -> str:
-        if filename is None:
-            filename = f"ww3_4km_{self.tile}_SPC_%Y%m%dT%HZ.nc"
-        return filename
 
     def get_coordinates(
         self,
@@ -275,7 +260,6 @@ class WW3_4km(SpectralDataReader):
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         folder = self._folder(folder, source)
         filename = self._filename(filename, source)
-
         ds = read_first_ds(self.file_structure, start_time, folder, filename)
 
         all_points = {"lon": ds.longitude.values[0], "lat": ds.latitude.values[0]}
@@ -325,6 +309,13 @@ class WW3_4km(SpectralDataReader):
 class WAM3(SpectralDataReader):
     """covers Nordic Seas and the Arctic"""
 
+    _default_folders = {
+        DataSource.REMOTE: "https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam3_latest/",
+        DataSource.IMMUTABLE: "DNMI_WAVE/%Y/%m/%d",
+    }
+    _default_filenames = {DataSource.REMOTE: "MyWave_wam3_WAVE_%Y%m%dT%HZ.nc"}
+    _default_filename = "MyWave_wam3_SPC_%Y%m%dT%HZ.nc"
+
     def __init__(
         self,
         stride: int = 12,
@@ -337,6 +328,7 @@ class WAM3(SpectralDataReader):
             stride=stride,
             hours_per_file=hours_per_file,
             last_file=last_file,
+            lead_time=lead_time,
             offset=offset,
         )
 
@@ -345,24 +337,6 @@ class WAM3(SpectralDataReader):
 
     def default_data_source(self) -> DataSource:
         return DataSource.IMMUTABLE
-
-    def _folder(self, folder: str, source: DataSource) -> str:
-        if source == DataSource.REMOTE:
-            folder = (
-                folder
-                or "https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam3_latest/"
-            )
-        elif source == DataSource.IMMUTABLE:
-            folder = get_url(folder, "DNMI_WAVE/%Y/%m/%d")
-        return folder
-
-    def _filename(self, filename: str, source: DataSource) -> str:
-        if filename is not None:
-            return filename
-        if source == DataSource.REMOTE:
-            return "MyWave_wam3_WAVE_%Y%m%dT%HZ.nc"
-        else:
-            return "MyWave_wam3_SPC_%Y%m%dT%HZ.nc"
 
     def get_coordinates(
         self,
@@ -444,34 +418,23 @@ class WAM800(SpectralDataReader):
             stride=stride,
             hours_per_file=hours_per_file,
             last_file=last_file,
+            lead_time=lead_time,
             offset=offset,
         )
         self.tile = tile
+        self._default_folders = {
+            DataSource.REMOTE: f"https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam800{self.tile_names[self.tile][0].lower()}"
+        }
+        self._default_filenames = {
+            DataSource.REMOTE: f"MyWave_wam800_{self.tile}SPC%H.nc"
+        }
+        self._default_filename = f"MyWave_wam800_{self.tile}SPC_%Y%m%dT%HZ.nc"
 
     def convention(self) -> SpectralConvention:
         return SpectralConvention.OCEAN
 
     def default_data_source(self) -> DataSource:
         return DataSource.IMMUTABLE
-
-    def _folder(self, folder: str, source: DataSource) -> str:
-        if source == DataSource.REMOTE:
-            folder = (
-                folder
-                or f"https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam800{self.tile_names[self.tile][0].lower()}"
-            )
-        elif source == DataSource.IMMUTABLE:
-            folder = get_url(folder, "DNMI_WAVE/%Y/%m/%d")
-        return folder
-
-    def _filename(self, filename: str, source: DataSource) -> str:
-        if filename is not None:
-            return filename
-
-        if source == DataSource.REMOTE:
-            return f"MyWave_wam800_{self.tile}SPC%H.nc"
-        else:
-            return f"MyWave_wam800_{self.tile}SPC_%Y%m%dT%HZ.nc"
 
     def get_coordinates(
         self,

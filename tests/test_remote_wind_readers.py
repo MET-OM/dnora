@@ -17,7 +17,7 @@ def timevec():
 @pytest.mark.remote
 def test_nora3(grid, timevec):
     model = dn.modelrun.ModelRun(grid, year=2022, month=4, day=1)
-    model.import_wind(dn.wind.read_metno.NORA3(), program="fimex")
+    model.import_wind(dn.wind.read_metno.NORA3(), program="pyfimex")
     assert np.all(model.wind().time() == timevec)
 
 
@@ -35,12 +35,12 @@ def test_meps(grid, timevec):
     assert np.all(model.wind().time() == timevec)
 
 
-@pytest.mark.remote
-def test_nora3fp(grid, timevec):
-    """NORA3 reader reading the original hourly files"""
-    model = dn.modelrun.ModelRun(grid, year=2022, month=4, day=1)
-    model.import_wind(dn.wind.read_metno.NORA3_fp())
-    assert np.all(model.wind().time() == timevec)
+# @pytest.mark.remote
+# def test_nora3fp(grid, timevec):
+#     """NORA3 reader reading the original hourly files"""
+#     model = dn.modelrun.ModelRun(grid, year=2022, month=4, day=1)
+#     model.import_wind(dn.wind.read_metno.NORA3_fp())
+#     assert np.all(model.wind().time() == timevec)
 
 
 @pytest.mark.remote

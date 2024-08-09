@@ -85,15 +85,23 @@ def ds_fimex_read(
     lon,
     lat,
     resolution_in_km: float,
-    variables: list[str],
+    data_vars: list[str],
     data_type: DnoraDataType,
     name: str,
     program: str = "pyfimex",  #'fimex' or 'pyfimex'
+    extra_commands: list[str] = None,
 ) -> xr.Dataset:
+    if extra_commands is None:
+        extra_commands = []
+
     nc_fimex = f"dnora_{data_type.name.lower()}_temp/{name}_{start_time.strftime('%Y%m%d%H%M')}_fimex.nc"
     if program not in ["fimex", "pyfimex"]:
         raise ValueError("program need to be 'fimex' or 'pyfimex'!")
 
+    if extra_commands:
+        ensemble_member = True
+    else:
+        ensemble_member = False
     if program == "pyfimex":
         x_vec, y_vec = create_pyfimex_xy_vectors(lon, lat, resolution_in_km)
         pyfimex(
@@ -102,9 +110,10 @@ def ds_fimex_read(
             projString="+proj=latlong +ellps=sphere +a=6371000 +e=0",
             xAxisValues=x_vec,
             yAxisValues=y_vec,
-            selectVariables=variables,
+            selectVariables=data_vars,
             reduceTime_start=start_time.strftime("%Y-%m-%dT%H:%M:%S"),
             reduceTime_end=end_time.strftime("%Y-%m-%dT%H:%M:%S"),
+            ensemble_member=ensemble_member,
         )
     elif program == "fimex":
         fimex_command = create_fimex_command(
@@ -115,8 +124,10 @@ def ds_fimex_read(
             lon,
             lat,
             resolution_in_km=resolution_in_km,
-            variables=variables,
+            variables=data_vars,
         )
+        for command in extra_commands:
+            fimex_command.insert(-2, command)
         call(fimex_command)
     ds = xr.open_dataset(nc_fimex).squeeze()
     return ds

@@ -21,6 +21,10 @@ class DataReader(ABC):
     The area is defined from the Grid object that is passed.
     """
 
+    _default_folders = {}
+    _default_filename = None  # If we have a source independent filename
+    _default_filenames = {}  # Possible source-dependent filenames
+
     @staticmethod
     def _caching_strategy() -> CachingStrategy:
         """Defines what caching strategy to use"""
@@ -68,6 +72,24 @@ class DataReader(ABC):
 
     def default_data_source(self) -> DataSource:
         return DataSource.UNDEFINED
+
+    def _folder(self, folder: str, source: DataSource) -> str:
+        if source == DataSource.REMOTE:
+            folder = folder or self._default_folders.get(source)
+        elif source == DataSource.INTERNAL:
+            folder = get_url(folder, self._default_folders.get(source))
+        elif source == DataSource.IMMUTABLE:
+            folder = get_url(folder, self._default_folders.get(source))
+        elif source == DataSource.LOCAL:
+            folder = folder or self._default_folders.get(source)
+        return folder
+
+    def _filename(self, filename: str, source: DataSource) -> str:
+        if filename is None:
+            filename = self._default_filenames.get(source)
+        if filename is None:
+            filename = self._default_filename
+        return filename
 
 
 class PointDataReader(DataReader):
