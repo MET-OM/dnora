@@ -258,14 +258,7 @@ class MEPS(DataReader):
         )
 
         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
-        temp_folder = "dnora_wnd_temp"
-        if not os.path.isdir(temp_folder):
-            os.mkdir(temp_folder)
-            msg.info("Creating folder %s..." % temp_folder)
-
-        msg.plain("Removing old files from temporary folder...")
-        for f in glob.glob("dnora_wnd_temp/*MetNo_MEPS.nc"):
-            os.remove(f)
+        setup_temp_dir(DnoraDataType.WIND, self.name())
 
         # Check weather to use 'det' or 'subset' files
         self._default_filename = f"meps_det_2_5km_%Y%m%dT%HZ.nc"

@@ -21,6 +21,9 @@ from dnora.dnora_type_manager.data_sources import DataSource
 from dnora.readers.abstract_readers import DataReader
 
 from dnora.cacher.caching_strategies import CachingStrategy
+from dnora.readers.ds_read_functions import setup_temp_dir
+
+from dnora.dnora_type_manager.dnora_types import DnoraDataType
 
 
 def download_era5_from_cds(
@@ -32,7 +35,7 @@ def download_era5_from_cds(
     end_time = pd.Timestamp(end_time)
     c = cdsapi.Client()
 
-    filename = f"{folder}/EC_ERA5.nc"
+    filename = f"{folder}/ERA5_cds_temp.nc"
     # cds_command_test = {
     #     'product_type': 'reanalysis',
     #     'format': 'netcdf',
@@ -133,6 +136,7 @@ class ERA5(DataReader):
         grid: Grid,
         start_time: str,
         end_time: str,
+        source: DataSource,
         expansion_factor: float = 1.2,
         **kwargs,
     ):
@@ -140,26 +144,15 @@ class ERA5(DataReader):
         the Grid object."""
 
         msg.info(f"Getting ERA5 wind forcing from {start_time} to {end_time}")
-
-        temp_folder = "dnora_wnd_temp"
-        if not os.path.isdir(temp_folder):
-            os.mkdir(temp_folder)
-            print("Creating folder %s..." % temp_folder)
-
-        msg.plain("Removing old files from temporary folder...")
-        for f in glob.glob("dnora_wnd_temp/EC_ERA5.nc"):
-            os.remove(f)
+        setup_temp_dir(DnoraDataType.WIND, self.name())
 
         # Define area to search in
         lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
 
         nc_file = download_era5_from_cds(
-            start_time, end_time, lon=lon, lat=lat, folder="dnora_wnd_temp"
+            start_time, end_time, lon=lon, lat=lat, folder="dnora_wind_temp"
         )
         wind_forcing = xr.open_dataset(nc_file)
-        # wind_forcing = wind_forcing.rename_dims({"longitude": "lon", "latitude": "lat"})
-        # wind_forcing = wind_forcing.rename_vars({"longitude": "lon", "latitude": "lat"})
-        # wind_forcing = wind_forcing.rename_vars({"u10": "u", "v10": "v"})
 
         wind_forcing = wind_forcing.isel(
             latitude=slice(None, None, -1)
