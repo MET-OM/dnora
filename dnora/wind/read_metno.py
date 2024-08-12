@@ -297,9 +297,6 @@ class MEPS(DataReader):
         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
         lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
 
-        setup_temp_dir(DnoraDataType.WIND, self.name())
-
-        # Check weather to use 'det' or 'subset' files
         folder = self._folder(folder, source)
         filename = self._filename(filename, source)
 
@@ -333,8 +330,8 @@ class MEPS(DataReader):
         wind_forcing = xr.concat(wind_list, dim="time", coords="minimal")
 
         data_dict = {
-            "u": wind_forcing.x_wind_10m.values,
-            "v": wind_forcing.y_wind_10m.values,
+            "u": wind_forcing.x_wind_10m.data,
+            "v": wind_forcing.y_wind_10m.data,
         }
         coord_dict = {
             "time": wind_forcing.time.values,
@@ -346,162 +343,127 @@ class MEPS(DataReader):
         return coord_dict, data_dict, meta_dict
 
 
-# class NORA3_fp(DataReader):
-#     """Reads wind data of the NORA3 hindcast directly from MET Norways servers.
+class NORA3_fp(DataReader):
+    """Reads wind data of the NORA3 hindcast directly from MET Norways servers.
 
-#     The NORA3 HARMONIE-AROME high-resolution (ca 3 km) hindcast for the
-#     North Sea, the Norwegian Sea, and the Barents Sea.
+    The NORA3 HARMONIE-AROME high-resolution (ca 3 km) hindcast for the
+    North Sea, the Norwegian Sea, and the Barents Sea.
 
-#     Haakenstad, H., Breivik, Ø., Furevik, B. R., Reistad, M., Bohlinger, P., &
-#     Aarnes, O. J. (2021). NORA3: A Nonhydrostatic High-Resolution Hindcast of
-#     the North Sea, the Norwegian Sea, and the Barents Sea,
-#     Journal of Applied Meteorology and Climatology, 60(10), 1443-1464,
-#     DOI: 10.1175/JAMC-D-21-0029.1
-#     """
+    Haakenstad, H., Breivik, Ø., Furevik, B. R., Reistad, M., Bohlinger, P., &
+    Aarnes, O. J. (2021). NORA3: A Nonhydrostatic High-Resolution Hindcast of
+    the North Sea, the Norwegian Sea, and the Barents Sea,
+    Journal of Applied Meteorology and Climatology, 60(10), 1443-1464,
+    DOI: 10.1175/JAMC-D-21-0029.1
+    """
 
-#     def default_data_source(self) -> DataSource:
-#         return DataSource.REMOTE
+    _default_folders = {
+        DataSource.REMOTE: "https://thredds.met.no/thredds/dodsC/nora3/SUBFOLDER",
+    }
+    _default_filename = f"fcTIMESTAMP_fp.nc"
 
-#     def __init__(
-#         self,
-#         stride: int = 1,
-#         hours_per_file: int = 1,
-#         last_file: str = "",
-#         lead_time: int = 4,
-#     ):
-#         """The data is currently in hourly files. Do not change the default
-#         setting unless you have a good reason to do so.
-#         """
+    def default_data_source(self) -> DataSource:
+        return DataSource.REMOTE
 
-#         self.file_structure = FileStructure(
-#             stride=stride,
-#             hours_per_file=hours_per_file,
-#             last_file=last_file,
-#             lead_time=lead_time,
-#         )
+    def __init__(
+        self,
+        stride: int = 1,
+        hours_per_file: int = 1,
+        last_file: str = "",
+        lead_time: int = 4,
+    ):
+        """The data is currently in hourly files. Do not change the default
+        setting unless you have a good reason to do so.
+        """
 
-#     def _folder(
-#         self,
-#         folder: str,
-#         time_stamp_file,
-#         source: DataSource,
-#     ) -> str:
-#         if source == DataSource.REMOTE:
-#             h0 = int(time_stamp_file.hour) % 6
-#             subfolder = time_stamp_file.strftime("%Y/%m/%d/") + (
-#                 time_stamp_file - np.timedelta64(h0, "h")
-#             ).strftime("%H")
-#             folder = "https://thredds.met.no/thredds/dodsC/nora3/" + subfolder
+        self.file_structure = FileStructure(
+            stride=stride,
+            hours_per_file=hours_per_file,
+            last_file=last_file,
+            lead_time=lead_time,
+        )
 
-#         return folder
+    def __call__(
+        self,
+        grid: Grid,
+        start_time: str,
+        end_time: str,
+        source: DataSource,
+        folder: str,
+        filename: str,
+        expansion_factor: float = 1.2,
+        program: str = "pyfimex",
+        **kwargs,
+    ):
+        """Reads boundary spectra between given times and given area around
+        the Grid object."""
 
-#     def _filename(self, filename: str, time_stamp_file, time_stamp, first_ind) -> str:
-#         h0 = int(time_stamp_file.hour) % 6
-#         ind = int((time_stamp.hour - first_ind) % 6) + first_ind
-#         filename = (
-#             time_stamp_file.strftime("fc%Y%m%d")
-#             + (time_stamp_file - np.timedelta64(h0, "h")).strftime("%H")
-#             + f"_{ind:03d}_fp.nc"
-#         )
+        def get_nora3fp_urls(folder, filename, file_times):
+            """This is passed to the read_ds_list. We need it because the folder and filename that makes up th URL changes is time"""
+            urls = []
+            for file_time, start_time in zip(file_times, start_times):
+                h0 = int(file_time.hour) % 6
+                subfolder = file_time.strftime("%Y/%m/%d/") + (
+                    file_time - np.timedelta64(h0, "h")
+                ).strftime("%H")
 
-#         return filename
+                remote_folder = re.sub("SUBFOLDER", subfolder, folder)
 
-#     def __call__(
-#         self,
-#         grid: Grid,
-#         start_time: str,
-#         end_time: str,
-#         source: DataSource,
-#         folder: str,
-#         filename: str,
-#         expansion_factor: float = 1.2,
-#         **kwargs,
-#     ):
-#         """Reads boundary spectra between given times and given area around
-#         the Grid object."""
+                first_ind = self.file_structure.lead_time
+                ind = int((start_time.hour - first_ind) % 6) + first_ind
 
-#         self.start_time = start_time
-#         self.end_time = end_time
+                time_stamp = (
+                    file_time.strftime("%Y%m%d")
+                    + (file_time - np.timedelta64(h0, "h")).strftime("%H")
+                    + f"_{ind:03d}"
+                )
 
-#         start_times, end_times, file_times = self.file_structure.create_time_stamps(
-#             start_time,
-#             end_time,
-#         )
+                remote_filename = re.sub("TIMESTAMP", time_stamp, filename)
 
-#         msg.info(
-#             f"Getting wind forcing from NORA3 from {self.start_time} to {self.end_time}"
-#         )
+                urls.append(get_url(remote_folder, remote_filename))
+            return urls
 
-#         setup_temp_dir(DnoraDataType.WIND, self.name())
+        start_times, end_times, file_times = self.file_structure.create_time_stamps(
+            start_time, end_time
+        )
+        msg.info(f"Getting wind forcing from NORA3 from {start_time} to {end_time}")
 
-#         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
-#         lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
+        setup_temp_dir(DnoraDataType.WIND, self.name())
+        folder = self._folder(folder, source)
+        filename = self._filename(filename, source)
+        msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
+        lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
+        ds_creator_function = partial(
+            ds_fimex_read,
+            lon=lon,
+            lat=lat,
+            resolution_in_km=3,
+            data_vars=["wind_speed", "wind_direction"],
+            data_type=DnoraDataType.WIND,
+            name=self.name(),
+            program=program,
+        )
+        wind_list = read_ds_list(
+            start_times,
+            end_times,
+            file_times,
+            folder,
+            filename,
+            ds_creator_function,
+            url_function=get_nora3fp_urls,
+            hours_per_file=self.file_structure.hours_per_file,
+        )
 
-#         # Set resolution to about 3 km
-#         x_str, y_str = create_fimex_xy_strings(lon, lat, resolution_in_km=3)
+        wind_forcing = xr.concat(wind_list, dim="time")
 
-#         wnd_list = []
-#         for n in range(len(file_times)):
-#             folder = self._folder(folder, file_times[n], source)
-#             filename = self._filename(
-#                 filename, file_times[n], start_times[n], first_ind=self.lead_time
-#             )
-#             url = get_url(folder, filename)
+        # Go to u and v components
+        u, v = u_v_from_speed_dir(wind_forcing.wind_speed, wind_forcing.wind_direction)
 
-#             msg.from_file(url)
-#             msg.plain(f"Reading wind forcing data: {start_times[n]}-{end_times[n]}")
+        data_dict = {"u": u.fillna(0).data, "v": v.fillna(0).data}
+        coord_dict = {
+            "time": wind_forcing.time.data,
+            "lon": wind_forcing.x.data,
+            "lat": wind_forcing.y.data,
+        }
+        meta_dict = wind_forcing.attrs
 
-#             nc_fimex = f"dnora_wind_temp/NORA3_{n:04.0f}_fimextemp.nc"
-
-#             fimex_command = [
-#                 "fimex",
-#                 "--input.file=" + url,
-#                 "--interpolate.method=bilinear",
-#                 "--interpolate.projString=+proj=latlong +ellps=sphere +a=6371000 +e=0",
-#                 "--interpolate.xAxisValues=" + x_str + "",
-#                 "--interpolate.yAxisValues=" + y_str + "",
-#                 "--interpolate.xAxisUnit=degree",
-#                 "--interpolate.yAxisUnit=degree",
-#                 "--process.rotateVector.all",
-#                 "--extract.selectVariables=wind_speed",
-#                 "--extract.selectVariables=wind_direction",
-#                 "--extract.reduceTime.start="
-#                 + start_times[n].strftime("%Y-%m-%dT%H:%M:%S"),
-#                 "--extract.reduceTime.end="
-#                 + end_times[n].strftime("%Y-%m-%dT%H:%M:%S"),
-#                 "--process.rotateVector.direction=latlon",
-#                 "--output.file=" + nc_fimex,
-#             ]
-
-#             # read_success = False
-#             # for ct in range(5):  # try 6 times
-#             #     try:
-#             #         call(fimex_command)
-#             #         read_success = True
-#             #     except:
-#             #         print(f'......Retry {ct}.....')
-#             #         time.sleep(10)  # wait for 10 seconds before re-trying
-#             #
-#             # # Don't want to catch the last execption
-#             # if not read_success:
-#             call(fimex_command)
-#             wnd_list.append(xr.open_dataset(nc_fimex).squeeze())
-
-#         wind_forcing = xr.concat(wnd_list, dim="time")
-
-#         # Fimex has already rotated the longitudes and latitudes, so calling them rlon/rlat is now incorrect
-#         #        wind_forcing = wind_forcing.rename_dims({'y': 'lat', 'x': 'lon'})
-#         # wind_forcing = wind_forcing.rename_vars({'y': 'lat', 'x': 'lon'})
-
-#         # Go to u and v components
-#         u, v = u_v_from_speed_dir(wind_forcing.wind_speed, wind_forcing.wind_direction)
-
-#         data_dict = {"u": u.fillna(0).data, "v": v.fillna(0).data}
-#         coord_dict = {
-#             "time": wind_forcing.time.data,
-#             "lon": wind_forcing.x.data,
-#             "lat": wind_forcing.y.data,
-#         }
-#         meta_dict = wind_forcing.attrs
-
-#         return coord_dict, data_dict, meta_dict
+        return coord_dict, data_dict, meta_dict

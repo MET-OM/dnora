@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 
 from dnora.dnora_type_manager.data_sources import DataSource
 from dnora.spectral_conventions import SpectralConvention
-
+from dnora.aux_funcs import get_url
 
 from typing import TYPE_CHECKING, Union
 

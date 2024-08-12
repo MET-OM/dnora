@@ -23,7 +23,7 @@ def test_data_left_to_try_with():
     ]
     n = 0
     ct = 0
-    assert data_left_to_try_with(hours_per_file, n, ct, file_times, end_times[n])
+    assert not data_left_to_try_with(hours_per_file, n, ct, file_times, end_times[n])
 
     # First file needs to exist!
     n = 0
@@ -32,7 +32,7 @@ def test_data_left_to_try_with():
 
     # Second file is missing byt we can go back one file since they contain 12 hours
     n = 1
-    ct = 1
+    ct = 0
     assert data_left_to_try_with(hours_per_file, n, ct, file_times, end_times[n])
 
     # Third and second file is missing
@@ -63,17 +63,16 @@ def test_data_left_to_try_with_no_overlap():
         "2020-01-01 17:00:00",
         "2020-01-01 23:00:00",
     ]
-    # No missing file
     n = 0
     ct = 0
-    assert data_left_to_try_with(hours_per_file, n, ct, file_times, end_times[n])
+    assert not data_left_to_try_with(hours_per_file, n, ct, file_times, end_times[n])
 
     n = 0
     ct = 1
     assert not data_left_to_try_with(hours_per_file, n, ct, file_times, end_times[n])
 
     n = 1
-    ct = 1
+    ct = 0
     assert not data_left_to_try_with(hours_per_file, n, ct, file_times, end_times[n])
 
     n = 2

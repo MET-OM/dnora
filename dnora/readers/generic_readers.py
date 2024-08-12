@@ -160,6 +160,9 @@ class ConstantData(SpectralDataReader):
     }
     _class_default_peak_values = {"freq": 0.3, "dirs": 0, "default": 0}
 
+    def default_data_source(self) -> DataSource:
+        return DataSource.CREATION
+
     def _caching_strategy(self) -> CachingStrategy:
         return CachingStrategy.DontCacheMe
 

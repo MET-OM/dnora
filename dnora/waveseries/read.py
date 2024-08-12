@@ -16,13 +16,19 @@ import geo_parameters as gp
 from geo_parameters.metaparameter import MetaParameter
 
 from dnora.spectra1d import Spectra1D, process
-from dnora.aux_funcs import get_url
+from dnora.aux_funcs import get_url, create_monthly_stamps
 from dnora.readers.abstract_readers import PointDataReader
 from dnora.waveseries import wave_parameters
 import inspect
 from dnora.dnora_type_manager.dnora_types import DnoraDataType
 from dnora.dnora_type_manager.data_sources import DataSource
 from dnora.wave_parameters.parameters import get_function
+from dnora.readers.ds_read_functions import read_ds_list, read_first_ds
+
+
+def ds_xarray_read(start_time, end_time, url):
+    ds = xr.open_dataset(url).sel(time=slice(start_time, end_time))
+    return ds
 
 
 class Spectra1DToWaveSeries(PointDataReader):
@@ -38,9 +44,18 @@ class Spectra1DToWaveSeries(PointDataReader):
             )
         self._freq = freq
 
+    def default_data_source(self) -> DataSource:
+        return DataSource.CREATION
+
     def get_coordinates(
-        self, grid, start_time: str, source: DataSource, folder: str
-    ) -> dict[str : np.ndarray]:
+        self,
+        grid,
+        start_time,
+        source: DataSource,
+        folder: str,
+        filename: str,
+        **kwargs,
+    ) -> dict:
         all_points = {
             "lon": self._Spectra1D.lon(strict=True),
             "lat": self._Spectra1D.lat(strict=True),
@@ -54,8 +69,10 @@ class Spectra1DToWaveSeries(PointDataReader):
         grid,
         start_time,
         end_time,
+        source: DataSource,
+        folder: str,
+        filename: str,
         inds,
-        source: str,
         parameters: list[MetaParameter] = [
             gp.wave.Hs,
             gp.wave.Tm01,
@@ -95,12 +112,17 @@ class Spectra1DToWaveSeries(PointDataReader):
 
 
 class E39(PointDataReader):
+    _default_folders = {
+        DataSource.REMOTE: "https://thredds.met.no/thredds/dodsC/obs/buoy-svv-e39/%Y/%m"
+    }
+
     def default_data_source(self) -> DataSource:
         return DataSource.REMOTE
 
     def __init__(self, loc: str = "D", mode="wave"):
         self._loc = loc  # Given as "D", or "D_Breisundet"
         self._mode = mode  # 'wind' or 'wave'
+        self._default_filename = f"%Y%m_E39_{self.loc()}_{self._mode}.nc"
 
     def _buoy_dict(self) -> dict:
         return {
@@ -120,47 +142,64 @@ class E39(PointDataReader):
         else:
             return self._buoy_dict()[self._loc]
 
-    def _folder_filename(
-        self, source: DataSource, folder: str, filename: str
-    ) -> tuple[str]:
-        if source == DataSource.REMOTE:
-            folder = "https://thredds.met.no/thredds/dodsC/obs/buoy-svv-e39/%Y/%m"
-        if filename is None:
-            filename = f"%Y%m_E39_{self.loc()}_{self._mode}.nc"
-        return folder, filename
+    # def _folder_filename(
+    #     self, source: DataSource, folder: str, filename: str
+    # ) -> tuple[str]:
+    #     if source == DataSource.REMOTE:
+    #         folder = "https://thredds.met.no/thredds/dodsC/obs/buoy-svv-e39/%Y/%m"
+    #     if filename is None:
+    #         filename = f"%Y%m_E39_{self.loc()}_{self._mode}.nc"
+    #     return folder, filename
 
     def get_coordinates(
-        self, grid, start_time, source: DataSource, folder: str, filename: str = None
-    ) -> tuple:
-        start_time = pd.to_datetime(start_time)
-        folder, filename = self._folder_filename(source, folder, filename)
-        url = get_url(folder, filename, start_time)
-        ds = xr.open_dataset(url).isel(time=[0])
+        self,
+        grid,
+        start_time,
+        source: DataSource,
+        folder: str,
+        filename: str,
+        **kwargs,
+    ) -> dict:
+        # start_time = pd.to_datetime(start_time)
+        folder = self._folder(folder, source)
+        filename = self._filename(filename, source)
+        ds = read_first_ds(folder, filename, start_time)
         return {"lon": ds.longitude.values, "lat": ds.latitude.values}
 
     def __call__(
         self,
-        obj_type: DnoraDataType,
-        grid: Grid,
-        start_time: str,
-        end_time: str,
-        inds: list[int],
+        grid,
+        start_time,
+        end_time,
         source: DataSource,
         folder: str,
-        filename: str = None,
+        filename: str,
+        inds,
         **kwargs,
     ) -> tuple:
         # loc = np.array(self._buoys())[inds][0]
 
-        folder, filename = self._folder_filename(source, folder, filename)
+        folder = self._folder(folder, source)
+        filename = self._filename(filename, source)
 
-        months = aux_funcs.month_list(start_time, end_time)
+        start_times, end_times = create_monthly_stamps(start_time, end_time)
+        file_times = start_times
 
-        ds_list = []
-        for month in months:
-            url = get_url(folder, filename, month)
-            ds_list.append(xr.open_dataset(url))
-        ds = xr.concat(ds_list, dim="time").sel(time=slice(start_time, end_time))
+        ds_creator_function = ds_xarray_read
+        ds_list = read_ds_list(
+            start_times,
+            end_times,
+            file_times,
+            folder,
+            filename,
+            ds_creator_function,
+        )
+        # breakpoint()
+        # ds_list = []
+        # for month in months:
+        #     url = get_url(folder, filename, month)
+        #     ds_list.append(xr.open_dataset(url))
+        ds = xr.concat(ds_list, dim="time")
         ds["lon"] = np.nanmedian(ds.longitude.values)
         ds["lat"] = np.nanmedian(ds.latitude.values)
 

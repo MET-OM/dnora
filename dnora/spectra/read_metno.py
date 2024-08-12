@@ -5,16 +5,16 @@ import pandas as pd
 import numpy as np
 from functools import partial
 
+
 # Import abstract classes and needed instances of them
 from .process import RemoveEmpty
 from dnora.spectral_conventions import SpectralConvention
 
 # Import aux_funcsiliry functions
 from dnora import msg
-from dnora.aux_funcs import create_time_stamps
+from dnora.aux_funcs import create_time_stamps, get_url
 from dnora.dnora_type_manager.data_sources import DataSource
 from dnora.readers.abstract_readers import SpectralDataReader
-from dnora.aux_funcs import get_url
 
 
 from dnora.readers.ds_read_functions import read_ds_list, read_first_ds, create_dicts
@@ -81,7 +81,7 @@ class WAM4km(SpectralDataReader):
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         folder = self._folder(folder, source)
         filename = self._filename(filename, source)
-        ds = read_first_ds(self.file_structure, start_time, folder, filename)
+        ds = read_first_ds(folder, filename, start_time, self.file_structure)
 
         all_points = {"lon": ds.longitude.values[0], "lat": ds.latitude.values[0]}
         return all_points
@@ -114,7 +114,7 @@ class WAM4km(SpectralDataReader):
             folder,
             filename,
             ds_creator_function,
-            self.file_structure.hours_per_file,
+            hours_per_file=self.file_structure.hours_per_file,
         )
 
         msg.info("Merging dataset together (this might take a while)...")
@@ -164,7 +164,7 @@ class NORA3(SpectralDataReader):
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         folder = self._folder(folder, source)
         filename = self._filename(filename, source)
-        ds = read_first_ds(self.file_structure, start_time, folder, filename)
+        ds = read_first_ds(folder, filename, start_time, self.file_structure)
 
         all_points = {"lon": ds.longitude.values[0], "lat": ds.latitude.values[0]}
         return all_points
@@ -200,7 +200,7 @@ class NORA3(SpectralDataReader):
             folder,
             filename,
             ds_creator_function,
-            self.file_structure.hours_per_file,
+            hours_per_file=self.file_structure.hours_per_file,
         )
 
         msg.info("Merging dataset together (this might take a while)...")
@@ -260,7 +260,7 @@ class WW3_4km(SpectralDataReader):
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         folder = self._folder(folder, source)
         filename = self._filename(filename, source)
-        ds = read_first_ds(self.file_structure, start_time, folder, filename)
+        ds = read_first_ds(folder, filename, start_time, self.file_structure)
 
         all_points = {"lon": ds.longitude.values[0], "lat": ds.latitude.values[0]}
         return all_points
@@ -295,7 +295,7 @@ class WW3_4km(SpectralDataReader):
             folder,
             filename,
             ds_creator_function,
-            self.file_structure.hours_per_file,
+            hours_per_file=self.file_structure.hours_per_file,
         )
 
         msg.info("Merging dataset together (this might take a while)...")
@@ -351,7 +351,7 @@ class WAM3(SpectralDataReader):
         folder = self._folder(folder, source)
         filename = self._filename(filename, source)
 
-        ds = read_first_ds(self.file_structure, start_time, folder, filename)
+        ds = read_first_ds(folder, filename, start_time, self.file_structure)
 
         all_points = {"lon": ds.longitude.values[0], "lat": ds.latitude.values[0]}
         return all_points
@@ -384,7 +384,7 @@ class WAM3(SpectralDataReader):
             folder,
             filename,
             ds_creator_function,
-            self.file_structure.hours_per_file,
+            hours_per_file=self.file_structure.hours_per_file,
         )
 
         msg.info("Merging dataset together (this might take a while)...")
@@ -423,7 +423,8 @@ class WAM800(SpectralDataReader):
         )
         self.tile = tile
         self._default_folders = {
-            DataSource.REMOTE: f"https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam800{self.tile_names[self.tile][0].lower()}"
+            DataSource.REMOTE: f"https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam800{self.tile_names[self.tile][0].lower()}",
+            DataSource.IMMUTABLE: "DNMI_WAVE/%Y/%m/%d",
         }
         self._default_filenames = {
             DataSource.REMOTE: f"MyWave_wam800_{self.tile}SPC%H.nc"
@@ -448,7 +449,7 @@ class WAM800(SpectralDataReader):
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
         folder = self._folder(folder, source)
         filename = self._filename(filename, source)
-        ds = read_first_ds(self.file_structure, start_time, folder, filename)
+        ds = read_first_ds(folder, filename, start_time, self.file_structure)
 
         all_points = {"lon": ds.longitude.values[0], "lat": ds.latitude.values[0]}
         return all_points
@@ -482,7 +483,7 @@ class WAM800(SpectralDataReader):
             folder,
             filename,
             ds_creator_function,
-            self.file_structure.hours_per_file,
+            hours_per_file=self.file_structure.hours_per_file,
         )
 
         msg.info("Merging dataset together (this might take a while)...")

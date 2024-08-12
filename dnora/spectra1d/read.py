@@ -18,9 +18,18 @@ class SpectraTo1D(SpectralDataReader):
     def convention(self):
         return convert_2d_to_1d(self._boundary._convention)
 
+    def default_data_source(self) -> DataSource:
+        return DataSource.CREATION
+
     def get_coordinates(
-        self, grid, start_time: str, source: DataSource, folder: str, **kwargs
-    ) -> dict[str : np.ndarray]:
+        self,
+        grid,
+        start_time,
+        source: DataSource,
+        folder: str,
+        filename: str,
+        **kwargs,
+    ) -> dict:
         all_points = {
             "lon": self._boundary.lon(strict=True),
             "lat": self._boundary.lat(strict=True),
@@ -30,7 +39,15 @@ class SpectraTo1D(SpectralDataReader):
         return all_points
 
     def __call__(
-        self, grid, start_time, end_time, inds, source: DataSource, **kwargs
+        self,
+        grid,
+        start_time,
+        end_time,
+        source: DataSource,
+        folder: str,
+        filename: str,
+        inds,
+        **kwargs,
     ) -> tuple:
         time = (
             self._boundary.time(data_array=True)

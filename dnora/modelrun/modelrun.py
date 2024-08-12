@@ -13,7 +13,7 @@ from dnora.grid import Grid, TriGrid
 from dnora.file_module import FileNames
 
 # Import abstract classes and needed instances of them
-from dnora.pick.point_pickers import PointPicker, NearestGridPoint
+from dnora.pick.point_pickers import PointPicker, NearestGridPoint, Trivial
 from dnora.importer import DataImporter
 
 from dnora.spectral_grid import SpectralGrid
@@ -122,8 +122,11 @@ class ModelRun:
         dry_run: bool = False,
         name: str = "DnoraModelRun",
     ):
-        if grid is None:
+        if grid is not None and (grid.nx() == 1 and grid.ny() == 1):
+            self._point_picker = NearestGridPoint()
+        elif grid is None:
             grid = Grid(lon=0, lat=0)
+            self._point_picker = Trivial()
         self._grid = grid
         start_time, end_time = start_and_end_time_of_run(
             start_time, end_time, year, month, day, hotstart_hour
@@ -217,11 +220,14 @@ class ModelRun:
             )
 
         # If we have some local or internal source, try to get the folder
-        if source not in [DataSource.UNDEFINED, DataSource.REMOTE] and folder is None:
+        if (
+            source not in [DataSource.UNDEFINED, DataSource.REMOTE, DataSource.CREATION]
+            and folder is None
+        ):
             folder = read_environment_variable(obj_type=obj_type, data_source=source)
 
         # All other sources always requires a folder
-        if folder is None and source not in [DataSource.REMOTE]:
+        if folder is None and source not in [DataSource.REMOTE, DataSource.CREATION]:
             raise ValueError(
                 f"'folder' is not set for source {source.name}: 1) give 'folder' as a keyword or 2) set the environmental variable DNORA_{source.name}_PATH."
             )

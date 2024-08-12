@@ -48,7 +48,9 @@ def test_meps_subset(grid):
 def test_meps_url():
     file_times = pd.date_range("2020-02-04 00:00:00", "2020-02-04 23:00:00", freq="6h")
     urls = get_meps_urls(
-        MEPS._default_folders[DataSource.REMOTE], MEPS._default_filename, file_times
+        MEPS._default_folders[DataSource.REMOTE],
+        MEPS._default_filename,
+        file_times,
     )
     assert len(urls) == 4
     assert "subset" in urls[0]
@@ -75,12 +77,12 @@ def test_meps_old_archive(grid):
     assert np.all(model.wind().time() == timevec)
 
 
-# @pytest.mark.remote
-# def test_nora3fp(grid, timevec):
-#     """NORA3 reader reading the original hourly files"""
-#     model = dn.modelrun.ModelRun(grid, year=2022, month=4, day=1)
-#     model.import_wind(dn.wind.read_metno.NORA3_fp())
-#     assert np.all(model.wind().time() == timevec)
+@pytest.mark.remote
+def test_nora3fp(grid, timevec):
+    """NORA3 reader reading the original hourly files"""
+    model = dn.modelrun.ModelRun(grid, year=2022, month=4, day=1)
+    model.import_wind(dn.wind.read_metno.NORA3_fp())
+    assert np.all(model.wind().time() == timevec)
 
 
 @pytest.mark.remote

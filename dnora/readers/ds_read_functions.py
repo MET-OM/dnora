@@ -11,12 +11,17 @@ from typing import Callable
 
 
 def read_first_ds(
-    file_structure: FileStructure, start_time: str, folder: str, filename: str
+    folder: str,
+    filename: str,
+    start_time: str,
+    file_structure: FileStructure = None,
 ) -> xr.Dataset:
-    start_times, end_times, file_times = file_structure.create_time_stamps(
-        start_time, start_time
-    )
-    url = get_url(folder, filename, file_times[0])
+    if file_structure is not None:
+        _, _, file_times = file_structure.create_time_stamps(start_time, start_time)
+        file_time = file_times[0]
+    else:
+        file_time = start_time
+    url = get_url(folder, filename, file_time)
     ds = xr.open_dataset(url).isel(time=[0])
 
     return ds
@@ -146,7 +151,7 @@ def data_left_to_try_with(hours_per_file, n, ct, file_times, end_time) -> bool:
     if n - ct <= 0:
         return False
 
-    if pd.Timestamp(end_time) - pd.Timestamp(file_times[n - ct]) > pd.Timedelta(
+    if pd.Timestamp(end_time) - pd.Timestamp(file_times[n - ct - 1]) > pd.Timedelta(
         hours_per_file, "hours"
     ):
         return False

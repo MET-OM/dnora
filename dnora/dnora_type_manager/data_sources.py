@@ -6,6 +6,7 @@ class DataSource(Enum):
     INTERNAL = auto()
     IMMUTABLE = auto()
     REMOTE = auto()
+    CREATION = auto()
     UNDEFINED = auto()
 
 
