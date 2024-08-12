@@ -4,6 +4,7 @@ import pandas as pd
 from dnora.dnora_type_manager.dnora_types import DnoraDataType
 from dnora.aux_funcs import lon_in_km
 from subprocess import call
+from typing import Callable
 
 
 def create_fimex_xy_strings(
@@ -92,13 +93,17 @@ def ds_fimex_read(
     extra_commands: list[str] = None,
 ) -> xr.Dataset:
     if extra_commands is None:
-        extra_commands = []
+        extra_fimex_commands = []
+    elif isinstance(extra_commands, Callable):
+        extra_fimex_commands = extra_commands(start_time, end_time, url)
+    else:
+        extra_fimex_commands = extra_commands.copy()
 
     nc_fimex = f"dnora_{data_type.name.lower()}_temp/{name}_{start_time.strftime('%Y%m%d%H%M')}_fimex.nc"
     if program not in ["fimex", "pyfimex"]:
         raise ValueError("program need to be 'fimex' or 'pyfimex'!")
 
-    if extra_commands:
+    if extra_fimex_commands:
         ensemble_member = True
     else:
         ensemble_member = False
@@ -126,10 +131,11 @@ def ds_fimex_read(
             resolution_in_km=resolution_in_km,
             variables=data_vars,
         )
-        for command in extra_commands:
+        for command in extra_fimex_commands:
             fimex_command.insert(-2, command)
         call(fimex_command)
     ds = xr.open_dataset(nc_fimex).squeeze()
+
     return ds
 
 

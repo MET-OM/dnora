@@ -6,6 +6,7 @@ import os, glob
 import pandas as pd
 from functools import partial
 from dnora.readers.file_structure import FileStructure
+import re
 
 # Import objects
 from dnora.grid import Grid
@@ -209,6 +210,39 @@ class MyWave3km(DataReader):
         return coord_dict, data_dict, meta_dict
 
 
+def get_meps_urls(folder, filename, file_times):
+    """This is passed to the read_ds_list. We need it because the folder and filename that makes up th URL changes is time"""
+    urls = []
+
+    for file_time in file_times:
+        if file_time >= pd.Timestamp("2020-02-04T12:00"):
+            remote_filename = filename
+        else:
+            remote_filename = re.sub("det", "subset", filename)
+        if file_time >= pd.Timestamp("2020-01-01T00:00"):
+            remote_folder = folder
+        else:
+            remote_folder = re.sub("meps25epsarchive", "mepsoldarchive", folder)
+
+        urls.append(get_url(remote_folder, remote_filename, file_time))
+    return urls
+
+
+def meps_extra_fimex_commands(start_time, end_time, url) -> list[str]:
+    """Determines the possible extra fimex commands needed to process the MEPS netcdf.
+    Repend on the url ('det'/'subset')
+
+    start_time and end_time accepted because of standard convention"""
+    if "subset" in url:
+        return [
+            "--extract.reduceDimension.name=ensemble_member",
+            "--extract.reduceDimension.start=1",
+            "--extract.reduceDimension.end=1",
+        ]
+    else:
+        return []
+
+
 class MEPS(DataReader):
     """Reads wind data from MET Norways MEPS forecast.
 
@@ -218,6 +252,7 @@ class MEPS(DataReader):
     _default_folders = {
         DataSource.REMOTE: "https://thredds.met.no/thredds/dodsC/meps25epsarchive/%Y/%m/%d",
     }
+    _default_filename = f"meps_det_2_5km_%Y%m%dT%HZ.nc"
 
     def default_data_source(self) -> DataSource:
         return DataSource.REMOTE
@@ -265,25 +300,8 @@ class MEPS(DataReader):
         setup_temp_dir(DnoraDataType.WIND, self.name())
 
         # Check weather to use 'det' or 'subset' files
-        self._default_filename = f"meps_det_2_5km_%Y%m%dT%HZ.nc"
         folder = self._folder(folder, source)
         filename = self._filename(filename, source)
-        url = get_url(folder, filename, file_times[0])
-
-        try:
-            xr.open_dataset(url)
-            extra_fimex_commands = []
-        except:
-            self._default_filename = f"meps_subset_2_5km_%Y%m%dT%HZ.nc"
-            extra_fimex_commands = [
-                "--extract.reduceDimension.name=ensemble_member",
-                "--extract.reduceDimension.start=1",
-                "--extract.reduceDimension.end=1",
-            ]
-
-        folder = self._folder(folder, source)
-        filename = self._filename(filename, source)
-        url = get_url(folder, filename, file_times[0])
 
         setup_temp_dir(DnoraDataType.WIND, self.name())
         # Define area to search in
@@ -299,7 +317,7 @@ class MEPS(DataReader):
             data_type=DnoraDataType.WIND,
             name=self.name(),
             program=program,
-            extra_commands=extra_fimex_commands,
+            extra_commands=meps_extra_fimex_commands,
         )
         wind_list = read_ds_list(
             start_times,
@@ -308,9 +326,11 @@ class MEPS(DataReader):
             folder,
             filename,
             ds_creator_function,
+            url_function=get_meps_urls,
+            hours_per_file=self.file_structure.hours_per_file,
         )
 
-        wind_forcing = xr.concat(wind_list, dim="time")
+        wind_forcing = xr.concat(wind_list, dim="time", coords="minimal")
 
         data_dict = {
             "u": wind_forcing.x_wind_10m.values,

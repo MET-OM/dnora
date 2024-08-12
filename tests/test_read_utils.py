@@ -1,4 +1,4 @@
-from dnora.spectra.read_metno import data_left_to_try_with
+from dnora.readers.ds_read_functions import data_left_to_try_with
 
 
 def test_data_left_to_try_with():
@@ -23,23 +23,23 @@ def test_data_left_to_try_with():
     ]
     n = 0
     ct = 0
-    assert data_left_to_try_with(hours_per_file, n, ct, file_times, end_times)
+    assert data_left_to_try_with(hours_per_file, n, ct, file_times, end_times[n])
 
     # First file needs to exist!
     n = 0
     ct = 1
-    assert not data_left_to_try_with(hours_per_file, n, ct, file_times, end_times)
+    assert not data_left_to_try_with(hours_per_file, n, ct, file_times, end_times[n])
 
     # Second file is missing byt we can go back one file since they contain 12 hours
     n = 1
     ct = 1
-    assert data_left_to_try_with(hours_per_file, n, ct, file_times, end_times)
+    assert data_left_to_try_with(hours_per_file, n, ct, file_times, end_times[n])
 
     # Third and second file is missing
     # We can NOT go back TWO files since they contain only 12 hours
     n = 2
     ct = 2
-    assert not data_left_to_try_with(hours_per_file, n, ct, file_times, end_times)
+    assert not data_left_to_try_with(hours_per_file, n, ct, file_times, end_times[n])
 
 
 def test_data_left_to_try_with_no_overlap():
@@ -66,16 +66,16 @@ def test_data_left_to_try_with_no_overlap():
     # No missing file
     n = 0
     ct = 0
-    assert data_left_to_try_with(hours_per_file, n, ct, file_times, end_times)
+    assert data_left_to_try_with(hours_per_file, n, ct, file_times, end_times[n])
 
     n = 0
     ct = 1
-    assert not data_left_to_try_with(hours_per_file, n, ct, file_times, end_times)
+    assert not data_left_to_try_with(hours_per_file, n, ct, file_times, end_times[n])
 
     n = 1
     ct = 1
-    assert not data_left_to_try_with(hours_per_file, n, ct, file_times, end_times)
+    assert not data_left_to_try_with(hours_per_file, n, ct, file_times, end_times[n])
 
     n = 2
     ct = 2
-    assert not data_left_to_try_with(hours_per_file, n, ct, file_times, end_times)
+    assert not data_left_to_try_with(hours_per_file, n, ct, file_times, end_times[n])

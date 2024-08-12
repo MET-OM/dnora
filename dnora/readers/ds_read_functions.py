@@ -7,6 +7,8 @@ from dnora.aux_funcs import get_url
 from dnora import msg
 from dnora.dnora_type_manager.dnora_types import DnoraDataType
 
+from typing import Callable
+
 
 def read_first_ds(
     file_structure: FileStructure, start_time: str, folder: str, filename: str
@@ -39,14 +41,13 @@ def read_one_ds(
     The ds_creator_function might use normal xarray or e.g. fimex and is therefore injected as a callable
     """
 
-    file_time = file_times[n]
-    ct = 1
+    ct = 0
     keep_trying = True
     try_next_file = False
     while keep_trying:
 
         try:
-            url = urls[n]
+            url = urls[n - ct]
             ds = ds_creator_function(start_time, end_time, url)
             if not file_is_consistent(ds, expected_shape):
                 msg.plain(f"SKIPPING, file inconsistent: {url}")
@@ -60,14 +61,20 @@ def read_one_ds(
             try_next_file = True
 
         if try_next_file:
-            if data_left_to_try_with(hours_per_file, n, ct, file_times, end_times):
-                file_time = file_times[n - ct]
+            if data_left_to_try_with(hours_per_file, n, ct, file_times, end_time):
                 ct += 1
             else:
+                msg.plain(f"SKIPPING, no data left to try with!")
                 ds = None
                 keep_trying = False
 
     return ds, url
+
+
+def get_constant_url(folder, filename, file_times) -> list[str]:
+    """Applies the same folder and filename to all file_times to get url.
+    folder and file_name can contain %Y etc. that will be replaced"""
+    return [get_url(folder, filename, file_time) for file_time in file_times]
 
 
 def read_ds_list(
@@ -76,7 +83,8 @@ def read_ds_list(
     file_times: pd.DatetimeIndex,
     folder: str,
     filename: str,
-    ds_creator_function: callable,
+    ds_creator_function: Callable,
+    url_function: Callable = get_constant_url,
     hours_per_file: int = None,
 ) -> list[xr.Dataset]:
     """Reads a list of xr.Datasets using the time stamps and folder/filename given.
@@ -85,7 +93,7 @@ def read_ds_list(
     the ds_creator function takes arguments (start_time, end_time, url) and returns an xr.Dataset.
     """
 
-    urls = [get_url(folder, filename, file_time) for file_time in file_times]
+    urls = url_function(folder, filename, file_times)
     ds_list = []
     expected_shape = None
     for n in range(len(file_times)):
@@ -106,7 +114,7 @@ def read_ds_list(
             msg.from_file(url)
             if not ds_list:
                 keys = list(ds.sizes.keys())
-                expected_shape = tuple([ds[var].size for var in keys])
+                expected_shape = tuple([ds[var].size for var in keys if var != "time"])
             ds_list.append(ds)
 
     return ds_list
@@ -126,7 +134,7 @@ def create_dicts(ds, var_mapping: dict):
     return coord_dict, data_dict, meta_dict
 
 
-def data_left_to_try_with(hours_per_file, n, ct, file_times, end_times) -> bool:
+def data_left_to_try_with(hours_per_file, n, ct, file_times, end_time) -> bool:
     """Checks if we can go back one file and still have data covering the entire period.
 
     E.g. Each files conains 72 hours but we want to read in 6 hour chunks.
@@ -135,10 +143,10 @@ def data_left_to_try_with(hours_per_file, n, ct, file_times, end_times) -> bool:
     if hours_per_file is None:
         return False
 
-    if n - ct < 0:
+    if n - ct <= 0:
         return False
 
-    if pd.Timestamp(end_times[n]) - pd.Timestamp(file_times[n - ct]) > pd.Timedelta(
+    if pd.Timestamp(end_time) - pd.Timestamp(file_times[n - ct]) > pd.Timedelta(
         hours_per_file, "hours"
     ):
         return False
@@ -157,7 +165,7 @@ def file_is_consistent(
         return True
 
     keys = list(ds.sizes.keys())
-    given_shape = tuple([ds[var].size for var in keys])
+    given_shape = tuple([ds[var].size for var in keys if var != "time"])
     if given_shape == expected_shape:
         return True
     else:

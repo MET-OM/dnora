@@ -2,6 +2,8 @@ import dnora as dn
 import pytest
 import pandas as pd
 import numpy as np
+from dnora.wind.read_metno import get_meps_urls, MEPS
+from dnora.dnora_type_manager.data_sources import DataSource
 
 
 @pytest.fixture(scope="session")
@@ -32,6 +34,44 @@ def test_mywave3km(grid, timevec):
 def test_meps(grid, timevec):
     model = dn.modelrun.ModelRun(grid, year=2022, month=4, day=1)
     model.import_wind(dn.wind.read_metno.MEPS())
+    assert np.all(model.wind().time() == timevec)
+
+
+@pytest.mark.remote
+def test_meps_subset(grid):
+    model = dn.modelrun.ModelRun(grid, year=2020, month=2, day=3)
+    model.import_wind(dn.wind.read_metno.MEPS())
+    timevec = pd.date_range("2020-02-03 00:00:00", "2020-02-03 23:00:00", freq="1h")
+    assert np.all(model.wind().time() == timevec)
+
+
+def test_meps_url():
+    file_times = pd.date_range("2020-02-04 00:00:00", "2020-02-04 23:00:00", freq="6h")
+    urls = get_meps_urls(
+        MEPS._default_folders[DataSource.REMOTE], MEPS._default_filename, file_times
+    )
+    assert len(urls) == 4
+    assert "subset" in urls[0]
+    assert "subset" in urls[1]
+    assert "det" in urls[2]
+    assert "det" in urls[3]
+
+
+@pytest.mark.remote
+def test_meps_det_subset(grid):
+    model = dn.modelrun.ModelRun(grid, year=2020, month=2, day=4)
+    model.import_wind(dn.wind.read_metno.MEPS())
+    timevec = pd.date_range("2020-02-04 00:00:00", "2020-02-04 23:00:00", freq="1h")
+    assert np.all(model.wind().time() == timevec)
+
+
+@pytest.mark.remote
+def test_meps_old_archive(grid):
+    start_time = "2019-12-31 03:00:00"
+    end_time = "2020-01-01 03:00:00"
+    model = dn.modelrun.ModelRun(grid, start_time=start_time, end_time=end_time)
+    model.import_wind(dn.wind.read_metno.MEPS())
+    timevec = pd.date_range(start_time, end_time, freq="1h")
     assert np.all(model.wind().time() == timevec)
 
 
