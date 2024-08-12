@@ -164,6 +164,7 @@ tests/.vscode/*
 dnora/.vscode/*
 tests/dnora_wind_temp/*
 tests/dnora_current_temp/*
+tests/dnora_ice_temp/*
 
 # Dnora v1 folders
 bnd/
