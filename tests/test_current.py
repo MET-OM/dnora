@@ -19,6 +19,8 @@ def test_import_constant_current_one_point():
     np.testing.assert_almost_equal(np.mean(model.current().v()), 2)
     np.testing.assert_almost_equal(np.mean(model.current().mag()), (2**2 + 1**2) ** 0.5)
 
+    assert "to" in model.current().meta.get("dir").get("standard_name")
+
     np.testing.assert_almost_equal(
         np.mean(model.current().dir()),
         90 - np.rad2deg(np.arctan2(2, 1)),

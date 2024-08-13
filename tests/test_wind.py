@@ -18,6 +18,7 @@ def test_import_constant_wind_one_point():
     np.testing.assert_almost_equal(np.mean(model.wind().v()), 2)
     np.testing.assert_almost_equal(np.mean(model.wind().mag()), (2**2 + 1**2) ** 0.5)
 
+    assert "from" in model.wind().meta.get("dir").get("standard_name")
     np.testing.assert_almost_equal(
         np.mean(model.wind().dir()),
         90 - np.rad2deg(np.arctan2(2, 1)) + 180,
