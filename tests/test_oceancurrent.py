@@ -17,13 +17,11 @@ def test_import_constant_current_one_point():
 
     np.testing.assert_almost_equal(np.mean(model.current().u()), 1)
     np.testing.assert_almost_equal(np.mean(model.current().v()), 2)
-    np.testing.assert_almost_equal(
-        np.mean(model.current().magnitude()), (2**2 + 1**2) ** 0.5
-    )
+    np.testing.assert_almost_equal(np.mean(model.current().mag()), (2**2 + 1**2) ** 0.5)
 
     np.testing.assert_almost_equal(
-        np.mean(model.current().direction()),
-        90 - np.rad2deg(np.arctan2(2, 1)) + 180,
+        np.mean(model.current().dir()),
+        90 - np.rad2deg(np.arctan2(2, 1)),
     )
 
 
@@ -41,6 +39,9 @@ def test_import_constant_current():
 
     np.testing.assert_almost_equal(np.mean(model.current().u()), 1)
     np.testing.assert_almost_equal(np.mean(model.current().v()), 2)
+    np.testing.assert_almost_equal(np.mean(model.current().mag()), (2**2 + 1**2) ** 0.5)
+
     np.testing.assert_almost_equal(
-        np.mean(model.current().magnitude()), (2**2 + 1**2) ** 0.5
+        np.mean(model.current().dir()),
+        90 - np.rad2deg(np.arctan2(2, 1)),
     )
