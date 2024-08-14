@@ -128,8 +128,8 @@ def read_ds_list(
 def create_dicts(ds, var_mapping: dict):
     coord_dict = {
         "time": ds[var_mapping["time"]].values.squeeze(),
-        "lon": ds[var_mapping["lon"]].values.squeeze(),
-        "lat": ds[var_mapping["lat"]].values.squeeze(),
+        "lon": ds[var_mapping["lon"]].values,
+        "lat": ds[var_mapping["lat"]].values,
         "freq": ds[var_mapping["freq"]].values.squeeze(),
         "dirs": ds[var_mapping["dirs"]].values.squeeze(),
     }

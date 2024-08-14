@@ -74,22 +74,29 @@ class DataReader(ABC):
         return DataSource.UNDEFINED
 
     def _folder(self, folder: str, source: DataSource) -> str:
-        if source == DataSource.REMOTE:
-            folder = folder or self._default_folders.get(source)
-        elif source == DataSource.INTERNAL:
-            folder = get_url(folder, self._default_folders.get(source))
-        elif source == DataSource.IMMUTABLE:
-            folder = get_url(folder, self._default_folders.get(source))
-        elif source == DataSource.LOCAL:
-            folder = folder or self._default_folders.get(source)
-        return folder
+        default_folder = self._default_folders.get(source)
+        if source in [DataSource.REMOTE, DataSource.LOCAL]:
+            folder = folder or default_folder
+            if folder is not None:
+                return folder
+        else:
+            if folder is None:
+                raise ValueError(
+                    f"Define an environmental variable DNORA_{source.name}_PATH"
+                )
+            if default_folder is not None:
+                return get_url(folder, self._default_folders.get(source))
+
+        raise ValueError(f"No folder is defined for source {source}!")
 
     def _filename(self, filename: str, source: DataSource) -> str:
         if filename is None:
             filename = self._default_filenames.get(source)
         if filename is None:
             filename = self._default_filename
-        return filename
+        if filename is not None:
+            return filename
+        raise ValueError(f"No filename is defined for source {source}!")
 
 
 class PointDataReader(DataReader):

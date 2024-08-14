@@ -5,9 +5,16 @@ from dnora.dnora_type_manager.data_sources import DataSource
 from dnora.readers.abstract_readers import SpectralDataReader
 from dnora.aux_funcs import get_url
 from .swan_ascii import decode_lonlat, read_swan_ascii_spec
+import pandas as pd
+import numpy as np
+from dnora.readers.ds_read_functions import read_ds_list, read_first_ds, create_dicts
+from dnora.readers.file_structure import FileStructure
+from dnora.aux_funcs import create_monthly_stamps
+from functools import partial
+import xarray as xr
 
 
-class SWANAscii(SpectralDataReader):
+class SWAN_Ascii(SpectralDataReader):
     def convention(self) -> SpectralConvention:
         return SpectralConvention.MET
 
@@ -80,175 +87,275 @@ class SWANAscii(SpectralDataReader):
         return coord_dict, data_dict, meta_dict
 
 
-# class ForceFeed(SpectraReader):
-#     def __init__(
-#         self, time, freq, dirs, spec, lon, lat, convention: SpectralConvention
-#     ) -> None:
-#         self.time = copy(time)
-#         self.freq = copy(freq)
-#         self.dirs = copy(dirs)
-#         self.spec = copy(spec)
-#         self.lon = copy(lon)
-#         self.lat = copy(lat)
-#         self.set_convention(convention)
-#         return
-
-#     def get_coordinates(self, grid, start_time, source, folder) -> tuple:
-#         return copy(self.lon), copy(self.lat)
-
-#     def __call__(
-#         self, grid, start_time, end_time, inds, source, folder, **kwargs
-#     ) -> tuple:
-#         # return  copy(self.time), copy(self.freq), copy(self.dirs), np.reshape(self.spec, (len(self.time), len(self.lon), self.spec.shape[0], self.spec.shape[1])), copy(self.lon), copy(self.lat), ''
-#         return (
-#             copy(self.time),
-#             copy(self.freq),
-#             copy(self.dirs),
-#             copy(self.spec),
-#             copy(self.lon),
-#             copy(self.lat),
-#             None,
-#             None,
-#             {},
-#         )
+WAM_VAR_MAPPING = {
+    "spec": "SPEC",
+    "lon": "longitude",
+    "lat": "latitude",
+    "time": "time",
+    "dirs": "direction",
+    "freq": "freq",
+}
 
 
-# class WW3Nc(SpectraReader):
-#     def __init__(
-#         self, filename: str = "ww3.%Y%m_spec.nc", folder: str = "", mode: str = "single"
-#     ):
-#         """Mode can be 'single' (one file), 'monthly'"""
-#         self._filename = filename
-#         self._mode = mode
-#         self._folder = folder
-
-#     def convention(self) -> SpectralConvention:
-#         return SpectralConvention.WW3
-
-#     def _filenames(self, start_time, end_time, folder):
-#         filenames = []
-#         if self._mode == "single":
-#             filenames.append(f"{folder}/{self._filename}")
-#         else:
-#             for file in aux_funcs.month_list(start_time, end_time, fmt=self._filename):
-#                 filenames.append(f"{folder}/{file}")
-#         return filenames
-
-#     def get_coordinates(self, grid, start_time, source, folder) -> tuple:
-#         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
-#         # day = pd.date_range(start_time, start_time,freq='D')
-
-#         data = xr.open_dataset(
-#             self._filenames(start_time, start_time, folder=self._folder)[0]
-#         ).isel(time=[0])
-
-#         lon_all = data.longitude.values[0]
-#         lat_all = data.latitude.values[0]
-
-#         return lon_all, lat_all, None, None
-
-#     def __call__(
-#         self, grid, start_time, end_time, inds, source, folder, **kwargs
-#     ) -> tuple:
-#         """Reads in all boundary spectra between the given times and at for the given indeces"""
-
-#         msg.info(
-#             f"Getting boundary spectra from WW3 netcdf files from {start_time} to {end_time}"
-#         )
-
-#         def _crop(ds):
-#             """
-#             EMODNET tiles overlap by two cells on each boundary.
-#             """
-#             return ds.sel(time=slice(start_time, end_time), station=(inds + 1))
-
-#         import dask
-
-#         with dask.config.set(**{"array.slicing.split_large_chunks": True}):
-#             with xr.open_mfdataset(
-#                 self._filenames(start_time, end_time, self._folder), preprocess=_crop
-#             ) as ds:
-#                 time = ds.time.values
-#                 freq = ds.frequency.values
-#                 dirs = ds.direction.values
-#                 spec = ds.efth.values
-#                 lon = ds.longitude.values[0, :]
-#                 lat = ds.latitude.values[0, :]
-
-#                 return time, freq, dirs, spec, lon, lat, None, None, ds.attrs
+def ds_wam_xarray_read(
+    start_time: pd.Timestamp,
+    end_time: pd.Timestamp,
+    url: str,
+    inds: np.ndarray,
+    data_vars: list[str],
+):
+    with xr.open_dataset(url) as f:
+        ds = f.sel(
+            time=slice(start_time, end_time),
+            x=inds + 1,
+        )[data_vars]
+    return ds
 
 
-# class File_WW3Nc(BoundaryReader):
-#     def __init__(self, folder: str='', filename: str='ww3_T0', dateftm: str='%Y%m%dT%H%M', stride: int=6, hours_per_file: int=73, last_file: str='', lead_time: int=0) -> None:
-#         self.stride = copy(stride)
-#         self.hours_per_file = copy(hours_per_file)
-#         self.lead_time = copy(lead_time)
-#         self.last_file = copy(last_file)
+class WAM(SpectralDataReader):
 
-#         if (not folder == '') and (not folder[-1] == '/'):
-#             self.folder = folder + '/'
-#         else:
-#             self.folder = copy(folder)
+    stride = "month"  # int (for hourly), or 'month'
+    hours_per_file = None  # int (if not monthly files)
+    offset = 0  # int
 
-#         self.filestring = copy(filename)
-#         self.datestring = copy(dateftm)
+    def __init__(
+        self,
+        stride: (
+            int | str | None
+        ) = None,  # Integer is number of hours, 'month' for monthly files
+        hours_per_file: int | None = None,  # None for stride = 'month'
+        last_file: str = "",
+        lead_time: int = 0,
+        offset: int | None = None,
+    ) -> None:
+        if stride is not None:
+            self.stride = stride
 
-#         return
+        if hours_per_file is not None:
+            self.hours_per_file = hours_per_file
 
-#     def convention(self) -> SpectralConvention:
-#         return SpectralConvention.WW3
+        if offset is not None:
+            self.offset = offset
 
-#     def get_coordinates(self, grid, start_time) -> tuple:
-#         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
-#         #day = pd.date_range(start_time, start_time,freq='D')
-#         start_times, end_times, file_times = aux_funcs.create_time_stamps(start_time, start_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
-#         filename = self.get_filename(file_times[0])
+        if self.hours_per_file is not None:
+            self.file_structure = FileStructure(
+                stride=self.stride,
+                hours_per_file=self.hours_per_file,
+                last_file=last_file,
+                lead_time=lead_time,
+                offset=self.offset,
+            )
+        else:
+            # This assumes monthly files!
+            self.file_structure = None
 
-#         data = xr.open_dataset(filename).isel(time = [0])
+    def convention(self) -> SpectralConvention:
+        return SpectralConvention.WW3
 
-#         lon_all = data.longitude.values[0]
-#         lat_all = data.latitude.values[0]
+    def default_data_source(self) -> DataSource:
+        return DataSource.LOCAL
 
-#         return lon_all, lat_all
+    def get_coordinates(
+        self,
+        grid,
+        start_time,
+        source: DataSource,
+        folder: str,
+        filename: str,
+        **kwargs,
+    ) -> dict:
+        """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
+        folder = self._folder(folder, source)
+        filename = self._filename(filename, source)
+        ds = read_first_ds(folder, filename, start_time, self.file_structure)
 
-#     def __call__(self, grid, start_time, end_time, inds, **kwargs) -> tuple:
-#         """Reads in all boundary spectra between the given times and at for the given indeces"""
-#         self.start_time = start_time
-#         self.end_time = end_time
+        all_points = {"lon": ds.longitude.values[0], "lat": ds.latitude.values[0]}
+        return all_points
 
-#         start_times, end_times, file_times = aux_funcs.create_time_stamps(start_time, end_time, stride = self.stride, hours_per_file = self.hours_per_file, last_file = self.last_file, lead_time = self.lead_time)
+    def __call__(
+        self,
+        grid,
+        start_time,
+        end_time,
+        source: DataSource,
+        folder: str,
+        filename: str,
+        inds,
+        **kwargs,
+    ) -> tuple[dict]:
+        """Reads in all boundary spectra between the given times and at for the given indeces"""
+        folder = self._folder(folder, source)
+        filename = self._filename(filename, source)
+        if self.file_structure is None:
+            start_times, end_times = create_monthly_stamps(start_time, end_time)
+            file_times = start_times
+            hours_per_file = None
+        else:
+            start_times, end_times, file_times = self.file_structure.create_time_stamps(
+                start_time, end_time
+            )
+            hours_per_file = self.file_structure.hours_per_file
 
-#         msg.info(f"Getting boundary spectra from NORA3 from {self.start_time} to {self.end_time}")
-#         bnd_list = []
-#         for n in range(len(file_times)):
-#             filename = self.get_filename(file_times[n])
-#             msg.from_file(filename)
-#             msg.plain(f"Reading boundary spectra: {start_times[n]}-{end_times[n]}")
+        msg.info(
+            f"Getting boundary spectra from {self.name()} from {start_time} to {end_time}"
+        )
 
-#             bnd_list.append(xr.open_dataset(filename).sel(time = slice(start_times[n], end_times[n]), station = (inds+1)))
+        data_vars = list(WAM_VAR_MAPPING.values())
+        ds_creator_function = partial(
+            ds_wam_xarray_read, inds=inds, data_vars=data_vars
+        )
+        bnd_list = read_ds_list(
+            start_times,
+            end_times,
+            file_times,
+            folder,
+            filename,
+            ds_creator_function,
+            hours_per_file=hours_per_file,
+        )
 
-#         bnd=xr.concat(bnd_list, dim="time")
+        msg.info("Merging dataset together (this might take a while)...")
+        bnd = xr.concat(bnd_list, dim="time").squeeze("y")
+
+        if "time" in list(bnd.longitude.coords):
+            bnd["longitude"] = bnd.longitude[0, :]
+            bnd["latitude"] = bnd.latitude[0, :]
+        coord_dict, data_dict, meta_dict = create_dicts(bnd, WAM_VAR_MAPPING)
+
+        return coord_dict, data_dict, meta_dict
 
 
-#         # for x in range(len(inds)):
-#         #     for t in range(len(bnd.time.values)):
-#         #         new_spec, new_dirs = WW3ToOcean()(bnd.efth.values[t,x,:,:],bnd.direction.values)
-#         #         bnd.efth.values[t,x,:,:] = new_spec
-
-#         time = bnd.time.values
-#         freq = bnd.frequency.values
-#         dirs = bnd.direction.values
-#         spec = bnd.efth.values
-#         lon = bnd.longitude.values[0,:]
-#         lat = bnd.latitude.values[0,:]
-
-#         source = f"ww3_ouput_spectra"
-
-#         return  time, freq, dirs, spec, lon, lat, None, None, bnd.attrs
+WW3_VAR_MAPPING = {
+    "spec": "efth",
+    "lon": "longitude",
+    "lat": "latitude",
+    "time": "time",
+    "dirs": "direction",
+    "freq": "frequency",
+}
 
 
-#     def get_filename(self, time) -> str:
-#         filename = self.folder + file_module.replace_times(self.filename,
-#                                                         self.dateformat,
-#                                                         [time]) + '.nc'
-#         return filename
+def ds_ww3_xarray_read(
+    start_time: pd.Timestamp,
+    end_time: pd.Timestamp,
+    url: str,
+    inds: np.ndarray,
+    data_vars: list[str],
+):
+    with xr.open_dataset(url) as f:
+        ds = f.sel(
+            time=slice(start_time, end_time),
+            station=inds + 1,
+        )[data_vars]
+    return ds
+
+
+class WW3(SpectralDataReader):
+    _default_filename = "ww3_spec.%Y%m.nc"
+
+    stride = "month"  # int (for hourly), or 'month'
+    hours_per_file = None  # int (if not monthly files)
+    offset = 0  # int
+
+    def __init__(
+        self,
+        stride: (
+            int | str | None
+        ) = None,  # Integer is number of hours, 'month' for monthly files
+        hours_per_file: int | None = None,  # None for stride = 'month'
+        last_file: str = "",
+        lead_time: int = 0,
+        offset: int | None = None,
+    ) -> None:
+        if stride is not None:
+            self.stride = stride
+
+        if hours_per_file is not None:
+            self.hours_per_file = hours_per_file
+
+        if offset is not None:
+            self.offset = offset
+
+        if self.hours_per_file is not None:
+            self.file_structure = FileStructure(
+                stride=self.stride,
+                hours_per_file=self.hours_per_file,
+                last_file=last_file,
+                lead_time=lead_time,
+                offset=self.offset,
+            )
+        else:
+            # This assumes monthly files!
+            self.file_structure = None
+
+    def convention(self) -> SpectralConvention:
+        return SpectralConvention.WW3
+
+    def default_data_source(self) -> DataSource:
+        return DataSource.LOCAL
+
+    def get_coordinates(
+        self,
+        grid,
+        start_time,
+        source: DataSource,
+        folder: str,
+        filename: str,
+        **kwargs,
+    ) -> dict:
+        """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
+        folder = self._folder(folder, source)
+        filename = self._filename(filename, source)
+        ds = read_first_ds(folder, filename, start_time, self.file_structure)
+
+        all_points = {"lon": ds.longitude.values[0], "lat": ds.latitude.values[0]}
+        return all_points
+
+    def __call__(
+        self,
+        grid,
+        start_time,
+        end_time,
+        source: DataSource,
+        folder: str,
+        filename: str,
+        inds,
+        **kwargs,
+    ) -> tuple[dict]:
+        """Reads in all boundary spectra between the given times and at for the given indeces"""
+        folder = self._folder(folder, source)
+        filename = self._filename(filename, source)
+
+        if self.file_structure is None:
+            start_times, end_times = create_monthly_stamps(start_time, end_time)
+            file_times = start_times
+        else:
+            start_times, end_times, file_times = self.file_structure.create_time_stamps(
+                start_time, end_time
+            )
+        msg.info(
+            f"Getting boundary spectra from {self.name()} from {start_time} to {end_time}"
+        )
+
+        data_vars = list(WW3_VAR_MAPPING.values())
+        ds_creator_function = partial(
+            ds_ww3_xarray_read, inds=inds, data_vars=data_vars
+        )
+        bnd_list = read_ds_list(
+            start_times,
+            end_times,
+            file_times,
+            folder,
+            filename,
+            ds_creator_function,
+        )
+
+        msg.info("Merging dataset together (this might take a while)...")
+        bnd = xr.concat(bnd_list, dim="time")
+
+        if "time" in list(bnd.longitude.coords):
+            bnd["longitude"] = bnd.longitude[0, :]
+            bnd["latitude"] = bnd.latitude[0, :]
+        coord_dict, data_dict, meta_dict = create_dicts(bnd, WW3_VAR_MAPPING)
+
+        return coord_dict, data_dict, meta_dict

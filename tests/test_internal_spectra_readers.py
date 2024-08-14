@@ -42,3 +42,11 @@ def test_ww3_4km(grid, timevec):
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=1)
     model.import_spectra(dn.spectra.read_metno.WW3_4km(), source=DataSource.IMMUTABLE)
     assert np.all(model.spectra().time() == timevec)
+
+
+@pytest.mark.internal
+def test_norac(timevec):
+    grid = dn.grid.Grid(lon=9.834990, lat=63.571444)
+    model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=1)
+    model.import_spectra(dn.spectra.read_metno.NORAC(), source=DataSource.INTERNAL)
+    assert np.all(model.spectra().time() == timevec)
