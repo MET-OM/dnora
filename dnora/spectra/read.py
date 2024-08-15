@@ -2,16 +2,36 @@ from dnora.spectral_conventions import SpectralConvention
 from dnora import msg
 from dnora.aux_funcs import create_time_stamps
 from dnora.dnora_type_manager.data_sources import DataSource
+from dnora.dnora_type_manager.dnora_objects import dnora_objects, DnoraDataType
 from dnora.readers.abstract_readers import SpectralDataReader
 from dnora.aux_funcs import get_url
 from .swan_ascii import decode_lonlat, read_swan_ascii_spec
 import pandas as pd
 import numpy as np
-from dnora.readers.ds_read_functions import read_ds_list, read_first_ds, create_dicts
+from dnora.readers.ds_read_functions import (
+    read_ds_list,
+    read_first_ds,
+    create_dicts,
+    create_coord_dict,
+    create_data_dict,
+)
 from dnora.readers.file_structure import FileStructure
 from dnora.aux_funcs import create_monthly_stamps
 from functools import partial
 import xarray as xr
+import geo_parameters as gp
+
+ALIAS_MAPPINGS = {
+    "efth": gp.wave.Efth("spec"),
+    "SPEC": gp.wave.Efth("spec"),
+    "Pdir": gp.wave.Dirp(),
+    "depth": gp.ocean.WaterDepth("depth"),
+    "frequency": "freq",
+    "direction": "dirs",
+    "dpt": gp.ocean.WaterDepth("depth"),
+    "longitude": "lon",
+    "latitudes": "lat",
+}
 
 
 class SWAN_Ascii(SpectralDataReader):
@@ -112,8 +132,39 @@ def ds_wam_xarray_read(
     return ds
 
 
-class WAM(SpectralDataReader):
+WAM_ALIAS_MAPPINGS_FROM_DNORA = {
+    "lat": "latitude",
+    "lon": "longitude",
+    "time": "time",
+    "freq": "freq",
+    "dirs": "direction",
+}
 
+WAM_SPEC_VARS = [
+    "SPEC",
+    "longitude",
+    "latitude",
+    "time",
+    "freq",
+    "direction",
+    "time",
+]
+
+WAM_OTHER_VARS = [
+    "longitude",
+    "latitude",
+    "ff",
+    "dd",
+    "Pdir",
+    "hs",
+    "tp",
+    "time",
+]
+
+
+class WAM(SpectralDataReader):
+    WAM_SPEC_VARS = WAM_SPEC_VARS
+    WAM_OTHER_VARS = WAM_OTHER_VARS
     stride = "month"  # int (for hourly), or 'month'
     hours_per_file = None  # int (if not monthly files)
     offset = 0  # int
@@ -174,6 +225,7 @@ class WAM(SpectralDataReader):
 
     def __call__(
         self,
+        obj_type,
         grid,
         start_time,
         end_time,
@@ -200,7 +252,12 @@ class WAM(SpectralDataReader):
             f"Getting boundary spectra from {self.name()} from {start_time} to {end_time}"
         )
 
-        data_vars = list(WAM_VAR_MAPPING.values())
+        if obj_type == DnoraDataType.WAVESERIES:
+            data_vars = self.WAM_OTHER_VARS
+            wanted_coords = ["time", "lon", "lat"]
+        else:
+            data_vars = self.WAM_SPEC_VARS
+            wanted_coords = ["time", "lon", "lat", "freq", "dirs"]
         ds_creator_function = partial(
             ds_wam_xarray_read, inds=inds, data_vars=data_vars
         )
@@ -220,19 +277,49 @@ class WAM(SpectralDataReader):
         if "time" in list(bnd.longitude.coords):
             bnd["longitude"] = bnd.longitude[0, :]
             bnd["latitude"] = bnd.latitude[0, :]
-        coord_dict, data_dict, meta_dict = create_dicts(bnd, WAM_VAR_MAPPING)
+        coord_dict, ds_coord_strings = create_coord_dict(
+            wanted_coords=wanted_coords,
+            ds=bnd,
+            alias_mapping=WAM_ALIAS_MAPPINGS_FROM_DNORA,
+        )
+
+        data_vars = list(set(data_vars) - set(ds_coord_strings))
+        data_dict = create_data_dict(
+            wanted_vars=data_vars, ds=bnd, alias_mapping=ALIAS_MAPPINGS
+        )
+        meta_dict = bnd.attrs
 
         return coord_dict, data_dict, meta_dict
 
 
-WW3_VAR_MAPPING = {
-    "spec": "efth",
-    "lon": "longitude",
+WW3_ALIAS_MAPPINGS_FROM_DNORA = {
     "lat": "latitude",
+    "lon": "longitude",
     "time": "time",
-    "dirs": "direction",
     "freq": "frequency",
+    "dirs": "direction",
 }
+
+WW3_SPEC_VARS = [
+    "efth",
+    "longitude",
+    "latitude",
+    "time",
+    "frequency",
+    "direction",
+    "time",
+]
+
+WW3_OTHER_VARS = [
+    "longitude",
+    "latitude",
+    "wnd",
+    "wnddir",
+    "cur",
+    "curdir",
+    "dpt",
+    "time",
+]
 
 
 def ds_ww3_xarray_read(
@@ -313,6 +400,7 @@ class WW3(SpectralDataReader):
 
     def __call__(
         self,
+        obj_type,
         grid,
         start_time,
         end_time,
@@ -337,7 +425,12 @@ class WW3(SpectralDataReader):
             f"Getting boundary spectra from {self.name()} from {start_time} to {end_time}"
         )
 
-        data_vars = list(WW3_VAR_MAPPING.values())
+        if obj_type == DnoraDataType.WAVESERIES:
+            data_vars = WW3_OTHER_VARS
+            wanted_coords = ["time", "lon", "lat"]
+        else:
+            data_vars = WW3_SPEC_VARS
+            wanted_coords = ["time", "lon", "lat", "freq", "dirs"]
         ds_creator_function = partial(
             ds_ww3_xarray_read, inds=inds, data_vars=data_vars
         )
@@ -356,6 +449,17 @@ class WW3(SpectralDataReader):
         if "time" in list(bnd.longitude.coords):
             bnd["longitude"] = bnd.longitude[0, :]
             bnd["latitude"] = bnd.latitude[0, :]
-        coord_dict, data_dict, meta_dict = create_dicts(bnd, WW3_VAR_MAPPING)
+
+        coord_dict, ds_coord_strings = create_coord_dict(
+            wanted_coords=wanted_coords,
+            ds=bnd,
+            alias_mapping=WW3_ALIAS_MAPPINGS_FROM_DNORA,
+        )
+
+        data_vars = list(set(data_vars) - set(ds_coord_strings))
+        data_dict = create_data_dict(
+            wanted_vars=data_vars, ds=bnd, alias_mapping=ALIAS_MAPPINGS
+        )
+        meta_dict = bnd.attrs
 
         return coord_dict, data_dict, meta_dict

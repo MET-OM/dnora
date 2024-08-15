@@ -10,6 +10,19 @@ from dnora.spectra.read import WW3, WAM
 class WAM4km(WAM):
     """Operational WAM for Norwegian waters"""
 
+    WAM_OTHER_VARS = [
+        "time",
+        "longitude",
+        "latitude",
+        "ff",
+        "dd",
+        "Pdir",
+        "hs",
+        "tp",
+        "thq_sea",
+        "thq_swell",
+        "depth",
+    ]
     _default_folders = {
         DataSource.REMOTE: "https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/%Y/%m/%d",
     }
@@ -93,7 +106,19 @@ class WAM800(WAM):
         "c3": "Vestlandet",
         "c4": "Skagerrak",
     }
-
+    WAM_OTHER_VARS = [
+        "time",
+        "longitude",
+        "latitude",
+        "ff",
+        "dd",
+        "Pdir",
+        "hs",
+        "tp",
+        "thq_sea",
+        "thq_swell",
+        "depth",
+    ]
     stride: int = 12
     hours_per_file: int = 73
 

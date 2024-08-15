@@ -11,12 +11,17 @@ from .process import BoundaryProcessor
 from dnora import msg
 
 from geo_skeletons import PointSkeleton
-from geo_skeletons.decorators import add_time, add_frequency, add_direction, add_datavar
+from geo_skeletons.decorators import (
+    add_time,
+    add_frequency,
+    add_direction,
+    add_datavar,
+    add_magnitude,
+)
 
 import geo_parameters as gp
 
 
-# @add_mask(name='bad', coords='all', default_value=0)
 @add_datavar(gp.wave.Efth("spec"), coord_group="all", default_value=0.0)
 @add_direction(grid_coord=False)
 @add_frequency(grid_coord=False)

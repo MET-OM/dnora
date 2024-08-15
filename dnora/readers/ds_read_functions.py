@@ -8,6 +8,7 @@ from dnora import msg
 from dnora.dnora_type_manager.dnora_types import DnoraDataType
 
 from typing import Callable
+import geo_parameters as gp
 
 
 def read_first_ds(
@@ -137,6 +138,35 @@ def create_dicts(ds, var_mapping: dict):
 
     meta_dict = ds.attrs
     return coord_dict, data_dict, meta_dict
+
+
+def create_coord_dict(wanted_coords: list, ds: xr.Dataset, alias_mapping: dict) -> dict:
+    """Creates a dict of wanted coordinates from xr.Dataset and identifies which variables in the ds has been used for coordinates"""
+    coord_dict = {}
+    ds_coord_strings = []
+    for coord in wanted_coords:
+        if not hasattr(ds, coord):
+            ds_coord = alias_mapping[coord]
+        else:
+            ds_coord = coord
+        ds_coord_strings.append(ds_coord)
+        coord_dict[coord] = ds[ds_coord].values.squeeze()
+    return coord_dict, ds_coord_strings
+
+
+def create_data_dict(wanted_vars: list, ds: xr.Dataset, alias_mapping: dict) -> dict:
+    data_dict = {}
+    for var in wanted_vars:
+        standard_name = ds[var].attrs.get("standard_name")
+        param = gp.get(standard_name)
+        if param is None:
+            param = alias_mapping.get(var)
+
+        if param is None:
+            raise ValueError(f"Could not find dnora name for variable {var}!")
+
+        data_dict[param] = ds[var].data
+    return data_dict
 
 
 def data_left_to_try_with(hours_per_file, n, ct, file_times, end_time) -> bool:
