@@ -98,8 +98,8 @@ class Area(PointPicker):
             x, y = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
             x_all, y_all = all_points.lonlat()
 
-        maskx = np.logical_and(x_all > x[0], x_all < x[1])
-        masky = np.logical_and(y_all > y[0], y_all < y[1])
+        maskx = np.logical_and(x_all >= x[0], x_all <= x[1])
+        masky = np.logical_and(y_all >= y[0], y_all <= y[1])
         mask = np.logical_and(maskx, masky)
 
         inds = np.where(mask)[0]

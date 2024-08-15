@@ -13,7 +13,7 @@ from dnora.grid import Grid, TriGrid
 from dnora.file_module import FileNames
 
 # Import abstract classes and needed instances of them
-from dnora.pick.point_pickers import PointPicker, NearestGridPoint, Trivial
+from dnora.pick.point_pickers import PointPicker, NearestGridPoint, Trivial, Area
 from dnora.importer import DataImporter
 
 from dnora.spectral_grid import SpectralGrid
@@ -234,12 +234,24 @@ class ModelRun:
 
         return reader, name, source, folder
 
-    def _setup_point_picker(self, point_picker: PointPicker):
+    def _setup_point_picker(self, point_picker: PointPicker, point_mask: np.ndarray):
         """Sets up point picker using possible default values."""
-        point_picker = point_picker or self._get_point_picker()
+        grid_is_single_point = self.grid().nx() == 1 and self.grid().ny() == 1
+        grid_is_empty_area = (
+            self.grid().nx() == 2 and self.grid().ny() == 2 and self.grid().is_gridded()
+        )
+        # For single point grid, override user
+        if grid_is_single_point:
+            point_mask = self.grid().sea_mask() * True
+            point_picker = point_picker or self._get_point_picker()
+        elif grid_is_empty_area and np.all(np.logical_not(point_mask)):
+            point_picker = point_picker or Area()
+        else:
+            point_picker = point_picker or self._get_point_picker()
         if point_picker is None:
-            raise Exception("Define a PointPicker!")
-        return point_picker
+            raise ValueError("Define a PointPicker!")
+
+        return point_picker, point_mask
 
     def _import_data(
         self,
@@ -259,9 +271,9 @@ class ModelRun:
             obj_type, name, dry_run, reader, source, folder
         )
 
-        point_picker = self._setup_point_picker(point_picker)
-        if point_mask is None:
-            point_mask = self.grid().sea_mask()
+        point_picker, point_mask = self._setup_point_picker(point_picker, point_mask)
+        # if point_mask is None:
+        #     point_mask = self.grid().sea_mask()
         if self.forecast_mode():
             if hasattr(reader, "hours_per_file"):
                 start_time = self._reference_time
@@ -282,6 +294,7 @@ class ModelRun:
             start_time, end_time = self.start_time(), self.end_time()
 
         data_importer = DataImporter()
+
         obj = data_importer.import_data(
             grid=self.grid(),
             start_time=start_time,
@@ -366,7 +379,7 @@ class ModelRun:
             source,
             folder,
             filename,
-            point_mask=self.grid().sea_mask(),
+            point_mask=self.grid().boundary_mask(),
             point_picker=point_picker,
             **kwargs,
         )
@@ -392,7 +405,7 @@ class ModelRun:
             source,
             folder,
             filename,
-            point_mask=self.grid().sea_mask(),
+            point_mask=self.grid().boundary_mask(),
             point_picker=point_picker,
             **kwargs,
         )
@@ -418,7 +431,7 @@ class ModelRun:
             source,
             folder,
             filename,
-            point_mask=self.grid().sea_mask(squeeze=False),
+            point_mask=self.grid().sea_mask(),
             point_picker=point_picker,
             **kwargs,
         )

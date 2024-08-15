@@ -59,14 +59,18 @@ class DataImporter:
         else:
             search_inds = all_points.inds()
 
-        if np.all(np.logical_not(point_mask)):
-            msg.warning(
-                "None of the points set to interest points! Aborting import of data."
-            )
-            return
-        else:
-            interest_points = PointSkeleton.from_skeleton(grid, mask=point_mask)
+        # if np.all(np.logical_not(point_mask)):
+        #     msg.warning(
+        #         "None of the points set to interest points! Aborting import of data."
+        #     )
+        #     return
+        # else:
+        #     interest_points = PointSkeleton.from_skeleton(grid, mask=point_mask)
 
+        if not np.all(np.logical_not(point_mask)):
+            interest_points = PointSkeleton.from_skeleton(grid, mask=point_mask)
+        else:
+            interest_points = None
         inds = point_picker(
             grid=grid,
             all_points=all_points.sel(inds=search_inds),
@@ -76,8 +80,7 @@ class DataImporter:
         )
 
         if len(inds) < 1:
-            msg.warning("PointPicker didn't find any points. Aborting import of data.")
-            return
+            return []
         return search_inds[inds]
 
     @staticmethod
@@ -192,7 +195,7 @@ class DataImporter:
             msg.info("Dry run! No data will be imported.")
             return
 
-        if point_mask is not None and not dnora_objects.get(obj_type).is_gridded():
+        if not dnora_objects.get(obj_type).is_gridded():
             msg.header(point_picker, "Choosing points to import...")
             inds = self._pick_points(
                 grid,
@@ -205,14 +208,19 @@ class DataImporter:
                 filename,
                 **kwargs,
             )
+            if not inds:
+                msg.warning(
+                    "PointPicker didn't find any points. Aborting import of data."
+                )
+                return
         else:
-            inds = None
+            inds = []
 
-        if not dnora_objects.get(obj_type).is_gridded() and inds is None:
-            msg.info(
-                "No point_mask is provided, but it is needed to import a non-gridded object!"
-            )
-            return
+        # if not dnora_objects.get(obj_type).is_gridded() and inds is None:
+        #     msg.info(
+        #         "No point_mask is provided, but it is needed to import a non-gridded object!"
+        #     )
+        #     return
 
         obj = self._read_data_and_create_object(
             obj_type,
