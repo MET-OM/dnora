@@ -14,7 +14,7 @@ from dnora.file_module import FileNames
 
 # Import abstract classes and needed instances of them
 from dnora.pick.point_pickers import PointPicker, NearestGridPoint, Trivial, Area
-from dnora.importer import DataImporter
+from dnora.modelrun.import_functions import import_data
 
 from dnora.spectral_grid import SpectralGrid
 
@@ -293,9 +293,7 @@ class ModelRun:
         else:
             start_time, end_time = self.start_time(), self.end_time()
 
-        data_importer = DataImporter()
-
-        obj = data_importer.import_data(
+        obj = import_data(
             grid=self.grid(),
             start_time=start_time,
             end_time=end_time,
