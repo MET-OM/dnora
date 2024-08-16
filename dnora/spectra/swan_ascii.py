@@ -81,8 +81,13 @@ def decode_vadens(file, n_loc, n_freq, n_dir, start_time, end_time) -> tuple:
             print(pd.to_datetime(times[-1]).strftime("%Y-%m-%d"))
 
         single_spec = np.zeros((n_loc, n_freq, n_dir))
+        no_data_spec = []
         for k in range(n_loc):
             line = file.readline()
+            if "NODATA" in line:
+                no_data_spec.append(k + 1)
+                single_spec[k, :, :] = 0
+                continue
             assert "FACTOR" in line, f"Expected this line to be 'FACTOR'!"
 
             line = file.readline()
@@ -94,6 +99,9 @@ def decode_vadens(file, n_loc, n_freq, n_dir, start_time, end_time) -> tuple:
                 )
         specs.append(single_spec)
         line = file.readline()
+
+    for i in no_data_spec:
+        print(f"Spectrum {i}/{n_loc} had NODATA. (Set to 0)")
 
     print("<<< Ending decoding of VaDens")
     times = pd.to_datetime(times)

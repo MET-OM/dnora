@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from dnora.modelrun import ModelRun
     from dnora.dnora_type_manager.dnora_objects import DnoraObject
 from dnora.dnora_type_manager.dnora_types import DnoraDataType, DnoraFileType
-from .model_formats import ModelFormat
+from dnora.dnora_type_manager.model_formats import ModelFormat
 
 
 @dataclass
@@ -35,10 +35,13 @@ class FileNames:
         self.primary = self._defaults[self.format.name]
 
         if self.edge_object is None:
-            self.edge_object = self.obj_type
+            if isinstance(self.obj_type, DnoraDataType):
+                self.edge_object = self.obj_type
+            else:
+                self.edge_object = DnoraDataType.GRID  # Always present in ModelRun
 
         if self.obj_name is None and self.obj_type is not None:
-            if self.model[self.obj_type] is not None:
+            if self.model.get(self.obj_type) is not None:
                 self.obj_name = self.model[self.obj_type].name
 
     def get_start_time(self):

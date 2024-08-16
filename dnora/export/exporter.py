@@ -11,7 +11,7 @@ from dnora.dnora_type_manager.dnora_types import (
     data_type_from_string,
     DnoraFileType,
 )
-from ..model_formats import ModelFormat
+from dnora.dnora_type_manager.model_formats import ModelFormat
 
 WriterFunction = Union[
     DataWriter,

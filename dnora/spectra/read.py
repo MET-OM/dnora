@@ -24,6 +24,7 @@ import geo_parameters as gp
 ALIAS_MAPPINGS = {
     "efth": gp.wave.Efth("spec"),
     "SPEC": gp.wave.Efth("spec"),
+    "hspec": gp.wave.Ef("spec"),
     "Pdir": gp.wave.Dirp(),
     "depth": gp.ocean.WaterDepth("depth"),
     "frequency": "freq",
@@ -47,6 +48,9 @@ class SWAN_Ascii(SpectralDataReader):
         if source == DataSource.INTERNAL:
             folder = get_url(folder, "SWAN")
         return folder, filename
+
+    def post_processing(self):
+        return RemoveEmpty()
 
     def get_coordinates(
         self,

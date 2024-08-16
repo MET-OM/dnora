@@ -27,12 +27,12 @@ class DnoraFileType(Enum):
 
 
 def data_type_from_string(obj_str: str | DnoraDataType) -> DnoraDataType:
-    if isinstance(obj_str, DnoraDataType):
-        return obj_str
-    return DnoraDataType[obj_str.upper()]
+    if isinstance(obj_str, str):
+        obj_str = DnoraDataType[obj_str.upper()]
+    return obj_str
 
 
 def file_type_from_string(obj_str: str | DnoraFileType) -> DnoraFileType:
-    if isinstance(obj_str, DnoraFileType):
-        return obj_str
-    return DnoraFileType[obj_str.upper()]
+    if isinstance(obj_str, str):
+        obj_str = DnoraFileType[obj_str.upper()]
+    return obj_str

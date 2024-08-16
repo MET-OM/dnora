@@ -1,7 +1,7 @@
 from .executer import ModelExecuter
 from . import model_runners
 from . import inputfile
-from dnora.model_formats import ModelFormat
+from dnora.dnora_type_manager.model_formats import ModelFormat
 from dnora.dnora_type_manager.dnora_types import DnoraFileType
 
 

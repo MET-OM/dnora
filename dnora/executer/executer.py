@@ -2,7 +2,7 @@ from .inputfile.inputfile_writers import InputFileWriter
 from dnora.dnora_type_manager.dnora_types import DnoraFileType, DnoraDataType
 from dnora import msg
 from dnora.file_module import FileNames
-from dnora.model_formats import ModelFormat
+from dnora.dnora_type_manager.model_formats import ModelFormat
 
 from .post_processors import PostProcessor
 from .model_runners import ModelRunner

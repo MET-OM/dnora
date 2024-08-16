@@ -3,7 +3,7 @@ from . import data_writers, grid_writers, spectra_writers, spectra1d_writers
 
 from dnora.dnora_type_manager.dnora_types import DnoraDataType
 from .exporter import WriterFunction
-from dnora.model_formats import ModelFormat
+from dnora.dnora_type_manager.model_formats import ModelFormat
 
 
 class NullExporter(DataExporter):

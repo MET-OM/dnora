@@ -15,7 +15,7 @@ from dnora.file_module import FileNames
 # Import abstract classes and needed instances of them
 from dnora.pick.point_pickers import PointPicker, NearestGridPoint, Trivial, Area
 from dnora.modelrun.import_functions import import_data
-
+from dnora.dnora_type_manager.model_formats import ModelFormat
 from dnora.spectral_grid import SpectralGrid
 
 
@@ -567,7 +567,7 @@ class ModelRun:
 
     def grid(self) -> Union[Grid, TriGrid]:
         """Returns the grid object."""
-        return self._dnora_objects.get(DnoraDataType.GRID)
+        return self.get(DnoraDataType.TRIGRID) or self.get(DnoraDataType.GRID)
 
     def wind(self) -> Wind:
         """Returns the forcing object if exists."""
@@ -609,14 +609,14 @@ class ModelRun:
         self,
     ) -> list[DnoraObject]:
         """[ModelRun, Boundary] etc."""
-        return [self[x] for x in DnoraDataType if self[x] is not None]
+        return [self.get(x) for x in DnoraDataType if self.get(x) is not None]
 
     def dict_of_object_names(self) -> dict[str:str]:
         """{'Boundary': 'NORA3'} etc."""
         dict_of_object_names = {}
         for obj_type in DnoraDataType:
-            if self[obj_type] is not None:
-                dict_of_object_names[obj_type] = self[obj_type].name
+            if self.get(obj_type) is not None:
+                dict_of_object_names[obj_type] = self.get(obj_type).name
         return dict_of_object_names
 
     def data_exported_to(self, obj_type: DnoraDataType | str) -> str:
@@ -626,8 +626,6 @@ class ModelRun:
         a best guess
         """
         obj_type = data_type_from_string(obj_type)
-        if self[obj_type] is None:
-            return [""]
 
         default_name = FileNames(
             model=self, format=self._get_default_format(), obj_type=obj_type
@@ -641,11 +639,11 @@ class ModelRun:
         a best guess
         """
         file_type = file_type_from_string(file_type)
-        if self[file_type] is None:
-            return [""]
 
         default_name = FileNames(
-            model=self, format=self._get_default_format(), obj_type=file_type
+            model=self,
+            format=self._get_default_format(),
+            obj_type=file_type,
         ).get_filepath()
         return self._input_file_exported_to.get(file_type, default_name)
 
@@ -664,7 +662,7 @@ class ModelRun:
                 crop_with = DnoraDataType
 
             for obj_str in crop_with:
-                dnora_obj = self[data_type_from_string(obj_str)]
+                dnora_obj = self.get(data_type_from_string(obj_str))
                 if dnora_obj is not None:
                     time = dnora_obj.time()
                     if time[0] is not None:
@@ -673,7 +671,6 @@ class ModelRun:
                         t1 = pd.to_datetime([t1, time[-1]]).min()
         time = pd.date_range(t0, t1, freq="h")
         return time
-        # return time[:: len(time) - 1]
 
     def start_time(self, crop_with: list[str] = None):
         """Returns start time of ModelRun
@@ -685,27 +682,25 @@ class ModelRun:
         crop = True: Give the period that is covered by all objects (Forcing etc.)"""
         return self.time(crop_with=crop_with)[-1]
 
-    def __getitem__(self, obj_type: DnoraDataType) -> DnoraObject:
-        try:
-            obj_type = data_type_from_string(obj_type)
-        except:
-            pass
+    def __getitem__(self, obj_type: DnoraDataType | str) -> DnoraObject:
+        """Gets an Dnora item"""
+        obj_type = data_type_from_string(obj_type)
+        return self._dnora_objects[obj_type]
 
-        if obj_type is None:
-            return self
-        if obj_type == DnoraDataType.TRIGRID:
-            if type(self.grid()) == TriGrid:
-                return self.grid()
-            else:
-                return None
-
+    def get(self, obj_type: DnoraDataType | str) -> DnoraObject | None:
+        """Gets an Dnora item and returns None is it doesn't exist"""
+        obj_type = data_type_from_string(obj_type)
         return self._dnora_objects.get(obj_type)
 
-    def get(self, obj_type: DnoraDataType) -> DnoraObject:
-        return self.__getitem__(obj_type)
+    def __setitem__(self, obj_type: DnoraDataType | str, value: DnoraObject) -> None:
+        """Sets a Dnora item"""
+        obj_type = data_type_from_string(obj_type)
+        self._dnora_objects[obj_type] = value
 
-    def __setitem__(self, key: DnoraDataType, value: DnoraObject) -> None:
-        self._dnora_objects[key] = value
+    def __delitem__(self, obj_type: DnoraDataType | str) -> None:
+        """Delets a Dnora item"""
+        obj_type = data_type_from_string(obj_type)
+        del self._dnora_objects[obj_type]
 
     def _get_reader(self, obj_type: DnoraDataType | str) -> ReaderFunction:
         obj_type = data_type_from_string(obj_type)
@@ -713,6 +708,9 @@ class ModelRun:
 
     def _get_point_picker(self) -> PointPicker:
         return self._point_picker
+
+    def _get_default_format(self) -> str:
+        return ModelFormat[type(self).__name__.upper()]
 
     def activate_internal_mode(self, folder: str = None) -> None:
         self._activate_source_mode(DataSource.INTERNAL, folder)
