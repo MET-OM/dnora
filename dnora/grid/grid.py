@@ -1,3 +1,5 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
 from geo_skeletons import GriddedSkeleton
 import numpy as np
 import xarray as xr
@@ -9,7 +11,8 @@ from .mesh import Mesher, Interpolate
 from .process import GridProcessor
 from pathlib import Path
 
-from dnora.readers.abstract_readers import DataReader
+if TYPE_CHECKING:
+    from dnora.readers.abstract_readers import DataReader
 from dnora.dnora_type_manager.data_sources import DataSource
 import matplotlib.pyplot as plt
 from .topo import import_topo

@@ -105,7 +105,9 @@ class SWAN_Ascii(SpectralDataReader):
             "freq": freq,
             "dirs": dirs,
         }
-        data_dict = {"spec": spec}
+        data_dict = {
+            "spec": spec * 180 / np.pi
+        }  # SWAN normalizes using degrees, we want normal radians normalization
         meta_dict = {"source": "Spectral wave data from a SWAN run"}
 
         return coord_dict, data_dict, meta_dict

@@ -13,6 +13,11 @@ class NullExporter(DataExporter):
         return data_writers.Null()
 
 
+class Netcdf(DataExporter):
+    def _get_default_writer(self) -> WriterFunction:
+        return data_writers.Netcdf(monthly_files=True)
+
+
 class Cacher(DataExporter):
     _silent = True
 

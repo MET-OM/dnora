@@ -55,7 +55,6 @@ def moment(spec: Union[Spectra, Spectra1D], moment: float) -> np.ndarray:
         ds = dD * np.pi / 180 * spec.ds().sum(dim="dirs")
     else:
         ds = spec.ds()
-
     ds = trapz_or_sum(ds.spec * (ds.freq**moment))
 
     return ds.data

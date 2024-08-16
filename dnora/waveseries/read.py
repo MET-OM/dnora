@@ -98,11 +98,10 @@ class Spectra1DToWaveSeries(PointDataReader):
             func = get_function(wp)
             data_dict[wp] = func(self._Spectra1D)
 
-        meta_dict = self._Spectra1D.ds().attrs
+        meta_dict = self._Spectra1D.meta.get()
         meta_dict["integration_range"] = f"{self._freq[0]}-{self._freq[-1]} Hz"
 
         coord_dict = {"lon": lon, "lat": lat, "x": x, "y": y, "time": time}
-
         return coord_dict, data_dict, meta_dict
 
     def name(self) -> str:
