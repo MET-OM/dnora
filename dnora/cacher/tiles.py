@@ -96,7 +96,13 @@ class TileObject:
         return lon, lat
 
 
-def create_tiles(area, start_time, end_time, expansion_factor):
+def create_tiles(area, start_time, end_time, expansion_factor) -> tuple:
+    """Creates tiles that cover 5x5 degrees in space and one day in time.
+    Returns:
+
+    lons/lats that is a list of tuple [(0.0, 5.0), (5.0,10.0), ...]
+    times: list of strings ['2020-01-01', '2020-01-01', '2020-01-02', ...]
+    """
     tile_res = 5  # degrees
     lon, lat = expand_area(
         area.edges("lon", native=True), area.edges("lat", native=True), expansion_factor
@@ -105,10 +111,9 @@ def create_tiles(area, start_time, end_time, expansion_factor):
     days = day_list(start_time, end_time)
 
     lon[0] = np.floor(lon[0] / tile_res) * tile_res
-    lon[1] = np.ceil(lon[1] / tile_res) * tile_res
+    lon[1] = np.floor(lon[1] / tile_res) * tile_res + tile_res
     lat[0] = np.floor(lat[0] / tile_res) * tile_res
-    lat[1] = np.ceil(lat[1] / tile_res) * tile_res
-
+    lat[1] = np.floor(lat[1] / tile_res) * tile_res + tile_res
     lon_vec = np.arange(lon[0], lon[1] - tile_res / 2, tile_res)
     lat_vec = np.arange(lat[0], lat[1] - tile_res / 2, tile_res)
     lons = []
