@@ -153,16 +153,23 @@ class EMODNET(DataReader):
         folder = get_url(folder, f"EMODNET/{year:.0f}")
         # Area is expanded a bit to not get in trouble in the meshing stage
         # when we interpoolate or filter
+
+        msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
         lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
+        msg.plain(
+            f"Downloading bathymetry for: {lon[0]:10.7f}-{lon[1]:10.7f}, {lat[0]:10.7f}-{lat[1]:10.7f}."
+        )
 
         # Identefy tiles:
         tile_nw = find_tile(lon[0], lat[1])
         tile_se = find_tile(lon[1], lat[0])
+
         if not tile_nw or not tile_se:
-            msg.error(f"Area not coverd by EMODNET!!!")
+            msg.warning(f"Area not coverd by EMODNET!!!")
             return
         self.tiles = get_covering_tiles(tile_se=tile_se, tile_nw=tile_nw)
 
+        msg.plain(f"Using tiles: {self.tiles}")
         self.files = self._get_files(folder, self.tiles, year)
         # Check if tiles exist locally
         tiles_to_download = []
@@ -176,6 +183,7 @@ class EMODNET(DataReader):
                     msg.plain(f"Creating folder {folder}")
                 os.makedirs(folder)
             for tile in tiles_to_download:
+                msg.from_file(tile)
                 download_tile(tile=tile, year=year, folder=folder)
 
         def _crop(ds):
@@ -186,6 +194,7 @@ class EMODNET(DataReader):
 
         with dask.config.set(**{"array.slicing.split_large_chunks": True}):
             with xr.open_mfdataset(self.files, preprocess=_crop) as ds:
+                msg.from_file(self.files)
                 ds = ds.sel(lon=slice(lon[0], lon[1]), lat=slice(lat[0], lat[1]))
                 topo = -1 * ds.elevation.values
                 coord_dict = {"lon": ds.lon.values, "lat": ds.lat.values}
