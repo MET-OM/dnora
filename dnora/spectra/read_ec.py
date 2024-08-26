@@ -172,22 +172,25 @@ class ERA5(SpectralDataReader):
         # Latitude was flipped to be ascending, so flip that dimension
         spec = np.flip(spec, 3)
 
+        freq = bnd_spec.frequency.values
+        dirs = bnd_spec.direction.values
+        try:
+            time = bnd_spec.time.values
+        except AttributeError:  # Name changes in new beta
+            time = bnd_spec.valid_time.values
+
         # This is time, freq, dir, station
         spec = np.reshape(
             spec,
             (
-                len(bnd_spec.time),
-                len(bnd_spec.frequency),
-                len(bnd_spec.direction),
+                len(time),
+                len(freq),
+                len(dirs),
                 len(lon),
             ),
         )
         # This is time, station, freq, dir (as we want it)
         spec = np.moveaxis(spec, 3, 1)
-
-        freq = bnd_spec.frequency.values
-        dirs = bnd_spec.direction.values
-        time = bnd_spec.time.values
 
         # Inds given by point picker
         lon = lon[inds]

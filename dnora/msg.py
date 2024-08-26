@@ -11,7 +11,7 @@ def to_file(filename):
 def to_multifile(filenames: list[str], max_length: int = 5):
     if len(filenames) <= max_length:
         for file in filenames:
-            from_file(file)
+            to_file(file)
         return
     if max_length % 2 == 0:
         max_length -= 1

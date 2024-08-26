@@ -158,10 +158,15 @@ class ERA5(DataReader):
             latitude=slice(None, None, -1)
         )  # ERA5 gives lat as descending
 
+        try:
+            time = wind_forcing.time.values
+        except AttributeError:  # Name changes in new beta
+            time = wind_forcing.valid_time.values
+
         coord_dict = {
             "lon": wind_forcing.longitude.values,
             "lat": wind_forcing.latitude.values,
-            "time": wind_forcing.time.values,
+            "time": time,
         }
         data_dict = {"u": wind_forcing.u10.values, "v": wind_forcing.v10.values}
         meta_dict = wind_forcing.attrs
