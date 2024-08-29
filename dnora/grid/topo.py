@@ -11,7 +11,7 @@ from dnora.type_manager.data_sources import (
     DataSource,
     data_source_from_string,
 )
-from dnora import msg, aux_funcs
+from dnora import msg, utils
 from dnora.defaults import read_environment_variable
 import os
 
@@ -87,7 +87,7 @@ def import_topo(
         msg.warning("Imported topography seems to be empty. Maybe using wrong tile?")
         return
 
-    if aux_funcs.is_gridded(topo, lon, lat) or aux_funcs.is_gridded(topo, x, y):
+    if utils.grid.is_gridded(topo, lon, lat) or utils.grid.is_gridded(topo, x, y):
         topo_grid = GriddedTopo(lon=lon, lat=lat, x=x, y=y)
         topo_grid.set_spacing(nx=len(x or lon), ny=len(y or lat))
     else:

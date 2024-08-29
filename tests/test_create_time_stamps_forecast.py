@@ -1,4 +1,4 @@
-from dnora.aux_funcs import create_time_stamps
+from dnora.utils.time import create_time_stamps
 import pandas as pd
 
 

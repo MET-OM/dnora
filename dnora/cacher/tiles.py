@@ -108,7 +108,7 @@ def create_tiles(area, start_time, end_time, expansion_factor) -> tuple:
         area.edges("lon", native=True), area.edges("lat", native=True), expansion_factor
     )
     lon, lat = np.array(lon), np.array(lat)
-    days = day_list(start_time, end_time)
+    days = utils.time.day_list(start_time, end_time)
 
     lon[0] = np.floor(lon[0] / tile_res) * tile_res
     lon[1] = np.floor(lon[1] / tile_res) * tile_res + tile_res
