@@ -1,7 +1,7 @@
 from copy import copy
 
 # Import objects
-from dnora.spectral_conventions import SpectralConvention
+from dnora.type_manager.spectral_conventions import SpectralConvention
 from .process import boundary_processor_for_convention_change
 
 # Import abstract classes and needed instances of them

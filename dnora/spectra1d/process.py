@@ -1,7 +1,7 @@
 import numpy as np
 from abc import ABC, abstractmethod
 
-from dnora.spectral_conventions import SpectralConvention
+from dnora.type_manager.spectral_conventions import SpectralConvention
 from dnora.aux_funcs import check_that_spectra_are_consistent
 
 

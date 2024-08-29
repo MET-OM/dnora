@@ -3,7 +3,7 @@ import numpy as np
 
 from dnora.spectra import Spectra
 from dnora.spectra1d import Spectra1D
-from dnora.spectral_conventions import SpectralConvention
+from dnora.type_manager.spectral_conventions import SpectralConvention
 from typing import Union
 import geo_parameters as gp
 from typing import Union

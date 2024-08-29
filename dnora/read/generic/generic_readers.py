@@ -8,7 +8,7 @@ from dnora import aux_funcs
 from pathlib import Path
 from dnora.type_manager.dnora_types import DnoraDataType
 from dnora.type_manager.data_sources import DataSource
-from dnora.spectral_conventions import convert_2d_to_1d, SpectralConvention
+from dnora.type_manager.spectral_conventions import convert_2d_to_1d, SpectralConvention
 
 from dnora.type_manager.dnora_objects import dnora_objects
 from dnora.aux_funcs import get_url, expand_area

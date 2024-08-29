@@ -25,7 +25,7 @@ from dnora.cacher.cache_decorator import cached_reader
 from dnora.defaults import read_environment_variable
 from dnora.spectra1d.read import SpectraTo1D
 from dnora.waveseries.read import Spectra1DToWaveSeries
-from dnora.spectral_conventions import SpectralConvention
+from dnora.type_manager.spectral_conventions import SpectralConvention
 from dnora.pick import Trivial
 
 from dnora.export.templates import Cacher

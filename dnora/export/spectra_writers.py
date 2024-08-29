@@ -14,7 +14,7 @@ from dnora.type_manager.dnora_types import DnoraDataType
 from dnora import msg
 from dnora import file_module
 from .data_writers import DataWriter
-from dnora.spectral_conventions import SpectralConvention
+from dnora.type_manager.spectral_conventions import SpectralConvention
 
 
 class SpectraWriter(DataWriter):

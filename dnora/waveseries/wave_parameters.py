@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import xarray as xr
 import numpy as np
-from dnora.spectral_conventions import SpectralConvention
+from dnora.type_manager.spectral_conventions import SpectralConvention
 from dnora.spectra import Spectra
 from dnora.spectra1d import Spectra1D
 from typing import Union

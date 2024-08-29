@@ -4,7 +4,7 @@ from dnora import (
     pick,
     export,
 )
-from dnora.spectral_conventions import SpectralConvention
+from dnora.type_manager.spectral_conventions import SpectralConvention
 import numpy as np
 
 from dnora.read.generic import ConstantData

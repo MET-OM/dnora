@@ -2,7 +2,7 @@ from copy import copy
 
 # Import objects
 from .process import spectral_processor_for_convention_change
-from dnora.spectral_conventions import SpectralConvention, convert_2d_to_1d
+from dnora.type_manager.spectral_conventions import SpectralConvention, convert_2d_to_1d
 
 # Import abstract classes and needed instances of them
 from dnora import msg

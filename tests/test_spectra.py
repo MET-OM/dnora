@@ -3,7 +3,7 @@ from dnora import modelrun, pick
 import numpy as np
 
 from dnora.read.generic import ConstantData
-from dnora.spectral_conventions import SpectralConvention
+from dnora.type_manager.spectral_conventions import SpectralConvention
 
 
 def test_import_constant_spectra_one_point():

@@ -2,7 +2,7 @@ from copy import copy
 from dnora.spectra import Spectra
 import numpy as np
 
-from dnora.spectral_conventions import convert_2d_to_1d
+from dnora.type_manager.spectral_conventions import convert_2d_to_1d
 
 from dnora.type_manager.data_sources import DataSource
 from dnora.read.abstract_readers import SpectralDataReader

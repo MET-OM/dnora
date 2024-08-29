@@ -2,7 +2,7 @@ import unittest
 import dnora
 import numpy as np
 from copy import copy
-from dnora.spectral_conventions import SpectralConvention
+from dnora.type_manager.spectral_conventions import SpectralConvention
 
 
 def load_test_spec(shifted=False, math=False):

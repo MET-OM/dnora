@@ -10,7 +10,7 @@ from dnora.aux_funcs import (
     check_that_spectra_are_consistent,
 )
 
-from dnora.spectral_conventions import SpectralConvention
+from dnora.type_manager.spectral_conventions import SpectralConvention
 
 
 class BoundaryProcessor(ABC):

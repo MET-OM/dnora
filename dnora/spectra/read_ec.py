@@ -19,7 +19,7 @@ from dnora.aux_funcs import (
     int_list_of_months,
     int_list_of_years,
 )
-from dnora.spectral_conventions import SpectralConvention
+from dnora.type_manager.spectral_conventions import SpectralConvention
 
 
 def renormalize_era5_spec(bnd_spec):

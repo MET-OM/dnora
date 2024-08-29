@@ -1,6 +1,6 @@
 from dnora import msg
 from dnora.file_module import FileNames
-from dnora.spectral_conventions import SpectralConvention
+from dnora.type_manager.spectral_conventions import SpectralConvention
 from typing import Union
 from .data_writers import DataWriter, Netcdf
 from .spectra_writers import SpectraWriter

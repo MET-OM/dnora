@@ -1,4 +1,4 @@
-from dnora.spectral_conventions import SpectralConvention
+from dnora.type_manager.spectral_conventions import SpectralConvention
 from dnora import msg
 from dnora.aux_funcs import create_time_stamps
 from dnora.type_manager.data_sources import DataSource
