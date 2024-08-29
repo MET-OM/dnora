@@ -6,11 +6,11 @@ import numpy as np
 import xarray as xr
 from dnora import aux_funcs
 from pathlib import Path
-from dnora.dnora_type_manager.dnora_types import DnoraDataType
-from dnora.dnora_type_manager.data_sources import DataSource
+from dnora.type_manager.dnora_types import DnoraDataType
+from dnora.type_manager.data_sources import DataSource
 from dnora.spectral_conventions import convert_2d_to_1d, SpectralConvention
 
-from dnora.dnora_type_manager.dnora_objects import dnora_objects
+from dnora.type_manager.dnora_objects import dnora_objects
 from dnora.aux_funcs import get_url, expand_area
 from dnora import msg
 from .constant_funcs import create_constant_array, print_constant_values

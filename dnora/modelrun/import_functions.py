@@ -1,11 +1,11 @@
-from dnora.dnora_type_manager.dnora_types import DnoraDataType
+from dnora.type_manager.dnora_types import DnoraDataType
 from typing import Union
 from dnora.read.abstract_readers import (
     DataReader,
     SpectralDataReader,
     ReaderFunction,
 )
-from dnora.dnora_type_manager.dnora_objects import DnoraObject, Grid, dnora_objects
+from dnora.type_manager.dnora_objects import DnoraObject, Grid, dnora_objects
 import geo_parameters as gp
 import pandas as pd
 import numpy as np

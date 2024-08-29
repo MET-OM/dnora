@@ -6,12 +6,12 @@ from .data_writers import DataWriter, Netcdf
 from .spectra_writers import SpectraWriter
 
 from .decorators import add_export_method
-from dnora.dnora_type_manager.dnora_types import (
+from dnora.type_manager.dnora_types import (
     DnoraDataType,
     data_type_from_string,
     DnoraFileType,
 )
-from dnora.dnora_type_manager.model_formats import ModelFormat
+from dnora.type_manager.model_formats import ModelFormat
 
 WriterFunction = Union[
     DataWriter,

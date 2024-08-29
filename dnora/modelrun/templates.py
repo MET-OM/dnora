@@ -3,7 +3,7 @@ from dnora.modelrun.modelrun import ModelRun
 
 from dnora import spectra, wind, waterlevel
 from dnora.read.generic import ConstantData
-from dnora.dnora_type_manager.dnora_types import DnoraDataType
+from dnora.type_manager.dnora_types import DnoraDataType
 
 
 class Constant(ModelRun):

@@ -9,7 +9,7 @@ from dnora.grid import Grid
 
 # Import abstract classes
 from dnora.read.abstract_readers import DataReader
-from dnora.dnora_type_manager.data_sources import DataSource
+from dnora.type_manager.data_sources import DataSource
 from dnora.read.file_structure import FileStructure
 
 # Import aux_funcsiliry functions
@@ -21,7 +21,7 @@ from dnora.aux_funcs import (
     pyfimex,
     get_url,
 )
-from dnora.dnora_type_manager.dnora_types import DnoraDataType
+from dnora.type_manager.dnora_types import DnoraDataType
 from dnora.read.ds_read_functions import read_ds_list, setup_temp_dir
 from functools import partial
 from dnora.read.fimex_functions import ds_fimex_read

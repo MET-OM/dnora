@@ -17,13 +17,13 @@ from dnora.aux_funcs import (
 )
 import pandas as pd
 
-from dnora.dnora_type_manager.data_sources import DataSource
+from dnora.type_manager.data_sources import DataSource
 from dnora.read.abstract_readers import DataReader
 
 from dnora.cacher.caching_strategies import CachingStrategy
 from dnora.read.ds_read_functions import setup_temp_dir
 
-from dnora.dnora_type_manager.dnora_types import DnoraDataType
+from dnora.type_manager.dnora_types import DnoraDataType
 
 
 def download_era5_from_cds(

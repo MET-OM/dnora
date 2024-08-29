@@ -3,7 +3,7 @@ import pytest
 import pandas as pd
 import numpy as np
 from dnora.wind.read_metno import get_meps_urls, MEPS
-from dnora.dnora_type_manager.data_sources import DataSource
+from dnora.type_manager.data_sources import DataSource
 
 
 @pytest.fixture(scope="session")

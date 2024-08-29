@@ -11,7 +11,7 @@ from dnora.grid import Grid
 from dnora import msg
 from dnora.aux_funcs import create_time_stamps, expand_area, get_url
 
-from dnora.dnora_type_manager.data_sources import DataSource
+from dnora.type_manager.data_sources import DataSource
 from dnora.read.abstract_readers import DataReader
 
 

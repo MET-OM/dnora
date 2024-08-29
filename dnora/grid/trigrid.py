@@ -14,7 +14,7 @@ from .tri_arangers import TriAranger
 from .mesh import Trivial as TrivialMesher
 from dnora.read.abstract_readers import DataReader
 import cmocean.cm
-from dnora.dnora_type_manager.data_sources import DataSource
+from dnora.type_manager.data_sources import DataSource
 
 from pathlib import Path
 from .topo import import_topo

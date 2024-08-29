@@ -1,5 +1,5 @@
 import dnora as dn
-from dnora.dnora_type_manager.dnora_types import DnoraDataType
+from dnora.type_manager.dnora_types import DnoraDataType
 import pytest
 
 

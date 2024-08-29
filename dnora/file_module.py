@@ -9,9 +9,9 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from dnora.modelrun import ModelRun
-    from dnora.dnora_type_manager.dnora_objects import DnoraObject
-from dnora.dnora_type_manager.dnora_types import DnoraDataType, DnoraFileType
-from dnora.dnora_type_manager.model_formats import ModelFormat
+    from dnora.type_manager.dnora_objects import DnoraObject
+from dnora.type_manager.dnora_types import DnoraDataType, DnoraFileType
+from dnora.type_manager.model_formats import ModelFormat
 
 
 @dataclass

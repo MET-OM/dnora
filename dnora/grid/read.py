@@ -15,12 +15,12 @@ from dnora.aux_funcs import expand_area, get_url
 from dnora import msg
 from typing import Union
 import os
-from dnora.dnora_type_manager.data_sources import DataSource
+from dnora.type_manager.data_sources import DataSource
 import dask
 from pathlib import Path
 import meshio
 from dnora.read.abstract_readers import DataReader
-from dnora.dnora_type_manager.dnora_types import DnoraDataType
+from dnora.type_manager.dnora_types import DnoraDataType
 
 # from dnora.defaults import read_environment_variable
 from .emodnet_functions import find_tile, get_covering_tiles, download_tile

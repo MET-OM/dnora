@@ -20,8 +20,8 @@ from dnora.aux_funcs import get_url, create_monthly_stamps
 from dnora.read.abstract_readers import PointDataReader
 from dnora.waveseries import wave_parameters
 import inspect
-from dnora.dnora_type_manager.dnora_types import DnoraDataType
-from dnora.dnora_type_manager.data_sources import DataSource
+from dnora.type_manager.dnora_types import DnoraDataType
+from dnora.type_manager.data_sources import DataSource
 from dnora.wave_parameters.parameters import get_function
 from dnora.read.ds_read_functions import read_ds_list, read_first_ds
 from functools import partial

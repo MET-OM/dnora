@@ -10,7 +10,7 @@ from .process import RemoveEmpty
 from dnora.read.abstract_readers import SpectralDataReader
 from dnora.grid import Grid
 import cdsapi
-from dnora.dnora_type_manager.data_sources import DataSource
+from dnora.type_manager.data_sources import DataSource
 
 # Import aux_funcsiliry functions
 from dnora import msg

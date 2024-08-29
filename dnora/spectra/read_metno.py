@@ -3,7 +3,7 @@ from dnora.spectra.process import RemoveEmpty
 from dnora.spectral_conventions import SpectralConvention
 
 # Import aux_funcsiliry functions
-from dnora.dnora_type_manager.data_sources import DataSource
+from dnora.type_manager.data_sources import DataSource
 from dnora.spectra.read import WW3, WAM
 
 

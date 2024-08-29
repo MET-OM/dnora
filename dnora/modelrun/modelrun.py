@@ -15,7 +15,7 @@ from dnora.file_module import FileNames
 # Import abstract classes and needed instances of them
 from dnora.pick.point_pickers import PointPicker, NearestGridPoint, Trivial, Area
 from dnora.modelrun.import_functions import import_data
-from dnora.dnora_type_manager.model_formats import ModelFormat
+from dnora.type_manager.model_formats import ModelFormat
 from dnora.spectral_grid import SpectralGrid
 
 
@@ -37,17 +37,17 @@ from dnora.read.abstract_readers import (
     SpectralDataReader,
 )
 
-from dnora.dnora_type_manager.dnora_types import (
+from dnora.type_manager.dnora_types import (
     DnoraDataType,
     DnoraFileType,
     data_type_from_string,
     file_type_from_string,
 )
-from dnora.dnora_type_manager.data_sources import DataSource
+from dnora.type_manager.data_sources import DataSource
 from calendar import monthrange
 
 if TYPE_CHECKING:
-    from dnora.dnora_type_manager.dnora_objects import (
+    from dnora.type_manager.dnora_objects import (
         Grid,
         Wind,
         Spectra,

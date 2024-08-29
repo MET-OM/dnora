@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 from dnora.aux_funcs import create_swan_segment_coords
 from dnora import msg, file_module
-from dnora.dnora_type_manager.dnora_types import DnoraFileType
+from dnora.type_manager.dnora_types import DnoraFileType
 from .ww3_functions import (
     ww3_grid,
     ww3_prnc,

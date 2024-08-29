@@ -5,7 +5,7 @@ from .file_structure import FileStructure
 import os, glob
 from dnora.aux_funcs import get_url
 from dnora import msg
-from dnora.dnora_type_manager.dnora_types import DnoraDataType
+from dnora.type_manager.dnora_types import DnoraDataType
 
 from typing import Callable
 import geo_parameters as gp

@@ -18,7 +18,7 @@ from dnora.read.abstract_readers import DataReader
 from dnora import msg
 from dnora.aux_funcs import expand_area, int_list_of_months, int_list_of_years
 import pandas as pd
-from dnora.dnora_type_manager.data_sources import DataSource
+from dnora.type_manager.data_sources import DataSource
 
 
 def download_GTSM_from_cds(start_time, end_time, folder="dnora_wlv_temp") -> str:

@@ -6,7 +6,7 @@ import meshio
 
 from typing import Iterable
 import numpy as np
-from dnora.dnora_type_manager.data_sources import DataSource
+from dnora.type_manager.data_sources import DataSource
 import xarray as xr
 
 

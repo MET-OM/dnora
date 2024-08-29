@@ -1,4 +1,4 @@
-from dnora.dnora_type_manager.data_sources import DataSource
+from dnora.type_manager.data_sources import DataSource
 from dnora.waveseries.read import WW3Unstruct
 import geo_parameters as gp
 

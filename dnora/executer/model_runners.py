@@ -1,7 +1,7 @@
 from subprocess import Popen
 from abc import ABC, abstractmethod
 from dnora.file_module import FileNames
-from dnora.dnora_type_manager.model_formats import ModelFormat
+from dnora.type_manager.model_formats import ModelFormat
 from .post_processors import PostProcessor, SwashMatToNc, HosOceanToNc
 
 

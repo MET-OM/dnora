@@ -1,7 +1,7 @@
 from geo_skeletons import GriddedSkeleton, PointSkeleton
 from geo_skeletons.decorators import add_datavar, add_mask
 from dnora.read.abstract_readers import DataReader
-from dnora.dnora_type_manager.data_sources import (
+from dnora.type_manager.data_sources import (
     DataSource,
     data_source_from_string,
 )
@@ -11,7 +11,7 @@ import os
 
 from dnora.aux_funcs import set_metaparameters_in_object
 import geo_parameters as gp
-from dnora.dnora_type_manager.dnora_types import DnoraDataType
+from dnora.type_manager.dnora_types import DnoraDataType
 
 
 @add_mask(name="sea", coord_group="grid", default_value=1, opposite_name="land")

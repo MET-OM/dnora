@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from dnora.modelrun.modelrun import ModelRun
     from dnora.file_module import FileNames
 
-from dnora.dnora_type_manager.dnora_types import DnoraDataType
+from dnora.type_manager.dnora_types import DnoraDataType
 from dnora import msg
 from dnora import file_module
 from .data_writers import DataWriter

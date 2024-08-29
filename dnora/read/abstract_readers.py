@@ -3,14 +3,14 @@ from abc import ABC, abstractmethod
 
 # Import objects
 
-from dnora.dnora_type_manager.data_sources import DataSource
+from dnora.type_manager.data_sources import DataSource
 from dnora.spectral_conventions import SpectralConvention
 from dnora.aux_funcs import get_url
 
 from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
-    from dnora_type_manager.dnora_types import DnoraDataType
+    from type_manager.dnora_types import DnoraDataType
     from dnora.grid import Grid
 from dnora.cacher.caching_strategies import CachingStrategy
 
