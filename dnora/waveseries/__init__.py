@@ -1,2 +1,2 @@
 from .waveseries import WaveSeries
-from . import read
+from . import read, read_metno

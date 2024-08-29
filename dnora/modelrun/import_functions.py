@@ -106,6 +106,7 @@ def read_data_and_create_object(
 
     obj = dnora_objects.get(obj_type)(name=name, **coord_dict)
     existing_vars = obj.core.data_vars() + obj.core.magnitudes() + obj.core.directions()
+
     for key, value in data_dict.items():
         # Give (name[str], parmater[gp]) or (name[str], None) is values is a str
         name, param = gp.decode(key)

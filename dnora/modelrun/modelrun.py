@@ -226,8 +226,10 @@ class ModelRun:
         ):
             folder = read_environment_variable(obj_type=obj_type, data_source=source)
 
+        if folder is None and source in [DataSource.LOCAL]:
+            folder = ""
         # All other sources always requires a folder
-        if folder is None and source not in [DataSource.REMOTE, DataSource.CREATION]:
+        elif folder is None and source not in [DataSource.REMOTE, DataSource.CREATION]:
             raise ValueError(
                 f"'folder' is not set for source {source.name}: 1) give 'folder' as a keyword or 2) set the environmental variable DNORA_{source.name}_PATH."
             )

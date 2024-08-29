@@ -23,7 +23,7 @@ def test_import_constant_waveseries_one_point():
     np.testing.assert_almost_equal(np.mean(model.waveseries().hs()), manual_hs)
 
 
-def test_import_wind_from_norac_spectra():
+def test_import_wave_from_norac_spectra():
     grid = dn.grid.Grid(lon=9.834990, lat=63.571444)
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=10)
     model.import_waveseries(
@@ -38,7 +38,7 @@ def test_import_wind_from_norac_spectra():
     assert model.waveseries().depth() is not None
 
 
-def test_import_wind_from_ww3_4km_spectra():
+def test_import_wave_from_ww3_4km_spectra():
     grid = dn.grid.Grid(lon=9.834990, lat=63.571444)
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=10)
     model.import_waveseries(
@@ -53,7 +53,7 @@ def test_import_wind_from_ww3_4km_spectra():
     assert model.waveseries().dirp() is not None
 
 
-def test_import_wind_from_wam800_spectra():
+def test_import_wave_from_wam800_spectra():
     grid = dn.grid.Grid(lon=9.834990, lat=63.571444)
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=10)
     model.import_waveseries(
@@ -71,7 +71,7 @@ def test_import_wind_from_wam800_spectra():
     assert model.waveseries().depth() is not None
 
 
-def test_import_wind_from_wam4km_spectra():
+def test_import_wave_from_wam4km_spectra():
     grid = dn.grid.Grid(lon=6, lat=60)
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=10)
     model.import_waveseries(
@@ -87,3 +87,7 @@ def test_import_wind_from_wam4km_spectra():
     assert model.waveseries().dirm_swell() is not None
     assert model.waveseries().dirm_sea() is not None
     assert model.waveseries().depth() is not None
+
+
+def test_norac():
+    pass
