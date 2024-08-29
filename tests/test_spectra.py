@@ -2,7 +2,7 @@ from dnora.grid import Grid
 from dnora import modelrun, pick
 import numpy as np
 
-from dnora.read.generic_readers import ConstantData
+from dnora.read.generic import ConstantData
 from dnora.spectral_conventions import SpectralConvention
 
 

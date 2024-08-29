@@ -1,5 +1,5 @@
 from dnora.cacher.caching_strategies import CachingStrategy
-from .abstract_readers import PointDataReader, DataReader, SpectralDataReader
+from dnora.read.abstract_readers import PointDataReader, DataReader, SpectralDataReader
 import geo_parameters as gp
 import pandas as pd
 import numpy as np

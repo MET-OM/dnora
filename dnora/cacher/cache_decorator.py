@@ -4,7 +4,7 @@ from copy import copy
 from dnora.aux_funcs import expand_area
 from dnora.dnora_type_manager.dnora_types import DnoraDataType
 from dnora.dnora_type_manager.model_formats import ModelFormat
-from dnora.read.generic_readers import DataReader
+from dnora.read.abstract_readers import DataReader
 from inspect import getcallargs
 from dnora.pick import Area
 from .tiles import TileObject

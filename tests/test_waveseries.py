@@ -1,5 +1,5 @@
 from dnora import modelrun, pick
-from dnora.read.generic_readers import ConstantData
+from dnora.read.generic import ConstantData
 import numpy as np
 import dnora as dn
 import pandas as pd

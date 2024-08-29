@@ -1,4 +1,4 @@
-from dnora.read.generic_readers import ConstantData
+from dnora.read.generic import ConstantData
 from dnora.grid import Grid, TriGrid
 from dnora.dnora_type_manager.dnora_types import DnoraDataType
 import numpy as np

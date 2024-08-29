@@ -1,5 +1,5 @@
 from dnora.grid import TriGrid
-from dnora.read.generic_readers import ConstantData
+from dnora.read.generic import ConstantData
 from dnora.grid.process import SetMinDepth, SetMaxDepth
 import numpy as np
 

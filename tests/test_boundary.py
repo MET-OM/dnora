@@ -1,7 +1,7 @@
 from dnora.grid import Grid
 from dnora import modelrun, spectra, pick
 import numpy as np
-from dnora.read.generic_readers import ConstantData
+from dnora.read.generic import ConstantData
 
 
 def test_import_constant_boundary_one_point():

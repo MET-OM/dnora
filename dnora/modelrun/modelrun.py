@@ -30,7 +30,7 @@ from dnora.pick import Trivial
 
 from dnora.export.templates import Cacher
 from dnora.aux_funcs import get_url, get_first_file
-from dnora.read import generic_readers
+import dnora.read.generic
 from dnora.read.abstract_readers import (
     DataReader,
     PointDataReader,
@@ -312,7 +312,7 @@ class ModelRun:
         )
         self[obj_type] = obj
 
-    @cached_reader(DnoraDataType.WIND, generic_readers.Netcdf)
+    @cached_reader(DnoraDataType.WIND, dnora.read.generic.Netcdf)
     def import_wind(
         self,
         reader: DataReader | None = None,
@@ -335,7 +335,7 @@ class ModelRun:
             **kwargs,
         )
 
-    @cached_reader(DnoraDataType.WATERLEVEL, generic_readers.Netcdf)
+    @cached_reader(DnoraDataType.WATERLEVEL, dnora.read.generic.Netcdf)
     def import_waterlevel(
         self,
         reader: DataReader | None = None,
@@ -358,7 +358,7 @@ class ModelRun:
             **kwargs,
         )
 
-    @cached_reader(DnoraDataType.SPECTRA, generic_readers.PointNetcdf)
+    @cached_reader(DnoraDataType.SPECTRA, dnora.read.generic.PointNetcdf)
     def import_spectra(
         self,
         reader: SpectralDataReader | None = None,
@@ -384,7 +384,7 @@ class ModelRun:
             **kwargs,
         )
 
-    @cached_reader(DnoraDataType.SPECTRA1D, generic_readers.PointNetcdf)
+    @cached_reader(DnoraDataType.SPECTRA1D, dnora.read.generic.PointNetcdf)
     def import_spectra1d(
         self,
         reader: SpectralDataReader | None = None,
@@ -410,7 +410,7 @@ class ModelRun:
             **kwargs,
         )
 
-    @cached_reader(DnoraDataType.WAVESERIES, generic_readers.PointNetcdf)
+    @cached_reader(DnoraDataType.WAVESERIES, dnora.read.generic.PointNetcdf)
     def import_waveseries(
         self,
         reader: PointDataReader | None = None,
@@ -436,7 +436,7 @@ class ModelRun:
             **kwargs,
         )
 
-    @cached_reader(DnoraDataType.CURRENT, generic_readers.Netcdf)
+    @cached_reader(DnoraDataType.CURRENT, dnora.read.generic.Netcdf)
     def import_current(
         self,
         reader: DataReader | None = None,
@@ -459,7 +459,7 @@ class ModelRun:
             **kwargs,
         )
 
-    @cached_reader(DnoraDataType.ICE, generic_readers.Netcdf)
+    @cached_reader(DnoraDataType.ICE, dnora.read.generic.Netcdf)
     def import_ice(
         self,
         reader: DataReader | None = None,

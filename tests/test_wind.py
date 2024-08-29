@@ -1,7 +1,7 @@
 import dnora as dn
 import numpy as np
 
-from dnora.read.generic_readers import ConstantData
+from dnora.read.generic import ConstantData
 
 
 def test_import_constant_wind_one_point():
