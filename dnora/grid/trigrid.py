@@ -12,7 +12,7 @@ from .read import MshFile as topo_MshFile
 from .read_tr import MshReader, TriangReader
 from .tri_arangers import TriAranger
 from .mesh import Trivial as TrivialMesher
-from dnora.readers.abstract_readers import DataReader
+from dnora.read.abstract_readers import DataReader
 import cmocean.cm
 from dnora.dnora_type_manager.data_sources import DataSource
 

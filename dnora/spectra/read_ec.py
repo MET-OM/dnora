@@ -7,7 +7,7 @@ import pandas as pd
 from .process import RemoveEmpty
 
 # Import abstract classes and needed instances of them
-from dnora.readers.abstract_readers import SpectralDataReader
+from dnora.read.abstract_readers import SpectralDataReader
 from dnora.grid import Grid
 import cdsapi
 from dnora.dnora_type_manager.data_sources import DataSource

@@ -1,5 +1,5 @@
 from dnora.grid import Grid
-from dnora.readers.generic_readers import ConstantData
+from dnora.read.generic_readers import ConstantData
 import numpy as np
 
 

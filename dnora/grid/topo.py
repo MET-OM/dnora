@@ -1,6 +1,6 @@
 from geo_skeletons import GriddedSkeleton, PointSkeleton
 from geo_skeletons.decorators import add_datavar, add_mask
-from dnora.readers.abstract_readers import DataReader
+from dnora.read.abstract_readers import DataReader
 from dnora.dnora_type_manager.data_sources import (
     DataSource,
     data_source_from_string,

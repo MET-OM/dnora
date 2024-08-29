@@ -8,9 +8,9 @@ import os, glob
 from dnora.grid import Grid
 
 # Import abstract classes
-from dnora.readers.abstract_readers import DataReader
+from dnora.read.abstract_readers import DataReader
 from dnora.dnora_type_manager.data_sources import DataSource
-from dnora.readers.file_structure import FileStructure
+from dnora.read.file_structure import FileStructure
 
 # Import aux_funcsiliry functions
 from dnora import msg
@@ -22,9 +22,9 @@ from dnora.aux_funcs import (
     get_url,
 )
 from dnora.dnora_type_manager.dnora_types import DnoraDataType
-from dnora.readers.ds_read_functions import read_ds_list, setup_temp_dir
+from dnora.read.ds_read_functions import read_ds_list, setup_temp_dir
 from functools import partial
-from dnora.readers.fimex_functions import ds_fimex_read
+from dnora.read.fimex_functions import ds_fimex_read
 
 
 class NorKyst800(DataReader):

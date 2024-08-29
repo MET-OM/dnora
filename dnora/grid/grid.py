@@ -12,7 +12,7 @@ from .process import GridProcessor
 from pathlib import Path
 
 if TYPE_CHECKING:
-    from dnora.readers.abstract_readers import DataReader
+    from dnora.read.abstract_readers import DataReader
 from dnora.dnora_type_manager.data_sources import DataSource
 import matplotlib.pyplot as plt
 from .topo import import_topo

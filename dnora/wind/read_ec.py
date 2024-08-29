@@ -18,10 +18,10 @@ from dnora.aux_funcs import (
 import pandas as pd
 
 from dnora.dnora_type_manager.data_sources import DataSource
-from dnora.readers.abstract_readers import DataReader
+from dnora.read.abstract_readers import DataReader
 
 from dnora.cacher.caching_strategies import CachingStrategy
-from dnora.readers.ds_read_functions import setup_temp_dir
+from dnora.read.ds_read_functions import setup_temp_dir
 
 from dnora.dnora_type_manager.dnora_types import DnoraDataType
 

@@ -1,9 +1,9 @@
 from dnora.dnora_type_manager.data_sources import DataSource
 from dnora.dnora_type_manager.dnora_types import DnoraDataType
-from dnora.readers.abstract_readers import DataReader
-from dnora.readers.fimex_functions import ds_fimex_read
-from dnora.readers.ds_read_functions import read_ds_list, setup_temp_dir
-from dnora.readers.file_structure import FileStructure
+from dnora.read.abstract_readers import DataReader
+from dnora.read.fimex_functions import ds_fimex_read
+from dnora.read.ds_read_functions import read_ds_list, setup_temp_dir
+from dnora.read.file_structure import FileStructure
 from dnora.grid import Grid
 from dnora import msg
 from dnora.aux_funcs import expand_area, get_url

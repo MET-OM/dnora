@@ -3,19 +3,19 @@ from dnora import msg
 from dnora.aux_funcs import create_time_stamps
 from dnora.dnora_type_manager.data_sources import DataSource
 from dnora.dnora_type_manager.dnora_objects import dnora_objects, DnoraDataType
-from dnora.readers.abstract_readers import SpectralDataReader
+from dnora.read.abstract_readers import SpectralDataReader
 from dnora.aux_funcs import get_url
 from .swan_ascii import decode_lonlat, read_swan_ascii_spec
 import pandas as pd
 import numpy as np
-from dnora.readers.ds_read_functions import (
+from dnora.read.ds_read_functions import (
     read_ds_list,
     read_first_ds,
     create_dicts,
     create_coord_dict,
     create_data_dict,
 )
-from dnora.readers.file_structure import FileStructure
+from dnora.read.file_structure import FileStructure
 from dnora.aux_funcs import create_monthly_stamps
 from functools import partial
 import xarray as xr

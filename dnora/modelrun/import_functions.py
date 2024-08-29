@@ -1,6 +1,6 @@
 from dnora.dnora_type_manager.dnora_types import DnoraDataType
 from typing import Union
-from dnora.readers.abstract_readers import (
+from dnora.read.abstract_readers import (
     DataReader,
     SpectralDataReader,
     ReaderFunction,

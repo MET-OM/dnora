@@ -1,7 +1,7 @@
 from dnora.grid import Grid
 from .read import EMODNET, GEBCO
 
-# from dnora.readers.generic_readers import ConstantGriddedData
+# from dnora.read.generic_readers import ConstantGriddedData
 
 
 # class Constant(Grid):

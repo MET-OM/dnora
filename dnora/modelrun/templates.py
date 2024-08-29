@@ -2,7 +2,7 @@
 from dnora.modelrun.modelrun import ModelRun
 
 from dnora import spectra, wind, waterlevel
-from dnora.readers.generic_readers import ConstantData
+from dnora.read.generic_readers import ConstantData
 from dnora.dnora_type_manager.dnora_types import DnoraDataType
 
 

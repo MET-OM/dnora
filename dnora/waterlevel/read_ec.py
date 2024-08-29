@@ -12,7 +12,7 @@ from dnora.grid import Grid
 from scipy.interpolate import griddata
 
 # Import abstract classes
-from dnora.readers.abstract_readers import DataReader
+from dnora.read.abstract_readers import DataReader
 
 # Import aux_funcsiliry functions
 from dnora import msg

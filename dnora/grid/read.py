@@ -19,7 +19,7 @@ from dnora.dnora_type_manager.data_sources import DataSource
 import dask
 from pathlib import Path
 import meshio
-from dnora.readers.abstract_readers import DataReader
+from dnora.read.abstract_readers import DataReader
 from dnora.dnora_type_manager.dnora_types import DnoraDataType
 
 # from dnora.defaults import read_environment_variable

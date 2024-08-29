@@ -30,8 +30,8 @@ from dnora.pick import Trivial
 
 from dnora.export.templates import Cacher
 from dnora.aux_funcs import get_url, get_first_file
-from dnora.readers import generic_readers
-from dnora.readers.abstract_readers import (
+from dnora.read import generic_readers
+from dnora.read.abstract_readers import (
     DataReader,
     PointDataReader,
     SpectralDataReader,
@@ -59,7 +59,7 @@ if TYPE_CHECKING:
         DnoraObject,
     )
 
-    from dnora.readers.abstract_readers import ReaderFunction
+    from dnora.read.abstract_readers import ReaderFunction
 
 from typing import Optional
 
