@@ -8,8 +8,8 @@ from dnora import msg
 from .mesh import Mesher, Interpolate
 from .process import GridProcessor
 from pathlib import Path
-from .read import MshFile as topo_MshFile
-from .read_tr import MshReader, TriangReader
+from dnora.read.grid.grid_readers import MshFile as topo_MshFile
+from dnora.read.triang import MshReader
 from .tri_arangers import TriAranger
 from .mesh import Trivial as TrivialMesher
 from dnora.read.abstract_readers import DataReader
@@ -59,7 +59,7 @@ class TriGrid(PointSkeleton):
     @classmethod
     def generate(
         cls,
-        triang_reader: TriangReader,
+        triang_reader: DataReader,
         folder: str = None,
         name: str = "LonelyGrid",
         **kwargs,

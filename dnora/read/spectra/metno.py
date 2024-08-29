@@ -4,7 +4,7 @@ from dnora.type_manager.spectral_conventions import SpectralConvention
 
 # Import aux_funcsiliry functions
 from dnora.type_manager.data_sources import DataSource
-from dnora.spectra.read import WW3, WAM
+from dnora.read.spectra import WW3, WAM
 
 
 class WAM4km(WAM):

@@ -1,4 +1,4 @@
-from dnora.waveseries.read import read_data_vars
+from dnora.read.waveseries.waveseries_readers import read_data_vars
 from geo_skeletons import PointSkeleton
 import geo_parameters as gp
 import numpy as np

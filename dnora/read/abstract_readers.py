@@ -154,8 +154,27 @@ class SpectralDataReader(PointDataReader):
         return self._convention
 
 
-ReaderFunction = Union[
-    DataReader,
-    PointDataReader,
-    SpectralDataReader,
-]
+# class TriangReader(ABC):
+#     """Abstract class for reading the triangular object."""
+
+#     @abstractmethod
+#     def __call__(self, filename: str) -> tuple:
+#         """Reads the triangular grid.
+
+#         This method is called from within the TrGrid-object
+#         """
+#         pass
+
+#     @abstractmethod
+#     def __str__(self):
+#         """Describes what triangular grid is read and from wher.
+
+#         This is called by the TrGrid-object to provide output to the user.
+#         """
+#         pass
+
+#     def default_data_source(self) -> DataSource:
+#         return DataSource.UNDEFINED
+
+
+ReaderFunction = Union[DataReader, PointDataReader, SpectralDataReader]

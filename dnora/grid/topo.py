@@ -1,6 +1,12 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from dnora.read.abstract_readers import DataReader
 from geo_skeletons import GriddedSkeleton, PointSkeleton
 from geo_skeletons.decorators import add_datavar, add_mask
-from dnora.read.abstract_readers import DataReader
+
+
 from dnora.type_manager.data_sources import (
     DataSource,
     data_source_from_string,
@@ -15,17 +21,15 @@ from dnora.type_manager.dnora_types import DnoraDataType
 
 
 @add_mask(name="sea", coord_group="grid", default_value=1, opposite_name="land")
-@add_datavar(name="topo", default_value=999.0, coord_group="grid")
+@add_datavar(name=gp.ocean.WaterDepth("topo"), default_value=999.0, coord_group="grid")
 class GriddedTopo(GriddedSkeleton):
-    meta_dict = {"topo": gp.ocean.WaterDepth}
     _default_reader = None
     pass
 
 
 @add_mask(name="sea", coord_group="grid", default_value=1, opposite_name="land")
-@add_datavar(name="topo", default_value=999.0, coord_group="grid")
+@add_datavar(name=gp.ocean.WaterDepth("topo"), default_value=999.0, coord_group="grid")
 class PointTopo(PointSkeleton):
-    meta_dict = {"topo": gp.ocean.WaterDepth}
     _default_reader = None
     pass
 

@@ -22,7 +22,7 @@ def test_import_wave_from_norac_spectra():
     grid = dn.grid.Grid(lon=9.834990, lat=63.571444)
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=10)
     model.import_waveseries(
-        dn.spectra.read_metno.NORAC(),
+        dn.read.spectra.metno.NORAC(),
     )
     timevec = pd.date_range("2023-04-10 00:00:00", "2023-04-10 23:00:00", freq="1h")
     assert np.all(model.waveseries().time() == timevec)
@@ -38,7 +38,7 @@ def test_import_wave_from_ww3_4km_spectra():
     grid = dn.grid.Grid(lon=9.834990, lat=63.571444)
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=10)
     model.import_waveseries(
-        dn.spectra.read_metno.WW3_4km(),
+        dn.read.spectra.metno.WW3_4km(),
     )
     timevec = pd.date_range("2023-04-10 00:00:00", "2023-04-10 23:00:00", freq="1h")
     assert np.all(model.waveseries().time() == timevec)
@@ -54,7 +54,7 @@ def test_import_wave_from_wam800_spectra():
     grid = dn.grid.Grid(lon=9.834990, lat=63.571444)
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=10)
     model.import_waveseries(
-        dn.spectra.read_metno.WAM800(),
+        dn.read.spectra.metno.WAM800(),
     )
     timevec = pd.date_range("2023-04-10 00:00:00", "2023-04-10 23:00:00", freq="1h")
     assert np.all(model.waveseries().time() == timevec)
@@ -73,7 +73,7 @@ def test_import_wave_from_wam4km_spectra():
     grid = dn.grid.Grid(lon=6, lat=60)
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=10)
     model.import_waveseries(
-        dn.spectra.read_metno.WAM4km(),
+        dn.read.spectra.metno.WAM4km(),
     )
     timevec = pd.date_range("2023-04-10 00:00:00", "2023-04-10 23:00:00", freq="1h")
     assert np.all(model.waveseries().time() == timevec)

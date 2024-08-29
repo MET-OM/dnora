@@ -2,7 +2,7 @@ from dnora.type_manager.spectral_conventions import SpectralConvention
 from dnora import msg
 from dnora.aux_funcs import create_time_stamps
 from dnora.type_manager.data_sources import DataSource
-from dnora.type_manager.dnora_objects import dnora_objects, DnoraDataType
+from dnora.type_manager.dnora_types import DnoraDataType
 from dnora.read.abstract_readers import SpectralDataReader
 from dnora.aux_funcs import get_url
 from .swan_ascii import decode_lonlat, read_swan_ascii_spec

@@ -19,7 +19,7 @@ def timevec():
 @pytest.mark.remote
 def test_nora3(grid, timevec):
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=1)
-    model.import_spectra(dn.spectra.read_metno.NORA3())
+    model.import_spectra(dn.read.spectra.metno.NORA3())
     assert np.all(model.spectra().time() == timevec)
 
 
@@ -38,7 +38,7 @@ def test_nora3_generic(timevec):
 @pytest.mark.remote
 def test_wam4km(grid, timevec):
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=1)
-    model.import_spectra(dn.spectra.read_metno.WAM4km())
+    model.import_spectra(dn.read.spectra.metno.WAM4km())
     assert np.all(model.spectra().time() == timevec)
 
 
@@ -58,7 +58,7 @@ def test_wam4km_generic(timevec):
 @pytest.mark.remote
 def test_ww3_4km(grid, timevec):
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=1)
-    model.import_spectra(dn.spectra.read_metno.WW3_4km())
+    model.import_spectra(dn.read.spectra.metno.WW3_4km())
     assert np.all(model.spectra().time() == timevec)
 
 
@@ -79,7 +79,7 @@ def test_ww3_4km_generic(timevec):
 def test_norac(timevec):
     grid = dn.grid.Grid(lon=9.834990, lat=63.571444)
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=1)
-    model.import_spectra(dn.spectra.read_metno.NORAC())
+    model.import_spectra(dn.read.spectra.metno.NORAC())
     assert np.all(model.spectra().time() == timevec)
 
 
@@ -102,5 +102,5 @@ def test_norac_generic(timevec):
 #     model = dn.modelrun.ModelRun(
 #         grid, year=today.year, month=today.month, day=today.day
 #     )
-#     model.import_spectra(dn.spectra.read_metno.WAM3(), source="remote")
+#     model.import_spectra(dn.read.spectra.metno.WAM3(), source="remote")
 #     assert np.all(model.spectra().time() == timevec)

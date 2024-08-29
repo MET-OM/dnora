@@ -23,8 +23,8 @@ from dnora import msg
 from dnora.cacher.cache_decorator import cached_reader
 
 from dnora.defaults import read_environment_variable
-from dnora.spectra1d.read import SpectraTo1D
-from dnora.waveseries.read import Spectra1DToWaveSeries
+from dnora.read.spectra1d import SpectraTo1D
+from dnora.read.waveseries import Spectra1DToWaveSeries
 from dnora.type_manager.spectral_conventions import SpectralConvention
 from dnora.pick import Trivial
 
