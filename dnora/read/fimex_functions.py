@@ -2,7 +2,7 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 from dnora.type_manager.dnora_types import DnoraDataType
-from dnora.aux_funcs import lon_in_km
+from dnora.utils.distance import lon_in_km
 from subprocess import call
 from typing import Callable
 

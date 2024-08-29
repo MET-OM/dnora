@@ -9,7 +9,8 @@ from dnora.grid import Grid
 
 # Import aux_funcsiliry functions
 from dnora import msg
-from dnora.aux_funcs import create_time_stamps, expand_area, get_url
+from dnora import utils
+from dnora.aux_funcs import get_url
 
 from dnora.type_manager.data_sources import DataSource
 from dnora.read.abstract_readers import DataReader
@@ -62,7 +63,7 @@ class GFS(DataReader):
         self.start_time = start_time
         self.end_time = end_time
 
-        start_times, end_times, file_times = create_time_stamps(
+        start_times, end_times, file_times = utils.time.create_time_stamps(
             start_time,
             end_time,
             self.stride,
@@ -76,7 +77,9 @@ class GFS(DataReader):
         )
         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
         # Define area to search in
-        lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
+        lon, lat = utils.grid.expand_area(
+            grid.edges("lon"), grid.edges("lat"), expansion_factor
+        )
 
         wnd_list = []
         for n in range(len(file_times)):

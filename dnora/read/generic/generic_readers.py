@@ -11,8 +11,8 @@ from dnora.type_manager.data_sources import DataSource
 from dnora.type_manager.spectral_conventions import convert_2d_to_1d, SpectralConvention
 
 from dnora.type_manager.dnora_objects import dnora_objects
-from dnora.aux_funcs import get_url, expand_area
-from dnora import msg
+from dnora.aux_funcs import get_url
+from dnora import msg, utils
 from .constant_funcs import create_constant_array, print_constant_values
 from copy import copy
 from geo_skeletons import GriddedSkeleton
@@ -120,7 +120,7 @@ class Netcdf(DataReader):
 
         times = slice(start_time, end_time)
         if x is None:
-            lons, lats = expand_area(
+            lons, lats = utils.grid.expand_area(
                 grid.edges("lon"), grid.edges("lat"), expansion_factor
             )
             try:
@@ -128,7 +128,9 @@ class Netcdf(DataReader):
             except:
                 ds = ds.sel(longitude=slice(*lons), latitude=slice(*lats), time=times)
         else:
-            xs, ys = expand_area(grid.edges("x"), grid.edges("y"), expansion_factor)
+            xs, ys = utils.grid.expand_area(
+                grid.edges("x"), grid.edges("y"), expansion_factor
+            )
             ds = ds.sel(x=slice(*xs), y=slice(*ys), time=times)
 
         lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)

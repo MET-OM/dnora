@@ -14,13 +14,10 @@ from dnora.grid import Grid
 # Import aux_funcsiliry functions
 from dnora import msg
 from dnora.aux_funcs import (
-    create_time_stamps,
     u_v_from_speed_dir,
-    expand_area,
-    lon_in_km,
     get_url,
-    create_monthly_stamps,
 )
+from dnora import utils
 
 from dnora.type_manager.data_sources import DataSource
 from dnora.type_manager.dnora_types import DnoraDataType
@@ -68,13 +65,15 @@ class NORA3(DataReader):
         folder = self._folder(folder, source)
         filename = self._filename(filename, source)
 
-        start_times, end_times = create_monthly_stamps(start_time, end_time)
+        start_times, end_times = utils.time.create_monthly_stamps(start_time, end_time)
         file_times = start_times
 
         setup_temp_dir(DnoraDataType.WIND, self.name())
         # Define area to search in
         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
-        lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
+        lon, lat = utils.grid.expand_area(
+            grid.edges("lon"), grid.edges("lat"), expansion_factor
+        )
 
         msg.process(f"Applying {program}")
         ds_creator_function = partial(
@@ -169,7 +168,9 @@ class MyWave3km(DataReader):
         setup_temp_dir(DnoraDataType.WIND, self.name())
         # Define area to search in
         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
-        lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
+        lon, lat = utils.grid.expand_area(
+            grid.edges("lon"), grid.edges("lat"), expansion_factor
+        )
 
         msg.process(f"Applying {program}")
         ds_creator_function = partial(
@@ -295,14 +296,18 @@ class MEPS(DataReader):
         )
 
         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
-        lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
+        lon, lat = utils.grid.expand_area(
+            grid.edges("lon"), grid.edges("lat"), expansion_factor
+        )
 
         folder = self._folder(folder, source)
         filename = self._filename(filename, source)
 
         setup_temp_dir(DnoraDataType.WIND, self.name())
         # Define area to search in
-        lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
+        lon, lat = utils.grid.expand_area(
+            grid.edges("lon"), grid.edges("lat"), expansion_factor
+        )
 
         msg.process(f"Applying {program}")
         ds_creator_function = partial(
@@ -431,7 +436,9 @@ class NORA3_fp(DataReader):
         folder = self._folder(folder, source)
         filename = self._filename(filename, source)
         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
-        lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
+        lon, lat = utils.grid.expand_area(
+            grid.edges("lon"), grid.edges("lat"), expansion_factor
+        )
         ds_creator_function = partial(
             ds_fimex_read,
             lon=lon,

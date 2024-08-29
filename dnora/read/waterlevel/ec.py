@@ -16,7 +16,7 @@ from dnora.read.abstract_readers import DataReader
 
 # Import aux_funcsiliry functions
 from dnora import msg
-from dnora.aux_funcs import expand_area, int_list_of_months, int_list_of_years
+from dnora import utils
 import pandas as pd
 from dnora.type_manager.data_sources import DataSource
 
@@ -56,10 +56,10 @@ def download_GTSM_from_cds(start_time, end_time, folder="dnora_wlv_temp") -> str
     #     ],
     # }
 
-    years = [f"{y:4.0f}" for y in int_list_of_years(start_time, end_time)]
+    years = [f"{y:4.0f}" for y in utils.time.int_list_of_years(start_time, end_time)]
     if len(years) == 1:
         years = years[0]
-    months = [f"{m:02.0f}" for m in int_list_of_months(start_time, end_time)]
+    months = [f"{m:02.0f}" for m in utils.time.int_list_of_months(start_time, end_time)]
     if len(months) == 1:
         months = months[0]
 
@@ -102,17 +102,11 @@ class GTSM_ERA5(DataReader):
             os.remove(f)
 
         # Define area to search in
-        lon, lat = expand_area(
+        lon, lat = utils.grid.expand_area(
             lon=grid.edges("lon"),
             lat=grid.edges("lat"),
             expansion_factor=expansion_factor,
         )
-
-        # start_times, end_times = create_monthly_time_stamps(start_time, end_time)
-        # wnd_list = []
-        # for t0, t1 in zip(start_times, end_times):
-        #     msg.plain(f"Reading wind forcing data: {t0}-{t1}")
-        #     # Creates file dnora_wnd_tmp/EC_ERA5_YYYY_MM.nc
 
         out_file = download_GTSM_from_cds(start_time, end_time, folder="dnora_wlv_temp")
 

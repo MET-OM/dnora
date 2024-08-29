@@ -11,7 +11,8 @@ import re
 if TYPE_CHECKING:
     from dnora.grid import Grid, TriGrid
 from dnora.read.abstract_readers import DataReader
-from dnora.aux_funcs import expand_area, get_url
+from dnora.aux_funcs import get_url
+from dnora import utils
 from dnora import msg
 from typing import Union
 import os
@@ -22,6 +23,7 @@ import meshio
 
 from dnora.type_manager.dnora_types import DnoraDataType
 from .emodnet_functions import find_tile, get_covering_tiles, download_tile
+
 
 class EMODNET(DataReader):
     """Reads bathymetry from multiple EMODNET tiles in netcdf format.
@@ -58,7 +60,9 @@ class EMODNET(DataReader):
         # when we interpoolate or filter
 
         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
-        lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
+        lon, lat = utils.grid.expand_area(
+            grid.edges("lon"), grid.edges("lat"), expansion_factor
+        )
         msg.plain(
             f"Downloading bathymetry for: {lon[0]:10.7f}-{lon[1]:10.7f}, {lat[0]:10.7f}-{lat[1]:10.7f}."
         )

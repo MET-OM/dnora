@@ -15,12 +15,10 @@ from dnora.read.file_structure import FileStructure
 # Import aux_funcsiliry functions
 from dnora import msg
 from dnora.aux_funcs import (
-    create_time_stamps,
-    expand_area,
-    lon_in_km,
-    pyfimex,
     get_url,
 )
+from dnora import utils
+
 from dnora.type_manager.dnora_types import DnoraDataType
 from dnora.read.ds_read_functions import read_ds_list, setup_temp_dir
 from functools import partial
@@ -95,7 +93,9 @@ class NorKyst800(DataReader):
         setup_temp_dir(DnoraDataType.CURRENT, self.name())
         # Define area to search in
         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
-        lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
+        lon, lat = utils.grid.expand_area(
+            grid.edges("lon"), grid.edges("lat"), expansion_factor
+        )
 
         msg.process(f"Applying {program}")
         ds_creator_function = partial(

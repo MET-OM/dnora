@@ -14,7 +14,7 @@ from dnora.type_manager.data_sources import DataSource
 
 # Import aux_funcsiliry functions
 from dnora import msg
-from dnora.aux_funcs import (
+from dnora.utils.time import (
     int_list_of_days,
     int_list_of_months,
     int_list_of_years,

@@ -11,8 +11,7 @@ if TYPE_CHECKING:
     from dnora.grid import Grid, TriGrid
 
 # Import aux_funcsiliry functions
-from dnora import msg
-from dnora.aux_funcs import expand_area
+from dnora import msg, utils
 
 
 class PointPicker(ABC):
@@ -92,10 +91,14 @@ class Area(PointPicker):
         if grid.core.is_cartesian():
             number, zone = grid.utm()
             all_points.set_utm(number, zone)
-            x, y = expand_area(grid.edges("x"), grid.edges("y"), expansion_factor)
+            x, y = utils.grid.expand_area(
+                grid.edges("x"), grid.edges("y"), expansion_factor
+            )
             x_all, y_all = all_points.xy()
         else:
-            x, y = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
+            x, y = utils.grid.expand_area(
+                grid.edges("lon"), grid.edges("lat"), expansion_factor
+            )
             x_all, y_all = all_points.lonlat()
 
         maskx = np.logical_and(x_all >= x[0], x_all <= x[1])

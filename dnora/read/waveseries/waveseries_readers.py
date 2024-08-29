@@ -16,7 +16,8 @@ import geo_parameters as gp
 from geo_parameters.metaparameter import MetaParameter
 
 from dnora.spectra1d import Spectra1D, process
-from dnora.aux_funcs import get_url, create_monthly_stamps
+from dnora.aux_funcs import get_url
+from dnora.utils.time import create_monthly_stamps
 from dnora.read.abstract_readers import PointDataReader
 from dnora.waveseries import wave_parameters
 import inspect

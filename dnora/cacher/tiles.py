@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 import pandas as pd
 import glob
 import numpy as np
-from dnora.aux_funcs import day_list, expand_area
+from dnora import utils
 
 from dnora.grid import Grid
 
@@ -104,7 +104,7 @@ def create_tiles(area, start_time, end_time, expansion_factor) -> tuple:
     times: list of strings ['2020-01-01', '2020-01-01', '2020-01-02', ...]
     """
     tile_res = 5  # degrees
-    lon, lat = expand_area(
+    lon, lat = utils.grid.expand_area(
         area.edges("lon", native=True), area.edges("lat", native=True), expansion_factor
     )
     lon, lat = np.array(lon), np.array(lat)

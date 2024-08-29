@@ -3,7 +3,7 @@ from copy import copy
 from abc import ABC, abstractmethod
 from typing import Tuple
 
-from dnora.aux_funcs import (
+from dnora.utils.spec import (
     interp_spec,
     shift_spec,
     flip_spec,

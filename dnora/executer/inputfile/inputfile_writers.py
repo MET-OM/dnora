@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from dnora.modelrun.modelrun import ModelRun
     from dnora.file_module import FileNames
 
-from dnora.aux_funcs import create_swan_segment_coords
+from dnora.utils.grid import create_swan_segment_coords
 from dnora import msg, file_module
 from dnora.type_manager.dnora_types import DnoraFileType
 from .ww3_functions import (

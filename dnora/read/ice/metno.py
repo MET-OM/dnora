@@ -6,7 +6,8 @@ from dnora.read.ds_read_functions import read_ds_list, setup_temp_dir
 from dnora.read.file_structure import FileStructure
 from dnora.grid import Grid
 from dnora import msg
-from dnora.aux_funcs import expand_area, get_url
+from dnora import utils
+from dnora.aux_funcs import get_url
 from functools import partial
 import xarray as xr
 import re
@@ -60,7 +61,9 @@ class NORA3(DataReader):
         setup_temp_dir(DnoraDataType.ICE, self.name())
         # Define area to search in
         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
-        lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
+        lon, lat = utils.grid.expand_area(
+            grid.edges("lon"), grid.edges("lat"), expansion_factor
+        )
 
         msg.process(f"Applying {program}")
         ds_creator_function = partial(

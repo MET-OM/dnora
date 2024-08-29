@@ -9,12 +9,9 @@ from dnora.grid import Grid
 
 # Import aux_funcsiliry functions
 from dnora import msg
-from dnora.aux_funcs import (
-    expand_area,
-    int_list_of_days,
-    int_list_of_months,
-    int_list_of_years,
-)
+from dnora import utils
+
+
 import pandas as pd
 
 from dnora.type_manager.data_sources import DataSource
@@ -63,13 +60,13 @@ def download_era5_from_cds(
     #     ],
     # }
 
-    years = [f"{y:4.0f}" for y in int_list_of_years(start_time, end_time)]
+    years = [f"{y:4.0f}" for y in utils.time.int_list_of_years(start_time, end_time)]
     if len(years) == 1:
         years = years[0]
-    months = [f"{m:02.0f}" for m in int_list_of_months(start_time, end_time)]
+    months = [f"{m:02.0f}" for m in utils.time.int_list_of_months(start_time, end_time)]
     if len(months) == 1:
         months = months[0]
-    days = [f"{d:02.0f}" for d in int_list_of_days(start_time, end_time)]
+    days = [f"{d:02.0f}" for d in utils.time.int_list_of_days(start_time, end_time)]
     if len(days) == 1:
         days = days[0]
 
@@ -147,7 +144,9 @@ class ERA5(DataReader):
         setup_temp_dir(DnoraDataType.WIND, self.name())
 
         # Define area to search in
-        lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
+        lon, lat = utils.grid.expand_area(
+            grid.edges("lon"), grid.edges("lat"), expansion_factor
+        )
 
         nc_file = download_era5_from_cds(
             start_time, end_time, lon=lon, lat=lat, folder="dnora_wind_temp"

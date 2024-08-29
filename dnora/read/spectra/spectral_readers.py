@@ -1,6 +1,6 @@
 from dnora.type_manager.spectral_conventions import SpectralConvention
 from dnora import msg
-from dnora.aux_funcs import create_time_stamps
+from dnora.utils.time import create_time_stamps
 from dnora.type_manager.data_sources import DataSource
 from dnora.type_manager.dnora_types import DnoraDataType
 from dnora.read.abstract_readers import SpectralDataReader
@@ -16,7 +16,7 @@ from dnora.read.ds_read_functions import (
     create_data_dict,
 )
 from dnora.read.file_structure import FileStructure
-from dnora.aux_funcs import create_monthly_stamps
+from dnora.utils.time import create_monthly_stamps
 from functools import partial
 import xarray as xr
 import geo_parameters as gp
