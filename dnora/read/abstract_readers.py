@@ -107,6 +107,10 @@ class DataReader(ABC):
 
 
 class PointDataReader(DataReader):
+    def post_processing(self):
+        """Class to use for post processing of data"""
+        return None
+
     @abstractmethod
     def get_coordinates(self, grid, start_time, source, folder, **kwargs):
         """Return a list of ALL the available coordinated in the source.
@@ -123,9 +127,6 @@ class PointDataReader(DataReader):
 
 
 class SpectralDataReader(PointDataReader):
-    def post_processing(self):
-        """Class to use for post processing of data"""
-        return None
 
     def set_convention(self, convention: SpectralConvention | str) -> None:
         if isinstance(convention, str):
