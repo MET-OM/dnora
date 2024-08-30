@@ -14,6 +14,8 @@ if TYPE_CHECKING:
     from dnora.grid import Grid
 from dnora.cacher.caching_strategies import CachingStrategy
 
+from dnora.process.gridded import FillNaNs
+
 
 class DataReader(ABC):
     """Reads forcing data from some source and provide it to the object.
@@ -24,6 +26,10 @@ class DataReader(ABC):
     _default_folders = {}
     _default_filename = None  # If we have a source independent filename
     _default_filenames = {}  # Possible source-dependent filenames
+
+    def post_processing(self):
+        """Class to use for post processing of data"""
+        return FillNaNs(0)
 
     @staticmethod
     def _caching_strategy() -> CachingStrategy:
@@ -118,6 +124,7 @@ class PointDataReader(DataReader):
 
 class SpectralDataReader(PointDataReader):
     def post_processing(self):
+        """Class to use for post processing of data"""
         return None
 
     def set_convention(self, convention: SpectralConvention | str) -> None:

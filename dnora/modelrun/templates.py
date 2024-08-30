@@ -21,6 +21,7 @@ class NORA3(ModelRun):
     _reader_dict = {
         DnoraDataType.SPECTRA: dnora.read.spectra.metno.NORA3(),
         DnoraDataType.WIND: dnora.read.wind.metno.NORA3(),
+        DnoraDataType.ICE: dnora.read.ice.metno.NORA3(),
     }
 
 

@@ -99,7 +99,8 @@ class NORA3(DataReader):
         # Go to u and v components
         u, v = u_v_from_speed_dir(wind_forcing.wind_speed, wind_forcing.wind_direction)
 
-        data_dict = {"u": u.fillna(0).values, "v": v.fillna(0).values}
+        # data_dict = {"u": u.fillna(0).values, "v": v.fillna(0).values}
+        data_dict = {"u": u.data, "v": v.data}
         coord_dict = {
             "time": wind_forcing.time.values,
             "lon": wind_forcing.x.values,

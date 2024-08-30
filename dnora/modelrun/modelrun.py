@@ -60,7 +60,7 @@ if TYPE_CHECKING:
     )
 
     from dnora.read.abstract_readers import ReaderFunction
-
+from dnora.type_manager.dnora_objects import dnora_objects
 from typing import Optional
 
 
@@ -310,9 +310,16 @@ class ModelRun:
             point_mask=point_mask,
             **kwargs,
         )
-        if hasattr(obj, 'process'):
+
+        # Need to make the logic here same for all objects, but this works for now
+        if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
+            msg.info("Post-processing data...")
             obj.process(reader.post_processing())
-        self[obj_type] = obj
+            self[obj_type] = obj
+        else:
+            self[obj_type] = obj
+            msg.info("Post-processing data...")
+            self.process(obj_type, reader.post_processing())
 
     @cached_reader(DnoraDataType.WIND, dnora.read.generic.Netcdf)
     def import_wind(
@@ -601,13 +608,17 @@ class ModelRun:
         """Returns the ocean current object if exists."""
         return self._dnora_objects.get(DnoraDataType.ICE)
 
-    # def spectral_grid(self) -> SpectralGrid:
-    #     """Returns the spectral grid object if exists."""
-    #     return self._dnora_objects.get(DnoraDataType.SpectralGrid)
-
-    # def input_file(self) -> None:
-    #     """Only defined to have method for all objects"""
-    #     return None
+    def process(
+        self, obj_type: DnoraDataType | str, processor: GriddedDataProcessor
+    ) -> None:
+        """Processes data of a gridded object with a given processor and sets that processed data to ModelRun"""
+        if processor is None:
+            return
+        obj_type = data_type_from_string(obj_type)
+        print(processor)
+        new_ds = processor(self.get(obj_type))
+        obj_class = dnora_objects.get(obj_type)
+        self[obj_type] = obj_class.from_ds(new_ds)
 
     def list_of_objects(
         self,
