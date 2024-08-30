@@ -89,10 +89,10 @@ class Spectra(PointSkeleton):
             # Set new convention if the processor changed it
             new_convention = processor._convention_out()
             if new_convention is not None:
-                self._mark_convention(new_convention)
-                msg.info(
+                msg.process(
                     f"Changing convention from {old_convention} >>> {new_convention}"
                 )
+                self._mark_convention(new_convention)
 
         return
 

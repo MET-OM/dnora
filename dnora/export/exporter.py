@@ -62,6 +62,12 @@ class DataExporter:
         obj_type = data_type_from_string(obj_type)
         writer_function = self._setup_export(obj_type, writer, dry_run)
 
+        if not self._silent:
+            msg.header(
+                writer_function,
+                f"Writing {obj_type.name} data from {self.model[obj_type].name}",
+            )
+
         if not self.dry_run():
             try:  # GeneralWritingFunction might not have this method defined
                 wanted_convention = writer_function.convention()
@@ -110,12 +116,6 @@ class DataExporter:
         if writer_function is None:
             msg.info(f"No {obj_type.name} data exists. Won't export anything.")
             return
-
-        if not self._silent:
-            msg.header(
-                writer_function,
-                f"Writing {obj_type.name} data from {self.model[obj_type].name}",
-            )
 
         format = format or self._get_default_format()
         file_object = FileNames(
