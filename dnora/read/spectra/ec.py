@@ -4,7 +4,7 @@ import glob
 import numpy as np
 from typing import Tuple
 import pandas as pd
-from dnora.spectra.process import RemoveEmpty
+from dnora.process.spectra import RemoveEmpty
 
 # Import abstract classes and needed instances of them
 from dnora.read.abstract_readers import SpectralDataReader

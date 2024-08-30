@@ -1,5 +1,5 @@
 # Import abstract classes and needed instances of them
-from dnora.spectra.process import RemoveEmpty
+from dnora.process.spectra import RemoveEmpty
 from dnora.type_manager.spectral_conventions import SpectralConvention
 
 # Import aux_funcsiliry functions

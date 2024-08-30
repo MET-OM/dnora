@@ -2,10 +2,10 @@ from copy import copy
 
 # Import objects
 from dnora.type_manager.spectral_conventions import SpectralConvention
-from .process import spectral_processor_for_convention_change
+from dnora.process.spectra import spectral_processor_for_convention_change
 
 # Import abstract classes and needed instances of them
-from .process import SpectralProcessor
+from dnora.process.spectra import SpectralProcessor
 
 # Import default values and aux_funcsiliry functions
 from dnora import msg
