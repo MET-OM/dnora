@@ -37,7 +37,7 @@ class PointNetcdf(SpectralDataReader):
         filepath = get_url(folder, filename, get_list=True)
         ds = xr.open_dataset(filepath[0])
         lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
-        self.set_convention(ds.attrs.get("spectral_convention", "ocean"))
+        self.set_convention(ds.attrs.get("dnora_spectral_convention", "ocean"))
         return {"lon": lon, "lat": lat, "x": x, "y": y}
 
     def __call__(

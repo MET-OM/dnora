@@ -27,6 +27,8 @@ from dnora.wave_parameters.parameters import get_function
 from dnora.read.ds_read_functions import read_ds_list, read_first_ds
 from functools import partial
 
+# from dnora.type_manager.dnora_objects import dnora_objects
+
 
 def ds_xarray_read(start_time, end_time, url):
     ds = xr.open_dataset(url).sel(time=slice(start_time, end_time))
@@ -140,7 +142,7 @@ WW3_ALIASES = {
     gp.wind.YWind.standard_name(): "vwnd",
     gp.wave.HsSea.standard_name(): "phs0",
     gp.wave.HsSwell.standard_name(): "phs1",
-    # gp.wave.TpSea.standard_name(): "ptp0",  ## Doesn'r exist!
+    gp.wave.TpSea.standard_name(): "ptp0",
     gp.wave.TpSwell.standard_name(): "ptp1",
     gp.wave.DirmSea.standard_name(): "pdir0",
     gp.wave.DirmSwell.standard_name(): "pdir1",
@@ -159,10 +161,16 @@ class WW3Unstruct(PointDataReader):
     stride = "month"  # int (for hourly), or 'month'
     hours_per_file = None  # int (if not monthly files)
     offset = 0  # int
-    _keep_source_names = False
-    _keep_gp_names = False
+    _force_names: str = "gp"  #'gp' or 'source'
     _decode_cf = False
-    _data_vars = None
+    _data_vars = [
+        gp.wave.Hs,
+        gp.wave.Tm01("t01"),
+        gp.wave.Tm02("t02"),
+        gp.wave.Tm_10("t0m1"),
+        gp.wave.Dirm("dir"),
+        gp.wave.Dirp("dp"),
+    ]
 
     def __init__(
         self,
@@ -226,20 +234,28 @@ class WW3Unstruct(PointDataReader):
         filename: str,
         inds,
         data_vars: list[str] = None,
-        keep_source_names: bool = None,
-        keep_gp_names: bool = None,
+        force_names: str = None,
         decode_cf: bool = None,
         **kwargs,
     ) -> tuple[dict]:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
-        if keep_source_names is None:
-            keep_source_names = self._keep_source_names
-        if keep_gp_names is None:
-            keep_gp_names = self._keep_gp_names
+        if force_names is None:
+            force_names = self._force_names
+
+        keep_gp_names = False
+        keep_source_names = False
+        if force_names == "gp":
+            keep_gp_names = True
+        elif force_names == "source":
+            keep_source_names = True
+
         if decode_cf is None:
             decode_cf = self._decode_cf
         if data_vars is None:
             data_vars = self._data_vars
+
+        # if not data_vars:
+        #     data_vars = dnora_objects.get(obj_type).non_coord_objects()
 
         folder = self._folder(folder, source)
         filename = self._filename(filename, source)
@@ -258,7 +274,7 @@ class WW3Unstruct(PointDataReader):
         )
 
         msg.blank()
-        msg.info("Compiling list of parameters:")
+        msg.process("Compiling list of parameters accounting for known WW3 names:")
         data_vars = compile_data_vars(data_vars, aliases=WW3_ALIASES)
         msg.blank()
 
@@ -303,7 +319,7 @@ class WW3Unstruct(PointDataReader):
         return coord_dict, data_dict, meta_dict
 
 
-def compile_data_vars(data_vars, aliases: dict = WW3_ALIASES):
+def compile_data_vars(data_vars, aliases: dict):
     """Compiles data_vars accounting for possible aliases etc."""
     new_vars = []
     for var in data_vars:

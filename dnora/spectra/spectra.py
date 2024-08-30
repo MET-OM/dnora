@@ -122,8 +122,8 @@ class Spectra(PointSkeleton):
     def _mark_convention(self, convention: SpectralConvention) -> None:
         """Marks new convention in metadata etc. but does nothing to the spectra"""
         self._convention = convention
-        self.meta.append({"spectral_convention": self.convention().value})
-        print(f"Spectral convention is now: {self.convention()}")
+        self.meta.append({"dnora_spectral_convention": self.convention().value})
+        msg.plain(f"Spectral convention is now: {self.convention()}")
 
     def convention(self) -> SpectralConvention | None:
         """Returns the convention (WW3/OCEAN/MET/MATH/MATHVEC) of the spectra"""

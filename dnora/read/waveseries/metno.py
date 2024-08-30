@@ -6,19 +6,10 @@ from dnora.read.abstract_readers import PointDataReader
 
 class NORAC(WW3Unstruct):
     _default_folders = {
-        DataSource.REMOTE: "https://thredds.met.no/thredds/dodsC/norac_wave/field"
+        DataSource.REMOTE: "https://thredds.met.no/thredds/dodsC/norac_wave/field",
+        DataSource.INTERNAL: "sfiblues/wave_hindcast/hindcast_v2/field",
     }
     _default_filename = "ww3.%Y%m.nc"
-    _decode_cf = False
-    _keep_gp_names = True
-    _data_vars = [
-        gp.wave.Hs,
-        gp.wave.Tm01("t01"),
-        gp.wave.Tm02("t02"),
-        gp.wave.Tm_10("t0m1"),
-        gp.wave.Dirm("dir"),
-        gp.wave.Dirp("dp"),
-    ]
 
     def default_data_source(self) -> DataSource:
         return DataSource.REMOTE
@@ -54,15 +45,6 @@ class E39(PointDataReader):
             return self._loc
         else:
             return self._buoy_dict()[self._loc]
-
-    # def _folder_filename(
-    #     self, source: DataSource, folder: str, filename: str
-    # ) -> tuple[str]:
-    #     if source == DataSource.REMOTE:
-    #         folder = "https://thredds.met.no/thredds/dodsC/obs/buoy-svv-e39/%Y/%m"
-    #     if filename is None:
-    #         filename = f"%Y%m_E39_{self.loc()}_{self._mode}.nc"
-    #     return folder, filename
 
     def get_coordinates(
         self,
