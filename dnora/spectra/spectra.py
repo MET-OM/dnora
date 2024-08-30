@@ -2,10 +2,10 @@ from copy import copy
 
 # Import objects
 from dnora.type_manager.spectral_conventions import SpectralConvention
-from .process import boundary_processor_for_convention_change
+from .process import spectral_processor_for_convention_change
 
 # Import abstract classes and needed instances of them
-from .process import BoundaryProcessor
+from .process import SpectralProcessor
 
 # Import default values and aux_funcsiliry functions
 from dnora import msg
@@ -27,23 +27,21 @@ import geo_parameters as gp
 @add_frequency(grid_coord=False)
 @add_time(grid_coord=True)
 class Spectra(PointSkeleton):
-    def process_boundary(
-        self, boundary_processors: list[BoundaryProcessor] | None = None
-    ):
+    def process(self, spectral_processors: list[SpectralProcessor] | None = None):
         """Process all the individual spectra of the boundary object.
 
         E.g. change convention form WW3 to Oceanic, interpolate spectra to
         new directional grid, or multiply everything with a constant.
         """
 
-        if boundary_processors is None:
+        if spectral_processors is None:
             msg.info("No BoundaryProcessor provided. Doing Nothing.")
             return
 
-        if not isinstance(boundary_processors, list):
-            boundary_processors = [boundary_processors]
+        if not isinstance(spectral_processors, list):
+            spectral_processors = [spectral_processors]
 
-        for processor in boundary_processors:
+        for processor in spectral_processors:
             msg.process(f"Processing spectra with {type(processor).__name__}")
             print(processor)
             old_convention = processor._convention_in()
@@ -54,7 +52,7 @@ class Spectra(PointSkeleton):
                     )
 
             new_spec, new_dirs, new_freq, new_inds = processor(
-                self.spec(), self.dirs(), self.freq(), self.inds()
+                self.spec(squeeze=False), self.dirs(), self.freq(), self.inds()
             )
             new_inds = list(new_inds)
 
@@ -109,17 +107,17 @@ class Spectra(PointSkeleton):
         if isinstance(convention, str):
             convention = SpectralConvention[convention.upper()]
 
-        boundary_processor = boundary_processor_for_convention_change(
+        spectral_processor = spectral_processor_for_convention_change(
             current_convention=self.convention(), wanted_convention=convention
         )
 
-        if boundary_processor is None:
+        if spectral_processor is None:
             msg.info(
                 f"Convention ({self.convention()}) already equals wanted convention ({convention})."
             )
             return
 
-        self.process_boundary(boundary_processor)
+        self.process(spectral_processor)
 
     def _mark_convention(self, convention: SpectralConvention) -> None:
         """Marks new convention in metadata etc. but does nothing to the spectra"""

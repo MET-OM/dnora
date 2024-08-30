@@ -310,6 +310,8 @@ class ModelRun:
             point_mask=point_mask,
             **kwargs,
         )
+        if hasattr(obj, 'process'):
+            obj.process(reader.post_processing())
         self[obj_type] = obj
 
     @cached_reader(DnoraDataType.WIND, dnora.read.generic.Netcdf)

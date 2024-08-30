@@ -357,6 +357,8 @@ def clean_filename(filename: str, list_of_placeholders: list[str] = None) -> str
     """Cleans out the file name from possible used placeholders, e.g. #Grid
     as given in the list.
 
+    Removes the name 'LonelySkeleton', which might be present if no nameis given to the grid.
+
     Also removes multiple underscores '___' etc.
     """
 
@@ -371,6 +373,8 @@ def clean_filename(filename: str, list_of_placeholders: list[str] = None) -> str
 
     for s in list_of_placeholders:
         filename = re.sub(s, "", filename)
+
+    filename = re.sub("LonelySkeleton", "", filename)
 
     filename = re.sub("_{2,10}", "_", filename)
     filename = re.sub("_-_", "", filename)

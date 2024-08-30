@@ -155,3 +155,34 @@ def expand_area(
     new_lat = lat[0] - expand_lat, lat[1] + expand_lat
 
     return new_lon, new_lat
+
+
+def get_coordinates_from_ds(ds, return_dict: bool = False) -> tuple:
+    """Determins if an xarray dataset is cartesian (x,y) or spherical (lon,lat)
+    and returns the vecotrs (None for the ones that are not defined).
+
+    If lon, lat is defined over time, the firs instance is grabbed."""
+
+    if "time" in ds.dims:
+        ds = ds.isel(time=0)
+
+    if hasattr(ds, "lon") and hasattr(ds, "lat"):
+        lon, lat = np.squeeze(ds.lon.values), np.squeeze(ds.lat.values)
+        x, y = None, None
+
+    if hasattr(ds, "longitude") and hasattr(ds, "latitude"):
+        lon, lat = np.squeeze(ds.longitude.values), np.squeeze(ds.latitude.values)
+        x, y = None, None
+    if hasattr(ds, "x") and hasattr(ds, "y"):
+        x, y = np.squeeze(ds.x.values), np.squeeze(ds.y.values)
+        lon, lat = None, None
+
+    if all_none([x, y, lon, lat]):
+        raise AttributeError(
+            "Dataset doesn't have a combination of lon(gitude)/lat(itude) or x/y!"
+        )
+
+    if return_dict:
+        return {"lon": lon, "lat": lat, "x": x, "y": y}
+    else:
+        return lon, lat, x, y

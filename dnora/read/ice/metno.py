@@ -177,7 +177,9 @@ class Barents25(DataReader):
         setup_temp_dir(DnoraDataType.ICE, self.name())
         # Define area to search in
         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
-        lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
+        lon, lat = utils.grid.expand_area(
+            grid.edges("lon"), grid.edges("lat"), expansion_factor
+        )
 
         msg.process(f"Applying {program}")
         ds_creator_function = partial(

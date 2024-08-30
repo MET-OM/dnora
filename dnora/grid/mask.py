@@ -199,30 +199,3 @@ class MidPoint(MaskSetter):
 
     def __str__(self):
         return f"Setting mid point of edges {self.edges} to mask point."
-
-
-# class SetMatrix(MaskSetter):
-#     """Set boundary points by providing a boolean array [True = mask point].
-
-#     The dimensions and orientation of the array should be:
-
-#     rows = latitude and colums = longitude (i.e.) shape = (nr_lat, nr_lon).
-
-#     North = [-1,:]
-#     South = [0,:]
-#     East = [:,-1]
-#     West = [:,0]
-#     """
-
-#     def __init__(self, matrix):
-#         self.matrix = matrix
-#         return
-
-#     def __call__(self, grid):
-#         if self.matrix.shape == grid.sea_mask().shape:
-#             return self.matrix
-#         else:
-#             raise Exception(f'Given mask for boundary points does not match the dimensions of the grid ({self.matrix.shape[0]}x{self.matrix.shape[1]} vs {mask_size[0]}x{mask_size[1]})')
-
-#     def __str__(self):
-#         return(f"Setting boundary points using the boolean matrix I was initialized with.")

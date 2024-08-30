@@ -1,7 +1,6 @@
 import numpy as np
 from copy import copy
 from abc import ABC, abstractmethod
-from typing import Tuple
 
 from dnora.utils.spec import (
     interp_spec,
@@ -13,7 +12,7 @@ from dnora.utils.spec import (
 from dnora.type_manager.spectral_conventions import SpectralConvention
 
 
-class BoundaryProcessor(ABC):
+class SpectralProcessor(ABC):
     def __init__(self):
         pass
 
@@ -76,7 +75,7 @@ class BoundaryProcessor(ABC):
         return None
 
     @abstractmethod
-    def __call__(self, spec, dirs, freq, inds) -> Tuple:
+    def __call__(self, spec, dirs, freq, inds) -> tuple:
         """Processes individual spectra and returns them to object.
 
         In addition to the spectra, also the direction and frequency
@@ -95,14 +94,14 @@ class BoundaryProcessor(ABC):
         pass
 
 
-class Multiply(BoundaryProcessor):
+class Multiply(SpectralProcessor):
     """Multiplies all spectra with a constant defined at initialization."""
 
     def __init__(self, calib_spec=1) -> None:
         self.calib_spec = calib_spec
         return
 
-    def __call__(self, spec, dirs, freq, inds) -> Tuple:
+    def __call__(self, spec, dirs, freq, inds) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
         new_spec = spec * self.calib_spec
         check_that_spectra_are_consistent(new_spec, dirs, freq, expected_dim=2)
@@ -112,13 +111,13 @@ class Multiply(BoundaryProcessor):
         return f"Multiplying spectral values with {self.calib_spec}"
 
 
-class RemoveEmpty(BoundaryProcessor):
+class RemoveEmpty(SpectralProcessor):
     """Remove all empty spectra."""
 
     def __init__(self, threshold: float = 0.01) -> None:
         self.threshold = threshold
 
-    def __call__(self, spec, dirs, freq, inds) -> Tuple:
+    def __call__(self, spec, dirs, freq, inds) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
 
         mask = np.full(len(inds), True)
@@ -140,7 +139,7 @@ class RemoveEmpty(BoundaryProcessor):
         return f"Removing spectra with all values less than {self.threshold} or with NaN's..."
 
 
-class ReGridDirs(BoundaryProcessor):
+class ReGridDirs(SpectralProcessor):
     """Interpolates the spectra to have the same resoltuon but to start from
     a certain values, e.g. 0."""
 
@@ -149,7 +148,7 @@ class ReGridDirs(BoundaryProcessor):
 
         return
 
-    def __call__(self, spec, dirs, freq, inds) -> Tuple:
+    def __call__(self, spec, dirs, freq, inds) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
         if dirs[0] > 0:
             nbins = len(dirs)
@@ -182,7 +181,7 @@ class ReGridDirs(BoundaryProcessor):
         return f"Interpolating spectra to start from {self.first_dir}"
 
 
-# class ClearNaN(BoundaryProcessor):
+# class ClearNaN(SpectralProcessor):
 #     def __init__(self):
 #         pass
 #
@@ -200,7 +199,7 @@ class ReGridDirs(BoundaryProcessor):
 #         return new_spec, new_mask, new_freq, new_dirs
 
 
-class OceanToWW3(BoundaryProcessor):
+class OceanToWW3(SpectralProcessor):
     """Changes all spectra from Oceanic convention to WW3 convention.
     OCEAN:    Oceanic convention
                 Directional vector monotonically increasing.
@@ -220,7 +219,7 @@ class OceanToWW3(BoundaryProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.WW3
 
-    def __call__(self, spec, dirs, freq, inds) -> Tuple:
+    def __call__(self, spec, dirs, freq, inds) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
         # Flip direction of the both spectra and directional vector
         spec_flip = flip_spec(spec, dirs)
@@ -238,7 +237,7 @@ class OceanToWW3(BoundaryProcessor):
         return "Flipping both spectra and direction to mathematical notation."
 
 
-class WW3ToOcean(BoundaryProcessor):
+class WW3ToOcean(SpectralProcessor):
     """Changes all spectra from WW3 convention to Oceanic convention.
 
     WW3:      WAVEWATCH III output convention
@@ -259,7 +258,7 @@ class WW3ToOcean(BoundaryProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.OCEAN
 
-    def __call__(self, spec, dirs, freq, inds) -> Tuple:
+    def __call__(self, spec, dirs, freq, inds) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
         # Flip direction of the both spectra and directional vector
         spec_flip = flip_spec(spec, dirs)
@@ -278,7 +277,7 @@ class WW3ToOcean(BoundaryProcessor):
         return "Flipping both spectra and direction to oceanic notation."
 
 
-class MathToOcean(BoundaryProcessor):
+class MathToOcean(SpectralProcessor):
     """Changes all spectra from Mathematical convention to Oceanic convention.
 
     MATH:     Mathematical convention
@@ -299,7 +298,7 @@ class MathToOcean(BoundaryProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.OCEAN
 
-    def __call__(self, spec, dirs, freq, inds) -> Tuple:
+    def __call__(self, spec, dirs, freq, inds) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
         # Flip direction of the both spectra and directional vector
         spec_flip = flip_spec(spec, dirs)
@@ -317,7 +316,7 @@ class MathToOcean(BoundaryProcessor):
         return "Flipping spectra to oceanic notation."
 
 
-class MathVecToOcean(BoundaryProcessor):
+class MathVecToOcean(SpectralProcessor):
     """Changes all spectra from MathVec convention to Oceanic convention.
 
     MATHVEC:  Mathematical convention in vector
@@ -338,7 +337,7 @@ class MathVecToOcean(BoundaryProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.OCEAN
 
-    def __call__(self, spec, dirs, freq, inds) -> Tuple:
+    def __call__(self, spec, dirs, freq, inds) -> tuple:
         # Flip direction of the both spectra and directional vector
         spec_flip = flip_spec(spec, dirs)
         D_flip = flip_spec(dirs, dirs)
@@ -357,7 +356,7 @@ class MathVecToOcean(BoundaryProcessor):
         return "Flipping direction to oceanic notation."
 
 
-class OceanToMath(BoundaryProcessor):
+class OceanToMath(SpectralProcessor):
     """Changes all spectra from Oceanic convention to Mathematical convention.
 
     OCEAN:    Oceanic convention
@@ -378,7 +377,7 @@ class OceanToMath(BoundaryProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.MATH
 
-    def __call__(self, spec, dirs, freq, inds) -> Tuple:
+    def __call__(self, spec, dirs, freq, inds) -> tuple:
         # Flip direction of the both spectra and directional vector
         spec_flip = flip_spec(spec, dirs)
         D_flip = flip_spec(dirs, dirs)
@@ -392,7 +391,7 @@ class OceanToMath(BoundaryProcessor):
         return "Flipping only spectra to mathematical notation."
 
 
-class OceanToMathVec(BoundaryProcessor):
+class OceanToMathVec(SpectralProcessor):
     """Changes all spectra from Oceanic convention to Mathematical convention.
 
     OCEAN:    Oceanic convention
@@ -413,7 +412,7 @@ class OceanToMathVec(BoundaryProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.MATHVEC
 
-    def __call__(self, spec, dirs, freq, inds) -> Tuple:
+    def __call__(self, spec, dirs, freq, inds) -> tuple:
         # Flip direction of the both spectra and directional vector
         spec_flip = flip_spec(spec, dirs)
         D_flip = flip_spec(dirs, dirs)
@@ -427,7 +426,7 @@ class OceanToMathVec(BoundaryProcessor):
         return "Flipping only directions to mathematical notation."
 
 
-class MetToOcean(BoundaryProcessor):
+class MetToOcean(SpectralProcessor):
     """Changes all spectra from Meteorological convention to Ocanic convention.
 
     OCEAN:    Oceanic convention
@@ -448,7 +447,7 @@ class MetToOcean(BoundaryProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.OCEAN
 
-    def __call__(self, spec, dirs, freq, inds) -> Tuple:
+    def __call__(self, spec, dirs, freq, inds) -> tuple:
         new_spec = shift_spec(spec, dirs, 180)
 
         return new_spec, dirs, freq, inds
@@ -457,7 +456,7 @@ class MetToOcean(BoundaryProcessor):
         return "Shifting spectrum 180 degrees."
 
 
-class OceanToMet(BoundaryProcessor):
+class OceanToMet(SpectralProcessor):
     """Changes all spectra from Oceanic convention to Meteorological convention.
 
     OCEAN:    Oceanic convention
@@ -478,7 +477,7 @@ class OceanToMet(BoundaryProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.MET
 
-    def __call__(self, spec, dirs, freq, inds) -> Tuple:
+    def __call__(self, spec, dirs, freq, inds) -> tuple:
         new_spec = shift_spec(spec, dirs, 180)
 
         return new_spec, dirs, freq, inds
@@ -487,10 +486,10 @@ class OceanToMet(BoundaryProcessor):
         return "Shifting spectrum 180 degrees."
 
 
-def boundary_processor_for_convention_change(
+def spectral_processor_for_convention_change(
     current_convention: str, wanted_convention: str
-) -> BoundaryProcessor:
-    """Provides a BoundaryProcessor object for the .change_convention()
+) -> SpectralProcessor:
+    """Provides a SpectralProcessor object for the .change_convention()
     method of the Boundary objects.
 
     The conventions to choose from are predetermined:

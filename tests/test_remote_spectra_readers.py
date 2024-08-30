@@ -28,7 +28,7 @@ def test_nora3_generic(timevec):
     grid = dn.grid.Grid(lon=9.834990, lat=63.571444)
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=1)
     model.import_spectra(
-        dn.spectra.read.WAM(stride=24, hours_per_file=24),
+        dn.read.spectra.WAM(stride=24, hours_per_file=24),
         folder="https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/%Y/%m",
         filename="SPC%Y%m%d00.nc",
     )
@@ -47,7 +47,7 @@ def test_wam4km_generic(timevec):
     grid = dn.grid.Grid(lon=9.834990, lat=63.571444)
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=1)
     model.import_spectra(
-        dn.spectra.read.WAM(stride=6, hours_per_file=73),
+        dn.read.spectra.WAM(stride=6, hours_per_file=73),
         source=DataSource.REMOTE,
         folder="https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/%Y/%m/%d",
         filename="MyWave_wam4_SPC_%Y%m%dT%HZ.nc",
@@ -67,7 +67,7 @@ def test_ww3_4km_generic(timevec):
     grid = dn.grid.Grid(lon=9.834990, lat=63.571444)
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=1)
     model.import_spectra(
-        dn.spectra.read.WAM(stride=6, hours_per_file=73),
+        dn.read.spectra.WAM(stride=6, hours_per_file=73),
         source=DataSource.REMOTE,
         folder="https://thredds.met.no/thredds/dodsC/ww3_4km_archive_files/%Y/%m/%d",
         filename="ww3_4km_POI_SPC_%Y%m%dT%HZ.nc",
@@ -88,7 +88,7 @@ def test_norac_generic(timevec):
     grid = dn.grid.Grid(lon=9.834990, lat=63.571444)
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=1)
     model.import_spectra(
-        dn.spectra.read.WW3(),
+        dn.read.spectra.WW3(),
         source=DataSource.REMOTE,
         folder="https://thredds.met.no/thredds/dodsC/norac_wave/spec/",
     )

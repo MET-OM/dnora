@@ -4,7 +4,7 @@ import geo_parameters as gp
 import pandas as pd
 import numpy as np
 import xarray as xr
-from dnora import aux_funcs
+from dnora import utils
 from pathlib import Path
 from dnora.type_manager.dnora_types import DnoraDataType
 from dnora.type_manager.data_sources import DataSource
@@ -36,7 +36,7 @@ class PointNetcdf(SpectralDataReader):
             raise ValueError("Provide at least one filename!")
         filepath = get_url(folder, filename, get_list=True)
         ds = xr.open_dataset(filepath[0])
-        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
+        lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
         self.set_convention(ds.attrs.get("spectral_convention", "ocean"))
         return {"lon": lon, "lat": lat, "x": x, "y": y}
 
@@ -61,13 +61,13 @@ class PointNetcdf(SpectralDataReader):
         ds = xr.open_mfdataset(filepath)
         for fn in filepath:
             msg.from_file(fn)
-        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
+        lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
 
         times = slice(start_time, end_time)
 
         ds = ds.sel(inds=inds, time=times)
 
-        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
+        lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
         coord_dict = {"x": x, "y": y, "lon": lon, "lat": lat}
         for c in list(ds.coords):
             if c not in ["inds"]:
@@ -116,7 +116,7 @@ class Netcdf(DataReader):
         ds = xr.open_mfdataset(filepath)
 
         msg.from_multifile(filepath)
-        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
+        lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
 
         times = slice(start_time, end_time)
         if x is None:
@@ -133,7 +133,7 @@ class Netcdf(DataReader):
             )
             ds = ds.sel(x=slice(*xs), y=slice(*ys), time=times)
 
-        lon, lat, x, y = aux_funcs.get_coordinates_from_ds(ds)
+        lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
         coord_dict = {"x": x, "y": y, "lon": lon, "lat": lat}
 
         for c in list(ds.coords):

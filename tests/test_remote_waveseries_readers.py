@@ -12,7 +12,7 @@ def test_e39():
     model = dn.modelrun.ModelRun(
         start_time="2018-01-01 00:00", end_time="2018-05-01 00:00"
     )
-    model.import_waveseries(dn.waveseries.read.E39(loc="D"))
+    model.import_waveseries(dn.read.waveseries.metno.E39(loc="D"))
     assert model.waveseries().time()[0] == pd.Timestamp("2018-01-01 00:00")
     assert model.waveseries().time()[-1] == pd.Timestamp("2018-05-01 00:00")
 
@@ -91,5 +91,5 @@ def test_import_wave_from_wam4km_spectra():
 def test_norac():
     grid = dn.grid.Grid(lon=9.834990, lat=63.571444)
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=10)
-    model.import_waveseries(dn.waveseries.read.NORAC())
+    model.import_waveseries(dn.read.waveseries.metno.NORAC())
     breakpoint()

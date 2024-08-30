@@ -68,10 +68,8 @@ class DataExporter:
             except AttributeError:
                 wanted_convention = self._get_spectral_convention()
 
-            try:
-                self.model[obj_type]._set_convention(wanted_convention)
-            except AttributeError:  # Can only be done for spectra
-                pass
+            if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
+                self.model[obj_type].set_convention(wanted_convention)
 
         self._export_object(
             obj_type,
