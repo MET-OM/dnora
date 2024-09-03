@@ -2,6 +2,11 @@ from dnora.type_manager.data_sources import DataSource
 from dnora.read.waveseries import WW3Unstruct
 import geo_parameters as gp
 from dnora.read.abstract_readers import PointDataReader
+from dnora.read.ds_read_functions import read_ds_list, read_first_ds
+from .waveseries_readers import ds_xarray_read
+import xarray as xr
+import numpy as np
+from dnora import utils
 
 
 class NORAC(WW3Unstruct):
@@ -77,7 +82,7 @@ class E39(PointDataReader):
         folder = self._folder(folder, source)
         filename = self._filename(filename, source)
 
-        start_times, end_times = create_monthly_stamps(start_time, end_time)
+        start_times, end_times = utils.time.create_monthly_stamps(start_time, end_time)
         file_times = start_times
 
         ds_creator_function = ds_xarray_read
@@ -98,7 +103,7 @@ class E39(PointDataReader):
         ds["lon"] = np.nanmedian(ds.longitude.values)
         ds["lat"] = np.nanmedian(ds.latitude.values)
 
-        lon, lat, x, y = utils.get_coordinates_from_ds(ds)
+        lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
         data_dict = {}
         for var in ds.data_vars:
             if var not in ["lon", "lat", "longitude", "latitude", "x", "y"]:

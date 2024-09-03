@@ -35,7 +35,10 @@ class FileNames:
         self.primary = self._defaults[self.format.name]
 
         if self.edge_object is None:
-            if isinstance(self.obj_type, DnoraDataType):
+            if (
+                isinstance(self.obj_type, DnoraDataType)
+                and self.model.get(self.obj_type) is not None
+            ):
                 self.edge_object = self.obj_type
             else:
                 self.edge_object = DnoraDataType.GRID  # Always present in ModelRun

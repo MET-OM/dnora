@@ -311,15 +311,19 @@ class ModelRun:
             **kwargs,
         )
 
-        # Need to make the logic here same for all objects, but this works for now
-        if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
-            msg.info("Post-processing data...")
-            obj.process(reader.post_processing())
-            self[obj_type] = obj
-        else:
-            self[obj_type] = obj
-            msg.info("Post-processing data...")
-            self.process(obj_type, reader.post_processing())
+        if obj is not None:
+            # Need to make the logic here same for all objects, but this works for now
+            if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
+                msg.info("Post-processing data...")
+                obj.process(reader.post_processing())
+                self[obj_type] = obj
+            else:
+                self[obj_type] = obj
+                msg.info("Post-processing data...")
+                try:
+                    self.process(obj_type, reader.post_processing())
+                except TypeError:
+                    pass  # Might happen when using spectral reader to read waveseries data. Need to fix this
 
     @cached_reader(DnoraDataType.WIND, dnora.read.generic.Netcdf)
     def import_wind(

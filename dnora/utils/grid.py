@@ -186,3 +186,7 @@ def get_coordinates_from_ds(ds, return_dict: bool = False) -> tuple:
         return {"lon": lon, "lat": lat, "x": x, "y": y}
     else:
         return lon, lat, x, y
+
+
+def all_none(val) -> bool:
+    return not [a for a in val if a is not None]

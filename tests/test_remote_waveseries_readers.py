@@ -92,4 +92,6 @@ def test_norac():
     grid = dn.grid.Grid(lon=9.834990, lat=63.571444)
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=10)
     model.import_waveseries(dn.read.waveseries.metno.NORAC())
-    breakpoint()
+    timevec = pd.date_range("2023-04-10 00:00:00", "2023-04-10 23:00:00", freq="1h")
+    assert np.all(model.waveseries().time() == timevec)
+    assert model.waveseries().hs() is not None

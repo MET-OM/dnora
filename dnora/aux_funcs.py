@@ -7,10 +7,6 @@ import re
 import os
 
 
-def all_none(val) -> bool:
-    return not [a for a in val if a is not None]
-
-
 #
 
 

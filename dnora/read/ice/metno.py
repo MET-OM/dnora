@@ -12,6 +12,7 @@ from functools import partial
 import xarray as xr
 import re
 import numpy as np
+import pandas as pd
 
 
 class NORA3(DataReader):
@@ -102,11 +103,26 @@ class NORA3(DataReader):
 
 
 def get_barents25_urls(folder, filename, file_times):
+    """Remote folder and file name changes December 2022"""
     urls = []
 
     for file_time in file_times:
+        # if file_time > pd.Timestamp("2023-03-01 00:00"):
         h6 = np.floor(file_time.hour / 6) * 6
         remote_folder = re.sub("#6HSTAMP#", f"{h6:02.0f}", folder)
+        # else:  # Old files
+        #     # Sub out instead of setting directly, since this should only affect the remote folder and filename!
+        #     filename = re.sub(
+        #         "barents_sfc_%Y%m%dT%HZm%H.nc",
+        #         "Barents-2.5km_ZDEPTHS_his.an.%Y%m%d06.nc",
+        #         filename,
+        #     )
+        #     remote_folder = re.sub(
+        #         "fou-hi/barents_eps_surface/%Y/%m/%d/T#6HSTAMP#Z",
+        #         "barents25km_files/",
+        #         folder,
+        #     )
+
         urls.append(get_url(remote_folder, filename, file_time))
     return urls
 
@@ -134,8 +150,6 @@ class Barents25(DataReader):
 
     def __init__(
         self,
-        stride: int = 6,
-        hours_per_file: int = 67,
         last_file: str = "",
         lead_time: int = 0,
     ):
@@ -143,12 +157,8 @@ class Barents25(DataReader):
         setting unless you have a good reason to do so.
         """
 
-        self.file_structure = FileStructure(
-            stride=stride,
-            hours_per_file=hours_per_file,
-            last_file=last_file,
-            lead_time=lead_time,
-        )
+        self.last_file = last_file
+        self.lead_time = lead_time
         return
 
     def __call__(
@@ -164,6 +174,16 @@ class Barents25(DataReader):
         **kwargs,
     ):
         """Reads in Barents 2.5 km ice data between the given times and area"""
+        # if start_time > pd.Timestamp("2023-03-01 00:00"):
+        #     self.file_structure = FileStructure(
+        #         stride=6,
+        #         hours_per_file=67,
+        #         last_file=self.last_file,
+        #         lead_time=self.lead_time,
+        #     )
+        # else:
+        #     # Old version uses daily files with no overlap
+        self.file_structure = FileStructure(stride=24, hours_per_file=24, offset=6)
 
         folder = self._folder(folder, source)
         filename = self._filename(filename, source)
@@ -192,6 +212,7 @@ class Barents25(DataReader):
             name=self.name(),
             program=program,
         )
+
         ds_list = read_ds_list(
             start_times,
             end_times,

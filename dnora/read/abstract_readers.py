@@ -46,6 +46,8 @@ class DataReader(ABC):
         source: DataSource,
         folder: str,
         filename: str,
+        inds: list[int],
+        obj_data_vars: list[str],
         **kwargs,
     ):
         """Reads in the forcing witih grid and between start_time and end_time.

@@ -16,6 +16,11 @@ def timevec():
 
 
 @pytest.fixture(scope="session")
+def timevec_late2022():
+    return pd.date_range("2022-10-01 00:00:00", "2022-10-02 23:00:00", freq="1h")
+
+
+@pytest.fixture(scope="session")
 def timevec2024():
     return pd.date_range("2024-01-05 00:00:00", "2024-01-05 23:00:00", freq="1h")
 
