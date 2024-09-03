@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 from dnora import msg
 from dnora import file_module
-from dnora.dnora_type_manager.dnora_types import DnoraDataType
+from dnora.type_manager.dnora_types import DnoraDataType
 
 
 class SWAN(DataWriter):

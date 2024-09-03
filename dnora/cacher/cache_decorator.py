@@ -1,10 +1,9 @@
 from dnora.file_module import FileNames
 
 from copy import copy
-from dnora.aux_funcs import expand_area
-from dnora.dnora_type_manager.dnora_types import DnoraDataType
-from dnora.dnora_type_manager.model_formats import ModelFormat
-from dnora.readers.generic_readers import DataReader
+from dnora.type_manager.dnora_types import DnoraDataType
+from dnora.type_manager.model_formats import ModelFormat
+from dnora.read.abstract_readers import DataReader
 from inspect import getcallargs
 from dnora.pick import Area
 from .tiles import TileObject
@@ -15,7 +14,7 @@ from .caching_functions import (
     patch_cached_data,
     write_data_to_cache,
 )
-from dnora import msg
+from dnora import msg, utils
 from geo_skeletons import PointSkeleton
 
 
@@ -148,7 +147,7 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
                     grid.core.x_str: slice(*lon),
                     grid.core.y_str: slice(*lat),
                 }
-                lon, lat = expand_area(
+                lon, lat = utils.grid.expand_area(
                     grid.edges("lon", native=True),
                     grid.edges("lat", native=True),
                     expansion_factor=kwargs.get("expansion_factor", 1.0),

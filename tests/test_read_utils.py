@@ -1,4 +1,4 @@
-from dnora.readers.ds_read_functions import data_left_to_try_with
+from dnora.read.ds_read_functions import data_left_to_try_with
 
 
 def test_data_left_to_try_with():

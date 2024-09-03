@@ -4,11 +4,11 @@ from dnora import (
     pick,
     export,
 )
-from dnora.spectral_conventions import SpectralConvention
+from dnora.type_manager.spectral_conventions import SpectralConvention
 import numpy as np
 
-from dnora.readers.generic_readers import ConstantData
-from dnora.dnora_type_manager.dnora_types import DnoraDataType
+from dnora.read.generic import ConstantData
+from dnora.type_manager.dnora_types import DnoraDataType
 
 
 def get_freq_and_dir_vector(math=False):

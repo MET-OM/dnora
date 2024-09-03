@@ -91,7 +91,7 @@ WW3:
     filename: '#GRID'
     extension: 'txt'
   spectra:
-    filename: 'ww3_spec_E#LonN#Lat_#SPECTRA_#GRID_#T0-#T1'
+    filename: 'ww3_spec_E#LONN#LAT_#SPECTRA_#GRID_#T0-#T1'
     extension: 'nc'
   wind:
     filename: 'wind_#WIND_#GRID_#T0-#T1'

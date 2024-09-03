@@ -1,35 +1,26 @@
-from dnora import (
-    grid,
-    pick,
-    spectra,
-    wind,
-    spectra1d,
-    waveseries,
-    export,
-    modelrun,
-)
+import dnora as dn
 import pytest
 
 
 @pytest.fixture(scope="session")
 def model():
     # grid = grd.Grid(lon=(10, 20), lat=(60, 65))
-    area = grid.Grid(lon=5, lat=60)
-    model = modelrun.ModelRun(grid=area, dry_run=True)
-    model.import_spectra(spectra.read_metno.NORA3(), pick.Area())
-    model.import_wind(wind.read_metno.NORA3())
+    area = dn.grid.Grid(lon=5, lat=60)
+    model = dn.modelrun.ModelRun(grid=area, dry_run=True)
+    model.import_spectra(dn.read.spectra.metno.NORA3(), dn.pick.Area())
+    model.import_wind(dn.read.wind.metno.NORA3())
     model.import_spectra1d(
-        spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.Trivial()
+        dn.read.spectra1d.SpectraTo1D(model.spectra()), point_picker=dn.pick.Trivial()
     )
     model.import_waveseries(
-        waveseries.read.Spectra1DToWaveSeries(model.spectra1d()),
-        point_picker=pick.Trivial(),
+        dn.read.waveseries.Spectra1DToWaveSeries(model.spectra1d()),
+        point_picker=dn.pick.Trivial(),
     )
     return model
 
 
 def test_dnora(model):
-    exporter = export.DataExporter(model)
+    exporter = dn.export.DataExporter(model)
     exporter.export_spectra()
     exporter.export_wind()
     exporter.export_spectra1d()
@@ -37,7 +28,7 @@ def test_dnora(model):
 
 
 def test_cache(model):
-    exporter = export.Cacher(model)
+    exporter = dn.export.Cacher(model)
     exporter.export_spectra()
     exporter.export_wind()
     exporter.export_spectra1d()
@@ -45,7 +36,7 @@ def test_cache(model):
 
 
 def test_swan(model):
-    exporter = export.SWAN(model)
+    exporter = dn.export.SWAN(model)
     exporter.export_spectra()
     exporter.export_wind()
     exporter.export_spectra1d()
@@ -53,7 +44,7 @@ def test_swan(model):
 
 
 def test_ww3(model):
-    exporter = export.WW3(model)
+    exporter = dn.export.WW3(model)
     exporter.export_spectra()
     exporter.export_wind()
     exporter.export_spectra1d()
@@ -61,7 +52,7 @@ def test_ww3(model):
 
 
 def test_hos(model):
-    exporter = export.HOS_Ocean(model)
+    exporter = dn.export.HOS_Ocean(model)
     exporter.export_spectra()
     exporter.export_wind()
     exporter.export_spectra1d()
@@ -69,7 +60,7 @@ def test_hos(model):
 
 
 def test_reef3d(model):
-    exporter = export.REEF3D(model)
+    exporter = dn.export.REEF3D(model)
     exporter.export_spectra()
     exporter.export_wind()
     exporter.export_spectra1d()
@@ -77,7 +68,7 @@ def test_reef3d(model):
 
 
 def test_swash(model):
-    exporter = export.SWASH(model)
+    exporter = dn.export.SWASH(model)
     exporter.export_spectra()
     exporter.export_wind()
     exporter.export_spectra1d()

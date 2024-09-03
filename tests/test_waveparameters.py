@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from dnora.wave_parameters.parameters import get_function
-from dnora.spectral_conventions import SpectralConvention
+from dnora.type_manager.spectral_conventions import SpectralConvention
 import geo_parameters as gp
 
 

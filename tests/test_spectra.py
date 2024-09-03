@@ -2,8 +2,8 @@ from dnora.grid import Grid
 from dnora import modelrun, pick
 import numpy as np
 
-from dnora.readers.generic_readers import ConstantData
-from dnora.spectral_conventions import SpectralConvention
+from dnora.read.generic import ConstantData
+from dnora.type_manager.spectral_conventions import SpectralConvention
 
 
 def test_import_constant_spectra_one_point():

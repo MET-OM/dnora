@@ -15,7 +15,7 @@ from dnora.file_module import FileNames
 # Import abstract classes and needed instances of them
 from dnora.pick.point_pickers import PointPicker, NearestGridPoint, Trivial, Area
 from dnora.modelrun.import_functions import import_data
-from dnora.dnora_type_manager.model_formats import ModelFormat
+from dnora.type_manager.model_formats import ModelFormat
 from dnora.spectral_grid import SpectralGrid
 
 
@@ -23,31 +23,31 @@ from dnora import msg
 from dnora.cacher.cache_decorator import cached_reader
 
 from dnora.defaults import read_environment_variable
-from dnora.spectra1d.read import SpectraTo1D
-from dnora.waveseries.read import Spectra1DToWaveSeries
-from dnora.spectral_conventions import SpectralConvention
+from dnora.read.spectra1d import SpectraTo1D
+from dnora.read.waveseries import Spectra1DToWaveSeries
+from dnora.type_manager.spectral_conventions import SpectralConvention
 from dnora.pick import Trivial
 
 from dnora.export.templates import Cacher
 from dnora.aux_funcs import get_url, get_first_file
-from dnora.readers import generic_readers
-from dnora.readers.abstract_readers import (
+import dnora.read.generic
+from dnora.read.abstract_readers import (
     DataReader,
     PointDataReader,
     SpectralDataReader,
 )
 
-from dnora.dnora_type_manager.dnora_types import (
+from dnora.type_manager.dnora_types import (
     DnoraDataType,
     DnoraFileType,
     data_type_from_string,
     file_type_from_string,
 )
-from dnora.dnora_type_manager.data_sources import DataSource
+from dnora.type_manager.data_sources import DataSource
 from calendar import monthrange
 
 if TYPE_CHECKING:
-    from dnora.dnora_type_manager.dnora_objects import (
+    from dnora.type_manager.dnora_objects import (
         Grid,
         Wind,
         Spectra,
@@ -59,8 +59,8 @@ if TYPE_CHECKING:
         DnoraObject,
     )
 
-    from dnora.readers.abstract_readers import ReaderFunction
-
+    from dnora.read.abstract_readers import ReaderFunction
+from dnora.type_manager.dnora_objects import dnora_objects
 from typing import Optional
 
 
@@ -310,9 +310,22 @@ class ModelRun:
             point_mask=point_mask,
             **kwargs,
         )
-        self[obj_type] = obj
 
-    @cached_reader(DnoraDataType.WIND, generic_readers.Netcdf)
+        if obj is not None:
+            # Need to make the logic here same for all objects, but this works for now
+            if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
+                msg.info("Post-processing data...")
+                obj.process(reader.post_processing())
+                self[obj_type] = obj
+            else:
+                self[obj_type] = obj
+                msg.info("Post-processing data...")
+                try:
+                    self.process(obj_type, reader.post_processing())
+                except TypeError:
+                    pass  # Might happen when using spectral reader to read waveseries data. Need to fix this
+
+    @cached_reader(DnoraDataType.WIND, dnora.read.generic.Netcdf)
     def import_wind(
         self,
         reader: DataReader | None = None,
@@ -335,7 +348,7 @@ class ModelRun:
             **kwargs,
         )
 
-    @cached_reader(DnoraDataType.WATERLEVEL, generic_readers.Netcdf)
+    @cached_reader(DnoraDataType.WATERLEVEL, dnora.read.generic.Netcdf)
     def import_waterlevel(
         self,
         reader: DataReader | None = None,
@@ -358,7 +371,7 @@ class ModelRun:
             **kwargs,
         )
 
-    @cached_reader(DnoraDataType.SPECTRA, generic_readers.PointNetcdf)
+    @cached_reader(DnoraDataType.SPECTRA, dnora.read.generic.PointNetcdf)
     def import_spectra(
         self,
         reader: SpectralDataReader | None = None,
@@ -384,7 +397,7 @@ class ModelRun:
             **kwargs,
         )
 
-    @cached_reader(DnoraDataType.SPECTRA1D, generic_readers.PointNetcdf)
+    @cached_reader(DnoraDataType.SPECTRA1D, dnora.read.generic.PointNetcdf)
     def import_spectra1d(
         self,
         reader: SpectralDataReader | None = None,
@@ -410,7 +423,7 @@ class ModelRun:
             **kwargs,
         )
 
-    @cached_reader(DnoraDataType.WAVESERIES, generic_readers.PointNetcdf)
+    @cached_reader(DnoraDataType.WAVESERIES, dnora.read.generic.PointNetcdf)
     def import_waveseries(
         self,
         reader: PointDataReader | None = None,
@@ -436,7 +449,7 @@ class ModelRun:
             **kwargs,
         )
 
-    @cached_reader(DnoraDataType.CURRENT, generic_readers.Netcdf)
+    @cached_reader(DnoraDataType.CURRENT, dnora.read.generic.Netcdf)
     def import_current(
         self,
         reader: DataReader | None = None,
@@ -459,7 +472,7 @@ class ModelRun:
             **kwargs,
         )
 
-    @cached_reader(DnoraDataType.ICE, generic_readers.Netcdf)
+    @cached_reader(DnoraDataType.ICE, dnora.read.generic.Netcdf)
     def import_ice(
         self,
         reader: DataReader | None = None,
@@ -599,13 +612,17 @@ class ModelRun:
         """Returns the ocean current object if exists."""
         return self._dnora_objects.get(DnoraDataType.ICE)
 
-    # def spectral_grid(self) -> SpectralGrid:
-    #     """Returns the spectral grid object if exists."""
-    #     return self._dnora_objects.get(DnoraDataType.SpectralGrid)
-
-    # def input_file(self) -> None:
-    #     """Only defined to have method for all objects"""
-    #     return None
+    def process(
+        self, obj_type: DnoraDataType | str, processor: GriddedDataProcessor
+    ) -> None:
+        """Processes data of a gridded object with a given processor and sets that processed data to ModelRun"""
+        if processor is None:
+            return
+        obj_type = data_type_from_string(obj_type)
+        print(processor)
+        new_ds = processor(self.get(obj_type))
+        obj_class = dnora_objects.get(obj_type)
+        self[obj_type] = obj_class.from_ds(new_ds)
 
     def list_of_objects(
         self,

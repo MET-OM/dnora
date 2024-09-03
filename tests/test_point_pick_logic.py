@@ -1,7 +1,7 @@
 import dnora as dn
-from dnora.readers.abstract_readers import SpectralDataReader
-from dnora.dnora_type_manager.dnora_types import DnoraDataType
-from dnora.dnora_type_manager.data_sources import DataSource
+from dnora.read.abstract_readers import SpectralDataReader
+from dnora.type_manager.dnora_types import DnoraDataType
+from dnora.type_manager.data_sources import DataSource
 import pandas as pd
 import numpy as np
 

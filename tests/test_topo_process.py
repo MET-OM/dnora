@@ -1,5 +1,5 @@
 from dnora.grid import Grid
-from dnora.readers.generic_readers import ConstantData
+from dnora.read.generic import ConstantData
 from dnora.grid.process import SetConstantDepth, SetMinDepth, SetMaxDepth
 import numpy as np
 

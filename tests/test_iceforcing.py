@@ -1,6 +1,6 @@
 from dnora import grid, modelrun, ice
 import numpy as np
-from dnora.readers.generic_readers import ConstantData
+from dnora.read.generic import ConstantData
 
 
 def test_import_constant_iceforcing_one_point():

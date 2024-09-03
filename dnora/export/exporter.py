@@ -1,17 +1,17 @@
 from dnora import msg
 from dnora.file_module import FileNames
-from dnora.spectral_conventions import SpectralConvention
+from dnora.type_manager.spectral_conventions import SpectralConvention
 from typing import Union
 from .data_writers import DataWriter, Netcdf
 from .spectra_writers import SpectraWriter
 
 from .decorators import add_export_method
-from dnora.dnora_type_manager.dnora_types import (
+from dnora.type_manager.dnora_types import (
     DnoraDataType,
     data_type_from_string,
     DnoraFileType,
 )
-from dnora.dnora_type_manager.model_formats import ModelFormat
+from dnora.type_manager.model_formats import ModelFormat
 
 WriterFunction = Union[
     DataWriter,
@@ -63,15 +63,32 @@ class DataExporter:
         writer_function = self._setup_export(obj_type, writer, dry_run)
 
         if not self.dry_run():
+            if self.model.get(obj_type) is None:
+                msg.info(f"No {obj_type.name} data exists. Won't export anything.")
+                return
+
+            if not self._silent:
+                msg.header(
+                    writer_function,
+                    f"Writing {obj_type.name} data from {self.model[obj_type].name}",
+                )
+
             try:  # GeneralWritingFunction might not have this method defined
                 wanted_convention = writer_function.convention()
             except AttributeError:
                 wanted_convention = self._get_spectral_convention()
 
-            try:
-                self.model[obj_type]._set_convention(wanted_convention)
-            except AttributeError:  # Can only be done for spectra
-                pass
+            if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
+                self.model[obj_type].set_convention(wanted_convention)
+        else:
+            if not self._silent:
+                if self.model.get(obj_type) is None:
+                    msg.info(f"Writing {obj_type.name} data")
+                else:
+                    msg.header(
+                        writer_function,
+                        f"Writing {obj_type.name} data from {self.model[obj_type].name}",
+                    )
 
         self._export_object(
             obj_type,
@@ -87,9 +104,6 @@ class DataExporter:
         self, obj_type: DnoraDataType, writer_function, dry_run: bool
     ) -> WriterFunction:
         self._dry_run = dry_run
-
-        if self.model[obj_type] is None:
-            return None
 
         writer_function = writer_function or self._get_writer(obj_type)
 
@@ -109,16 +123,6 @@ class DataExporter:
         **kwargs,
     ) -> list[str]:
         # Controls generation of file names using the proper defaults etc.
-        if writer_function is None:
-            msg.info(f"No {obj_type.name} data exists. Won't export anything.")
-            return
-
-        if not self._silent:
-            msg.header(
-                writer_function,
-                f"Writing {obj_type.name} data from {self.model[obj_type].name}",
-            )
-
         format = format or self._get_default_format()
         file_object = FileNames(
             format=format,

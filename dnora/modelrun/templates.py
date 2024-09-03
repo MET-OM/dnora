@@ -1,9 +1,8 @@
 # from ..run import model_executers
 from dnora.modelrun.modelrun import ModelRun
-
-from dnora import spectra, wind, waterlevel
-from dnora.readers.generic_readers import ConstantData
-from dnora.dnora_type_manager.dnora_types import DnoraDataType
+from dnora.read.generic import ConstantData
+from dnora.type_manager.dnora_types import DnoraDataType
+import dnora
 
 
 class Constant(ModelRun):
@@ -20,34 +19,35 @@ class Constant(ModelRun):
 
 class NORA3(ModelRun):
     _reader_dict = {
-        DnoraDataType.SPECTRA: spectra.read_metno.NORA3(),
-        DnoraDataType.WIND: wind.read_metno.NORA3(),
+        DnoraDataType.SPECTRA: dnora.read.spectra.metno.NORA3(),
+        DnoraDataType.WIND: dnora.read.wind.metno.NORA3(),
+        DnoraDataType.ICE: dnora.read.ice.metno.NORA3(),
     }
 
 
 class ERA5(ModelRun):
     _reader_dict = {
-        DnoraDataType.SPECTRA: spectra.read_ec.ERA5(),
-        DnoraDataType.WIND: wind.read_ec.ERA5(),
-        DnoraDataType.WATERLEVEL: waterlevel.read_ec.GTSM_ERA5(),
+        DnoraDataType.SPECTRA: dnora.read.spectra.ec.ERA5(),
+        DnoraDataType.WIND: dnora.read.wind.ec.ERA5(),
+        DnoraDataType.WATERLEVEL: dnora.read.waterlevel.ec.GTSM_ERA5(),
     }
 
 
 class NOAA(ModelRun):
     _reader_dict = {
-        DnoraDataType.WIND: wind.read_noaa.GFS(),
+        DnoraDataType.WIND: dnora.read.wind.noaa.GFS(),
     }
 
 
 class WAM4km(ModelRun):
     _reader_dict = {
-        DnoraDataType.SPECTRA: spectra.read_metno.WAM4km(),
-        DnoraDataType.WIND: wind.read_metno.MEPS(),
+        DnoraDataType.SPECTRA: dnora.read.spectra.metno.WAM4km(),
+        DnoraDataType.WIND: dnora.read.wind.metno.MEPS(),
     }
 
 
 class WW3_4km(ModelRun):
     _reader_dict = {
-        DnoraDataType.SPECTRA: spectra.read_metno.WW3_4km(),
-        DnoraDataType.WIND: wind.read_metno.MEPS(),
+        DnoraDataType.SPECTRA: dnora.read.spectra.metno.WW3_4km(),
+        DnoraDataType.WIND: dnora.read.wind.metno.MEPS(),
     }

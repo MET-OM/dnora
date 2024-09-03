@@ -1,4 +1,4 @@
-from dnora.dnora_type_manager.dnora_types import DnoraDataType
+from dnora.type_manager.dnora_types import DnoraDataType
 
 
 def add_export_method(obj_type: DnoraDataType):

@@ -2,7 +2,7 @@ import unittest
 import dnora
 from dnora.grid import Grid
 from dnora.grid.mask import Edges
-from dnora.aux_funcs import (
+from dnora.utils.grid import (
     identify_boundary_edges,
     create_ordered_boundary_list,
     get_coords_for_boundary_edges,

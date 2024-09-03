@@ -1,35 +1,34 @@
-from dnora.grid import Grid
-from dnora import wind, spectra, spectra1d, waveseries, modelrun, pick, export, executer
+import dnora as dn
 
 
 def test_model_one_point():
-    grid = Grid(lon=5, lat=60)
-    model = modelrun.ModelRun(grid=grid, dry_run=True)
+    grid = dn.grid.Grid(lon=5, lat=60)
+    model = dn.modelrun.ModelRun(grid=grid, dry_run=True)
 
-    model.import_spectra(spectra.read_metno.NORA3(), pick.Area())
-    model.import_wind(wind.read_metno.NORA3())
+    model.import_spectra(dn.read.spectra.metno.NORA3(), dn.pick.Area())
+    model.import_wind(dn.read.wind.metno.NORA3())
     model.import_spectra1d(
-        spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.Trivial()
+        dn.read.spectra1d.SpectraTo1D(model.spectra()), point_picker=dn.pick.Trivial()
     )
 
     model.import_waveseries(
-        waveseries.read.Spectra1DToWaveSeries(model.spectra1d()),
-        point_picker=pick.Trivial(),
+        dn.read.waveseries.Spectra1DToWaveSeries(model.spectra1d()),
+        point_picker=dn.pick.Trivial(),
     )
 
-    DNORA = export.DataExporter(model)
-    DNORA.export_spectra()
-    DNORA.export_wind()
-    DNORA.export_spectra1d()
-    DNORA.export_waveseries()
+    generic = dn.export.DataExporter(model)
+    generic.export_spectra()
+    generic.export_wind()
+    generic.export_spectra1d()
+    generic.export_waveseries()
 
-    SWAN = export.SWAN(model)
+    SWAN = dn.export.SWAN(model)
     SWAN.export_spectra()
     SWAN.export_wind()
     SWAN.export_spectra1d()
     SWAN.export_waveseries()
 
-    exe = executer.SWAN(model)
+    exe = dn.executer.SWAN(model)
     exe.write_input_file()
     exe.run_model()
 
@@ -37,18 +36,18 @@ def test_model_one_point():
 
 
 def test_model_one_area():
-    grid = Grid(lon=(5, 6), lat=(60, 61))
-    model = modelrun.ModelRun(grid=grid, dry_run=True)
-    model.import_spectra(spectra.read_metno.NORA3(), pick.Area())
-    model.import_wind(wind.read_metno.NORA3())
+    grid = dn.grid.Grid(lon=(5, 6), lat=(60, 61))
+    model = dn.modelrun.ModelRun(grid=grid, dry_run=True)
+    model.import_spectra(dn.read.spectra.metno.NORA3(), dn.pick.Area())
+    model.import_wind(dn.read.wind.metno.NORA3())
     model.import_spectra1d(
-        spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.Trivial()
+        dn.read.spectra1d.SpectraTo1D(model.spectra()), point_picker=dn.pick.Trivial()
     )
     model.import_waveseries(
-        waveseries.read.Spectra1DToWaveSeries(model.spectra1d()),
-        point_picker=pick.Trivial(),
+        dn.read.waveseries.Spectra1DToWaveSeries(model.spectra1d()),
+        point_picker=dn.pick.Trivial(),
     )
-    exe = executer.SWAN(model)
+    exe = dn.executer.SWAN(model)
     exe.write_input_file()
     exe.run_model()
 
@@ -56,20 +55,20 @@ def test_model_one_area():
 
 
 def test_model_gridded():
-    grid = Grid(lon=(5, 6), lat=(60, 61))
+    grid = dn.grid.Grid(lon=(5, 6), lat=(60, 61))
     grid.set_spacing(nx=10, ny=10)
-    model = modelrun.ModelRun(grid=grid, dry_run=True)
-    model.import_spectra(spectra.read_metno.NORA3(), pick.Area())
-    model.import_wind(wind.read_metno.NORA3())
+    model = dn.modelrun.ModelRun(grid=grid, dry_run=True)
+    model.import_spectra(dn.read.spectra.metno.NORA3(), dn.pick.Area())
+    model.import_wind(dn.read.wind.metno.NORA3())
     model.import_spectra1d(
-        spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.Trivial()
+        dn.read.spectra1d.SpectraTo1D(model.spectra()), point_picker=dn.pick.Trivial()
     )
     model.import_waveseries(
-        waveseries.read.Spectra1DToWaveSeries(model.spectra1d()),
-        point_picker=pick.Trivial(),
+        dn.read.waveseries.Spectra1DToWaveSeries(model.spectra1d()),
+        point_picker=dn.pick.Trivial(),
     )
 
-    exe = executer.SWAN(model)
+    exe = dn.executer.SWAN(model)
     exe.write_input_file()
     exe.run_model()
 
@@ -77,19 +76,19 @@ def test_model_gridded():
 
 
 def test_model_one_point_cartesian():
-    grid = Grid(x=5, y=3)
-    model = modelrun.ModelRun(grid=grid, dry_run=True)
-    model.import_spectra(spectra.read_metno.NORA3(), pick.Area())
-    model.import_wind(wind.read_metno.NORA3())
+    grid = dn.grid.Grid(x=5, y=3)
+    model = dn.modelrun.ModelRun(grid=grid, dry_run=True)
+    model.import_spectra(dn.read.spectra.metno.NORA3(), dn.pick.Area())
+    model.import_wind(dn.read.wind.metno.NORA3())
     model.import_spectra1d(
-        spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.Trivial()
+        dn.read.spectra1d.SpectraTo1D(model.spectra()), point_picker=dn.pick.Trivial()
     )
     model.import_waveseries(
-        waveseries.read.Spectra1DToWaveSeries(model.spectra1d()),
-        point_picker=pick.Trivial(),
+        dn.read.waveseries.Spectra1DToWaveSeries(model.spectra1d()),
+        point_picker=dn.pick.Trivial(),
     )
 
-    exe = executer.SWAN(model)
+    exe = dn.executer.SWAN(model)
     exe.write_input_file()
     exe.run_model()
 
@@ -97,18 +96,18 @@ def test_model_one_point_cartesian():
 
 
 def test_model_one_area_cartesian():
-    grid = Grid(x=(5, 6), y=(3, 4))
-    model = modelrun.ModelRun(grid=grid, dry_run=True)
-    model.import_spectra(spectra.read_metno.NORA3(), pick.Area())
-    model.import_wind(wind.read_metno.NORA3())
+    grid = dn.grid.Grid(x=(5, 6), y=(3, 4))
+    model = dn.modelrun.ModelRun(grid=grid, dry_run=True)
+    model.import_spectra(dn.read.spectra.metno.NORA3(), dn.pick.Area())
+    model.import_wind(dn.read.wind.metno.NORA3())
     model.import_spectra1d(
-        spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.Trivial()
+        dn.read.spectra1d.SpectraTo1D(model.spectra()), point_picker=dn.pick.Trivial()
     )
     model.import_waveseries(
-        waveseries.read.Spectra1DToWaveSeries(model.spectra1d()),
-        point_picker=pick.Trivial(),
+        dn.read.waveseries.Spectra1DToWaveSeries(model.spectra1d()),
+        point_picker=dn.pick.Trivial(),
     )
-    exe = executer.SWAN(model)
+    exe = dn.executer.SWAN(model)
     exe.write_input_file()
     exe.run_model()
 
@@ -116,19 +115,19 @@ def test_model_one_area_cartesian():
 
 
 def test_model_gridded_cartesian():
-    grid = Grid(x=(5, 6), y=(3, 4))
+    grid = dn.grid.Grid(x=(5, 6), y=(3, 4))
     grid.set_spacing(nx=10, ny=10)
-    model = modelrun.ModelRun(grid=grid, dry_run=True)
-    model.import_spectra(spectra.read_metno.NORA3(), pick.Area())
-    model.import_wind(wind.read_metno.NORA3())
+    model = dn.modelrun.ModelRun(grid=grid, dry_run=True)
+    model.import_spectra(dn.read.spectra.metno.NORA3(), dn.pick.Area())
+    model.import_wind(dn.read.wind.metno.NORA3())
     model.import_spectra1d(
-        spectra1d.read.SpectraTo1D(model.spectra()), point_picker=pick.Trivial()
+        dn.read.spectra1d.SpectraTo1D(model.spectra()), point_picker=dn.pick.Trivial()
     )
     model.import_waveseries(
-        waveseries.read.Spectra1DToWaveSeries(model.spectra1d()),
-        point_picker=pick.Trivial(),
+        dn.read.waveseries.Spectra1DToWaveSeries(model.spectra1d()),
+        point_picker=dn.pick.Trivial(),
     )
-    exe = executer.SWAN(model)
+    exe = dn.executer.SWAN(model)
     exe.write_input_file()
     exe.run_model()
 

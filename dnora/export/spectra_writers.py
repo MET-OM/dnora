@@ -10,11 +10,11 @@ if TYPE_CHECKING:
     from dnora.modelrun.modelrun import ModelRun
     from dnora.file_module import FileNames
 
-from dnora.dnora_type_manager.dnora_types import DnoraDataType
+from dnora.type_manager.dnora_types import DnoraDataType
 from dnora import msg
 from dnora import file_module
 from .data_writers import DataWriter
-from dnora.spectral_conventions import SpectralConvention
+from dnora.type_manager.spectral_conventions import SpectralConvention
 
 
 class SpectraWriter(DataWriter):
@@ -69,10 +69,10 @@ class WW3(SpectraWriter):
         boundary = model.spectra()
 
         if self.one_file:
-            filename = file_object.get_filepath()
+            # clean = False keeps possible #LON/#LAT tags
+            filename = file_object.get_filepath(clean=False)
             if len(boundary.inds()) == 1:
-                # Uses $Lon $Lat
-                filename = file_module.replace_lonlat(
+                filename = file_object.replace_placeholders(
                     filename, lon=boundary.lon()[0], lat=boundary.lat()[0]
                 )
 
@@ -82,8 +82,9 @@ class WW3(SpectraWriter):
         else:
             output_files = []
             for n in boundary.inds():
-                filename = file_object.get_filepath()
-                output_file = file_module.replace_lonlat(
+                # clean = False keeps possible #LON/#LAT tags
+                filename = file_object.get_filepath(clean=False)
+                output_file = file_object.replace_placeholders(
                     filename, lon=boundary.lon()[n], lat=boundary.lat()[n]
                 )
                 output_file = file_module.clean_filename(output_file)

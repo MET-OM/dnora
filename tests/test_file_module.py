@@ -5,7 +5,7 @@ import os
 import yaml
 from dnora import file_module
 
-from dnora.dnora_type_manager.dnora_types import DnoraDataType, DnoraFileType
+from dnora.type_manager.dnora_types import DnoraDataType, DnoraFileType
 
 with open("data/defaults.yml", "r") as file:
     defaults = yaml.safe_load(file)

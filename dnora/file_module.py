@@ -9,9 +9,9 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from dnora.modelrun import ModelRun
-    from dnora.dnora_type_manager.dnora_objects import DnoraObject
-from dnora.dnora_type_manager.dnora_types import DnoraDataType, DnoraFileType
-from dnora.dnora_type_manager.model_formats import ModelFormat
+    from dnora.type_manager.dnora_objects import DnoraObject
+from dnora.type_manager.dnora_types import DnoraDataType, DnoraFileType
+from dnora.type_manager.model_formats import ModelFormat
 
 
 @dataclass
@@ -35,7 +35,10 @@ class FileNames:
         self.primary = self._defaults[self.format.name]
 
         if self.edge_object is None:
-            if isinstance(self.obj_type, DnoraDataType):
+            if (
+                isinstance(self.obj_type, DnoraDataType)
+                and self.model.get(self.obj_type) is not None
+            ):
                 self.edge_object = self.obj_type
             else:
                 self.edge_object = DnoraDataType.GRID  # Always present in ModelRun
@@ -357,6 +360,8 @@ def clean_filename(filename: str, list_of_placeholders: list[str] = None) -> str
     """Cleans out the file name from possible used placeholders, e.g. #Grid
     as given in the list.
 
+    Removes the name 'LonelySkeleton', which might be present if no nameis given to the grid.
+
     Also removes multiple underscores '___' etc.
     """
 
@@ -371,6 +376,8 @@ def clean_filename(filename: str, list_of_placeholders: list[str] = None) -> str
 
     for s in list_of_placeholders:
         filename = re.sub(s, "", filename)
+
+    filename = re.sub("LonelySkeleton", "", filename)
 
     filename = re.sub("_{2,10}", "_", filename)
     filename = re.sub("_-_", "", filename)

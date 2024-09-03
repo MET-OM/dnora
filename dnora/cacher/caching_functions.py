@@ -1,6 +1,6 @@
 import numpy as np
 from dnora.export import Cacher
-from dnora.dnora_type_manager.data_sources import DataSource
+from dnora.type_manager.data_sources import DataSource
 from copy import copy
 from dnora.grid import Grid
 from .caching_strategies import caching_strategies, CachingStrategy

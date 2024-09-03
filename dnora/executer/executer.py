@@ -1,13 +1,13 @@
 from .inputfile.inputfile_writers import InputFileWriter
-from dnora.dnora_type_manager.dnora_types import DnoraFileType, DnoraDataType
+from dnora.type_manager.dnora_types import DnoraFileType, DnoraDataType
 from dnora import msg
 from dnora.file_module import FileNames
-from dnora.dnora_type_manager.model_formats import ModelFormat
+from dnora.type_manager.model_formats import ModelFormat
 
 from .post_processors import PostProcessor
 from .model_runners import ModelRunner
 from pathlib import Path
-from dnora.dnora_type_manager.dnora_types import file_type_from_string
+from dnora.type_manager.dnora_types import file_type_from_string
 
 
 class ModelExecuter:

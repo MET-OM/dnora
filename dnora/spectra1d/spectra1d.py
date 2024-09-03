@@ -2,7 +2,7 @@ from copy import copy
 
 # Import objects
 from .process import spectral_processor_for_convention_change
-from dnora.spectral_conventions import SpectralConvention, convert_2d_to_1d
+from dnora.type_manager.spectral_conventions import SpectralConvention, convert_2d_to_1d
 
 # Import abstract classes and needed instances of them
 from dnora import msg
@@ -22,9 +22,7 @@ import geo_parameters as gp
 class Spectra1D(PointSkeleton):
     meta_dict = {"spec": gp.wave.Ef, "dirm": gp.wave.Dirm, "spr": gp.wave.Spr}
 
-    def process_spectra(
-        self, spectral_processors: list[SpectralProcessor] | None = None
-    ):
+    def process(self, spectral_processors: list[SpectralProcessor] | None = None):
         """Process all the individual spectra of the spectra object.
 
         E.g. change convention form Meteorological to Oceanic, interpolate spectra to, or multiply everything with a constant.
@@ -48,7 +46,11 @@ class Spectra1D(PointSkeleton):
                     )
 
             new_spec, new_dirs, new_freq, new_spr, new_inds = processor(
-                self.spec(), self.dirm(), self.freq(), self.spr(), self.inds()
+                self.spec(squeeze=False),
+                self.dirm(),
+                self.freq(),
+                self.spr(),
+                self.inds(),
             )
 
             new_inds = list(new_inds)
@@ -111,7 +113,7 @@ class Spectra1D(PointSkeleton):
             )
             return
 
-        self.process_spectra(spectral_processor)
+        self.process(spectral_processor)
 
     def _mark_convention(self, convention: SpectralConvention) -> None:
         """Marks new convention in metadata etc. but does nothing to the spectra"""

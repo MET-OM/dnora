@@ -1,11 +1,11 @@
-from dnora.dnora_type_manager.dnora_types import DnoraDataType
+from dnora.type_manager.dnora_types import DnoraDataType
 from typing import Union
-from dnora.readers.abstract_readers import (
+from dnora.read.abstract_readers import (
     DataReader,
     SpectralDataReader,
     ReaderFunction,
 )
-from dnora.dnora_type_manager.dnora_objects import DnoraObject, Grid, dnora_objects
+from dnora.type_manager.dnora_objects import DnoraObject, Grid, dnora_objects
 import geo_parameters as gp
 import pandas as pd
 import numpy as np
@@ -92,6 +92,8 @@ def read_data_and_create_object(
 ) -> DnoraObject:
     """Reads data using the reader, creates the objects and sets data and metadata in object"""
 
+    obj_class = dnora_objects.get(obj_type)
+    obj_data_vars = obj_class.core.non_coord_objects()
     coord_dict, data_dict, meta_dict = reader(
         obj_type=obj_type,
         grid=grid,
@@ -101,10 +103,11 @@ def read_data_and_create_object(
         folder=folder,
         filename=filename,
         inds=inds,
+        obj_data_vars=obj_data_vars,
         **kwargs,
     )
 
-    obj = dnora_objects.get(obj_type)(name=name, **coord_dict)
+    obj = obj_class(name=name, **coord_dict)
     existing_vars = obj.core.data_vars() + obj.core.magnitudes() + obj.core.directions()
 
     for key, value in data_dict.items():

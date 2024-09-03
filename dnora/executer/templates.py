@@ -1,8 +1,8 @@
 from .executer import ModelExecuter
 from . import model_runners
 from . import inputfile
-from dnora.dnora_type_manager.model_formats import ModelFormat
-from dnora.dnora_type_manager.dnora_types import DnoraFileType
+from dnora.type_manager.model_formats import ModelFormat
+from dnora.type_manager.dnora_types import DnoraFileType
 
 
 class SWAN(ModelExecuter):

@@ -2,7 +2,7 @@ from dnora.grid import Grid
 from dnora import modelrun, current
 import numpy as np
 
-from dnora.readers.generic_readers import ConstantData
+from dnora.read.generic import ConstantData
 
 
 def test_import_constant_current_one_point():
