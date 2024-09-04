@@ -19,6 +19,8 @@ from dnora.aux_funcs import set_metaparameters_in_object
 import geo_parameters as gp
 from dnora.type_manager.dnora_types import DnoraDataType
 
+from dnora import aux_funcs
+
 
 @add_mask(name="sea", coord_group="grid", default_value=1, opposite_name="land")
 @add_datavar(name=gp.ocean.WaterDepth("topo"), default_value=999.0, coord_group="grid")
