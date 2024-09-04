@@ -619,10 +619,13 @@ class ModelRun:
         if processor is None:
             return
         obj_type = data_type_from_string(obj_type)
+        old_name = self[obj_type].name
         print(processor)
         new_ds = processor(self.get(obj_type))
+
         obj_class = dnora_objects.get(obj_type)
         self[obj_type] = obj_class.from_ds(new_ds)
+        self[obj_type].name = old_name  # Preserve name
 
     def list_of_objects(
         self,
