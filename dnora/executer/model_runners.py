@@ -38,9 +38,13 @@ class SWAN(ModelRunner):
         """For generation of file name."""
         return ModelFormat.SWAN
 
-    def __call__(self, input_file: str, model_folder: str) -> None:
+    def __call__(self, file_object, nproc=4, **kwargs) -> None:
+
         print("Running SWAN----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>")
-        p = Popen(["swanrun", "-input", input_file], cwd=model_folder)
+        p = Popen(
+            ["swanrun", "-input", file_object.get_filename(), "-omp", f"{nproc}"],
+            cwd=file_object.get_folder(),
+        )
         p.wait()
 
         return

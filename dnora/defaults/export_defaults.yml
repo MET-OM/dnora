@@ -69,7 +69,7 @@ MODELRUN:
 
 SWAN:
   dateformat: '%Y%m%d'
-  folder: 'MySWANFolder'
+  folder: '#GRID_SWAN'
   extension: 'asc'
   grid:
     filename: '#GRID_SWAN'
@@ -81,7 +81,7 @@ SWAN:
   ice:
     filename: 'ice#WIND#GRID#T0_#T1'
   waterlevel:
-    filename: 'wlve#SPECTRA#GRID#T0#T1'
+    filename: 'wlvl#SPECTRA#GRID#T0#T1'
   current:
     filename: 'cur#SPECTRA#GRID#T0#T1'
   input:

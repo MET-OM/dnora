@@ -61,11 +61,11 @@ class SWAN(InputFileWriter):
         use_wind: bool = True,
         **kwargs,
     ) -> str:
-        forcing = model.forcing()
+        forcing = model.wind()
         grid = model.grid()
         grid_path = exported_files["grid"][-1]
-        forcing_path = exported_files["forcing"][-1]
-        boundary_path = exported_files["boundary"][-1]
+        forcing_path = exported_files["wind"][-1]
+        boundary_path = exported_files["spectra"][-1]
 
         filename = file_object.get_filepath()
 
@@ -74,13 +74,13 @@ class SWAN(InputFileWriter):
 
         if forcing is None and use_wind == True:
             msg.info(
-                "No forcing object provided. Wind information will NOT be written to SWAN input file!"
+                "No wind object provided. Wind information will NOT be written to SWAN input file!"
             )
             use_wind = False
 
         # Define start and end times of model run
-        DATE_START = model.time(crop=True)[0]
-        DATE_END = model.time(crop=True)[-1]
+        DATE_START = model.time(crop_with="all")[0]
+        DATE_END = model.time(crop_with="all")[-1]
         STR_START = DATE_START.strftime("%Y%m%d.%H%M%S")
         STR_END = DATE_END.strftime("%Y%m%d.%H%M%S")
 
@@ -95,7 +95,7 @@ class SWAN(InputFileWriter):
         with open(filename, "w") as file_out:
             file_out.write("$************************HEADING************************\n")
             file_out.write("$ \n")
-            file_out.write(" PROJ '" + grid.name() + "' 'T24' \n")
+            file_out.write(" PROJ '" + grid.name + "' 'T24' \n")
             file_out.write("$ \n")
             file_out.write("$*******************MODEL INPUT*************************\n")
             file_out.write("$ \n")
@@ -141,7 +141,7 @@ class SWAN(InputFileWriter):
             file_out.write("$ \n")
 
             lons, lats = create_swan_segment_coords(
-                grid.boundary_mask(), grid.lon_edges(), grid.lat_edges()
+                grid.boundary_mask(), grid.edges("lon"), grid.edges("lat")
             )
             bound_string = "BOUNDSPEC SEGMENT XY"
             for lon, lat in zip(lons, lats):
@@ -151,7 +151,7 @@ class SWAN(InputFileWriter):
             file_out.write(bound_string)
             # file_out.write('BOU NEST \''+boundary_path.split('/')[-1]+'\' OPEN \n')
             file_out.write("$ \n")
-
+            dt = forcing.time().to_series().diff().dt.total_seconds().values[-1] / 3600
             if use_wind:
                 file_out.write(
                     "INPGRID WIND "
@@ -168,7 +168,7 @@ class SWAN(InputFileWriter):
                     + str((delta_Yf / (forcing.ny() - 1)).round(6))
                     + " NONSTATIONARY "
                     + STR_START
-                    + f" {forcing.dt():.0f} HR "
+                    + f" {dt:.0f} HR "
                     + STR_END
                     + "\n"
                 )
@@ -193,7 +193,7 @@ class SWAN(InputFileWriter):
             forcing_folder = "/".join(temp_list[0:-1])
             file_out.write(
                 "BLOCK 'COMPGRID' HEAD '"
-                + grid.name()
+                + grid.name
                 + "_"
                 + STR_START.split(".")[0]
                 + ".nc"
@@ -211,7 +211,7 @@ class SWAN(InputFileWriter):
                     file_out.write(str(lon) + " " + str(lat) + " &\n")
                 file_out.write(
                     "SPECOUT 'pkt' SPEC2D ABS '"
-                    + grid.name()
+                    + grid.name
                     + "_"
                     + STR_START.split(".")[0]
                     + "_spec.nc"

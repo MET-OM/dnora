@@ -30,7 +30,7 @@ class ModelExecuter:
         filename: str = None,
         folder: str = None,
         dateformat: str = None,
-        format: ModelFormat = ModelFormat.MODELRUN,
+        format: ModelFormat = None,
         grid_path: str = None,
         forcing_path: str = None,
         boundary_path: str = None,
@@ -72,10 +72,16 @@ class ModelExecuter:
                 msg.to_file(file)
         else:
             # Write the grid using the InputFileWriter object
-            output_files = input_file_writer(self.model, file_object, **kwargs)
-            if type(output_files) is not list:
+            output_files = input_file_writer(
+                self.model,
+                file_object,
+                exported_files=self.model.exported_files(),
+                **kwargs,
+            )
+            if not isinstance(output_files, list):
                 output_files = [output_files]
 
+        msg.to_multifile(output_files)
         self.model._input_file_exported_to[file_type] = output_files
 
         return
@@ -105,7 +111,7 @@ class ModelExecuter:
         # Option 2) Use knowledge of where has been exported
         # Option 3) Use default values to guess where is has previously been exported
         exported_path = Path(self.model.input_file_exported_to(file_type)[0])
-        primary_file = input_file or exported_path.name
+        primary_file = input_file or exported_path.stem
         primary_folder = folder or str(exported_path.parent)
 
         file_object = FileNames(
@@ -114,6 +120,7 @@ class ModelExecuter:
             folder=primary_folder,
             dateformat=dateformat,
             obj_type=file_type,
+            format=self._get_default_format(),
             edge_object=DnoraDataType.GRID,
         )
 
@@ -122,7 +129,6 @@ class ModelExecuter:
         if not self.dry_run():
             model_runner(
                 file_object=file_object,
-                model_folder=folder,
                 **kwargs,
             )
 

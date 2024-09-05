@@ -649,10 +649,19 @@ class ModelRun:
         """
         obj_type = data_type_from_string(obj_type)
 
-        default_name = FileNames(
-            model=self, format=self._get_default_format(), obj_type=obj_type
-        ).get_filepath()
+        default_name = [
+            FileNames(
+                model=self, format=self._get_default_format(), obj_type=obj_type
+            ).get_filepath()
+        ]  # Want a list of strings
         return self._data_exported_to.get(obj_type, default_name)
+
+    def exported_files(self) -> dict:
+        """Gives a dict of the exported files"""
+        files = {}
+        for dnora_type in DnoraDataType:
+            files[dnora_type.name.lower()] = self.data_exported_to(dnora_type)
+        return files
 
     def input_file_exported_to(self, file_type: DnoraFileType | str) -> str:
         """Returns the path the object (e.g. grid) was exported to.
@@ -662,11 +671,13 @@ class ModelRun:
         """
         file_type = file_type_from_string(file_type)
 
-        default_name = FileNames(
-            model=self,
-            format=self._get_default_format(),
-            obj_type=file_type,
-        ).get_filepath()
+        default_name = [
+            FileNames(
+                model=self,
+                format=self._get_default_format(),
+                obj_type=file_type,
+            ).get_filepath()
+        ]  # Want a list of strings
         return self._input_file_exported_to.get(file_type, default_name)
 
     def time(self, crop_with: list[DnoraDataType | str] = None):
@@ -732,7 +743,10 @@ class ModelRun:
         return self._point_picker
 
     def _get_default_format(self) -> str:
-        return ModelFormat[type(self).__name__.upper()]
+        modelrun_name = type(self).__name__.upper()
+        if not hasattr(ModelFormat, modelrun_name):
+            modelrun_name = "MODELRUN"
+        return ModelFormat[modelrun_name]
 
     def activate_internal_mode(self, folder: str = None) -> None:
         self._activate_source_mode(DataSource.INTERNAL, folder)

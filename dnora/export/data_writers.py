@@ -115,7 +115,7 @@ class SWAN(DataWriter):
     _datavars = {
         DnoraDataType.WIND: ["u", "v"],
         DnoraDataType.WATERLEVEL: ["eta"],
-        DnoraDataType.ICE: ["sic", "sit"],
+        DnoraDataType.ICE: ["sic"],
         DnoraDataType.CURRENT: ["u", "v"],
     }
 

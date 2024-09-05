@@ -140,7 +140,7 @@ class DataExporter:
             # Write the object using the WriterFunction
             file_object.create_folder()
             output_files = writer_function(self.model, file_object, obj_type, **kwargs)
-            if type(output_files) is not list:
+            if not isinstance(output_files, list):
                 output_files = [output_files]
 
         # Store name and location where file was written
