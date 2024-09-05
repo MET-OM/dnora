@@ -6,6 +6,7 @@ import numpy as np
 
 def test_strings():
     data = PointSkeleton(lon=0, lat=0)
+    data.core.static = False
     data.add_datavar("hs")
     data.set_hs(1)
     data.add_datavar("tp")
@@ -26,6 +27,7 @@ def test_strings():
 
 def test_gp_uninit():
     data = PointSkeleton(lon=0, lat=0)
+    data.core.static = False
     data.add_datavar("hs")
     data.set_hs(1)
     data.add_datavar("tp")
@@ -44,6 +46,7 @@ def test_gp_uninit():
 
 def test_gp_init():
     data = PointSkeleton(lon=0, lat=0)
+    data.core.static = False
     data.add_datavar("hsig")
     data.set_hsig(1)
     data.add_datavar("tpeak")
@@ -62,6 +65,7 @@ def test_gp_init():
 
 def test_gp_init_keep_gp_names():
     data = PointSkeleton(lon=0, lat=0)
+    data.core.static = False
     data.add_datavar("hsig")
     data.set_hsig(1)
     data.add_datavar("tpeak")
@@ -80,6 +84,7 @@ def test_gp_init_keep_gp_names():
 
 def test_gp_init_keep_source_names():
     data = PointSkeleton(lon=0, lat=0)
+    data.core.static = False
     data.add_datavar("hsig")
     data.set_hsig(1)
     data.add_datavar("tpeak")
@@ -98,6 +103,7 @@ def test_gp_init_keep_source_names():
 
 def test_gp_init_keep_source_names2():
     data = PointSkeleton(lon=0, lat=0)
+    data.core.static = False
     data.add_datavar(gp.wave.Hs("hsig"))
     data.set_hsig(1)
     data.add_datavar(gp.wave.Tp("tpeak"))
@@ -116,6 +122,7 @@ def test_gp_init_keep_source_names2():
 
 def test_gp_init_keep_source_names3():
     data = PointSkeleton(lon=0, lat=0)
+    data.core.static = False
     data.add_datavar(gp.wave.Hs("hsig"))
     data.set_hsig(1)
     data.add_datavar(gp.wave.Tp("tpeak"))
@@ -134,6 +141,7 @@ def test_gp_init_keep_source_names3():
 
 def test_gp_decode_cf():
     data = PointSkeleton(lon=0, lat=0)
+    data.core.static = False
     data.add_datavar(gp.wave.Hs("hs"))
     data.set_hs(1)
     data.add_datavar(gp.wave.Tp("tp"))
@@ -152,6 +160,7 @@ def test_gp_decode_cf():
 
 def test_gp_decode_cf_false():
     data = PointSkeleton(lon=0, lat=0)
+    data.core.static = False
     data.add_datavar(gp.wave.Hs("hs"))
     data.set_hs(1)
     data.add_datavar(gp.wave.Tp("tp"))

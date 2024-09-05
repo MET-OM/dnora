@@ -150,7 +150,7 @@ class KartverketNo50m(DataReader):
         folder = self._folder(folder)
 
         self.source = get_url(folder, f"{tile}_grid50_utm{zone_number}.xyz")
-        x, y = expand_area(grid.edges("x"), grid.edges("y"), expansion_factor)
+        x, y = utils.grid.expand_area(grid.edges("x"), grid.edges("y"), expansion_factor)
 
         print(f"Expansion factor: {expansion_factor}")
 
@@ -199,7 +199,7 @@ class GEBCO(DataReader):
         **kwargs,
     ) -> tuple:
 
-        lon, lat = expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
+        lon, lat = utils.grid.expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
         # url = f'https://api.odb.ntu.edu.tw/gebco?mode=zonly&sample=1&jsonsrc={"type":"Polygon","coordinates":[[[{lon[0]},[{lat[1]}]],[{lon[1]},{lat[1]}],[{lon[1]},{lon[0]}],[{lon[0]},{lat[0]}],[{lon[0]},{lat[1]}]]]}'
         url = 'https://api.odb.ntu.edu.tw/gebco?mode=zonly&sample=1&jsonsrc={"type":"Polygon","coordinates":[[[LON0,LAT1],[LON1,LAT1],[LON1,LAT0],[LON0,LAT0],[LON0,LAT1]]]}'
         url = re.sub("LON0", f"{lon[0]:.2f}", url)
@@ -255,7 +255,7 @@ class MshFile(DataReader):
                 grid.edges("lon"), grid.edges("lat"), expansion_factor
             )
         else:
-            xedges, yedges = expand_area(
+            xedges, yedges = utils.grid.expand_area(
                 grid.edges("x"), grid.edges("y"), expansion_factor
             )
 
