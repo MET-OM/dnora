@@ -2,8 +2,8 @@ name: dnora2
 channels:
   - conda-forge
 dependencies:
-  - geo-skeletons>=0.17.1
-  - geo-parameters>=0.4.5
+  - geo-skeletons>=0.17.5
+  - geo-parameters>=0.4.7
   - python=>3.9
   - numpy>=1.17
   - scipy>=1.7
