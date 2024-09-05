@@ -66,6 +66,12 @@ SWAN:
     filename: 'wind#WIND#GRID#T0_#T1'
   spectra:
     filename: 'spec#SPECTRA#GRID#T0#T1'
+  ice:
+    filename: 'ice#WIND#GRID#T0_#T1'
+  waterlevel:
+    filename: 'wlve#SPECTRA#GRID#T0#T1'
+  current:
+    filename: 'cur#SPECTRA#GRID#T0#T1'
   input:
     filename: 'input_#T0_#GRID'
     folder: '#GRID_SWAN'

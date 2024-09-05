@@ -261,7 +261,7 @@ class SWAN(SpectraWriter):
         **kwargs,
     ) -> str:
         filename = file_object.get_filepath()
-        boundary = model.boundary()
+        boundary = model.spectra()
         days = boundary.days(datetime=False)
 
         with open(filename, "w") as file_out:
