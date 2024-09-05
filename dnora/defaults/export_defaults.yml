@@ -35,7 +35,7 @@ MODELRUN:
     dateformat: '%Y%m%dT%H%M'
   wind:
     folder: 'output'
-    filename: 'wind_#FORCING_#GRID_#T0-#T1'
+    filename: 'wind_#WIND_#GRID_#T0-#T1'
     dateformat: '%Y%m%dT%H%M'
   spectra:
     folder: 'output'
@@ -49,9 +49,21 @@ MODELRUN:
     folder: 'output'
     filename: 'waveseries_#WAVESERIES_#GRID_#T0-#T1'
     dateformat: '%Y%m%dT%H%M'
+  current:
+    folder: 'output'
+    filename: 'current_#CURRENT_#GRID_#T0-#T1'
+    dateformat: '%Y%m%dT%H%M'
+  waterlevel:
+    folder: 'output'
+    filename: 'waterlevel_#WATERLEVEL_#GRID_#T0-#T1'
+    dateformat: '%Y%m%dT%H%M'
+  ice:
+    folder: 'output'
+    filename: 'ice_#ICE_#GRID_#T0-#T1'
+    dateformat: '%Y%m%dT%H%M'  
   input:
     folder: 'output'
-    filename: 'inputfile_#GRID_#FORCING_#BOUNDARY_#SPECTRA_#T0_#T1_#LON_#LAT'
+    filename: 'inputfile_#GRID_#WIND_#BOUNDARY_#SPECTRA_#T0_#T1_#LON_#LAT'
     dateformat: '%Y%m%dT%H%M'
     extension: 'txt'
 
@@ -102,6 +114,15 @@ WW3:
   wind:
     filename: 'wind_#WIND_#GRID_#T0-#T1'
     extension: 'nc'
+  current:
+    filename: 'current_#CURRENT_#GRID_#T0-#T1'
+    extension: 'nc'  
+  ice:
+    filename: 'ice_#ICE_#GRID_#T0-#T1'
+    extension: 'nc'    
+  waterlevel:
+    filename: 'waterlevel_#WATERLEVEL_#GRID_#T0-#T1'
+    extension: 'nc'     
   input:
     filename: ''
     folder: 'MyWW3Folder'
