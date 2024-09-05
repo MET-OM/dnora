@@ -143,15 +143,16 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
             final_object = mrun_cacher[obj_type]
 
             if final_object.is_gridded():
-                slice_dict = {
-                    grid.core.x_str: slice(*lon),
-                    grid.core.y_str: slice(*lat),
-                }
                 lon, lat = utils.grid.expand_area(
                     grid.edges("lon", native=True),
                     grid.edges("lat", native=True),
                     expansion_factor=kwargs.get("expansion_factor", 1.0),
                 )
+                slice_dict = {
+                    grid.core.x_str: slice(*lon),
+                    grid.core.y_str: slice(*lat),
+                }
+
             else:
                 # Get the wanted points from the exanded area using the original PointPicker
                 inds = given_point_picker(
