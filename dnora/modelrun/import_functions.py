@@ -212,6 +212,7 @@ def pick_points(
         interest_points = PointSkeleton.from_skeleton(grid, mask=point_mask)
     else:
         interest_points = None
+
     inds = point_picker(
         grid=grid,
         all_points=all_points.sel(inds=search_inds),

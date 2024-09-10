@@ -110,6 +110,7 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
                 end_time=end_time,
             )
             if read_cache:
+                kwargs_cache["point_mask"] = grid.boundary_mask()
                 mrun_cacher = read_data_from_cache(
                     mrun_cacher, tiles, cache_reader, kwargs_cache
                 )

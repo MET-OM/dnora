@@ -150,7 +150,9 @@ class KartverketNo50m(DataReader):
         folder = self._folder(folder)
 
         self.source = get_url(folder, f"{tile}_grid50_utm{zone_number}.xyz")
-        x, y = utils.grid.expand_area(grid.edges("x"), grid.edges("y"), expansion_factor)
+        x, y = utils.grid.expand_area(
+            grid.edges("x"), grid.edges("y"), expansion_factor
+        )
 
         print(f"Expansion factor: {expansion_factor}")
 
@@ -194,28 +196,42 @@ class GEBCO(DataReader):
         source: DataSource,
         folder: str,
         expansion_factor: float = 1.2,
-        tile: str = "n61.0_s59.0_w4.0_e6.0",
+        filename: list[str] = None,
         year: int = 2023,
         **kwargs,
     ) -> tuple:
 
-        lon, lat = utils.grid.expand_area(grid.edges("lon"), grid.edges("lat"), expansion_factor)
-        # url = f'https://api.odb.ntu.edu.tw/gebco?mode=zonly&sample=1&jsonsrc={"type":"Polygon","coordinates":[[[{lon[0]},[{lat[1]}]],[{lon[1]},{lat[1]}],[{lon[1]},{lon[0]}],[{lon[0]},{lat[0]}],[{lon[0]},{lat[1]}]]]}'
-        url = 'https://api.odb.ntu.edu.tw/gebco?mode=zonly&sample=1&jsonsrc={"type":"Polygon","coordinates":[[[LON0,LAT1],[LON1,LAT1],[LON1,LAT0],[LON0,LAT0],[LON0,LAT1]]]}'
-        url = re.sub("LON0", f"{lon[0]:.2f}", url)
-        url = re.sub("LON1", f"{lon[1]:.2f}", url)
-        url = re.sub("LAT0", f"{lat[0]:.2f}", url)
-        url = re.sub("LAT1", f"{lat[1]:.2f}", url)
-        msg.from_file(url)
-        response = urlopen(url)
+        lon, lat = utils.grid.expand_area(
+            grid.edges("lon"), grid.edges("lat"), expansion_factor
+        )
+        if filename is None:
+            # url = f'https://api.odb.ntu.edu.tw/gebco?mode=zonly&sample=1&jsonsrc={"type":"Polygon","coordinates":[[[{lon[0]},[{lat[1]}]],[{lon[1]},{lat[1]}],[{lon[1]},{lon[0]}],[{lon[0]},{lat[0]}],[{lon[0]},{lat[1]}]]]}'
+            url = 'https://api.odb.ntu.edu.tw/gebco?mode=zonly&sample=1&jsonsrc={"type":"Polygon","coordinates":[[[LON0,LAT1],[LON1,LAT1],[LON1,LAT0],[LON0,LAT0],[LON0,LAT1]]]}'
+            url = re.sub("LON0", f"{lon[0]:.2f}", url)
+            url = re.sub("LON1", f"{lon[1]:.2f}", url)
+            url = re.sub("LAT0", f"{lat[0]:.2f}", url)
+            url = re.sub("LAT1", f"{lat[1]:.2f}", url)
+            msg.from_file(url)
+            response = urlopen(url)
 
-        data = json.loads(response.read())
+            data = json.loads(response.read())
+            # Negative valies and NaN's are land
+            topo = -1 * np.array(data["z"])
 
-        # Negative valies and NaN's are land
-        topo = -1 * np.array(data["z"])
-
-        topo_lon = np.array(data["longitude"])
-        topo_lat = np.array(data["latitude"])
+            topo_lon = np.array(data["longitude"])
+            topo_lat = np.array(data["latitude"])
+        else:
+            if not isinstance(filename, list):
+                filename = [filename]
+            folder = get_url(folder, "GEBCO")
+            filenames = [folder + "/" + fn for fn in filename]
+            msg.from_multifile(filenames)
+            with xr.open_mfdataset(filenames) as ds:
+                ds = ds.sel(lon=slice(lon[0], lon[1]), lat=slice(lat[0], lat[1]))
+                elevation = ds.elevation.values.astype(float)
+                topo = -1 * elevation
+                topo_lon = ds.lon.values.astype(float)
+                topo_lat = ds.lat.values.astype(float)
 
         coord_dict = {"lon": topo_lon, "lat": topo_lat}
         data_dict = {"topo": topo}
