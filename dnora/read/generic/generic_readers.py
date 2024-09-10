@@ -59,6 +59,7 @@ class PointNetcdf(SpectralDataReader):
         if filename is None:
             raise ValueError("Provide at least one filename!")
         filepath = get_url(folder, filename, get_list=True)
+
         ds = xr.open_mfdataset(filepath)
         for fn in filepath:
             msg.from_file(fn)
@@ -142,7 +143,9 @@ class Netcdf(DataReader):
                 coord_dict[c] = ds.get(c).values
         data_dict = {}
         metaparameter_dict = {}
-        for var, meta_var in dnora_objects.get(obj_type).meta_dict.items():
+
+        for var in dnora_objects.get(obj_type).core.data_vars():
+            meta_var = dnora_objects.get(obj_type).core.meta_parameter(var)
             ds_var = meta_var.find_me_in_ds(ds)
             ds_data = ds.get(ds_var)
             if ds_data is not None:

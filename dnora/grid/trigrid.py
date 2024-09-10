@@ -170,8 +170,8 @@ class TriGrid(PointSkeleton):
                 tri, self.topo(), cmap=cmocean.cm.deep, levels=levels
             )
         cbar = plt.colorbar(cont, label=f"Water depth [m]")
-        plt.xlabel(self.x_str)
-        plt.ylabel(self.y_str)
+        plt.xlabel(self.core.x_str)
+        plt.ylabel(self.core.y_str)
 
         plt.show()
 

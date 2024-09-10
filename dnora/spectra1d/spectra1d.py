@@ -66,7 +66,7 @@ class Spectra1D(PointSkeleton):
                 msg.info(f"Removing the following points:")
                 for ind in list(set(self.inds()) - set(new_inds)):
                     msg.plain(
-                        f"ind = {ind}, {self.x_str} = {lon[ind]}, {self.y_str} = {lat[ind]}"
+                        f"ind = {ind}, {self.core.x_str} = {lon[ind]}, {self.core.y_str} = {lat[ind]}"
                     )
 
             metadata = self.meta.get()
