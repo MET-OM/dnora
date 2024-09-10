@@ -3,6 +3,7 @@ from dnora.read.abstract_readers import PointDataReader, DataReader, SpectralDat
 import geo_parameters as gp
 import pandas as pd
 import numpy as np
+import re
 import xarray as xr
 from dnora import utils
 from pathlib import Path
@@ -19,6 +20,45 @@ from copy import copy
 from geo_skeletons import GriddedSkeleton
 
 
+def read_cached_filelist(folder, filename):
+    if filename is None:
+        raise ValueError("Provide at least one filename!")
+    filepath = get_url(folder, filename, get_list=True)
+    dds = []
+    ds_top_list = []
+    days = list(
+        set(
+            [
+                re.findall("[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]", fp)[0]
+                for fp in filepath
+            ]
+        )
+    )
+
+    # '2021-08-25'
+
+    # tiles_in_day = sum([first_day in fn for fn in filepath])
+    # number_of_days = int(len(filepath) / tiles_in_day)
+    days.sort()
+    for day in days:
+        files_in_day = [fn for fn in filepath if day in fn]
+
+        ds_list = []
+        points_in_previous_tile = 0
+        for file in files_in_day:
+            msg.from_file(file)
+            one_ds = xr.open_dataset(file)
+            one_ds["inds"] = one_ds["inds"] + points_in_previous_tile
+            points_in_previous_tile = len(one_ds.inds)
+            ds_list.append(one_ds)
+            # ds_list.append(ds)
+
+        # ds_top_list.append(xr.merge(ds_list))
+    ds = xr.merge(ds_list)
+
+    return ds
+
+
 class PointNetcdf(SpectralDataReader):
     def default_data_source(self) -> DataSource:
         return DataSource.LOCAL
@@ -33,10 +73,11 @@ class PointNetcdf(SpectralDataReader):
         self, grid, start_time, source, folder, filename: list[str] = None, **kwargs
     ):
         filename = filename or self.files
-        if filename is None:
-            raise ValueError("Provide at least one filename!")
-        filepath = get_url(folder, filename, get_list=True)
-        ds = xr.open_dataset(filepath[0])
+        ds = read_cached_filelist(folder, filename)
+        # if filename is None:
+        #     raise ValueError("Provide at least one filename!")
+        # filepath = get_url(folder, filename, get_list=True)
+        # ds = xr.open_dataset(filepath[0])
         lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
         self.set_convention(ds.attrs.get("dnora_spectral_convention", "ocean"))
         return {"lon": lon, "lat": lat, "x": x, "y": y}
@@ -56,13 +97,10 @@ class PointNetcdf(SpectralDataReader):
 
         filename = filename or self.files
 
-        if filename is None:
-            raise ValueError("Provide at least one filename!")
-        filepath = get_url(folder, filename, get_list=True)
+        ds = read_cached_filelist(folder, filename)
 
-        ds = xr.open_mfdataset(filepath)
-        for fn in filepath:
-            msg.from_file(fn)
+        # ds = xr.open_mfdataset(filepath)
+
         lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
 
         times = slice(start_time, end_time)
