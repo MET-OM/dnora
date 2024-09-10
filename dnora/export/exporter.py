@@ -77,7 +77,6 @@ class DataExporter:
                 wanted_convention = writer_function.convention()
             except AttributeError:
                 wanted_convention = self._get_spectral_convention()
-
             if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
                 self.model[obj_type].set_convention(wanted_convention)
         else:
@@ -139,8 +138,6 @@ class DataExporter:
         else:
             # Write the object using the WriterFunction
             file_object.create_folder()
-            if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
-                self.model[obj_type].set_convention(writer_function.convention())
             output_files = writer_function(self.model, file_object, obj_type, **kwargs)
             if not isinstance(output_files, list):
                 output_files = [output_files]

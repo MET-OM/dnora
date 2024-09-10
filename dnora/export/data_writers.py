@@ -35,9 +35,6 @@ class DataWriter(ABC):
 
 
 class Null(DataWriter):
-    def convention(self):
-        return SpectralConvention.MET
-
     def __call__(
         self,
         model: ModelRun,
@@ -49,9 +46,6 @@ class Null(DataWriter):
 
 
 class Netcdf(DataWriter):
-    def convention(self):
-        return SpectralConvention.MET
-
     def __init__(self, monthly_files: bool = False, daily_files: bool = False):
         self._monthly_files = monthly_files
         self._daily_files = daily_files

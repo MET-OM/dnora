@@ -167,7 +167,12 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
                 slice_dict = {"inds": inds}
 
             slice_dict["time"] = slice(mrun.start_time(), mrun.end_time())
-            final_object = final_object.sel(**slice_dict)
+            if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
+                convention = final_object.convention()
+                final_object = final_object.sel(**slice_dict)
+                final_object._mark_convention(convention)
+            else:
+                final_object = final_object.sel(**slice_dict)
             final_object.name = name
 
             mrun[obj_type] = final_object

@@ -316,6 +316,7 @@ class ModelRun:
             if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
                 msg.info("Post-processing data...")
                 obj.process(reader.post_processing())
+
                 self[obj_type] = obj
             else:
                 self[obj_type] = obj
