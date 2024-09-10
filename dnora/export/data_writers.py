@@ -11,6 +11,8 @@ if TYPE_CHECKING:
 
 from calendar import monthrange
 from dnora.type_manager.dnora_types import DnoraDataType
+from dnora.type_manager.spectral_conventions import SpectralConvention
+
 from dnora import file_module
 import os
 import numpy as np
@@ -33,6 +35,9 @@ class DataWriter(ABC):
 
 
 class Null(DataWriter):
+    def convention(self):
+        return SpectralConvention.MET
+
     def __call__(
         self,
         model: ModelRun,
@@ -44,6 +49,9 @@ class Null(DataWriter):
 
 
 class Netcdf(DataWriter):
+    def convention(self):
+        return SpectralConvention.MET
+
     def __init__(self, monthly_files: bool = False, daily_files: bool = False):
         self._monthly_files = monthly_files
         self._daily_files = daily_files
@@ -112,6 +120,9 @@ class SWAN(DataWriter):
 
     # The names of the variables could in theory be read from the object class itself (obj_type.value._coord_manager.added_vars().keys())
     # We prefer to be explicit here, since then we are 100% sure that the order is correct
+    def convention(self):
+        return SpectralConvention.MET
+
     _datavars = {
         DnoraDataType.WIND: ["u", "v"],
         DnoraDataType.WATERLEVEL: ["eta"],

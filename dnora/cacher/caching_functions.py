@@ -104,6 +104,8 @@ def write_data_to_cache(mrun_cacher, tiles, obj_type):
             sel_inds = np.array(list(set(ind_lon) & set(ind_lat)))
             cropped_obj = cropped_obj.isel(inds=sel_inds)
         cropped_obj.name = mrun_cacher[obj_type].name
+        if hasattr(mrun_cacher[obj_type], "convention"):
+            cropped_obj._mark_convention(mrun_cacher[obj_type].convention())
         mrun_write_tile[obj_type] = cropped_obj
         exporter = Cacher(mrun_write_tile)  # Writes daily files
         exporter.export(obj_type)
