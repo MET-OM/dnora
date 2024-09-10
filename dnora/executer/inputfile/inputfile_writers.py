@@ -846,7 +846,7 @@ class WW3(InputFileWriter):
             filename = file_object.get_filepath()
 
         forcing = {}
-        forcing["wnd"] = model.forcing() is not None
+        forcing["wnd"] = model.wind() is not None
         forcing["wlv"] = model.waterlevel() is not None
         forcing["ocr"] = model.oceancurrent() is not None
 
