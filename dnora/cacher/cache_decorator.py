@@ -145,8 +145,8 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
 
             if final_object.is_gridded():
                 lon, lat = utils.grid.expand_area(
-                    grid.edges("lon", native=True),
-                    grid.edges("lat", native=True),
+                    mrun.grid().edges("lon", native=True),
+                    mrun.grid().edges("lat", native=True),
                     expansion_factor=kwargs.get("expansion_factor", 1.0),
                 )
                 slice_dict = {
