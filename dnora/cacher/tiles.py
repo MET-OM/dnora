@@ -54,15 +54,15 @@ class TileObject:
 
     def relevant_files(self) -> list[str]:
         """The files that cover the grid and exists in the cache"""
-        if self.covering_files is None:
-            return self.existing_files()
+        # if not self._covering_files:
+        #     return self.existing_files()
 
         return list(set(self.existing_files()).intersection(set(self.covering_files())))
 
     def additional_files(self) -> list[str]:
         """The files that cover the grid but doesn't exist in the cache"""
-        if self.covering_files is None:
-            return []
+        # if self.covering_files is None:
+        #     return []
         return list(set(self.covering_files()) - set(self.existing_files()))
 
     @staticmethod
