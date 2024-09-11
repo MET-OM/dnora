@@ -56,9 +56,9 @@ class Oper(DataReader):
 
     def __init__(
         self,
-        stride: int = 24,
+        stride: int = 12,
         hours_per_file: int = 240,
-        offset: int = 12,
+        offset: int = 0,
         last_file: str = "",
         lead_time: int = 0,
     ):
