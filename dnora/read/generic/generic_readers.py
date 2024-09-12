@@ -348,7 +348,7 @@ class ConstantData(SpectralDataReader):
         print_constant_values(data_dict, obj_type, time_vec)
 
         if zone_number is not None and zone_letter is not None:
-            meta_dict = {"utm_zone": zone_number, "zone_letter": zone_letter}
+            meta_dict = {"zone_number": zone_number, "zone_letter": zone_letter}
         else:
             meta_dict = {}
 

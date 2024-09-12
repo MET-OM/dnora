@@ -65,7 +65,7 @@ def test_gridded_data_on_gridded_grid_sperical():
     assert data_dict.get("v").shape == (hours, grid.ny(), grid.nx())
     np.testing.assert_almost_equal(data_dict.get("u"), 2.0)
     np.testing.assert_almost_equal(data_dict.get("v"), 5.0)
-    assert meta_dict == {"zone_number": None, "zone_letter": None}
+    assert meta_dict == {}
 
 
 def test_point_data_on_gridded_grid_cartesian():
@@ -99,7 +99,7 @@ def test_point_data_on_gridded_grid_cartesian():
     np.testing.assert_almost_equal(data_dict.get("spec"), 2.0)
     # np.testing.assert_almost_equal(data_dict.get("v"), 5.0)
 
-    assert meta_dict == {"zone_number": None, "zone_letter": None}
+    assert meta_dict == {}
 
 
 def test_point_data_on_gridded_grid_spherical():
@@ -133,7 +133,7 @@ def test_point_data_on_gridded_grid_spherical():
     np.testing.assert_almost_equal(data_dict.get("spec"), 2.0)
     # np.testing.assert_almost_equal(data_dict.get("v"), 5.0)
 
-    assert meta_dict == {"zone_number": None, "zone_letter": None}
+    assert meta_dict == {}
 
 
 def test_gridded_data_on_point_grid_cartesian():
@@ -195,7 +195,7 @@ def test_point_data_on_point_grid_sperical():
     assert data_dict.get("spec").shape == (len(coord_dict["time"]), 11, 4, 36)
     np.testing.assert_almost_equal(data_dict.get("spec"), 0.1)
 
-    assert meta_dict == {"zone_number": None, "zone_letter": None}
+    assert meta_dict == {}
 
 
 def test_gridded_data_on_gridded_grid_force_spherical():
@@ -225,7 +225,7 @@ def test_gridded_data_on_gridded_grid_force_spherical():
     assert data_dict.get("topo").shape == grid.size()
     np.testing.assert_almost_equal(data_dict.get("topo"), 1.0)
 
-    assert meta_dict == {"zone_number": None, "zone_letter": None}
+    assert meta_dict == {}
 
 
 def test_point_data_on_gridded_grid_force_cartesian():
