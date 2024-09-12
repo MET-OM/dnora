@@ -78,15 +78,15 @@ class DepFile(DataReader):
             f"Reading bathymetry for: {lon[0]:10.7f}-{lon[1]:10.7f}, {lat[0]:10.7f}-{lat[1]:10.7f}."
         )
 
-        lon_inds = np.where(np.logical_and(lons > lon[0], lons < [lon[1]]))[0]
-        lat_inds = np.where(np.logical_and(lats > lat[0], lats < [lat[1]]))[0]
-
+        lon_inds = np.where(np.logical_and(lons > lon[0], lons < lon[1]))[0]
+        lat_inds = np.where(np.logical_and(lats > lat[0], lats < lat[1]))[0]
+        topo = np.flipud(topo)
         topo = topo[lat_inds, :]
         topo = topo[:, lon_inds]
 
         coord_dict = {"lon": lons[lon_inds], "lat": lats[lat_inds]}
 
-        data_dict = {"topo": np.flipud(-topo)}
+        data_dict = {"topo": -topo}
         meta_dict = {}
 
         return coord_dict, data_dict, meta_dict
