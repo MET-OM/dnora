@@ -454,7 +454,7 @@ class ModelRun:
             source,
             folder,
             filename,
-            point_mask=self.grid().sea_mask(),
+            point_mask=self.grid().waveseries_mask(),
             point_picker=point_picker,
             **kwargs,
         )

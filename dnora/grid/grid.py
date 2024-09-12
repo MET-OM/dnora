@@ -21,6 +21,7 @@ import cmocean.cm
 import geo_parameters as gp
 
 
+@add_mask(name="waveseries", coord_group="grid", default_value=0)
 @add_mask(name="boundary", coord_group="grid", default_value=0)
 @add_mask(name="output", coord_group="grid", default_value=0)
 @add_mask(
@@ -146,6 +147,10 @@ class Grid(GriddedSkeleton):
     def set_output_points(self, mask_setter) -> None:
         mask = mask_setter(self)
         self.set_output_mask(mask)
+
+    def set_waveseries_points(self, mask_setter) -> None:
+        mask = mask_setter(self)
+        self.set_waveseries_mask(mask)
 
     def time(self) -> tuple:
         return (None, None)
