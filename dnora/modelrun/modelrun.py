@@ -324,6 +324,7 @@ class ModelRun:
         # Need to make the logic here same for all objects, but this works for now
         if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
             msg.info("Post-processing data...")
+            obj = self[obj_type]
             obj.process(post_processor)
             self[obj_type] = obj
 
