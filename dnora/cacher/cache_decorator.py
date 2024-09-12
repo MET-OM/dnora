@@ -123,20 +123,22 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
                     mrun_cacher = patch_cached_data(
                         mrun_cacher, tiles, kwargs_cache, strategy
                     )
-            else:
+                mrun_cacher[obj_type].name = name
+            elif write_cache:
                 # Import data from original source only
+                kwargs_cache["post_process"] = False
                 mrun_cacher._import_data(**kwargs_cache)
-            mrun_cacher[obj_type].name = name
+                mrun_cacher[obj_type].name = name
 
-            ## Write data if necessary
-
-            if write_cache:
                 msg.header(
                     "Netcdf (DataWriter)",
                     f"Writing {obj_type.name} data from {name}",
                 )
                 write_data_to_cache(mrun_cacher, tiles, obj_type)
                 msg.to_multifile(tiles.covering_files())
+                mrun_cacher._post_process_object(
+                    obj_type, mrun_cacher["reader"].post_processing()
+                )
 
             ## Crop final object to the desired area since it might have been exanded to tiles
 

@@ -266,6 +266,7 @@ class ModelRun:
         filename,
         point_mask=None,
         point_picker=None,
+        post_process: bool = True,
         **kwargs,
     ):
         """Performs import and returns DNORA object"""
@@ -311,20 +312,27 @@ class ModelRun:
             **kwargs,
         )
 
-        if obj is not None:
-            # Need to make the logic here same for all objects, but this works for now
-            if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
-                msg.info("Post-processing data...")
-                obj.process(reader.post_processing())
+        self[obj_type] = obj
+        # We are not post_processing e.g. if we are caching!
+        if post_process:
+            self._post_process_object(obj_type, reader.post_processing())
 
-                self[obj_type] = obj
-            else:
-                self[obj_type] = obj
-                msg.info("Post-processing data...")
-                try:
-                    self.process(obj_type, reader.post_processing())
-                except TypeError:
-                    pass  # Might happen when using spectral reader to read waveseries data. Need to fix this
+    def _post_process_object(self, obj_type, post_processor) -> None:
+        if self.get(obj_type) is None:
+            return
+
+        # Need to make the logic here same for all objects, but this works for now
+        if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
+            msg.info("Post-processing data...")
+            obj.process(post_processor)
+            self[obj_type] = obj
+
+        else:
+            msg.info("Post-processing data...")
+            try:
+                self.process(obj_type, post_processor)
+            except TypeError:
+                pass  # Might happen when using spectral reader to read waveseries data. Need to fix this
 
     @cached_reader(DnoraDataType.WIND, dnora.read.generic.Netcdf)
     def import_wind(
