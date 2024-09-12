@@ -85,6 +85,7 @@ def test_nora3fp(grid, timevec):
     assert np.all(model.wind().time() == timevec)
 
 
+@pytest.mark.slow
 @pytest.mark.remote
 def test_era5(grid, timevec):
     model = dn.modelrun.ModelRun(grid, year=2022, month=4, day=1)
