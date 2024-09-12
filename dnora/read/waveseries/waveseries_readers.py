@@ -475,7 +475,7 @@ class SWANnc(PointDataReader):
             "lon": ds.longitude.values,
             "lat": ds.latitude.values,
         }
-        breakpoint()
+
         data_dict = {}
 
         msg.blank()
