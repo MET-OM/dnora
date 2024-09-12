@@ -137,7 +137,7 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
                 write_data_to_cache(mrun_cacher, tiles, obj_type)
                 msg.to_multifile(tiles.covering_files())
                 mrun_cacher._post_process_object(
-                    obj_type, mrun_cacher["reader"].post_processing()
+                    obj_type, kwargs_cache["reader"].post_processing()
                 )
 
             ## Crop final object to the desired area since it might have been exanded to tiles
