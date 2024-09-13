@@ -245,7 +245,7 @@ class ConstantData(SpectralDataReader):
         end_time,
         source: DataSource,
         folder: str,
-        new_vars: dict = None,
+        # new_vars: dict = None,
         time: list[str] = None,
         dt: int = None,
         force_type: str = "",
