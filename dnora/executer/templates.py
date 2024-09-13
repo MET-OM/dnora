@@ -14,6 +14,15 @@ class SWAN(ModelExecuter):
         return ModelFormat.SWAN
 
 
+class SWASH(ModelExecuter):
+
+    _input_file_writers = {DnoraFileType.INPUT: inputfile.SWASH()}
+    _model_runners = {DnoraFileType.INPUT: model_runners.SWASH()}
+
+    def _get_default_format(self):
+        return ModelFormat.SWASH
+
+
 class WW3(ModelExecuter):
 
     _input_file_writers = {
