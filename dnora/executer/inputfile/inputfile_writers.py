@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
+import re
 
 # Import objects
 from typing import TYPE_CHECKING, Union
@@ -232,19 +233,36 @@ class SWASH(InputFileWriter):
         model: ModelRun,
         file_object: FileNames,
         exported_files: dict[str, list[str]],
-        bound_side_command: str = "BOU SIDE W CCW CON REG 0.5 14 270 ",
+        bound_side_command: str = "BOU SIDE W CCW CON REG #HS #TP #DIRP ",
         **kwargs,
     ) -> str:
         grid = model.grid()
         filename = file_object.get_filepath()
         grid_path = exported_files["grid"][-1]
-        DATE_START = model.time(crop=True)[0]
-        DATE_END = model.time(crop=True)[-1]
+        DATE_START = model.time(crop_with="all")[0]
+        DATE_END = model.time(crop_with="all")[-1]
         STR_START = pd.Timestamp(DATE_START).strftime("%H%M%S")
         STR_END = pd.Timestamp(DATE_END).strftime("%H%M%S")
 
         delta_X = np.round(np.abs(grid.edges("lon")[-1] - grid.edges("lon")[0]), 8)
         delta_Y = np.round(np.abs(grid.edges("lat")[-1] - grid.edges("lat")[0]), 8)
+
+        waveseries = model.get("waveseries")
+        if waveseries is not None:
+            msg.info(f"Using waveseries object {waveseries.name} as boundary")
+            hs = waveseries.hs(inds=0)[0]
+            tp = waveseries.tp(inds=0)[0]
+            dirp = waveseries.dirp(inds=0)[0]
+        else:
+            hs = 0.5
+            tp = 15
+            dirp = 0
+
+        bound_side_command = re.sub("#HS", f"{hs:.2f}", bound_side_command)
+        bound_side_command = re.sub("#TP", f"{tp:.1f}", bound_side_command)
+        bound_side_command = re.sub("#DIRP", f"{dirp:.0f}", bound_side_command)
+
+        msg.plain(f"Using bound_side_command: {bound_side_command}")
 
         with open(filename, "w") as file_out:
             file_out.write("$************************HEADING************************\n")
@@ -294,7 +312,7 @@ class SWASH(InputFileWriter):
                 "READINP BOTTOM 1 '" + grid_path.split("/")[-1] + "' 3 0 FREE \n"
             )
             file_out.write("$ \n")
-            file_out.write(self.bound_side_command + " \n")
+            file_out.write(bound_side_command + " \n")
             # file_out.write('BOU NEST \''+add_folder_to_filename(self.bnd_filename, self.bnd_folder)+'\' OPEN \n')
             file_out.write("$ \n")
             file_out.write("$*******************************************************\n")
