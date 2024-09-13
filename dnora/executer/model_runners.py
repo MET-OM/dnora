@@ -58,7 +58,7 @@ class SWASH(ModelRunner):
         """For generation of file name."""
         return ModelFormat.SWASH
 
-    def _post_processors(self) -> list[PostProcessor]:
+    def post_processors(self) -> list[PostProcessor]:
         return [SwashMatToNc()]
 
     def __call__(self, file_object: FileNames) -> None:

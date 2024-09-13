@@ -33,8 +33,8 @@ class SwashMatToNc(PostProcessor):
         lat  : [lat_min, lat_max]
         dt  : timestep of simulation in seconds"""
 
-        input_file = f"{file_object.get_folder()}/{self.grid().name}.mat"
-        output_file = f"{file_object.get_folder()}/{self.grid().name}.nc"
+        input_file = f"{file_object.get_folder()}/{model.grid().name}.mat"
+        output_file = f"{file_object.get_folder()}/{model.grid().name}.nc"
         dt = 1
 
         lon = model.grid().edges("lon", native=True)

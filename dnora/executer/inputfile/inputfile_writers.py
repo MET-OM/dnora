@@ -234,13 +234,15 @@ class SWASH(InputFileWriter):
         file_object: FileNames,
         exported_files: dict[str, list[str]],
         bound_side_command: str = "BOU SIDE W CCW CON REG #HS #TP #DIRP ",
+        dt: float = 0.001,  # [s]
         **kwargs,
     ) -> str:
         grid = model.grid()
         filename = file_object.get_filepath()
         grid_path = exported_files["grid"][-1]
-        DATE_START = model.time(crop_with="all")[0]
-        DATE_END = model.time(crop_with="all")[-1]
+
+        DATE_START = model.time()[0]
+        DATE_END = model.time()[-1]
         STR_START = pd.Timestamp(DATE_START).strftime("%H%M%S")
         STR_END = pd.Timestamp(DATE_END).strftime("%H%M%S")
 
@@ -248,15 +250,29 @@ class SWASH(InputFileWriter):
         delta_Y = np.round(np.abs(grid.edges("lat")[-1] - grid.edges("lat")[0]), 8)
 
         waveseries = model.get("waveseries")
+
+        hs = kwargs.get("hs")
+        tp = kwargs.get("tp")
+        dirp = kwargs.get("dirp")
+
         if waveseries is not None:
-            msg.info(f"Using waveseries object {waveseries.name} as boundary")
-            hs = waveseries.hs(inds=0)[0]
-            tp = waveseries.tp(inds=0)[0]
-            dirp = waveseries.dirp(inds=0)[0]
+            if hs is None:
+                msg.info(f"Using waveseries object {waveseries.name} for Hs!")
+                hs = waveseries.hs(inds=0)[0]
+            if tp is None:
+                msg.info(f"Using waveseries object {waveseries.name} for Tp!")
+                tp = waveseries.tp(inds=0)[0]
+            if dirp is None:
+                msg.info(f"Using waveseries object {waveseries.name} for Dirp!")
+                dirp = waveseries.dirp(inds=0)[0]
         else:
-            hs = 0.5
-            tp = 15
-            dirp = 0
+            hs = kwargs.get("hs") or 0.5
+            tp = kwargs.get("tp") or 20
+            dirp = kwargs.get("dirp") or 0
+
+        msg.plain(f"Using hs = {hs:.2f}")
+        msg.plain(f"Using tp = {tp:.1f}")
+        msg.plain(f"Using dirp = {hs:.0f}")
 
         bound_side_command = re.sub("#HS", f"{hs:.2f}", bound_side_command)
         bound_side_command = re.sub("#TP", f"{tp:.1f}", bound_side_command)
@@ -322,7 +338,7 @@ class SWASH(InputFileWriter):
             file_out.write("BLOCK 'COMPGRID' NOHEAD '" + grid.name + ".mat" + "' & \n")
             file_out.write("LAY 3 WATL BOTL OUTPUT " + STR_START + " 5 SEC \n")
             file_out.write("$ \n")
-            file_out.write("COMPUTE " + STR_START + " 0.001 SEC " + STR_END + "\n")
+            file_out.write("COMPUTE " + STR_START + f" {dt:.3f} SEC " + STR_END + "\n")
             file_out.write("STOP \n")
 
         return filename
