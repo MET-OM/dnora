@@ -61,7 +61,7 @@ class SWASH(ModelRunner):
     def _post_processors(self) -> list[PostProcessor]:
         return [SwashMatToNc()]
 
-    def __call__(self, file_object: FileNames, mat_to_nc: bool = True) -> None:
+    def __call__(self, file_object: FileNames) -> None:
         print("Running SWASH----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>")
         p = Popen(
             ["swashrun", "-input", file_object.get_filename()],
