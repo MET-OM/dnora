@@ -92,6 +92,7 @@ SWAN:
 SWASH:
   dateformat: '%Y%m%d'
   extension: 'asc'
+  folder: '#GRID_SWASH'
   grid:
     filename: '#GRID_SWASH'
     extension: 'bot'
