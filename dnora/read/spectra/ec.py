@@ -108,11 +108,6 @@ class ERA5(SpectralDataReader):
         self, grid, start_time, source: DataSource, folder: str, **kwargs
     ) -> dict:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
-        # point_list = self.get_restricted_area()._point_list()
-        # lon_all = point_list[:,0]
-        # lat_all = point_list[:,1]
-
-        # return lon_all, lat_all
         lon = np.floor(np.array(grid.edges("lon")) / self.dlon) * self.dlon
         lat = np.floor(np.array(grid.edges("lat")) / self.dlat) * self.dlat
 
@@ -158,47 +153,38 @@ class ERA5(SpectralDataReader):
         )
 
         bnd_spec = xr.open_dataset(nc_file)
-
         bnd_spec = renormalize_era5_spec(bnd_spec)
-
-        lon, lat = np.meshgrid(
-            bnd_spec.longitude.values, bnd_spec.latitude.values[::-1]
-        )
-        lon = lon.ravel()
-        lat = lat.ravel()
-
-        # This spec is time, freq, dir, lat, lon
-        spec = bnd_spec.d2fd.values
-        # Latitude was flipped to be ascending, so flip that dimension
-        spec = np.flip(spec, 3)
 
         freq = bnd_spec.frequency.values
         dirs = bnd_spec.direction.values
-        try:
-            time = bnd_spec.time.values
-        except AttributeError:  # Name changes in new beta
-            time = bnd_spec.valid_time.values
+        time = bnd_spec.valid_time.values
 
-        # This is time, freq, dir, station
-        spec = np.reshape(
-            spec,
+        lon = np.zeros(len(bnd_spec.longitude) * len(bnd_spec.latitude))
+        lat = np.zeros(len(bnd_spec.longitude) * len(bnd_spec.latitude))
+        spec = np.zeros(
             (
                 len(time),
-                len(freq),
                 len(dirs),
+                len(freq),
                 len(lon),
             ),
         )
-        # This is time, station, freq, dir (as we want it)
-        spec = np.moveaxis(spec, 3, 1)
+        ct = 0
+        for n, lo in enumerate(bnd_spec.longitude.values):
+            for k, la in enumerate(bnd_spec.latitude.values):
+                lon[ct] = bnd_spec.longitude[n]
+                lat[ct] = bnd_spec.latitude[k]
+                # This is time, dir, freq, station
+                spec[:, :, :, ct] = bnd_spec.d2fd.values[:, :, :, k, n]
+                ct += 1
 
         # Inds given by point picker
         lon = lon[inds]
         lat = lat[inds]
-        spec = spec[:, inds, :, :]
+        spec = spec[:, :, :, inds]
 
         coord_dict = {"lon": lon, "lat": lat, "time": time, "freq": freq, "dirs": dirs}
-        data_dict = {"spec": spec}
+        data_dict = {"spec": (spec, ["time", "dirs", "freq", "inds"])}
         meta_dict = {"source": "ECMWF-ERA5 from Copernicus Climate Data Store"}
 
         return coord_dict, data_dict, meta_dict
