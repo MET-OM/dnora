@@ -233,7 +233,8 @@ class SWASH(InputFileWriter):
         model: ModelRun,
         file_object: FileNames,
         exported_files: dict[str, list[str]],
-        bound_side_command: str = "BOU SIDE W CCW CON REG #HS #TP #DIRP ",
+        boundary: str,
+        bound_side_command: str = "BOU SIDE #BOUNDARY CCW CON REG #HS #TP #DIRP ",
         dt: float = 0.001,  # [s]
         **kwargs,
     ) -> str:
@@ -264,7 +265,7 @@ class SWASH(InputFileWriter):
                 tp = waveseries.tp(inds=0)[0]
             if dirp is None:
                 msg.info(f"Using waveseries object {waveseries.name} for Dirp!")
-                dirp = waveseries.dirp(inds=0)[0]
+                dirp = waveseries.dirp(inds=0, dir_type="from")[0]
         else:
             hs = kwargs.get("hs") or 0.5
             tp = kwargs.get("tp") or 20
@@ -277,6 +278,7 @@ class SWASH(InputFileWriter):
         bound_side_command = re.sub("#HS", f"{hs:.2f}", bound_side_command)
         bound_side_command = re.sub("#TP", f"{tp:.1f}", bound_side_command)
         bound_side_command = re.sub("#DIRP", f"{dirp:.0f}", bound_side_command)
+        bound_side_command = re.sub("#BOUNDARY", boundary, bound_side_command)
 
         msg.plain(f"Using bound_side_command: {bound_side_command}")
 

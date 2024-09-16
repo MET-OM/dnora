@@ -139,6 +139,7 @@ class ModelRun:
         self._source = DataSource.UNDEFINED
         self._reference_time = None
         self.name = name
+        self._post_processing = None
         self._dnora_objects: dict[DnoraDataType, DnoraObject] = {
             DnoraDataType.GRID: grid,
         }
@@ -316,6 +317,8 @@ class ModelRun:
         # We are not post_processing e.g. if we are caching!
         if post_process:
             self._post_process_object(obj_type, reader.post_processing())
+        else:
+            self._post_processing = reader.post_processing()
 
     def _post_process_object(self, obj_type, post_processor) -> None:
         if self.get(obj_type) is None:
