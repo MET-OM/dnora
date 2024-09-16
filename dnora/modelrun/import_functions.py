@@ -119,14 +119,21 @@ def read_data_and_create_object(
             # Can we find it in the class? Otherwise add it
             if name not in existing_vars:
                 obj.add_datavar(name)
-            obj.set(name, value)
+
+            if isinstance(value, tuple):
+                obj.set(name, value[0], coords=value[1])
+            else:
+                obj.set(name, value)
             continue
 
         # If the geo-parameter has been initialized with a name, use primarily that
         if gp.is_gp_instance(param):
             if param.name not in existing_vars:
                 obj.add_datavar(param)  # Getting metadata by adding a geo-parameter
-            obj.set(param.name, value)
+            if isinstance(value, tuple):
+                obj.set(name, value[0], coords=value[1])
+            else:
+                obj.set(name, value)
             continue
 
         # If parameter is not initiated, try to find it, and otherwise create a new one
@@ -144,7 +151,10 @@ def read_data_and_create_object(
             obj.add_datavar(param)
             names = [param.name]
 
-        obj.set(names[0], value)
+        if isinstance(value, tuple):
+            obj.set(names[0], value[0], coords=value[1])
+        else:
+            obj.set(names[0], value)
         continue
 
     obj.meta.set(meta_dict)
