@@ -109,6 +109,23 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
                 start_time=start_time,
                 end_time=end_time,
             )
+
+            if write_cache:
+                # Import data from original source only
+                kwargs_cache["post_process"] = False
+                mrun_cacher._import_data(**kwargs_cache)
+                mrun_cacher[obj_type].name = name
+
+                msg.header(
+                    "Netcdf (DataWriter)",
+                    f"Writing {obj_type.name} data from {name}",
+                )
+                write_data_to_cache(mrun_cacher, tiles, obj_type)
+                msg.to_multifile(tiles.covering_files())
+
+                mrun_cacher._post_process_object(obj_type, mrun_cacher._post_processing)
+                read_cache = True
+
             if read_cache:
                 kwargs_cache["point_mask"] = grid.boundary_mask()
                 mrun_cacher = read_data_from_cache(
@@ -124,21 +141,6 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
                         mrun_cacher, tiles, kwargs_cache, strategy
                     )
                 mrun_cacher[obj_type].name = name
-            elif write_cache:
-                # Import data from original source only
-                kwargs_cache["post_process"] = False
-                mrun_cacher._import_data(**kwargs_cache)
-                mrun_cacher[obj_type].name = name
-
-            if write_cache:
-                msg.header(
-                    "Netcdf (DataWriter)",
-                    f"Writing {obj_type.name} data from {name}",
-                )
-                write_data_to_cache(mrun_cacher, tiles, obj_type)
-                msg.to_multifile(tiles.covering_files())
-
-                mrun_cacher._post_process_object(obj_type, mrun_cacher._post_processing)
 
             ## Crop final object to the desired area since it might have been exanded to tiles
 
