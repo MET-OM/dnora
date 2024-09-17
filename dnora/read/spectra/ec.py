@@ -81,10 +81,10 @@ def download_era5_from_cds(
 
 class ERA5(SpectralDataReader):
     def __init__(self, dlon: float = None, dlat: float = None):
-        """Default dlon=dlat=0.5. If only dlon given, dlon=dlat and vice versa."""
+        """Default dlon=dlat=0.1. If only dlon given, dlon=dlat and vice versa."""
         if dlon is None and dlat is None:
-            dlon = 0.5
-            dlat = 0.5
+            dlon = 0.1
+            dlat = 0.1
 
         if dlon is None:
             dlon = dlat
