@@ -46,17 +46,17 @@ def download_era5_from_cds(
     c = cdsapi.Client()
 
     filename = f"{folder}/EC_ERA5.nc"
+    # years = [f"{y:4.0f}" for y in int_list_of_years(start_time, end_time)]
+    # months = [f"{m:02.0f}" for m in int_list_of_months(start_time, end_time)]
+    # days = [f"{d:02.0f}" for d in int_list_of_days(start_time, end_time)]
 
-    years = [f"{y:4.0f}" for y in int_list_of_years(start_time, end_time)]
-    months = [f"{m:02.0f}" for m in int_list_of_months(start_time, end_time)]
-    days = [f"{d:02.0f}" for d in int_list_of_days(start_time, end_time)]
-
-    # Create string for dates
-    dates = []
-    for y in years:
-        for m in months:
-            for d in days:
-                dates.append(f"{y}-{m}-{d}")
+    # # Create string for dates
+    # dates = []
+    # for y in years:
+    #     for m in months:
+    #         for d in days:
+    #             dates.append(f"{y}-{m}-{d}")
+    dates = list(pd.date_range(start_time, end_time, freq="1d").strftime("%y-%m-%d"))
     dates = "/".join(dates)
 
     cds_command = {
