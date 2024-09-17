@@ -56,7 +56,7 @@ def download_era5_from_cds(
     #     for m in months:
     #         for d in days:
     #             dates.append(f"{y}-{m}-{d}")
-    dates = list(pd.date_range(start_time, end_time, freq="1d").strftime("%y-%m-%d"))
+    dates = list(pd.date_range(start_time, end_time, freq="1d").strftime("%Y-%m-%d"))
     dates = "/".join(dates)
 
     cds_command = {

@@ -59,16 +59,13 @@ def download_era5_from_cds(
     #         5.73,
     #     ],
     # }
-
-    years = [f"{y:4.0f}" for y in utils.time.int_list_of_years(start_time, end_time)]
-    if len(years) == 1:
-        years = years[0]
-    months = [f"{m:02.0f}" for m in utils.time.int_list_of_months(start_time, end_time)]
-    if len(months) == 1:
-        months = months[0]
-    days = [f"{d:02.0f}" for d in utils.time.int_list_of_days(start_time, end_time)]
-    if len(days) == 1:
-        days = days[0]
+    times = pd.date_range(start_time, end_time, freq="1d")
+    # years = [f"{y:4.0f}" for y in utils.time.int_list_of_years(start_time, end_time)]
+    years = list(set(times.strftime("%Y")))
+    years.sort()
+    months = list(set(times.strftime("%m")))
+    months.sort()
+    days = [f"{n:02.0f}" for n in range(1, 32)]
 
     cds_command = {
         "product_type": "reanalysis",
