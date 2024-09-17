@@ -167,7 +167,6 @@ class FileNames:
 
     def create_folder(self, edge_object: str = None) -> None:
         folder = Path(self.get_folder())
-
         if not folder.is_dir():
             msg.process(f"Creating folder {str(folder)}")
             folder.mkdir(parents=True)

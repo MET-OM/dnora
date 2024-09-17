@@ -19,9 +19,17 @@ class TileObject:
         self.tile_res = 5
 
     def existing_files(self) -> list[str]:
-        return glob.glob(
-            f"{'_'.join(self._file_object.get_filepath().split('_')[:-3])}*"
+        years, months, __ = self.times(self.covering_files())
+        times = list(
+            set([f"{year:.0f}-{month:02.0f}" for year, month in zip(years, months)])
         )
+        times.sort()
+        files = []
+        for time in times:
+            files += glob.glob(
+                f"{'_'.join(self._file_object.get_filepath(start_time=time).split('_')[:-3])}*"
+            )
+        return files
 
     def create_covering_files(
         self, area: Grid, start_time, end_time, expansion_factor: float = 1.0

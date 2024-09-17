@@ -5,6 +5,7 @@ from copy import copy
 from dnora.grid import Grid
 from .caching_strategies import caching_strategies, CachingStrategy
 from dnora import msg
+import pandas as pd
 
 
 def dont_proceed_with_caching(read_cache, write_cache, strategy, kwargs):
@@ -81,7 +82,8 @@ def patch_cached_data(mrun_cacher, tiles, kwargs_cache, strategy: CachingStrateg
 def write_data_to_cache(mrun_cacher, tiles, obj_type):
     # Write spatial tile for spatial tile
     lons, lats = tiles.lonlat(tiles.covering_files())
-    for lon_tuple, lat_tuple in zip(lons, lats):
+    years, months, days = tiles.times(tiles.covering_files())
+    for lon_tuple, lat_tuple, year, month, day in zip(lons, lats, years, months, days):
         mrun_write_tile = mrun_cacher.empty_copy(
             grid=Grid(lon=lon_tuple, lat=lat_tuple),
             start_time=mrun_cacher.start_time(),
@@ -99,10 +101,14 @@ def write_data_to_cache(mrun_cacher, tiles, obj_type):
         ind_lon = np.where(lon_mask)[0]
         ind_lat = np.where(lat_mask)[0]
         if cropped_obj.is_gridded():
-            cropped_obj = cropped_obj.isel(lon=ind_lon, lat=ind_lat)
+            cropped_obj = cropped_obj.isel(lon=ind_lon, lat=ind_lat).sel(
+                time=f"{year:.0f}-{month:02.0f}-{day:02.0f}"
+            )
         else:
             sel_inds = np.array(list(set(ind_lon) & set(ind_lat)))
-            cropped_obj = cropped_obj.isel(inds=sel_inds)
+            cropped_obj = cropped_obj.isel(inds=sel_inds).sel(
+                time=f"{year:.0f}-{month:02.0f}-{day:02.0f}"
+            )
         cropped_obj.name = mrun_cacher[obj_type].name
         if hasattr(mrun_cacher[obj_type], "convention"):
             cropped_obj._mark_convention(mrun_cacher[obj_type].convention())

@@ -159,6 +159,7 @@ class KartverketNo50m(DataReader):
         import dask.dataframe as dd
 
         df = dd.read_csv(self.source, sep=" ", header=None)
+
         df.columns = ["x", "y", "z"]
         topo_x = np.array(df["x"].astype(float))
         topo_y = np.array(df["y"].astype(float))
