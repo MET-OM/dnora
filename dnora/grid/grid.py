@@ -46,6 +46,18 @@ class Grid(GriddedSkeleton):
         return grid
 
     @classmethod
+    def from_swan_bot(cls, filename: str, lon: tuple, lat: tuple, folder: str = ""):
+        """Recreate the bathymetrical grid from a SWAN bot-file"""
+        filepath = Path(folder).joinpath(filename)
+        msg.from_file(filepath)
+        topo = np.loadtxt(filepath)
+
+        grid = cls(lon=lon, lat=lat)
+        grid.set_spacing(nx=topo.shape[1], ny=topo.shape[0])
+        grid.set_topo(topo)
+        return grid
+
+    @classmethod
     def from_ww3_grid(cls, gridname: str, folder: str = ""):
         """Recreate a WW3 grid object based on the _info, _bathy and _mapsta files"""
 

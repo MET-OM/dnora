@@ -32,7 +32,7 @@ class DataReader(ABC):
         return FillNaNs(0)
 
     @staticmethod
-    def _caching_strategy() -> CachingStrategy:
+    def caching_strategy() -> CachingStrategy:
         """Defines what caching strategy to use"""
         return CachingStrategy.PatchInTime
 

@@ -15,6 +15,7 @@ from dnora.read.ds_read_functions import (
     create_coord_dict,
     create_data_dict,
 )
+from dnora.process.spectra import RemoveEmpty
 from dnora.read.file_structure import FileStructure
 from dnora.utils.time import create_monthly_stamps
 from functools import partial

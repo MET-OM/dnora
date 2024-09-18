@@ -37,6 +37,7 @@ def read_data_from_cache(mrun_cacher, tiles, cache_reader, kwargs_cache):
         kwargs_read_cache["reader"] = cache_reader(files=tiles.relevant_files())
         kwargs_read_cache["source"] = DataSource.LOCAL
         mrun_cacher._import_data(**kwargs_read_cache)
+
     return mrun_cacher
 
 
@@ -71,7 +72,7 @@ def patch_cached_data(mrun_cacher, tiles, kwargs_cache, strategy: CachingStrateg
         mrun_patch._import_data(**kwargs_cache)
 
         ## Merge patch together with what was found in the cached
-        if mrun_cacher[obj_type] is None:
+        if mrun_cacher.get(obj_type) is None:
             mrun_cacher[obj_type] = mrun_patch[obj_type]
         else:
             mrun_cacher[obj_type].absorb(mrun_patch[obj_type], patch_dimension)

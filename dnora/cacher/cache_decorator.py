@@ -52,7 +52,7 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
 
             if given_reader is None:
                 raise ValueError("Provide a DataReader!")
-            strategy = given_reader._caching_strategy()
+            strategy = given_reader.caching_strategy()
 
             if dont_proceed_with_caching(read_cache, write_cache, strategy, kwargs):
                 import_method(**kwargs)
@@ -146,30 +146,30 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
 
             final_object = mrun_cacher[obj_type]
 
-            if final_object.is_gridded():
-                lon, lat = utils.grid.expand_area(
-                    mrun.grid().edges("lon", native=True),
-                    mrun.grid().edges("lat", native=True),
-                    expansion_factor=kwargs.get("expansion_factor", 1.0),
-                )
-                slice_dict = {
-                    grid.core.x_str: slice(*lon),
-                    grid.core.y_str: slice(*lat),
-                }
+            # if final_object.is_gridded():
+            #     lon, lat = utils.grid.expand_area(
+            #         mrun.grid().edges("lon", native=True),
+            #         mrun.grid().edges("lat", native=True),
+            #         expansion_factor=kwargs.get("expansion_factor", 1.0),
+            #     )
+            #     slice_dict = {
+            #         grid.core.x_str: slice(*lon),
+            #         grid.core.y_str: slice(*lat),
+            #     }
 
-            else:
-                # Get the wanted points from the exanded area using the original PointPicker
-                inds = given_point_picker(
-                    grid=mrun.grid(),
-                    all_points=PointSkeleton.from_skeleton(mrun_cacher[obj_type]),
-                    selected_points=PointSkeleton.from_skeleton(
-                        mrun.grid(), mask=mrun.grid().sea_mask()
-                    ),
-                    expansion_factor=kwargs.get("expansion_factor", 1.0),
-                )
-                slice_dict = {"inds": inds}
+            # else:
+            #     # Get the wanted points from the exanded area using the original PointPicker
+            #     inds = given_point_picker(
+            #         grid=mrun.grid(),
+            #         all_points=PointSkeleton.from_skeleton(mrun_cacher[obj_type]),
+            #         selected_points=PointSkeleton.from_skeleton(
+            #             mrun.grid(), mask=mrun.grid().sea_mask()
+            #         ),
+            #         expansion_factor=kwargs.get("expansion_factor", 1.0),
+            #     )
+            #     slice_dict = {"inds": inds}
 
-            slice_dict["time"] = slice(mrun.start_time(), mrun.end_time())
+            slice_dict = {"time": slice(mrun.start_time(), mrun.end_time())}
             if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
                 convention = final_object.convention()
                 final_object = final_object.sel(**slice_dict)

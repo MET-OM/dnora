@@ -11,6 +11,7 @@ from dnora.read.abstract_readers import SpectralDataReader
 from dnora.grid import Grid
 import cdsapi
 from dnora.type_manager.data_sources import DataSource
+from dnora.cacher.caching_strategies import CachingStrategy
 
 # Import aux_funcsiliry functions
 from dnora import msg
@@ -103,6 +104,9 @@ class ERA5(SpectralDataReader):
 
     def post_processing(self):
         return RemoveEmpty()
+
+    def caching_strategy(self) -> CachingStrategy:
+        return CachingStrategy.SinglePatch
 
     def get_coordinates(
         self, grid, start_time, source: DataSource, folder: str, **kwargs

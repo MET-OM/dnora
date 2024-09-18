@@ -122,7 +122,7 @@ class ERA5(DataReader):
     def default_data_source(self) -> DataSource:
         return DataSource.REMOTE
 
-    def _caching_strategy(self) -> CachingStrategy:
+    def caching_strategy(self) -> CachingStrategy:
         return CachingStrategy.SinglePatch
 
     def __call__(
@@ -142,7 +142,7 @@ class ERA5(DataReader):
 
         # Define area to search in
         lon, lat = utils.grid.expand_area(
-            grid.edges("lon"), grid.edges("lat"), expansion_factor
+            grid.edges("lon"), grid.edges("lat"), expansion_factor, dlon=0.25, dlat=0.25
         )
 
         nc_file = download_era5_from_cds(
@@ -154,17 +154,16 @@ class ERA5(DataReader):
             latitude=slice(None, None, -1)
         )  # ERA5 gives lat as descending
 
-        try:
-            time = wind_forcing.time.values
-        except AttributeError:  # Name changes in new beta
-            time = wind_forcing.valid_time.values
+        wind_forcing = wind_forcing.sel(valid_time=slice(start_time, end_time))
+
+        time = wind_forcing.valid_time.values
 
         coord_dict = {
             "lon": wind_forcing.longitude.values,
             "lat": wind_forcing.latitude.values,
             "time": time,
         }
-        data_dict = {"u": wind_forcing.u10.values, "v": wind_forcing.v10.values}
+        data_dict = {"u": wind_forcing.u10.data, "v": wind_forcing.v10.data}
         meta_dict = wind_forcing.attrs
 
         return coord_dict, data_dict, meta_dict

@@ -20,10 +20,13 @@ from copy import copy
 from geo_skeletons import GriddedSkeleton
 
 
-def read_cached_filelist(folder, filename):
+def read_cached_filelist(folder, filename, silent: bool = False):
+    """Reads cached files of unstructured data, since they can't be opened simply by open_mfdataset"""
     if filename is None:
         raise ValueError("Provide at least one filename!")
     filepath = get_url(folder, filename, get_list=True)
+    if not silent:
+        msg.from_multifile(filepath)
     dds = []
     ds_top_list = []
     days = list(
@@ -35,27 +38,19 @@ def read_cached_filelist(folder, filename):
         )
     )
 
-    # '2021-08-25'
-
-    # tiles_in_day = sum([first_day in fn for fn in filepath])
-    # number_of_days = int(len(filepath) / tiles_in_day)
     days.sort()
+    ds_list = []
+    points_in_previous_tiles = 0
     for day in days:
         files_in_day = [fn for fn in filepath if day in fn]
 
-        ds_list = []
-        points_in_previous_tile = 0
         for file in files_in_day:
-            msg.from_file(file)
-            one_ds = xr.open_dataset(file)
-            one_ds["inds"] = one_ds["inds"] + points_in_previous_tile
-            points_in_previous_tile = len(one_ds.inds)
+            one_ds = xr.open_dataset(file, chunks="auto")
+            one_ds["inds"] = one_ds["inds"] + points_in_previous_tiles
+            points_in_previous_tiles += len(one_ds.inds)
             ds_list.append(one_ds)
-            # ds_list.append(ds)
 
-        # ds_top_list.append(xr.merge(ds_list))
-    ds = xr.merge(ds_list)
-
+    ds = xr.concat(ds_list, dim="inds")
     return ds
 
 
@@ -63,7 +58,7 @@ class PointNetcdf(SpectralDataReader):
     def default_data_source(self) -> DataSource:
         return DataSource.LOCAL
 
-    def _caching_strategy(self) -> CachingStrategy:
+    def caching_strategy(self) -> CachingStrategy:
         return CachingStrategy.DontCacheMe
 
     def __init__(self, files: list[str] = None):
@@ -73,11 +68,16 @@ class PointNetcdf(SpectralDataReader):
         self, grid, start_time, source, folder, filename: list[str] = None, **kwargs
     ):
         filename = filename or self.files
-        ds = read_cached_filelist(folder, filename)
+        if isinstance(filename, list):
+            ds = read_cached_filelist(folder, filename, silent=True)
+        else:
+            filepath = get_url(folder, filename)
+            ds = xr.open_dataset(filepath)
         # if filename is None:
         #     raise ValueError("Provide at least one filename!")
         # filepath = get_url(folder, filename, get_list=True)
         # ds = xr.open_dataset(filepath[0])
+
         lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
         self.set_convention(ds.attrs.get("dnora_spectral_convention", "ocean"))
         return {"lon": lon, "lat": lat, "x": x, "y": y}
@@ -96,18 +96,20 @@ class PointNetcdf(SpectralDataReader):
     ):
 
         filename = filename or self.files
-
-        ds = read_cached_filelist(folder, filename)
+        if isinstance(filename, list):
+            ds = read_cached_filelist(folder, filename)
+        else:
+            filepath = get_url(folder, filename)
+            ds = xr.open_dataset(filepath)
 
         # ds = xr.open_mfdataset(filepath)
-
-        lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
 
         times = slice(start_time, end_time)
 
         ds = ds.sel(inds=inds, time=times)
 
         lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
+
         coord_dict = {"x": x, "y": y, "lon": lon, "lat": lat}
         for c in list(ds.coords):
             if c not in ["inds"]:
@@ -129,7 +131,7 @@ class Netcdf(DataReader):
     def default_data_source(self) -> DataSource:
         return DataSource.LOCAL
 
-    def _caching_strategy(self) -> CachingStrategy:
+    def caching_strategy(self) -> CachingStrategy:
         return CachingStrategy.DontCacheMe
 
     def __init__(self, files: list[str] = None):
@@ -144,7 +146,7 @@ class Netcdf(DataReader):
         source: DataSource,
         folder: str,
         filename: list[str] = None,
-        expansion_factor=1.0,
+        expansion_factor=1.2,
         **kwargs,
     ):
 
@@ -207,8 +209,8 @@ class ConstantData(SpectralDataReader):
     def default_data_source(self) -> DataSource:
         return DataSource.CREATION
 
-    def _caching_strategy(self) -> CachingStrategy:
-        return CachingStrategy.DontCacheMe
+    def caching_strategy(self) -> CachingStrategy:
+        return self._caching_strategy
 
     def get_coordinates(self, grid, start_time, source, folder, **kwargs):
         lon, lat = grid.lonlat(strict=True)
@@ -221,7 +223,13 @@ class ConstantData(SpectralDataReader):
         coords: dict = None,
         peaks: dict = None,
         convention: SpectralConvention | str = SpectralConvention.OCEAN,
+        debug_cache: bool = False,
     ):
+        if debug_cache:
+            self._caching_strategy = CachingStrategy.SinglePatch
+        else:
+            self._caching_strategy = CachingStrategy.DontCacheMe
+
         """E.g. ConstantData(vars={'u':1, 'v':2})"""
         vars = vars or {}
         self._default_var_values = copy(self._class_default_var_values)

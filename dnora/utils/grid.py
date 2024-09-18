@@ -141,15 +141,28 @@ def is_gridded(data: np.ndarray, lon: np.ndarray, lat: np.ndarray) -> bool:
 
 
 def expand_area(
-    lon: tuple[float, float], lat: tuple[float, float], expansion_factor: float
+    lon: tuple[float, float],
+    lat: tuple[float, float],
+    expansion_factor: float,
+    dlon: float = 0.0,
+    dlat: float = 0.0,
 ) -> tuple[float, float, float, float]:
     """
     Expands a lon-lat bounding box with an expansion factor.
     expansion_factor = 1 does nothing, and 1.5 expands 50% both directions.
+
+    give dlon, dlat to ensure a minimum exansion in case the expansion factor is not enough
+
+    E.g. for lat=(60, 61)
+    expansion_factor=1.2 gives (59.9, 61.1)
+    expansion_factor=1.2 and dlat = 0.25 gives (59.75, 61.25)
     """
 
     expand_lon = (lon[1] - lon[0]) * (expansion_factor - 1) * 0.5
     expand_lat = (lat[1] - lat[0]) * (expansion_factor - 1) * 0.5
+
+    expand_lon = np.maximum(expand_lon, dlon)
+    expand_lat = np.maximum(expand_lat, dlat)
 
     new_lon = lon[0] - expand_lon, lon[1] + expand_lon
     new_lat = lat[0] - expand_lat, lat[1] + expand_lat
