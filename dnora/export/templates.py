@@ -17,7 +17,7 @@ class Netcdf(DataExporter):
     _writer_dict = {DnoraDataType.GRID: data_writers.Netcdf()}
 
     def _get_default_writer(self) -> WriterFunction:
-        return data_writers.Netcdf(monthly_files=True)
+        return data_writers.Netcdf()
 
 
 class Cacher(DataExporter):

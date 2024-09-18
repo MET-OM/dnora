@@ -50,8 +50,14 @@ class SWAN_Ascii(SpectralDataReader):
             folder = get_url(folder, "SWAN")
         return folder, filename
 
+    def __init__(self, keep_empty: bool = False):
+        if keep_empty:
+            self._post_processing = None
+        else:
+            self._post_processing = RemoveEmpty()
+
     def post_processing(self):
-        return RemoveEmpty()
+        return self._post_processing
 
     def get_coordinates(
         self,
