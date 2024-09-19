@@ -225,7 +225,7 @@ class SWAN(InputFileWriter):
             file_out.write(
                 'LAY 1 '+self.output_var+' OUTPUT ' + STR_START + ' 1 HR \n')
             file_out.write('$ \n')
-            if spec_lon:
+            if len(spec_lon) > 0:
                 file_out.write('POINTS \'pkt\' &\n')
                 for slon, slat in zip(spec_lon, spec_lat):
                     file_out.write(str(slon)+' '+str(slat)+ ' &\n')
