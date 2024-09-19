@@ -66,11 +66,14 @@ class Spectra(PointSkeleton):
             del_inds = list(set(self.inds()) - set(new_inds))
             if del_inds:
                 lon, lat = self.lonlat(native=True)
-                msg.info(f"Removing the following points:")
-                for ind in list(set(self.inds()) - set(new_inds)):
-                    msg.plain(
-                        f"ind = {ind}, {self.core.x_str} = {lon[ind]}, {self.core.y_str} = {lat[ind]}"
-                    )
+                if len(del_inds) <= 10:
+                    msg.info(f"Removing the following points:")
+                    for ind in list(set(self.inds()) - set(new_inds)):
+                        msg.plain(
+                            f"ind = {ind}, {self.core.x_str} = {lon[ind]}, {self.core.y_str} = {lat[ind]}"
+                        )
+                else:
+                    msg.info(f"Removing a total of {len(del_inds)} points...")
 
             metadata = self.meta.get()
 

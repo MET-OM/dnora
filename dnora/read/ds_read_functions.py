@@ -157,10 +157,10 @@ def create_coord_dict(wanted_coords: list, ds: xr.Dataset, alias_mapping: dict) 
 def create_data_dict(wanted_vars: list, ds: xr.Dataset, alias_mapping: dict) -> dict:
     data_dict = {}
     for var in wanted_vars:
-        standard_name = ds[var].attrs.get("standard_name")
-        param = gp.get(standard_name)
+        param = alias_mapping.get(var)
         if param is None:
-            param = alias_mapping.get(var)
+            standard_name = ds[var].attrs.get("standard_name")
+            param = gp.get(standard_name)
 
         if param is None:
             raise ValueError(f"Could not find dnora name for variable {var}!")
