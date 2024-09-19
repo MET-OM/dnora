@@ -1063,6 +1063,7 @@ class WW3Spectra(InputFileWriter):
         folder_on_server: str = "/server/boundaryfiles/",
         **kwargs,
     ) -> str:
+        msg.to_file(file_object.get_folder() + "/spectral_boundary_files.list")
         ww3_specfile_list(
             file_object.get_folder() + "/spectral_boundary_files.list",
             exported_files["spectra"],
@@ -1100,6 +1101,7 @@ class WW3(InputFileWriter):
         if homog is None:
             homog = {}
         lons, lats = model.grid().output_points()
+        msg.to_file(file_object.get_folder() + "/spectral_points.list")
         ww3_spectral_output_list(
             file_object.get_folder() + "/spectral_points.list", lons, lats
         )
