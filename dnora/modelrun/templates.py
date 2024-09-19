@@ -51,3 +51,10 @@ class WW3_4km(ModelRun):
         DnoraDataType.SPECTRA: dnora.read.spectra.metno.WW3_4km(),
         DnoraDataType.WIND: dnora.read.wind.metno.MEPS(),
     }
+
+class NCHMF(ModelRun):
+    _reader_dict = {
+        DnoraDataType.SPECTRA: dnora.read.spectra.nchmf.SWAN(),
+        DnoraDataType.WIND: dnora.read.wind.nchmf.Oper(),
+        DnoraDataType.WATERLEVEL: dnora.read.waterlevel.cmems.Global(),
+    }

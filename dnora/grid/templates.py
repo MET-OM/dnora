@@ -8,3 +8,6 @@ class EMODNET(Grid):
 
 class GEBCO(Grid):
     _default_reader = GEBCO()
+
+class NCHMF(Grid):
+    _default_reader = dnora.read.grid.grid_readers.nchmf.DepFile()
