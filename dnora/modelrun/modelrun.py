@@ -146,10 +146,12 @@ class ModelRun:
         self._consistency_check(
             objects_to_ignore_get=[
                 DnoraDataType.TRIGRID,
+                DnoraDataType.SPECTRALGRID
             ],
             objects_to_ignore_import=[
                 DnoraDataType.GRID,
                 DnoraDataType.TRIGRID,
+                DnoraDataType.SPECTRALGRID
             ],
         )
 
@@ -585,8 +587,8 @@ class ModelRun:
                 dirshift = np.min(np.abs(dirs))
             dirs = np.linspace(0, 360, ndir + 1)[0:-1] + dirshift
 
-        self[DnoraDataType.SpectralGrid] = SpectralGrid(
-            name=DnoraDataType.SpectralGrid.value, freq=freq, dirs=dirs
+        self[DnoraDataType.SPECTRALGRID] = SpectralGrid(
+            name=DnoraDataType.SPECTRALGRID.name, freq=freq, dirs=dirs
         )
 
     def dry_run(self):
@@ -624,6 +626,10 @@ class ModelRun:
     def ice(self) -> Ice:
         """Returns the ocean current object if exists."""
         return self._dnora_objects.get(DnoraDataType.ICE)
+
+    def spectral_grid(self) -> Ice:
+        """Returns the spectral grid object if exists."""
+        return self._dnora_objects.get(DnoraDataType.SPECTRALGRID)
 
     def process(
         self, obj_type: DnoraDataType | str, processor: GriddedDataProcessor
@@ -709,7 +715,7 @@ class ModelRun:
 
             for obj_str in crop_with:
                 dnora_obj = self.get(data_type_from_string(obj_str))
-                if dnora_obj is not None:
+                if dnora_obj is not None and hasattr(dnora_obj, 'time'):
                     time = dnora_obj.time()
                     if time[0] is not None:
                         t0 = pd.to_datetime([t0, time[0]]).max()

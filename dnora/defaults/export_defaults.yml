@@ -61,7 +61,7 @@ MODELRUN:
     folder: 'output'
     filename: 'ice_#ICE_#GRID_#T0-#T1'
     dateformat: '%Y%m%dT%H%M'  
-  input:
+  input_file:
     folder: 'output'
     filename: 'inputfile_#GRID_#WIND_#BOUNDARY_#SPECTRA_#T0_#T1_#LON_#LAT'
     dateformat: '%Y%m%dT%H%M'
@@ -84,7 +84,7 @@ SWAN:
     filename: 'wlvl#SPECTRA#GRID#T0#T1'
   current:
     filename: 'cur#SPECTRA#GRID#T0#T1'
-  input:
+  input_file:
     filename: 'input_#T0_#GRID'
     folder: '#GRID_SWAN'
     extension: 'swn'
@@ -100,7 +100,7 @@ SWASH:
     filename: 'wind#WIND#GRID#T0_#T1'
   spectra:
     filename: 'spec#SPECTRA#GRID#T0#T1'
-  input:
+  input_file:
     filename: 'input_#T0_#T1_#GRID'
     folder: '#GRID_SWASH'
     extension: 'sws'
@@ -124,15 +124,28 @@ WW3:
   waterlevel:
     filename: 'waterlevel_#WATERLEVEL_#GRID_#T0-#T1'
     extension: 'nc'     
-  input:
+  input_file:
     filename: ''
     folder: 'MyWW3Folder'
     extension: 'nml'
+  grid_file:
+    filename: 'ww3_grid'
+    folder: 'MyWW3Folder'
+    extension: 'nml'
+  wind_file:
+    filename: 'ww3_prnc'
+    folder: 'MyWW3Folder'
+    extension: 'nml'
+  spectra_file:
+    filename: 'ww3_bounc'
+    folder: 'MyWW3Folder'
+    extension: 'nml'
+
 
 HOS_OCEAN:
   grid:
     filename: '#GRID_HOS_ocean'
-  input:
+  input_file:
     filename: 'input_HOS'
     folder: MyHOS_oceanFolder'
     extension: 'dat'
@@ -146,7 +159,7 @@ REEF3D:
     filename: 'spectrum-file'
     folder: '#GRID_REEF3D'
     extension: 'dat'
-  input:
+  input_file:
     filename: 'ctrl'
     folder: '#GRID_REEF3D'
     extension: 'txt'

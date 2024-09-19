@@ -8,8 +8,18 @@ from .post_processors import PostProcessor
 from .model_runners import ModelRunner
 from pathlib import Path
 from dnora.type_manager.dnora_types import file_type_from_string
+from .decorators import add_write_method
 
-
+@add_write_method(DnoraFileType.INPUT)
+@add_write_method(DnoraFileType.GRID)
+@add_write_method(DnoraFileType.TRIGRID)
+@add_write_method(DnoraFileType.WIND)
+@add_write_method(DnoraFileType.SPECTRA)
+@add_write_method(DnoraFileType.SPECTRA1D)
+@add_write_method(DnoraFileType.WAVESERIES)
+@add_write_method(DnoraFileType.WATERLEVEL)
+@add_write_method(DnoraFileType.CURRENT)
+@add_write_method(DnoraFileType.ICE)
 class ModelExecuter:
     _input_file_writers = {}
     _model_runners = {}
@@ -23,10 +33,9 @@ class ModelExecuter:
     def dry_run(self) -> bool:
         return self._dry_run or self.model.dry_run()
 
-    def write_input_file(
-        self,
+    def write(self,
+        file_type: DnoraFileType | str,
         input_file_writer: InputFileWriter = None,
-        file_type: DnoraFileType | str = DnoraFileType.INPUT,
         filename: str = None,
         folder: str = None,
         dateformat: str = None,

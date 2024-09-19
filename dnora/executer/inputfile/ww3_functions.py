@@ -74,7 +74,7 @@ def ww3_grid(
             fout.write("  GRID%TYPE             = 'RECT'\n")
         else:
             fout.write("  GRID%TYPE             = 'UNST'\n")
-        if grid.is_cartesian():
+        if grid.core.is_cartesian():
             fout.write("  GRID%TYPE             = 'CART'\n")
         else:
             fout.write("  GRID%COORD            = 'SPHE'\n")
@@ -182,7 +182,7 @@ def ww3_grid(
         write_block("grid.txt")
         write_grid()
         if grid.is_gridded():
-            if grid.is_cartesian():
+            if grid.core.is_cartesian():
                 write_block("cart.txt")
                 write_cart()
             else:
@@ -311,7 +311,7 @@ def ww3_shel(
 
     def write_input():
         fout.write("&INPUT_NML\n")
-        FORCING_NAMES = {"wnd": "WINDS", "wlv": "WATER_LEVELS", "ocr": "CURRENTS"}
+        FORCING_NAMES = {"wind": "WINDS", "waterlevel": "WATER_LEVELS", "current": "CURRENTS"}
         for field_type in FORCING_NAMES:
             if homog.get(field_type) is not None:
                 fout.write(
@@ -354,7 +354,7 @@ def ww3_shel(
         fout.write("/\n")
 
     def write_homog():
-        FORCING_NAMES = {"wnd": "WND", "wlv": "LEV", "ocr": "CUR"}
+        FORCING_NAMES = {"wind": "WND", "waterlevel": "LEV", "current": "CUR"}
         fout.write("&HOMOG_COUNT_NML\n")
         for field_type in FORCING_NAMES:
             if homog.get(field_type) is not None:

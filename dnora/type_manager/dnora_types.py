@@ -12,10 +12,12 @@ class DnoraDataType(Enum):
     WATERLEVEL = auto()
     ICE = auto()
     WAVESERIES = auto()
+    SPECTRALGRID = auto()
 
 
 class DnoraFileType(Enum):
     GRID = auto()
+    TRIGRID = auto()
     SPECTRA1D = auto()
     SPECTRA = auto()
     WIND = auto()

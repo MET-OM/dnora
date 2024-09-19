@@ -398,6 +398,8 @@ def get_default_value(key: str, obj_type: DnoraDataType, primary: dict, fallback
     """
 
     obj_str = obj_type.name.lower()
+    if isinstance(obj_type, DnoraFileType):
+        obj_str += '_file'
 
     # Try dnora_obj specific fallback name
     fallback_name = None

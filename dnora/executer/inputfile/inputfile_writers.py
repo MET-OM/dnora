@@ -981,8 +981,8 @@ class HOS_ocean(InputFileWriter):
 
 class WW3Grid(InputFileWriter):
 
-    def file_type(self) -> DnoraFileType:
-        return DnoraFileType.GRID
+    # def file_type(self) -> DnoraFileType:
+    #     return DnoraFileType.GRID
 
     # def __init__(self):
     #     self.scaling = 10**6
@@ -997,7 +997,7 @@ class WW3Grid(InputFileWriter):
         **kwargs,
     ) -> str:
         grid = model.grid()
-        spectral_grid = model.spectral_grid()
+        spectral_grid = model.get('spectralgrid')
         if file_object.get_filename() == "":
             filename = file_object.get_folder() + "/ww3_grid.nml"
         else:
@@ -1043,7 +1043,7 @@ class WW3Wind(InputFileWriter):
             filename = file_object.get_folder() + "/ww3_prnc.nml"
         else:
             filename = file_object.get_filepath()
-        ww3_prnc(filename, exported_files["forcing"], folder_on_server)
+        ww3_prnc(filename, exported_files["wind"], folder_on_server)
 
         return filename
 
@@ -1065,7 +1065,7 @@ class WW3Spectra(InputFileWriter):
     ) -> str:
         ww3_specfile_list(
             file_object.get_folder() + "/spectral_boundary_files.list",
-            exported_files["boundary"],
+            exported_files["spectra"],
         )
         if file_object.get_filename() == "":
             filename = file_object.get_folder() + "/ww3_bounc.nml"
@@ -1096,6 +1096,7 @@ class WW3(InputFileWriter):
         folder_on_server: str = "/server/namelists/",
         **kwargs,
     ) -> str:
+        """To use homogeneous input, set all the variables in order as: homog = {'wind': [1,4]}"""
         if homog is None:
             homog = {}
         lons, lats = model.grid().output_points()
@@ -1110,9 +1111,9 @@ class WW3(InputFileWriter):
             filename = file_object.get_filepath()
 
         forcing = {}
-        forcing["wnd"] = model.wind() is not None
-        forcing["wlv"] = model.waterlevel() is not None
-        forcing["ocr"] = model.oceancurrent() is not None
+        forcing["wind"] = model.wind() is not None
+        forcing["waterlevel"] = model.waterlevel() is not None
+        forcing["current"] = model.current() is not None
 
         ww3_shel(filename, folder_on_server, start_time, end_time, forcing, homog)
 
