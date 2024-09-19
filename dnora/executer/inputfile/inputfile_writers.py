@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
 import re
+import os
 
 # Import objects
 from typing import TYPE_CHECKING, Union
@@ -50,181 +51,408 @@ class Null(InputFileWriter):
     ) -> str:
         return ""
 
-
 class SWAN(InputFileWriter):
-    def __call__(
-        self,
-        model: ModelRun,
-        file_object: FileNames,
-        exported_files: dict[str, list[str]],
-        calib_wind: float = 1.0,
-        calib_wcap: float = 0.5000e-04,
-        use_wind: bool = True,
-        **kwargs,
-    ) -> str:
+    def __init__(self,timestep=10,f_low = 0.04, f_high=1., n_freq=31, n_dir=36,output_var='HSIGN RTP TPS PDIR TM01 TMM10 DIR DSPR DEP'):
+        self.default_calibrations = {'wind': 1, 'wcap': 0.5000E-04, 'waterlevel': 1, 'current': 1}
+        self.swan_timestep = timestep
+        self.f_low = f_low
+        self.f_high = f_high
+        self.n_freq = n_freq
+        self.n_dir = n_dir
+        self.output_var = output_var
+        return
+
+    def __call__(self, model: ModelRun,file_object: FileNames, exported_files: dict[str, list[str]], calibrate: dict[str, float]=None, use_wind:bool=True, use_waterlevel: bool=True, use_spectra: bool=True, use_current:bool=True):
         forcing = model.wind()
+        boundary = model.spectra()
+        waterlevel = model.waterlevel()
+        oceancurrent = model.current()
         grid = model.grid()
         grid_path = exported_files["grid"][-1]
         forcing_path = exported_files["wind"][-1]
         boundary_path = exported_files["spectra"][-1]
+        waterlevel_path = exported_files["waterlevel"][-1]
 
         filename = file_object.get_filepath()
 
-        spec_lon, spec_lat = grid.output_points()
-        spec_points = [(x, y) for x, y in zip(spec_lon, spec_lat)]
+       
+        
+        if calibrate is None:
+            calibrate = {}
 
         if forcing is None and use_wind == True:
-            msg.info(
-                "No wind object provided. Wind information will NOT be written to SWAN input file!"
-            )
+            msg.info('No wind object provided. Wind information will NOT be written to SWAN input file!')
             use_wind = False
+
+        if waterlevel is None and use_waterlevel == True:
+            msg.info('No waterlevel object provided. Waterlevel information will NOT be written to SWAN input file!')
+            use_waterlevel = False
+
+        if oceancurrent is None and use_current == True:
+            msg.info('No current object provided. OceanCurrent information will NOT be written to SWAN input file!')
+            use_current = False
+
+        if boundary is None and use_spectra == True:
+            msg.info('No spectra object provided. Spectra information will NOT be written to SWAN input file!')
+            use_spectra = False
 
         # Define start and end times of model run
         DATE_START = model.time(crop_with="all")[0]
         DATE_END = model.time(crop_with="all")[-1]
         STR_START = DATE_START.strftime("%Y%m%d.%H%M%S")
         STR_END = DATE_END.strftime("%Y%m%d.%H%M%S")
+        HOTSTART_FILE = 'hotstart_'+grid.name+'_'+(pd.Timestamp(DATE_START)-pd.Timedelta(hours=1)).strftime('%Y%m%d%H%M')
+        
+        spec_lon, spec_lat = grid.output_points()
 
-        delta_X = np.round(np.abs(grid.lon()[-1] - grid.lon()[0]), 5)
-        delta_Y = np.round(np.abs(grid.lat()[-1] - grid.lat()[0]), 5)
+        #spec_points = [(x, y) for x, y in zip(spec_lon, spec_lat)]
+        # STR_FORCING_START = STR_START
+        # STR_FORCING_END = STR_END
 
-        delta_Xf = np.round(np.abs(forcing.lon()[-1] - forcing.lon()[0]), 5)
-        delta_Yf = np.round(np.abs(forcing.lat()[-1] - forcing.lat()[0]), 5)
+        # # For wind forcing, range of all time steps in .asc file needs to be specified
+        # if forcing is not None:
+        #     if (forcing.name() == "ERA5"):  # bugfix: for era5 complete 24 hour timesteps are written to asc file.
+        #         STR_FORCING_START = pd.Timestamp(DATE_START).strftime('%Y%m%d') + '.000000'
+        #         STR_FORCING_END = pd.Timestamp(DATE_END).strftime('%Y%m%d') + '.230000'
 
-        factor_wind = calib_wind * 0.001
+        delta_X = np.round(np.diff(grid.edges('lon')), 5)[0]
+        delta_Y = np.round(np.diff(grid.edges('lon')), 5)[0]
 
-        with open(filename, "w") as file_out:
-            file_out.write("$************************HEADING************************\n")
-            file_out.write("$ \n")
-            file_out.write(" PROJ '" + grid.name + "' 'T24' \n")
-            file_out.write("$ \n")
-            file_out.write("$*******************MODEL INPUT*************************\n")
-            file_out.write("$ \n")
-            file_out.write("SET NAUT \n")
-            file_out.write("$ \n")
-            file_out.write("MODE NONSTATIONARY TWOD \n")
-            file_out.write("COORD SPHE CCM \n")
+        factor = {}
+        for calib_type in ['wind', 'waterlevel', 'current']:
+            factor[calib_type] = (calibrate.get(calib_type) or self.default_calibrations.get(calib_type))*0.001
+        factor['wcap'] = calibrate.get('wcap') or self.default_calibrations.get('wcap')
+
+        with open(filename, 'w') as file_out:
             file_out.write(
-                "CGRID "
-                + str(grid.lon()[0])
-                + " "
-                + str(grid.lat()[0])
-                + " 0. "
-                + str(delta_X)
-                + " "
-                + str(delta_Y)
-                + " "
-                + str(grid.nx() - 1)
-                + " "
-                + str(grid.ny() - 1)
-                + " CIRCLE 36 0.04 1.0 31 \n"
-            )
-            file_out.write("$ \n")
-
+                '$************************HEADING************************\n')
+            file_out.write('$ \n')
+            file_out.write(' PROJ \'' + grid.name + '\' \'T24\' \n')
+            file_out.write('$ \n')
             file_out.write(
-                "INPGRID BOTTOM "
-                + str(grid.lon()[0])
-                + " "
-                + str(grid.lat()[0])
-                + " 0. "
-                + str(grid.nx() - 1)
-                + " "
-                + str(grid.ny() - 1)
-                + " "
-                + str((delta_X / (grid.nx() - 1)).round(6))
-                + " "
-                + str((delta_Y / (grid.ny() - 1)).round(6))
-                + "\n"
-            )
-            file_out.write(
-                "READINP BOTTOM 1 '" + grid_path.split("/")[-1] + "' 3 0 FREE \n"
-            )
-            file_out.write("$ \n")
+                '$*******************MODEL INPUT*************************\n')
+            file_out.write('$ \n')
+            file_out.write('SET NAUT \n')
+            file_out.write('$ \n')
+            file_out.write('MODE NONSTATIONARY TWOD \n')
+            file_out.write('COORD SPHE CCM \n')
+            file_out.write('CGRID '+str(grid.lon()[0])+' '+str(grid.lat()[0])+' 0. '+str(delta_X)+' '+str(
+                delta_Y)+' '+str(grid.nx()-1)+' '+str(grid.ny()-1)+' CIRCLE %d %f %f %d \n' %(self.n_dir, self.f_low,
+                                                                                              self.f_high, self.n_freq))
+            file_out.write('$ \n')
 
-            lons, lats = create_swan_segment_coords(
-                grid.boundary_mask(), grid.edges("lon"), grid.edges("lat")
-            )
-            bound_string = "BOUNDSPEC SEGMENT XY"
-            for lon, lat in zip(lons, lats):
-                bound_string += f" {lon:.2f} {lat:.2f}"
-            bound_string += " VARIABLE FILE 0 "
-            bound_string += f"'{boundary_path.split('/')[-1]}'\n"
-            file_out.write(bound_string)
-            # file_out.write('BOU NEST \''+boundary_path.split('/')[-1]+'\' OPEN \n')
-            file_out.write("$ \n")
-            dt = forcing.time().to_series().diff().dt.total_seconds().values[-1] / 3600
+            file_out.write('INPGRID BOTTOM ' + str(grid.lon()[0])+' '+str(grid.lat()[0])+' 0. '+str(grid.nx()-1)+' '+str(
+                grid.ny()-1)+' ' + str((delta_X/(grid.nx()-1)).round(8)) + ' ' + str((delta_Y/(grid.ny()-1)).round(8)) + '\n')
+            file_out.write('READINP BOTTOM 1 \''+ grid_path.split('/')[-1] +'\' 3 0 FREE \n')
+            file_out.write('$ \n')
+            if use_spectra:
+                lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.edges('lon'), grid.edges('lat'))
+
+                bound_string = "BOUNDSPEC SEGMENT XY"
+                for lon, lat in zip(lons, lats):
+                    bound_string += f" {lon:.4f} {lat:.4f}"
+                bound_string += " VARIABLE FILE 0 "
+                bound_string += f"'{boundary_path.split('/')[-1]}'\n"
+                file_out.write(bound_string)
+
+                #file_out.write('BOU NEST \''+boundary_path.split('/')[-1]+'\' OPEN \n')
+                file_out.write('$ \n')
+
             if use_wind:
-                file_out.write(
-                    "INPGRID WIND "
-                    + str(forcing.lon()[0])
-                    + " "
-                    + str(forcing.lat()[0])
-                    + " 0. "
-                    + str(forcing.nx() - 1)
-                    + " "
-                    + str(forcing.ny() - 1)
-                    + " "
-                    + str((delta_Xf / (forcing.nx() - 1)).round(6))
-                    + " "
-                    + str((delta_Yf / (forcing.ny() - 1)).round(6))
-                    + " NONSTATIONARY "
-                    + STR_START
-                    + f" {dt:.0f} HR "
-                    + STR_END
-                    + "\n"
-                )
-                file_out.write(
-                    "READINP WIND "
-                    + str(factor_wind)
-                    + "  '"
-                    + forcing_path.split("/")[-1]
-                    + "' 3 0 0 1 FREE \n"
-                )
-                file_out.write("$ \n")
+                self.output_var = self.output_var + ' WIND'
+                delta_Xf = np.round(np.diff(forcing.edges('lon')), 5)[0]
+                delta_Yf = np.round(np.diff(forcing.edges('lat')), 5)[0]
+
+                file_out.write('INPGRID WIND ' + str(forcing.lon()[0].round(3)) + ' ' + str(forcing.lat()[0].round(3)) + ' 0. ' + str(
+                    forcing.nx() - 1) + ' ' + str(forcing.ny() - 1) + ' ' + str(
+                    (delta_Xf / (forcing.nx() - 1)).round(6)) + ' ' + str((delta_Yf / (forcing.ny() - 1)).round(
+                    6)) + ' NONSTATIONARY ' + STR_START + f" {forcing.dt():.0f} HR " + STR_END + '\n')
+
+                file_out.write('READINP WIND '+str(factor['wind'])+'  \''+forcing_path.split('/')[-1]+'\' 3 0 0 1 FREE \n')
+                file_out.write('$ \n')
             else:
-                file_out.write("OFF QUAD \n")
-            file_out.write("GEN3 WESTH cds2=" + str(calib_wcap) + "\n")
-            file_out.write("FRICTION JON 0.067 \n")
-            file_out.write("PROP BSBT \n")
-            file_out.write("NUM ACCUR NONST 1 \n")
-            file_out.write("$ \n")
-            file_out.write("$*******************************************************\n")
-            file_out.write("$ Generate block-output \n")
-            temp_list = forcing_path.split("/")
-            forcing_folder = "/".join(temp_list[0:-1])
-            file_out.write(
-                "BLOCK 'COMPGRID' HEAD '"
-                + grid.name
-                + "_"
-                + STR_START.split(".")[0]
-                + ".nc"
-                + "' & \n"
-            )
-            file_out.write(
-                "LAY 1 HSIGN RTP TPS PDIR TM01 DIR DSPR WIND DEP OUTPUT "
-                + STR_START
-                + " 1 HR \n"
-            )
-            file_out.write("$ \n")
-            if spec_points:
-                file_out.write("POINTS 'pkt' &\n")
-                for lon, lat in spec_points:
-                    file_out.write(str(lon) + " " + str(lat) + " &\n")
-                file_out.write(
-                    "SPECOUT 'pkt' SPEC2D ABS '"
-                    + grid.name
-                    + "_"
-                    + STR_START.split(".")[0]
-                    + "_spec.nc"
-                    + "' & \n"
-                )
-                file_out.write("OUTPUT " + STR_START + " 1 HR \n")
+                file_out.write('WIND 0 0 \n') # no wind forcing
+
+            if use_waterlevel:
+                self.output_var = self.output_var + ' WATLEV'
+                delta_Xf = np.round(np.diff(waterlevel.edges('lon')), 5)[0]
+                delta_Yf = np.round(np.diff(waterlevel.edges('lat')), 5)[0]
+
+                file_out.write('INPGRID WLEV ' + str(waterlevel.lon()[0]) + ' ' + str(waterlevel.lat()[0]) + ' 0. ' + str(
+                    waterlevel.nx() - 1) + ' ' + str(waterlevel.ny() - 1) + ' ' + str(
+                    (delta_Xf / (waterlevel.nx() - 1)).round(6)) + ' ' + str((delta_Yf / (waterlevel.ny() - 1)).round(
+                    6)) + ' NONSTATIONARY ' + STR_START + f" {waterlevel.dt():.0f} HR " + STR_END + '\n')
+
+                file_out.write('READINP WLEV '+str(factor['waterlevel'])+'  \''+waterlevel_path.split('/')[-1]+'\' 3 0 1 FREE \n')
+                file_out.write('$ \n')
             else:
                 pass
-            file_out.write("COMPUTE " + STR_START + " 10 MIN " + STR_END + "\n")
-            file_out.write("STOP \n")
+
+            if use_current:
+                self.output_var = self.output_var + ' VEL'
+                #delta_Xf = np.round(np.abs(oceancurrent.lon()[-1] - oceancurrent.lon()[0]), 5)
+                #delta_Yf = np.round(np.abs(oceancurrent.lat()[-1] - oceancurrent.lat()[0]), 5)
+                delta_Xf = np.round(np.diff(oceancurrent.edges('lon')), 5)[0]
+                delta_Yf = np.round(np.diff(oceancurrent.edges('lat')), 5)[0]
+
+                file_out.write('INPGRID CUR ' + str(oceancurrent.lon()[0]) + ' ' + str(oceancurrent.lat()[0]) + ' 0. ' + str(
+                    oceancurrent.nx() - 1) + ' ' + str(oceancurrent.ny() - 1) + ' ' + str(
+                    (delta_Xf / (oceancurrent.nx() - 1)).round(6)) + ' ' + str((delta_Yf / (oceancurrent.ny() - 1)).round(
+                    6)) + ' EXC 32767 NONSTATIONARY ' + STR_START + f" {oceancurrent.dt():.0f} HR " + STR_END + ' \n')
+
+                file_out.write('READINP CUR '+str(factor['oceancurrent'])+'  \''+oceancurrent_path.split('/')[-1]+'\' 3 0 0 1 FREE \n')
+                file_out.write('$ \n')
+            else:
+                pass
+
+            if os.path.isfile(grid_path.split('/')[0]+'/'+HOTSTART_FILE) is True:
+                file_out.write('INITIAL HOTSTART \''+HOTSTART_FILE+'\''  '\n')
+
+
+            file_out.write('GEN3 WESTH cds2='+str(factor['wcap']) +' AGROW'+ '\n')
+            file_out.write('FRICTION JON 0.067 \n')
+            file_out.write('PROP BSBT \n')
+            file_out.write('NUM ACCUR NONST 1 \n')
+            file_out.write('$ \n')
+            file_out.write(
+                '$*******************************************************\n')
+
+            file_out.write('$ Generate block-output \n')
+            temp_list = forcing_path.split('/')
+            forcing_folder = '/'.join(temp_list[0:-1])
+            file_out.write('BLOCK \'COMPGRID\' HEAD \''+grid.name+'_'+STR_START.split('.')[0]+'.nc'
+                           + '\' & \n')
+            file_out.write(
+                'LAY 1 '+self.output_var+' OUTPUT ' + STR_START + ' 1 HR \n')
+            file_out.write('$ \n')
+            if spec_lon:
+                file_out.write('POINTS \'pkt\' &\n')
+                for slon, slat in zip(spec_lon, spec_lat):
+                    file_out.write(str(slon)+' '+str(slat)+ ' &\n')
+                file_out.write('SPECOUT \'pkt\' SPEC2D ABS \''+grid.name+'_'+STR_START.split('.')[0]+'_spec.nc'+ '\' & \n')
+                file_out.write('OUTPUT ' + STR_START + ' 1 HR \n')
+            else:
+                pass
+            file_out.write('COMPUTE '+STR_START+ ' %d MIN ' % self.swan_timestep + STR_END + '\n')
+            file_out.write('HOTFILE \'hotstart_'+grid.name+'_'+STR_END.replace('.','')[:-2]+'\'' +' FREE \n')
+            file_out.write('STOP \n')
 
         return filename
+
+# class SWANold(InputFileWriter):
+#     def __call__(
+#         self,
+#         model: ModelRun,
+#         file_object: FileNames,
+#         exported_files: dict[str, list[str]],
+#         calib_wind: float = 1.0,
+#         calib_wcap: float = 0.5000e-04,
+#         use_wind: bool = True,
+#         use_waterlevel: bool = True,
+#         **kwargs,
+#     ) -> str:
+#         forcing = model.wind()
+#         waterlevel = model.waterlevel()
+#         grid = model.grid()
+#         grid_path = exported_files["grid"][-1]
+#         forcing_path = exported_files["wind"][-1]
+#         boundary_path = exported_files["spectra"][-1]
+#         waterlevel_path = exported_files["waterlevel"][-1]
+
+#         filename = file_object.get_filepath()
+
+#         spec_lon, spec_lat = grid.output_points()
+#         spec_points = [(x, y) for x, y in zip(spec_lon, spec_lat)]
+
+#         if forcing is None and use_wind:
+#             msg.info(
+#                 "No wind object provided. Wind information will NOT be written to SWAN input file!"
+#             )
+#             use_wind = False
+
+#         if waterlevel is None and use_waterlevel:
+#             msg.info(
+#                 "No waterlevel object provided. Waterlevel information will NOT be written to SWAN input file!"
+#             )
+#             use_waterlevel = False
+
+#         # Define start and end times of model run
+#         DATE_START = model.time(crop_with="all")[0]
+#         DATE_END = model.time(crop_with="all")[-1]
+#         STR_START = DATE_START.strftime("%Y%m%d.%H%M%S")
+#         STR_END = DATE_END.strftime("%Y%m%d.%H%M%S")
+
+#         delta_X = np.round(np.abs(grid.lon()[-1] - grid.lon()[0]), 5)
+#         delta_Y = np.round(np.abs(grid.lat()[-1] - grid.lat()[0]), 5)
+
+#         delta_Xf = np.round(np.abs(forcing.lon()[-1] - forcing.lon()[0]), 5)
+#         delta_Yf = np.round(np.abs(forcing.lat()[-1] - forcing.lat()[0]), 5)
+
+#         factor_wind = calib_wind * 0.001
+
+#         delta_Xwl = np.round(np.abs(waterlevel.lon()[-1] - waterlevel.lon()[0]), 5)
+#         delta_Ywl = np.round(np.abs(waterlevel.lat()[-1] - waterlevel.lat()[0]), 5)
+
+#         with open(filename, "w") as file_out:
+#             file_out.write("$************************HEADING************************\n")
+#             file_out.write("$ \n")
+#             file_out.write(" PROJ '" + grid.name + "' 'T24' \n")
+#             file_out.write("$ \n")
+#             file_out.write("$*******************MODEL INPUT*************************\n")
+#             file_out.write("$ \n")
+#             file_out.write("SET NAUT \n")
+#             file_out.write("$ \n")
+#             file_out.write("MODE NONSTATIONARY TWOD \n")
+#             file_out.write("COORD SPHE CCM \n")
+#             file_out.write(
+#                 "CGRID "
+#                 + str(grid.lon()[0])
+#                 + " "
+#                 + str(grid.lat()[0])
+#                 + " 0. "
+#                 + str(delta_X)
+#                 + " "
+#                 + str(delta_Y)
+#                 + " "
+#                 + str(grid.nx() - 1)
+#                 + " "
+#                 + str(grid.ny() - 1)
+#                 + " CIRCLE 36 0.04 1.0 31 \n"
+#             )
+#             file_out.write("$ \n")
+
+#             file_out.write(
+#                 "INPGRID BOTTOM "
+#                 + str(grid.lon()[0])
+#                 + " "
+#                 + str(grid.lat()[0])
+#                 + " 0. "
+#                 + str(grid.nx() - 1)
+#                 + " "
+#                 + str(grid.ny() - 1)
+#                 + " "
+#                 + str((delta_X / (grid.nx() - 1)).round(6))
+#                 + " "
+#                 + str((delta_Y / (grid.ny() - 1)).round(6))
+#                 + "\n"
+#             )
+#             file_out.write(
+#                 "READINP BOTTOM 1 '" + grid_path.split("/")[-1] + "' 3 0 FREE \n"
+#             )
+#             file_out.write("$ \n")
+
+#             lons, lats = create_swan_segment_coords(
+#                 grid.boundary_mask(), grid.edges("lon"), grid.edges("lat")
+#             )
+#             bound_string = "BOUNDSPEC SEGMENT XY"
+#             for lon, lat in zip(lons, lats):
+#                 bound_string += f" {lon:.2f} {lat:.2f}"
+#             bound_string += " VARIABLE FILE 0 "
+#             bound_string += f"'{boundary_path.split('/')[-1]}'\n"
+#             file_out.write(bound_string)
+#             # file_out.write('BOU NEST \''+boundary_path.split('/')[-1]+'\' OPEN \n')
+#             file_out.write("$ \n")
+#             dt = forcing.time().to_series().diff().dt.total_seconds().values[-1] / 3600
+#             dt_wl = waterlevel.time().to_series().diff().dt.total_seconds().values[-1] / 3600
+#             if use_wind:
+#                 file_out.write(
+#                     "INPGRID WIND "
+#                     + str(forcing.lon()[0])
+#                     + " "
+#                     + str(forcing.lat()[0])
+#                     + " 0. "
+#                     + str(forcing.nx() - 1)
+#                     + " "
+#                     + str(forcing.ny() - 1)
+#                     + " "
+#                     + str((delta_Xf / (forcing.nx() - 1)).round(6))
+#                     + " "
+#                     + str((delta_Yf / (forcing.ny() - 1)).round(6))
+#                     + " NONSTATIONARY "
+#                     + STR_START
+#                     + f" {dt:.0f} HR "
+#                     + STR_END
+#                     + "\n"
+#                 )
+#                 file_out.write(
+#                     "READINP WIND "
+#                     + str(factor_wind)
+#                     + "  '"
+#                     + forcing_path.split("/")[-1]
+#                     + "' 3 0 0 1 FREE \n"
+#                 )
+#                 file_out.write("$ \n")
+#             else:
+#                 file_out.write("OFF QUAD \n")
+#             if use_waterlevel:
+#                 file_out.write(
+#                     "INPGRID WLEVEL "
+#                     + str(waterlevel.lon()[0])
+#                     + " "
+#                     + str(waterlevel.lat()[0])
+#                     + " 0. "
+#                     + str(waterlevel.nx() - 1)
+#                     + " "
+#                     + str(waterlevel.ny() - 1)
+#                     + " "
+#                     + str((delta_Xwl / (waterlevel.nx() - 1)).round(6))
+#                     + " "
+#                     + str((delta_Ywl / (waterlevel.ny() - 1)).round(6))
+#                     + " NONSTATIONARY "
+#                     + STR_START
+#                     + f" {dt_wl:.0f} HR "
+#                     + STR_END
+#                     + "\n"
+#                 )
+#                 file_out.write(
+#                     "READINP WLEVEL"
+#                     + "  '"
+#                     + waterlevel_path.split("/")[-1]
+#                     + "' 3 0 0 1 FREE \n"
+#                 )
+#                 file_out.write("$ \n")
+#             file_out.write("GEN3 WESTH cds2=" + str(calib_wcap) + "\n")
+#             file_out.write("FRICTION JON 0.067 \n")
+#             file_out.write("PROP BSBT \n")
+#             file_out.write("NUM ACCUR NONST 1 \n")
+#             file_out.write("$ \n")
+#             file_out.write("$*******************************************************\n")
+#             file_out.write("$ Generate block-output \n")
+#             temp_list = forcing_path.split("/")
+#             forcing_folder = "/".join(temp_list[0:-1])
+#             file_out.write(
+#                 "BLOCK 'COMPGRID' HEAD '"
+#                 + grid.name
+#                 + "_"
+#                 + STR_START.split(".")[0]
+#                 + ".nc"
+#                 + "' & \n"
+#             )
+#             file_out.write(
+#                 "LAY 1 HSIGN RTP TPS PDIR TM01 DIR DSPR WIND DEP OUTPUT "
+#                 + STR_START
+#                 + " 1 HR \n"
+#             )
+#             file_out.write("$ \n")
+#             if spec_points:
+#                 file_out.write("POINTS 'pkt' &\n")
+#                 for lon, lat in spec_points:
+#                     file_out.write(str(lon) + " " + str(lat) + " &\n")
+#                 file_out.write(
+#                     "SPECOUT 'pkt' SPEC2D ABS '"
+#                     + grid.name
+#                     + "_"
+#                     + STR_START.split(".")[0]
+#                     + "_spec.nc"
+#                     + "' & \n"
+#                 )
+#                 file_out.write("OUTPUT " + STR_START + " 1 HR \n")
+#             else:
+#                 pass
+#             file_out.write("COMPUTE " + STR_START + " 10 MIN " + STR_END + "\n")
+#             file_out.write("STOP \n")
+
+#         return filename
 
 
 class SWASH(InputFileWriter):
