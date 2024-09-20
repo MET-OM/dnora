@@ -98,7 +98,7 @@ class Oper(DataReader):
         # Define area to search in
         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
         lon, lat = utils.grid.expand_area(
-            grid.edges("lon"), grid.edges("lat"), expansion_factor
+            grid.edges("lon"), grid.edges("lat"), expansion_factor, dlon=0.25, dlat=0.25
         )
 
         ds_creator_function = partial(
