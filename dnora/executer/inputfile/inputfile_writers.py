@@ -116,7 +116,7 @@ class SWAN(InputFileWriter):
         #         STR_FORCING_END = pd.Timestamp(DATE_END).strftime('%Y%m%d') + '.230000'
 
         delta_X = np.round(np.diff(grid.edges('lon')), 5)[0]
-        delta_Y = np.round(np.diff(grid.edges('lon')), 5)[0]
+        delta_Y = np.round(np.diff(grid.edges('lat')), 5)[0]
 
         factor = {}
         for calib_type in ['wind', 'waterlevel', 'current']:
@@ -149,6 +149,7 @@ class SWAN(InputFileWriter):
                 lons, lats = create_swan_segment_coords(grid.boundary_mask(), grid.edges('lon'), grid.edges('lat'))
 
                 bound_string = "BOUNDSPEC SEGMENT XY"
+
                 for lon, lat in zip(lons, lats):
                     bound_string += f" {lon:.4f} {lat:.4f}"
                 bound_string += " VARIABLE FILE 0 "
