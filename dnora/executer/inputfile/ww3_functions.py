@@ -33,7 +33,7 @@ def ww3_grid(
         fout.write("&RUN_NML\n")
         fout.write("  RUN%FLCX       = T\n")
         fout.write("  RUN%FLCY       = T\n")
-        fout.write("  RUN%FLTH       = T\n")
+        fout.write("  RUN%FLCTH      = T\n")
         fout.write("  RUN%FLCK       = T\n")
         fout.write("  RUN%FLSOU      = T\n")
         fout.write("/\n\n")
