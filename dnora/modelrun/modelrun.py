@@ -824,3 +824,25 @@ class ModelRun:
         new_model._dry_run = self._dry_run
         new_model._global_dry_run = self._global_dry_run
         return new_model
+
+    def __repr__(self) -> str:
+        string = "\n" + "-" * 80
+        string += f'\n{self.name} ({type(self).__name__}): {self.start_time()} - {self.end_time()}'
+        string += f"\n{' Containing ':-^80}"
+        for obj_type in DnoraDataType:
+            obj = self.get(obj_type)
+            if obj is not None:
+                string += f"\n{obj_type.name} ({obj.name}):"
+                string += f"\n    lon={obj.edges('lon')}, lat={obj.edges('lat')}"
+                if obj.is_gridded():
+                    string += f' (ny = {obj.ny()}, nx = {obj.nx()})'
+                else:
+                    string += f' (#inds {len(obj.inds())})'
+                if 'time' in obj.core.coords():
+                    string += f"\n    {obj.time(datetime=False)[0]} - {obj.time(datetime=False)[-1]}"
+        string += f"\n{' Defaults ':-^80}"
+        for key, value in self._reader_dict.items():
+            string += f'\n{key.name}: {value.__repr__()}'
+        string += f'\nPointPicker: {self._point_picker.__repr__()}'
+        string += "\n" + "-" * 80
+        return string
