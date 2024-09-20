@@ -79,7 +79,7 @@ def ww3_grid(
         else:
             fout.write("  GRID%COORD            = 'SPHE'\n")
         fout.write("  GRID%CLOS             = 'NONE'\n")
-        fout.write("  GRID%DMIN             = '2.0'\n")
+        fout.write("  GRID%DMIN             = 2.0\n")
         fout.write("/\n\n")
 
     def write_rect():
