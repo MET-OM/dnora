@@ -57,7 +57,7 @@ class Spectra(PointSkeleton):
             new_inds = list(new_inds)
 
             if not new_inds:
-                self.ds_manager.set_new_ds(None)
+                self._ds_manager.set_new_ds(None)
                 msg.warning(
                     f"No boundary spectra left after processing. Removing all data."
                 )

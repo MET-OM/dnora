@@ -35,6 +35,10 @@ ALIAS_MAPPINGS = {
     "depth": gp.ocean.WaterDepth("depth"),
     "longitude": "lon",
     "latitudes": "lat",
+    "xwnd": gp.wind.XWind,
+    "ywnd": gp.wind.YWind,
+    "xcur": gp.ocean.XCurrent,
+    "ycur": gp.ocean.YCurrent,
 }
 
 
@@ -501,6 +505,7 @@ SWAN_SPEC_VARS = [
 SWAN_OTHER_VARS = [
     "longitude",
     "latitude",
+    "hs",
     "xwnd",
     "ywnd",
     "xcur",
@@ -619,6 +624,7 @@ class SWAN(SpectralDataReader):
         else:
             data_vars = SWAN_SPEC_VARS
             wanted_coords = ["time", "lon", "lat", "freq", "dirs"]
+
         ds_creator_function = partial(
             ds_swan_xarray_read, inds=inds, data_vars=data_vars
         )
@@ -648,7 +654,9 @@ class SWAN(SpectralDataReader):
         data_dict = create_data_dict(
             wanted_vars=data_vars, ds=bnd, alias_mapping=ALIAS_MAPPINGS
         )
-        if np.max(coord_dict['dirs']) < 10:
-            coord_dict['dirs'] = np.rad2deg(coord_dict['dirs'])
+        
+        if obj_type == DnoraDataType.SPECTRA:
+            if np.max(coord_dict['dirs']) < 10:
+                coord_dict['dirs'] = np.rad2deg(coord_dict['dirs'])
         meta_dict = bnd.attrs
         return coord_dict, data_dict, meta_dict
