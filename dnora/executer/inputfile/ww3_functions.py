@@ -116,7 +116,7 @@ def ww3_grid(
         )
         fout.write(f"  DEPTH%IDLA             =  1\n")
         fout.write(f"  DEPTH%IDFM             = 2\n")
-        fout.write(f"  DEPTH%FORMAT           = '(F15.6)\n")
+        fout.write(f"  DEPTH%FORMAT           = '(F15.6)'\n")
         fout.write("/\n\n")
 
     def write_mask():
@@ -126,7 +126,7 @@ def ww3_grid(
         )
         fout.write(f"  MASK%IDLA             =  1\n")
         fout.write(f"  MASK%IDFM             = 2\n")
-        fout.write(f"  MASK%FORMAT           = '(I3)\n")
+        fout.write(f"  MASK%FORMAT           = '(I3)'\n")
         fout.write("/\n\n")
 
     def write_unst():
