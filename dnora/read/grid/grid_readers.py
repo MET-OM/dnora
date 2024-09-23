@@ -23,6 +23,7 @@ import meshio
 
 from dnora.type_manager.dnora_types import DnoraDataType
 from .emodnet_functions import find_tile, get_covering_tiles, download_tile
+import dask.dataframe as dd
 
 
 class EMODNET(DataReader):
@@ -150,13 +151,14 @@ class KartverketNo50m(DataReader):
         folder = self._folder(folder)
 
         self.source = get_url(folder, f"{tile}_grid50_utm{zone_number}.xyz")
+        # grid.utm.set((zone_number, "W"))
         x, y = utils.grid.expand_area(
-            grid.edges("x"), grid.edges("y"), expansion_factor
+            grid.edges("x", utm=(zone_number, "W")),
+            grid.edges("y", utm=(zone_number, "W")),
+            expansion_factor=expansion_factor,
         )
 
         print(f"Expansion factor: {expansion_factor}")
-
-        import dask.dataframe as dd
 
         df = dd.read_csv(self.source, sep=" ", header=None)
 
