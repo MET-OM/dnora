@@ -94,6 +94,8 @@ def import_topo(
         topo_grid.set_spacing(nx=len(x or lon), ny=len(y or lat))
     else:
         topo_grid = PointTopo(lon=lon, lat=lat, x=x, y=y)
+    if zone_number is not None:
+        topo_grid.utm.set((zone_number, zone_letter))
 
     if (
         grid.edges("lon", native=True)[0] < topo_grid.edges(grid.core.x_str)[0]
@@ -110,9 +112,6 @@ def import_topo(
         msg.warning(
             f"The data gotten from the DataReader doesn't cover the grid in the {grid.core.y_str} direction. Grid: {grid.edges('lat', native=True)}, imported topo: {topo_grid.edges(grid.core.y_str)}"
         )
-
-    if zone_number is not None:
-        topo_grid.set_utm((zone_number, zone_letter))
 
     topo_grid.set_topo(topo)
     # topo_grid = set_metaparameters_in_object(topo_grid, metaparameter_dict, data_dict)
