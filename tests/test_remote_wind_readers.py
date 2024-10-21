@@ -6,7 +6,7 @@ from dnora.read.wind.metno import get_meps_urls, MEPS
 from dnora.type_manager.data_sources import DataSource
 
 
-def grid_is_covered(gird, skeleton):
+def grid_is_covered(grid, skeleton):
     assert skeleton.lon()[0] < grid.lon()[0]
     assert skeleton.lon()[-1] >= grid.lon()[-1]
     assert skeleton.lat()[0] < grid.lat()[0]

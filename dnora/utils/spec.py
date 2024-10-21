@@ -43,9 +43,10 @@ def flip_spec(spec, D):
 
     # Need to move indeces the other way if the vector is decreasing than if it is increasing
     direction = np.sign(np.median(np.diff(D)))
-    ind_flip = ((ind - 2 * steps * direction).astype(int) + len(D)) % len(D)
 
-    spec_flip = spec[..., list(ind_flip)]
+    ind_flip = (np.round((ind - 2 * steps * direction)) + len(D)) % len(D)
+
+    spec_flip = spec[..., list(ind_flip.astype(int))]
 
     if flipping_dir:
         spec_flip = spec_flip[0]
@@ -74,9 +75,9 @@ def shift_spec(spec, D, shift=0):
             f"Shift {shift} needs to be multiple of frequency resolution {dD}, but shift/dD={shift/dD}! Otherwise interpolation would be needed."
         )
 
-    ind_flip = ((ind + int(shift / dD)).astype(int) + len(D)) % len(D)
+    ind_flip = (np.round(ind + int(shift / dD)) + len(D)) % len(D)
 
-    spec_shift = spec[..., list(ind_flip)]
+    spec_shift = spec[..., list(ind_flip.astype(int))]
     if shifting_dir:
         spec_shift = spec_shift[0]
 
