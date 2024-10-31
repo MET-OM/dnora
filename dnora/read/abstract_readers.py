@@ -32,6 +32,11 @@ class DataReader(ABC):
         return FillNaNs(0)
 
     @staticmethod
+    def returning_ds() -> bool:
+        """Set this to true if you are returning a well defined xarray Dataset instead of a dict of numpy arrays"""
+        return False
+
+    @staticmethod
     def caching_strategy() -> CachingStrategy:
         """Defines what caching strategy to use"""
         return CachingStrategy.PatchInTime

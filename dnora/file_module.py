@@ -165,8 +165,8 @@ class FileNames:
             ),
         )
 
-    def create_folder(self, edge_object: str = None) -> None:
-        folder = Path(self.get_folder())
+    def create_folder(self, edge_object: str = None ,start_time: str = None, end_time: str = None,) -> None:
+        folder = Path(self.get_folder(start_time=start_time, end_time=end_time))
         if not folder.is_dir():
             msg.process(f"Creating folder {str(folder)}")
             folder.mkdir(parents=True)
@@ -266,6 +266,12 @@ def replace_times(
 
     return filename
 
+def fstring(val: float, fmt: str) -> str:
+    """Creates a string with equal number of padding zeros for negative and positive values"""
+    fstring = f"{abs(val):{fmt}}"
+    if val <0:
+        fstring = "-" + fstring 
+    return fstring
 
 def replace_lonlat(filename: str, lon: float, lat: float, fmt: str) -> str:
     """Substitutes the strings #Lon, #Lat in filename with values of lon and
@@ -273,24 +279,23 @@ def replace_lonlat(filename: str, lon: float, lat: float, fmt: str) -> str:
 
     e.g. #Lon_#Lat_file.txt, 8.0, 60.05 -> 08.0000000_60.05000000_file.txt
     """
-
     if isinstance(lon, tuple):
         if lon[0] is not None:
-            filename = re.sub("#LON0", f"{lon[0]:{fmt}}", filename)
+            filename = re.sub("#LON0", fstring(lon[0], fmt), filename)
         if lon[1] is not None:
-            filename = re.sub("#LAT1", f"{lon[1]:{fmt}}", filename)
+            filename = re.sub("#LAT1", fstring(lon[1], fmt), filename)
     else:
         if lon is not None:
-            filename = re.sub("#LON", f"{lon:{fmt}}", filename)
+            filename = re.sub("#LON", fstring(lon, fmt), filename)
 
     if isinstance(lat, tuple):
         if lat[0] is not None:
-            filename = re.sub("#LAT0", f"{lat[0]:{fmt}}", filename)
+            filename = re.sub("#LAT0",fstring(lat[0], fmt), filename)
         if lat[1] is not None:
-            filename = re.sub("#LAT1", f"{lat[1]:{fmt}}", filename)
+            filename = re.sub("#LAT1", fstring(lat[1], fmt), filename)
     else:
         if lat is not None:
-            filename = re.sub("#LAT", f"{lat:{fmt}}", filename)
+            filename = re.sub("#LAT", fstring(lat[0], fmt), filename)
 
     return filename
 
@@ -303,21 +308,21 @@ def replace_xy(filename: str, x: float, y: float, fmt: str) -> str:
     """
     if isinstance(x, tuple):
         if x[0] is not None:
-            filename = re.sub("#X0", f"{x[0]:{fmt}}", filename)
+            filename = re.sub("#X0", fstring(x[0], fmt), filename)
         if x[1] is not None:
-            filename = re.sub("#Y1", f"{x[1]:{fmt}}", filename)
+            filename = re.sub("#Y1",fstring(x[1], fmt), filename)
     else:
         if x is not None:
-            filename = re.sub("#X", f"{x:{fmt}}", filename)
+            filename = re.sub("#X", fstring(x, fmt), filename)
 
     if isinstance(y, tuple):
         if y[0] is not None:
-            filename = re.sub("#Y0", f"{y[0]:{fmt}}", filename)
+            filename = re.sub("#Y0",fstring(y[0], fmt), filename)
         if y[1] is not None:
-            filename = re.sub("#Y1", f"{y[1]:{fmt}}", filename)
+            filename = re.sub("#Y1", fstring(y[1], fmt), filename)
     else:
         if y is not None:
-            filename = re.sub("#Y", f"{y:{fmt}}", filename)
+            filename = re.sub("#Y",fstring(y, fmt), filename)
 
     return filename
 
@@ -380,7 +385,7 @@ def clean_filename(filename: str, list_of_placeholders: list[str] = None) -> str
 
     filename = re.sub("_{2,10}", "_", filename)
     filename = re.sub("_-_", "", filename)
-    filename = re.sub("_-", "_", filename)
+    #filename = re.sub("_-", "_", filename)
     if filename and filename[-1] == "_":
         filename = filename[:-1]
 

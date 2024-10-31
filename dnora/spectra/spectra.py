@@ -115,18 +115,19 @@ class Spectra(PointSkeleton):
         )
 
         if spectral_processor is None:
-            msg.info(
-                f"Convention ({self.convention()}) already equals wanted convention ({convention})."
-            )
+            # msg.info(
+            #     f"Convention ({self.convention()}) already equals wanted convention ({convention})."
+            # )
             return
 
         self.process(spectral_processor)
 
-    def _mark_convention(self, convention: SpectralConvention) -> None:
+    def _mark_convention(self, convention: SpectralConvention, silent: bool=False) -> None:
         """Marks new convention in metadata etc. but does nothing to the spectra"""
         self._convention = convention
         self.meta.append({"dnora_spectral_convention": self.convention().value})
-        msg.plain(f"Spectral convention is now: {self.convention()}")
+        if not silent:
+            msg.plain(f"Spectral convention is now: {self.convention()}")
 
     def convention(self) -> SpectralConvention | None:
         """Returns the convention (WW3/OCEAN/MET/MATH/MATHVEC) of the spectra"""

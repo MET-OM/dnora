@@ -103,6 +103,7 @@ def write_daily_nc_files(dnora_obj: DnoraDataType, file_object: FileNames) -> li
         outfile = file_module.clean_filename(outfile)
         if os.path.exists(outfile):
             os.remove(outfile)
+        file_object.create_folder(start_time=day)
         dnora_obj.ds().sel(time=slice(t0, t1)).to_netcdf(outfile)
 
         output_files.append(outfile)

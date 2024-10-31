@@ -22,6 +22,7 @@ def import_data(
     name,
     dry_run,
     reader,
+    expansion_factor: float, 
     source,
     folder: str,
     filename: str,
@@ -49,6 +50,7 @@ def import_data(
             reader,
             start_time,
             point_picker,
+            expansion_factor,
             point_mask,
             source,
             folder,
@@ -64,6 +66,7 @@ def import_data(
     obj = read_data_and_create_object(
         obj_type,
         reader,
+        expansion_factor,
         grid,
         start_time,
         end_time,
@@ -80,6 +83,7 @@ def import_data(
 def read_data_and_create_object(
     obj_type: DnoraDataType,
     reader: Union[DataReader, SpectralDataReader],
+    expansion_factor: float, 
     grid: Grid,
     start_time: str,
     end_time: str,
@@ -94,7 +98,8 @@ def read_data_and_create_object(
 
     obj_class = dnora_objects.get(obj_type)
     obj_data_vars = obj_class.core.non_coord_objects()
-    coord_dict, data_dict, meta_dict = reader(
+    if reader.returning_ds():
+        ds = reader(
         obj_type=obj_type,
         grid=grid,
         start_time=pd.to_datetime(start_time),
@@ -104,65 +109,66 @@ def read_data_and_create_object(
         filename=filename,
         inds=inds,
         obj_data_vars=obj_data_vars,
+        expansion_factor=expansion_factor,
         **kwargs,
     )
+    
+        obj = obj_class.from_ds(ds)
+    else:
 
-    obj = obj_class(name=name, **coord_dict)
-    existing_vars = obj.core.data_vars() + obj.core.magnitudes() + obj.core.directions()
-
-    for key, value in data_dict.items():
-        # Give (name[str], parmater[gp]) or (name[str], None) is values is a str
-        name, param = gp.decode(key)
-
-        # Only a string identifier was given, e.g. 'hs'
-        if param is None:
-            # Can we find it in the class? Otherwise add it
-            if name not in existing_vars:
-                obj.add_datavar(name)
-
-            if isinstance(value, tuple):
-                obj.set(name, value[0], coords=value[1])
-            else:
-                obj.set(name, value)
-            continue
-
-        # If the geo-parameter has been initialized with a name, use primarily that
-        if gp.is_gp_instance(param):
-            if param.name not in existing_vars:
-                obj.add_datavar(param)  # Getting metadata by adding a geo-parameter
-            if isinstance(value, tuple):
-                obj.set(name, value[0], coords=value[1])
-            else:
-                obj.set(name, value)
-            continue
-
-        # If parameter is not initiated, try to find it, and otherwise create a new one
-        names = obj.find_cf(param.standard_name()) + obj.find_cf(
-            param.standard_name(alias=True)
+        coord_dict, data_dict, meta_dict = reader(
+            obj_type=obj_type,
+            grid=grid,
+            start_time=pd.to_datetime(start_time),
+            end_time=pd.to_datetime(end_time),
+            source=source,
+            folder=folder,
+            filename=filename,
+            inds=inds,
+            obj_data_vars=obj_data_vars,
+            expansion_factor=expansion_factor,
+            **kwargs,
         )
-        names = list(set(names))  # Remove duplicates
 
-        if len(names) > 1:
-            raise KeyError(
-                f"The standard_name '{param.standard_name()} of class {param.__name__} matches several variables: {names}'. Try specifying with e.g. {param.__name__}('{names[0]}') "
-            )
-        elif len(names) == 0:
-            # The parameter doesn't exist, so lets create it dynamically
-            obj.add_datavar(param)
-            names = [param.name]
 
-        if isinstance(value, tuple):
-            obj.set(names[0], value[0], coords=value[1])
-        else:
-            obj.set(names[0], value)
-        continue
+        
+        
+        obj = obj_class(name=name, **coord_dict)
+        existing_vars = obj.core.non_coord_objects()
 
-    obj.meta.set(meta_dict)
-    if (
-        meta_dict.get("zone_number") is not None
-        and meta_dict.get("zone_letter") is not None
-    ):
-        obj.utm.set((meta_dict.get("zone_number"), meta_dict.get("zone_letter")))
+        for key, value in data_dict.items():
+            # Give (name[str], parmater[gp]) or (name[str], None) is values is a str
+            name, param = gp.decode(key)
+
+            # Only a string identifier was given, e.g. 'hs'
+            if name not in existing_vars and param is not None:
+                names = obj.core.find_cf(param.standard_name()) + obj.core.find_cf(
+                    param.standard_name(alias=True)
+                )
+                names = list(set(names))  # Remove duplicates
+
+                if len(names) > 1:
+                    raise KeyError(
+                        f"The standard_name '{param.standard_name()} of class {param.__name__} matches several variables: {names}'. Try specifying with e.g. {param.__name__}('{names[0]}') "
+                    )
+                elif len(names) < 1:
+                    name = 0
+                else:
+                    name = names[0]
+
+
+            if name in existing_vars:
+                if isinstance(value, tuple):
+                    obj.set(name, value[0], coords=value[1])
+                else:
+                    obj.set(name, value)
+
+        obj.meta.set(meta_dict)
+        if (
+            meta_dict.get("zone_number") is not None
+            and meta_dict.get("zone_letter") is not None
+        ):
+            obj.utm.set((meta_dict.get("zone_number"), meta_dict.get("zone_letter")))
 
     try:
         obj._mark_convention(reader.convention())
@@ -177,6 +183,7 @@ def pick_points(
     reader: ReaderFunction,
     start_time: str,
     point_picker: PointPicker,
+    expansion_factor: float, 
     point_mask: np.ndarray[bool],
     source: str,
     folder: str,

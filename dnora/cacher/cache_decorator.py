@@ -78,13 +78,15 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
 
             # Covering tiles are daily 5degx5deg tiles
             # Covers the (possibly expanded) area we want to read
+
             tiles = TileObject(file_object)
             tiles.create_covering_files(
                 mrun.grid(),
                 mrun.start_time(),
                 mrun.end_time(),
-                kwargs.get("expansion_factor", 1.0),
+                kwargs["expansion_factor"],
             )
+
             ### -------------------------------------------------------------
 
             ### Determine new kwargs to be given to caching function calls
@@ -131,8 +133,9 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
                 mrun_cacher = read_data_from_cache(
                     mrun_cacher, tiles, cache_reader, kwargs_cache
                 )
+
                 # Patch from original source
-                if tiles.additional_files():
+                if tiles.additional_files() and not kwargs.get('dont_patch'):
                     msg.blank()
                     msg.process(
                         f"Applying {strategy.name} caching strategy in patching."
@@ -141,35 +144,34 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
                         mrun_cacher, tiles, kwargs_cache, strategy
                     )
                 mrun_cacher[obj_type].name = name
-
+            
             ## Crop final object to the desired area since it might have been exanded to tiles
-
             final_object = mrun_cacher[obj_type]
 
-            # if final_object.is_gridded():
-            #     lon, lat = utils.grid.expand_area(
-            #         mrun.grid().edges("lon", native=True),
-            #         mrun.grid().edges("lat", native=True),
-            #         expansion_factor=kwargs.get("expansion_factor", 1.0),
-            #     )
-            #     slice_dict = {
-            #         grid.core.x_str: slice(*lon),
-            #         grid.core.y_str: slice(*lat),
-            #     }
 
-            # else:
-            #     # Get the wanted points from the exanded area using the original PointPicker
-            #     inds = given_point_picker(
-            #         grid=mrun.grid(),
-            #         all_points=PointSkeleton.from_skeleton(mrun_cacher[obj_type]),
-            #         selected_points=PointSkeleton.from_skeleton(
-            #             mrun.grid(), mask=mrun.grid().sea_mask()
-            #         ),
-            #         expansion_factor=kwargs.get("expansion_factor", 1.0),
-            #     )
-            #     slice_dict = {"inds": inds}
+            if final_object.is_gridded():
+                lon, lat = utils.grid.expand_area(
+                    mrun.grid().edges("lon", native=True),
+                    mrun.grid().edges("lat", native=True),
+                    expansion_factor=kwargs["expansion_factor"],
+                )
+                slice_dict = {
+                    grid.core.x_str: slice(*lon),
+                    grid.core.y_str: slice(*lat),
+                }
+            else:
+                # Get the wanted points from the exanded area using the original PointPicker
+                inds = given_point_picker(
+                    grid=mrun.grid(),
+                    all_points=PointSkeleton.from_skeleton(mrun_cacher[obj_type]),
+                    selected_points=PointSkeleton.from_skeleton(
+                        mrun.grid(), mask=mrun.grid().sea_mask()
+                    ),
+                    expansion_factor=kwargs["expansion_factor"],
+                )
+                slice_dict = {"inds": inds}
 
-            slice_dict = {"time": slice(mrun.start_time(), mrun.end_time())}
+            slice_dict['time'] = slice(mrun.start_time(), mrun.end_time())
             if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
                 convention = final_object.convention()
                 final_object = final_object.sel(**slice_dict)
@@ -177,6 +179,7 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
             else:
                 final_object = final_object.sel(**slice_dict)
             final_object.name = name
+
 
             mrun[obj_type] = final_object
 

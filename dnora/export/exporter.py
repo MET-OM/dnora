@@ -41,9 +41,9 @@ class DataExporter:
     def _get_writer(self, obj_type: DnoraDataType | DnoraFileType) -> WriterFunction:
         return self._writer_dict.get(obj_type, self._get_default_writer())
 
-    def _get_spectral_convention(self) -> SpectralConvention:
-        """Used only if method is not defined, such as for GeneralWritingFunctions that just dump everything to montly netcdf-files."""
-        return SpectralConvention.OCEAN
+    # def _get_spectral_convention(self) -> SpectralConvention:
+    #     """Used only if method is not defined, such as for GeneralWritingFunctions that just dump everything to montly netcdf-files."""
+    #     return SpectralConvention.OCEAN
 
     def __init__(self, model):
         self.model = model
@@ -66,19 +66,21 @@ class DataExporter:
             if self.model.get(obj_type) is None:
                 msg.info(f"No {obj_type.name} data exists. Won't export anything.")
                 return
-
             if not self._silent:
                 msg.header(
                     writer_function,
                     f"Writing {obj_type.name} data from {self.model[obj_type].name}",
                 )
+                
 
             try:  # GeneralWritingFunction might not have this method defined
                 wanted_convention = writer_function.convention()
             except AttributeError:
-                wanted_convention = self._get_spectral_convention()
-            if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
+                wanted_convention = None
+            if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D] and wanted_convention is not None:
                 self.model[obj_type].set_convention(wanted_convention)
+                if not self._silent:
+                    msg.plain(f"Writing data in convention: {wanted_convention}")
         else:
             if not self._silent:
                 if self.model.get(obj_type) is None:
