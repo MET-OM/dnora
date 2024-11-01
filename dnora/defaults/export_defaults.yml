@@ -63,7 +63,7 @@ MODELRUN:
     dateformat: '%Y%m%dT%H%M'  
   input_file:
     folder: 'output'
-    filename: 'inputfile_#GRID_#WIND_#BOUNDARY_#SPECTRA_#T0_#T1_#LON_#LAT'
+    filename: 'inputfile_#GRID_#WIND_#SPECTRA_#CURRENT_#T0_#T1_#LON_#LAT'
     dateformat: '%Y%m%dT%H%M'
     extension: 'txt'
 
@@ -77,13 +77,13 @@ SWAN:
   wind:
     filename: 'wind#WIND#GRID#T0_#T1'
   spectra:
-    filename: 'spec#SPECTRA#GRID#T0#T1'
+    filename: 'spec#SPECTRA#GRID#T0_#T1'
   ice:
-    filename: 'ice#WIND#GRID#T0_#T1'
+    filename: 'ice#ICE#GRID#T0_#T1'
   waterlevel:
-    filename: 'wlvl#SPECTRA#GRID#T0#T1'
+    filename: 'wlvl#WATERLEVEL#GRID#T0_#T1'
   current:
-    filename: 'cur#SPECTRA#GRID#T0#T1'
+    filename: 'cur#CURRENT#GRID#T0_#T1'
   input_file:
     filename: 'input_#T0_#GRID'
     folder: '#GRID_SWAN'
