@@ -274,56 +274,49 @@ def fstring(val: float, fmt: str) -> str:
     return fstring
 
 def replace_lonlat(filename: str, lon: float, lat: float, fmt: str) -> str:
-    """Substitutes the strings #Lon, #Lat in filename with values of lon and
+    """Substitutes the strings #LON0, #LON1, #LAT0, #LAT1 in filename with values of lon and
     lat.
 
-    e.g. #Lon_#Lat_file.txt, 8.0, 60.05 -> 08.0000000_60.05000000_file.txt
+    e.g. #LON0_#LAT0_file.txt, 8.0, 60.05 -> 08.0000000_60.05000000_file.txt
     """
-    if isinstance(lon, tuple):
-        if lon[0] is not None:
-            filename = re.sub("#LON0", fstring(lon[0], fmt), filename)
-        if lon[1] is not None:
-            filename = re.sub("#LAT1", fstring(lon[1], fmt), filename)
-    else:
-        if lon is not None:
-            filename = re.sub("#LON", fstring(lon, fmt), filename)
+    if not isinstance(lon, tuple):
+        lon = (lon, lon)
+    if lon[0] is not None:
+        filename = re.sub("#LON0", fstring(lon[0], fmt), filename)
+    if lon[1] is not None:
+        filename = re.sub("#LAT1", fstring(lon[1], fmt), filename)
 
-    if isinstance(lat, tuple):
-        if lat[0] is not None:
-            filename = re.sub("#LAT0",fstring(lat[0], fmt), filename)
-        if lat[1] is not None:
-            filename = re.sub("#LAT1", fstring(lat[1], fmt), filename)
-    else:
-        if lat is not None:
-            filename = re.sub("#LAT", fstring(lat[0], fmt), filename)
+    if not isinstance(lat, tuple):
+        lat = (lat, lat)
+    if lat[0] is not None:
+        filename = re.sub("#LAT0",fstring(lat[0], fmt), filename)
+    if lat[1] is not None:
+        filename = re.sub("#LAT1", fstring(lat[1], fmt), filename)
 
     return filename
 
 
 def replace_xy(filename: str, x: float, y: float, fmt: str) -> str:
-    """Substitutes the strings #X, #Y in filename with values of lon and
+    """Substitutes the strings #X0, #X1, #Y0, #Y1 in filename with values of lon and
     lat.
 
-    e.g. #Lon_#Lat_file.txt, 8.0, 60.05 -> 08.0000000_60.05000000_file.txt
+    e.g. #X0_#Y0_file.txt, 10.0, 20.10 -> 10.0000000_20.10000000_file.txt
     """
-    if isinstance(x, tuple):
-        if x[0] is not None:
-            filename = re.sub("#X0", fstring(x[0], fmt), filename)
-        if x[1] is not None:
-            filename = re.sub("#Y1",fstring(x[1], fmt), filename)
-    else:
-        if x is not None:
-            filename = re.sub("#X", fstring(x, fmt), filename)
+    if not isinstance(x, tuple):
+        x = (x,x)
+    if x[0] is not None:
+        filename = re.sub("#X0", fstring(x[0], fmt), filename)
+    if x[1] is not None:
+        filename = re.sub("#Y1",fstring(x[1], fmt), filename)
 
-    if isinstance(y, tuple):
-        if y[0] is not None:
-            filename = re.sub("#Y0",fstring(y[0], fmt), filename)
-        if y[1] is not None:
-            filename = re.sub("#Y1", fstring(y[1], fmt), filename)
-    else:
-        if y is not None:
-            filename = re.sub("#Y",fstring(y, fmt), filename)
 
+    if not isinstance(y, tuple):
+        y = (y,y)
+    if y[0] is not None:
+        filename = re.sub("#Y0",fstring(y[0], fmt), filename)
+    if y[1] is not None:
+        filename = re.sub("#Y1", fstring(y[1], fmt), filename)
+    
     return filename
 
 
@@ -368,26 +361,14 @@ def clean_filename(filename: str, list_of_placeholders: list[str] = None) -> str
 
     Also removes multiple underscores '___' etc.
     """
-
-    if list_of_placeholders is None:
-        list_of_placeholders = read_defaults("export_defaults.yml", from_module=True)[
-            "list_of_placeholders"
-        ]
-
-    list_of_placeholders = list_of_placeholders + [
-        f"#{obj.name}" for obj in DnoraDataType
-    ]
-
-    for s in list_of_placeholders:
-        filename = re.sub(s, "", filename)
+    
+    filename = '_'.join([p for p in filename.split('_') if '#' not in p])
 
     filename = re.sub("LonelySkeleton", "", filename)
 
     filename = re.sub("_{2,10}", "_", filename)
     filename = re.sub("_-_", "", filename)
-    #filename = re.sub("_-", "_", filename)
-    if filename and filename[-1] == "_":
-        filename = filename[:-1]
+    filename = re.sub("_$", "", filename)
 
     return filename
 
