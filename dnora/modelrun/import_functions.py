@@ -233,6 +233,7 @@ def pick_points(
     inds = point_picker(
         grid=grid,
         all_points=all_points.sel(inds=search_inds),
+        expansion_factor=expansion_factor,
         selected_points=interest_points,
         fast=True,
         **kwargs,

@@ -405,7 +405,6 @@ class ModelRun:
         filename: str | None = None,
         **kwargs,
     ) -> None:
-
         self._import_data(
             DnoraDataType.SPECTRA,
             name,

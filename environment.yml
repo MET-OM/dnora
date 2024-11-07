@@ -1,4 +1,4 @@
-name: dnora2_new_gp
+name: dnora2_dev
 channels:
   - conda-forge
 dependencies:
@@ -9,10 +9,11 @@ dependencies:
   - pandas
   - xarray=>0.20.1
   - meshio
+  - scipy
+  - geo-skeletons==0.20.1
   - pip
   - pip:
     - dnplot==0.3.1
-    - geo-parameters==0.9.3
   - pytest
   - pytest-cov
   - cdsapi>=0.7.0

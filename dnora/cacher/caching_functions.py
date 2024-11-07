@@ -114,6 +114,8 @@ def write_data_to_cache(mrun_cacher, tiles, obj_type):
                 cropped_obj = cropped_obj.isel(lon=ind_lon, lat=ind_lat)
             else:
                 sel_inds = np.array(list(set(ind_lon) & set(ind_lat)))
+                if len(sel_inds) == 0:
+                    continue
                 cropped_obj = cropped_obj.isel(inds=sel_inds)
 
             if hasattr(mrun_cacher[obj_type], "convention"):

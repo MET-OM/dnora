@@ -346,13 +346,12 @@ def ds_ww3_xarray_read(
     end_time: pd.Timestamp,
     url: str,
     inds: np.ndarray,
-    data_vars: list[str],
 ):
     with xr.open_dataset(url) as f:
         ds = f.sel(
             time=slice(start_time, end_time),
             station=inds + 1,
-        )[data_vars]
+        )
     return ds
 
 
@@ -450,9 +449,7 @@ class WW3(SpectralDataReader):
         else:
             data_vars = WW3_SPEC_VARS
             wanted_coords = ["time", "lon", "lat", "freq", "dirs"]
-        ds_creator_function = partial(
-            ds_ww3_xarray_read, inds=inds, data_vars=data_vars
-        )
+        ds_creator_function = partial(ds_ww3_xarray_read, inds=inds)
         bnd_list = read_ds_list(
             start_times,
             end_times,
@@ -464,7 +461,7 @@ class WW3(SpectralDataReader):
 
         msg.info("Merging dataset together (this might take a while)...")
         bnd = xr.concat(bnd_list, dim="time")
-
+        breakpoint()
         if "time" in list(bnd.longitude.coords):
             bnd["longitude"] = bnd.longitude[0, :]
             bnd["latitude"] = bnd.latitude[0, :]
@@ -641,8 +638,8 @@ class SWAN(SpectralDataReader):
         bnd = xr.concat(bnd_list, dim="time")
 
         if "time" in list(bnd.longitude.coords):
-            bnd["longitude"] = bnd.longitude[0,:]
-            bnd["latitude"] = bnd.latitude[0,:]
+            bnd["longitude"] = bnd.longitude[0, :]
+            bnd["latitude"] = bnd.latitude[0, :]
 
         coord_dict, ds_coord_strings = create_coord_dict(
             wanted_coords=wanted_coords,
@@ -654,9 +651,9 @@ class SWAN(SpectralDataReader):
         data_dict = create_data_dict(
             wanted_vars=data_vars, ds=bnd, alias_mapping=ALIAS_MAPPINGS
         )
-        
+
         if obj_type == DnoraDataType.SPECTRA:
-            if np.max(coord_dict['dirs']) < 10:
-                coord_dict['dirs'] = np.rad2deg(coord_dict['dirs'])
+            if np.max(coord_dict["dirs"]) < 10:
+                coord_dict["dirs"] = np.rad2deg(coord_dict["dirs"])
         meta_dict = bnd.attrs
         return coord_dict, data_dict, meta_dict
