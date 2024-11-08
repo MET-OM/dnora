@@ -3,7 +3,7 @@ from dnora.read.abstract_readers import PointDataReader, DataReader, SpectralDat
 import geo_parameters as gp
 import pandas as pd
 import numpy as np
-import re
+import re, os
 import xarray as xr
 from dnora import utils
 from pathlib import Path
@@ -42,13 +42,14 @@ def read_cached_filelist(folder, filename, silent: bool = False):
     ds_list = []
     points_in_previous_tiles = 0
     for day in days:
-        files_in_day = [fn for fn in filepath if day in fn]
+        files_in_day = [fn for fn in filepath if day in fn and os.path.getsize(fn) > 0]
 
         for file in files_in_day:
             one_ds = xr.open_dataset(file, chunks="auto")
-            one_ds["inds"] = one_ds["inds"] + points_in_previous_tiles
-            points_in_previous_tiles += len(one_ds.inds)
-            ds_list.append(one_ds)
+            if len(one_ds.data_vars) > 2:  # Otherwise we have empty lon/lat file
+                one_ds["inds"] = one_ds["inds"] + points_in_previous_tiles
+                points_in_previous_tiles += len(one_ds.inds)
+                ds_list.append(one_ds)
 
     ds = xr.concat(ds_list, dim="inds")
     return ds
@@ -99,20 +100,21 @@ class PointNetcdf(SpectralDataReader):
 
         filename = filename or self.files
         if isinstance(filename, list):
-            ds = read_cached_filelist(folder, filename)
+            ds = read_cached_filelist(folder, filename).sel(inds=inds)
         else:
             filepath = get_url(folder, filename)
-            ds = xr.open_dataset(filepath)
+            ds = xr.open_dataset(filepath).sel(inds=inds)
             msg.from_file(filepath)
 
         cls = dnora_objects.get(obj_type)
         # This geo-skeleton method does all the heavy lifting with decoding the Dataset to match the class data variables etc.
         data = cls.from_ds(ds)
         # Set reader convention. This is used by the import method to set correct convention to the instance
-        self.set_convention(data.meta.get().get('dnora_spectral_convention'))
+        self.set_convention(data.meta.get().get("dnora_spectral_convention"))
 
         return data.ds()
-        
+
+
 class Netcdf(DataReader):
     @staticmethod
     def default_data_source() -> DataSource:
@@ -147,7 +149,16 @@ class Netcdf(DataReader):
         if filename is None:
             raise ValueError("Provide at least one filename!")
         filepath = get_url(folder, filename, get_list=True)
-        ds = xr.open_mfdataset(filepath)
+        filepath = [file for file in filepath if os.path.getsize(file) > 0]
+
+        msg.process(f"Using expansion_factor = {expansion_factor:.2f}")
+        lon, lat = utils.grid.expand_area(
+            grid.edges("lon"), grid.edges("lat"), expansion_factor
+        )
+
+        ds = xr.open_mfdataset(filepath).sel(
+            lon=slice(*lon), lat=slice(*lat), time=slice(start_time, end_time)
+        )
 
         msg.from_multifile(filepath)
 
@@ -156,6 +167,7 @@ class Netcdf(DataReader):
         data = cls.from_ds(ds)
 
         return data.ds()
+
 
 # class Netcdf(DataReader):
 #     def default_data_source(self) -> DataSource:

@@ -85,7 +85,7 @@ class Area(PointPicker):
         **kwargs,
     ) -> np.ndarray:
 
-        msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
+        msg.process(f"Using expansion_factor = {expansion_factor:.2f}")
 
         # Define area to search in
         if grid.core.is_cartesian():

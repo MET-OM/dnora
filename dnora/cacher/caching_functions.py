@@ -7,6 +7,8 @@ from .caching_strategies import caching_strategies, CachingStrategy
 from dnora import msg
 import pandas as pd
 from dnora.type_manager.spectral_conventions import SpectralConvention
+from dnora.type_manager.dnora_types import DnoraDataType
+
 
 def dont_proceed_with_caching(read_cache, write_cache, strategy, kwargs):
     """Checks if there is any reason not to proceed with the cahcing process"""
@@ -72,8 +74,11 @@ def patch_cached_data(mrun_cacher, tiles, kwargs_cache, strategy: CachingStrateg
         mrun_patch._import_data(**kwargs_cache)
 
         ## Merge patch together with what was found in the cached
-        if patch_dimension == 'time':
-                times_to_keep = np.logical_and(mrun_cacher[obj_type].time()<patch_date[0],mrun_cacher[obj_type].time()>patch_date[-1])
+        if patch_dimension == "time":
+            times_to_keep = np.logical_and(
+                mrun_cacher[obj_type].time() < patch_date[0],
+                mrun_cacher[obj_type].time() > patch_date[-1],
+            )
         if mrun_cacher.get(obj_type) is None or not np.any(times_to_keep):
             mrun_cacher[obj_type] = mrun_patch[obj_type]
         else:
@@ -115,11 +120,20 @@ def write_data_to_cache(mrun_cacher, tiles, obj_type):
             else:
                 sel_inds = np.array(list(set(ind_lon) & set(ind_lat)))
                 if len(sel_inds) == 0:
-                    continue
-                cropped_obj = cropped_obj.isel(inds=sel_inds)
+                    coord_dict = cropped_obj.coord_dict()
+                    coord_dict[cropped_obj.core.x_str] = lon_tuple
+                    coord_dict[cropped_obj.core.y_str] = lat_tuple
+
+                    cropped_obj = cropped_obj.__class__(**coord_dict)
+
+                else:
+
+                    cropped_obj = cropped_obj.isel(inds=sel_inds)
 
             if hasattr(mrun_cacher[obj_type], "convention"):
-                cropped_obj._mark_convention(mrun_cacher[obj_type].convention(), silent=True)
+                cropped_obj._mark_convention(
+                    mrun_cacher[obj_type].convention(), silent=True
+                )
                 cropped_obj.set_convention(SpectralConvention.OCEAN)
                 if first_round:
                     msg.plain(f"Writing data in convention: {cropped_obj.convention()}")
@@ -128,14 +142,15 @@ def write_data_to_cache(mrun_cacher, tiles, obj_type):
 
             mrun_write_tile[obj_type] = cropped_obj
             exporter = Cacher(mrun_write_tile)  # Writes daily files
-            exporter.export(obj_type)
+            exporter.export(obj_type, edge_object=DnoraDataType.GRID)
+
 
 # def write_data_to_cache(mrun_cacher, tiles, obj_type):
 #     # Write spatial tile for spatial tile
 #     lons, lats = tiles.lonlat(tiles.covering_files())
 #     years, months, days = tiles.times(tiles.covering_files())
 #     for lon_tuple, lat_tuple, year, month, day in zip(lons, lats, years, months, days):
-        
+
 #         mrun_write_tile = mrun_cacher.empty_copy(
 #             grid=Grid(lon=lon_tuple, lat=lat_tuple),
 #             start_time=mrun_cacher.start_time(),

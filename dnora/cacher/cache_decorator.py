@@ -100,6 +100,7 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
             if write_cache:
                 kwargs_cache["point_picker"] = Area()
                 kwargs_cache["expansion_factor"] = 1.0
+                msg.info("Expanding area to 5 degree daily tiles...")
                 (
                     grid,
                     start_time,
@@ -135,7 +136,7 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
                 )
 
                 # Patch from original source
-                if tiles.additional_files() and not kwargs.get('dont_patch'):
+                if tiles.additional_files() and not kwargs.get("dont_patch"):
                     msg.blank()
                     msg.process(
                         f"Applying {strategy.name} caching strategy in patching."
@@ -144,23 +145,39 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
                         mrun_cacher, tiles, kwargs_cache, strategy
                     )
                 mrun_cacher[obj_type].name = name
-            
+
             ## Crop final object to the desired area since it might have been exanded to tiles
             final_object = mrun_cacher[obj_type]
+            lon, lat = utils.grid.expand_area(
+                mrun.grid().edges("lon", native=True),
+                mrun.grid().edges("lat", native=True),
+                expansion_factor=kwargs["expansion_factor"],
+            )
+            slice_dict = {"time": slice(mrun.start_time(), mrun.end_time())}
 
+            msg.plain("")
+            msg.print_line()
+            msg.plain("CUTTING CACHED DATA")
+            msg.print_line()
+            orig_lon = mrun.grid().edges("lon", native=True)
+            orig_lat = mrun.grid().edges("lat", native=True)
+            msg.plain(
+                f"Area: lon: ({orig_lon[0]:.2f}, {orig_lon[1]:.2f}), ({orig_lat[0]:.2f}, {orig_lat[1]:.2f})"
+            )
+            msg.process(f"Using expansion_factor = {kwargs['expansion_factor']:.2f}")
+            msg.plain(
+                f"Area: lon: ({lon[0]:.2f}, {lon[1]:.2f}), ({lat[0]:.2f}, {lat[1]:.2f})"
+            )
+            msg.plain(f"{mrun.start_time()} - {mrun.end_time()}")
 
             if final_object.is_gridded():
-                lon, lat = utils.grid.expand_area(
-                    mrun.grid().edges("lon", native=True),
-                    mrun.grid().edges("lat", native=True),
-                    expansion_factor=kwargs["expansion_factor"],
-                )
-                slice_dict = {
-                    grid.core.x_str: slice(*lon),
-                    grid.core.y_str: slice(*lat),
-                }
+
+                slice_dict[grid.core.x_str] = slice(*lon)
+                slice_dict[grid.core.y_str] = (slice(*lat),)
+
             else:
                 # Get the wanted points from the exanded area using the original PointPicker
+                msg.header(given_point_picker, "Choosing points to import...")
                 inds = given_point_picker(
                     grid=mrun.grid(),
                     all_points=PointSkeleton.from_skeleton(mrun_cacher[obj_type]),
@@ -169,17 +186,16 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
                     ),
                     expansion_factor=kwargs["expansion_factor"],
                 )
-                slice_dict = {"inds": inds}
+                slice_dict["inds"] = inds
 
-            slice_dict['time'] = slice(mrun.start_time(), mrun.end_time())
             if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
                 convention = final_object.convention()
                 final_object = final_object.sel(**slice_dict)
                 final_object._mark_convention(convention)
             else:
+
                 final_object = final_object.sel(**slice_dict)
             final_object.name = name
-
 
             mrun[obj_type] = final_object
 

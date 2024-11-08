@@ -92,7 +92,9 @@ def write_monthly_nc_files(
 
 
 def write_daily_nc_files(dnora_obj: DnoraDataType, file_object: FileNames) -> list[str]:
-    "Writes the data of a DNORA object into daily netcdf-files wh the ames specified by the FileNames instance."
+    """Writes the data of a DNORA object into daily netcdf-files wh the ames specified by the FileNames instance.
+    if the dnora_object has no xr.Dataset, then empty files will be created (needed in caching)
+    """
     output_files = []
     for day in dnora_obj.days():
         t0 = f"{day.strftime('%Y-%m-%d 00:00')}"
@@ -104,6 +106,11 @@ def write_daily_nc_files(dnora_obj: DnoraDataType, file_object: FileNames) -> li
         if os.path.exists(outfile):
             os.remove(outfile)
         file_object.create_folder(start_time=day)
+        # if dnora_obj.meta.get().get("dummy") == "True":
+        #     with open(outfile, "w") as __:
+        #         pass
+        # else:
+
         dnora_obj.ds().sel(time=slice(t0, t1)).to_netcdf(outfile)
 
         output_files.append(outfile)

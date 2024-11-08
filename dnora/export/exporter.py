@@ -71,13 +71,15 @@ class DataExporter:
                     writer_function,
                     f"Writing {obj_type.name} data from {self.model[obj_type].name}",
                 )
-                
 
             try:  # GeneralWritingFunction might not have this method defined
                 wanted_convention = writer_function.convention()
             except AttributeError:
                 wanted_convention = None
-            if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D] and wanted_convention is not None:
+            if (
+                obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]
+                and wanted_convention is not None
+            ):
                 self.model[obj_type].set_convention(wanted_convention)
                 if not self._silent:
                     msg.plain(f"Writing data in convention: {wanted_convention}")
@@ -125,6 +127,7 @@ class DataExporter:
     ) -> list[str]:
         # Controls generation of file names using the proper defaults etc.
         format = format or self._get_default_format()
+        edge_object = kwargs.get("edge_object")
         file_object = FileNames(
             format=format,
             obj_type=obj_type,
@@ -132,6 +135,7 @@ class DataExporter:
             filename=filename,
             folder=folder,
             dateformat=dateformat,
+            edge_object=edge_object,
         )
         if self.dry_run():
             if not self._silent:

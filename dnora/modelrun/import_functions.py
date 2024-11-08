@@ -22,7 +22,7 @@ def import_data(
     name,
     dry_run,
     reader,
-    expansion_factor: float, 
+    expansion_factor: float,
     source,
     folder: str,
     filename: str,
@@ -31,7 +31,10 @@ def import_data(
     **kwargs,
 ) -> DnoraObject:
     """Imports data using DataReader and creates and returns a DNORA object"""
-
+    msg.plain("")
+    msg.print_line()
+    msg.plain("Starting import of data")
+    msg.print_line()
     msg.plain(
         f"Area: {grid.core.x_str}: {grid.edges('lon',native=True)}, {grid.core.y_str}: {grid.edges('lat',native=True)}"
     )
@@ -83,7 +86,7 @@ def import_data(
 def read_data_and_create_object(
     obj_type: DnoraDataType,
     reader: Union[DataReader, SpectralDataReader],
-    expansion_factor: float, 
+    expansion_factor: float,
     grid: Grid,
     start_time: str,
     end_time: str,
@@ -100,19 +103,19 @@ def read_data_and_create_object(
     obj_data_vars = obj_class.core.non_coord_objects()
     if reader.returning_ds():
         ds = reader(
-        obj_type=obj_type,
-        grid=grid,
-        start_time=pd.to_datetime(start_time),
-        end_time=pd.to_datetime(end_time),
-        source=source,
-        folder=folder,
-        filename=filename,
-        inds=inds,
-        obj_data_vars=obj_data_vars,
-        expansion_factor=expansion_factor,
-        **kwargs,
-    )
-    
+            obj_type=obj_type,
+            grid=grid,
+            start_time=pd.to_datetime(start_time),
+            end_time=pd.to_datetime(end_time),
+            source=source,
+            folder=folder,
+            filename=filename,
+            inds=inds,
+            obj_data_vars=obj_data_vars,
+            expansion_factor=expansion_factor,
+            **kwargs,
+        )
+
         obj = obj_class.from_ds(ds)
     else:
 
@@ -130,9 +133,6 @@ def read_data_and_create_object(
             **kwargs,
         )
 
-
-        
-        
         obj = obj_class(name=name, **coord_dict)
         existing_vars = obj.core.non_coord_objects()
 
@@ -155,7 +155,6 @@ def read_data_and_create_object(
                     name = 0
                 else:
                     name = names[0]
-
 
             if name in existing_vars:
                 if isinstance(value, tuple):
@@ -183,7 +182,7 @@ def pick_points(
     reader: ReaderFunction,
     start_time: str,
     point_picker: PointPicker,
-    expansion_factor: float, 
+    expansion_factor: float,
     point_mask: np.ndarray[bool],
     source: str,
     folder: str,
