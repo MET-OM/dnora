@@ -461,7 +461,7 @@ class WW3(SpectralDataReader):
 
         msg.info("Merging dataset together (this might take a while)...")
         bnd = xr.concat(bnd_list, dim="time")
-        breakpoint()
+
         if "time" in list(bnd.longitude.coords):
             bnd["longitude"] = bnd.longitude[0, :]
             bnd["latitude"] = bnd.latitude[0, :]
