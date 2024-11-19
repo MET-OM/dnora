@@ -140,3 +140,87 @@ class NorKyst800(DataReader):
         meta_dict = ds.attrs
 
         return coord_dict, data_dict, meta_dict
+
+
+class NorFjords160(DataReader):
+    """ """
+
+    _default_filename = "norfjords_160m_his.nc4_2024031801-2024031900_surface.nc4"
+    _default_folders = {
+        DataSource.INTERNAL: "fou/om/SWAN/Bjornafjorden2/ROMS/Test/",
+    }
+
+    def __init__(
+        self,
+        stride: int = 24,
+        hours_per_file: int = 24,
+        last_file: str = "",
+        lead_time: int = 0,
+    ):
+        """The data is currently in daily files. Do not change the default
+        setting unless you have a good reason to do so.
+        """
+
+        self.file_structure = FileStructure(
+            stride=stride,
+            hours_per_file=hours_per_file,
+            last_file=last_file,
+            lead_time=lead_time,
+        )
+
+        return
+
+    def default_data_source(self) -> DataSource:
+        return DataSource.INTERNAL
+
+    def __call__(
+        self,
+        grid: Grid,
+        start_time: str,
+        end_time: str,
+        source: DataSource,
+        folder: str,
+        filename: str,
+        expansion_factor: float = 1.2,
+        **kwargs,
+    ):
+        """Reads in all grid points between the given times and at for the given indeces"""
+
+        folder = self._folder(folder, source)
+        filename = self._filename(filename, source)
+
+        start_times, end_times, file_times = self.file_structure.create_time_stamps(
+            start_time, end_time
+        )
+
+        setup_temp_dir(DnoraDataType.CURRENT, self.name())
+        # Define area to search in
+        msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
+        lon, lat = utils.grid.expand_area(
+            grid.edges("lon"), grid.edges("lat"), expansion_factor
+        )
+
+        current_list = read_ds_list(
+            start_times,
+            end_times,
+            file_times,
+            folder,
+            filename,
+        )
+
+        ds = xr.concat(current_list, dim="time").sel(
+            longitude=slice(*lon), latitude=slice(*lat)
+        )
+
+        data_dict = {
+            "u": ds.u_eastward.fillna(0).data,
+            "v": ds.v_northward.fillna(0).data,
+        }
+        coord_dict = {
+            "time": ds.time.data,
+            "lon": ds.longitude.data,
+            "lat": ds.latitude.data,
+        }
+        meta_dict = ds.attrs
+
+        return coord_dict, data_dict, meta_dict

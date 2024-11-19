@@ -11,6 +11,23 @@ from typing import Callable
 import geo_parameters as gp
 
 
+def basic_xarray_read(
+    start_time: pd.Timestamp, end_time: pd.Timestamp, url: str, time_var: str = None
+):
+    with xr.open_dataset(url) as f:
+        if time_var is None:
+            if "time" in list(f.coords):
+                time_var = "time"
+            else:
+                time_vars = [v for v in list(f.coords) if "time" in v]
+                if not time_vars:
+                    raise KeyError(f"Cant find a time variable in {list(f.coords)}")
+                else:
+                    time_var = time_vars[0]
+        ds = f.sel(**{time_var: slice(start_time, end_time)})
+    return ds
+
+
 def read_first_ds(
     folder: str,
     filename: str,
@@ -89,7 +106,7 @@ def read_ds_list(
     file_times: pd.DatetimeIndex,
     folder: str,
     filename: str,
-    ds_creator_function: Callable,
+    ds_creator_function: Callable = basic_xarray_read,
     url_function: Callable = get_constant_url,
     hours_per_file: int = None,
 ) -> list[xr.Dataset]:
