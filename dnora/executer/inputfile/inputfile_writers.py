@@ -53,7 +53,7 @@ class Null(InputFileWriter):
 
 class SWAN(InputFileWriter):
     def __init__(self,timestep=10,f_low = 0.04, f_high=1., n_freq=31, n_dir=36,output_var='HSIGN RTP TPS PDIR TM01 TMM10 DIR DSPR DEP'):
-        self.default_calibrations = {'wind': 1, 'wcap': 0.5000E-04, 'waterlevel': 1, 'current': 1}
+        self.default_calibrations = {'wind': 1, 'wcap': 0.5000E-04, 'waterlevel': 1, 'current': 1, 'ice': 1}
         self.swan_timestep = timestep
         self.f_low = f_low
         self.f_high = f_high
@@ -62,16 +62,18 @@ class SWAN(InputFileWriter):
         self.output_var = output_var
         return
 
-    def __call__(self, model: ModelRun,file_object: FileNames, exported_files: dict[str, list[str]], calibrate: dict[str, float]=None, use_wind:bool=True, use_waterlevel: bool=True, use_spectra: bool=True, use_current:bool=True):
+    def __call__(self, model: ModelRun,file_object: FileNames, exported_files: dict[str, list[str]], calibrate: dict[str, float]=None, use_wind:bool=True, use_waterlevel: bool=True, use_spectra: bool=True, use_current:bool=True, use_ice:bool=True):
         forcing = model.wind()
         boundary = model.spectra()
         waterlevel = model.waterlevel()
         oceancurrent = model.current()
+        ice = model.ice()
         grid = model.grid()
         grid_path = exported_files["grid"][-1]
         forcing_path = exported_files["wind"][-1]
         boundary_path = exported_files["spectra"][-1]
         waterlevel_path = exported_files["waterlevel"][-1]
+        ice_path = exported_files["ice"][-1]
 
         filename = file_object.get_filepath()
 
@@ -96,6 +98,10 @@ class SWAN(InputFileWriter):
             msg.info('No spectra object provided. Spectra information will NOT be written to SWAN input file!')
             use_spectra = False
 
+        if ice is None and use_ice == True:
+            msg.info('No ice object provided. Ice information will NOT be written to SWAN input file!')
+            use_ice = False
+
         # Define start and end times of model run
         DATE_START = model.time(crop_with="all")[0]
         DATE_END = model.time(crop_with="all")[-1]
@@ -119,7 +125,7 @@ class SWAN(InputFileWriter):
         delta_Y = np.round(np.diff(grid.edges('lat')), 5)[0]
 
         factor = {}
-        for calib_type in ['wind', 'waterlevel', 'current']:
+        for calib_type in ['wind', 'waterlevel', 'current', 'ice']:
             factor[calib_type] = (calibrate.get(calib_type) or self.default_calibrations.get(calib_type))*0.001
         factor['wcap'] = calibrate.get('wcap') or self.default_calibrations.get('wcap')
 
@@ -196,12 +202,30 @@ class SWAN(InputFileWriter):
                 delta_Xf = np.round(np.diff(oceancurrent.edges('lon')), 5)[0]
                 delta_Yf = np.round(np.diff(oceancurrent.edges('lat')), 5)[0]
 
-                file_out.write('INPGRID CUR ' + str(oceancurrent.lon()[0]) + ' ' + str(oceancurrent.lat()[0]) + ' 0. ' + str(
+                file_out.write('INPGRID CUR ' + str(oceancurrent.lon()[0].round(3)) + ' ' + str(oceancurrent.lat()[0].round(3)) + ' 0. ' + str(
                     oceancurrent.nx() - 1) + ' ' + str(oceancurrent.ny() - 1) + ' ' + str(
                     (delta_Xf / (oceancurrent.nx() - 1)).round(6)) + ' ' + str((delta_Yf / (oceancurrent.ny() - 1)).round(
                     6)) + ' EXC 32767 NONSTATIONARY ' + STR_START + f" {oceancurrent.dt():.0f} HR " + STR_END + ' \n')
 
                 file_out.write('READINP CUR '+str(factor['oceancurrent'])+'  \''+oceancurrent_path.split('/')[-1]+'\' 3 0 0 1 FREE \n')
+                file_out.write('$ \n')
+            else:
+                pass
+
+            if use_ice:
+                if ice_path.split('/')[-1].startswith('sic') or ice_path.split('/')[-1].startswith('ice'):
+                   ICE_NAME = 'AICE'
+                elif ice_path.split('/')[-1].startswith('sit'):
+                   ICE_NAME =  'HICE'
+                self.output_var = self.output_var + ' '+ICE_NAME
+                delta_Xf = np.round(np.diff(ice.edges('lon')), 5)[0]
+                delta_Yf = np.round(np.diff(ice.edges('lat')), 5)[0]
+
+                file_out.write('INPGRID '+ICE_NAME+ ' '+ str(ice.lon()[0].round(3)) + ' ' + str(ice.lat()[0].round(3)) + ' 0. ' + str(
+                    ice.nx() - 1) + ' ' + str(ice.ny() - 1) + ' ' + str(
+                    (delta_Xf / (ice.nx() - 1)).round(6)) + ' ' + str((delta_Yf / (ice.ny() - 1)).round(
+                    6)) + ' NONSTATIONARY ' + STR_START + f" {ice.dt():.0f} HR " + STR_END + ' \n')
+                file_out.write('READINP '+ICE_NAME + ' '+str(factor['ice'])+'  \''+ice_path.split('/')[-1]+'\' 3 0 0 1 FREE \n')
                 file_out.write('$ \n')
             else:
                 pass
