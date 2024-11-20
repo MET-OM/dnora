@@ -125,13 +125,22 @@ class SWAN(DataWriter):
     }
 
     def __call__(
-        self, model: ModelRun, file_object: FileNames, obj_type: DnoraDataType, **kwargs
+        self,
+        model: ModelRun,
+        file_object: FileNames,
+        obj_type: DnoraDataType,
+        data_vars: list[str] = None,
+        **kwargs,
     ) -> list[str]:
         filename = file_object.get_filepath()
         data = model[obj_type]
         if data is None:
             msg.warning(f"Can't find any {obj_type.name} data!! Aborting...")
             return ""
+
+        data_vars = data_vars or self._datavars.get(obj_type)
+        if not isinstance(data_vars, list):
+            data_vars = [data_vars]
 
         days = data.days(datetime=False)
         with open(filename, "w") as file_out:
@@ -149,7 +158,7 @@ class SWAN(DataWriter):
                             f"Don't know how to write {obj_type.name} in SWAN format! Aborting..."
                         )
                         return ""
-                    for var in self._datavars.get(obj_type):
+                    for var in data_vars:
                         file_out.write(time_stamp)
                         np.savetxt(file_out, data.get(var)[ct, :, :] * 1000, fmt="%i")
 
