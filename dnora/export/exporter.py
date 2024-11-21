@@ -143,9 +143,9 @@ class DataExporter:
                 output_files = [output_files]
 
         # Store name and location where file was written
-        self.model._data_exported_to[data_type_from_string(obj_type.name)] = (
-            output_files
-        )
+        old_files = self.model._data_exported_to.get(obj_type, [])
+        self.model._data_exported_to[obj_type] = old_files + output_files
+
         if not self._silent:
             msg.to_multifile(output_files)
 
