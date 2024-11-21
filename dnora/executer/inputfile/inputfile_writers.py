@@ -73,7 +73,7 @@ class SWAN(InputFileWriter):
         forcing_path = exported_files["wind"][-1]
         boundary_path = exported_files["spectra"][-1]
         waterlevel_path = exported_files["waterlevel"][-1]
-        ice_path = exported_files["ice"][-1]
+        ice_path = exported_files["ice"]
 
         filename = file_object.get_filepath()
 
@@ -213,20 +213,20 @@ class SWAN(InputFileWriter):
                 pass
 
             if use_ice:
-                if ice_path.split('/')[-1].startswith('sic') or ice_path.split('/')[-1].startswith('ice'):
-                   ICE_NAME = 'AICE'
-                elif ice_path.split('/')[-1].startswith('sit'):
-                   ICE_NAME =  'HICE'
-                self.output_var = self.output_var + ' '+ICE_NAME
                 delta_Xf = np.round(np.diff(ice.edges('lon')), 5)[0]
                 delta_Yf = np.round(np.diff(ice.edges('lat')), 5)[0]
-
-                file_out.write('INPGRID '+ICE_NAME+ ' '+ str(ice.lon()[0].round(3)) + ' ' + str(ice.lat()[0].round(3)) + ' 0. ' + str(
-                    ice.nx() - 1) + ' ' + str(ice.ny() - 1) + ' ' + str(
-                    (delta_Xf / (ice.nx() - 1)).round(6)) + ' ' + str((delta_Yf / (ice.ny() - 1)).round(
-                    6)) + ' NONSTATIONARY ' + STR_START + f" {ice.dt():.0f} HR " + STR_END + ' \n')
-                file_out.write('READINP '+ICE_NAME + ' '+str(factor['ice'])+'  \''+ice_path.split('/')[-1]+'\' 3 0 0 1 FREE \n')
-                file_out.write('$ \n')
+                for i in range(len(ice_path)):
+                    if ice_path[i].split('/')[-1].startswith('sic') or ice_path[i].split('/')[-1].startswith('ice'):
+                       ICE_NAME = 'AICE'
+                    elif ice_path[i].split('/')[-1].startswith('sit'):
+                         ICE_NAME =  'HICE'
+                    self.output_var = self.output_var + ' '+ICE_NAME
+                    file_out.write('INPGRID '+ICE_NAME+ ' '+ str(ice.lon()[0].round(3)) + ' ' + str(ice.lat()[0].round(3)) + ' 0. ' + str(
+                             ice.nx() - 1) + ' ' + str(ice.ny() - 1) + ' ' + str(
+                             (delta_Xf / (ice.nx() - 1)).round(6)) + ' ' + str((delta_Yf / (ice.ny() - 1)).round(
+                             6)) + ' NONSTATIONARY ' + STR_START + f" {ice.dt():.0f} HR " + STR_END + ' \n')
+                    file_out.write('READINP '+ICE_NAME + ' '+str(factor['ice'])+'  \''+ice_path[i].split('/')[-1]+'\' 3 0 0 1 FREE \n')
+                    file_out.write('$ \n')
             else:
                 pass
 
