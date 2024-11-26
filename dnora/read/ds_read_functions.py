@@ -12,7 +12,13 @@ import geo_parameters as gp
 
 
 def basic_xarray_read(
-    start_time: pd.Timestamp, end_time: pd.Timestamp, url: str, time_var: str = None
+    start_time: pd.Timestamp,
+    end_time: pd.Timestamp,
+    url: str,
+    time_var: str = None,
+    lon: tuple[float] = None,
+    lat: tuple[float] = None,
+    data_vars: list[str] = None,
 ):
     with xr.open_dataset(url) as f:
         if time_var is None:
@@ -25,6 +31,11 @@ def basic_xarray_read(
                 else:
                     time_var = time_vars[0]
         ds = f.sel(**{time_var: slice(start_time, end_time)})
+        if lon is not None and lat is not None:
+            ds = ds.sel(longitude=slice(*lon), latitude=slice(*lat))
+        if data_vars is not None:
+            ds = ds[data_vars]
+
     return ds
 
 

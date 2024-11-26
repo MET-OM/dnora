@@ -23,6 +23,7 @@ from dnora.type_manager.dnora_types import DnoraDataType
 from dnora.read.ds_read_functions import read_ds_list, setup_temp_dir
 from functools import partial
 from dnora.read.fimex_functions import ds_fimex_read
+from dnora.read.ds_read_functions import basic_xarray_read
 
 
 class NorKyst800(DataReader):
@@ -202,22 +203,19 @@ class NorFjords160(DataReader):
             grid.edges("lon"), grid.edges("lat"), expansion_factor
         )
         msg.process(f"Applying {program}")
-        # ds_creator_function = partial(
-        #     ds_cdo_read,
-        #     lon=lon,
-        #     lat=lat,
-        #     resolution_in_km=0.160,
-        #     data_vars=["u_eastward", "v_northward"],
-        #     data_type=DnoraDataType.CURRENT,
-        #     name=self.name(),
-        # )
-        current_list = read_ds_list(
-            start_times, end_times, file_times, folder, filename
+        ds_creator_function = partial(
+            basic_xarray_read,
+            lon=lon,
+            lat=lat,
+            data_vars=["u_eastward", "v_northward"],
         )
 
-        ds = xr.concat(current_list, dim="time").sel(
-            longitude=slice(*lon), latitude=slice(*lat)
+        current_list = read_ds_list(
+            start_times, end_times, file_times, folder, filename, ds_creator_function
         )
+
+        msg.plain("Merging xarrays (this might take a while)...")
+        ds = xr.concat(current_list, dim="time")
 
         data_dict = {
             "u": ds.u_eastward.fillna(0).data,
