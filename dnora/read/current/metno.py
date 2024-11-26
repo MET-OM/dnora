@@ -145,9 +145,9 @@ class NorKyst800(DataReader):
 class NorFjords160(DataReader):
     """ """
 
-    _default_filename = "norfjords_160m_his.nc4_2024031801-2024031900_surface.nc4"
+    _default_filename = "norfjords_160m_his.nc4_%Y%m%d01_surface_gridded.nc4"
     _default_folders = {
-        DataSource.INTERNAL: "fou/om/SWAN/Bjornafjorden2/ROMS/Test/",
+        DataSource.INTERNAL: "fou/om/SWAN/Bjornafjorden2/ROMS/",
     }
 
     def __init__(
@@ -156,6 +156,7 @@ class NorFjords160(DataReader):
         hours_per_file: int = 24,
         last_file: str = "",
         lead_time: int = 0,
+        offset: int = 1,
     ):
         """The data is currently in daily files. Do not change the default
         setting unless you have a good reason to do so.
@@ -166,6 +167,7 @@ class NorFjords160(DataReader):
             hours_per_file=hours_per_file,
             last_file=last_file,
             lead_time=lead_time,
+            offset=offset,
         )
 
         return
@@ -182,6 +184,7 @@ class NorFjords160(DataReader):
         folder: str,
         filename: str,
         expansion_factor: float = 1.2,
+        program: str = "pyfimex",
         **kwargs,
     ):
         """Reads in all grid points between the given times and at for the given indeces"""
@@ -192,20 +195,24 @@ class NorFjords160(DataReader):
         start_times, end_times, file_times = self.file_structure.create_time_stamps(
             start_time, end_time
         )
-
         setup_temp_dir(DnoraDataType.CURRENT, self.name())
         # Define area to search in
         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
         lon, lat = utils.grid.expand_area(
             grid.edges("lon"), grid.edges("lat"), expansion_factor
         )
-
+        msg.process(f"Applying {program}")
+        # ds_creator_function = partial(
+        #     ds_cdo_read,
+        #     lon=lon,
+        #     lat=lat,
+        #     resolution_in_km=0.160,
+        #     data_vars=["u_eastward", "v_northward"],
+        #     data_type=DnoraDataType.CURRENT,
+        #     name=self.name(),
+        # )
         current_list = read_ds_list(
-            start_times,
-            end_times,
-            file_times,
-            folder,
-            filename,
+            start_times, end_times, file_times, folder, filename
         )
 
         ds = xr.concat(current_list, dim="time").sel(
