@@ -146,7 +146,7 @@ class NorKyst800(DataReader):
 class NorFjords160(DataReader):
     """ """
 
-    _default_filename = "norfjords_160m_his.nc4_%Y%m%d01_surface_gridded.nc4"
+    _default_filename = "norfjords_160m_his_%Y%m%d01_surface_interp.nc"
     _default_folders = {
         DataSource.INTERNAL: "fou/om/SWAN/Bjornafjorden2/ROMS/",
     }
@@ -205,27 +205,34 @@ class NorFjords160(DataReader):
         msg.process(f"Applying {program}")
         ds_creator_function = partial(
             basic_xarray_read,
-            lon=lon,
-            lat=lat,
-            data_vars=["u_eastward", "v_northward"],
+            create_hourly_time_stamps=True,
         )
 
         current_list = read_ds_list(
             start_times, end_times, file_times, folder, filename, ds_creator_function
         )
-
         msg.plain("Merging xarrays (this might take a while)...")
         ds = xr.concat(current_list, dim="time")
 
-        data_dict = {
-            "u": ds.u_eastward.fillna(0).data,
-            "v": ds.v_northward.fillna(0).data,
-        }
+        lons, lats = ds.lon.values[:, 0], ds.lat.values[0, :]
+        lon_mask = np.logical_and(lons >= lon[0], lons <= lon[1])
+        lat_mask = np.logical_and(lats >= lat[0], lats <= lat[1])
         coord_dict = {
             "time": ds.time.data,
-            "lon": ds.longitude.data,
-            "lat": ds.latitude.data,
+            "lon": lons[lon_mask],
+            "lat": lats[lat_mask],
         }
+
+        u = ds.u.fillna(0).values[:, :, lon_mask, :]
+        u = u[:, :, :, lat_mask]
+        v = ds.v.fillna(0).values[:, :, lon_mask, :]
+        v = v[:, :, :, lat_mask]
+
+        data_dict = {
+            "u": (u, ["time", "lon", "lat"]),
+            "v": (v, ["time", "lon", "lat"]),
+        }
+
         meta_dict = ds.attrs
 
         return coord_dict, data_dict, meta_dict

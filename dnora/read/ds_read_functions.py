@@ -19,8 +19,10 @@ def basic_xarray_read(
     lon: tuple[float] = None,
     lat: tuple[float] = None,
     data_vars: list[str] = None,
+    create_hourly_time_stamps: bool = False,
 ):
-    with xr.open_dataset(url) as f:
+
+    with xr.open_dataset(url, decode_times=(not create_hourly_time_stamps)) as f:
         if time_var is None:
             if "time" in list(f.coords):
                 time_var = "time"
@@ -30,9 +32,16 @@ def basic_xarray_read(
                     raise KeyError(f"Cant find a time variable in {list(f.coords)}")
                 else:
                     time_var = time_vars[0]
+        if create_hourly_time_stamps:
+            times = pd.date_range(start_time, end_time, freq="1h")
+            f[time_var] = times
+
         ds = f.sel(**{time_var: slice(start_time, end_time)})
         if lon is not None and lat is not None:
-            ds = ds.sel(longitude=slice(*lon), latitude=slice(*lat))
+            lon_str = gp.grid.Lon.find_me_in_ds(ds, return_first=True) or "longitude"
+            lat_str = gp.grid.Lon.find_me_in_ds(ds, return_first=True) or "latitude"
+            if lon is not None and lat is not None:
+                ds = ds.sel(**{lon_str: slice(*lon), lat_str: slice(*lat)})
         if data_vars is not None:
             ds = ds[data_vars]
 
