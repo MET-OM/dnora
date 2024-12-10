@@ -205,7 +205,6 @@ class NorFjords160(DataReader):
         msg.process(f"Applying {program}")
         ds_creator_function = partial(
             basic_xarray_read,
-            create_hourly_time_stamps=True,
         )
 
         current_list = read_ds_list(
