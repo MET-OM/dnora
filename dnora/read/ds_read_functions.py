@@ -239,7 +239,7 @@ def file_is_consistent(
         return True
 
     keys = list(ds.sizes.keys())
-    given_shape = tuple([ds[var].size for var in keys if var != "time"])
+    given_shape = tuple([ds[var].size for var in keys if "time" not in var])
     if given_shape == expected_shape:
         return True
     else:
