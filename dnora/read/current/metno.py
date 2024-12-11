@@ -211,20 +211,21 @@ class NorFjords160(DataReader):
             start_times, end_times, file_times, folder, filename, ds_creator_function
         )
         msg.plain("Merging xarrays (this might take a while)...")
-        ds = xr.concat(current_list, dim="time")
+
+        ds = xr.concat(current_list, dim="ocean_time")
 
         lons, lats = ds.lon.values[:, 0], ds.lat.values[0, :]
         lon_mask = np.logical_and(lons >= lon[0], lons <= lon[1])
         lat_mask = np.logical_and(lats >= lat[0], lats <= lat[1])
         coord_dict = {
-            "time": ds.time.data,
+            "time": ds.ocean_time.data,
             "lon": lons[lon_mask],
             "lat": lats[lat_mask],
         }
 
-        u = ds.u.fillna(0).values[:, :, lon_mask, :]
+        u = ds.u.fillna(0).data[:, :, lon_mask, :]
         u = u[:, :, :, lat_mask]
-        v = ds.v.fillna(0).values[:, :, lon_mask, :]
+        v = ds.v.fillna(0).data[:, :, lon_mask, :]
         v = v[:, :, :, lat_mask]
 
         data_dict = {
