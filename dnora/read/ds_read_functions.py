@@ -22,7 +22,9 @@ def basic_xarray_read(
     create_hourly_time_stamps: bool = False,
 ):
 
-    with xr.open_dataset(url, decode_times=(not create_hourly_time_stamps)) as f:
+    with xr.open_dataset(
+        url, decode_times=(not create_hourly_time_stamps), chunks="auto"
+    ) as f:
         if time_var is None:
             if "time" in list(f.coords):
                 time_var = "time"
