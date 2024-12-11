@@ -157,7 +157,9 @@ def read_ds_list(
             msg.from_file(url)
             if not ds_list:
                 keys = list(ds.sizes.keys())
-                expected_shape = tuple([ds[var].size for var in keys if var != "time"])
+                expected_shape = tuple(
+                    [ds[var].size for var in keys if "time" not in var]
+                )
             ds_list.append(ds)
 
     return ds_list
