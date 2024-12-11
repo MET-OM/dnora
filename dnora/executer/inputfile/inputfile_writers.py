@@ -98,6 +98,7 @@ class SWAN(InputFileWriter):
         grid_path = exported_files["grid"][-1]
         forcing_path = exported_files["wind"][-1]
         boundary_path = exported_files["spectra"][-1]
+        oceancurrent_path = exported_files["current"][-1]
         waterlevel_path = exported_files["waterlevel"][-1]
         ice_path = exported_files["ice"]
 
