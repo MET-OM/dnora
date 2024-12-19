@@ -22,7 +22,7 @@ class GetDefaultValues(unittest.TestCase):
             primary=defaults["SWAN"],
             fallback=defaults["MODELRUN"],
         )
-        self.assertEqual(filename, "spec#SPECTRA#GRID#T0#T1")
+        self.assertEqual(filename, "spec#SPECTRA#GRID#T0_#T1")
 
         filename = file_module.get_default_value(
             key="filename",

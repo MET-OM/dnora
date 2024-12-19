@@ -141,13 +141,12 @@ def ds_wam_xarray_read(
     end_time: pd.Timestamp,
     url: str,
     inds: np.ndarray,
-    data_vars: list[str],
 ):
     with xr.open_dataset(url) as f:
         ds = f.sel(
             time=slice(start_time, end_time),
             x=inds + 1,
-        )[data_vars]
+        )
     return ds
 
 
@@ -182,8 +181,10 @@ WAM_OTHER_VARS = [
 
 
 class WAM(SpectralDataReader):
-    WAM_SPEC_VARS = WAM_SPEC_VARS
-    WAM_OTHER_VARS = WAM_OTHER_VARS
+    @staticmethod
+    def returning_ds() -> bool:
+        return True
+
     stride = "month"  # int (for hourly), or 'month'
     hours_per_file = None  # int (if not monthly files)
     offset = 0  # int
@@ -252,6 +253,7 @@ class WAM(SpectralDataReader):
         folder: str,
         filename: str,
         inds,
+        dnora_class,
         **kwargs,
     ) -> tuple[dict]:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
@@ -271,16 +273,8 @@ class WAM(SpectralDataReader):
             f"Getting boundary spectra from {self.name()} from {start_time} to {end_time}"
         )
 
-        if obj_type == DnoraDataType.WAVESERIES:
-            data_vars = self.WAM_OTHER_VARS
-            wanted_coords = ["time", "lon", "lat"]
-        else:
-            data_vars = self.WAM_SPEC_VARS
-            wanted_coords = ["time", "lon", "lat", "freq", "dirs"]
-        ds_creator_function = partial(
-            ds_wam_xarray_read, inds=inds, data_vars=data_vars
-        )
-        bnd_list = read_ds_list(
+        ds_creator_function = partial(ds_wam_xarray_read, inds=inds)
+        ds_list = read_ds_list(
             start_times,
             end_times,
             file_times,
@@ -290,25 +284,15 @@ class WAM(SpectralDataReader):
             hours_per_file=hours_per_file,
         )
 
+        if obj_type == DnoraDataType.WAVESERIES:
+            dynamic = True
+        else:
+            dynamic = False
         msg.info("Merging dataset together (this might take a while)...")
-        bnd = xr.concat(bnd_list, dim="time").squeeze("y")
+        ds = xr.concat(ds_list, dim="time")  # .squeeze("y")
+        points = dnora_class.from_ds(ds, dynamic=dynamic)
 
-        if "time" in list(bnd.longitude.coords):
-            bnd["longitude"] = bnd.longitude[0, :]
-            bnd["latitude"] = bnd.latitude[0, :]
-        coord_dict, ds_coord_strings = create_coord_dict(
-            wanted_coords=wanted_coords,
-            ds=bnd,
-            alias_mapping=WAM_ALIAS_MAPPINGS_FROM_DNORA,
-        )
-
-        data_vars = list(set(data_vars) - set(ds_coord_strings))
-        data_dict = create_data_dict(
-            wanted_vars=data_vars, ds=bnd, alias_mapping=ALIAS_MAPPINGS
-        )
-        meta_dict = bnd.attrs
-
-        return coord_dict, data_dict, meta_dict
+        return points.ds()
 
 
 WW3_ALIAS_MAPPINGS_FROM_DNORA = {
@@ -341,26 +325,26 @@ WW3_OTHER_VARS = [
 ]
 
 
-def ds_ww3_xarray_read(
-    start_time: pd.Timestamp,
-    end_time: pd.Timestamp,
-    url: str,
-    inds: np.ndarray,
-):
-    with xr.open_dataset(url) as f:
-        ds = f.sel(
-            time=slice(start_time, end_time),
-            station=inds + 1,
-        )
-    return ds
+class WaveModel(SpectralDataReader):
+    """This should not be used directly, but is a template for model specific implementations"""
 
+    @staticmethod
+    def returning_ds() -> bool:
+        return True
 
-class WW3(SpectralDataReader):
-    _default_filename = "ww3_spec.%Y%m.nc"
+    _default_filename = "wave_model_output_%Y%m.nc"
 
     stride = "month"  # int (for hourly), or 'month'
     hours_per_file = None  # int (if not monthly files)
     offset = 0  # int
+
+    def set_up_for_ds_read(self, obj_type) -> tuple:
+        """This needs to be customized for model specific implementations"""
+        ignore_vars = []
+        ds_aliases = {}
+        aliases = {}
+        dynamic = False
+        return dynamic, aliases, ds_aliases, ignore_vars
 
     def __init__(
         self,
@@ -426,6 +410,7 @@ class WW3(SpectralDataReader):
         folder: str,
         filename: str,
         inds,
+        dnora_class=None,
         **kwargs,
     ) -> tuple[dict]:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
@@ -443,14 +428,8 @@ class WW3(SpectralDataReader):
             f"Getting boundary spectra from {self.name()} from {start_time} to {end_time}"
         )
 
-        if obj_type == DnoraDataType.WAVESERIES:
-            data_vars = WW3_OTHER_VARS
-            wanted_coords = ["time", "lon", "lat"]
-        else:
-            data_vars = WW3_SPEC_VARS
-            wanted_coords = ["time", "lon", "lat", "freq", "dirs"]
         ds_creator_function = partial(ds_ww3_xarray_read, inds=inds)
-        bnd_list = read_ds_list(
+        ds_list = read_ds_list(
             start_times,
             end_times,
             file_times,
@@ -460,25 +439,58 @@ class WW3(SpectralDataReader):
         )
 
         msg.info("Merging dataset together (this might take a while)...")
-        bnd = xr.concat(bnd_list, dim="time")
+        ds = xr.concat(ds_list, dim="time")
+        dynamic, aliases, ds_aliases, ignore_vars = self.set_up_for_ds_read(obj_type)
 
-        if "time" in list(bnd.longitude.coords):
-            bnd["longitude"] = bnd.longitude[0, :]
-            bnd["latitude"] = bnd.latitude[0, :]
-
-        coord_dict, ds_coord_strings = create_coord_dict(
-            wanted_coords=wanted_coords,
-            ds=bnd,
-            alias_mapping=WW3_ALIAS_MAPPINGS_FROM_DNORA,
+        points = dnora_class.from_ds(
+            ds,
+            dynamic=dynamic,
+            ignore_vars=ignore_vars,
+            ds_aliases=ds_aliases,
+            aliases=aliases,
         )
+        return points.ds()
 
-        data_vars = list(set(data_vars) - set(ds_coord_strings))
-        data_dict = create_data_dict(
-            wanted_vars=data_vars, ds=bnd, alias_mapping=ALIAS_MAPPINGS
+
+def ds_ww3_xarray_read(
+    start_time: pd.Timestamp,
+    end_time: pd.Timestamp,
+    url: str,
+    inds: np.ndarray,
+):
+    with xr.open_dataset(url) as f:
+        ds = f.sel(
+            time=slice(start_time, end_time),
+            station=inds + 1,
         )
-        meta_dict = bnd.attrs
+    return ds
 
-        return coord_dict, data_dict, meta_dict
+
+class WW3(WaveModel):
+    _default_filename = "ww3_spec.%Y%m.nc"
+
+    stride = "month"  # int (for hourly), or 'month'
+    hours_per_file = None  # int (if not monthly files)
+    offset = 0  # int
+
+    def set_up_for_ds_read(self, obj_type) -> tuple:
+        if obj_type == DnoraDataType.WAVESERIES:
+            dynamic = True
+            ignore_vars = ["station_name"]
+            ds_aliases = {"dpt": gp.ocean.WaterDepth}
+            aliases = {}
+        else:
+            ignore_vars = []
+            ds_aliases = {}
+            aliases = {}
+            dynamic = False
+        return dynamic, aliases, ds_aliases, ignore_vars
+
+    def convention(self) -> SpectralConvention:
+        return SpectralConvention.WW3
+
+    def default_data_source(self) -> DataSource:
+        return DataSource.LOCAL
 
 
 SWAN_ALIAS_MAPPINGS_FROM_DNORA = {

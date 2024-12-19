@@ -98,9 +98,7 @@ def read_data_and_create_object(
     **kwargs,
 ) -> DnoraObject:
     """Reads data using the reader, creates the objects and sets data and metadata in object"""
-
-    obj_class = dnora_objects.get(obj_type)
-    obj_data_vars = obj_class.core.non_coord_objects()
+    dnora_class = dnora_objects.get(obj_type)
     if reader.returning_ds():
         ds = reader(
             obj_type=obj_type,
@@ -111,12 +109,12 @@ def read_data_and_create_object(
             folder=folder,
             filename=filename,
             inds=inds,
-            obj_data_vars=obj_data_vars,
+            dnora_class=dnora_class,
             expansion_factor=expansion_factor,
             **kwargs,
         )
 
-        obj = obj_class.from_ds(ds)
+        obj = dnora_class.from_ds(ds, dynamic=True)
     else:
 
         coord_dict, data_dict, meta_dict = reader(
@@ -128,12 +126,12 @@ def read_data_and_create_object(
             folder=folder,
             filename=filename,
             inds=inds,
-            obj_data_vars=obj_data_vars,
+            dnora_class=dnora_class,
             expansion_factor=expansion_factor,
             **kwargs,
         )
 
-        obj = obj_class(name=name, **coord_dict)
+        obj = dnora_class(name=name, **coord_dict)
         existing_vars = obj.core.non_coord_objects()
 
         for key, value in data_dict.items():
