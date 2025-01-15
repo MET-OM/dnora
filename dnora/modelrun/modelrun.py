@@ -144,14 +144,11 @@ class ModelRun:
             DnoraDataType.GRID: grid,
         }
         self._consistency_check(
-            objects_to_ignore_get=[
-                DnoraDataType.TRIGRID,
-                DnoraDataType.SPECTRALGRID
-            ],
+            objects_to_ignore_get=[DnoraDataType.TRIGRID, DnoraDataType.SPECTRALGRID],
             objects_to_ignore_import=[
                 DnoraDataType.GRID,
                 DnoraDataType.TRIGRID,
-                DnoraDataType.SPECTRALGRID
+                DnoraDataType.SPECTRALGRID,
             ],
         )
 
@@ -327,13 +324,16 @@ class ModelRun:
             return
 
         # Need to make the logic here same for all objects, but this works for now
-        if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
+        if (
+            obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]
+            and post_processor is not None
+        ):
             msg.info("Post-processing data...")
             obj = self[obj_type]
             obj.process(post_processor)
             self[obj_type] = obj
 
-        else:
+        elif post_processor is not None:
             msg.info("Post-processing data...")
             try:
                 self.process(obj_type, post_processor)
@@ -715,7 +715,7 @@ class ModelRun:
 
             for obj_str in crop_with:
                 dnora_obj = self.get(data_type_from_string(obj_str))
-                if dnora_obj is not None and hasattr(dnora_obj, 'time'):
+                if dnora_obj is not None and hasattr(dnora_obj, "time"):
                     time = dnora_obj.time()
                     if time[0] is not None:
                         t0 = pd.to_datetime([t0, time[0]]).max()
@@ -827,7 +827,7 @@ class ModelRun:
 
     def __repr__(self) -> str:
         string = "\n" + "-" * 80
-        string += f'\n{self.name} ({type(self).__name__}): {self.start_time()} - {self.end_time()}'
+        string += f"\n{self.name} ({type(self).__name__}): {self.start_time()} - {self.end_time()}"
         string += f"\n{' Containing ':-^80}"
         for obj_type in DnoraDataType:
             obj = self.get(obj_type)
@@ -835,14 +835,14 @@ class ModelRun:
                 string += f"\n{obj_type.name} ({obj.name}):"
                 string += f"\n    lon={obj.edges('lon')}, lat={obj.edges('lat')}"
                 if obj.is_gridded():
-                    string += f' (ny = {obj.ny()}, nx = {obj.nx()})'
+                    string += f" (ny = {obj.ny()}, nx = {obj.nx()})"
                 else:
-                    string += f' (#inds {len(obj.inds())})'
-                if 'time' in obj.core.coords():
+                    string += f" (#inds {len(obj.inds())})"
+                if "time" in obj.core.coords():
                     string += f"\n    {obj.time(datetime=False)[0]} - {obj.time(datetime=False)[-1]}"
         string += f"\n{' Defaults ':-^80}"
         for key, value in self._reader_dict.items():
-            string += f'\n{key.name}: {value.__repr__()}'
-        string += f'\nPointPicker: {self._point_picker.__repr__()}'
+            string += f"\n{key.name}: {value.__repr__()}"
+        string += f"\nPointPicker: {self._point_picker.__repr__()}"
         string += "\n" + "-" * 80
         return string

@@ -1,7 +1,7 @@
 from copy import copy
 
 # Import objects
-from .process import spectral_processor_for_convention_change
+from dnora.process.spectra import spectral_processor_for_convention_change
 from dnora.type_manager.spectral_conventions import SpectralConvention, convert_2d_to_1d
 
 # Import abstract classes and needed instances of them
@@ -10,7 +10,7 @@ from dnora import msg
 from geo_skeletons import PointSkeleton
 from geo_skeletons.decorators import add_time, add_frequency, add_datavar
 
-from .process import SpectralProcessor
+from dnora.process.spectra import SpectralProcessor
 import geo_parameters as gp
 
 
@@ -96,6 +96,9 @@ class Spectra1D(PointSkeleton):
 
     def set_convention(self, convention: SpectralConvention) -> None:
         """Processes spectra to new directional spectral convention and updates metadata."""
+        if convention is None:
+            return
+
         if self.convention() is None:
             msg.info(
                 "set_convention changes the convention AND the data. No convention is currently set. Use _mark_convention to define a convention without touching the data."
@@ -118,7 +121,7 @@ class Spectra1D(PointSkeleton):
     def _mark_convention(self, convention: SpectralConvention) -> None:
         """Marks new convention in metadata etc. but does nothing to the spectra"""
         self._convention = convention
-        self.meta.append({"spectral_convention": self.convention().value})
+        self.meta.append({"dnora_spectral_convention": self.convention().value})
         print(f"Spectral convention is now: {self.convention()}")
 
     def convention(self) -> SpectralConvention | None:

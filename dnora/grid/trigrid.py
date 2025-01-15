@@ -154,6 +154,18 @@ class TriGrid(PointSkeleton):
 
         obj.set_topo(topo)
 
+    def set_boundary_points(self, mask_setter) -> None:
+        boundary_mask = mask_setter(self)
+        self.set_boundary_mask(boundary_mask)
+
+    def set_output_points(self, mask_setter) -> None:
+        mask = mask_setter(self)
+        self.set_output_mask(mask)
+
+    def set_waveseries_points(self, mask_setter) -> None:
+        mask = mask_setter(self)
+        self.set_waveseries_mask(mask)
+
     def plot(self) -> None:
         vmin, vmax = np.min(self.topo()), np.max(self.topo())
         if vmax - vmin < 20:

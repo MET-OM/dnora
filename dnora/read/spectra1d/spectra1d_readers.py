@@ -93,7 +93,7 @@ class SpectraTo1D(SpectralDataReader):
             "freq": freq,
         }
         data_dict = {"spec": spec, "dirm": mdir, "spr": spr}
-        meta_dict = self._boundary.ds().attrs
+        meta_dict = copy(self._boundary.ds().attrs)
 
         return coord_dict, data_dict, meta_dict
 

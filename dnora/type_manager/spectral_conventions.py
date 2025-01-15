@@ -47,3 +47,13 @@ def convert_2d_to_1d(convention_2d: SpectralConvention):
         convention_1d = SpectralConvention.MET
 
     return convention_1d
+
+
+def spectral_convention_from_string(
+    convention_str: str | SpectralConvention,
+) -> SpectralConvention:
+    if convention_str is None:
+        return None
+    if isinstance(convention_str, SpectralConvention):
+        return convention_str
+    return SpectralConvention[convention_str.upper()]

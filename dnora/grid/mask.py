@@ -53,7 +53,7 @@ class All(MaskSetter):
     """Set all points to boundary points."""
 
     def __call__(self, grid):
-        return np.full(grid.size(), True)
+        return np.full(grid.size("spatial"), True)
 
     def __str__(self):
         return f"Setting all points to boundary points."

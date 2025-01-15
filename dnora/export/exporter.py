@@ -1,6 +1,9 @@
 from dnora import msg
 from dnora.file_module import FileNames
-from dnora.type_manager.spectral_conventions import SpectralConvention
+from dnora.type_manager.spectral_conventions import (
+    SpectralConvention,
+    spectral_convention_from_string,
+)
 from typing import Union
 from .data_writers import DataWriter, Netcdf
 from .spectra_writers import SpectraWriter
@@ -52,6 +55,7 @@ class DataExporter:
         self,
         obj_type: DnoraDataType | str,
         writer: WriterFunction = None,
+        spectral_convention: SpectralConvention | str = None,
         filename: str = None,
         folder: str = None,
         dateformat: str = None,
@@ -60,6 +64,7 @@ class DataExporter:
         **kwargs,
     ) -> None:
         obj_type = data_type_from_string(obj_type)
+        spectral_convention = spectral_convention_from_string(spectral_convention)
         writer_function = self._setup_export(obj_type, writer, dry_run)
 
         if not self.dry_run():
@@ -73,12 +78,14 @@ class DataExporter:
                     f"Writing {obj_type.name} data from {self.model[obj_type].name}",
                 )
 
-            try:  # GeneralWritingFunction might not have this method defined
-                wanted_convention = writer_function.convention()
-            except AttributeError:
-                wanted_convention = self._get_spectral_convention()
+            if spectral_convention is None:
+                try:  # GeneralWritingFunction might not have this method defined
+                    spectral_convention = writer_function.convention()
+                except AttributeError:
+                    pass
+                    # wanted_convention = self._get_spectral_convention()
             if obj_type in [DnoraDataType.SPECTRA, DnoraDataType.SPECTRA1D]:
-                self.model[obj_type].set_convention(wanted_convention)
+                self.model[obj_type].set_convention(spectral_convention)
         else:
             if not self._silent:
                 if self.model.get(obj_type) is None:

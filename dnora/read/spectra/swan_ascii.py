@@ -82,12 +82,15 @@ def decode_vadens(file, n_loc, n_freq, n_dir, start_time, end_time) -> tuple:
 
         single_spec = np.zeros((n_loc, n_freq, n_dir))
         no_data_spec = []
+
         for k in range(n_loc):
             line = file.readline()
             if "NODATA" in line:
                 no_data_spec.append(k + 1)
+            if "NODATA" in line or "ZERO" in line:
                 single_spec[k, :, :] = 0
                 continue
+
             assert "FACTOR" in line, f"Expected this line to be 'FACTOR'!"
 
             line = file.readline()

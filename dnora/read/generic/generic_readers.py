@@ -79,7 +79,7 @@ class PointNetcdf(SpectralDataReader):
         # ds = xr.open_dataset(filepath[0])
 
         lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
-        self.set_convention(ds.attrs.get("dnora_spectral_convention", "ocean"))
+        self.set_convention(ds.attrs.get("dnora_spectral_convention", "unknown"))
         return {"lon": lon, "lat": lat, "x": x, "y": y}
 
     def __call__(
@@ -118,7 +118,7 @@ class PointNetcdf(SpectralDataReader):
         data_dict = {}
         for var in dnora_objects.get(obj_type).core.data_vars():
             meta_var = dnora_objects.get(obj_type).core.meta_parameter(var)
-            ds_var = meta_var.find_me_in_ds(ds)
+            ds_var = meta_var.find_me_in_ds(ds)[0]
             ds_data = ds.get(ds_var)
             if ds_data is not None:
                 data_dict[meta_var] = ds_data.values
