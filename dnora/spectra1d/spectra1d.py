@@ -1,7 +1,7 @@
 from copy import copy
 
 # Import objects
-from dnora.process.spectra import spectral_processor_for_convention_change
+from .process import spectral_processor_for_convention_change
 from dnora.type_manager.spectral_conventions import SpectralConvention, convert_2d_to_1d
 
 # Import abstract classes and needed instances of them
@@ -10,7 +10,7 @@ from dnora import msg
 from geo_skeletons import PointSkeleton
 from geo_skeletons.decorators import add_time, add_frequency, add_datavar
 
-from dnora.process.spectra import SpectralProcessor
+from .process import SpectralProcessor
 import geo_parameters as gp
 
 
