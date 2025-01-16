@@ -173,7 +173,7 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
             if final_object.is_gridded():
 
                 slice_dict[grid.core.x_str] = slice(*lon)
-                slice_dict[grid.core.y_str] = (slice(*lat),)
+                slice_dict[grid.core.y_str] = slice(*lat)
 
             else:
                 # Get the wanted points from the exanded area using the original PointPicker
@@ -193,7 +193,6 @@ def cached_reader(obj_type: DnoraDataType, cache_reader: DataReader):
                 final_object = final_object.sel(**slice_dict)
                 final_object._mark_convention(convention)
             else:
-
                 final_object = final_object.sel(**slice_dict)
             final_object.name = name
 
