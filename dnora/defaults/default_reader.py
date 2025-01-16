@@ -22,9 +22,8 @@ def read_defaults(filename: str, from_module: bool = False):
 
 
 def read_environment_variable(obj_type: DnoraDataType, data_source: DataSource) -> str:
-
     load_dotenv(f"{sys.path[0]}/.env")
     value = os.getenv(f"DNORA_{data_source.name}_{obj_type.name}_PATH")
     if value is None:
-        value = os.getenv(f"DNORA_{data_source.name}_PATH")
+        value = os.getenv(f"DNORA_{obj_type.name}_PATH")
     return value

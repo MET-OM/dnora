@@ -44,9 +44,9 @@ class DataExporter:
     def _get_writer(self, obj_type: DnoraDataType | DnoraFileType) -> WriterFunction:
         return self._writer_dict.get(obj_type, self._get_default_writer())
 
-    def _get_spectral_convention(self) -> SpectralConvention:
-        """Used only if method is not defined, such as for GeneralWritingFunctions that just dump everything to montly netcdf-files."""
-        return SpectralConvention.OCEAN
+    # def _get_spectral_convention(self) -> SpectralConvention:
+    #     """Used only if method is not defined, such as for GeneralWritingFunctions that just dump everything to montly netcdf-files."""
+    #     return SpectralConvention.OCEAN
 
     def __init__(self, model):
         self.model = model
@@ -71,7 +71,6 @@ class DataExporter:
             if self.model.get(obj_type) is None:
                 msg.info(f"No {obj_type.name} data exists. Won't export anything.")
                 return
-
             if not self._silent:
                 msg.header(
                     writer_function,
@@ -130,6 +129,7 @@ class DataExporter:
     ) -> list[str]:
         # Controls generation of file names using the proper defaults etc.
         format = format or self._get_default_format()
+        edge_object = kwargs.get("edge_object")
         file_object = FileNames(
             format=format,
             obj_type=obj_type,
@@ -137,6 +137,7 @@ class DataExporter:
             filename=filename,
             folder=folder,
             dateformat=dateformat,
+            edge_object=edge_object,
         )
         if self.dry_run():
             if not self._silent:

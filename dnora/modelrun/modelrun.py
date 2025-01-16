@@ -261,6 +261,7 @@ class ModelRun:
         name,
         dry_run,
         reader,
+        expansion_factor,
         source,
         folder,
         filename,
@@ -304,6 +305,7 @@ class ModelRun:
             name=name,
             dry_run=self.dry_run(),
             reader=reader,
+            expansion_factor=expansion_factor,
             source=source,
             folder=folder,
             filename=filename,
@@ -344,6 +346,7 @@ class ModelRun:
     def import_wind(
         self,
         reader: DataReader | None = None,
+        expansion_factor: float = 1.2,
         name: str | None = None,
         dry_run: bool = False,
         source: str | DataSource = DataSource.UNDEFINED,
@@ -357,6 +360,7 @@ class ModelRun:
             name,
             dry_run,
             reader,
+            expansion_factor,
             source,
             folder,
             filename,
@@ -367,6 +371,7 @@ class ModelRun:
     def import_waterlevel(
         self,
         reader: DataReader | None = None,
+        expansion_factor: float = 1.2,
         name: str | None = None,
         dry_run: bool = False,
         source: str | DataSource = DataSource.UNDEFINED,
@@ -380,6 +385,7 @@ class ModelRun:
             name,
             dry_run,
             reader,
+            expansion_factor,
             source,
             folder,
             filename,
@@ -391,6 +397,7 @@ class ModelRun:
         self,
         reader: SpectralDataReader | None = None,
         point_picker: PointPicker | None = None,
+        expansion_factor: float = 1.5,
         name: str | None = None,
         dry_run: bool = False,
         source: str | DataSource = DataSource.UNDEFINED,
@@ -398,12 +405,12 @@ class ModelRun:
         filename: str | None = None,
         **kwargs,
     ) -> None:
-
         self._import_data(
             DnoraDataType.SPECTRA,
             name,
             dry_run,
             reader,
+            expansion_factor,
             source,
             folder,
             filename,
@@ -417,6 +424,7 @@ class ModelRun:
         self,
         reader: SpectralDataReader | None = None,
         point_picker: PointPicker | None = None,
+        expansion_factor: float = 1.5,
         name: str | None = None,
         dry_run: bool = False,
         source: str | DataSource = DataSource.UNDEFINED,
@@ -430,6 +438,7 @@ class ModelRun:
             name,
             dry_run,
             reader,
+            expansion_factor,
             source,
             folder,
             filename,
@@ -443,6 +452,7 @@ class ModelRun:
         self,
         reader: PointDataReader | None = None,
         point_picker: PointPicker | None = None,
+        expansion_factor: float = 1.5,
         name: str | None = None,
         dry_run: bool = False,
         source: str | DataSource = DataSource.UNDEFINED,
@@ -456,6 +466,7 @@ class ModelRun:
             name,
             dry_run,
             reader,
+            expansion_factor,
             source,
             folder,
             filename,
@@ -468,6 +479,7 @@ class ModelRun:
     def import_current(
         self,
         reader: DataReader | None = None,
+        expansion_factor: float = 1.2,
         name: str | None = None,
         dry_run: bool = False,
         source: str | DataSource = DataSource.UNDEFINED,
@@ -481,6 +493,7 @@ class ModelRun:
             name,
             dry_run,
             reader,
+            expansion_factor,
             source,
             folder,
             filename,
@@ -491,6 +504,7 @@ class ModelRun:
     def import_ice(
         self,
         reader: DataReader | None = None,
+        expansion_factor: float = 1.2,
         name: str | None = None,
         dry_run: bool = False,
         source: str | DataSource = DataSource.UNDEFINED,
@@ -500,7 +514,7 @@ class ModelRun:
     ) -> None:
 
         self._import_data(
-            DnoraDataType.ICE, name, dry_run, reader, source, folder, filename, **kwargs
+            DnoraDataType.ICE, name, dry_run, reader, expansion_factor,source, folder, filename, **kwargs
         )
 
     def spectra_to_1d(

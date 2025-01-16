@@ -163,15 +163,7 @@ class WW3Unstruct(PointDataReader):
     hours_per_file = None  # int (if not monthly files)
     offset = 0  # int
     _force_names: str = "gp"  #'gp' or 'source'
-    _decode_cf = False
-    _data_vars = [
-        gp.wave.Hs,
-        gp.wave.Tm01("t01"),
-        gp.wave.Tm02("t02"),
-        gp.wave.Tm_10("t0m1"),
-        gp.wave.Dirm("dir"),
-        gp.wave.Dirp("dp"),
-    ]
+    _data_vars = []
 
     def __init__(
         self,
@@ -235,9 +227,8 @@ class WW3Unstruct(PointDataReader):
         filename: str,
         inds: list[int],
         obj_data_vars: list[str],
-        data_vars: list[str] = None,
+        dnora_class=None,
         force_names: str = None,
-        decode_cf: bool = None,
         **kwargs,
     ) -> tuple[dict]:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
@@ -251,14 +242,14 @@ class WW3Unstruct(PointDataReader):
         elif force_names == "source":
             keep_source_names = True
 
-        if decode_cf is None:
-            decode_cf = self._decode_cf
         if data_vars is None:
             data_vars = self._data_vars
 
         # If no data variables have been provided, read the ones that might be prsent in the class
-        if not data_vars:
-            data_vars = obj_data_vars
+        if data_vars:
+            dynamic = True
+        else:
+            dynamic = False
 
         folder = self._folder(folder, source)
         filename = self._filename(filename, source)
@@ -276,11 +267,6 @@ class WW3Unstruct(PointDataReader):
             f"Getting waveseries data from {self.name()} from {start_time} to {end_time}"
         )
 
-        msg.blank()
-        msg.process("Compiling list of parameters accounting for known WW3 names:")
-        data_vars = compile_data_vars(data_vars, aliases=WW3_ALIASES)
-        msg.blank()
-
         ds_creator_function = partial(ds_unstruct_ww3_read, inds=inds)
         ds_list = read_ds_list(
             start_times,
@@ -295,6 +281,8 @@ class WW3Unstruct(PointDataReader):
         msg.info("Merging dataset together (this might take a while)...")
         ds = xr.concat(ds_list, dim="time")
 
+        breakpoint()
+        cls = dnora_objects.get(obj_type)
         coord_dict = {
             "time": ds.time.values,
             "lon": ds.longitude.values[0],

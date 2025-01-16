@@ -87,20 +87,30 @@ class TileObject:
         return [f"{y:04.0f}-{m:02.0f}-{d:02.0f}" for (y, m, d) in zip(year, month, day)]
 
     def lonlat_strings(self, filenames: list[str]) -> list[str]:
-        return [
-            f"{lat[0]:03.0f}N{lon[0]:03.0f}E" for (lat, lon) in self.latlon(filenames)
-        ]
+        lonlat_strs = []
+        for filename in filenames:
+
+            lonlat = filename.split("_")[-3:-1]
+            lonstr = [s for s in lonlat if "E" in s][0]
+            latstr = [s for s in lonlat if "N" in s][0]
+            lonlat_strs.append(f"{latstr}{lonstr}")
+
+        return lonlat_strs
+        #return [
+        #    f"{lat[0]:03.0f}N{lon[0]:03.0f}E" for (lat, lon) in self.latlon(filenames)
+        #]
 
     def lonlat(self, filenames: list[str]) -> tuple[list[tuple[int]]]:
+        """Creates a list of tuples of lons and lats that correspond to the given filenames"""
         lon, lat = [], []
         for filename in filenames:
 
             lonlat = filename.split("_")[-3:-1]
             lonstr = [s for s in lonlat if "E" in s][0]
             latstr = [s for s in lonlat if "N" in s][0]
+            lon.append((int(lonstr[:-1]), int(lonstr[:-1]) + self.tile_res))
+            lat.append((int(latstr[:-1]), int(latstr[:-1]) + self.tile_res))
 
-            lon.append((int(lonstr[0:3]), int(lonstr[0:3]) + self.tile_res))
-            lat.append((int(latstr[0:3]), int(latstr[0:3]) + self.tile_res))
         return lon, lat
 
 
