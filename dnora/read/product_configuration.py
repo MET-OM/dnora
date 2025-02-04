@@ -10,18 +10,17 @@ class ProductConfiguration:
     filename: str = "model_output_%Y%m.nc"
     default_filenames: dict[DataSource, str] = field(default_factory=dict)
     default_folders: dict[DataSource, str] = field(default_factory=dict)
+    tile: str | None = None
+    tile_names: dict[str, str] = field(default_factory=dict)
     default_data_source: DataSource = DataSource.UNDEFINED
     convention: SpectralConvention = SpectralConvention.UNDEFINED
     ds_creator_function: callable = basic_xarray_read
-    ds_aliases: dict[DnoraDataType, dict] = field(default_factory=dict)
+    ds_aliases: dict[str, str] = field(default_factory=dict)
     core_aliases: dict[DnoraDataType, dict] = field(default_factory=dict)
     # only_vars: field(default_factory=dict)
     # ignore_vars: field(default_factory=dict)
     # dynamic: field(default_factory=dict)
     time_var: str = None
-
-    def get_ds_aliases(self, obj_type):
-        return self.ds_aliases.get(obj_type)
 
     def get_core_aliases(self, obj_type):
         return self.core_aliases.get(obj_type)

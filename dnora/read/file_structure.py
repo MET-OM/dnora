@@ -10,6 +10,7 @@ class FileStructure:
     lead_time: int = 0
     last_file: str = ""
     offset: int = 0
+    tile: str = None
 
     def create_time_stamps(self, start_time: str, end_time: str):
         if self.stride == "month":
@@ -25,4 +26,5 @@ class FileStructure:
                 lead_time=self.lead_time,
                 offset=self.offset,
             )
+
         return start_times, end_times, file_times

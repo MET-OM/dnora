@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from dnora.type_manager.data_sources import DataSource
 from dnora.type_manager.spectral_conventions import SpectralConvention
 from dnora.aux_funcs import get_url
-
+import re
 from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
@@ -92,11 +92,21 @@ class DataReader(ABC):
     def default_data_source(self) -> DataSource:
         return self._default_data_source
 
-    def _folder(self, folder: str, source: DataSource) -> str:
+    def _folder(
+        self,
+        folder: str,
+        source: DataSource,
+        tile: str | None = None,
+        tile_name: str | None = None,
+    ) -> str:
         default_folder = self._default_folders.get(source)
         if source in [DataSource.REMOTE, DataSource.LOCAL]:
             folder = folder or default_folder
             if folder is not None:
+                if tile is not None:
+                    folder = re.sub("#TILE", tile, folder)
+                if tile_name is not None:
+                    folder = re.sub("#TILENAME", tile_name, folder)
                 return folder
         else:
             if folder is None:
@@ -104,18 +114,33 @@ class DataReader(ABC):
                     f"Define an environmental variable DNORA_{source.name}_PATH"
                 )
             if default_folder is not None:
-                return get_url(folder, self._default_folders.get(source))
-
+                folder = get_url(folder, self._default_folders.get(source))
+                if tile is not None:
+                    folder = re.sub("#TILE", tile, folder)
+                if tile_name is not None:
+                    folder = re.sub("#TILENAME", tile_name, folder)
+                return folder
         raise ValueError(f"No folder is defined for source {source}!")
 
-    def _filename(self, filename: str, source: DataSource) -> str:
+    def _filename(
+        self,
+        filename: str,
+        source: DataSource,
+        tile: str | None = None,
+        tile_name: str | None = None,
+    ) -> str:
         if filename is None:
             filename = self._default_filenames.get(source)
         if filename is None:
             filename = self._default_filename
-        if filename is not None:
-            return filename
-        raise ValueError(f"No filename is defined for source {source}!")
+        if filename is None:
+            raise ValueError(f"No filename is defined for source {source}!")
+
+        if tile is not None:
+            filename = re.sub("#TILE", tile, filename)
+        if tile_name is not None:
+            filename = re.sub("#TILENAME", tile_name, filename)
+        return filename
 
 
 class PointDataReader(DataReader):
