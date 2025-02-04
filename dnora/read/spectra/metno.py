@@ -4,7 +4,12 @@ from dnora.type_manager.spectral_conventions import SpectralConvention
 
 # Import aux_funcsiliry functions
 from dnora.type_manager.data_sources import DataSource
-from dnora.read.spectra import WW3, WAM
+from dnora.read.spectra import WAM, SpectralProductReader
+
+from dnora.read.product_configuration import ProductConfiguration
+from dnora.read.file_structure import FileStructure
+from functools import partial
+from dnora.read.ds_read_functions import basic_xarray_read
 
 
 class WAM4km(WAM):
@@ -78,24 +83,6 @@ class WW3_4km(WAM):
         return DataSource.REMOTE
 
 
-class WAM3(WAM):
-    """covers Nordic Seas and the Arctic"""
-
-    _default_folders = {
-        DataSource.REMOTE: "https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam3_latest/",
-        DataSource.IMMUTABLE: "DNMI_WAVE/%Y/%m/%d",
-    }
-    _default_filenames = {DataSource.REMOTE: "MyWave_wam3_WAVE_%Y%m%dT%HZ.nc"}
-    _default_filename = "MyWave_wam3_SPC_%Y%m%dT%HZ.nc"
-
-    stride: int = 12
-    hours_per_file: int = 121
-    offset: int = 6
-
-    def default_data_source(self) -> DataSource:
-        return DataSource.IMMUTABLE
-
-
 class WAM800(WAM):
     """c0 covers Finnmark, c1 covers NordNorge, c2 covers MidtNorge, c3 covers Vestlandet and c4 covers Skagerrak (these are the names of the different domains as used below)."""
 
@@ -141,11 +128,67 @@ class WAM800(WAM):
         return DataSource.IMMUTABLE
 
 
-class NORAC(WW3):
+class NORAC(SpectralProductReader):
+    product_configuration = ProductConfiguration(
+        filename="ww3_spec.%Y%m.nc",
+        default_folders={
+            DataSource.REMOTE: "https://thredds.met.no/thredds/dodsC/norac_wave/spec/",
+            DataSource.INTERNAL: "sfiblues/wave_hindcast/hindcast_v2/spec",
+        },
+        ds_creator_function=partial(basic_xarray_read, inds_var="station"),
+        convention=SpectralConvention.WW3,
+        default_data_source=DataSource.REMOTE,
+    )
+
+    # This defines how the file structure of the model output is set up
+    # file_structure = FileStructure(stride="month")
+
+    # _default_filename = "ww3_spec.%Y%m.nc"
+
+    # stride = "month"  # int (for hourly), or 'month'
+    # hours_per_file = None  # int (if not monthly files)
+    # offset = 0  # int
+
+    # def set_up_for_ds_read(self, obj_type) -> tuple:
+    #     if obj_type == DnoraDataType.WAVESERIES:
+    #         dynamic = True
+    #         ignore_vars = ["station_name"]
+    #         ds_aliases = {"dpt": gp.ocean.WaterDepth}
+    #         aliases = {}
+    #     else:
+    #         ignore_vars = []
+    #         ds_aliases = {}
+    #         aliases = {}
+    #         dynamic = False
+    #     return dynamic, aliases, ds_aliases, ignore_vars
+
+    # def _ds_creator_function(self, inds):
+    #     return partial(basic_xarray_read, inds=inds, inds_var="station")
+
+
+# class NORAC(WW3):
+#     _default_folders = {
+#         DataSource.REMOTE: "https://thredds.met.no/thredds/dodsC/norac_wave/spec/",
+#         DataSource.INTERNAL: "sfiblues/wave_hindcast/hindcast_v2/spec",
+#     }
+
+#     def default_data_source(self) -> DataSource:
+#         return DataSource.REMOTE
+
+
+class WAM3(WAM):
+    """covers Nordic Seas and the Arctic"""
+
     _default_folders = {
-        DataSource.REMOTE: "https://thredds.met.no/thredds/dodsC/norac_wave/spec/",
-        DataSource.INTERNAL: "sfiblues/wave_hindcast/hindcast_v2/spec",
+        DataSource.REMOTE: "https://thredds.met.no/thredds/dodsC/fou-hi/mywavewam3_latest/",
+        DataSource.IMMUTABLE: "DNMI_WAVE/%Y/%m/%d",
     }
+    _default_filenames = {DataSource.REMOTE: "MyWave_wam3_WAVE_%Y%m%dT%HZ.nc"}
+    _default_filename = "MyWave_wam3_SPC_%Y%m%dT%HZ.nc"
+
+    stride: int = 12
+    hours_per_file: int = 121
+    offset: int = 6
 
     def default_data_source(self) -> DataSource:
-        return DataSource.REMOTE
+        return DataSource.IMMUTABLE

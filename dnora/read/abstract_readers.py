@@ -84,8 +84,13 @@ class DataReader(ABC):
     def __str__(self) -> str:
         return self.name()
 
+    default_data_source = DataSource.UNDEFINED
+
+    def set_default_data_source(self, source):
+        self._default_data_source = source
+
     def default_data_source(self) -> DataSource:
-        return DataSource.UNDEFINED
+        return self._default_data_source
 
     def _folder(self, folder: str, source: DataSource) -> str:
         default_folder = self._default_folders.get(source)

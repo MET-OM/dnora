@@ -34,6 +34,8 @@ class SpectralConvention(Enum):
     Direction to. North = 0, East = 90."""
     WW3 = "ww3"
 
+    UNDEFINED = "undefined"
+
 
 def convert_2d_to_1d(convention_2d: SpectralConvention):
     """Determine the correct 1d convention from a 2d convention.

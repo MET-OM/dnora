@@ -1,2 +1,2 @@
-from .spectral_readers import SWAN_Ascii, WAM, WW3, SWAN
+from .spectral_readers import SWAN_Ascii, WAM, SWAN, SpectralProductReader
 from . import metno, ec, nchmf

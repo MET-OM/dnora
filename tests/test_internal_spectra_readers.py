@@ -55,3 +55,4 @@ def test_norac(timevec):
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=1)
     model.import_spectra(dn.read.spectra.metno.NORAC(), source=DataSource.INTERNAL)
     assert np.all(model.spectra().time() == timevec)
+    breakpoint()

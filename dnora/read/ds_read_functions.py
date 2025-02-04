@@ -11,31 +11,51 @@ from typing import Callable
 import geo_parameters as gp
 
 
+def find_time_var_in_ds(ds):
+    """Tries to identify the time variable in a dataset"""
+    if "time" in list(ds.coords):
+        return "time"
+    time_vars = [v for v in list(ds.coords) if "time" in v]
+    if not time_vars:
+        raise KeyError(f"Cant find a time variable in {list(ds.coords)}")
+    else:
+        return time_vars[0]
+
+
 def basic_xarray_read(
     start_time: pd.Timestamp,
     end_time: pd.Timestamp,
     url: str,
     time_var: str = None,
+    dt_for_time_stamps_in_hours: float = 0,
     lon: tuple[float] = None,
     lat: tuple[float] = None,
+    inds: list[int] = None,
+    inds_var: str = "inds",
     data_vars: list[str] = None,
-    create_hourly_time_stamps: bool = False,
+    chunks=None,
 ):
+    """Reads a single file into an Xarray Dataset:
 
+    1) The file is vut between start_time and end_time (variable 'time')
+        - If there is no variable 'time', then first variable containing string 'time' is used
+        - Automatic detection can be overridden by providing keyword time_var = 'xxxx'
+    2) If dt_for_time_stamps_in_hours > 0, then no attempt to decode times in the netcdf is made
+        - We will instead create time stamps with given time step
+    3) If lon and lat is given, then the dataset is cut to those limits
+    4) If inds is given, then dataset is cut to those indeces
+        - If indexd variable is not 'inds', it can be specified with e.g. inds='station'
+    5) If data_vars is given, then dataset is cut to those data variables
+    """
     with xr.open_dataset(
-        url, decode_times=(not create_hourly_time_stamps), chunks="auto"
+        url, decode_times=(not dt_for_time_stamps_in_hours), chunks=chunks
     ) as f:
-        if time_var is None:
-            if "time" in list(f.coords):
-                time_var = "time"
-            else:
-                time_vars = [v for v in list(f.coords) if "time" in v]
-                if not time_vars:
-                    raise KeyError(f"Cant find a time variable in {list(f.coords)}")
-                else:
-                    time_var = time_vars[0]
-        if create_hourly_time_stamps:
-            times = pd.date_range(start_time, end_time, freq="1h")
+        time_var = time_var or find_time_var_in_ds(f)
+
+        if dt_for_time_stamps_in_hours:
+            times = pd.date_range(
+                start_time, end_time, freq=f"{dt_for_time_stamps_in_hours}h"
+            )
             f[time_var] = times
 
         ds = f.sel(**{time_var: slice(start_time, end_time)})
@@ -44,6 +64,9 @@ def basic_xarray_read(
             lat_str = gp.grid.Lon.find_me_in_ds(ds, return_first=True) or "latitude"
             if lon is not None and lat is not None:
                 ds = ds.sel(**{lon_str: slice(*lon), lat_str: slice(*lat)})
+        if inds is not None:
+            ds = ds.isel(**{inds_var: inds})
+
         if data_vars is not None:
             ds = ds[data_vars]
 
