@@ -143,8 +143,9 @@ class ReGridDirs(SpectralProcessor):
     """Interpolates the spectra to have the same resoltuon but to start from
     a certain values, e.g. 0."""
 
-    def __init__(self, first_dir=0) -> None:
+    def __init__(self, res: int | None = None, first_dir: int = 0) -> None:
         self.first_dir = copy(first_dir)
+        self.res = copy(res)
 
         return
 
@@ -152,7 +153,8 @@ class ReGridDirs(SpectralProcessor):
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
         if dirs[0] > 0:
             nbins = len(dirs)
-            dD = int(360 / nbins)
+            dD = self.res or 360 / nbins
+            dD = int(dD)
 
             new_dirs = np.array(range(0, 360, dD), dtype="float32") + self.first_dir
 
@@ -178,7 +180,11 @@ class ReGridDirs(SpectralProcessor):
         return new_spec, new_dirs, freq, inds
 
     def __str__(self):
-        return f"Interpolating spectra to start from {self.first_dir}"
+        return_string = f"Interpolating spectra to start from {self.first_dir}"
+        if self.res is not None:
+            return_string += " and setting resolution to {self.res}"
+
+        return return_string
 
 
 # class ClearNaN(SpectralProcessor):
