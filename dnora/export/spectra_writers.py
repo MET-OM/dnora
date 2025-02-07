@@ -109,6 +109,19 @@ class WW3(SpectraWriter):
         inds_var = var_names.get("inds", "station")
         freq_var = var_names.get("freq", "frequency")
         dirs_var = var_names.get("dirs", "direction")
+        efth_var = var_names.get("efth", "efth")
+        lon_var = var_names.get("lon", "longitude")
+        lat_var = var_names.get("lat", "latitude")
+
+        msg.plain("Using the following names in the netcdf-file:")
+        msg.plain(f"'time' >> '{time_var}'")
+        msg.plain(f"'inds' >> '{inds_var}'")
+        msg.plain(f"'freq' >> '{freq_var}'")
+        msg.plain(f"'dirs' >> '{dirs_var}'")
+        msg.plain(f"'efth' >> '{efth_var}'")
+        msg.plain(f"'lon' >> '{lon_var}'")
+        msg.plain(f"'lat' >> '{lat_var}'")
+
         root_grp = netCDF4.Dataset(output_file, "w", format="NETCDF4")
         #################### dimensions
         root_grp.createDimension(time_var, None)
@@ -127,7 +140,7 @@ class WW3(SpectraWriter):
         frequency = root_grp.createVariable(freq_var, np.float32, (freq_var,))
         direction = root_grp.createVariable(dirs_var, np.float32, (dirs_var,))
         efth = root_grp.createVariable(
-            "efth",
+            efth_var,
             np.float32,
             (
                 time_var,
@@ -137,7 +150,7 @@ class WW3(SpectraWriter):
             ),
         )
         latitude = root_grp.createVariable(
-            "latitude",
+            lat_var,
             np.float32,
             (
                 time_var,
@@ -145,7 +158,7 @@ class WW3(SpectraWriter):
             ),
         )
         longitude = root_grp.createVariable(
-            "longitude",
+            lon_var,
             np.float32,
             (
                 time_var,
