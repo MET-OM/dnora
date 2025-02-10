@@ -4,7 +4,7 @@ from dnora.type_manager.spectral_conventions import SpectralConvention
 
 # Import aux_funcsiliry functions
 from dnora.type_manager.data_sources import DataSource
-from dnora.read.spectra import SpectralProductReader
+from dnora.read.product_readers import SpectralProductReader
 
 from dnora.read.product_configuration import ProductConfiguration
 from dnora.read.file_structure import FileStructure
