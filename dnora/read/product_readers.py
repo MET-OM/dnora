@@ -120,6 +120,7 @@ class ProductReader(DataReader):
             ds_creator_function,
             url_function=self.product_configuration.url_function,
             hours_per_file=self.file_structure.hours_per_file,
+            lead_time=self.file_structure.lead_time,
         )
 
         msg.info("Merging dataset together (this might take a while)...")

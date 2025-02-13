@@ -139,12 +139,6 @@ def read_one_ds(
     return ds, url
 
 
-def get_constant_url(folder, filename, file_times) -> list[str]:
-    """Applies the same folder and filename to all file_times to get url.
-    folder and file_name can contain %Y etc. that will be replaced"""
-    return [get_url(folder, filename, file_time) for file_time in file_times]
-
-
 def read_ds_list(
     start_times: pd.DatetimeIndex,
     end_times: pd.DatetimeIndex,
@@ -152,16 +146,18 @@ def read_ds_list(
     folder: str,
     filename: str,
     ds_creator_function: Callable = basic_xarray_read,
-    url_function: Callable = get_constant_url,
+    url_function: Callable = None,
     hours_per_file: int = None,
+    lead_time: int = None,
 ) -> list[xr.Dataset]:
     """Reads a list of xr.Datasets using the time stamps and folder/filename given.
 
     If one file is missing, the function tries to patch if the files have overlap (if hours_per_file is given).
     the ds_creator function takes arguments (start_time, end_time, url) and returns an xr.Dataset.
     """
-
-    urls = url_function(folder, filename, file_times)
+    urls = url_function(
+        folder, filename, file_times, start_times=start_times, lead_time=lead_time
+    )
     ds_list = []
     expected_shape = None
     for n in range(len(file_times)):
