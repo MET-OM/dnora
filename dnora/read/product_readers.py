@@ -1,4 +1,4 @@
-from .abstract_readers import SpectralDataReader
+from .abstract_readers import SpectralDataReader, DataReader
 from dnora.read.file_structure import FileStructure
 from dnora.read.product_configuration import ProductConfiguration
 from functools import partial
@@ -7,10 +7,140 @@ from dnora.read.ds_read_functions import (
     read_ds_list,
     read_first_ds,
     find_time_var_in_ds,
+    setup_temp_dir,
 )
+from dnora.read.fimex_functions import ds_fimex_read
 from geo_skeletons import PointSkeleton
 from dnora import msg
 import xarray as xr
+from dnora import utils
+
+
+class ProductReader(DataReader):
+    """This should not be used directly, but is a template for model specific implementations"""
+
+    # This defines filenames, data sources etc.
+    product_configuration = ProductConfiguration(default_data_source=DataSource.LOCAL)
+
+    # This defines how the file structure of the model output is set up
+    file_structure = FileStructure(
+        stride="month",
+        hours_per_file=None,
+        last_file="",
+        lead_time=0,
+        offset=0,
+    )
+
+    @staticmethod
+    def returning_ds() -> bool:
+        return True
+
+    def __init__(
+        self,
+        stride: (
+            int | str | None
+        ) = None,  # Integer is number of hours, 'month' for monthly files
+        hours_per_file: int | None = None,  # None for stride = 'month'
+        last_file: str | None = None,
+        lead_time: int | None = None,
+        offset: int | None = None,
+        tile: str | None = None,
+    ) -> None:
+        if stride is not None:
+            self.file_structure.stride = stride
+
+        if hours_per_file is not None:
+            self.file_structure.hours_per_file = hours_per_file
+
+        if last_file is not None:
+            self.file_structure.last_file = last_file
+
+        if lead_time is not None:
+            self.file_structure.lead_time = lead_time
+
+        if offset is not None:
+            self.file_structure.offset = offset
+
+        self._default_filename = self.product_configuration.filename
+        self._default_filenames = self.product_configuration.default_filenames
+        self._default_folders = self.product_configuration.default_folders
+        self.set_default_data_source(self.product_configuration.default_data_source)
+
+        self._tile = tile or self.product_configuration.tile
+
+    def __call__(
+        self,
+        obj_type,
+        grid,
+        start_time,
+        end_time,
+        source: DataSource,
+        folder: str,
+        filename: str,
+        expansion_factor: float = 1.2,
+        program: str = "pyfimex",
+        dnora_class=None,
+        tile: str | None = None,
+        **kwargs,
+    ) -> tuple[dict]:
+        """Reads in all gridded data for given area and time"""
+        tile = tile or self._tile
+        tile_name = self.product_configuration.tile_names.get(tile)
+        folder = self._folder(folder, source, tile=tile, tile_name=tile_name)
+        filename = self._filename(filename, source, tile=tile, tile_name=tile_name)
+        start_times, end_times, file_times = self.file_structure.create_time_stamps(
+            start_time, end_time
+        )
+        msg.info(
+            f"Getting {obj_type} from {self.name()} from {start_time} to {end_time}"
+        )
+        setup_temp_dir(obj_type, self.name())
+        # Define area to search in
+        msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
+        lon, lat = utils.grid.expand_area(
+            grid.edges("lon"), grid.edges("lat"), expansion_factor
+        )
+
+        msg.process(f"Applying {program}")
+
+        ds_creator_function = partial(
+            self.product_configuration.ds_creator_function,
+            lon=lon,
+            lat=lat,
+            data_type=obj_type,
+            name=self.name(),
+            program=program,
+        )
+        ds_list = read_ds_list(
+            start_times,
+            end_times,
+            file_times,
+            folder,
+            filename,
+            ds_creator_function,
+            url_function=self.product_configuration.url_function,
+            hours_per_file=self.file_structure.hours_per_file,
+        )
+
+        msg.info("Merging dataset together (this might take a while)...")
+        time_var = self.product_configuration.time_var or find_time_var_in_ds(
+            ds_list[0]
+        )
+        ds = xr.concat(ds_list, dim=time_var, coords="minimal")
+
+        ds_aliases = self.product_configuration.ds_aliases
+        core_aliases = self.product_configuration.get_core_aliases(obj_type)
+
+        points = dnora_class.from_ds(
+            ds,
+            dynamic=False,
+            ignore_vars=[],
+            only_vars=[],
+            ds_aliases=ds_aliases,
+            core_aliases=core_aliases,
+        )
+
+        return points.ds()
 
 
 class SpectralProductReader(SpectralDataReader):

@@ -3,6 +3,8 @@ from dnora.type_manager.spectral_conventions import SpectralConvention
 from dnora.type_manager.data_sources import DataSource
 from dnora.read.ds_read_functions import basic_xarray_read
 from dnora.type_manager.dnora_types import DnoraDataType
+from dnora.aux_funcs import get_url
+from typing import Callable
 
 
 @dataclass
@@ -21,6 +23,7 @@ class ProductConfiguration:
     # ignore_vars: field(default_factory=dict)
     # dynamic: field(default_factory=dict)
     time_var: str = None
+    url_function: Callable = field(default=get_url)
 
     def get_core_aliases(self, obj_type):
         return self.core_aliases.get(obj_type)
