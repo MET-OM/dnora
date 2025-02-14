@@ -24,6 +24,8 @@ from dnora.read.ds_read_functions import read_ds_list, setup_temp_dir
 from functools import partial
 from dnora.read.fimex_functions import ds_fimex_read
 from dnora.read.ds_read_functions import basic_xarray_read
+from dnora.read.product_readers import ProductReader
+from dnora.read.product_configuration import ProductConfiguration, get_constant_url
 
 
 class NorKyst800(DataReader):
@@ -148,7 +150,7 @@ class NorFjords160(DataReader):
 
     _default_filename = "norfjords_160m_his_%Y%m%d01_surface_interp.nc"
     _default_folders = {
-        DataSource.INTERNAL: "fou/om/SWAN/Bjornafjorden2/ROMS/",
+        DataSource.INTERNAL: "SWAN/Bjornafjorden2/ROMS/",
     }
 
     def __init__(
@@ -208,12 +210,19 @@ class NorFjords160(DataReader):
         )
 
         current_list = read_ds_list(
-            start_times, end_times, file_times, folder, filename, ds_creator_function
+            start_times,
+            end_times,
+            file_times,
+            folder,
+            filename,
+            ds_creator_function,
+            url_function=get_constant_url,
+            hours_per_file=self.file_structure.hours_per_file,
+            lead_time=self.file_structure.lead_time,
         )
         msg.plain("Merging xarrays (this might take a while)...")
 
         ds = xr.concat(current_list, dim="ocean_time")
-
         lons, lats = ds.lon.values[:, 0], ds.lat.values[0, :]
         lon_mask = np.logical_and(lons >= lon[0], lons <= lon[1])
         lat_mask = np.logical_and(lats >= lat[0], lats <= lat[1])

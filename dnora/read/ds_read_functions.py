@@ -241,9 +241,16 @@ def data_left_to_try_with(hours_per_file, n, ct, file_times, end_time) -> bool:
     if n - ct <= 0:
         return False
 
-    if pd.Timestamp(end_time) - pd.Timestamp(file_times[n - ct - 1]) > pd.Timedelta(
-        hours_per_file, "hours"
-    ):
+    # Take ct-1 since we want to check what the file contains if we increate ct with one in the next loop
+    end_of_previous_file = pd.Timestamp(file_times[n - ct - 1]) + pd.Timedelta(
+        hours_per_file - 1, "hours"
+    )
+    last_time_to_be_read = pd.Timestamp(end_time)
+
+    if last_time_to_be_read > end_of_previous_file:
+        # if pd.Timestamp(end_time) - pd.Timestamp(file_times[n - ct - 1]) > pd.Timedelta(
+        #    hours_per_file, "hours"
+        # ):
         return False
 
     return True

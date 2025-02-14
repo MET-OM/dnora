@@ -20,3 +20,11 @@ def test_norkyst800(grid, timevec):
     model.import_current(dn.read.current.metno.NorKyst800(), program="pyfimex")
 
     assert np.all(model.current().time() == timevec)
+
+
+@pytest.mark.remote
+def test_norfjords160(grid, timevec):
+    model = dn.modelrun.ModelRun(grid, year=2022, month=4, day=1)
+    model.import_current(dn.read.current.metno.NorFjords160(), program="pyfimex")
+
+    assert np.all(model.current().time() == timevec)
