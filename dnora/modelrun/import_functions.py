@@ -113,8 +113,7 @@ def read_data_and_create_object(
             expansion_factor=expansion_factor,
             **kwargs,
         )
-
-        obj = dnora_class.from_ds(ds, dynamic=True)
+        obj = dnora_class.from_ds(ds, dynamic=False)
     else:
 
         coord_dict, data_dict, meta_dict = reader(

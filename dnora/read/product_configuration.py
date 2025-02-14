@@ -24,15 +24,15 @@ class ProductConfiguration:
     convention: SpectralConvention = SpectralConvention.UNDEFINED
     ds_creator_function: callable = basic_xarray_read
     ds_aliases: dict[str, str] = field(default_factory=dict)
-    core_aliases: dict[DnoraDataType, dict] = field(default_factory=dict)
+    core_aliases: dict[str, str] = field(default_factory=dict)
     # only_vars: field(default_factory=dict)
     # ignore_vars: field(default_factory=dict)
     # dynamic: field(default_factory=dict)
     time_var: str = None
     url_function: Callable = field(default=get_constant_url)
 
-    def get_core_aliases(self, obj_type):
-        return self.core_aliases.get(obj_type)
+    # def get_core_aliases(self, obj_type):
+    #     return self.core_aliases.get(obj_type)
 
     def get_default_filename(self, source):
         return self.default_filenames.get(source)
