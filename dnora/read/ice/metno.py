@@ -125,7 +125,6 @@ class NORA3old(DataReader):
         )
 
         ice_forcing = xr.concat(ds_list, dim="time")
-        breakpoint()
         data_dict = {
             "sic": ice_forcing.SIC.data,
             "sit": ice_forcing.SIT.data,
