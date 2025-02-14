@@ -10,7 +10,7 @@ dependencies:
   - xarray=>0.20.1
   - meshio
   - scipy
-  - geo-skeletons==0.20.1
+  - geo-skeletons==0.20.4
   - pip
   - pip:
     - dnplot==0.3.1
