@@ -115,10 +115,11 @@ class DataReader(ABC):
                 )
             if default_folder is not None:
                 folder = get_url(folder, self._default_folders.get(source))
-                if tile is not None:
-                    folder = re.sub("#TILE", tile, folder)
                 if tile_name is not None:
                     folder = re.sub("#TILENAME", tile_name, folder)
+                if tile is not None:
+                    folder = re.sub("#TILE", tile, folder)
+
                 return folder
         raise ValueError(f"No folder is defined for source {source}!")
 
@@ -135,11 +136,11 @@ class DataReader(ABC):
             filename = self._default_filename
         if filename is None:
             raise ValueError(f"No filename is defined for source {source}!")
-
-        if tile is not None:
-            filename = re.sub("#TILE", tile, filename)
         if tile_name is not None:
             filename = re.sub("#TILENAME", tile_name, filename)
+        if tile is not None:
+            filename = re.sub("#TILE", tile, filename)
+
         return filename
 
 
@@ -197,5 +198,6 @@ class SpectralDataReader(PointDataReader):
                     Direction to. North = 0, East = 90.
         """
         return self._convention
+
 
 ReaderFunction = Union[DataReader, PointDataReader, SpectralDataReader]

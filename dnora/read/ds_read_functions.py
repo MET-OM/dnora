@@ -64,7 +64,8 @@ def basic_xarray_read(
             lat_str = gp.grid.Lon.find_me_in_ds(ds, return_first=True) or "latitude"
             if lon is not None and lat is not None:
                 ds = ds.sel(**{lon_str: slice(*lon), lat_str: slice(*lat)})
-        if inds is not None:
+
+        if inds is not None and hasattr(ds, inds_var):
             ds = ds.isel(**{inds_var: inds})
 
         if data_vars is not None:

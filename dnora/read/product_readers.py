@@ -230,6 +230,8 @@ class SpectralProductReader(SpectralDataReader):
         inds,
         dnora_class=None,
         tile: str | None = None,
+        verbose: bool = False,
+        add_datavars: list = None,
         **kwargs,
     ) -> tuple[dict]:
         """Reads in all boundary spectra between the given times and at for the given indeces"""
@@ -264,9 +266,12 @@ class SpectralProductReader(SpectralDataReader):
             ds_list[0]
         )
         ds = xr.concat(ds_list, dim=time_var)
-
         ds_aliases = self.product_configuration.ds_aliases
-        core_aliases = self.product_configuration.get_core_aliases(obj_type)
+        core_aliases = self.product_configuration.core_aliases
+
+        if add_datavars is not None:
+            for data_var in add_datavars:
+                dnora_class = dnora_class.add_datavar(data_var)
 
         points = dnora_class.from_ds(
             ds,
@@ -275,6 +280,7 @@ class SpectralProductReader(SpectralDataReader):
             only_vars=[],
             ds_aliases=ds_aliases,
             core_aliases=core_aliases,
+            verbose=verbose,
         )
 
         return points.ds()

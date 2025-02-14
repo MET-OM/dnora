@@ -11,6 +11,7 @@ from dnora.read.file_structure import FileStructure
 from functools import partial
 from dnora.read.ds_read_functions import basic_xarray_read
 import geo_parameters as gp
+from dnora.read.aliases import WW3_DS_ALIASES
 
 
 class WAM4km(SpectralProductReader):
@@ -114,6 +115,7 @@ class NORAC(SpectralProductReader):
         ds_creator_function=partial(basic_xarray_read, inds_var="station"),
         convention=SpectralConvention.WW3,
         default_data_source=DataSource.REMOTE,
+        ds_aliases=WW3_DS_ALIASES,
     )
 
 
