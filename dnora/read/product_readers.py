@@ -130,7 +130,7 @@ class ProductReader(DataReader):
         ds = xr.concat(ds_list, dim=time_var, coords="minimal")
 
         ds_aliases = self.product_configuration.ds_aliases
-        core_aliases = self.product_configuration.get_core_aliases(obj_type)
+        core_aliases = self.product_configuration.core_aliases
 
         points = dnora_class.from_ds(
             ds,
