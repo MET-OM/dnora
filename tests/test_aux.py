@@ -1,9 +1,37 @@
 import unittest
 import sys
 import numpy as np
+import pandas as pd
 
 sys.path.insert(0, "../../")
 from dnora.utils.time import create_time_stamps
+from dnora.aux_funcs import get_url
+
+
+def test_get_url():
+    time = pd.Timestamp("2020-01-01 07:00")
+    url = "https://run[6]/%Y-%m-%d %H:%M"
+    folder = "const"
+    new_url = get_url(folder, url, time)
+    assert new_url == "const/https://run06/2020-01-01 07:00"
+
+    time = pd.Timestamp("2020-01-01 07:00")
+    url = "https://run[3]/%Y-%m-%d %H:%M"
+    folder = "const"
+    new_url = get_url(folder, url, time)
+    assert new_url == "const/https://run06/2020-01-01 07:00"
+
+    time = pd.Timestamp("2020-01-01 07:00")
+    url = "https://run[12]/%Y-%m-%d %H:%M"
+    folder = "const"
+    new_url = get_url(folder, url, time)
+    assert new_url == "const/https://run00/2020-01-01 07:00"
+
+    time = pd.Timestamp("2020-01-01 14:00")
+    url = "https://run[12]/%Y-%m-%d %H:%M"
+    folder = "const"
+    new_url = get_url(folder, url, time)
+    assert new_url == "const/https://run12/2020-01-01 14:00"
 
 
 class TimeStamps(unittest.TestCase):
