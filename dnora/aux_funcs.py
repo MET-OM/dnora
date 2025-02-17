@@ -109,9 +109,10 @@ def get_url(
         url_temp = re.sub(f"https:/", "https://", str(url_temp), 1)
         url_temp = re.sub(f"http:/", "http://", str(url_temp), 1)
         url_temp = re.sub(f"ftp:/", "ftp://", str(url_temp), 1)
-        for floor_hour in range(1, 24):
-            hfloor = int(np.floor(time_stamp.hour / floor_hour) * floor_hour)
-            url_temp = re.sub(f"\[{floor_hour}\]", f"{hfloor:02.0f}", str(url_temp))
+        if time_stamp is not None:
+            for floor_hour in range(1, 24):
+                hfloor = int(np.floor(time_stamp.hour / floor_hour) * floor_hour)
+                url_temp = re.sub(f"\[{floor_hour}\]", f"{hfloor:02.0f}", str(url_temp))
 
         url.append(url_temp)
     if len(url) == 1 and not get_list:
