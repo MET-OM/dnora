@@ -30,8 +30,8 @@ def test_nora3(grid, timevec_late2022):
     model = dn.modelrun.ModelRun(
         grid, start_time="2022-10-01 00:00", end_time="2022-10-02 23:00"
     )
-    model.import_ice(dn.read.ice.metno.NORA3old())
-    assert np.all(model.ice().time() == timevec)
+    model.import_ice(dn.read.ice.metno.NORA3())
+    assert np.all(model.ice().time() == timevec_late2022)
 
 
 @pytest.mark.remote
