@@ -30,6 +30,7 @@ class ProductConfiguration:
     # dynamic: field(default_factory=dict)
     time_var: str = None
     url_function: Callable = field(default=get_constant_url)
+    ds_pre_processor: Callable = field(default=(lambda ds: ds))
 
     # def get_core_aliases(self, obj_type):
     #     return self.core_aliases.get(obj_type)

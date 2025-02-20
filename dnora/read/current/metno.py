@@ -28,6 +28,8 @@ from dnora.read.product_readers import ProductReader
 from dnora.read.product_configuration import ProductConfiguration, get_constant_url
 import pandas as pd
 import re
+from dnora.process.gridded import FillNaNs
+import geo_parameters as gp
 
 
 def get_norkyst800_urls(folder: str, filename: str, file_times: list[str], **kwargs):
@@ -43,6 +45,11 @@ def get_norkyst800_urls(folder: str, filename: str, file_times: list[str], **kwa
             )
         urls.append(get_url(remote_folder, filename, file_time))
     return urls
+
+
+def pre_process_norkyst800_ds(ds: xr.Dataset) -> xr.Dataset:
+    """Chooses surface level in ds"""
+    return ds.isel(depth=0)
 
 
 class NorKyst800(ProductReader):
@@ -68,12 +75,17 @@ class NorKyst800(ProductReader):
         ),
         default_data_source=DataSource.REMOTE,
         url_function=get_norkyst800_urls,
+        ds_aliases={"u": gp.ocean.XCurrent, "v": gp.ocean.YCurrent},
+        ds_pre_processor=(lambda ds: ds.isel(depth=0)),
     )
 
     file_structure = FileStructure(
         stride=24,
         hours_per_file=24,
     )
+
+    def post_processing(self):
+        return FillNaNs(0)
 
 
 class NorFjords160(DataReader):
@@ -154,6 +166,7 @@ class NorFjords160(DataReader):
         msg.plain("Merging xarrays (this might take a while)...")
 
         ds = xr.concat(current_list, dim="ocean_time")
+
         lons, lats = ds.lon.values[:, 0], ds.lat.values[0, :]
         lon_mask = np.logical_and(lons >= lon[0], lons <= lon[1])
         lat_mask = np.logical_and(lats >= lat[0], lats <= lat[1])

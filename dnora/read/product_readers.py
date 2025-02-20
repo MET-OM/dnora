@@ -130,6 +130,7 @@ class ProductReader(DataReader):
             ds_list[0]
         )
         ds = xr.concat(ds_list, dim=time_var, coords="minimal")
+        ds = self.product_configuration.ds_pre_processor(ds)
 
         ds_aliases = self.product_configuration.ds_aliases
         core_aliases = self.product_configuration.core_aliases
@@ -268,6 +269,7 @@ class SpectralProductReader(SpectralDataReader):
             ds_list[0]
         )
         ds = xr.concat(ds_list, dim=time_var)
+        ds = self.product_configuration.ds_pre_processor(ds)
         ds_aliases = self.product_configuration.ds_aliases
         core_aliases = self.product_configuration.core_aliases
 
