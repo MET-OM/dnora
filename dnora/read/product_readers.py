@@ -122,7 +122,9 @@ class ProductReader(DataReader):
             hours_per_file=self.file_structure.hours_per_file,
             lead_time=self.file_structure.lead_time,
         )
-
+        if not ds_list:
+            msg.warning("No data found!")
+            return None
         msg.info("Merging dataset together (this might take a while)...")
         time_var = self.product_configuration.time_var or find_time_var_in_ds(
             ds_list[0]

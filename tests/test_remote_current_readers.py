@@ -14,12 +14,25 @@ def timevec():
     return pd.date_range("2022-04-01 00:00:00", "2022-04-01 23:00:00", freq="1h")
 
 
+@pytest.fixture(scope="session")
+def timevec2017():
+    return pd.date_range("2017-04-01 00:00:00", "2017-04-01 23:00:00", freq="1h")
+
+
 @pytest.mark.remote
 def test_norkyst800(grid, timevec):
     model = dn.modelrun.ModelRun(grid, year=2022, month=4, day=1)
     model.import_current(dn.read.current.metno.NorKyst800(), program="pyfimex")
 
     assert np.all(model.current().time() == timevec)
+
+
+@pytest.mark.remote
+def test_norkyst800_2017(grid, timevec2017):
+    model = dn.modelrun.ModelRun(grid, year=2017, month=4, day=1)
+    model.import_current(dn.read.current.metno.NorKyst800(), program="pyfimex")
+
+    assert np.all(model.current().time() == timevec2017)
 
 
 @pytest.mark.remote
