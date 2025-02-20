@@ -34,6 +34,7 @@ def basic_xarray_read(
     inds_var: str = "inds",
     data_vars: list[str] = None,
     chunks=None,
+    **kwargs,
 ):
     """Reads a single file into an Xarray Dataset:
 
@@ -63,7 +64,10 @@ def basic_xarray_read(
             lon_str = gp.grid.Lon.find_me_in_ds(ds, return_first=True) or "longitude"
             lat_str = gp.grid.Lon.find_me_in_ds(ds, return_first=True) or "latitude"
             if lon is not None and lat is not None:
-                ds = ds.sel(**{lon_str: slice(*lon), lat_str: slice(*lat)})
+                if len([c for c in ds.lat.shape if c > 1]) == 1:
+                    ds = ds.sel(**{lat_str: slice(*lat)})
+                if len([c for c in ds.lon.shape if c > 1]) == 1:
+                    ds = ds.sel(**{lon_str: slice(*lon)})
 
         if inds is not None and hasattr(ds, inds_var):
             ds = ds.isel(**{inds_var: inds})

@@ -130,8 +130,8 @@ class ProductReader(DataReader):
             ds_list[0]
         )
         ds = xr.concat(ds_list, dim=time_var, coords="minimal")
-        ds = self.product_configuration.ds_pre_processor(ds)
 
+        ds, kwargs = self.product_configuration.ds_pre_processor(ds)
         ds_aliases = self.product_configuration.ds_aliases
         core_aliases = self.product_configuration.core_aliases
 
@@ -142,9 +142,14 @@ class ProductReader(DataReader):
             only_vars=[],
             ds_aliases=ds_aliases,
             core_aliases=core_aliases,
+            time=ds.get(time_var).values,
+            **kwargs,
         )
 
-        return points.ds()
+        # in case the ds_creator_function didn't crop it
+        ds = points.ds().sel(**{"lat": slice(*lat), "lon": slice(*lon)})
+
+        return ds
 
 
 class SpectralProductReader(SpectralDataReader):

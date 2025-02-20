@@ -30,6 +30,7 @@ import pandas as pd
 import re
 from dnora.process.gridded import FillNaNs
 import geo_parameters as gp
+from dnora.read.ds_read_functions import basic_xarray_read
 
 
 def get_norkyst800_urls(folder: str, filename: str, file_times: list[str], **kwargs):
@@ -45,11 +46,6 @@ def get_norkyst800_urls(folder: str, filename: str, file_times: list[str], **kwa
             )
         urls.append(get_url(remote_folder, filename, file_time))
     return urls
-
-
-def pre_process_norkyst800_ds(ds: xr.Dataset) -> xr.Dataset:
-    """Chooses surface level in ds"""
-    return ds.isel(depth=0)
 
 
 class NorKyst800(ProductReader):
@@ -76,7 +72,7 @@ class NorKyst800(ProductReader):
         default_data_source=DataSource.REMOTE,
         url_function=get_norkyst800_urls,
         ds_aliases={"u": gp.ocean.XCurrent, "v": gp.ocean.YCurrent},
-        ds_pre_processor=(lambda ds: ds.isel(depth=0)),
+        ds_pre_processor=lambda ds: (ds.isel(depth=0), {}),
     )
 
     file_structure = FileStructure(
@@ -88,104 +84,25 @@ class NorKyst800(ProductReader):
         return FillNaNs(0)
 
 
-class NorFjords160(DataReader):
+class NorFjords160(ProductReader):
     """ """
 
-    _default_filename = "norfjords_160m_his_%Y%m%d01_surface_interp.nc"
-    _default_folders = {
-        DataSource.INTERNAL: "SWAN/Bjornafjorden2/ROMS/",
-    }
+    product_configuration = ProductConfiguration(
+        filename="norfjords_160m_his_%Y%m%d01_surface_interp.nc",
+        default_folders={
+            DataSource.INTERNAL: "SWAN/Bjornafjorden2/ROMS/",
+        },
+        default_data_source=DataSource.INTERNAL,
+        ds_creator_function=basic_xarray_read,
+        time_var="ocean_time",
+        ds_aliases={"u": gp.ocean.XCurrent, "v": gp.ocean.YCurrent},
+        ds_pre_processor=lambda ds: (
+            ds,
+            {"lon": ds.lon.values[:, 0], "lat": ds.lat.values[0, :]},
+        ),
+    )
 
-    def __init__(
-        self,
-        stride: int = 24,
-        hours_per_file: int = 24,
-        last_file: str = "",
-        lead_time: int = 0,
-        offset: int = 1,
-    ):
-        """The data is currently in daily files. Do not change the default
-        setting unless you have a good reason to do so.
-        """
+    file_structure = FileStructure(stride=24, hours_per_file=24, offset=1)
 
-        self.file_structure = FileStructure(
-            stride=stride,
-            hours_per_file=hours_per_file,
-            last_file=last_file,
-            lead_time=lead_time,
-            offset=offset,
-        )
-
-        return
-
-    def default_data_source(self) -> DataSource:
-        return DataSource.INTERNAL
-
-    def __call__(
-        self,
-        grid: Grid,
-        start_time: str,
-        end_time: str,
-        source: DataSource,
-        folder: str,
-        filename: str,
-        expansion_factor: float = 1.2,
-        program: str = "pyfimex",
-        **kwargs,
-    ):
-        """Reads in all grid points between the given times and at for the given indeces"""
-
-        folder = self._folder(folder, source)
-        filename = self._filename(filename, source)
-
-        start_times, end_times, file_times = self.file_structure.create_time_stamps(
-            start_time, end_time
-        )
-        setup_temp_dir(DnoraDataType.CURRENT, self.name())
-        # Define area to search in
-        msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
-        lon, lat = utils.grid.expand_area(
-            grid.edges("lon"), grid.edges("lat"), expansion_factor
-        )
-        msg.process(f"Applying {program}")
-        ds_creator_function = partial(
-            basic_xarray_read,
-        )
-
-        current_list = read_ds_list(
-            start_times,
-            end_times,
-            file_times,
-            folder,
-            filename,
-            ds_creator_function,
-            url_function=get_constant_url,
-            hours_per_file=self.file_structure.hours_per_file,
-            lead_time=self.file_structure.lead_time,
-        )
-        msg.plain("Merging xarrays (this might take a while)...")
-
-        ds = xr.concat(current_list, dim="ocean_time")
-
-        lons, lats = ds.lon.values[:, 0], ds.lat.values[0, :]
-        lon_mask = np.logical_and(lons >= lon[0], lons <= lon[1])
-        lat_mask = np.logical_and(lats >= lat[0], lats <= lat[1])
-        coord_dict = {
-            "time": ds.ocean_time.data,
-            "lon": lons[lon_mask],
-            "lat": lats[lat_mask],
-        }
-
-        u = ds.u.fillna(0).data[:, :, lon_mask, :]
-        u = u[:, :, :, lat_mask]
-        v = ds.v.fillna(0).data[:, :, lon_mask, :]
-        v = v[:, :, :, lat_mask]
-
-        data_dict = {
-            "u": (u, ["time", "lon", "lat"]),
-            "v": (v, ["time", "lon", "lat"]),
-        }
-
-        meta_dict = ds.attrs
-
-        return coord_dict, data_dict, meta_dict
+    def post_processing(self):
+        return FillNaNs(0)
