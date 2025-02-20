@@ -384,7 +384,7 @@ class SWAN(InputFileWriter):
                         + str(factor["ice"])
                         + "  '"
                         + ice_path[i].split("/")[-1]
-                        + "' 3 0 0 1 FREE \n"
+                        + "' \n"
                     )
                     file_out.write("$ \n")
             else:
