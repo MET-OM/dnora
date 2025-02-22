@@ -355,7 +355,7 @@ class SWAN(InputFileWriter):
                         ICE_NAME = "AICE"
                     elif ice_path[i].split("/")[-1].startswith("sit"):
                         ICE_NAME = "HICE"
-                    self.output_var = self.output_var + " " + ICE_NAME
+                    #self.output_var = self.output_var + " " + ICE_NAME # comment due to AICE/HICE not available as output in nc-format in SWAN
                     file_out.write(
                         "INPGRID "
                         + ICE_NAME
