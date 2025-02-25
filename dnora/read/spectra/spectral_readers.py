@@ -50,7 +50,8 @@ class SWAN_Ascii(SpectralDataReader):
     ) -> dict:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
 
-        folder, filename = self._folder_filename(source, folder, filename)
+        folder = self._folder(folder, source)
+        filename = self._filename(filename, source)
         url = get_url(folder, filename)
         with open(url, "r") as file:
             line = file.readline()
@@ -79,7 +80,8 @@ class SWAN_Ascii(SpectralDataReader):
         msg.info(
             f"Getting boundary spectra from SWAN ascii file from {start_time} to {end_time}"
         )
-        folder, filename = self._folder_filename(source, folder, filename)
+        folder = self._folder(folder, source)
+        filename = self._filename(filename, source)
         url = get_url(folder, filename)
         time, lon, lat, spec, freq, dirs = read_swan_ascii_spec(
             url, start_time=start_time, end_time=end_time
