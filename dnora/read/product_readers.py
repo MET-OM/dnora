@@ -274,7 +274,7 @@ class SpectralProductReader(SpectralDataReader):
             ds_list[0]
         )
         ds = xr.concat(ds_list, dim=time_var)
-        ds = self.product_configuration.ds_pre_processor(ds)
+        ds, kwargs = self.product_configuration.ds_pre_processor(ds)
         ds_aliases = self.product_configuration.ds_aliases
         core_aliases = self.product_configuration.core_aliases
 
@@ -290,6 +290,7 @@ class SpectralProductReader(SpectralDataReader):
             ds_aliases=ds_aliases,
             core_aliases=core_aliases,
             verbose=verbose,
+            **kwargs,
         )
 
         return points.ds()
