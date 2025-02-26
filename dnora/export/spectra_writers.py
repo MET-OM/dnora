@@ -15,6 +15,7 @@ from dnora import msg
 from dnora import file_module
 from .data_writers import DataWriter
 from dnora.type_manager.spectral_conventions import SpectralConvention
+import warnings
 
 
 class SpectraWriter(DataWriter):
@@ -57,8 +58,14 @@ class SpectraWriter(DataWriter):
 
 class WW3(SpectraWriter):
     def __init__(
-        self, convention=SpectralConvention.WW3, one_file: bool = True
+        self, convention=SpectralConvention.WW3, one_file: bool = None
     ) -> None:
+        if one_file is not None:
+            warnings.warn(
+                "Set 'one_file' as a keyword in the 'export_spectra'-method instead!",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         self.one_file = one_file
         self._convention = convention
 
@@ -68,12 +75,22 @@ class WW3(SpectraWriter):
         file_object: FileNames,
         obj_type: DnoraDataType,
         var_names: dict = None,
+        one_file: bool = True,
+        squeeze_lonlat: bool = False,
         **kwargs,
     ) -> list[str]:
+        """You can change the variable names by giving a dictionary e.g. var_names = {'efth': 'SPEC'}
+        To write one file for each lon/lat points, set one_file = False
+        To write longitude/latitude withouth a time dimension, set squeeze_lonlat = True
+        """
+
         msg.info("Writing WAVEWATCH-III netcdf-output")
         boundary = model.spectra()
 
-        if self.one_file:
+        if self.one_file is not None:
+            one_file = self.one_file
+
+        if one_file:
             # clean = False keeps possible #LON/#LAT tags
             filename = file_object.get_filepath(clean=False)
             if len(boundary.inds()) == 1:
@@ -82,26 +99,43 @@ class WW3(SpectraWriter):
                 )
 
             output_files = file_module.clean_filename(filename)
-            self.write_netcdf(boundary, output_files, var_names=var_names)
+            self.write_netcdf(
+                boundary,
+                output_files,
+                n=None,
+                var_names=var_names,
+                one_file=one_file,
+                squeeze_lonlat=squeeze_lonlat,
+            )
 
         else:
             output_files = []
             for n in boundary.inds():
-                # clean = False keeps possible #LON/#LAT tags
-                filename = file_object.get_filepath(clean=False)
-                output_file = file_object.replace_placeholders(
-                    filename, lon=boundary.lon()[n], lat=boundary.lat()[n]
+                output_file = file_object.get_filepath(
+                    lon=boundary.lon()[n], lat=boundary.lat()[n]
                 )
-                output_file = file_module.clean_filename(output_file)
                 output_files.append(output_file)
 
                 msg.plain(f"Point {n} >> {output_file}")
-                self.write_netcdf(boundary, output_file, n=n, var_names=var_names)
+                self.write_netcdf(
+                    boundary,
+                    output_file,
+                    n=n,
+                    var_names=var_names,
+                    one_file=one_file,
+                    squeeze_lonlat=squeeze_lonlat,
+                )
 
         return output_files
 
     def write_netcdf(
-        self, boundary, output_file: str, n: int = None, var_names: dict = None
+        self,
+        boundary,
+        output_file: str,
+        n: int,
+        var_names: dict,
+        one_file: bool,
+        squeeze_lonlat: bool,
     ) -> None:
         """Writes WW3 compatible netcdf spectral output from a list containing xarray datasets."""
         var_names = var_names or {}
@@ -125,7 +159,7 @@ class WW3(SpectraWriter):
         root_grp = netCDF4.Dataset(output_file, "w", format="NETCDF4")
         #################### dimensions
         root_grp.createDimension(time_var, None)
-        if self.one_file:
+        if one_file:
             root_grp.createDimension(inds_var, len(boundary.inds()))
         else:
             root_grp.createDimension(inds_var, 1)
@@ -149,21 +183,21 @@ class WW3(SpectraWriter):
                 dirs_var,
             ),
         )
+
+        if squeeze_lonlat:
+            lonlat_variables = (inds_var,)
+        else:
+            lonlat_variables = (time_var, inds_var)
+
         latitude = root_grp.createVariable(
             lat_var,
             np.float32,
-            (
-                time_var,
-                inds_var,
-            ),
+            lonlat_variables,
         )
         longitude = root_grp.createVariable(
             lon_var,
             np.float32,
-            (
-                time_var,
-                inds_var,
-            ),
+            lonlat_variables,
         )
         station_name = root_grp.createVariable(
             "station_name",
@@ -245,24 +279,24 @@ class WW3(SpectraWriter):
         frequency[:] = boundary.freq()
         direction[:] = boundary.dirs()
 
-        if self.one_file:
+        if one_file:
             station[:] = boundary.inds()
             efth[:] = boundary.spec()
-            longitude[:] = np.full(
-                (len(boundary.time()), len(boundary.lon())), boundary.lon(), dtype=float
-            )
-            latitude[:] = np.full(
-                (len(boundary.time()), len(boundary.lat())), boundary.lat(), dtype=float
-            )
+            if squeeze_lonlat:
+                lonlat_shape = (len(boundary.lon()),)
+            else:
+                lonlat_shape = (len(boundary.time()), len(boundary.lon()))
+            longitude[:] = np.full(lonlat_shape, boundary.lon(), dtype=float)
+            latitude[:] = np.full(lonlat_shape, boundary.lat(), dtype=float)
         else:
             station[:] = 1
             efth[:] = boundary.spec(inds=[n])
-            longitude[:] = np.full(
-                (len(boundary.time()), 1), boundary.lon()[n], dtype=float
-            )
-            latitude[:] = np.full(
-                (len(boundary.time()), 1), boundary.lat()[n], dtype=float
-            )
+            if squeeze_lonlat:
+                lonlat_shape = (1,)
+            else:
+                lonlat_shape = (len(boundary.time()), 1)
+            longitude[:] = np.full(lonlat_shape, boundary.lon()[n], dtype=float)
+            latitude[:] = np.full(lonlat_shape, boundary.lat()[n], dtype=float)
         # longitude[:] = bnd_out.longitude.values
         # latitude[:] = bnd_out.latitude.values
         station_name[:] = 1
