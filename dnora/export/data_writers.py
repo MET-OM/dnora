@@ -168,7 +168,9 @@ class SWAN(DataWriter):
                         return ""
                     for var in data_vars:
                         file_out.write(time_stamp)
-                        np.savetxt(file_out, data.get(var)[ct, :, :] * 1000, fmt="%i")
+                        np.savetxt(
+                            file_out, data.get(var)[ct, :, :] * 1000, fmt="%4.0f"
+                        )
 
                     ct += 1
 
