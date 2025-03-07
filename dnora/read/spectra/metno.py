@@ -138,3 +138,23 @@ class WAM3(SpectralProductReader):
         hours_per_file=121,
         offset=6,
     )
+
+
+class CLIMAREST(SpectralProductReader):
+    product_configuration = ProductConfiguration(
+        filename="CLIMAREST_*_spec_2040_2070.nc",
+        convention=SpectralConvention.OCEAN,
+        default_data_source=DataSource.LOCAL,
+        ds_aliases={
+            "efth": gp.wave.Efth,
+            "dir": gp.wave.Dirs,
+            "hs": gp.wave.Hs,
+            "tp": gp.wave.Tp,
+            "Pdir": gp.wave.DirpTo,
+        },
+    )
+
+    # stride = None means one point per file and all times in one file
+    file_structure = FileStructure(
+        stride=None,
+    )

@@ -8,6 +8,7 @@ from dnora.read.ds_read_functions import (
     read_first_ds,
     find_time_var_in_ds,
     setup_temp_dir,
+    read_list_of_spatial_ds,
 )
 from dnora.read.fimex_functions import ds_fimex_read
 from geo_skeletons import PointSkeleton
@@ -222,8 +223,19 @@ class SpectralProductReader(SpectralDataReader):
 
         folder = self._folder(folder, source, tile=tile, tile_name=tile_name)
         filename = self._filename(filename, source, tile=tile, tile_name=tile_name)
-        ds = read_first_ds(folder, filename, start_time, self.file_structure)
-        points = PointSkeleton.from_ds(ds)
+
+        if self.file_structure.stride is None:
+            # Points scattered between files with all times in each file
+            ds_list = read_list_of_spatial_ds(folder, filename)
+            points = None
+            for ds in ds_list:
+                if points is None:
+                    points = PointSkeleton.from_ds(ds)
+                else:
+                    points = points.absorb(PointSkeleton.from_ds(ds), dim="inds")
+        else:
+            ds = read_first_ds(folder, filename, start_time, self.file_structure)
+            points = PointSkeleton.from_ds(ds)
         return points.coord_dict()
 
     def __call__(
@@ -247,50 +259,68 @@ class SpectralProductReader(SpectralDataReader):
         tile_name = self.product_configuration.tile_names.get(tile)
         folder = self._folder(folder, source, tile=tile, tile_name=tile_name)
         filename = self._filename(filename, source, tile=tile, tile_name=tile_name)
-        start_times, end_times, file_times = self.file_structure.create_time_stamps(
-            start_time, end_time
-        )
         msg.info(
             f"Getting boundary spectra from {self.name()} from {start_time} to {end_time}"
         )
-
-        ds_creator_function = partial(
-            self.product_configuration.ds_creator_function, inds=inds
-        )
-        ds_list = read_ds_list(
-            start_times,
-            end_times,
-            file_times,
-            folder,
-            filename,
-            ds_creator_function,
-            url_function=self.product_configuration.url_function,
-            hours_per_file=self.file_structure.hours_per_file,
-            lead_time=self.file_structure.lead_time,
-        )
-
-        msg.info("Merging dataset together (this might take a while)...")
-        time_var = self.product_configuration.time_var or find_time_var_in_ds(
-            ds_list[0]
-        )
-        ds = xr.concat(ds_list, dim=time_var)
-        ds, kwargs = self.product_configuration.ds_pre_processor(ds)
-        ds_aliases = self.product_configuration.ds_aliases
-        core_aliases = self.product_configuration.core_aliases
 
         if add_datavars is not None:
             for data_var in add_datavars:
                 dnora_class = dnora_class.add_datavar(data_var)
 
-        points = dnora_class.from_ds(
-            ds,
-            dynamic=False,
-            ignore_vars=[],
-            only_vars=[],
-            ds_aliases=ds_aliases,
-            core_aliases=core_aliases,
-            verbose=verbose,
-            **kwargs,
-        )
+        ds_aliases = self.product_configuration.ds_aliases
+        core_aliases = self.product_configuration.core_aliases
+
+        if self.file_structure.stride is None:
+            # Points scattered between files with all times in each file
+            ds_list = read_list_of_spatial_ds(folder, filename)
+            points = None
+            for ds in ds_list:
+                data = dnora_class.from_ds(
+                    ds,
+                    ds_aliases=ds_aliases,
+                    core_aliases=core_aliases,
+                )
+                if points is None:
+                    points = data
+                else:
+                    points = points.absorb(data, dim="inds")
+
+        else:
+            start_times, end_times, file_times = self.file_structure.create_time_stamps(
+                start_time, end_time
+            )
+
+            ds_creator_function = partial(
+                self.product_configuration.ds_creator_function, inds=inds
+            )
+            ds_list = read_ds_list(
+                start_times,
+                end_times,
+                file_times,
+                folder,
+                filename,
+                ds_creator_function,
+                url_function=self.product_configuration.url_function,
+                hours_per_file=self.file_structure.hours_per_file,
+                lead_time=self.file_structure.lead_time,
+            )
+
+            msg.info("Merging dataset together (this might take a while)...")
+            time_var = self.product_configuration.time_var or find_time_var_in_ds(
+                ds_list[0]
+            )
+            ds = xr.concat(ds_list, dim=time_var)
+            ds, kwargs = self.product_configuration.ds_pre_processor(ds)
+
+            points = dnora_class.from_ds(
+                ds,
+                dynamic=False,
+                ignore_vars=[],
+                only_vars=[],
+                ds_aliases=ds_aliases,
+                core_aliases=core_aliases,
+                verbose=verbose,
+                **kwargs,
+            )
 
         return points.ds()

@@ -5,7 +5,13 @@ from dnora.utils.time import create_monthly_stamps
 
 @dataclass
 class FileStructure:
-    stride: int
+    """stride:
+    int in hours (e.g. 24 for daily files)
+    'month' for monthly files
+    None if all data is in one file, but points are spread across different files
+    """
+
+    stride: int | str | None
     hours_per_file: int = None
     lead_time: int = 0
     last_file: str = ""
