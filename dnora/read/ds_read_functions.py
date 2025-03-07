@@ -78,6 +78,20 @@ def basic_xarray_read(
     return ds
 
 
+def read_list_of_spatial_ds(folder: str, filename: str):
+    """Reads in a list of Datasets when different points are scattered over different files.
+    Assumes all files cover the entire time period"""
+
+    url = get_url(folder, filename)
+    files = glob.glob(url)
+    ds_list = []
+    for file in files:
+        ds = xr.open_dataset(file)
+        ds_list.append(ds)
+
+    return ds_list
+
+
 def read_first_ds(
     folder: str,
     filename: str,
