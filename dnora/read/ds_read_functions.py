@@ -84,6 +84,8 @@ def read_list_of_spatial_ds(folder: str, filename: str):
 
     url = get_url(folder, filename)
     files = glob.glob(url)
+    if not files:
+        raise FileNotFoundError(f"Cannot find any files {url}!")
     ds_list = []
     for file in files:
         ds = xr.open_dataset(file)
