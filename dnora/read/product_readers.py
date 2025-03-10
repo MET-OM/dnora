@@ -279,7 +279,7 @@ class SpectralProductReader(SpectralDataReader):
                     ds,
                     ds_aliases=ds_aliases,
                     core_aliases=core_aliases,
-                ).sel(time=slice(start_times, end_time))
+                ).sel(time=slice(start_time, end_time))
                 if points is None:
                     points = data
                 else:
