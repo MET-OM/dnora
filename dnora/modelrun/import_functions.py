@@ -99,37 +99,24 @@ def read_data_and_create_object(
 ) -> DnoraObject:
     """Reads data using the reader, creates the objects and sets data and metadata in object"""
     dnora_class = dnora_objects.get(obj_type)
-    if reader.returning_ds():
-        ds = reader(
-            obj_type=obj_type,
-            grid=grid,
-            start_time=pd.to_datetime(start_time),
-            end_time=pd.to_datetime(end_time),
-            source=source,
-            folder=folder,
-            filename=filename,
-            inds=inds,
-            dnora_class=dnora_class,
-            expansion_factor=expansion_factor,
-            **kwargs,
-        )
+
+    ds = reader(
+        obj_type=obj_type,
+        grid=grid,
+        start_time=pd.to_datetime(start_time),
+        end_time=pd.to_datetime(end_time),
+        source=source,
+        folder=folder,
+        filename=filename,
+        inds=inds,
+        dnora_class=dnora_class,
+        expansion_factor=expansion_factor,
+        **kwargs,
+    )
+    if not isinstance(ds, tuple):
         obj = dnora_class.from_ds(ds, dynamic=False)
     else:
-
-        coord_dict, data_dict, meta_dict = reader(
-            obj_type=obj_type,
-            grid=grid,
-            start_time=pd.to_datetime(start_time),
-            end_time=pd.to_datetime(end_time),
-            source=source,
-            folder=folder,
-            filename=filename,
-            inds=inds,
-            dnora_class=dnora_class,
-            expansion_factor=expansion_factor,
-            **kwargs,
-        )
-
+        coord_dict, data_dict, meta_dict = ds
         obj = dnora_class(name=name, **coord_dict)
         existing_vars = obj.core.non_coord_objects()
 
