@@ -32,10 +32,6 @@ class ProductReader(DataReader):
         offset=0,
     )
 
-    @staticmethod
-    def returning_ds() -> bool:
-        return True
-
     def __init__(
         self,
         stride: (
@@ -167,10 +163,6 @@ class SpectralProductReader(SpectralDataReader):
         lead_time=0,
         offset=0,
     )
-
-    @staticmethod
-    def returning_ds() -> bool:
-        return True
 
     def __init__(
         self,
