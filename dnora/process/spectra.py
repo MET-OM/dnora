@@ -101,11 +101,11 @@ class Multiply(SpectralProcessor):
         self.calib_spec = calib_spec
         return
 
-    def __call__(self, spec, dirs, freq, inds) -> tuple:
+    def __call__(self, spec, dirs, freq, inds, times) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
         new_spec = spec * self.calib_spec
         check_that_spectra_are_consistent(new_spec, dirs, freq, expected_dim=2)
-        return new_spec, dirs, freq, inds
+        return new_spec, dirs, freq, inds, times
 
     def __str__(self):
         return f"Multiplying spectral values with {self.calib_spec}"
@@ -117,7 +117,7 @@ class RemoveEmpty(SpectralProcessor):
     def __init__(self, threshold: float = 0.01) -> None:
         self.threshold = threshold
 
-    def __call__(self, spec, dirs, freq, inds) -> tuple:
+    def __call__(self, spec, dirs, freq, inds, times) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
 
         mask = np.full(len(inds), True)
@@ -133,10 +133,32 @@ class RemoveEmpty(SpectralProcessor):
 
         check_that_spectra_are_consistent(new_spec, dirs, freq, expected_dim=2)
 
-        return new_spec, dirs, freq, new_inds
+        return new_spec, dirs, freq, new_inds, times
 
     def __str__(self):
         return f"Removing spectra with all values less than {self.threshold} or with NaN's..."
+
+
+class RemoveNanTimes(SpectralProcessor):
+    """Remove times when some index has nan-values"""
+
+    def __call__(self, spec, dirs, freq, inds, times) -> tuple:
+        check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
+
+        mask = np.full(len(times), True)
+        for n in range(len(times)):
+            if np.isnan(spec[n, :, :, :]).any():
+                mask[n] = False
+
+        new_times = times[mask]
+        new_spec = spec[mask, :, :, :]
+
+        check_that_spectra_are_consistent(new_spec, dirs, freq, expected_dim=2)
+
+        return new_spec, dirs, freq, inds, new_times
+
+    def __str__(self):
+        return f"Removing times where at least one point has NaN value..."
 
 
 class ReGridDirs(SpectralProcessor):
@@ -149,7 +171,7 @@ class ReGridDirs(SpectralProcessor):
 
         return
 
-    def __call__(self, spec, dirs, freq, inds) -> tuple:
+    def __call__(self, spec, dirs, freq, inds, times) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
         if dirs[0] > 0:
             nbins = len(dirs)
@@ -177,7 +199,7 @@ class ReGridDirs(SpectralProcessor):
                         )
                         new_spec[n1, n2, :, :] = temp_spec
         check_that_spectra_are_consistent(new_spec, new_dirs, freq, expected_dim=2)
-        return new_spec, new_dirs, freq, inds
+        return new_spec, new_dirs, freq, inds, times
 
     def __str__(self):
         return_string = f"Interpolating spectra to start from {self.first_dir}"
@@ -225,7 +247,7 @@ class OceanToWW3(SpectralProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.WW3
 
-    def __call__(self, spec, dirs, freq, inds) -> tuple:
+    def __call__(self, spec, dirs, freq, inds, times) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
         # Flip direction of the both spectra and directional vector
         spec_flip = flip_spec(spec, dirs)
@@ -237,7 +259,7 @@ class OceanToWW3(SpectralProcessor):
         new_dirs = shift_spec(D_flip, D_flip, -90)
 
         check_that_spectra_are_consistent(new_spec, new_dirs, freq, expected_dim=2)
-        return new_spec, new_dirs, freq, inds
+        return new_spec, new_dirs, freq, inds, times
 
     def __str__(self):
         return "Flipping both spectra and direction to mathematical notation."
@@ -264,7 +286,7 @@ class WW3ToOcean(SpectralProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.OCEAN
 
-    def __call__(self, spec, dirs, freq, inds) -> tuple:
+    def __call__(self, spec, dirs, freq, inds, times) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
         # Flip direction of the both spectra and directional vector
         spec_flip = flip_spec(spec, dirs)
@@ -277,7 +299,7 @@ class WW3ToOcean(SpectralProcessor):
 
         check_that_spectra_are_consistent(new_spec, new_dirs, freq, expected_dim=2)
 
-        return new_spec, new_dirs, freq, inds
+        return new_spec, new_dirs, freq, inds, times
 
     def __str__(self):
         return "Flipping both spectra and direction to oceanic notation."
@@ -304,7 +326,7 @@ class MathToOcean(SpectralProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.OCEAN
 
-    def __call__(self, spec, dirs, freq, inds) -> tuple:
+    def __call__(self, spec, dirs, freq, inds, times) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
         # Flip direction of the both spectra and directional vector
         spec_flip = flip_spec(spec, dirs)
@@ -316,7 +338,7 @@ class MathToOcean(SpectralProcessor):
         # new_dirs = shift_spec(D_flip, D_flip, -270)
 
         check_that_spectra_are_consistent(new_spec, dirs, freq, expected_dim=2)
-        return new_spec, dirs, freq, inds
+        return new_spec, dirs, freq, inds, times
 
     def __str__(self):
         return "Flipping spectra to oceanic notation."
@@ -343,7 +365,7 @@ class MathVecToOcean(SpectralProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.OCEAN
 
-    def __call__(self, spec, dirs, freq, inds) -> tuple:
+    def __call__(self, spec, dirs, freq, inds, times) -> tuple:
         # Flip direction of the both spectra and directional vector
         spec_flip = flip_spec(spec, dirs)
         D_flip = flip_spec(dirs, dirs)
@@ -354,7 +376,7 @@ class MathVecToOcean(SpectralProcessor):
         new_dirs = shift_spec(D_flip, D_flip, -270)
 
         # if freq is not None:
-        return spec, new_dirs, freq, inds
+        return spec, new_dirs, freq, inds, times
         # else:
         #     return spec, new_dirs
 
@@ -383,7 +405,7 @@ class OceanToMath(SpectralProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.MATH
 
-    def __call__(self, spec, dirs, freq, inds) -> tuple:
+    def __call__(self, spec, dirs, freq, inds, times) -> tuple:
         # Flip direction of the both spectra and directional vector
         spec_flip = flip_spec(spec, dirs)
         D_flip = flip_spec(dirs, dirs)
@@ -391,7 +413,7 @@ class OceanToMath(SpectralProcessor):
         # Shift 0 to be at 90
         new_spec = shift_spec(spec_flip, D_flip, -90)
 
-        return new_spec, dirs, freq, inds
+        return new_spec, dirs, freq, inds, times
 
     def __str__(self):
         return "Flipping only spectra to mathematical notation."
@@ -418,7 +440,7 @@ class OceanToMathVec(SpectralProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.MATHVEC
 
-    def __call__(self, spec, dirs, freq, inds) -> tuple:
+    def __call__(self, spec, dirs, freq, inds, times) -> tuple:
         # Flip direction of the both spectra and directional vector
         spec_flip = flip_spec(spec, dirs)
         D_flip = flip_spec(dirs, dirs)
@@ -426,7 +448,7 @@ class OceanToMathVec(SpectralProcessor):
         # Shift 0 to be at 90
         new_dirs = shift_spec(D_flip, D_flip, -90)
 
-        return spec, new_dirs, freq, inds
+        return spec, new_dirs, freq, inds, times
 
     def __str__(self):
         return "Flipping only directions to mathematical notation."
@@ -453,10 +475,10 @@ class MetToOcean(SpectralProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.OCEAN
 
-    def __call__(self, spec, dirs, freq, inds) -> tuple:
+    def __call__(self, spec, dirs, freq, inds, times) -> tuple:
         new_spec = shift_spec(spec, dirs, 180)
 
-        return new_spec, dirs, freq, inds
+        return new_spec, dirs, freq, inds, times
 
     def __str__(self):
         return "Shifting spectrum 180 degrees."
@@ -483,10 +505,10 @@ class OceanToMet(SpectralProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.MET
 
-    def __call__(self, spec, dirs, freq, inds) -> tuple:
+    def __call__(self, spec, dirs, freq, inds, times) -> tuple:
         new_spec = shift_spec(spec, dirs, 180)
 
-        return new_spec, dirs, freq, inds
+        return new_spec, dirs, freq, inds, times
 
     def __str__(self):
         return "Shifting spectrum 180 degrees."

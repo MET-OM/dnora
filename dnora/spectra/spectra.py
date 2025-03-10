@@ -51,8 +51,12 @@ class Spectra(PointSkeleton):
                         f"Boundary convention ({self.convention()}) doesn't match that expected by the processor ({old_convention})!"
                     )
 
-            new_spec, new_dirs, new_freq, new_inds = processor(
-                self.spec(squeeze=False), self.dirs(), self.freq(), self.inds()
+            new_spec, new_dirs, new_freq, new_inds, new_times = processor(
+                self.spec(squeeze=False),
+                self.dirs(),
+                self.freq(),
+                self.inds(),
+                self.time(),
             )
             new_inds = list(new_inds)
 
@@ -75,6 +79,11 @@ class Spectra(PointSkeleton):
                 else:
                     msg.info(f"Removing a total of {len(del_inds)} points...")
 
+            if len(new_times) < len(self.time()):
+                msg.info(
+                    f"Removing a total of {len(self.time())-len(new_times)} times..."
+                )
+
             metadata = self.meta.get()
 
             self._init_structure(
@@ -82,7 +91,7 @@ class Spectra(PointSkeleton):
                 y=self.y(strict=True, inds=new_inds),
                 lon=self.lon(strict=True, inds=new_inds),
                 lat=self.lat(strict=True, inds=new_inds),
-                time=self.time(),
+                time=new_times,
                 freq=new_freq,
                 dirs=new_dirs,
             )
@@ -125,7 +134,9 @@ class Spectra(PointSkeleton):
 
         self.process(spectral_processor)
 
-    def _mark_convention(self, convention: SpectralConvention, silent: bool=False) -> None:
+    def _mark_convention(
+        self, convention: SpectralConvention, silent: bool = False
+    ) -> None:
         """Marks new convention in metadata etc. but does nothing to the spectra"""
         self._convention = convention
         self.meta.append({"dnora_spectral_convention": self.convention().value})
