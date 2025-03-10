@@ -45,8 +45,8 @@ def loop_conventions(list_of_conventions, S, D):
             bnd_processor = [bnd_processor]
 
         for processor in bnd_processor:
-            Snew, Dnew, _, _ = processor(
-                spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds
+            Snew, Dnew, _, _, _ = processor(
+                spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
             )
     return Snew, Dnew
 
@@ -63,8 +63,8 @@ class BoundarySpectralConventionsOcean(unittest.TestCase):
                     wanted_convention=SpectralConvention.MET,
                 )
             )
-            Snew, Dnew, _, _ = bnd_processor(
-                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds
+            Snew, Dnew, _, _, _ = bnd_processor(
+                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds, times=None
             )
 
             self.assertIsNone(np.testing.assert_almost_equal(Dnew, D))
@@ -85,8 +85,8 @@ class BoundarySpectralConventionsOcean(unittest.TestCase):
                     wanted_convention=SpectralConvention.WW3,
                 )
             )
-            Snew, Dnew, _, _ = bnd_processor(
-                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds
+            Snew, Dnew, _, _, _ = bnd_processor(
+                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds, times=None
             )
 
             self.assertIsNone(
@@ -111,8 +111,8 @@ class BoundarySpectralConventionsOcean(unittest.TestCase):
                     wanted_convention=SpectralConvention.MATH,
                 )
             )
-            Snew, Dnew, _, _ = bnd_processor(
-                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds
+            Snew, Dnew, _, _, _ = bnd_processor(
+                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds, times=None
             )
 
             self.assertIsNone(np.testing.assert_almost_equal(Dnew, D))
@@ -133,8 +133,8 @@ class BoundarySpectralConventionsOcean(unittest.TestCase):
                     wanted_convention=SpectralConvention.MATHVEC,
                 )
             )
-            Snew, Dnew, _, _ = bnd_processor(
-                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds
+            Snew, Dnew, _, _, _ = bnd_processor(
+                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds, times=None
             )
 
             self.assertIsNone(
@@ -163,8 +163,8 @@ class BoundarySpectralConventionsWW3(unittest.TestCase):
                     wanted_convention=SpectralConvention.OCEAN,
                 )
             )
-            Snew, Dnew, _, _ = bnd_processor(
-                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds
+            Snew, Dnew, _, _, _ = bnd_processor(
+                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds, times=None
             )
 
             self.assertIsNone(
@@ -197,8 +197,8 @@ class BoundarySpectralConventionsWW3(unittest.TestCase):
             Snew = copy(S)
             Dnew = copy(D)
             for processor in bnd_processor:
-                Snew, Dnew, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds
+                Snew, Dnew, _, _, _ = processor(
+                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
                 )
 
             self.assertIsNone(
@@ -232,8 +232,8 @@ class BoundarySpectralConventionsWW3(unittest.TestCase):
             Snew = copy(S)
             Dnew = copy(D)
             for processor in bnd_processor:
-                Snew, Dnew, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds
+                Snew, Dnew, _, _, _ = processor(
+                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
                 )
 
             self.assertIsNone(
@@ -268,8 +268,8 @@ class BoundarySpectralConventionsWW3(unittest.TestCase):
             Dnew = copy(D)
 
             for processor in bnd_processor:
-                Snew, Dnew, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds
+                Snew, Dnew, _, _, _ = processor(
+                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
                 )
 
             self.assertIsNone(np.testing.assert_almost_equal(Dnew, D))
@@ -299,8 +299,8 @@ class BoundarySpectralConventionsMet(unittest.TestCase):
                     wanted_convention=SpectralConvention.OCEAN,
                 )
             )
-            Snew, Dnew, _, _ = bnd_processor(
-                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds
+            Snew, Dnew, _, _, _ = bnd_processor(
+                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds, times=None
             )
 
             self.assertIsNone(np.testing.assert_almost_equal(Dnew, D))
@@ -330,8 +330,8 @@ class BoundarySpectralConventionsMet(unittest.TestCase):
             Dnew = copy(D)
 
             for processor in bnd_processor:
-                Snew, Dnew, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds
+                Snew, Dnew, _, _, _ = processor(
+                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
                 )
 
             self.assertIsNone(
@@ -365,8 +365,8 @@ class BoundarySpectralConventionsMet(unittest.TestCase):
             Dnew = copy(D)
 
             for processor in bnd_processor:
-                Snew, Dnew, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds
+                Snew, Dnew, _, _, _ = processor(
+                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
                 )
 
             self.assertIsNone(np.testing.assert_almost_equal(Dnew, D))
@@ -396,8 +396,8 @@ class BoundarySpectralConventionsMet(unittest.TestCase):
             Dnew = copy(D)
 
             for processor in bnd_processor:
-                Snew, Dnew, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds
+                Snew, Dnew, _, _, _ = processor(
+                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
                 )
 
             self.assertIsNone(
@@ -432,8 +432,8 @@ class BoundarySpectralConventionsMath(unittest.TestCase):
                 )
             )
 
-            Snew, Dnew, _, _ = bnd_processor(
-                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds
+            Snew, Dnew, _, _, _ = bnd_processor(
+                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds, times=None
             )
 
             self.assertIsNone(np.testing.assert_almost_equal(Dnew, D))
@@ -463,8 +463,8 @@ class BoundarySpectralConventionsMath(unittest.TestCase):
             Snew = copy(S)
             Dnew = copy(D)
             for processor in bnd_processor:
-                Snew, Dnew, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds
+                Snew, Dnew, _, _, _ = processor(
+                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
                 )
 
             self.assertIsNone(
@@ -495,8 +495,8 @@ class BoundarySpectralConventionsMath(unittest.TestCase):
             Snew = copy(S)
             Dnew = copy(D)
             for processor in bnd_processor:
-                Snew, Dnew, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds
+                Snew, Dnew, _, _, _ = processor(
+                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
                 )
 
             self.assertIsNone(np.testing.assert_almost_equal(Dnew, D))
@@ -524,8 +524,8 @@ class BoundarySpectralConventionsMath(unittest.TestCase):
             Snew = copy(S)
             Dnew = copy(D)
             for processor in bnd_processor:
-                Snew, Dnew, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds
+                Snew, Dnew, _, _, _ = processor(
+                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
                 )
 
             self.assertIsNone(
@@ -552,8 +552,8 @@ class BoundarySpectralConventionsMathVec(unittest.TestCase):
                     wanted_convention=SpectralConvention.OCEAN,
                 )
             )
-            Snew, Dnew, _, _ = bnd_processor(
-                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds
+            Snew, Dnew, _, _, _ = bnd_processor(
+                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds, times=None
             )
 
             self.assertIsNone(
@@ -577,8 +577,8 @@ class BoundarySpectralConventionsMathVec(unittest.TestCase):
             Snew = copy(S)
             Dnew = copy(D)
             for processor in bnd_processor:
-                Snew, Dnew, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds
+                Snew, Dnew, _, _, _ = processor(
+                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
                 )
 
             self.assertIsNone(
@@ -605,8 +605,8 @@ class BoundarySpectralConventionsMathVec(unittest.TestCase):
             Snew = copy(S)
             Dnew = copy(D)
             for processor in bnd_processor:
-                Snew, Dnew, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds
+                Snew, Dnew, _, _, _ = processor(
+                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
                 )
 
             self.assertIsNone(np.testing.assert_almost_equal(Dnew, D))
@@ -631,8 +631,8 @@ class BoundarySpectralConventionsMathVec(unittest.TestCase):
             Snew = copy(S)
             Dnew = copy(D)
             for processor in bnd_processor:
-                Snew, Dnew, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds
+                Snew, Dnew, _, _, _ = processor(
+                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
                 )
 
             self.assertIsNone(
