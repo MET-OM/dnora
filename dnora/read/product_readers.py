@@ -279,12 +279,11 @@ class SpectralProductReader(SpectralDataReader):
                     ds,
                     ds_aliases=ds_aliases,
                     core_aliases=core_aliases,
-                )
+                ).sel(time=slice(start_times, end_time))
                 if points is None:
                     points = data
                 else:
                     points = points.absorb(data, dim="inds")
-
         else:
             start_times, end_times, file_times = self.file_structure.create_time_stamps(
                 start_time, end_time
