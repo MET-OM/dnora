@@ -1,5 +1,5 @@
 # Import abstract classes and needed instances of them
-from dnora.process.spectra import RemoveEmpty
+from dnora.process.spectra import RemoveEmpty, RemoveNanTimes
 from dnora.type_manager.spectral_conventions import SpectralConvention
 
 # Import aux_funcsiliry functions
@@ -158,3 +158,6 @@ class CLIMAREST(SpectralProductReader):
     file_structure = FileStructure(
         stride=None,
     )
+
+    def post_processing(self):
+        return RemoveNanTimes()
