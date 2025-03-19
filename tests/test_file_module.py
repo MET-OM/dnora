@@ -6,9 +6,12 @@ import yaml
 from dnora import file_module
 
 from dnora.type_manager.dnora_types import DnoraDataType, DnoraFileType
+from dnora.defaults import read_defaults
 
-with open("data/defaults.yml", "r") as file:
-    defaults = yaml.safe_load(file)
+defaults = read_defaults('export_defaults.yml', from_module=True)
+
+#with open("data/defaults.yml", "r") as file:
+#    defaults = yaml.safe_load(file)
 
 
 class GetDefaultValues(unittest.TestCase):
@@ -19,7 +22,7 @@ class GetDefaultValues(unittest.TestCase):
             primary=defaults["SWAN"],
             fallback=defaults["MODELRUN"],
         )
-        self.assertEqual(filename, "spec#SPECTRA#GRID#T0#T1")
+        self.assertEqual(filename, "spec#SPECTRA#GRID#T0_#T1")
 
         filename = file_module.get_default_value(
             key="filename",
@@ -27,7 +30,7 @@ class GetDefaultValues(unittest.TestCase):
             primary=defaults["SWAN"],
             fallback=defaults["MODELRUN"],
         )
-        self.assertEqual(filename, "spec1d_#SPECTRA1D_#GRID_#T0-#T1")
+        self.assertEqual(filename, "spec1d_#SPECTRA1D_#GRID_#T0_#T1")
 
     def test_folder(self):
         filename = file_module.get_default_value(
@@ -168,7 +171,7 @@ class Clean(unittest.TestCase):
         self.assertEqual(filename, "filename")
 
         filename = file_module.clean_filename(
-            filename="filename_#T0-#T1",
+            filename="filename_#T0_#T1",
             list_of_placeholders=defaults["list_of_placeholders"],
         )
         self.assertEqual(filename, "filename")
@@ -181,56 +184,56 @@ class Clean(unittest.TestCase):
 
     def test_lonlat(self):
         filename = file_module.clean_filename(
-            filename="filename_#Lon",
+            filename="filename_#LON",
             list_of_placeholders=defaults["list_of_placeholders"],
         )
         self.assertEqual(filename, "filename")
 
         filename = file_module.clean_filename(
-            filename="filename_#Lat",
+            filename="filename_#LAT",
             list_of_placeholders=defaults["list_of_placeholders"],
         )
         self.assertEqual(filename, "filename")
 
         filename = file_module.clean_filename(
-            filename="filename_E#Lon",
+            filename="filename_E#LON",
             list_of_placeholders=defaults["list_of_placeholders"],
         )
         self.assertEqual(filename, "filename")
 
         filename = file_module.clean_filename(
-            filename="filename_N#Lat",
+            filename="filename_N#LAT",
             list_of_placeholders=defaults["list_of_placeholders"],
         )
         self.assertEqual(filename, "filename")
 
         filename = file_module.clean_filename(
-            filename="filename_#Lon_#Lat",
+            filename="filename_#LON_#LAT",
             list_of_placeholders=defaults["list_of_placeholders"],
         )
         self.assertEqual(filename, "filename")
 
         filename = file_module.clean_filename(
-            filename="filename_E#Lon_N#Lat",
+            filename="filename_E#LON_N#LAT",
             list_of_placeholders=defaults["list_of_placeholders"],
         )
         self.assertEqual(filename, "filename")
 
     def test_combinations(self):
         filename = file_module.clean_filename(
-            filename="filename_#Lon_#GRID#SPECTRASaveThis#WIND__",
+            filename="filename_#LON_#GRID#SPECTRA_SaveThis_#WIND__",
             list_of_placeholders=defaults["list_of_placeholders"],
         )
         self.assertEqual(filename, "filename_SaveThis")
 
         filename = file_module.clean_filename(
-            filename="filename_#Lon_#T0-#T1#GRID#SPECTRASaveThis#WIND__",
+            filename="filename_#LON_#T0_#T1#GRID#SPECTRA_SaveThis_#WIND__",
             list_of_placeholders=defaults["list_of_placeholders"],
         )
         self.assertEqual(filename, "filename_SaveThis")
 
         filename = file_module.clean_filename(
-            filename="filename_#Lon_#T0-#T1#GRID#SPECTRASaveThisE#Lon#WIND__",
+            filename="filename_#LON_#T0_#T1#GRID_#SPECTRA_SaveThis_E#LON#WIND__",
             list_of_placeholders=defaults["list_of_placeholders"],
         )
         self.assertEqual(filename, "filename_SaveThis")
@@ -254,7 +257,7 @@ class ReplaceObjects(unittest.TestCase):
 class ReplaceLonLat(unittest.TestCase):
     def test_all(self):
         filename = file_module.replace_lonlat(
-            "file_#LON_#ModelRun_#LAT", lon=5.3, lat=60.2222, fmt="010.7f"
+            "file_#LON0_#ModelRun_#LAT0", lon=5.3, lat=60.2222, fmt="010.7f"
         )
         self.assertEqual(filename, "file_05.3000000_#ModelRun_60.2222000")
 

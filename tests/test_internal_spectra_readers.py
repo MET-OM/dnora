@@ -22,6 +22,7 @@ def test_wam3(grid, timevec):
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=1)
     model.import_spectra(dn.read.spectra.metno.WAM3(), source=DataSource.IMMUTABLE)
     assert np.all(model.spectra().time() == timevec)
+    assert model.spectra().spec(strict=True) is not None
 
 
 @pytest.mark.remote
@@ -30,6 +31,7 @@ def test_wam800(grid, timevec):
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=1)
     model.import_spectra(dn.read.spectra.metno.WAM800(), source=DataSource.IMMUTABLE)
     assert np.all(model.spectra().time() == timevec)
+    assert model.spectra().spec(strict=True) is not None
 
 
 @pytest.mark.remote
@@ -38,7 +40,7 @@ def test_nora3(grid, timevec):
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=1)
     model.import_spectra(dn.read.spectra.metno.NORA3(), source=DataSource.INTERNAL)
     assert np.all(model.spectra().time() == timevec)
-
+    assert model.spectra().spec(strict=True) is not None
 
 @pytest.mark.remote
 @pytest.mark.internal
@@ -46,7 +48,7 @@ def test_ww3_4km(grid, timevec):
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=1)
     model.import_spectra(dn.read.spectra.metno.WW3_4km(), source=DataSource.IMMUTABLE)
     assert np.all(model.spectra().time() == timevec)
-
+    assert model.spectra().spec(strict=True) is not None
 
 @pytest.mark.remote
 @pytest.mark.internal
@@ -55,3 +57,4 @@ def test_norac(timevec):
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=1)
     model.import_spectra(dn.read.spectra.metno.NORAC(), source=DataSource.INTERNAL)
     assert np.all(model.spectra().time() == timevec)
+    assert model.spectra().spec(strict=True) is not None

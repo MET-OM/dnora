@@ -3,7 +3,7 @@ from dnora.read.abstract_readers import PointDataReader, DataReader, SpectralDat
 import geo_parameters as gp
 import pandas as pd
 import numpy as np
-import re
+import re, os
 import xarray as xr
 from dnora import utils
 from pathlib import Path
@@ -42,24 +42,31 @@ def read_cached_filelist(folder, filename, silent: bool = False):
     ds_list = []
     points_in_previous_tiles = 0
     for day in days:
-        files_in_day = [fn for fn in filepath if day in fn]
+        files_in_day = [fn for fn in filepath if day in fn and os.path.getsize(fn) > 0]
 
         for file in files_in_day:
             one_ds = xr.open_dataset(file, chunks="auto")
-            one_ds["inds"] = one_ds["inds"] + points_in_previous_tiles
-            points_in_previous_tiles += len(one_ds.inds)
-            ds_list.append(one_ds)
+            if len(one_ds.data_vars) > 2:  # Otherwise we have empty lon/lat file
+                one_ds["inds"] = one_ds["inds"] + points_in_previous_tiles
+                points_in_previous_tiles += len(one_ds.inds)
+                ds_list.append(one_ds)
 
     ds = xr.concat(ds_list, dim="inds")
     return ds
 
 
 class PointNetcdf(SpectralDataReader):
-    def default_data_source(self) -> DataSource:
+    @staticmethod
+    def default_data_source() -> DataSource:
         return DataSource.LOCAL
 
-    def caching_strategy(self) -> CachingStrategy:
+    @staticmethod
+    def caching_strategy() -> CachingStrategy:
         return CachingStrategy.DontCacheMe
+
+    @staticmethod
+    def returning_ds() -> bool:
+        return True
 
     def __init__(self, files: list[str] = None):
         self.files = files
@@ -73,10 +80,6 @@ class PointNetcdf(SpectralDataReader):
         else:
             filepath = get_url(folder, filename)
             ds = xr.open_dataset(filepath)
-        # if filename is None:
-        #     raise ValueError("Provide at least one filename!")
-        # filepath = get_url(folder, filename, get_list=True)
-        # ds = xr.open_dataset(filepath[0])
 
         lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
         self.set_convention(ds.attrs.get("dnora_spectral_convention", "unknown"))
@@ -97,42 +100,33 @@ class PointNetcdf(SpectralDataReader):
 
         filename = filename or self.files
         if isinstance(filename, list):
-            ds = read_cached_filelist(folder, filename)
+            ds = read_cached_filelist(folder, filename).sel(inds=inds)
         else:
             filepath = get_url(folder, filename)
-            ds = xr.open_dataset(filepath)
+            ds = xr.open_dataset(filepath).sel(inds=inds)
+            msg.from_file(filepath)
 
-        # ds = xr.open_mfdataset(filepath)
+        cls = dnora_objects.get(obj_type)
+        # This geo-skeleton method does all the heavy lifting with decoding the Dataset to match the class data variables etc.
+        data = cls.from_ds(ds)
+        # Set reader convention. This is used by the import method to set correct convention to the instance
+        self.set_convention(data.meta.get().get("dnora_spectral_convention"))
 
-        times = slice(start_time, end_time)
-
-        ds = ds.sel(inds=inds, time=times)
-
-        lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
-
-        coord_dict = {"x": x, "y": y, "lon": lon, "lat": lat}
-        for c in list(ds.coords):
-            if c not in ["inds"]:
-                coord_dict[c] = ds.get(c).values
-
-        data_dict = {}
-        for var in dnora_objects.get(obj_type).core.data_vars():
-            meta_var = dnora_objects.get(obj_type).core.meta_parameter(var)
-            ds_var = meta_var.find_me_in_ds(ds)[0]
-            ds_data = ds.get(ds_var)
-            if ds_data is not None:
-                data_dict[meta_var] = ds_data.values
-
-        meta_dict = ds.attrs
-        return coord_dict, data_dict, meta_dict
+        return data.ds()
 
 
 class Netcdf(DataReader):
-    def default_data_source(self) -> DataSource:
+    @staticmethod
+    def default_data_source() -> DataSource:
         return DataSource.LOCAL
 
-    def caching_strategy(self) -> CachingStrategy:
+    @staticmethod
+    def caching_strategy() -> CachingStrategy:
         return CachingStrategy.DontCacheMe
+
+    @staticmethod
+    def returning_ds() -> bool:
+        return True
 
     def __init__(self, files: list[str] = None):
         self.files = files
@@ -155,46 +149,94 @@ class Netcdf(DataReader):
         if filename is None:
             raise ValueError("Provide at least one filename!")
         filepath = get_url(folder, filename, get_list=True)
-        ds = xr.open_mfdataset(filepath)
+        filepath = [file for file in filepath if os.path.getsize(file) > 0]
+
+        msg.process(f"Using expansion_factor = {expansion_factor:.2f}")
+        lon, lat = utils.grid.expand_area(
+            grid.edges("lon"), grid.edges("lat"), expansion_factor
+        )
+
+        ds = xr.open_mfdataset(filepath).sel(
+            lon=slice(*lon), lat=slice(*lat), time=slice(start_time, end_time)
+        )
 
         msg.from_multifile(filepath)
-        lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
 
-        times = slice(start_time, end_time)
-        if x is None:
-            lons, lats = utils.grid.expand_area(
-                grid.edges("lon"), grid.edges("lat"), expansion_factor
-            )
-            try:
-                ds = ds.sel(lon=slice(*lons), lat=slice(*lats), time=times)
-            except:
-                ds = ds.sel(longitude=slice(*lons), latitude=slice(*lats), time=times)
-        else:
-            xs, ys = utils.grid.expand_area(
-                grid.edges("x"), grid.edges("y"), expansion_factor
-            )
-            ds = ds.sel(x=slice(*xs), y=slice(*ys), time=times)
+        cls = dnora_objects.get(obj_type)
+        # This geo-skeleton method does all the heavy lifting with decoding the Dataset to match the class data variables etc.
+        data = cls.from_ds(ds)
 
-        lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
-        coord_dict = {"x": x, "y": y, "lon": lon, "lat": lat}
+        return data.ds()
 
-        for c in list(ds.coords):
-            if c not in ["lon", "lat", "longitudes", "latitudes"]:
-                coord_dict[c] = ds.get(c).values
-        data_dict = {}
-        metaparameter_dict = {}
 
-        for var in dnora_objects.get(obj_type).core.data_vars():
-            meta_var = dnora_objects.get(obj_type).core.meta_parameter(var)
-            ds_var = meta_var.find_me_in_ds(ds)
-            ds_data = ds.get(ds_var)
-            if ds_data is not None:
-                data_dict[meta_var] = ds_data.values
-                # metaparameter_dict[var] = meta_var
+# class Netcdf(DataReader):
+#     def default_data_source(self) -> DataSource:
+#         return DataSource.LOCAL
 
-        meta_dict = ds.attrs
+#     def caching_strategy(self) -> CachingStrategy:
+#         return CachingStrategy.DontCacheMe
 
-        return coord_dict, data_dict, meta_dict
+#     def __init__(self, files: list[str] = None):
+#         self.files = files
+
+#     def __call__(
+#         self,
+#         obj_type: DnoraDataType,
+#         grid,
+#         start_time,
+#         end_time,
+#         source: DataSource,
+#         folder: str,
+#         filename: list[str] = None,
+#         expansion_factor=1.2,
+#         **kwargs,
+#     ):
+
+#         filename = filename or self.files
+
+#         if filename is None:
+#             raise ValueError("Provide at least one filename!")
+#         filepath = get_url(folder, filename, get_list=True)
+#         ds = xr.open_mfdataset(filepath)
+
+#         msg.from_multifile(filepath)
+#         lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
+
+#         times = slice(start_time, end_time)
+#         if x is None:
+#             lons, lats = utils.grid.expand_area(
+#                 grid.edges("lon"), grid.edges("lat"), expansion_factor
+#             )
+#             try:
+#                 ds = ds.sel(lon=slice(*lons), lat=slice(*lats), time=times)
+#             except:
+#                 ds = ds.sel(longitude=slice(*lons), latitude=slice(*lats), time=times)
+#         else:
+#             xs, ys = utils.grid.expand_area(
+#                 grid.edges("x"), grid.edges("y"), expansion_factor
+#             )
+#             ds = ds.sel(x=slice(*xs), y=slice(*ys), time=times)
+
+#         lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
+#         coord_dict = {"x": x, "y": y, "lon": lon, "lat": lat}
+
+#         for c in list(ds.coords):
+#             if c not in ["lon", "lat", "longitudes", "latitudes"]:
+#                 coord_dict[c] = ds.get(c).values
+#         data_dict = {}
+#         metaparameter_dict = {}
+
+#         for var in dnora_objects.get(obj_type).core.data_vars():
+#             meta_var = dnora_objects.get(obj_type).core.meta_parameter(var)
+#             ds_var = meta_var.find_me_in_ds(ds)
+#             ds_data = ds.get(ds_var)
+#             if ds_data is not None:
+#                 data_dict[meta_var] = ds_data.values
+#                 # metaparameter_dict[var] = meta_var
+
+#         meta_dict = ds.attrs
+
+#         return coord_dict, data_dict, meta_dict
 
 
 class ConstantData(SpectralDataReader):
@@ -332,7 +374,6 @@ class ConstantData(SpectralDataReader):
             )
             coord_dict[obj_coord] = val
             obj_size.append(len(val))
-
         obj_size = tuple(obj_size)
 
         # Get values for data variables

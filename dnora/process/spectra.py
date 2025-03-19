@@ -143,46 +143,47 @@ class ReGridDirs(SpectralProcessor):
     """Interpolates the spectra to have the same resoltuon but to start from
     a certain values, e.g. 0."""
 
-    def __init__(self, res: int | None = None, first_dir: int = 0) -> None:
+    def __init__(
+        self,
+        res: int | None = None,
+        first_dir: int | None = None,
+        nbins: int | None = None,
+    ) -> None:
         self.first_dir = copy(first_dir)
+        if res is not None and nbins is not None:
+            raise ValueError(f"Provide EITHER 'res' or 'nbins'!")
         self.res = copy(res)
-
+        self.nbins = copy(nbins)
         return
 
     def __call__(self, spec, dirs, freq, inds) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
-        if dirs[0] > 0:
-            nbins = len(dirs)
-            dD = self.res or 360 / nbins
-            dD = int(dD)
 
-            new_dirs = np.array(range(0, 360, dD), dtype="float32") + self.first_dir
+        nbins = self.nbins or len(dirs)
+        dD = self.res or 360 / nbins
+        dD = int(dD)
 
-            if len(spec.shape) == 2:
-                new_spec = interp_spec(freq, dirs, spec, freq, new_dirs)
-            elif len(spec.shape) == 3:
-                new_spec = copy(spec)
-                N = spec.shape[0]
-                for n in range(N):
-                    temp_spec = interp_spec(freq, dirs, spec[n, :, :], freq, new_dirs)
-                    new_spec[n, :, :] = temp_spec
-            elif len(spec.shape) == 4:
-                new_spec = copy(spec)
-                N1 = spec.shape[0]
-                N2 = spec.shape[1]
-                for n1 in range(N1):
-                    for n2 in range(N2):
-                        temp_spec = interp_spec(
-                            freq, dirs, spec[n1, n2, :], freq, new_dirs
-                        )
-                        new_spec[n1, n2, :, :] = temp_spec
+        first_dir = self.first_dir or dirs[0]
+
+        new_dirs = np.array(range(0, 360, dD), dtype="float32") + first_dir
+        new_spec = np.zeros((spec.shape[0], len(inds), len(freq), len(new_dirs)))
+        N1 = spec.shape[0]
+        N2 = spec.shape[1]
+        for n1 in range(N1):
+            for n2 in range(N2):
+                m0_orig = np.trapz(np.sum(spec[n1, n2, :], axis=1) * 360 / nbins, freq)
+                temp_spec = interp_spec(freq, dirs, spec[n1, n2, :], freq, new_dirs)
+                m0_new = np.trapz(np.sum(temp_spec, axis=1) * dD, freq)
+                new_spec[n1, n2, :, :] = temp_spec * m0_new / m0_orig
         check_that_spectra_are_consistent(new_spec, new_dirs, freq, expected_dim=2)
         return new_spec, new_dirs, freq, inds
 
     def __str__(self):
-        return_string = f"Interpolating spectra to start from {self.first_dir}"
+        return_string = ""
+        if self.first_dir is not None:
+            return_string += f"Interpolating spectra to start from {self.first_dir} "
         if self.res is not None:
-            return_string += " and setting resolution to {self.res}"
+            return_string += f"Setting resolution to {self.res}"
 
         return return_string
 

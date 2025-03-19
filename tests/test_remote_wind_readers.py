@@ -55,8 +55,8 @@ def test_meps_subset(grid):
 def test_meps_url():
     file_times = pd.date_range("2020-02-04 00:00:00", "2020-02-04 23:00:00", freq="6h")
     urls = get_meps_urls(
-        MEPS._default_folders[DataSource.REMOTE],
-        MEPS._default_filename,
+        MEPS.product_configuration.default_folders[DataSource.REMOTE],
+        MEPS.product_configuration.filename,
         file_times,
     )
     assert len(urls) == 4

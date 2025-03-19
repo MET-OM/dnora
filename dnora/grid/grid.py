@@ -14,11 +14,14 @@ from pathlib import Path
 if TYPE_CHECKING:
     from dnora.read.abstract_readers import DataReader
 from dnora.type_manager.data_sources import DataSource
+from dnora.type_manager.dnora_types import DnoraDataType
 import matplotlib.pyplot as plt
 from .topo import import_topo
 import cmocean.cm
 
 import geo_parameters as gp
+
+from dnora.defaults import read_environment_variable
 
 
 @add_mask(name="waveseries", coord_group="grid", default_value=0)
@@ -37,13 +40,13 @@ import geo_parameters as gp
 class Grid(GriddedSkeleton):
     _default_reader = None
 
-    @classmethod
-    def from_netcdf(cls, filename: str, folder: str = ""):
-        filepath = Path(folder).joinpath(filename)
-        msg.from_file(filepath)
-        ds = xr.open_dataset(filepath)
-        grid = cls.from_ds(ds)
-        return grid
+    # @classmethod
+    # def from_netcdf(cls, filename: str, folder: str = ""):
+    #     filepath = Path(folder).joinpath(filename)
+    #     msg.from_file(filepath)
+    #     ds = xr.open_dataset(filepath)
+    #     grid = cls.from_ds(ds)
+    #     return grid
 
     @classmethod
     def from_swan_bot(cls, filename: str, lon: tuple, lat: tuple, folder: str = ""):
@@ -113,6 +116,8 @@ class Grid(GriddedSkeleton):
         folder: str = None,
         **kwargs,
     ) -> None:
+        if folder is None:
+            folder = read_environment_variable(DnoraDataType.GRID, DataSource.LOCAL)
         topo_reader = topo_reader or self._default_reader
         raw_topo = import_topo(self, topo_reader, source, folder, **kwargs)
         self._raw = raw_topo

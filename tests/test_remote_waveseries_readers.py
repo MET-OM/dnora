@@ -26,8 +26,8 @@ def test_import_wave_from_norac_spectra():
     )
     timevec = pd.date_range("2023-04-10 00:00:00", "2023-04-10 23:00:00", freq="1h")
     assert np.all(model.waveseries().time() == timevec)
-    assert model.waveseries().wind() is not None
-    assert model.waveseries().wind_dir() is not None
+    assert model.waveseries().ff() is not None
+    assert model.waveseries().dd() is not None
     assert model.waveseries().current() is not None
     assert model.waveseries().current_dir() is not None
     assert model.waveseries().depth() is not None
@@ -42,8 +42,8 @@ def test_import_wave_from_ww3_4km_spectra():
     )
     timevec = pd.date_range("2023-04-10 00:00:00", "2023-04-10 23:00:00", freq="1h")
     assert np.all(model.waveseries().time() == timevec)
-    assert model.waveseries().wind() is not None
-    assert model.waveseries().wind_dir() is not None
+    assert model.waveseries().ff() is not None
+    assert model.waveseries().dd() is not None
     assert model.waveseries().hs() is not None
     assert model.waveseries().tp() is not None
     assert model.waveseries().dirp() is not None
