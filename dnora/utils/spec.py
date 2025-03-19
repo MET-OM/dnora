@@ -8,12 +8,11 @@ def interp_spec(f, D, S, fi, Di):
     """
     Sleft = S
     Sright = S
-    Dleft = -D[::-1]
+    Dleft = D - 360  # -D[::-1]
     Dright = D + 360
 
     bigS = np.concatenate((Sleft, S, Sright), axis=1)
     bigD = np.concatenate((Dleft, D, Dright))
-
     Finterpolator = interpolate.RectBivariateSpline(f, bigD, bigS, kx=1, ky=1, s=0)
     Si = Finterpolator(fi, Di)
 
