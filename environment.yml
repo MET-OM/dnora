@@ -1,4 +1,4 @@
-name: dnora2_dev
+name: dnora2
 channels:
   - conda-forge
 dependencies:
@@ -7,7 +7,7 @@ dependencies:
   - scipy>=1.7
   - netcdf4
   - pandas
-  - xarray=>0.20.1
+  - xarray>=0.20.1
   - meshio
   - scipy
   - geo-skeletons==0.20.4
