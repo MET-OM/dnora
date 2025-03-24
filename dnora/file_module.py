@@ -96,10 +96,13 @@ class FileNames:
         filename = self.replace_placeholders(
             filename, start_time, end_time, lon, lat, x, y
         )
-
+        filename_suffix = Path(filename).suffix[1:]
+        # pytest_ww3_spectra_00.0000000_10.0000000 gives suffix '0000000', which we don't want
+        if len(filename_suffix) > 4:
+            filename_suffix = None
         extension = (
             extension
-            or Path(filename).suffix[1:]
+            or filename_suffix
             or get_default_value(
                 "extension", self.obj_type, self.primary, self.fallback
             )
@@ -110,7 +113,11 @@ class FileNames:
             return filename
         if extension is None:
             return str(Path(filename))
-        return f"{Path(filename).with_suffix(f'.{extension}')}"
+        # Don't replace possible .0000000 "suffixes" that denote the longitude or latitude
+        if len(Path(filename).suffix[1:]) > 4:
+            return f"{Path(filename)}.{extension}"
+        else:
+            return f"{Path(filename).with_suffix(f'.{extension}')}"
 
     def get_folder(
         self,
