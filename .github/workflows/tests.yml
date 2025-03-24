@@ -3,11 +3,14 @@ name: Tests
 on:
   push:
     branches:
-      - main
+      - v2
     tags:
       - v*
   pull_request:
-
+    branches:
+      - v2
+    tags:
+      - v*
 jobs:
   tests:
     name: pytests (${{ matrix.os }} - ${{ matrix.python-version }}, Miniforge3)
