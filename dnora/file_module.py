@@ -97,8 +97,12 @@ class FileNames:
             filename, start_time, end_time, lon, lat, x, y
         )
 
-        extension = extension or get_default_value(
-            "extension", self.obj_type, self.primary, self.fallback
+        extension = (
+            extension
+            or Path(filename).suffix[1:]
+            or get_default_value(
+                "extension", self.obj_type, self.primary, self.fallback
+            )
         )
         if clean:
             filename = clean_filename(filename)
@@ -106,7 +110,7 @@ class FileNames:
             return filename
         if extension is None:
             return str(Path(filename))
-        return f"{Path(filename)}.{extension}"
+        return f"{Path(filename).with_suffix(f'.{extension}')}"
 
     def get_folder(
         self,
@@ -165,7 +169,12 @@ class FileNames:
             ),
         )
 
-    def create_folder(self, edge_object: str = None ,start_time: str = None, end_time: str = None,) -> None:
+    def create_folder(
+        self,
+        edge_object: str = None,
+        start_time: str = None,
+        end_time: str = None,
+    ) -> None:
         folder = Path(self.get_folder(start_time=start_time, end_time=end_time))
         if not folder.is_dir():
             msg.process(f"Creating folder {str(folder)}")
@@ -266,12 +275,14 @@ def replace_times(
 
     return filename
 
+
 def fstring(val: float, fmt: str) -> str:
     """Creates a string with equal number of padding zeros for negative and positive values"""
     fstring = f"{abs(val):{fmt}}"
-    if val <0:
-        fstring = "-" + fstring 
+    if val < 0:
+        fstring = "-" + fstring
     return fstring
+
 
 def replace_lonlat(filename: str, lon: float, lat: float, fmt: str) -> str:
     """Substitutes the strings #LON0, #LON1, #LAT0, #LAT1 in filename with values of lon and
@@ -289,7 +300,7 @@ def replace_lonlat(filename: str, lon: float, lat: float, fmt: str) -> str:
     if not isinstance(lat, tuple):
         lat = (lat, lat)
     if lat[0] is not None:
-        filename = re.sub("#LAT0",fstring(lat[0], fmt), filename)
+        filename = re.sub("#LAT0", fstring(lat[0], fmt), filename)
     if lat[1] is not None:
         filename = re.sub("#LAT1", fstring(lat[1], fmt), filename)
 
@@ -303,20 +314,19 @@ def replace_xy(filename: str, x: float, y: float, fmt: str) -> str:
     e.g. #X0_#Y0_file.txt, 10.0, 20.10 -> 10.0000000_20.10000000_file.txt
     """
     if not isinstance(x, tuple):
-        x = (x,x)
+        x = (x, x)
     if x[0] is not None:
         filename = re.sub("#X0", fstring(x[0], fmt), filename)
     if x[1] is not None:
-        filename = re.sub("#Y1",fstring(x[1], fmt), filename)
-
+        filename = re.sub("#Y1", fstring(x[1], fmt), filename)
 
     if not isinstance(y, tuple):
-        y = (y,y)
+        y = (y, y)
     if y[0] is not None:
-        filename = re.sub("#Y0",fstring(y[0], fmt), filename)
+        filename = re.sub("#Y0", fstring(y[0], fmt), filename)
     if y[1] is not None:
         filename = re.sub("#Y1", fstring(y[1], fmt), filename)
-    
+
     return filename
 
 
@@ -361,10 +371,10 @@ def clean_filename(filename: str, list_of_placeholders: list[str] = None) -> str
 
     Also removes multiple underscores '___' etc.
     """
-    
-    filename = '_'.join([p for p in filename.split('_') if '#' not in p])
 
-    filename = re.sub("LonelySkeleton", "", filename)
+    filename = "_".join([p for p in filename.split("_") if "#" not in p])
+
+    filename = re.sub("LonelySkeleton", "GridName", filename)
 
     filename = re.sub("_{2,10}", "_", filename)
     filename = re.sub("_-_", "", filename)
@@ -385,7 +395,7 @@ def get_default_value(key: str, obj_type: DnoraDataType, primary: dict, fallback
 
     obj_str = obj_type.name.lower()
     if isinstance(obj_type, DnoraFileType):
-        obj_str += '_file'
+        obj_str += "_file"
 
     # Try dnora_obj specific fallback name
     fallback_name = None
