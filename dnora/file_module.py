@@ -97,8 +97,12 @@ class FileNames:
             filename, start_time, end_time, lon, lat, x, y
         )
 
-        extension = extension or get_default_value(
-            "extension", self.obj_type, self.primary, self.fallback
+        extension = (
+            extension
+            or Path(filename).suffix[1:]
+            or get_default_value(
+                "extension", self.obj_type, self.primary, self.fallback
+            )
         )
         if clean:
             filename = clean_filename(filename)
@@ -106,7 +110,7 @@ class FileNames:
             return filename
         if extension is None:
             return str(Path(filename))
-        return f"{Path(filename)}.{extension}"
+        return f"{Path(filename).with_suffix(f'.{extension}')}"
 
     def get_folder(
         self,
