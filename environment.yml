@@ -2,7 +2,6 @@ name: dnora2
 channels:
   - conda-forge
 dependencies:
-  - python>=3.9,<3.12
   - numpy>=1.17
   - scipy>=1.7
   - netcdf4
