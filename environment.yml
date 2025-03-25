@@ -22,3 +22,4 @@ dependencies:
   - matplotlib
   - cmocean
   - copernicusmarine
+  - pyarrow
