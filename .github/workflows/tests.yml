@@ -33,5 +33,6 @@ jobs:
       - name: Run tests
         run: |
           conda activate test
+          pip install .
           pytest -m "not remote" -vs --log-cli-level=debug
 
