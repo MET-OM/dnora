@@ -10,15 +10,15 @@ dependencies:
   - xarray>=0.20.1
   - meshio
   - scipy
-  - geo-skeletons==0.20.4
+  - geo-skeletons=0.20.4
   - pip
   - pip:
-    - dnplot==0.3.1
+    - dnplot=0.3.1
   - pytest
   - pytest-cov
   - cdsapi>=0.7.0
   - python-dotenv
-  - fimex==1.8.1
+  - fimex=1.8.1
   - progressbar
   - matplotlib
   - cmocean
