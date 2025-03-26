@@ -55,10 +55,18 @@ class SpectraWriter(DataWriter):
             self._convention = SpectralConvention[self._convention.upper()]
         return self._convention
 
+    def set_convention(self, convention: SpectralConvention | str) -> None:
+        if isinstance(convention, str):
+            self._convention = SpectralConvention[convention.upper()]
+        else:
+            self._convention = convention
+
 
 class WW3(SpectraWriter):
     def __init__(
-        self, convention=SpectralConvention.WW3, one_file: bool = None
+        self,
+        convention: SpectralConvention | str = SpectralConvention.WW3,
+        one_file: bool = None,
     ) -> None:
         if one_file is not None:
             warnings.warn(
@@ -67,7 +75,7 @@ class WW3(SpectraWriter):
                 stacklevel=2,
             )
         self.one_file = one_file
-        self._convention = convention
+        self.set_convention(convention)
 
     def __call__(
         self,
@@ -77,12 +85,15 @@ class WW3(SpectraWriter):
         var_names: dict = None,
         one_file: bool = True,
         squeeze_lonlat: bool = False,
+        convention: SpectralConvention | str | None = None,
         **kwargs,
     ) -> list[str]:
         """You can change the variable names by giving a dictionary e.g. var_names = {'efth': 'SPEC'}
         To write one file for each lon/lat points, set one_file = False
         To write longitude/latitude withouth a time dimension, set squeeze_lonlat = True
         """
+        if convention is not None:
+            model.spectra().set_convention(convention)
 
         msg.info("Writing WAVEWATCH-III netcdf-output")
         boundary = model.spectra()
