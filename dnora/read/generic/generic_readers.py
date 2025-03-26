@@ -391,7 +391,7 @@ class ConstantData(SpectralDataReader):
             data_dict[key] = create_constant_array(val, time, obj_size, time_vec)
             if non_fp_ind is not None:
                 data_dict[key][:, :, non_fp_ind, ...] = 0
-            elif non_dirp_ind is not None:
+            if non_dirp_ind is not None:
                 data_dict[key][:, :, :, non_dirp_ind] = 0
 
         print_constant_values(data_dict, obj_type, time_vec)
