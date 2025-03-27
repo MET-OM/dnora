@@ -7,7 +7,7 @@ import pandas as pd
 from functools import partial
 from dnora.read.file_structure import FileStructure
 import re
-
+import geo_parameters as gp
 # Import objects
 from dnora.grid import Grid
 
@@ -217,15 +217,16 @@ class NORA3_fp(ProductReader):
 
 class CLIMAREST(ProductReader):
     product_configuration = ProductConfiguration(
-        filename="climarest_forcing_%Y.nc2",
+        filename="wind_HCLIM43_MPIESM12LR_3hr_%Y_%m.nc",
         ds_creator_function=partial(
             ds_fimex_read,
             resolution_in_km=2.5,
-            data_vars=["uas", "vas", "sic"],
+            data_vars=["uas", "vas"],
         ),
         default_data_source=DataSource.LOCAL,
+        ds_aliases = {'uas': gp.wind.XWind, 'vas': gp.wind.YWind}
     )
-
+    
     file_structure = FileStructure(
-        stride="year",
+        stride="month",
     )
