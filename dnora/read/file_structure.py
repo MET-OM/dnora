@@ -1,6 +1,6 @@
 from dnora.utils.time import create_time_stamps
 from dataclasses import dataclass
-from dnora.utils.time import create_monthly_stamps
+from dnora.utils.time import create_monthly_stamps, create_yearly_stamps
 
 
 @dataclass
@@ -8,6 +8,7 @@ class FileStructure:
     """stride:
     int in hours (e.g. 24 for daily files)
     'month' for monthly files
+    'year' for yearly files
     None if all data is in one file, but points are spread across different files
     """
 
@@ -21,6 +22,9 @@ class FileStructure:
     def create_time_stamps(self, start_time: str, end_time: str):
         if self.stride == "month":
             start_times, end_times = create_monthly_stamps(start_time, end_time)
+            file_times = start_times
+        elif self.stride == "year":
+            start_times, end_times = create_yearly_stamps(start_time, end_time)
             file_times = start_times
         else:
             start_times, end_times, file_times = create_time_stamps(
