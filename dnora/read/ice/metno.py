@@ -80,3 +80,19 @@ class Barents25(ProductReader):
         stride=6,
         hours_per_file=97,
     )
+
+
+class CLIMAREST(ProductReader):
+    product_configuration = ProductConfiguration(
+        filename="sic_HCLIM43_MPIESM12LR_3hr_%Y_%m.nc",
+        ds_creator_function=partial(
+            ds_fimex_read,
+            resolution_in_km=2.5,
+            data_vars=["sic"],
+        ),
+        default_data_source=DataSource.LOCAL,
+    )
+
+    file_structure = FileStructure(
+        stride="month",
+    )
