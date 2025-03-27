@@ -214,3 +214,18 @@ class NORA3_fp(ProductReader):
     file_structure = FileStructure(
         stride=1, hours_per_file=1, last_file="", lead_time=4
     )
+
+class CLIMAREST(ProductReader):
+    product_configuration = ProductConfiguration(
+        filename="climarest_forcing_%Y.nc2",
+        ds_creator_function=partial(
+            ds_fimex_read,
+            resolution_in_km=2.5,
+            data_vars=["uas", "vas", "sic"],
+        ),
+        default_data_source=DataSource.LOCAL,
+    )
+
+    file_structure = FileStructure(
+        stride="year",
+    )
