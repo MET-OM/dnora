@@ -73,8 +73,8 @@ def create_yearly_stamps(start_time: str, end_time: str) -> tuple:
     start_times = []
     end_times = []
     for year in years:
-        t0 = pd.to_datatime(f"%Y-01-01 00:00:00")
-        t1 = pd.to_datatime(f"%Y-12-31 23:59:59")
+        t0 = pd.to_datetime(f"{year}-01-01 00:00:00")
+        t1 = pd.to_datetime(f"{year}-12-31 23:59:59")
         start_times.append(t0)
         end_times.append(t1)
     start_times[0] = np.max([start_times[0], pd.to_datetime(start_time)])
