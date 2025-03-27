@@ -220,7 +220,7 @@ class CLIMAREST(ProductReader):
         filename="wind_HCLIM43_MPIESM12LR_3hr_%Y_%m.nc",
         ds_creator_function=partial(
             ds_fimex_read,
-            resolution_in_km=2.5,
+            resolution_in_km=3.0,
             data_vars=["uas", "vas"],
         ),
         default_data_source=DataSource.LOCAL,
