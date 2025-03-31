@@ -1,5 +1,8 @@
 import numpy as np
+
 from ...file_module import split_filepath, add_folder_to_filename
+
+from pathlib import Path
 
 
 def ww3_grid(
@@ -111,9 +114,7 @@ def ww3_grid(
     def write_depth():
         fout.write("&DEPTH_NML\n")
         fout.write(f"  DEPTH%SF               = -1.\n")
-        fout.write(
-            f"  DEPTH%FILENAME         = {add_folder_to_filename(grid_exported_to[0],folder_on_server)}\n"
-        )
+        fout.write(f"  DEPTH%FILENAME         = '{grid_exported_to[0]}'\n")
         fout.write(f"  DEPTH%IDLA             =  1\n")
         fout.write(f"  DEPTH%IDFM             = 2\n")
         fout.write(f"  DEPTH%FORMAT           = '(F15.6)'\n")
@@ -121,9 +122,7 @@ def ww3_grid(
 
     def write_mask():
         fout.write("&MASK_NML\n")
-        fout.write(
-            f"  MASK%FILENAME         =  {add_folder_to_filename(grid_exported_to[-1],folder_on_server)}\n"
-        )
+        fout.write(f"  MASK%FILENAME         =  '{grid_exported_to[-1]}'\n")
         fout.write(f"  MASK%IDLA             =  1\n")
         fout.write(f"  MASK%IDFM             = 2\n")
         fout.write(f"  MASK%FORMAT           = '(I3)'\n")
@@ -132,9 +131,7 @@ def ww3_grid(
     def write_unst():
         fout.write("&UNST_NML\n")
         fout.write(f"  UNST%SF               = -1.\n")
-        fout.write(
-            f"  UNST%FILENAME         =  {add_folder_to_filename(grid_exported_to[0],folder_on_server)}\n"
-        )
+        fout.write(f"  UNST%FILENAME         =  '{grid_exported_to[0]}'\n")
         fout.write(f"  UNST%IDLA             =  4\n")
         fout.write("/\n\n")
 
@@ -167,9 +164,11 @@ def ww3_grid(
         fout.write("/\n\n")
 
     folder = __file__[:-17] + "/metadata/ww3_grid/"
+    folder_on_server = folder_on_server or str(Path(grid_exported_to[0]).parents[0])
     for n in range(len(grid_exported_to)):
-        fn, __ = split_filepath(grid_exported_to[n])
-        grid_exported_to[n] = fn
+        # fn, __ = split_filepath(grid_exported_to[n])
+        fn = Path(grid_exported_to[n]).name
+        grid_exported_to[n] = str(Path(folder_on_server, fn))
     with open(filename, "w") as fout:
         write_block("header.txt")
         fout.write("\n")
@@ -311,7 +310,11 @@ def ww3_shel(
 
     def write_input():
         fout.write("&INPUT_NML\n")
-        FORCING_NAMES = {"wind": "WINDS", "waterlevel": "WATER_LEVELS", "current": "CURRENTS"}
+        FORCING_NAMES = {
+            "wind": "WINDS",
+            "waterlevel": "WATER_LEVELS",
+            "current": "CURRENTS",
+        }
         for field_type in FORCING_NAMES:
             if homog.get(field_type) is not None:
                 fout.write(

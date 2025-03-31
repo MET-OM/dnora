@@ -1204,7 +1204,7 @@ class WW3Grid(InputFileWriter):
         model: ModelRun,
         file_object: FileNames,
         exported_files: dict[str, list[str]],
-        folder_on_server: str = "/server/gridfiles/",
+        folder_on_server: str = "",
         **kwargs,
     ) -> str:
         grid = model.grid()
