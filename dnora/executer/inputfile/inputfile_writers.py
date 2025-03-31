@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import re
 import os
+from pathlib import Path
 
 # Import objects
 from typing import TYPE_CHECKING, Union
@@ -1190,15 +1191,19 @@ class HOS_ocean(InputFileWriter):
         return filename
 
 
+def apply_folder_on_server(
+    exported_files: list[str], folder_on_server: str
+) -> list[str]:
+    """Replaces true export folder with a given folder on server"""
+    obj_exported_to = []
+    for grid_filename in exported_files:
+        fn = Path(grid_filename).name
+        obj_exported_to.append(str(Path(folder_on_server, fn)))
+
+    return obj_exported_to
+
+
 class WW3Grid(InputFileWriter):
-
-    # def file_type(self) -> DnoraFileType:
-    #     return DnoraFileType.GRID
-
-    # def __init__(self):
-    #     self.scaling = 10**6
-    #     return
-
     def __call__(
         self,
         model: ModelRun,
@@ -1224,11 +1229,17 @@ class WW3Grid(InputFileWriter):
             nth = 36
             nk = 32
             dirshift = 0
+        if folder_on_server:
+            grid_exported_to = apply_folder_on_server(
+                exported_files["grid"], folder_on_server
+            )
+        else:
+            grid_exported_to = exported_files["grid"]
+
         ww3_grid(
             grid,
             filename,
-            exported_files["grid"],
-            folder_on_server,
+            grid_exported_to,
             freq1,
             nth,
             nk,
@@ -1247,14 +1258,20 @@ class WW3Wind(InputFileWriter):
         model: ModelRun,
         file_object: FileNames,
         exported_files: dict[str, list[str]],
-        folder_on_server: str = "/server/windfiles/",
+        folder_on_server: str = "",
         **kwargs,
     ) -> str:
         if file_object.get_filename() == "":
             filename = file_object.get_folder() + "/ww3_prnc.nml"
         else:
             filename = file_object.get_filepath()
-        ww3_prnc(filename, exported_files["wind"], folder_on_server)
+        if folder_on_server:
+            wind_exported_to = apply_folder_on_server(
+                exported_files["wind"], folder_on_server
+            )
+        else:
+            wind_exported_to = exported_files["wind"]
+        ww3_prnc(filename, wind_exported_to)
 
         return filename
 
