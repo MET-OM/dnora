@@ -1288,14 +1288,18 @@ class WW3Spectra(InputFileWriter):
         exported_files: dict[str, list[str]],
         method: str = "nearest",
         verbose_level: int = 2,
-        folder_on_server: str = "/server/boundaryfiles/",
+        folder_on_server: str = "",
         **kwargs,
     ) -> str:
         msg.to_file(file_object.get_folder() + "/spectral_boundary_files.list")
+        spectra_exported_to = apply_folder_on_server(
+            exported_files["spectra"], folder_on_server
+        )
         ww3_specfile_list(
             file_object.get_folder() + "/spectral_boundary_files.list",
-            exported_files["spectra"],
+            spectra_exported_to,
         )
+
         if file_object.get_filename() == "":
             filename = file_object.get_folder() + "/ww3_bounc.nml"
         else:

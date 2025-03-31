@@ -65,3 +65,35 @@ def test_wind(grid):
     assert nml_dict['FILE_NML']['FILE']['VAR(1)'] == "'u'"
     assert nml_dict['FILE_NML']['FILE']['VAR(2)'] == "'v'"
     cleanup()
+
+
+
+def test_spectra(grid):
+    cleanup()
+    model = dn.modelrun.Constant(
+        grid, start_time="2020-01-30 00:00", end_time="2020-01-31 23:00"
+    )
+    model.import_spectra()
+    exp = dn.export.WW3(model)
+    exp.export_spectra()
+    
+    exe = dn.executer.WW3(model)
+    exe.write_spectra_file()
+    nml_dict = read_ww3_nml('TestGrid_WW3/ww3_bounc.nml')
+    assert nml_dict['BOUND_NML']['BOUND']['MODE'] == "'WRITE'"
+    assert nml_dict['BOUND_NML']['BOUND']['INTERP'] == '1'
+    assert nml_dict['BOUND_NML']['BOUND']['VERBOSE'] == '2'
+    assert nml_dict['BOUND_NML']['BOUND']['FILE'] == "'spectral_boundary_files.list'"
+    with open('TestGrid_WW3/spectral_boundary_files.list', "r") as file:
+        assert file.readline()[0:3] == 'ww3'
+
+    exe.write_spectra_file(folder_on_server='/lustre/folder/myfolder', verbose_level=1, method='linear')
+    nml_dict = read_ww3_nml('TestGrid_WW3/ww3_bounc.nml')
+    assert nml_dict['BOUND_NML']['BOUND']['MODE'] == "'WRITE'"
+    assert nml_dict['BOUND_NML']['BOUND']['INTERP'] == '2'
+    assert nml_dict['BOUND_NML']['BOUND']['VERBOSE'] == '1'
+    assert nml_dict['BOUND_NML']['BOUND']['FILE'] == "'spectral_boundary_files.list'"
+    with open('TestGrid_WW3/spectral_boundary_files.list', "r") as file:
+        assert file.readline()[0:7] == '/lustre'
+
+    cleanup()

@@ -234,9 +234,9 @@ def ww3_prnc(
 
 
 def ww3_specfile_list(outfile: str, list_of_filenames: list[str]):
-    for n in range(len(list_of_filenames)):
-        fn, __ = split_filepath(list_of_filenames[n])
-        list_of_filenames[n] = fn
+    # for n in range(len(list_of_filenames)):
+    #     fn, __ = split_filepath(list_of_filenames[n])
+    #     list_of_filenames[n] = fn
     with open(outfile, "w") as fout:
         for fn in list_of_filenames:
             fout.write(f"{fn}\n")
