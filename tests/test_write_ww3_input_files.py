@@ -35,3 +35,33 @@ def test_grid(grid):
     assert nml_dict['DEPTH_NML']['DEPTH']['FILENAME'] == "'/lustre/folder/myfolder/TestGrid_bathy.txt'"
     assert nml_dict['MASK_NML']['MASK']['FILENAME'] == "'/lustre/folder/myfolder/TestGrid_mapsta.txt'"
     cleanup()
+
+
+def test_wind(grid):
+    cleanup()
+    model = dn.modelrun.Constant(
+        grid, start_time="2020-01-30 00:00", end_time="2020-01-31 23:00"
+    )
+    model.import_wind()
+    exp = dn.export.WW3(model)
+    exp.export_wind()
+    
+    exe = dn.executer.WW3(model)
+    exe.write_wind_file()
+    nml_dict = read_ww3_nml('TestGrid_WW3/ww3_prnc.nml')
+
+    assert nml_dict['FILE_NML']['FILE']['FILENAME'] == "'TestGrid_WW3/wind_ConstantData_TestGrid_20200101T0000_20200131T2300.nc'"
+    assert nml_dict['FILE_NML']['FILE']['LONGITUDE'] == "'lon'"
+    assert nml_dict['FILE_NML']['FILE']['LATITUDE'] == "'lat'"
+    assert nml_dict['FILE_NML']['FILE']['VAR(1)'] == "'u'"
+    assert nml_dict['FILE_NML']['FILE']['VAR(2)'] == "'v'"
+    
+    
+    exe.write_wind_file(folder_on_server='/lustre/folder/myfolder')
+    nml_dict = read_ww3_nml('TestGrid_WW3/ww3_prnc.nml')
+    assert nml_dict['FILE_NML']['FILE']['FILENAME'] == "'/lustre/folder/myfolder/wind_ConstantData_TestGrid_20200101T0000_20200131T2300.nc'"
+    assert nml_dict['FILE_NML']['FILE']['LONGITUDE'] == "'lon'"
+    assert nml_dict['FILE_NML']['FILE']['LATITUDE'] == "'lat'"
+    assert nml_dict['FILE_NML']['FILE']['VAR(1)'] == "'u'"
+    assert nml_dict['FILE_NML']['FILE']['VAR(2)'] == "'v'"
+    cleanup()
