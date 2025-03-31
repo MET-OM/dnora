@@ -2,14 +2,11 @@ import numpy as np
 
 from ...file_module import split_filepath, add_folder_to_filename
 
-from pathlib import Path
-
 
 def ww3_grid(
     grid,
     filename: str,
     grid_exported_to: str,
-    folder_on_server: str,
     freq1: float,
     nth: int,
     nk: int,
@@ -164,11 +161,7 @@ def ww3_grid(
         fout.write("/\n\n")
 
     folder = __file__[:-17] + "/metadata/ww3_grid/"
-    folder_on_server = folder_on_server or str(Path(grid_exported_to[0]).parents[0])
-    for n in range(len(grid_exported_to)):
-        # fn, __ = split_filepath(grid_exported_to[n])
-        fn = Path(grid_exported_to[n]).name
-        grid_exported_to[n] = str(Path(folder_on_server, fn))
+
     with open(filename, "w") as fout:
         write_block("header.txt")
         fout.write("\n")
@@ -202,8 +195,7 @@ def ww3_grid(
 
 def ww3_prnc(
     filename: str,
-    forcing_exported_to: list[str],
-    folder_on_server: str,
+    wind_exported_to: list[str],
     minwind: float = None,
 ) -> None:
     """Writes ww3_prnc.nml file"""
@@ -223,9 +215,7 @@ def ww3_prnc(
 
     def write_file():
         fout.write("&FILE_NML\n")
-        fout.write(
-            f"  FILE%FILENAME      = '{add_folder_to_filename(forcing_exported_to[-1],folder_on_server)}'\n"
-        )
+        fout.write(f"  FILE%FILENAME      = '{wind_exported_to[-1]}'\n")
         fout.write("  FILE%LONGITUDE     = 'lon'\n")
         fout.write("  FILE%LATITUDE      = 'lat'\n")
         fout.write("  FILE%VAR(1)        = 'u'\n")
@@ -233,9 +223,6 @@ def ww3_prnc(
         fout.write("/\n")
 
     folder = __file__[:-17] + "/metadata/ww3_prnc/"
-    for n in range(len(forcing_exported_to)):
-        fn, __ = split_filepath(forcing_exported_to[n])
-        forcing_exported_to[n] = fn
     with open(filename, "w") as fout:
         write_block("header.txt")
         fout.write("\n")
