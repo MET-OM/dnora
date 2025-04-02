@@ -97,3 +97,135 @@ def test_spectra(grid):
         assert file.readline()[0:7] == '/lustre'
 
     cleanup()
+
+
+def test_shel(grid):
+    cleanup()
+    model = dn.modelrun.Constant(
+        grid, start_time="2020-01-30 00:00", end_time="2020-01-31 23:00"
+    )
+    model.import_wind()
+
+    exe = dn.executer.WW3(model)
+    exe.write_input_file()
+    nml_dict = read_ww3_nml('TestGrid_WW3/ww3_shel.nml')
+    assert nml_dict['DOMAIN_NML']['DOMAIN']['START'] == "20200130000000"
+    assert nml_dict['DOMAIN_NML']['DOMAIN']['STOP'] == "20200131230000"
+    assert nml_dict['INPUT_NML']['INPUT']['FORCING']['WINDS'] == "'T'"
+    assert nml_dict['INPUT_NML']['INPUT']['FORCING']['WATER_LEVELS'] == "'F'"
+    assert nml_dict['INPUT_NML']['INPUT']['FORCING']['CURRENTS'] == "'F'"
+    cleanup()
+
+def test_shel_all_forcing(grid):
+    cleanup()
+    model = dn.modelrun.Constant(
+        grid, start_time="2020-01-30 00:00", end_time="2020-01-31 23:00"
+    )
+    model.import_wind()
+    model.import_waterlevel()
+    model.import_current()
+
+    exe = dn.executer.WW3(model)
+    exe.write_input_file()
+    nml_dict = read_ww3_nml('TestGrid_WW3/ww3_shel.nml')
+    assert nml_dict['DOMAIN_NML']['DOMAIN']['START'] == "20200130000000"
+    assert nml_dict['DOMAIN_NML']['DOMAIN']['STOP'] == "20200131230000"
+    assert nml_dict['INPUT_NML']['INPUT']['FORCING']['WINDS'] == "'T'"
+    assert nml_dict['INPUT_NML']['INPUT']['FORCING']['WATER_LEVELS'] == "'T'"
+    assert nml_dict['INPUT_NML']['INPUT']['FORCING']['CURRENTS'] == "'T'"
+    assert nml_dict['OUTPUT_TYPE_NML']['TYPE']['POINT']['FILE'] == "'spectral_points.list'"
+    assert len(nml_dict['OUTPUT_TYPE_NML']['TYPE']['FIELD']['LIST']) > 0
+    cleanup()    
+  
+def test_shel_all_forcing(grid):
+    cleanup()
+    model = dn.modelrun.Constant(
+        grid, start_time="2020-01-30 00:00", end_time="2020-01-31 23:00"
+    )
+    model.import_wind()
+    model.import_waterlevel()
+    model.import_current()
+
+    exe = dn.executer.WW3(model)
+    exe.write_input_file()
+    nml_dict = read_ww3_nml('TestGrid_WW3/ww3_shel.nml')
+    assert nml_dict['DOMAIN_NML']['DOMAIN']['START'] == "20200130000000"
+    assert nml_dict['DOMAIN_NML']['DOMAIN']['STOP'] == "20200131230000"
+    assert nml_dict['INPUT_NML']['INPUT']['FORCING']['WINDS'] == "'T'"
+    assert nml_dict['INPUT_NML']['INPUT']['FORCING']['WATER_LEVELS'] == "'T'"
+    assert nml_dict['INPUT_NML']['INPUT']['FORCING']['CURRENTS'] == "'T'"
+    assert nml_dict['OUTPUT_TYPE_NML']['TYPE']['POINT']['FILE'] == "'spectral_points.list'"
+    assert len(nml_dict['OUTPUT_TYPE_NML']['TYPE']['FIELD']['LIST']) > 0
+    cleanup()
+
+def test_shel_homog_wind(grid):
+    cleanup()
+    model = dn.modelrun.Constant(
+        grid, start_time="2020-01-30 00:00", end_time="2020-01-31 23:00"
+    )
+    model.import_waterlevel()
+
+    exe = dn.executer.WW3(model)
+    exe.write_input_file(homog = {'wind': (5,6)})
+    nml_dict = read_ww3_nml('TestGrid_WW3/ww3_shel.nml')
+    assert nml_dict['DOMAIN_NML']['DOMAIN']['START'] == "20200130000000"
+    assert nml_dict['DOMAIN_NML']['DOMAIN']['STOP'] == "20200131230000"
+    assert nml_dict['INPUT_NML']['INPUT']['FORCING']['WINDS'] == "'H'"
+    assert nml_dict['INPUT_NML']['INPUT']['FORCING']['WATER_LEVELS'] == "'T'"
+    assert nml_dict['INPUT_NML']['INPUT']['FORCING']['CURRENTS'] == "'F'"
+    assert nml_dict['OUTPUT_TYPE_NML']['TYPE']['POINT']['FILE'] == "'spectral_points.list'"
+    assert len(nml_dict['OUTPUT_TYPE_NML']['TYPE']['FIELD']['LIST']) > 0
+
+    assert nml_dict['HOMOG_COUNT_NML']['HOMOG_COUNT']['N_WND'] == "1"
+    assert nml_dict['HOMOG_INPUT_NML']['HOMOG_INPUT(1)']['NAME'] == "'WND'"
+    assert nml_dict['HOMOG_INPUT_NML']['HOMOG_INPUT(1)']['DATE'] == "20200130000000"
+    assert nml_dict['HOMOG_INPUT_NML']['HOMOG_INPUT(1)']['VALUE1'] == "5"
+    assert nml_dict['HOMOG_INPUT_NML']['HOMOG_INPUT(1)']['VALUE2'] == "6"
+    cleanup()
+def test_shel_homog_waterlevel(grid):
+    cleanup()
+    model = dn.modelrun.Constant(
+        grid, start_time="2020-01-30 00:00", end_time="2020-01-31 23:00"
+    )
+    model.import_wind()
+    exe = dn.executer.WW3(model)
+    exe.write_input_file(homog = {'waterlevel':1})
+    nml_dict = read_ww3_nml('TestGrid_WW3/ww3_shel.nml')
+    assert nml_dict['DOMAIN_NML']['DOMAIN']['START'] == "20200130000000"
+    assert nml_dict['DOMAIN_NML']['DOMAIN']['STOP'] == "20200131230000"
+    assert nml_dict['INPUT_NML']['INPUT']['FORCING']['WINDS'] == "'T'"
+    assert nml_dict['INPUT_NML']['INPUT']['FORCING']['WATER_LEVELS'] == "'H'"
+    assert nml_dict['INPUT_NML']['INPUT']['FORCING']['CURRENTS'] == "'F'"
+    assert nml_dict['OUTPUT_TYPE_NML']['TYPE']['POINT']['FILE'] == "'spectral_points.list'"
+    assert len(nml_dict['OUTPUT_TYPE_NML']['TYPE']['FIELD']['LIST']) > 0
+
+    assert nml_dict['HOMOG_COUNT_NML']['HOMOG_COUNT']['N_LEV'] == "1"
+    assert nml_dict['HOMOG_INPUT_NML']['HOMOG_INPUT(1)']['NAME'] == "'LEV'"
+    assert nml_dict['HOMOG_INPUT_NML']['HOMOG_INPUT(1)']['DATE'] == "20200130000000"
+    assert nml_dict['HOMOG_INPUT_NML']['HOMOG_INPUT(1)']['VALUE1'] == "1"
+    cleanup()   
+
+
+def test_shel_homog_current(grid):
+    cleanup()
+    model = dn.modelrun.Constant(
+        grid, start_time="2020-01-30 00:00", end_time="2020-01-31 23:00"
+    )
+    model.import_wind()
+    exe = dn.executer.WW3(model)
+    exe.write_input_file(homog = {'current':(0,3)})
+    nml_dict = read_ww3_nml('TestGrid_WW3/ww3_shel.nml')
+    assert nml_dict['DOMAIN_NML']['DOMAIN']['START'] == "20200130000000"
+    assert nml_dict['DOMAIN_NML']['DOMAIN']['STOP'] == "20200131230000"
+    assert nml_dict['INPUT_NML']['INPUT']['FORCING']['WINDS'] == "'T'"
+    assert nml_dict['INPUT_NML']['INPUT']['FORCING']['WATER_LEVELS'] == "'F'"
+    assert nml_dict['INPUT_NML']['INPUT']['FORCING']['CURRENTS'] == "'H'"
+    assert nml_dict['OUTPUT_TYPE_NML']['TYPE']['POINT']['FILE'] == "'spectral_points.list'"
+    assert len(nml_dict['OUTPUT_TYPE_NML']['TYPE']['FIELD']['LIST']) > 0
+
+    assert nml_dict['HOMOG_COUNT_NML']['HOMOG_COUNT']['N_CUR'] == "1"
+    assert nml_dict['HOMOG_INPUT_NML']['HOMOG_INPUT(1)']['NAME'] == "'CUR'"
+    assert nml_dict['HOMOG_INPUT_NML']['HOMOG_INPUT(1)']['DATE'] == "20200130000000"
+    assert nml_dict['HOMOG_INPUT_NML']['HOMOG_INPUT(1)']['VALUE1'] == "0"
+    assert nml_dict['HOMOG_INPUT_NML']['HOMOG_INPUT(1)']['VALUE2'] == "3"
+    cleanup()
