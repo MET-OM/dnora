@@ -1326,7 +1326,6 @@ class WW3(InputFileWriter):
         file_object: FileNames,
         exported_files: dict[str, list[str]],
         homog: dict[tuple[float, float]] = None,
-        folder_on_server: str = "/server/namelists/",
         **kwargs,
     ) -> str:
         """To use homogeneous input, set all the variables in order as: homog = {'wind': [1,4]}"""
@@ -1349,6 +1348,6 @@ class WW3(InputFileWriter):
         forcing["waterlevel"] = model.waterlevel() is not None
         forcing["current"] = model.current() is not None
 
-        ww3_shel(filename, folder_on_server, start_time, end_time, forcing, homog)
+        ww3_shel(filename, start_time, end_time, forcing, homog)
 
         return filename
