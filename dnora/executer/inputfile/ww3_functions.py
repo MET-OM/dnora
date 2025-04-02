@@ -1,4 +1,5 @@
 import numpy as np
+
 from ...file_module import split_filepath, add_folder_to_filename
 
 
@@ -6,7 +7,6 @@ def ww3_grid(
     grid,
     filename: str,
     grid_exported_to: str,
-    folder_on_server: str,
     freq1: float,
     nth: int,
     nk: int,
@@ -111,9 +111,7 @@ def ww3_grid(
     def write_depth():
         fout.write("&DEPTH_NML\n")
         fout.write(f"  DEPTH%SF               = -1.\n")
-        fout.write(
-            f"  DEPTH%FILENAME         = {add_folder_to_filename(grid_exported_to[0],folder_on_server)}\n"
-        )
+        fout.write(f"  DEPTH%FILENAME         = '{grid_exported_to[0]}'\n")
         fout.write(f"  DEPTH%IDLA             =  1\n")
         fout.write(f"  DEPTH%IDFM             = 2\n")
         fout.write(f"  DEPTH%FORMAT           = '(F15.6)'\n")
@@ -121,9 +119,7 @@ def ww3_grid(
 
     def write_mask():
         fout.write("&MASK_NML\n")
-        fout.write(
-            f"  MASK%FILENAME         =  {add_folder_to_filename(grid_exported_to[-1],folder_on_server)}\n"
-        )
+        fout.write(f"  MASK%FILENAME         =  '{grid_exported_to[-1]}'\n")
         fout.write(f"  MASK%IDLA             =  1\n")
         fout.write(f"  MASK%IDFM             = 2\n")
         fout.write(f"  MASK%FORMAT           = '(I3)'\n")
@@ -132,9 +128,7 @@ def ww3_grid(
     def write_unst():
         fout.write("&UNST_NML\n")
         fout.write(f"  UNST%SF               = -1.\n")
-        fout.write(
-            f"  UNST%FILENAME         =  {add_folder_to_filename(grid_exported_to[0],folder_on_server)}\n"
-        )
+        fout.write(f"  UNST%FILENAME         =  '{grid_exported_to[0]}'\n")
         fout.write(f"  UNST%IDLA             =  4\n")
         fout.write("/\n\n")
 
@@ -167,9 +161,7 @@ def ww3_grid(
         fout.write("/\n\n")
 
     folder = __file__[:-17] + "/metadata/ww3_grid/"
-    for n in range(len(grid_exported_to)):
-        fn, __ = split_filepath(grid_exported_to[n])
-        grid_exported_to[n] = fn
+
     with open(filename, "w") as fout:
         write_block("header.txt")
         fout.write("\n")
@@ -203,8 +195,7 @@ def ww3_grid(
 
 def ww3_prnc(
     filename: str,
-    forcing_exported_to: list[str],
-    folder_on_server: str,
+    wind_exported_to: list[str],
     minwind: float = None,
 ) -> None:
     """Writes ww3_prnc.nml file"""
@@ -224,9 +215,7 @@ def ww3_prnc(
 
     def write_file():
         fout.write("&FILE_NML\n")
-        fout.write(
-            f"  FILE%FILENAME      = '{add_folder_to_filename(forcing_exported_to[-1],folder_on_server)}'\n"
-        )
+        fout.write(f"  FILE%FILENAME      = '{wind_exported_to[-1]}'\n")
         fout.write("  FILE%LONGITUDE     = 'lon'\n")
         fout.write("  FILE%LATITUDE      = 'lat'\n")
         fout.write("  FILE%VAR(1)        = 'u'\n")
@@ -234,9 +223,6 @@ def ww3_prnc(
         fout.write("/\n")
 
     folder = __file__[:-17] + "/metadata/ww3_prnc/"
-    for n in range(len(forcing_exported_to)):
-        fn, __ = split_filepath(forcing_exported_to[n])
-        forcing_exported_to[n] = fn
     with open(filename, "w") as fout:
         write_block("header.txt")
         fout.write("\n")
@@ -248,9 +234,9 @@ def ww3_prnc(
 
 
 def ww3_specfile_list(outfile: str, list_of_filenames: list[str]):
-    for n in range(len(list_of_filenames)):
-        fn, __ = split_filepath(list_of_filenames[n])
-        list_of_filenames[n] = fn
+    # for n in range(len(list_of_filenames)):
+    #     fn, __ = split_filepath(list_of_filenames[n])
+    #     list_of_filenames[n] = fn
     with open(outfile, "w") as fout:
         for fn in list_of_filenames:
             fout.write(f"{fn}\n")
@@ -291,7 +277,6 @@ def ww3_spectral_output_list(
 
 def ww3_shel(
     filename: str,
-    folder_on_server: str,
     start_time: str,
     end_time: str,
     forcing: dict[str, bool],
@@ -311,7 +296,11 @@ def ww3_shel(
 
     def write_input():
         fout.write("&INPUT_NML\n")
-        FORCING_NAMES = {"wind": "WINDS", "waterlevel": "WATER_LEVELS", "current": "CURRENTS"}
+        FORCING_NAMES = {
+            "wind": "WINDS",
+            "waterlevel": "WATER_LEVELS",
+            "current": "CURRENTS",
+        }
         for field_type in FORCING_NAMES:
             if homog.get(field_type) is not None:
                 fout.write(
@@ -333,7 +322,7 @@ def ww3_shel(
             "  TYPE%FIELD%LIST     = 'HS LM TP DIR SPR DP T02 T0M1 T01 UST CHA DPT WND USS TUS TAW TWO TOC FAW FOC PHS PTP PTM10 PT01 PT02 PDIR PDP MXE MXH MXHC SDMH SDMHC ABR UBR FBB TBB CGE WCC WBT'\n"
         )
         fout.write(
-            f"  TYPE%POINT%FILE     = '{add_folder_to_filename('spectral_points.list',folder_on_server)}'\n"
+            f"  TYPE%POINT%FILE     = 'spectral_points.list'\n"
         )
         fout.write("/\n")
 

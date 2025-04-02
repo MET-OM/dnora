@@ -106,6 +106,7 @@ SWASH:
     extension: 'sws'
 
 WW3:
+  folder: '#GRID_WW3'
   grid:
     filename: '#GRID'
     extension: 'txt'
@@ -126,19 +127,15 @@ WW3:
     extension: 'nc'     
   input_file:
     filename: ''
-    folder: 'MyWW3Folder'
     extension: 'nml'
   grid_file:
     filename: 'ww3_grid'
-    folder: 'MyWW3Folder'
     extension: 'nml'
   wind_file:
     filename: 'ww3_prnc'
-    folder: 'MyWW3Folder'
     extension: 'nml'
   spectra_file:
     filename: 'ww3_bounc'
-    folder: 'MyWW3Folder'
     extension: 'nml'
 
 
