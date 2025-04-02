@@ -20,7 +20,7 @@ def grid():
 
 @pytest.fixture(scope="session")
 def timevec():
-    return pd.date_range("2022-04-01 00:00:00", "2022-04-01 23:00:00", freq="1h")
+    return pd.date_range("2023-04-01 00:00:00", "2023-04-01 23:00:00", freq="1h")
 def cleanup():
     if os.path.isdir("dnora_waterlevel_temp"):
         shutil.rmtree("dnora_waterlevel_temp")
@@ -30,9 +30,20 @@ def cleanup():
 @pytest.mark.remote
 def test_era5(grid, timevec):
     cleanup()
-    model = dn.modelrun.ModelRun(grid, year=2022, month=4, day=1)
+    model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=1)
     model.import_waterlevel(dn.read.waterlevel.ec.GTSM_ERA5())
 
+    assert np.all(model.waterlevel().time() == timevec)
+
+    grid_is_covered(grid, model.waterlevel())
+    cleanup()
+
+
+@pytest.mark.remote
+def test_cmems(grid, timevec):
+    cleanup()
+    model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=1)
+    model.import_waterlevel(dn.read.waterlevel.cmems.Global())
     assert np.all(model.waterlevel().time() == timevec)
 
     grid_is_covered(grid, model.waterlevel())

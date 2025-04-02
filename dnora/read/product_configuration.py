@@ -13,6 +13,23 @@ def get_constant_url(folder, filename, file_times, **kwargs) -> list[str]:
     return [get_url(folder, filename, file_time) for file_time in file_times]
 
 
+
+"""ds_creator function will get called once with partial using the following arguments:
+
+    lon=lon, #tuple
+    lat=lat, #tuple
+    data_type=obj_type, #DnoraDataType
+    name=self.name(),
+    program=program, # 'fimex'/'pyfimex', ignore if not needed
+
+    It will get called with the following arguments when reading data:
+
+    start_time, 
+    end_time, 
+    url # string to filename
+    
+    Needs to return an xr.Dataset"""
+
 @dataclass
 class ProductConfiguration:
     filename: str = "model_output_%Y%m.nc"
