@@ -20,7 +20,7 @@ from dnora import utils
 import pandas as pd
 from dnora.type_manager.data_sources import DataSource
 from dnora.read.ds_read_functions import setup_temp_dir
-
+from dnora.type_manager.dnora_types import DnoraDataType
 def download_GTSM_from_cds(start_time, end_time, folder="dnora_wlv_temp") -> str:
     """Downloads GTSM model water level data from the Copernicus Climate Data Store for a
     given area and time period"""
@@ -146,6 +146,7 @@ class GTSM_ERA5(DataReader):
             points = np.array([waterlevel.lon, waterlevel.lat]).T
             time = waterlevel.time
             grid_z = np.zeros([len(time), len(lat_local), len(lon_local)])
+            msg.info('Interpolating data to a 0.1x0.1 degree resolution with cubic interpolation...')
             for i_t, t in enumerate(time):
                 values = waterlevel.waterlevel[i_t, :]
                 grid_z[i_t, :, :] = griddata(
@@ -175,12 +176,17 @@ class GTSM_ERA5(DataReader):
         # )
 
         # print(waterlevel_gridded)
-        return (
-            time,
-            grid_tot,
-            lon_local,
-            lat_local,
-            None,
-            None,
-            dict(description="Waterlevel from GTSM/ERA5"),
-        )
+        coord_dict = {'lon': lon_local, 'lat':lat_local, 'time': time}
+        data_dict = {'eta': grid_tot}
+        meta_dict = {'description': "Waterlevel from GTSM/ERA5"}
+        
+        return coord_dict, data_dict, meta_dict
+        # return (
+        #     time,
+        #     grid_tot,
+        #     lon_local,
+        #     lat_local,
+        #     None,
+        #     None,
+        #     dict(description="Waterlevel from GTSM/ERA5"),
+        # )
