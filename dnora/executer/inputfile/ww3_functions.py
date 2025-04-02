@@ -277,7 +277,6 @@ def ww3_spectral_output_list(
 
 def ww3_shel(
     filename: str,
-    folder_on_server: str,
     start_time: str,
     end_time: str,
     forcing: dict[str, bool],
@@ -323,7 +322,7 @@ def ww3_shel(
             "  TYPE%FIELD%LIST     = 'HS LM TP DIR SPR DP T02 T0M1 T01 UST CHA DPT WND USS TUS TAW TWO TOC FAW FOC PHS PTP PTM10 PT01 PT02 PDIR PDP MXE MXH MXHC SDMH SDMHC ABR UBR FBB TBB CGE WCC WBT'\n"
         )
         fout.write(
-            f"  TYPE%POINT%FILE     = '{add_folder_to_filename('spectral_points.list',folder_on_server)}'\n"
+            f"  TYPE%POINT%FILE     = 'spectral_points.list'\n"
         )
         fout.write("/\n")
 
