@@ -295,7 +295,7 @@ def file_is_consistent(
         return False
 
 
-def setup_temp_dir(data_type: DnoraDataType, reader_name: str) -> None:
+def setup_temp_dir(data_type: DnoraDataType, reader_name: str) -> str:
     """Sets up a temporery directory for fimex files and cleans out possible old files"""
     temp_folder = f"dnora_{data_type.name.lower()}_temp"
     if not os.path.isdir(temp_folder):
@@ -303,5 +303,7 @@ def setup_temp_dir(data_type: DnoraDataType, reader_name: str) -> None:
         print("Creating folder %s..." % temp_folder)
 
     msg.plain("Removing old files from temporary folder...")
-    for f in glob.glob(f"dnora_{data_type.name.lower()}_temp/{reader_name}*.nc"):
+    for f in glob.glob(f"dnora_{data_type.name.lower()}_temp/{reader_name}*.*"):
         os.remove(f)
+
+    return temp_folder
