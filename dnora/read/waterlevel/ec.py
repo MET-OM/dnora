@@ -78,6 +78,8 @@ def download_GTSM_from_cds(start_time, end_time, folder="dnora_wlv_temp") -> str
 
 class GTSM_ERA5(DataReader):
     """Reads GTSM_ERA5 waterlevel data"""
+    def default_data_source(self) -> DataSource:
+        return DataSource.REMOTE
 
     def __call__(
         self,
