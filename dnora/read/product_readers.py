@@ -83,8 +83,8 @@ class ProductReader(DataReader):
         """Reads in all gridded data for given area and time"""
         tile = tile or self._tile
         tile_name = self.product_configuration.tile_names.get(tile)
-        folder = self._folder(folder, source, tile=tile, tile_name=tile_name)
-        filename = self._filename(filename, source, tile=tile, tile_name=tile_name)
+        folder = self._folder(folder, source, tile=tile, tile_name=tile_name, strict=False)
+        filename = self._filename(filename, source, tile=tile, tile_name=tile_name, strict=False)
         start_times, end_times, file_times = self.file_structure.create_time_stamps(
             start_time, end_time
         )

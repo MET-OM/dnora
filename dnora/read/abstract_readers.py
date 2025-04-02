@@ -93,6 +93,7 @@ class DataReader(ABC):
         source: DataSource,
         tile: str | None = None,
         tile_name: str | None = None,
+        strict:bool = True, 
     ) -> str:
         default_folder = self._default_folders.get(source)
         if source in [DataSource.REMOTE, DataSource.LOCAL]:
@@ -116,7 +117,10 @@ class DataReader(ABC):
                     folder = re.sub("#TILE", tile, folder)
 
                 return folder
-        raise ValueError(f"No folder is defined for source {source}!")
+        if strict:
+            raise ValueError(f"No folder is defined for source {source}!")
+        return ''
+        
 
     def _filename(
         self,
@@ -124,13 +128,17 @@ class DataReader(ABC):
         source: DataSource,
         tile: str | None = None,
         tile_name: str | None = None,
+        strict:bool = True, 
     ) -> str:
         if filename is None:
             filename = self._default_filenames.get(source)
         if filename is None:
             filename = self._default_filename
         if filename is None:
-            raise ValueError(f"No filename is defined for source {source}!")
+            if strict: 
+                raise ValueError(f"No filename is defined for source {source}!")
+            return ''
+            
         if tile_name is not None:
             filename = re.sub("#TILENAME", tile_name, filename)
         if tile is not None:
