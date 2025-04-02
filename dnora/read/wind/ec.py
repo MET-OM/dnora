@@ -127,6 +127,7 @@ class ERA5(DataReader):
 
     def __call__(
         self,
+        obj_type,
         grid: Grid,
         start_time: str,
         end_time: str,
@@ -138,7 +139,7 @@ class ERA5(DataReader):
         the Grid object."""
 
         msg.info(f"Getting ERA5 wind forcing from {start_time} to {end_time}")
-        setup_temp_dir(DnoraDataType.WIND, self.name())
+        temp_folder = setup_temp_dir(DnoraDataType.WIND, self.name())
 
         # Define area to search in
         lon, lat = utils.grid.expand_area(
@@ -146,7 +147,7 @@ class ERA5(DataReader):
         )
 
         nc_file = download_era5_from_cds(
-            start_time, end_time, lon=lon, lat=lat, folder="dnora_wind_temp"
+            start_time, end_time, lon=lon, lat=lat, folder=temp_folder
         )
         wind_forcing = xr.open_dataset(nc_file)
 

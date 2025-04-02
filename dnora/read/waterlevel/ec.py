@@ -19,7 +19,7 @@ from dnora import msg
 from dnora import utils
 import pandas as pd
 from dnora.type_manager.data_sources import DataSource
-
+from dnora.read.ds_read_functions import setup_temp_dir
 
 def download_GTSM_from_cds(start_time, end_time, folder="dnora_wlv_temp") -> str:
     """Downloads GTSM model water level data from the Copernicus Climate Data Store for a
@@ -83,25 +83,20 @@ class GTSM_ERA5(DataReader):
 
     def __call__(
         self,
+        obj_type,
         grid: Grid,
         start_time: str,
         end_time: str,
         source: DataSource,
         folder: str,
         expansion_factor: float = 1.1,
+        **kwargs
     ):
         """Reads hourly water level from GTSM_ERA5 database"""
 
         msg.info(f"Getting GTSM/ERA5 water level from {start_time} to {end_time}")
+        temp_folder = setup_temp_dir(DnoraDataType.WATERLEVEL, self.name())
 
-        temp_folder = "dnora_wlv_temp"
-        if not os.path.isdir(temp_folder):
-            os.mkdir(temp_folder)
-            print("Creating folder %s..." % temp_folder)
-
-        msg.plain("Removing old files from temporary folder...")
-        for f in glob.glob("dnora_wlv_temp/EC_GTSM_ERA5.tar.gz"):
-            os.remove(f)
 
         # Define area to search in
         lon, lat = utils.grid.expand_area(
@@ -110,7 +105,7 @@ class GTSM_ERA5(DataReader):
             expansion_factor=expansion_factor,
         )
 
-        out_file = download_GTSM_from_cds(start_time, end_time, folder="dnora_wlv_temp")
+        out_file = download_GTSM_from_cds(start_time, end_time, folder=temp_folder)
 
         temppath = os.path.dirname(out_file)
         # first unpack the tar.gz file.
