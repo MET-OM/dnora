@@ -2,6 +2,10 @@ import numpy as np
 
 from ...file_module import split_filepath, add_folder_to_filename
 
+def write_block(folder: str,fn: str, fout):
+    with open(f"{folder}{fn}", "r") as fin:
+        block = fin.read()
+    fout.write(block)
 
 def ww3_grid(
     grid,
@@ -281,6 +285,7 @@ def ww3_shel(
     end_time: str,
     forcing: dict[str, bool],
     homog: dict[str, tuple[float, float]],
+    spectral_output: bool, 
 ):
     def write_block(fn: str):
         with open(f"{folder}{fn}", "r") as fin:
@@ -290,8 +295,8 @@ def ww3_shel(
     def write_domain():
         fout.write("&DOMAIN_NML\n")
         fout.write("  DOMAIN%IOSTYP  = 1\n")
-        fout.write(f"  DOMAIN%START  = {start_time}\n")
-        fout.write(f"  DOMAIN%STOP  = {end_time}\n")
+        fout.write(f"  DOMAIN%START  = '{start_time}'\n")
+        fout.write(f"  DOMAIN%STOP  = '{end_time}'\n")
         fout.write("/\n")
 
     def write_input():
@@ -321,9 +326,10 @@ def ww3_shel(
         fout.write(
             "  TYPE%FIELD%LIST     = 'HS LM TP DIR SPR DP T02 T0M1 T01 UST CHA DPT WND USS TUS TAW TWO TOC FAW FOC PHS PTP PTM10 PT01 PT02 PDIR PDP MXE MXH MXHC SDMH SDMHC ABR UBR FBB TBB CGE WCC WBT'\n"
         )
-        fout.write(
-            f"  TYPE%POINT%FILE     = 'spectral_points.list'\n"
-        )
+        if spectral_output:
+            fout.write(
+                f"  TYPE%POINT%FILE     = 'spectral_points.list'\n"
+            )
         fout.write("/\n")
 
     def write_date():
@@ -331,7 +337,10 @@ def ww3_shel(
         start_times = {"FIELD": start_time, "POINT": start_time, "RESTART": end_time}
         end_times = {"FIELD": end_time, "POINT": end_time, "RESTART": end_time}
         dt = {"FIELD": "3600", "POINT": "3600", "RESTART": "3600"}
-        for output_type in ["FIELD", "POINT", "RESTART"]:
+        output_types = ["FIELD", "RESTART"]
+        if spectral_output:
+            output_types.append('POINT')
+        for output_type in output_types:
             fout.write(
                 f"  DATE%{output_type}%START         = '{start_times[output_type]}'\n"
             )
@@ -380,3 +389,31 @@ def ww3_shel(
         write_block("homog.txt")
         write_homog()
         write_block("footer.txt")
+
+
+def ww3_ounf(filename:str, start_time:str, count: int, stride: int):
+    def write_field():
+        fout.write("&FIELD_NML\n")
+        fout.write(
+            "  FIELD%LIST     = 'HS LM TP DIR SPR DP T02 T0M1 T01 UST CHA DPT WND USS TUS TAW TWO TOC FAW FOC PHS PTP PTM10 PT01 PT02 PDIR PDP MXE MXH MXHC SDMH SDMHC ABR UBR FBB TBB CGE WCC WBT'\n"
+        )
+        
+        fout.write(f"  FIELD%TIMESTART  = '{start_time}'\n")
+        fout.write(f"  FIELD%TIMECOUNT  = '{count:.0f}'\n")
+        fout.write(f"  FIELD%TIMESTRIDE  = '{stride:.0f}'\n")
+        fout.write(f"  FIELD%TIMESPLIT  = 6\n")
+        fout.write("/\n")
+
+    def write_file():
+        fout.write("&FILE_NML\n")
+        fout.write(
+            "  FILE%NETCDF     = 3\n"
+        )
+    folder = __file__[:-17] + "/metadata/ww3_ounf/"
+    with open(filename, "w") as fout:
+        write_block(folder, "header.txt", fout)
+        write_block(folder, "field.txt", fout)
+        write_field()
+        write_block(folder, "file.txt", fout)
+        write_file()
+        write_block(folder,"footer.txt", fout)
