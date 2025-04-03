@@ -31,7 +31,7 @@ class WW3(ModelExecuter):
         DnoraFileType.WIND: inputfile.WW3Wind(),
         DnoraFileType.SPECTRA: inputfile.WW3Spectra(),
     }
-    _model_runners = {DnoraFileType.GRID: model_runners.WW3('grid'), DnoraFileType.WIND: model_runners.WW3('prnc')}
+    _model_runners = {DnoraFileType.GRID: model_runners.WW3('grid'), DnoraFileType.WIND: model_runners.WW3('prnc'), DnoraFileType.SPECTRA: model_runners.WW3('bounc')}
 
     def _get_default_format(self):
         return ModelFormat.WW3

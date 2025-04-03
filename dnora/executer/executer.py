@@ -11,6 +11,7 @@ from dnora.type_manager.dnora_types import file_type_from_string
 from .decorators import add_write_method, add_run_method
 from dnora.defaults import read_environment_variable
 
+@add_run_method(DnoraFileType.SPECTRA)
 @add_run_method(DnoraFileType.WIND)
 @add_run_method(DnoraFileType.GRID)
 @add_write_method(DnoraFileType.INPUT)
