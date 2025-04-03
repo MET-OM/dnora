@@ -1229,12 +1229,12 @@ class WW3Grid(InputFileWriter):
             nth = 36
             nk = 32
             dirshift = 0
-        if folder_on_server:
-            grid_exported_to = apply_folder_on_server(
-                exported_files["grid"], folder_on_server
-            )
-        else:
-            grid_exported_to = exported_files["grid"]
+        # if folder_on_server:
+        grid_exported_to = apply_folder_on_server(
+            exported_files["grid"], folder_on_server
+        )
+        # else:
+        #     grid_exported_to = exported_files["grid"]
 
         ww3_grid(
             grid,
@@ -1246,6 +1246,7 @@ class WW3Grid(InputFileWriter):
             dirshift,
         )
 
+        open(f'{str(Path(exported_files["grid"][0]).parent)}/namelists.nml','a').close()
         return filename
 
 
@@ -1265,12 +1266,9 @@ class WW3Wind(InputFileWriter):
             filename = file_object.get_folder() + "/ww3_prnc.nml"
         else:
             filename = file_object.get_filepath()
-        if folder_on_server:
-            wind_exported_to = apply_folder_on_server(
-                exported_files["wind"], folder_on_server
-            )
-        else:
-            wind_exported_to = exported_files["wind"]
+        wind_exported_to = apply_folder_on_server(
+            exported_files["wind"], folder_on_server
+        )
         ww3_prnc(filename, wind_exported_to)
 
         return filename
