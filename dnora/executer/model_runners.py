@@ -3,8 +3,8 @@ from abc import ABC, abstractmethod
 from dnora.file_module import FileNames
 from dnora.type_manager.model_formats import ModelFormat
 from .post_processors import PostProcessor, SwashMatToNc, HosOceanToNc
-
-
+from dnora import msg
+import shutil
 class ModelRunner(ABC):
     """Runs the model."""
 
@@ -12,7 +12,7 @@ class ModelRunner(ABC):
         self.model = model
 
     @abstractmethod
-    def _preferred_format(self) -> str:
+    def preferred_format(self) -> str:
         """For the file format using defauts.py, e.g. ModelFormat.SWAN"""
         return
 
@@ -34,7 +34,7 @@ class SWAN(ModelRunner):
     def __init__(self):
         return
 
-    def _preferred_format(self) -> str:
+    def preferred_format(self) -> str:
         """For generation of file name."""
         return ModelFormat.SWAN
 
@@ -54,7 +54,7 @@ class SWASH(ModelRunner):
     def __init__(self):
         pass
 
-    def _preferred_format(self) -> str:
+    def preferred_format(self) -> str:
         """For generation of file name."""
         return ModelFormat.SWASH
 
@@ -70,11 +70,46 @@ class SWASH(ModelRunner):
         p.wait()
 
 
+class WW3(ModelRunner):
+    def __init__(self, program: str):
+        """E.g. program = 'grid' to run ww3_grid etc."""
+        self.program = program
+        return
+
+    def preferred_format(self) -> str:
+        """For generation of file name."""
+        return ModelFormat.WW3
+
+    def __call__(self, file_object, model_folder, nproc=4, **kwargs) -> None:
+
+        if model_folder:
+            from_file = f"{model_folder}/ww3_{self.program}"
+            to_file = file_object.get_folder()
+            msg.copy_file(from_file,to_file)
+            shutil.copy(from_file, to_file)
+
+        filename_out = f'{file_object.get_folder()}/ww3_{self.program}.out'
+        msg.info(f"Running ww3_{self.program}...")
+
+        with open(filename_out, 'w') as outfile:
+            p = Popen(
+                [f"ww3_{self.program}"],
+                cwd=file_object.get_folder(),
+                stdout=outfile,
+            )
+            p.wait()
+        
+        msg.to_file(filename_out)
+        return
+
+
+
+
 class HOS_ocean(ModelRunner):
     def __init__(self):
         return
 
-    def _preferred_format(self) -> str:
+    def preferred_format(self) -> str:
         """For generation of file name."""
         return ModelFormat.HOS_OCEAN
 
