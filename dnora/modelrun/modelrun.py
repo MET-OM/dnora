@@ -5,7 +5,7 @@ import numpy as np
 
 from typing import Union, TYPE_CHECKING
 import os
-
+from dnora import utils
 
 # Import objects
 from dnora.grid import Grid, TriGrid
@@ -313,6 +313,10 @@ class ModelRun:
             point_mask=point_mask,
             **kwargs,
         )
+
+        if not utils.grid.data_covers_grid(obj, self.grid()):
+            msg.warning(f"The imported data (lon: {obj.edges('lon')}, lat: {obj.edges('lat')}) does not cover the grid (lon: {self.grid().edges('lon')}, lat: {self.grid().edges('lat')})! Maybe increase the expansion_factor (now {expansion_factor}) in the import method?")
+
 
         self[obj_type] = obj
         # We are not post_processing e.g. if we are caching!
