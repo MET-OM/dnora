@@ -74,11 +74,18 @@ class WW3(ModelRunner):
     def __init__(self, program: str):
         """E.g. program = 'grid' to run ww3_grid etc."""
         self.program = program
+        if program == 'shel':
+            self._post_processors = [WW3('ounf')]
+        else:
+            self._post_processors = []
         return
 
     def preferred_format(self) -> str:
         """For generation of file name."""
         return ModelFormat.WW3
+
+    def post_processors(self) -> list[PostProcessor]:
+        return self._post_processors
 
     def __call__(self, file_object, model_folder, nproc=4, **kwargs) -> None:
 
@@ -90,7 +97,7 @@ class WW3(ModelRunner):
 
         filename_out = f'{file_object.get_folder()}/ww3_{self.program}.out'
         msg.info(f"Running ww3_{self.program}...")
-
+        msg.to_file(filename_out)
         with open(filename_out, 'w') as outfile:
             p = Popen(
                 [f"ww3_{self.program}"],
@@ -99,7 +106,7 @@ class WW3(ModelRunner):
             )
             p.wait()
         
-        msg.to_file(filename_out)
+        
         return
 
 
