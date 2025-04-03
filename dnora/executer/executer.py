@@ -99,8 +99,8 @@ class ModelExecuter:
 
         return
 
-    #def run_grid(self, model_runner: ModelRunner | None = None, model_folder: str=''):
-    #    self._run_model(file_type=DnoraFileType.GRID, model_runner=model_runner, model_folder=model_folder)
+    def run_model(self, model_runner: ModelRunner | None = None, model_folder: str=''):
+        self._run(file_type=DnoraFileType.INPUT, model_runner=model_runner, model_folder=model_folder)
         
     def _run(
         self,
@@ -153,14 +153,14 @@ class ModelExecuter:
             post_processors = post_processors or model_runner.post_processors()
 
             if post_processors:
-                self.post_process(post_processors, file_object, **kwargs)
+                self.post_process(post_processors, file_object, model_folder,  **kwargs)
         else:
             msg.info("Dry run! Model will not run.")
 
     def post_process(
-        self, post_processors: list[PostProcessor], file_object: FileNames, **kwargs
+        self, post_processors: list[PostProcessor], file_object: FileNames, model_folder, **kwargs
     ) -> None:
         """Post processes model run output, e.g. convert to netcdf or move files"""
         for post_processor in post_processors:
-            print(post_processor)
-            post_processor(self.model, file_object, **kwargs)
+            msg.header(post_processor, "Post processing...")
+            post_processor(model=self.model, file_object=file_object, model_folder=model_folder, **kwargs)
