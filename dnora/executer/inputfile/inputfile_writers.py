@@ -23,6 +23,7 @@ from .ww3_functions import (
     ww3_specfile_list,
     ww3_bounc,
     ww3_shel,
+    ww3_ounf,
     ww3_spectral_output_list,
 )
 
@@ -1330,10 +1331,13 @@ class WW3(InputFileWriter):
         if homog is None:
             homog = {}
         lons, lats = model.grid().output_points()
-        msg.to_file(file_object.get_folder() + "/spectral_points.list")
-        ww3_spectral_output_list(
-            file_object.get_folder() + "/spectral_points.list", lons, lats
-        )
+        spectral_output = True if lons else False
+        if spectral_output:
+            msg.to_file(file_object.get_folder() + "/spectral_points.list")
+            ww3_spectral_output_list(
+                file_object.get_folder() + "/spectral_points.list", lons, lats
+            )
+
         start_time = model.start_time(crop_with="all").strftime("%Y%m%d %H0000")
         end_time = model.end_time(crop_with="all").strftime("%Y%m%d %H0000")
         if file_object.get_filename() == "":
@@ -1346,6 +1350,9 @@ class WW3(InputFileWriter):
         forcing["waterlevel"] = model.waterlevel() is not None
         forcing["current"] = model.current() is not None
 
-        ww3_shel(filename, start_time, end_time, forcing, homog)
+        ww3_shel(filename, start_time, end_time, forcing, homog, spectral_output)
+        # Make inputfiles for the post-processing
+        ounf_filename = file_object.get_folder() + "/ww3_ounf.nml"
+        ww3_ounf(ounf_filename, start_time, len(model.time()), 3600)
 
-        return filename
+        return [filename, ounf_filename]
