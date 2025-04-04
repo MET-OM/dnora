@@ -24,6 +24,7 @@ from .ww3_functions import (
     ww3_bounc,
     ww3_shel,
     ww3_ounf,
+    ww3_ounp,
     ww3_spectral_output_list,
 )
 
@@ -1354,5 +1355,6 @@ class WW3(InputFileWriter):
         # Make inputfiles for the post-processing
         ounf_filename = file_object.get_folder() + "/ww3_ounf.nml"
         ww3_ounf(ounf_filename, start_time, len(model.time()), 3600)
+        ww3_ounp(ounf_filename, start_time, len(model.time()), 3600)
 
         return [filename, ounf_filename]

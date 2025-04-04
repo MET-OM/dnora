@@ -409,6 +409,7 @@ def ww3_ounf(filename:str, start_time:str, count: int, stride: int):
         fout.write(
             "  FILE%NETCDF     = 3\n"
         )
+        fout.write("/\n")
     folder = __file__[:-17] + "/metadata/ww3_ounf/"
     with open(filename, "w") as fout:
         write_block(folder, "header.txt", fout)
@@ -416,4 +417,50 @@ def ww3_ounf(filename:str, start_time:str, count: int, stride: int):
         write_field()
         write_block(folder, "file.txt", fout)
         write_file()
+        write_block(folder,"footer.txt", fout)
+
+def ww3_ounp(filename:str, start_time:str, count: int, stride: int):
+    def write_point():
+        fout.write("&POINT_NML\n")
+        fout.write(f"  POINT%TIMESTART  = '{start_time}'\n")
+        fout.write(f"  POINT%TIMECOUNT  = '{count:.0f}'\n")
+        fout.write(f"  POINT%TIMESTRIDE  = '{stride:.0f}'\n")
+        fout.write(f"  POINT%TIMESPLIT  = 6\n")
+        fout.write("/\n")
+
+    def write_file():
+        fout.write("&FILE_NML\n")
+        fout.write(
+            "  FILE%NETCDF     = 3\n"
+        )
+        fout.write("/\n")
+    def write_spectra():
+        fout.write("&SPECTRA_NML\n")
+        fout.write(
+            "  SPECTRA%OUTPUT     = 3\n"
+        )
+        fout.write("/\n")
+    def write_param():
+        fout.write("&PARAM_NML\n")
+        fout.write(
+            "  PARAM%OUTPUT     = 6\n"
+        )
+        fout.write("/\n")
+    def write_source():
+        fout.write("&SOURCE_NML\n")
+        fout.write("/\n")
+
+    folder = __file__[:-17] + "/metadata/ww3_ounp/"
+    with open(filename, "w") as fout:
+        write_block(folder, "header.txt", fout)
+        write_block(folder, "point.txt", fout)
+        write_point()
+        write_block(folder, "file.txt", fout)
+        write_file()
+        write_block(folder, "spectra.txt", fout)
+        write_spectra()
+        write_block(folder, "param.txt", fout)
+        write_param()
+        write_block(folder, "source.txt", fout)
+        write_source()
         write_block(folder,"footer.txt", fout)
