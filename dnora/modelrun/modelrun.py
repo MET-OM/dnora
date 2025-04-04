@@ -314,10 +314,13 @@ class ModelRun:
             **kwargs,
         )
 
-        if not isinstance(point_picker, NearestGridPoint):
+        if not isinstance(point_picker, NearestGridPoint) and not self.dry_run():
             if not utils.grid.data_covers_grid(obj, self.grid()):
                 msg.warning(f"The imported data (lon: {obj.edges('lon')}, lat: {obj.edges('lat')}) does not cover the grid (lon: {self.grid().edges('lon')}, lat: {self.grid().edges('lat')})! Maybe increase the expansion_factor (now {expansion_factor}) in the import method?")
 
+        if obj is None:
+            msg.warning('Could not import any data!!!')
+            return
 
         self[obj_type] = obj
         # We are not post_processing e.g. if we are caching!
