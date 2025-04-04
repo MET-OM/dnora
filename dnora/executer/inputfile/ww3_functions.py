@@ -368,7 +368,7 @@ def ww3_shel(
                 fout.write(
                     f"  HOMOG_INPUT(1)%NAME       = '{FORCING_NAMES[field_type]}'\n"
                 )
-                fout.write(f"  HOMOG_INPUT(1)%DATE   = {start_time}\n")
+                fout.write(f"  HOMOG_INPUT(1)%DATE   = '{start_time}'\n")
 
                 for n, val in enumerate(data):
                     fout.write(f"  HOMOG_INPUT(1)%VALUE{n+1}     = {val}\n")
