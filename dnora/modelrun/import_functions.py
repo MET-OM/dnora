@@ -114,7 +114,7 @@ def read_data_and_create_object(
         **kwargs,
     )
     if not isinstance(ds, tuple):
-        obj = dnora_class.from_ds(ds, dynamic=False)
+        obj = dnora_class.from_ds(ds, name=name,dynamic=False)
     else:
         coord_dict, data_dict, meta_dict = ds
         obj = dnora_class(name=name, **coord_dict)

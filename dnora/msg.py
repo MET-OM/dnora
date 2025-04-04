@@ -3,6 +3,8 @@ def print_line(marker="-", length=75):
 
     print(marker * length)
 
+def copy_file(file_from, file_to):
+    plain(f"Copying {file_from} >>> {file_to}")
 
 def to_file(filename):
     plain(f"Writing to file >>> {filename}")

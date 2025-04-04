@@ -96,6 +96,7 @@ class WW3(SpectraWriter):
             model.spectra().set_convention(convention)
 
         msg.info("Writing WAVEWATCH-III netcdf-output")
+        var_names = self.determine_var_names(var_names)
         boundary = model.spectra()
 
         if self.one_file is not None:
@@ -127,7 +128,7 @@ class WW3(SpectraWriter):
                 )
                 output_files.append(output_file)
 
-                msg.plain(f"Point {n} >> {output_file}")
+                #msg.plain(f"Point {n} >> {output_file}")
                 self.write_netcdf(
                     boundary,
                     output_file,
@@ -139,6 +140,22 @@ class WW3(SpectraWriter):
 
         return output_files
 
+    @staticmethod
+    def determine_var_names(var_names: dict[str, str]) -> dict[str, str]:
+        var_names = var_names or {}
+        var_names['time'] = var_names.get("time", "time")
+        var_names['inds'] = var_names.get("inds", "station")
+        var_names['freq'] = var_names.get("freq", "frequency")
+        var_names['dirs'] = var_names.get("dirs", "direction")
+        var_names['efth'] = var_names.get("efth", "efth")
+        var_names['lon'] = var_names.get("lon", "longitude")
+        var_names['lat'] = var_names.get("lat", "latitude")
+
+        msg.plain("Using the following names in the netcdf-file:")
+        for key, value in var_names.items():
+            msg.plain(f"'{key}' >> '{value}'")
+        return var_names
+        
     def write_netcdf(
         self,
         boundary,
@@ -149,64 +166,48 @@ class WW3(SpectraWriter):
         squeeze_lonlat: bool,
     ) -> None:
         """Writes WW3 compatible netcdf spectral output from a list containing xarray datasets."""
-        var_names = var_names or {}
-        time_var = var_names.get("time", "time")
-        inds_var = var_names.get("inds", "station")
-        freq_var = var_names.get("freq", "frequency")
-        dirs_var = var_names.get("dirs", "direction")
-        efth_var = var_names.get("efth", "efth")
-        lon_var = var_names.get("lon", "longitude")
-        lat_var = var_names.get("lat", "latitude")
-
-        msg.plain("Using the following names in the netcdf-file:")
-        msg.plain(f"'time' >> '{time_var}'")
-        msg.plain(f"'inds' >> '{inds_var}'")
-        msg.plain(f"'freq' >> '{freq_var}'")
-        msg.plain(f"'dirs' >> '{dirs_var}'")
-        msg.plain(f"'efth' >> '{efth_var}'")
-        msg.plain(f"'lon' >> '{lon_var}'")
-        msg.plain(f"'lat' >> '{lat_var}'")
 
         root_grp = netCDF4.Dataset(output_file, "w", format="NETCDF4")
         #################### dimensions
-        root_grp.createDimension(time_var, None)
+        root_grp.createDimension(var_names['time'], None)
         if one_file:
-            root_grp.createDimension(inds_var, len(boundary.inds()))
+            root_grp.createDimension(var_names['inds'], len(boundary.inds()))
         else:
-            root_grp.createDimension(inds_var, 1)
+            root_grp.createDimension(var_names['inds'], 1)
         root_grp.createDimension("string16", 16)
-        root_grp.createDimension(freq_var, len(boundary.freq()))
-        root_grp.createDimension(dirs_var, len(boundary.dirs()))
+        root_grp.createDimension(var_names['freq'], len(boundary.freq()))
+        root_grp.createDimension(var_names['dirs'], len(boundary.dirs()))
 
         #######################################################
         ####################### variables
-        time = root_grp.createVariable(time_var, np.float64, (time_var,))
-        station = root_grp.createVariable(inds_var, np.int32, (inds_var,))
-        frequency = root_grp.createVariable(freq_var, np.float32, (freq_var,))
-        direction = root_grp.createVariable(dirs_var, np.float32, (dirs_var,))
+        time = root_grp.createVariable(var_names['time'], np.float64, (var_names['time'],))
+        station = root_grp.createVariable(var_names['inds'], np.int32, (var_names['inds'],))
+        frequency = root_grp.createVariable(var_names['freq'], np.float32, (var_names['freq'],))
+        direction = root_grp.createVariable(var_names['dirs'], np.float32, (var_names['dirs'],))
         efth = root_grp.createVariable(
-            efth_var,
+            var_names['efth'],
             np.float32,
             (
-                time_var,
-                inds_var,
-                freq_var,
-                dirs_var,
+                var_names['time'],
+                var_names['inds'],
+                var_names['freq'],
+                var_names['dirs'],
             ),
+            fill_value = 9.96921e+36
         )
 
         if squeeze_lonlat:
-            lonlat_variables = (inds_var,)
+            lonlat_variables = (ivar_names['inds'],)
         else:
-            lonlat_variables = (time_var, inds_var)
+            lonlat_variables = (var_names['time'], var_names['inds'])
 
         latitude = root_grp.createVariable(
-            lat_var,
+            var_names['lat'],
             np.float32,
             lonlat_variables,
         )
         longitude = root_grp.createVariable(
-            lon_var,
+            var_names['lon'],
             np.float32,
             lonlat_variables,
         )
@@ -214,7 +215,7 @@ class WW3(SpectraWriter):
             "station_name",
             "S1",
             (
-                inds_var,
+                var_names['inds'],
                 "string16",
             ),
         )
@@ -223,7 +224,7 @@ class WW3(SpectraWriter):
         ########################## Attributes
         time.units = "seconds since 1970-01-01 00:00:00 UTC"
         time.calendar = "standard"
-        time.standard_name = time_var
+        time.standard_name = var_names['time']
         time.axis = "T"
 
         station.long_name = "station id"
@@ -232,7 +233,7 @@ class WW3(SpectraWriter):
         frequency.units = "s-1"
         frequency.long_name = "frequency of center band"
         frequency.standard_name = "sea_surface_wave_frequency"
-        frequency.globwave_name = freq_var
+        frequency.globwave_name = "frequency"
         frequency.valid_min = 0
         frequency.valid_max = 10
         frequency.axis = "Y"
@@ -280,8 +281,7 @@ class WW3(SpectraWriter):
         efth.scale_factor = 1
         efth.add_offset = 0
         efth.valid_min = 0
-        # efth.valid_max = 1.0e+20
-        # efth._FillValue = 9.96921e+36
+        #efth._FillValue = 9.96921e+36
         efth.content = "TXYZ"
         efth.associates = "time station frequency direction"
         #######################################################

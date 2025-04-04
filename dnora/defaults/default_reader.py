@@ -26,4 +26,4 @@ def read_environment_variable(obj_type: DnoraDataType, data_source: DataSource) 
     value = os.getenv(f"DNORA_{data_source.name}_{obj_type.name}_PATH")
     if value is None:
         value = os.getenv(f"DNORA_{data_source.name}_PATH")
-    return value
+    return os.path.expanduser(value)

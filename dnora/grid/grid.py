@@ -40,14 +40,6 @@ from dnora.defaults import read_environment_variable
 class Grid(GriddedSkeleton):
     _default_reader = None
 
-    # @classmethod
-    # def from_netcdf(cls, filename: str, folder: str = ""):
-    #     filepath = Path(folder).joinpath(filename)
-    #     msg.from_file(filepath)
-    #     ds = xr.open_dataset(filepath)
-    #     grid = cls.from_ds(ds)
-    #     return grid
-
     @classmethod
     def from_swan_bot(cls, filename: str, lon: tuple, lat: tuple, folder: str = ""):
         """Recreate the bathymetrical grid from a SWAN bot-file"""

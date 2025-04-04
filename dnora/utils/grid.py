@@ -1,6 +1,15 @@
 import numpy as np
 
 
+def data_covers_grid(skeleton, grid):
+    """Checks if a given skeleton covers a given grid"""
+    for coord in ['lon', 'lat']:
+        if skeleton.edges(coord)[0] > grid.edges(coord)[0]:
+            return False
+        if skeleton.edges(coord)[-1] < grid.edges(coord)[-1]:
+            return False
+    return True
+
 def identify_boundary_edges(boundary_mask: np.ndarray) -> list[str]:
     """Identifies which edges has some boundary points
     North = [-1,:]

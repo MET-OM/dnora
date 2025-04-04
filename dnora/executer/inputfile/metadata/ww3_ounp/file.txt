@@ -1,0 +1,8 @@
+! -------------------------------------------------------------------- !
+! Define the content of the output file via FILE_NML namelist
+!
+! * namelist must be terminated with /
+! * definitions & defaults:
+!     FILE%PREFIX        = 'ww3.'            ! Prefix for output file name
+!     FILE%NETCDF        = 3                 ! Netcdf version [3|4]
+! -------------------------------------------------------------------- !

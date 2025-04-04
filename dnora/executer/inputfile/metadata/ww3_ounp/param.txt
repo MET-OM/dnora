@@ -1,0 +1,30 @@
+! -------------------------------------------------------------------- !
+! Define the type 2, mean parameter via PARAM_NML namelist
+!
+! Forcing parameters content : 
+! - dpt, wnd, wnddir, cur, curdir
+!
+! Mean wave parameters content : 
+! - hs, lm, tr, th1p, sth1p, fp, th1m, sth1m
+!
+! Nondimensional parameters (U*) content :
+! - ust, efst, fpst, cd, alpha
+!
+! Nondimensional parameters (U10) content : 
+! - wnd, efst, fpst, cd, alpha
+!
+! Validation table content :  
+! - wnd, wnddir, hs, hsst, cpu, cmu, ast
+!
+! WMO stantdard output content :
+! - wnd, wnddir, hs, tp
+!
+! * namelist must be terminated with /
+! * definitions & defaults:
+!     PARAM%OUTPUT      = 4                ! 1: Forcing parameters
+!                                          ! 2: Mean wave parameters
+!                                          ! 3: Nondimensional pars. (U*)
+!                                          ! 4: Nondimensional pars. (U10)
+!                                          ! 5: Validation table
+!                                          ! 6: WMO standard output
+! -------------------------------------------------------------------- !
