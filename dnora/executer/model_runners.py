@@ -38,14 +38,16 @@ class SWAN(ModelRunner):
         """For generation of file name."""
         return ModelFormat.SWAN
 
-    def __call__(self, file_object, nproc=4, **kwargs) -> None:
+    def __call__(self, file_object, model_folder, nproc=4, **kwargs) -> None:
 
-        print("Running SWAN----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>")
-        p = Popen(
-            ["swanrun", "-input", file_object.get_filename(), "-omp", f"{nproc}"],
-            cwd=file_object.get_folder(),
-        )
-        p.wait()
+        try:
+            p = Popen(
+                [f"{model_folder}/swanrun", "-input", file_object.get_filename(), "-omp", f"{nproc}"],
+                cwd=file_object.get_folder(),
+            )
+            p.wait()
+        except FileNotFoundError:
+            msg.advice("swanrun not found! 1) Set the environmental variable DNORA_SWAN_PATH=/path/to/swanfolder, 2) provide keyword model_folder=/path/to/swanfolder or 3) add the SWAN directiory to your environmental PATH")
 
         return
 
@@ -61,12 +63,15 @@ class SWASH(ModelRunner):
     def post_processors(self) -> list[PostProcessor]:
         return [SwashMatToNc()]
 
-    def __call__(self, file_object: FileNames) -> None:
-        print("Running SWASH----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>")
-        p = Popen(
-            ["swashrun", "-input", file_object.get_filename()],
-            cwd=file_object.get_folder(),
-        )
+    def __call__(self, file_object: FileNames, model_folder:str) -> None:
+        try:
+            p = Popen(
+                [f"{model_folder}/swashrun", "-input", file_object.get_filename()],
+                cwd=file_object.get_folder(),
+            )
+        except FileNotFoundError:
+            msg.advice("swashrun not found! 1) Set the environmental variable DNORA_SWASH_PATH=/path/to/swashfolder, 2) provide keyword model_folder=/path/to/swashfolder or 3) add the SWASH directiory to your environmental PATH")
+
         p.wait()
 
 
@@ -99,13 +104,16 @@ class WW3(ModelRunner):
         msg.info(f"Running ww3_{self.program}...")
         msg.to_file(filename_out)
         with open(filename_out, 'w') as outfile:
-            p = Popen(
-                [f"ww3_{self.program}"],
-                cwd=file_object.get_folder(),
-                stdout=outfile,
-            )
-            p.wait()
-        
+            try:
+                p = Popen(
+                    [f"ww3_{self.program}"],
+                    cwd=file_object.get_folder(),
+                    stdout=outfile,
+                )
+                p.wait()
+            except FileNotFoundError:
+                msg.advice(f"ww3_{self.program} not found! 1) Set the environmental variable DNORA_WW3_PATH=/path/to/swashfolder or 2) provide keyword model_folder=/path/to/ww3folder")
+
         
         return
 
