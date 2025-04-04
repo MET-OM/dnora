@@ -1332,7 +1332,8 @@ class WW3(InputFileWriter):
         if homog is None:
             homog = {}
         lons, lats = model.grid().output_points()
-        spectral_output = True if lons else False
+        
+        spectral_output = len(lons)>0
         if spectral_output:
             msg.to_file(file_object.get_folder() + "/spectral_points.list")
             ww3_spectral_output_list(
