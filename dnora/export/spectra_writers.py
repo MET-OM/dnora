@@ -281,7 +281,6 @@ class WW3(SpectraWriter):
         efth.scale_factor = 1
         efth.add_offset = 0
         efth.valid_min = 0
-        efth.valid_max = 1.0e+20
         #efth._FillValue = 9.96921e+36
         efth.content = "TXYZ"
         efth.associates = "time station frequency direction"
