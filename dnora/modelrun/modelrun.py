@@ -314,8 +314,9 @@ class ModelRun:
             **kwargs,
         )
 
-        if not utils.grid.data_covers_grid(obj, self.grid()):
-            msg.warning(f"The imported data (lon: {obj.edges('lon')}, lat: {obj.edges('lat')}) does not cover the grid (lon: {self.grid().edges('lon')}, lat: {self.grid().edges('lat')})! Maybe increase the expansion_factor (now {expansion_factor}) in the import method?")
+        if not isinstance(point_picker, NearestGridPoint):
+            if not utils.grid.data_covers_grid(obj, self.grid()):
+                msg.warning(f"The imported data (lon: {obj.edges('lon')}, lat: {obj.edges('lat')}) does not cover the grid (lon: {self.grid().edges('lon')}, lat: {self.grid().edges('lat')})! Maybe increase the expansion_factor (now {expansion_factor}) in the import method?")
 
 
         self[obj_type] = obj
