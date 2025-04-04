@@ -99,8 +99,9 @@ class ModelExecuter:
 
         return
 
-    def run_model(self, model_runner: ModelRunner | None = None, model_folder: str=''):
-        self._run(file_type=DnoraFileType.INPUT, model_runner=model_runner, model_folder=model_folder)
+    def run_model(self, model_runner: ModelRunner | None = None, model_folder: str='', post_process: bool=True):
+        """Run the main model. Set post_process=False to disable any post-processing that might be defined."""
+        self._run(file_type=DnoraFileType.INPUT, model_runner=model_runner, model_folder=model_folder, post_process=post_process)
         
     def _run(
         self,
@@ -110,6 +111,7 @@ class ModelExecuter:
         input_file: str | None = None,
         folder: str | None = None,
         dateformat: str | None = None,
+        post_process: bool = True, 
         post_processors: list[PostProcessor] | None = None,
         dry_run: bool = False,
         **kwargs,
@@ -149,13 +151,14 @@ class ModelExecuter:
                 model_folder=model_folder, 
                 **kwargs,
             )
-
-            post_processors = post_processors or model_runner.post_processors()
-
-            if post_processors:
-                self.post_process(post_processors, file_object, model_folder,  **kwargs)
         else:
             msg.info("Dry run! Model will not run.")
+
+
+        post_processors = post_processors or model_runner.post_processors()
+
+        if post_processors and post_process:
+            self.post_process(post_processors, file_object, model_folder,  **kwargs)
 
     def post_process(
         self, post_processors: list[PostProcessor], file_object: FileNames, model_folder, **kwargs

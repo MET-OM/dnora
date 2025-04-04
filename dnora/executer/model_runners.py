@@ -75,7 +75,7 @@ class WW3(ModelRunner):
         """E.g. program = 'grid' to run ww3_grid etc."""
         self.program = program
         if program == 'shel':
-            self._post_processors = [WW3('ounf')]
+            self._post_processors = [WW3('ounf'), WW3('ounp')]
         else:
             self._post_processors = []
         return
