@@ -197,7 +197,7 @@ class WW3(SpectraWriter):
         )
 
         if squeeze_lonlat:
-            lonlat_variables = (ivar_names['inds'],)
+            lonlat_variables = (var_names['inds'],)
         else:
             lonlat_variables = (var_names['time'], var_names['inds'])
 
