@@ -91,7 +91,22 @@ class SWAN(InputFileWriter):
         use_spectra: bool = True,
         use_current: bool = True,
         use_ice: bool = True,
+        structures: list[dict] = None,
     ):
+        """structures given in format:
+        E.g. One triangle and one line
+        [{'lon': (5,5.1,4.9), 'lat': (60,59.9,59,9), 'trans': 0.3, 'refl': 0.0, 'closed': True, 'name': 'closed triangle'},
+        {'lon': (4,4.1), 'lat': (60.1,60.1,60.1),'name': 'breakwater'}
+        ]
+
+        'trans' is the transparency (0 completely blocked, 1 completely open)
+        'refl' is the reflection (default 0.0)
+
+        if 'trans' or 'refl' is not given for an object, then the previous object's values are used.
+        Especially, if values are only given for the first object, then they are used for all objects.
+
+        'name' is optional, but will be printed to the swn file if provided to give a better overview
+        """
         forcing = model.wind()
         boundary = model.spectra()
         waterlevel = model.waterlevel()
@@ -106,6 +121,8 @@ class SWAN(InputFileWriter):
         ice_path = exported_files["ice"]
 
         filename = file_object.get_filepath()
+
+        structures = structures or []
 
         if calibrate is None:
             calibrate = {}
@@ -153,16 +170,6 @@ class SWAN(InputFileWriter):
         )
 
         spec_lon, spec_lat = grid.output_points()
-
-        # spec_points = [(x, y) for x, y in zip(spec_lon, spec_lat)]
-        # STR_FORCING_START = STR_START
-        # STR_FORCING_END = STR_END
-
-        # # For wind forcing, range of all time steps in .asc file needs to be specified
-        # if forcing is not None:
-        #     if (forcing.name() == "ERA5"):  # bugfix: for era5 complete 24 hour timesteps are written to asc file.
-        #         STR_FORCING_START = pd.Timestamp(DATE_START).strftime('%Y%m%d') + '.000000'
-        #         STR_FORCING_END = pd.Timestamp(DATE_END).strftime('%Y%m%d') + '.230000'
 
         delta_X = np.round(np.diff(grid.edges("lon")), 5)[0]
         delta_Y = np.round(np.diff(grid.edges("lat")), 5)[0]
@@ -401,6 +408,35 @@ class SWAN(InputFileWriter):
             file_out.write("PROP BSBT \n")
             file_out.write("NUM ACCUR NONST 1 \n")
             file_out.write("$ \n")
+
+            trans = None
+            refl = 0.0
+            closed = False
+            for structure in structures:
+                trans = structure.get("trans") or trans
+                if trans is None:
+                    raise ValueError(
+                        "Provide a value for the transparency of the structure with the dict key 'trans' in every structure. To use a constant transparency, only provide it in the first structure."
+                    )
+                refl = structure.get("refl") or refl
+
+                if structure.get("name") is not None:
+                    file_out.write(f"$ --- {structure.get('name')}")
+                    if structure.get("closed"):
+                        file_out.write(f" [closed]")
+                    file_out.write(f" ---\n")
+
+                file_out.write(f"OBSTACLE TRANS {trans:.2f} REFL {refl:.2f} LINE")
+                for lon, lat in zip(structure.get("lon"), structure.get("lat")):
+                    file_out.write(f" {lon:.6f} {lat:.6f}")
+
+                if structure.get("closed"):
+                    file_out.write(
+                        f" {structure.get('lon')[0]:.6f} {structure.get('lat')[0]:.6f}"
+                    )
+                file_out.write("\n")
+                # 5.918541 62.442135 5.921974 62.444498
+
             file_out.write("$*******************************************************\n")
 
             file_out.write("$ Generate block-output \n")
@@ -451,222 +487,6 @@ class SWAN(InputFileWriter):
             file_out.write("STOP \n")
 
         return filename
-
-
-# class SWANold(InputFileWriter):
-#     def __call__(
-#         self,
-#         model: ModelRun,
-#         file_object: FileNames,
-#         exported_files: dict[str, list[str]],
-#         calib_wind: float = 1.0,
-#         calib_wcap: float = 0.5000e-04,
-#         use_wind: bool = True,
-#         use_waterlevel: bool = True,
-#         **kwargs,
-#     ) -> str:
-#         forcing = model.wind()
-#         waterlevel = model.waterlevel()
-#         grid = model.grid()
-#         grid_path = exported_files["grid"][-1]
-#         forcing_path = exported_files["wind"][-1]
-#         boundary_path = exported_files["spectra"][-1]
-#         waterlevel_path = exported_files["waterlevel"][-1]
-
-#         filename = file_object.get_filepath()
-
-#         spec_lon, spec_lat = grid.output_points()
-#         spec_points = [(x, y) for x, y in zip(spec_lon, spec_lat)]
-
-#         if forcing is None and use_wind:
-#             msg.info(
-#                 "No wind object provided. Wind information will NOT be written to SWAN input file!"
-#             )
-#             use_wind = False
-
-#         if waterlevel is None and use_waterlevel:
-#             msg.info(
-#                 "No waterlevel object provided. Waterlevel information will NOT be written to SWAN input file!"
-#             )
-#             use_waterlevel = False
-
-#         # Define start and end times of model run
-#         DATE_START = model.time(crop_with="all")[0]
-#         DATE_END = model.time(crop_with="all")[-1]
-#         STR_START = DATE_START.strftime("%Y%m%d.%H%M%S")
-#         STR_END = DATE_END.strftime("%Y%m%d.%H%M%S")
-
-#         delta_X = np.round(np.abs(grid.lon()[-1] - grid.lon()[0]), 5)
-#         delta_Y = np.round(np.abs(grid.lat()[-1] - grid.lat()[0]), 5)
-
-#         delta_Xf = np.round(np.abs(forcing.lon()[-1] - forcing.lon()[0]), 5)
-#         delta_Yf = np.round(np.abs(forcing.lat()[-1] - forcing.lat()[0]), 5)
-
-#         factor_wind = calib_wind * 0.001
-
-#         delta_Xwl = np.round(np.abs(waterlevel.lon()[-1] - waterlevel.lon()[0]), 5)
-#         delta_Ywl = np.round(np.abs(waterlevel.lat()[-1] - waterlevel.lat()[0]), 5)
-
-#         with open(filename, "w") as file_out:
-#             file_out.write("$************************HEADING************************\n")
-#             file_out.write("$ \n")
-#             file_out.write(" PROJ '" + grid.name + "' 'T24' \n")
-#             file_out.write("$ \n")
-#             file_out.write("$*******************MODEL INPUT*************************\n")
-#             file_out.write("$ \n")
-#             file_out.write("SET NAUT \n")
-#             file_out.write("$ \n")
-#             file_out.write("MODE NONSTATIONARY TWOD \n")
-#             file_out.write("COORD SPHE CCM \n")
-#             file_out.write(
-#                 "CGRID "
-#                 + str(grid.lon()[0])
-#                 + " "
-#                 + str(grid.lat()[0])
-#                 + " 0. "
-#                 + str(delta_X)
-#                 + " "
-#                 + str(delta_Y)
-#                 + " "
-#                 + str(grid.nx() - 1)
-#                 + " "
-#                 + str(grid.ny() - 1)
-#                 + " CIRCLE 36 0.04 1.0 31 \n"
-#             )
-#             file_out.write("$ \n")
-
-#             file_out.write(
-#                 "INPGRID BOTTOM "
-#                 + str(grid.lon()[0])
-#                 + " "
-#                 + str(grid.lat()[0])
-#                 + " 0. "
-#                 + str(grid.nx() - 1)
-#                 + " "
-#                 + str(grid.ny() - 1)
-#                 + " "
-#                 + str((delta_X / (grid.nx() - 1)).round(6))
-#                 + " "
-#                 + str((delta_Y / (grid.ny() - 1)).round(6))
-#                 + "\n"
-#             )
-#             file_out.write(
-#                 "READINP BOTTOM 1 '" + grid_path.split("/")[-1] + "' 3 0 FREE \n"
-#             )
-#             file_out.write("$ \n")
-
-#             lons, lats = create_swan_segment_coords(
-#                 grid.boundary_mask(), grid.edges("lon"), grid.edges("lat")
-#             )
-#             bound_string = "BOUNDSPEC SEGMENT XY"
-#             for lon, lat in zip(lons, lats):
-#                 bound_string += f" {lon:.2f} {lat:.2f}"
-#             bound_string += " VARIABLE FILE 0 "
-#             bound_string += f"'{boundary_path.split('/')[-1]}'\n"
-#             file_out.write(bound_string)
-#             # file_out.write('BOU NEST \''+boundary_path.split('/')[-1]+'\' OPEN \n')
-#             file_out.write("$ \n")
-#             dt = forcing.time().to_series().diff().dt.total_seconds().values[-1] / 3600
-#             dt_wl = waterlevel.time().to_series().diff().dt.total_seconds().values[-1] / 3600
-#             if use_wind:
-#                 file_out.write(
-#                     "INPGRID WIND "
-#                     + str(forcing.lon()[0])
-#                     + " "
-#                     + str(forcing.lat()[0])
-#                     + " 0. "
-#                     + str(forcing.nx() - 1)
-#                     + " "
-#                     + str(forcing.ny() - 1)
-#                     + " "
-#                     + str((delta_Xf / (forcing.nx() - 1)).round(6))
-#                     + " "
-#                     + str((delta_Yf / (forcing.ny() - 1)).round(6))
-#                     + " NONSTATIONARY "
-#                     + STR_START
-#                     + f" {dt:.0f} HR "
-#                     + STR_END
-#                     + "\n"
-#                 )
-#                 file_out.write(
-#                     "READINP WIND "
-#                     + str(factor_wind)
-#                     + "  '"
-#                     + forcing_path.split("/")[-1]
-#                     + "' 3 0 0 1 FREE \n"
-#                 )
-#                 file_out.write("$ \n")
-#             else:
-#                 file_out.write("OFF QUAD \n")
-#             if use_waterlevel:
-#                 file_out.write(
-#                     "INPGRID WLEVEL "
-#                     + str(waterlevel.lon()[0])
-#                     + " "
-#                     + str(waterlevel.lat()[0])
-#                     + " 0. "
-#                     + str(waterlevel.nx() - 1)
-#                     + " "
-#                     + str(waterlevel.ny() - 1)
-#                     + " "
-#                     + str((delta_Xwl / (waterlevel.nx() - 1)).round(6))
-#                     + " "
-#                     + str((delta_Ywl / (waterlevel.ny() - 1)).round(6))
-#                     + " NONSTATIONARY "
-#                     + STR_START
-#                     + f" {dt_wl:.0f} HR "
-#                     + STR_END
-#                     + "\n"
-#                 )
-#                 file_out.write(
-#                     "READINP WLEVEL"
-#                     + "  '"
-#                     + waterlevel_path.split("/")[-1]
-#                     + "' 3 0 0 1 FREE \n"
-#                 )
-#                 file_out.write("$ \n")
-#             file_out.write("GEN3 WESTH cds2=" + str(calib_wcap) + "\n")
-#             file_out.write("FRICTION JON 0.067 \n")
-#             file_out.write("PROP BSBT \n")
-#             file_out.write("NUM ACCUR NONST 1 \n")
-#             file_out.write("$ \n")
-#             file_out.write("$*******************************************************\n")
-#             file_out.write("$ Generate block-output \n")
-#             temp_list = forcing_path.split("/")
-#             forcing_folder = "/".join(temp_list[0:-1])
-#             file_out.write(
-#                 "BLOCK 'COMPGRID' HEAD '"
-#                 + grid.name
-#                 + "_"
-#                 + STR_START.split(".")[0]
-#                 + ".nc"
-#                 + "' & \n"
-#             )
-#             file_out.write(
-#                 "LAY 1 HSIGN RTP TPS PDIR TM01 DIR DSPR WIND DEP OUTPUT "
-#                 + STR_START
-#                 + " 1 HR \n"
-#             )
-#             file_out.write("$ \n")
-#             if spec_points:
-#                 file_out.write("POINTS 'pkt' &\n")
-#                 for lon, lat in spec_points:
-#                     file_out.write(str(lon) + " " + str(lat) + " &\n")
-#                 file_out.write(
-#                     "SPECOUT 'pkt' SPEC2D ABS '"
-#                     + grid.name
-#                     + "_"
-#                     + STR_START.split(".")[0]
-#                     + "_spec.nc"
-#                     + "' & \n"
-#                 )
-#                 file_out.write("OUTPUT " + STR_START + " 1 HR \n")
-#             else:
-#                 pass
-#             file_out.write("COMPUTE " + STR_START + " 10 MIN " + STR_END + "\n")
-#             file_out.write("STOP \n")
-
-#         return filename
 
 
 class SWASH(InputFileWriter):
@@ -1248,7 +1068,9 @@ class WW3Grid(InputFileWriter):
             dirshift,
         )
 
-        open(f'{str(Path(exported_files["grid"][0]).parent)}/namelists.nml','a').close()
+        open(
+            f'{str(Path(exported_files["grid"][0]).parent)}/namelists.nml', "a"
+        ).close()
         return filename
 
 
@@ -1332,8 +1154,8 @@ class WW3(InputFileWriter):
         if homog is None:
             homog = {}
         lons, lats = model.grid().output_points()
-        
-        spectral_output = len(lons)>0
+
+        spectral_output = len(lons) > 0
         if spectral_output:
             msg.to_file(file_object.get_folder() + "/spectral_points.list")
             ww3_spectral_output_list(
