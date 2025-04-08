@@ -105,6 +105,8 @@ class SWAN(InputFileWriter):
         if 'trans' or 'refl' is not given for an object, then the previous object's values are used.
         Especially, if values are only given for the first object, then they are used for all objects.
 
+        'closed': True [default False] means that the first point is repeated in the input file, thus effectively closing the structure
+
         'name' is optional, but will be printed to the swn file if provided to give a better overview
         """
         forcing = model.wind()
