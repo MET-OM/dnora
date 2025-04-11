@@ -7,12 +7,15 @@ Welcome to dnora's documentation!
 =====================================
 **dnora** is a Python package for dynamical downscaling of NORA wave hindcast using the spectral wave models SWAN or WAVEWATCH III and wave-flow model SWASH.
 
+This documentation is for the dnora version 2. 
+
 The package contains functions that:
   * create a high-resolution grid using open-access bathymetry/topography datasets,
-  * prepare the boundary conditions (NORA3, WAM4-operational wave model at MET Norway, available in https://thredds.met.no/thredds/catalog.html) for the spectral models (SWAN, WW3)
-  * prepare the wind (NORA3, WAM4) forcing for the spectral models
-  * create input parameter files (e.g., .swn, .inp, .sws) for the spectral and phase-resolving models (SWAN, WW3, SWASH, HOS-ocean)
+  * prepare the boundary spectra in the right directional convention from different sources
+  * prepare forcing files (wind, current, ice, etc.) for the spectral models
+  * create input parameter files based on the defined grid and files that have been prepared
   * run the wave models
+
 
 Installing **dnora**
 =============================================
@@ -38,6 +41,49 @@ To update the enviroment using a new environment.yml, run:
 .. code-block:: bash
 
    $ conda env update --file environment.yml --prune
+
+Basic workflow
+=============================================
+The basic workflow in dnora scripts follow the same logic
+
+  * Define an area you are working with by creating a Grid-object
+  * Define a time period you are working with by creating a ModelRun-object
+  * Import the data from the source you want
+  * Define an exporter to export the data in the format you want
+  * Define an executer to write input files and run the model
+
+Specifically, the import from different sources (e.g. MET Norway, ECMWF) and the writing data in differen formats (e.g. SWAN, WAVEWATCH III) are separated, and you can always use any combination you want, while dnora takes care of making sure the data is in the right format for the model (e.g. spectral conventions).
+
+Download data
+=============================================
+You can easily execute only a part of the workflow. For example, say you only want to download NORA3 wind and wave data around the area of Bergen, Norway for January 2020, but don't really want to worry about any specific model or model grid::
+
+   import dnora as dn
+   area = dn.grid.Grid(lat=(60.0, 60.6), lon=(4.4, 5.9), name="Bergen")
+   
+   model = dn.modelrun.NORA3(area, year=2020, month=1)
+   model.import_wind()
+   model.import_spectra()
+
+.. code-block:: rst
+
+Dnora automatically expands the download area with 20% for wind and 50% for wave spectra to make sure you get data covering the whole area. This might be important when the wave model interpolates the data to its own grid. If you want exactly the area you defined, use the keyword ``expansion_factor=1`` in both import methods.
+
+Say you wan't your data in netcdf files, but you want to make sure that your wave spectra have the convention 'coming from'. You can then first set the convention, and use the Netcdf-exporter to write the data::
+
+   model.spectra().set_convention('met')
+
+   exp = dn.exporter.Netcdf(model)
+   exp.export_wind()
+   exp.export_spectra()
+
+.. code-block:: rst
+
+In this case the NORA3 wave spectra actually had the directional convention 'going to', but you don't neew to know that. If the convention would have been right from the start, the ``set_convention``-method would have done nothing. If you would have wanted ERA5 data instead, just change the line to::
+
+   model = dn.modelrun.ERA5(area, year=2020, month=1)
+
+.. code-block:: rst
 
 
 
