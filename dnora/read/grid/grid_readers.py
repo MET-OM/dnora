@@ -238,7 +238,7 @@ class GEBCO(DataReader):
 
         coord_dict = {"lon": topo_lon, "lat": topo_lat}
         data_dict = {"topo": topo}
-        meta_dict = {"source": f"GEBCO2023", "through": "https://api.odb.ntu.edu.tw/"}
+        meta_dict = {"source": f"GEBCO{year}", "through": "https://api.odb.ntu.edu.tw/"}
 
         return coord_dict, data_dict, meta_dict
 
