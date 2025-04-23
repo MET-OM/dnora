@@ -90,10 +90,10 @@ def import_topo(
         return
 
     if utils.grid.is_gridded(topo, lon, lat) or utils.grid.is_gridded(topo, x, y):
-        topo_grid = GriddedTopo(lon=lon, lat=lat, x=x, y=y)
+        topo_grid = GriddedTopo(lon=lon, lat=lat, x=x, y=y, name=topo_reader.name())
         topo_grid.set_spacing(nx=len(x or lon), ny=len(y or lat))
     else:
-        topo_grid = PointTopo(lon=lon, lat=lat, x=x, y=y)
+        topo_grid = PointTopo(lon=lon, lat=lat, x=x, y=y, name=topo_reader.name())
     if zone_number is not None:
         topo_grid.utm.set((zone_number, zone_letter))
 
