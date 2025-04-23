@@ -124,7 +124,10 @@ class Grid(GriddedSkeleton):
 
         xQ, yQ = np.meshgrid(self.x(native=True), self.y(native=True))
 
-        x, y = self.raw().xy(native=True)
+        if self.core.is_cartesian():
+            x, y = self.raw().xy()
+        else:
+            x, y = self.raw().lonlat()
 
         topo = mesher(self.raw().topo().ravel(), x, y, xQ, yQ, **kwargs)
         print(mesher)
