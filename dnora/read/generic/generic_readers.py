@@ -82,7 +82,6 @@ class PointNetcdf(SpectralDataReader):
             ds = xr.open_dataset(filepath)
 
         lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
-        # self.set_convention(ds.attrs.get("dnora_spectral_convention", "undefined"))
         return {"lon": lon, "lat": lat, "x": x, "y": y}
 
     def __call__(
@@ -110,6 +109,10 @@ class PointNetcdf(SpectralDataReader):
         cls = dnora_objects.get(obj_type)
         # This geo-skeleton method does all the heavy lifting with decoding the Dataset to match the class data variables etc.
         data = cls.from_ds(ds).sel(inds=inds)
+
+        if "time" in data.core.coords():
+            data = data.sel(time=slice(start_time, end_time))
+
         # Set reader convention. This is used by the import method to set correct convention to the instance
         convention = convention or data.meta.get().get(
             "dnora_spectral_convention", "undefined"
@@ -160,13 +163,17 @@ class Netcdf(DataReader):
             grid.edges("lon"), grid.edges("lat"), expansion_factor
         )
 
-        ds = xr.open_mfdataset(filepath).sel(
-            lon=slice(*lon), lat=slice(*lat), time=slice(start_time, end_time)
-        )
+        cls = dnora_objects.get(obj_type)
+
+        if "time" in cls.core.coords():
+            ds = xr.open_mfdataset(filepath).sel(
+                lon=slice(*lon), lat=slice(*lat), time=slice(start_time, end_time)
+            )
+        else:
+            ds = xr.open_mfdataset(filepath).sel(lon=slice(*lon), lat=slice(*lat))
 
         msg.from_multifile(filepath)
 
-        cls = dnora_objects.get(obj_type)
         # This geo-skeleton method does all the heavy lifting with decoding the Dataset to match the class data variables etc.
         data = cls.from_ds(ds)
 
