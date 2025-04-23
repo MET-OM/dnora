@@ -63,7 +63,7 @@ def import_topo(
         if not os.path.exists(aux_funcs.get_url(folder, topo_reader.name())):
             os.mkdir(aux_funcs.get_url(folder, topo_reader.name()))
 
-    coord_dict, data_dict, meta_dict = topo_reader(
+    ds = topo_reader(
         obj_type=DnoraDataType.GRID,
         grid=grid,
         start_time=None,
@@ -72,6 +72,14 @@ def import_topo(
         folder=folder,
         **kwargs,
     )
+
+    if not isinstance(ds, tuple):
+        coord_dict = {key: ds.get(key).values for key in list(ds.coords)}
+        data_dict = {"topo": ds.get("topo").values}
+        meta_dict = ds.attrs
+    else:
+        coord_dict, data_dict, meta_dict = ds
+
     lon, lat, x, y = (
         coord_dict.get("lon"),
         coord_dict.get("lat"),
