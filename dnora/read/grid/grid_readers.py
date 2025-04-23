@@ -142,11 +142,16 @@ class KartverketNo50m(DataReader):
         folder: str,
         expansion_factor: float = 1.2,
         zone_number: int = 33,
-        tile: str = "B1008",
+        tile: str = "",
         **kwargs,
     ) -> tuple:
         # Area is expanded a bit to not get in trouble in the meshing stage
         # when we interpoolate or filter
+
+        if not tile:
+            raise ValueError(
+                "No tile! Specify a tile, e.g. tile = 'B1408' in the import. Wildcards allowed."
+            )
 
         folder = self._folder(folder)
 
