@@ -72,7 +72,6 @@ def import_topo(
         folder=folder,
         **kwargs,
     )
-
     lon, lat, x, y = (
         coord_dict.get("lon"),
         coord_dict.get("lat"),
@@ -116,6 +115,6 @@ def import_topo(
     topo_grid.set_topo(topo)
     # topo_grid = set_metaparameters_in_object(topo_grid, metaparameter_dict, data_dict)
     topo_grid.meta.set(meta_dict)
-    topo_grid.set_sea_mask(topo_grid.topo() > 0)
+    # topo_grid.set_sea_mask(topo_grid.topo() > 0)
 
     return topo_grid
