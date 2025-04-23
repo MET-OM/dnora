@@ -45,7 +45,6 @@ To update the enviroment using a new environment.yml, run:
 Basic workflow
 =============================================
 The basic workflow in dnora scripts follow the same logic
-
   * Define an area you are working with by creating a Grid-object
   * Define a time period you are working with by creating a ModelRun-object
   * Import the data from the source you want
