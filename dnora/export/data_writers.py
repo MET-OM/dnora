@@ -55,13 +55,17 @@ class Netcdf(DataWriter):
         model: ModelRun,
         file_object: FileNames,
         obj_type: DnoraDataType,
+        monthly_files: bool = False,
+        daily_files: bool = False,
         **kwargs,
     ) -> str:
-        if self._monthly_files and self._daily_files:
+        monthly_files = monthly_files or self._monthly_files
+        daily_files = daily_files or self._daily_files
+        if monthly_files and daily_files:
             raise ValueError(f"Choose montly_files OR daily_files!")
-        if self._monthly_files:
+        if monthly_files:
             output_files = write_monthly_nc_files(model[obj_type], file_object)
-        elif self._daily_files:
+        elif daily_files:
             output_files = write_daily_nc_files(model[obj_type], file_object)
         else:
             output_files = file_object.get_filepath()
