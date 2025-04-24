@@ -63,6 +63,8 @@ def import_topo(
         if not os.path.exists(aux_funcs.get_url(folder, topo_reader.name())):
             os.mkdir(aux_funcs.get_url(folder, topo_reader.name()))
 
+    # start_time, end_time and inds given to satisfy the generic Netcdf-readers
+    # Will need to fix this at some point
     ds = topo_reader(
         obj_type=DnoraDataType.GRID,
         grid=grid,
@@ -70,11 +72,12 @@ def import_topo(
         end_time=None,
         source=source,
         folder=folder,
+        inds=None,
         **kwargs,
     )
 
     if not isinstance(ds, tuple):
-        coord_dict = {key: ds.get(key).values for key in list(ds.coords)}
+        coord_dict = {key: ds.get(key) for key in ["lon", "lat", "x", "y"]}
         data_dict = {"topo": ds.get("topo").values}
         meta_dict = ds.attrs
     else:
