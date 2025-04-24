@@ -42,9 +42,37 @@ To update the enviroment using a new environment.yml, run:
 
    $ conda env update --file environment.yml --prune
 
-Basic workflow
+Basic example
 =============================================
-The basic workflow in dnora scripts follow the same logic
+
+DNORA was originally greated to easily downscale the NORA3 hindcast. While it can now do much more, here is how you do that. The code runs a 500 m SWAN model for one day using EMODNET topography, NORA3 wind forcing, and NORA3 boundary spectra::
+
+   import dnora as dn
+   
+   grid = dn.grid.EMODNET(lon=(5.35, 5.6), lat=(59.00, 59.17), name="Boknafjorden")
+   grid.import_topo()
+   grid.set_spacing(dm=500)
+   grid.mesh_grid()
+   grid.set_boundary_points(dn.grid.mask.Edges(["N", "W", "S"]))
+   
+   model = dn.modelrun.NORA3(grid, year=2020, month=2, day=15)
+   model.import_wind()
+   model.import_spectra()
+   
+   exp = dn.export.SWAN(model)
+   exp.export_grid()
+   exp.export_wind()
+   exp.export_spectra()
+   
+   exe = dn.executer.SWAN(model)
+   exe.write_input_file()
+   exe.run_model()
+
+.. code-block:: python
+
+Before running the example you have to have SWAN installed, since it is not a part of the DNORA package.
+
+The basic workflow in DNORA scripts follow the same logic
   * Define an area you are working with by creating a Grid-object
   * Define a time period you are working with by creating a ModelRun-object
   * Import the data from the source you want
@@ -53,41 +81,15 @@ The basic workflow in dnora scripts follow the same logic
 
 Specifically, the import from different sources (e.g. MET Norway, ECMWF) and the writing data in differen formats (e.g. SWAN, WAVEWATCH III) are separated, and you can always use any combination you want, while dnora takes care of making sure the data is in the right format for the model (e.g. spectral conventions).
 
-Download data
-=============================================
-You can easily execute only a part of the workflow. For example, say you only want to download NORA3 wind and wave data around the area of Bergen, Norway for January 2020, but don't really want to worry about any specific model or model grid::
 
-   import dnora as dn
-   area = dn.grid.Grid(lat=(60.0, 60.6), lon=(4.4, 5.9), name="Bergen")
-   
-   model = dn.modelrun.NORA3(area, year=2020, month=1)
-   model.import_wind()
-   model.import_spectra()
-
-.. code-block:: rst
-
-Dnora automatically expands the download area with 20% for wind and 50% for wave spectra to make sure you get data covering the whole area. This might be important when the wave model interpolates the data to its own grid. If you want exactly the area you defined, use the keyword ``expansion_factor=1`` in both import methods.
-
-Say you wan't your data in netcdf files, but you want to make sure that your wave spectra have the convention 'coming from'. You can then first set the convention, and use the Netcdf-exporter to write the data::
-
-   model.spectra().set_convention('met')
-
-   exp = dn.exporter.Netcdf(model)
-   exp.export_wind()
-   exp.export_spectra()
-
-.. code-block:: rst
-
-In this case the NORA3 wave spectra actually had the directional convention 'going to', but you don't neew to know that. If the convention would have been right from the start, the ``set_convention``-method would have done nothing. If you would have wanted ERA5 data instead, just change the line to::
-
-   model = dn.modelrun.ERA5(area, year=2020, month=1)
-
-.. code-block:: rst
-
-
-Creating a Grid-object
+The Grid-object
 =====================================
-In the previous example we only used the Grid-object to define an area. We will now create a proper grid. The grid object is initialized with the following command::
+
++++++++
+Setting area and resolution
++++++++
+
+The grid object is initialized with the following command::
 
    import dnora as dn
    grid = dn.grid.Grid(lat=(60.0, 60.6), lon=(4.4, 5.9), name="Bergen")
@@ -125,8 +127,9 @@ This will enforce the resolution and instead change the initially set area sligh
 
 .. code-block:: rst
 
++++++++
 Importing and meshing a topography
-=====================================
++++++++
 
 The grid created above is empty. To get bathymetrical data we need to import it. Trivially we can just test it by "importing" a bathymetry with constant 50 meter depth::
 
@@ -142,7 +145,7 @@ The "imported" raw bathymetry can be found at ``grid.raw()`` if you want to look
 
 This interpolates the "raw" topography, which can be either gridded or non-gridded, to the spacing you defined for your grid object. The meshing is a wrapper around ``scipy.interpolate.griddata`` using nearest neighbour interpolation. Change this by providing e.g. ``method='linear'``.
 
-*NB!* DNORA has a system for keeping track of folders and possible data that has been downloaded automatically so it can be reused between projects. See section "Folders, filenames and URL's in DNORA" for more information.
+**NB!** DNORA has a system for keeping track of folders and possible data that has been downloaded automatically so it can be reused between projects. See section "Folders, filenames and URL's in DNORA" for more information.
 
 If you want to modicy the meshed data, there are some functions to do that. E.g. to set everything less than 1 m deep to land, and everything less than 2 m deep to 2 m::
 
@@ -235,8 +238,9 @@ Assumes that the file has a variable named ``'topo'`` or that it has the standar
 
 For any more regular use, it is recommended to build a reader for that specific product.
 
-Setting boundary points in a grid
-=====================================
++++++++
+Boundary points
++++++++
 
 Setting boundary points is now only important for being able to write the grid-files, but are also of consequence when importing boundary spectra. E.g. to set the norther, western and southern edges of the grid as boundaries::
 
@@ -299,8 +303,12 @@ Provided for completeness and used internally e.g. on one point grids::
 
 .. code-block:: rst
 
-Creating a ModelRun-object
+The ModelRun-object
 =====================================
+
+++++++
+Defining a time period
+++++++
 
 The ``ModelRun``-object is the second central object and contain all forcing and boundary data. This object is always defined for a certain grid and a certain time::
 
@@ -322,113 +330,258 @@ This is equivalent to using a ``start_time='2020-05-01T00:00'`` and ``end_time='
 
 This is equivalent to using a ``start_time='2020-05-01T00:00'`` and ``end_time='2020-06-01T00:00'``
 
++++++++++++++++++++++
+Importing forcing data
++++++++++++++++++++++
 
+The bathymetrical data has already been imported to the ``Grid``-object. All other data will be imported at this stage. To e.g. import NORA3 wind forcing that covers the area and time period::
 
-The grid data can now be exported in a certain format using a ``GridWriter``. To export in WAVEWATCH III format::
-
-   model.export_grid(grd.write.WW3())
-
-.. code-block:: rst
-
-Boundary and Forcing data can be read using ``BoundaryReaders`` and ``ForcingReaders``. To read in boundary spectra and wind forcing from the MET Norway NORA3 hindcast, use::
-
-   model.import_boundary(bnd.read_metno.NORA3(), point_picker=bnd.pick.Area())
-   model.import_forcing(wnd.read_metno.NORA3())
+   model.import_forcing(dn.read.wind.metno.NORA3())
 
 .. code-block:: rst
 
-Here, the ``PointPicker`` object defines how spectra are chosen from the database. In WW3, we take all spectra around the grid area, and let WW3 interpolate. For SWAN, we would want to use::
+In practice, you can use often use subclasses (defined in ``dnora.modelrun.templates``) of the ``ModelRun``-object and then you don't have to specify the reader. For example, if you just want to work with NORA3 data, then the above code simplifies to::
 
-   model.import_boundary(bnd.read_metno.NORA3(), point_picker=bnd.pick.NearestGridPoint())
-
-.. code-block:: rst
-
-to connect each defined boundary point to a certain spectra (even though we can get duplicates).
-
-to write the boundary spectra in WAVEWATCH III format and wind forcing in SWAN format, use::
-
-   model.export_boundary(bnd.write.WW3())
-   model.export_forcing(wnd.write.SWAN())
+   model = dn.modelrun.NORA3(grid, year=2020, month=5)
+   model.import_forcing()
 
 .. code-block:: rst
 
-The spectral convention is defined in the ``BoundaryReader`` and ``BoundaryWriter``, and the ``ModelRun``-object automatically takes care of convention changes (if needed).
+You can also now import boundary spectra and ice simply by calling those import methods::
 
-**NB!** The WW3 convention here is thath of the WW3 *output* files, i.e. directional vector looks like a mathematical convention, but it is actually oceanic. This is in line with the bounc.ftn file used in the develop-branch of WAVEWATCH III.
+   model.import_spectra()
+   model.import_ice()
 
-Creating templates
+.. code-block:: rst
+
++++++++++++++++++++++
+Import of gridded data
++++++++++++++++++++++
+
+You typically want to import two types of data: gridded or non-gridded. Examples of gridded data are wind, ice and currents. An example of non-gridded data is boundary spectra.
+
+For gridded data the import-method automaticall gets all data that covers the grid you provided, but expands it by 20% to make sure the edges are covered (needed for interpolation etc.). If the imported area is too small or too large, this can be controlled by a keyword::
+
+   model.import_forcing(expansion_factor=1.3)
+
+.. code-block:: rst
+
+will expand the are by 30%. The default value here is 1.2.
+
++++++++++++++++++++++
+Import of non-gridded data
++++++++++++++++++++++
+
+For non-gridded data we have some more options, since we might want different ways to choose e.g. boundary spectra. This is technically done by separating the logic of choosing the points to import and the actual import of data. Usually DNORA takes care of this automatically, and the logic is the following::
+
+1) If no boundary points are set, then we will import all spectra that fall within the area of the grid that has been expanded by 50% (``expansion_factor = 1.5``)
+2) If boundary points are set, then we will go through all boundary points in order, and find the nearest spectra in the database. No duplicates are given, so if all boundary points have the same nearest spectra, then only one spectum is imported.
+3) If the grid consists of a single point, then we find the nearest spectrum to that point, regardless of if it has been set to a boundary point.
+
+**Case 1)** the points are technically (and automatically) chosen by the ``PointPicker`` class ``dnora.pick.Area``. The user can change the area if e.g. the grid is small and the resolution of the spectra are low. To just take all NORA3 spectra the covers an area expanded to double size::
+
+   area = dn.grid.Grid(lat=(60.1, 60.2), lon=(4.2, 4.3), name='TestArea')
+   model = dn.modelrun.NORA3(area, year=2020, month=5)
+   model.import_spectra(expansion_factor=2)
+
+.. code-block:: rst
+
+**Case 2)** we set the western edge to boundary points and then grab the nearest spectrum (technically implemented in ``dnora.pick.NearestGridPoint``) to each point::
+
+   grid = dn.grid.Grid(lat=(60.0, 60.4), lon=(4.0, 4.3), name='TestGrid')
+   grid.set_spacing(dlon=0.1, dlat=0.1)
+   grid.set_boundary_points(dn.grid.mask.Edges(['W'])
+
+   model = dn.modelrun.NORA3(grid, year=2020, month=5)
+   model.import_spectra()
+
+.. code-block:: rst
+
+To speed up the process, DNORA actually limits the search for the nearest spectrum to an area expanded by 3 degrees in latitude and 6 degrees in longitude. This is mainly done to avoid having to calculate distances to points very far away, since fast cartesian calculations are not available if the database contains points above 84 degrees latitude. This is not visible to the user. The user can, however, choose to discard spectra that are too far from the boundary point. For example, if we rather not import any spectrum at all if the closest one is over 7 km away, then::
+
+   model.import_spectra(max_dist=7)
+
+.. code-block:: rst
+
+By default, no max distance is applied.
+
+*If* the user wants to import spectra for the entire area even though boundary points have been defined, then the default behaviour can be overridden by explicitly providing a ``PointPicker``. If, in addition, we want to make sure that no spectra from outside the grid area is imported, we can set the ``expansion_factor``::
+
+   model.import_spectra(point_picker=dn.pick.Area(), expansion_factor=1)
+
+.. code-block:: rst
+
+**Case 3)** is implemented so that the user can easily just get the spectrum that is nearest to a single point from a database without having to set a technical boundary point. Simply::
+
+   point = dn.grid.Grid(lat=60.0, lon=4.0, name='TestPoint')
+   
+   model = dn.modelrun.NORA3(point, year=2020, month=5)
+   model.import_spectra()
+
+.. code-block:: rst
+
+Also here the ``max_dist`` keyword can be used. Note, that since DNORA uses a standard format for 2D-spectra, it can automatically integrate the spectra to omni-directional spectra and to some basic integrated parameters. E.g. To get the omnidirectional spectra of the NORA3 2D-spectra from above::
+
+   model.spectra_to_1d()
+
+.. code-block:: rst
+
+You can now find the 1D-spectra at ``model.spectra1d()`` and the corresponding xarray Dataset at ``model.spectra1d().ds()``. To calculate integrated parameters from the 1D-spectra, use::
+   
+   model.spectra_to_waveseries()
+
+.. code-block:: rst
+
+You can now find the wave parameters ``model.waveseries()``. The method automatically calculates the 1D-spectra as an intermediate step if you have only imported 2D-spectra. In other words, the following code works::
+
+   model.import_spectra()
+   model.spectra_to_waveseries()
+
+.. code-block:: rst
+
+And after that you have 2D-spectra, 1D-spectra and wave parameters in ``model.spectra()``, ``model.spectra1d()`` and ``model.waveseries()`` respectively.
+
+Exporting data
 =====================================
 
-Several features that are typically used together can be packaged as a "template" by creating a subclass of the ``ModelRun`` object. These are defined in the ``mdl/models.py``-file. For example, a ``WW3``-template is defined as::
+The imported data is now in a model agnostic format inside the ``ModelRun`` object. We now need to export them to files so that the wave model can use them as forcing files. This is done by choosing a model-specific exporter. For example, if we want to run SWAN::
 
-   class WW3(ModelRun):
-       def _get_boundary_writer(self):
-           return bnd.write.WW3()
-
-       def _get_forcing_writer(self):
-           return wnd.write.WW3()
-
-       def _get_point_picker(self):
-           return bnd.pick.Area()
-
-       def _get_grid_writer(self):
-           return grd.write.WW3()
+   exp = dn.export.SWAN(model)
+   exp.export_grid()
+   exp.export_wind()
+   exp.export_spectra()
 
 .. code-block:: rst
 
-These defaults can be used by::
+This exports the data to ASCII files that follows the SWAN format. It also makes sure that the directional convention of the spectra matches that that SWAN is expecting (in this case coming from). The filenames are DNORA defaults. If you need to change this, it can be done. See the section on Filenames and folders. 
 
-   model = mdl.WW3(grid, start_time='2018-08-25T00:00', end_time='2018-08-25T01:00')
+To prepare forcing files for WAVEWATCH III (including converting to the proper spectral convention), just use a different exporter::
 
-   model.import_boundary(bnd.read_metno.NORA3()) # PointPicker defined in template
-   model.export_boundary() # BoundaryWriter defined in template
-
+   exp = dn.export.WW3(model)
+   
 .. code-block:: rst
 
-Further subclasses can also be defied. For example to have a ``ModelRun``-object that uses WW3 conventions and gets the forcing data from the NORA3-hindcast, a ``WW3_NORA3``-template is defined using the above ``WW3``-template::
+The available exporters are:
 
-   class WW3_NORA3(WW3):
-       def _get_boundary_reader(self):
-           return bnd.read_metno.NORA3()
++++++++++++++++++++++
+SWAN (``dn.export.SWAN``)
++++++++++++++++++++++
 
-       def _get_forcing_reader(self):
-           return wnd.read_metno.NORA3()
+Can write grid, wind, spectra, current, waterlevel and ice. Writes ASCII files and all data into one file.
 
-.. code-block:: rst
++++++++++++++++++++++
+WW3 (``dn.export.WW3``)
++++++++++++++++++++++
 
-The above importing and exporting of NORA3 boundary is now simplified to::
+Can write grid, wind, spectra and triangular grids. Writes netcdf's (wind files into monthly files). Since there are different verisions of the WAVEWATCH III code floating around, the spectral writer has some options:
 
-   model = mdl.WW3_NORA3(grid, start_time='2018-08-25T00:00', end_time='2018-08-25T01:00')
+``one_file=False`` (default: ``True``): Writes every point into a separate file.
 
-   model.import_boundary() # BoundaryReader and PointPicker defined in template
-   model.export_boundary() # BoundaryWriter defined in template
-.. code-block:: rst
+``squeeze_lonlat=True`` (default: ``False``): Write the longitudes and latitudes without a time dimension.
 
-The defaults of the templates can always be overridden by explicitly providing an object to the method. For example, the following code import WAM 4km boundary spectra, not NORA3 spectra::
+``convention='ww3'`` (default: ``'ww3'``): Force a different convention for the spectra (see section on DNORA Spectral conventions). Use only if you know what you are doing.
 
-   model = mdl.WW3_NORA3(grid, start_time='2018-08-25T00:00', end_time='2018-08-25T01:00')
+``var_names={'efth': 'SPEC'}``: Change the names of the variables in the netcdf-files. E.g. change the spectra to ``'SPEC'`` (default: ``'efth'``).
 
-   model.import_boundary(bnd.read_metno.WAM4km()) # Override BoundaryReader but use template PointPicker
-   model.export_boundary() # BoundaryWriter defined in template
-.. code-block:: rst
++++++++++++++++++++++
+SWASH (``dn.export.SWASH``)
++++++++++++++++++++++
+
+Can write grid, wind, and spectra. Uses same ASCII format as SWAN.
+
++++++++++++++++++++++
+REEF3D (``dn.export.REEF3D``)
++++++++++++++++++++++
+
+Can write spectra1d.
+
++++++++++++++++++++++
+Netcdf (``dn.export.Netcdf``)
++++++++++++++++++++++
+
+Can write anything and is model-agnistic. Default writes all data into one file, but you can specify ``daily_files=True`` or ``monthly_files=True`` in the export method.
+
++++++++++++++++++++++
+Cacher (``dn.export.Cacher``)
++++++++++++++++++++++
+
+Used by the automatic caching function in DNORA (see section on Caching), and is probably not interesting for a user.
 
 
-
-Run the spectral model
+Running the model
 =====================================
 
-This fucntionality is at the moment only available for SWAN and SWASH. To run the model automatically we first need to generate an input file::
+The process of running the model includes writing the input files and possibly running the executables. The needs and process is a bit different for differnt models. All models need to be compiled, installed and set up separately. Please see the section on Dependencies for some additional information.
 
-   model.write_input_file(inp.SWAN())
+If the model can output wave spectra (namely SWAN and WAVEWATCH III), then output can be requested by setting output-points in the grid. E.g. to request the model to output spectra at a single location::
+
+   grid.set_output_points(dn.grid.mask.LonLat(lon=5.4, lat=59.1))
+
+.. code-block:: rst
+
++++++++++++
+SWAN
++++++++++++
+
+If the files have been exported, SWAN can be ran with::
+
+   exe = dn.executer.SWAN(model)
+   exe.write_input_file()
+   exe.run_model()
 
 .. code-block:: rst
 
-This generates an input file based on the grid, boundary and forcing data that is available in the object. After that, the model can be automatically ran by::
+The first function writes the input file (``.swn``) for the model. In writing the input file it makes use that it already knows the resolution of the grid and forcing files, the names to where the data has been exported, the wanted spectral output points etc. There are options to control the writing of the input file:
 
+``calibrate: dict`` default values: ``{"wind": 1, "wcap": 0.5000e-04, "waterlevel": 1, "current": 1, "ice": 1}``
 
-   model.run_model(run.SWAN())
+   ``'wcap'``: the white capping coefficient
+   
+   ``'wind'``: factor that the wind is multiplied with, e.g. 1.1 increases the wind speed by 10%.
+   
+   ``'current'``: factor that the currents are multiplied with, e.g. 1.1 increases the current speed by 10%.
+   
+   ``'waterlevel'``: factor added to the waterlevels, e.g. 2 means 2 meters are added to the waterlevel.
+   
+   ``'ice'``: factor for ice (spefic meaning?)
+
+``use_wind, use_waterlevel, use_spectra, use_current, use_ice: bool`` (default: ``True``): Set to false if you have maybe exported data that you don't want to use. By default forcing data is used if present (i.e. has been exported).
+
+``structures: list[dict]``: Can be used to set breakwaters of a given shape, and with given transparency and reflection. From the doc string of the method::
+
+     """structures given in format:
+     E.g. One triangle and one line
+     [{'lon': (5,5.1,4.9), 'lat': (60,59.9,59,9), 'trans': 0.3, 'refl': 0.0, 'closed': True, 'name': 'closed triangle'},
+     {'lon': (4,4.1), 'lat': (60.1,60.1,60.1),'name': 'breakwater'}
+     ]
+   
+     'trans' is the transparency (0 completely blocked, 1 completely open)
+     'refl' is the reflection (default 0.0)
+   
+     if 'trans' or 'refl' is not given for an object, then the previous object's values are used.
+     Especially, if values are only given for the first object, then they are used for all objects.
+   
+     'closed': True [default False] means that the first point is repeated in the input file, thus effectively closing the structure
+   
+     'name' is optional, but will be printed to the swn file if provided to give a better overview
+     """
 
 .. code-block:: rst
+
+The physics are currently set to a given standard that has been found useful in the Norwegian fjords (see e.g. Christakos et al (202x))::
+
+   GEN3 WESTH cds2=5e-05 AGROW
+   FRICTION JON 0.067 
+   PROP BSBT 
+   NUM ACCUR NONST 1 
+
+.. code-block:: rst
+
+If the user needs to change something else than the whitecapping coefficient, the input file needs to be edited manually before running the model.
+
+The second function simply executes the model. It runs with OpenMP parallelization. To change the amount of processes, ute the keyword ``nproc=2`` (default: 4).
+
+
 
 File names and directories
 =====================================
@@ -461,6 +614,37 @@ The third level is to actualy create a new template for this type of model runs,
    class SWAN_oper(SWAN):
        def _get_forcing_writer(self):
            return wnd.write.SWAN(out_format='SWAN_oper')
+
+.. code-block:: rst
+
+Download data
+=============================================
+You can easily execute only a part of the workflow. For example, say you only want to download NORA3 wind and wave data around the area of Bergen, Norway for January 2020, but don't really want to worry about any specific model or model grid::
+
+   import dnora as dn
+   area = dn.grid.Grid(lat=(60.0, 60.6), lon=(4.4, 5.9), name="Bergen")
+   
+   model = dn.modelrun.NORA3(area, year=2020, month=1)
+   model.import_wind()
+   model.import_spectra()
+
+.. code-block:: rst
+
+Dnora automatically expands the download area with 20% for wind and 50% for wave spectra to make sure you get data covering the whole area. This might be important when the wave model interpolates the data to its own grid. If you want exactly the area you defined, use the keyword ``expansion_factor=1`` in both import methods.
+
+Say you wan't your data in netcdf files, but you want to make sure that your wave spectra have the convention 'coming from'. You can then first set the convention, and use the Netcdf-exporter to write the data::
+
+   model.spectra().set_convention('met')
+
+   exp = dn.exporter.Netcdf(model)
+   exp.export_wind()
+   exp.export_spectra()
+
+.. code-block:: rst
+
+In this case the NORA3 wave spectra actually had the directional convention 'going to', but you don't neew to know that. If the convention would have been right from the start, the ``set_convention``-method would have done nothing. If you would have wanted ERA5 data instead, just change the line to::
+
+   model = dn.modelrun.ERA5(area, year=2020, month=1)
 
 .. code-block:: rst
 
