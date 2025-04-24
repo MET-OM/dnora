@@ -7,15 +7,11 @@ from dnora.type_manager.model_formats import ModelFormat
 
 
 class NullExporter(DataExporter):
-    _writer_dict = {}
-
     def _get_default_writer(self) -> WriterFunction:
         return data_writers.Null()
 
 
 class Netcdf(DataExporter):
-    _writer_dict = {DnoraDataType.GRID: data_writers.Netcdf()}
-
     def _get_default_writer(self) -> WriterFunction:
         return data_writers.Netcdf()
 
