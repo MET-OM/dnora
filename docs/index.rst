@@ -5,7 +5,7 @@
 
 Welcome to dnora's documentation!
 =====================================
-**dnora** is a Python package for dynamical downscaling of NORA wave hindcast using the spectral wave models SWAN or WAVEWATCH III and wave-flow model SWASH.
+**DNORA** is a Python package for dynamical downscaling of NORA wave hindcast using the spectral wave models SWAN or WAVEWATCH III and wave-flow model SWASH.
 
 This documentation is for the dnora version 2. 
 
@@ -17,7 +17,7 @@ The package contains functions that:
   * run the wave models
 
 
-Installing **dnora**
+Installing **DNORA**
 =============================================
 1. Install anaconda3 or miniconda3
 2. Clone dnora:
@@ -85,52 +85,15 @@ In this case the NORA3 wave spectra actually had the directional convention 'goi
 .. code-block:: rst
 
 
-
-Dependencies
-=====================================
-1. Installation of **SWAN**. The latest SWAN version can be downloaded from https://sourceforge.net/projects/swanmodel/files/swan/ . The installation procedure can be found in: https://swanmodel.sourceforge.io/online_doc/swanimp/node4.html
-
-2. Installation of **WAVEWATCH III**. The latest model version can be downloaded from https://github.com/NOAA-EMC/WW3 . The installation procedure can be found in: https://github.com/NOAA-EMC/WW3/wiki/Quick-Start
-
-3. Installation of **SWASH**. The latest model version can be downloaded from https://sourceforge.net/projects/swash/ . The installation procedure can be found in: https://swash.sourceforge.io/online_doc/swashimp/node4.html
-
-4. Installation of **HOS-ocean**. The latest HOS-ocean version can be downloaded from https://github.com/LHEEA/HOS-ocean . The installation procedure can be found in: https://github.com/LHEEA/HOS-ocean/wiki/Installation
-
-5. Installation of **REEF3D**. The latest REEF3D and DIVEMesh versions can be downloaded from https://github.com/REEF3D . The installation procedure can be found in: https://reef3d.wordpress.com/installation/ . Note: Only REEF3D::FNPF has been tested in dnora.
-
-To run the models within dnora, the paths, where the models are installed, need to be defined in .bashrc, e.g., ::
-
-   export PATH=${PATH}:/home/user/Programs/swan
-
-   export PATH=${PATH}:/home/user/Programs/swash
-
-   export PATH=${PATH}:/home/user/Programs/HOS-ocean/bin
-
-   export PATH=${PATH}:/home/user/Programs/REEF3D_xx/DIVEMesh/bin
-   export PATH=${PATH}:/home/user/Programs/REEF3D_xx/REEF3D/bin
-
-   source ~/.bashrc
-
-
-.. code-block:: rst
-
-3. Fimex is a the File Interpolation, Manipulation and EXtraction library for gridded geospatial data (more info in \url{httpshttps://wiki.met.no/fimex/start}). Fimex is used in DNORA for the preparation of forcing fields (wind). **In case of running the spectral model without wind forcing, the fimex installation can be neglected**.  A detailed installation procedure can be find in https://wiki.met.no/fimex/install. For a quick installation in Linux-Ubuntu, you can follow the steps: open the Synaptic Package Manager (to install it: sudo apt-get install synaptic
-) --> Settings --> Repositories --> Other Software --> Add:  **ppa:met-norway/fimex** to your system's Software Sources (see https://launchpad.net/~met-norway/+archive/ubuntu/fimex). Then, search and mark for installation a latest version of fimex, and press apply installation. Check the installation (usually it is installed in /usr/bin/) by typing in command line: fimex or fimex-xxx where xxx is the version number. In case that only fimex-xxx works then add a symbolic link::
-
-      cd /usr/bin
-      sudo ln -s fimex-xxx fimex
-
-.. code-block:: rst
-
 Creating a Grid-object
 =====================================
-This section document the grd-module. The grid object is initialized with the following command::
+In the previous example we only used the Grid-object to define an area. We will now create a proper grid. The grid object is initialized with the following command::
 
-   grid = grd.Grid(lon=(lon_min, lon_max), lat=(lat_min, lat_max), name=’GridName’)
-
+   import dnora as dn
+   grid = dn.grid.Grid(lat=(60.0, 60.6), lon=(4.4, 5.9), name="Bergen")
+   grid.set_spacing(dm=250) # Set spacing to around 250 metres
+   
 .. code-block:: rst
-
-Use ``print(grid)`` to print out the status of the object.
 
 A desired grid spacing can be set either by providing a desired grid spacing in metres (approximate) or defining the amounts of grid points (exact)::
 
@@ -151,30 +114,133 @@ In this case ``dlon`` and ``dlat`` are not exact.  If an exact resolution needs 
 
 .. code-block:: rst
 
-This will enforce the resolution and instead change the initially set ``lon_max`` and ``lat_max`` slightly (if needed). The main properties of the grid can be accessed by methods::
+This will enforce the resolution and instead change the initially set area slightly (if needed). The main properties of the grid can be accessed by methods::
 
    grid.lon() # Longitude vector
    grid.lat() # Latitude vector
-   grid.name() # Name given at initialization
+   grid.name # Name given at initialization
    grid.nx() # Amount of point in longitude direction
    grid.ny() # Amount of point in latitude direction
    grid.size() # Tuple (nx, ny)
 
 .. code-block:: rst
 
-Setting boundary points
+Importing and meshing a topography
 =====================================
 
-Setting boundary points is now only important for being able to write the grid-files, but are also of consequence when importing boundary spectra. The central method is to set the edged of the grid to boundary points::
+The grid created above is empty. To get bathymetrical data we need to import it. Trivially we can just test it by "importing" a bathymetry with constant 50 meter depth::
 
-   bnd_set = grd.boundary.EdgesAsBoundary(edges=['N', 'W', 'S'])
-   grid.set_boundary(boundary_setter=bnd_set)
+   grid.import_topo(dn.read.generic.ConstantData(), topo=50)
 
 .. code-block:: rst
 
-Here the North, West, and South edges are set to boundary points, and this is suitable for e.g. WAVEWATCH III. In SWAN we might want to not set every edge point as a boundary point (and then let the wave model interpolate spectra), especially if the boundary spectra are only available at a coarse resolution. This can be done by initializing the boundary_setter as (every tenth point a boundary point)::
+The "imported" raw bathymetry can be found at ``grid.raw()`` if you want to look at it (the corresponding xarray Dataset is ``grid.raw().ds()``), but what you really want to do is mesh this raw topography to the grid spacing you defined::
 
-   bnd_set = grd.boundary.EdgesAsBoundary(edges=['N', 'W', 'S'], step=10)
+   grid.mesh_grid()
+
+.. code-block:: rst
+
+This interpolates the "raw" topography, which can be either gridded or non-gridded, to the spacing you defined for your grid object. The meshing is a wrapper around ``scipy.interpolate.griddata`` using nearest neighbour interpolation. Change this by providing e.g. ``method='linear'``.
+
+*NB!* DNORA has a system for keeping track of folders and possible data that has been downloaded automatically so it can be reused between projects. See section "Folders, filenames and URL's in DNORA" for more information.
+
+If you want to modicy the meshed data, there are some functions to do that. E.g. to set everything less than 1 m deep to land, and everything less than 2 m deep to 2 m::
+
+   grid.process_grid(dn.grid.process.SetMinDepth(), min_depth=1, to_land=True)
+   grid.process_grid(dn.grid.process.SetMinDepth(), min_depth=2)
+
+.. code-block:: rst
+
+The possible data sources are:
+
++++++++
+EMODNET (``dnora.read.grid.EMODNET``)
++++++++
+
+Covers Europe with approximately 115 m resolution. To use this reader you can also just set the grid a subclass::
+
+   grid = dn.grid.EMODNET(lat=(60.0, 60.6), lon=(4.4, 5.9), name="Bergen")
+   grid.import_topo() # No reader needs to be specified
+
+.. code-block:: rst
+
+The EMODNET reader automatically identifies the tiles needed to cover the area, and downloads them if they do not exist in the folder.
+
+Reference: https://emodnet.ec.europa.eu/en/bathymetry
+
++++++++
+GEBCO (``dnora.read.grid.GEBCO``)
++++++++
+
+Global coverage approximately 500 m resolution. To use this reader you can also just set the grid a subclass::
+
+   grid = dn.grid.GEBCO(lat=(60.0, 60.6), lon=(4.4, 5.9), name="Bergen")
+   grid.import_topo(filename='name_of_downloaded_tile.nc') # No reader needs to be specified
+
+.. code-block:: rst
+
+The GEBCO reader is not as automated as the EMODNET reader, and basically wants to read custom tiles that have already been downloaded. You can download tiles here: https://download.gebco.net/ 
+
+However, it does make use of an API provided by (https://github.com/cywhale/gebco). This means that if no filename is provided, then the relevant data is automatically fetched using the API. However, this doesn't work for very large areas. Recommended practice is therefore to download a faiirly large area once, and then make use of that several times.
+
+The functionality will be improved in future versions.
+
+Refereces: https://gebco.net, https://github.com/cywhale/gebco
+
++++++++
+Karverket-50m (``dnora.read.grid.KartverketNo50m``)
++++++++
+
+High-resolution coverage for the Norwegian coast at a 50 m resolution provided by the Norwegian Mapping Authority (Kartverket). To use this reader you can also just set the grid a subclass::
+
+   grid = dn.grid.Kartverket(lat=(60.0, 60.6), lon=(4.4, 5.9), name="Bergen")
+   grid.import_topo(tile='B1008')
+.. code-block:: rst
+
+This reader is not automated. This means that you need to manually check which tile(s) you need and download them from Mapping Authorities web service, extract it and provide the tile to the reader.
+
+References: https://kartkatalog.geonorge.no/metadata/dybdedata-terrengmodeller-50-meters-grid-landsdekkende/bbd687d0-d34f-4d95-9e60-27e330e0f76e
+
++++++++
+Netcdf (``dnora.read.generic.Netcdf``)
++++++++
+
+Reads generic Netcdf files with structured data. E.g.::
+
+   grid = dn.grid.Grid(lat=(60.0, 60.6), lon=(4.4, 5.9), name="Bergen")
+   grid.import_topo(dn.read.generic.Netcdf(), filename='some_random_topo.nc', folder='')
+
+.. code-block:: rst
+
+Assumes that the file has a variable named ``'topo'`` or that it has the standard name ``'sea_floor_depth_below_sea_surface'``. Assumes depths are positive.
+
+For any more regular use, it is recommended to build a reader for that specific product.
+
++++++++
+PointNetcdf (``dnora.read.generic.PointNetcdf``)
++++++++
+
+Reads generic Netcdf files with unstructured data. This can be handy e.g. when you have donwloaded e.g. GEBCO data using the automatic API and wan't to save it for later::
+
+   grid = dn.grid.GEBCO(lat=(60.0, 60.6), lon=(4.4, 5.9), name="Bergen")
+   grid.import_topo()
+   grid.raw().ds().to_netcdf('GEBCO_Bergen.nc')
+
+   # Re-import from file
+   grid.import_topo(dn.read.generic.PointNetcdf(), filename='GEBCO_Bergen.nc', folder='')
+
+.. code-block:: rst
+
+Assumes that the file has a variable named ``'topo'`` or that it has the standard name ``'sea_floor_depth_below_sea_surface'``. Assumes depths are positive.
+
+For any more regular use, it is recommended to build a reader for that specific product.
+
+Setting boundary points in a grid
+=====================================
+
+Setting boundary points is now only important for being able to write the grid-files, but are also of consequence when importing boundary spectra. E.g. to set the norther, western and southern edges of the grid as boundaries::
+
+   grid.set_boundary_points(dn.grid.mask.Edges(edges=['N', 'W', 'S'])
 
 .. code-block:: rst
 
@@ -185,50 +251,78 @@ Information about the boundary points that are set in the grid can be accessed u
 
 .. code-block:: rst
 
+The possible logics to define bounaries are:
 
-Importing bathymetrical data
-=====================================
++++++++
+Whole edges (``dnora.grid.mask.Edges``)
++++++++
 
-The main idea is that the Grid-object is created, and a fixed set of methods are used to import a topography, mesh it down to a grid, or filter the data. The functionality of these methods are controlled by passing them a callable object. Adding e.g. a topography source thus means adding a new ``TopoReader``-class that can then me passed to the ``Grid``-object’s ``.import_topo()``-method. Different bathymetry readers such as::
+Set all wet points along a certain edge as boundary points::
 
-   ``EMODNET2018``: reads files with NetCDF format (version 2018) from https://portal.emodnet-bathymetry.eu/,
-   ``EMODNET2018``: reads files with NetCDF format (version 2020, possible to read several files using tile='*') from https://portal.emodnet-bathymetry.eu/,
-   ``KartverketNo50m``: reads files with xyz format (possible to read several files using tile='*') from https://kartkatalog.geonorge.no/metadata/dybdedata-terrengmodeller-50-meters-grid-landsdekkende/bbd687d0-d34f-4d95-9e60-27e330e0f76e
-   ``GEBCO2021``: reads files with NetCDF format from https://download.gebco.net/
-
-Examples::
-
-   topo_reader=grd.read.EMODNET2018(tile='D5',folder='/home/user/bathy/')
-   topo_reader=grd.read.EMODNET2020(tile='D5',folder='/home/user/bathy/')
-   topo_reader=grd.read.GEBCO2021(tile='n66.357421875_s57.041015625_w0.703125_e10.37109375',folder='/home/user/bathy/')
-   topo_reader=grd.read.KartverketNo50m(tile='B1008',folder='/home/user/bathy/')
-
-   grid.import_topo(topo_reader=topo_reader)
+   grid.set_boundary_points(dn.grid.mask.Edges(edges=['N', 'W', 'S'])
 
 .. code-block:: rst
 
-where the tile indicates the geographical area. This "raw" data can be processed by the ``.process_topo()`` command, taking a ``GridProcessor`` object. The data can me meshed to the desired grid definition by::
+This is probably what you want for spectral models.
 
-   grid.mesh_grid()
++++++++
+Mid points (``dnora.grid.mask.MidPoint``)
++++++++
+
+Same as Edges, but only set the middle point::
+
+   grid.set_boundary_points(dn.grid.mask.MidPoint(edges=['N', 'W'])
 
 .. code-block:: rst
 
-The default (and currently only available) ``GridMesher`` uses interpolation, and is set as default. After meshing the grid data can also be processed with a ``GridProcessor``. For example, to set all depth below 1 metre to land and after that impose a minimum of 2 metre depth in wet points, use::
+This might be needed in some phase resolving models.
 
-   grid.process_grid(grd.process.SetMinDept(min_depth=1, to_land=True))
-   grid.process_grid(grd.process.SetMinDept(min_depth=2))
++++++++
+A list of points (``dnora.grid.mask.LonLat`` or ``dnora.grid.mask.XY``)
++++++++
+
+Give a list of longitudes and latitudes (or x- and y-coordinates if grid is cartesian) and set the nearest grid point as a boundary point::
+
+   grid.set_boundary_points(dn.grid.mask.LonLat(lon=(5.0, 5.1), lat=(60.3, 60.3)))
 
 .. code-block:: rst
 
+This is probably not used for setting bounadries, but this same function can be used to set a mask of e.g. spectral output points.
+
++++++++
+All or none of the grid (``dnora.grid.mask.All`` or ``dnora.grid.mask.Clear``)
++++++++
+
+Provided for completeness and used internally e.g. on one point grids::
+
+   grid.set_boundary_points(dn.grid.mask.Clear())
+
+.. code-block:: rst
 
 Creating a ModelRun-object
 =====================================
 
-The ``ModelRun``-object is the second central object and contain all forcing and boundary data. This object is always defined for a certain grid and a certain time (if start_time/end_time is not given, it assumes default values::
+The ``ModelRun``-object is the second central object and contain all forcing and boundary data. This object is always defined for a certain grid and a certain time::
 
-   model = mdl.ModelRun(grid, start_time='2018-08-25T00:00', end_time='2018-08-25T01:00')
+   model = dn.modelrun.ModelRun(grid, start_time='2018-08-25T00:00', end_time='2018-08-25T01:00')
 
 .. code-block:: rst
+
+If you need to prepare forcing files for a long hindcast, it might pay of to use e.g. monthly files. Then a good possibility can be to define the time with the alternative format::
+
+   model = dn.modelrun.ModelRun(grid, year=2020, month=5)
+
+.. code-block:: rst
+
+This is equivalent to using a ``start_time='2020-05-01T00:00'`` and ``end_time='2020-05-01T23:00'``. If you need the first hour of the next month for e.g. hotstart-purposes, then::
+
+   model = dn.modelrun.ModelRun(grid, year=2020, month=5, hotstart_hour=True)
+
+.. code-block:: rst
+
+This is equivalent to using a ``start_time='2020-05-01T00:00'`` and ``end_time='2020-06-01T00:00'``
+
+
 
 The grid data can now be exported in a certain format using a ``GridWriter``. To export in WAVEWATCH III format::
 
@@ -370,6 +464,50 @@ The third level is to actualy create a new template for this type of model runs,
 
 .. code-block:: rst
 
+
+
+
+
+Dependencies
+=====================================
+1. Installation of **SWAN**. The latest SWAN version can be downloaded from https://sourceforge.net/projects/swanmodel/files/swan/ . The installation procedure can be found in: https://swanmodel.sourceforge.io/online_doc/swanimp/node4.html
+
+2. Installation of **WAVEWATCH III**. The latest model version can be downloaded from https://github.com/NOAA-EMC/WW3 . The installation procedure can be found in: https://github.com/NOAA-EMC/WW3/wiki/Quick-Start
+
+3. Installation of **SWASH**. The latest model version can be downloaded from https://sourceforge.net/projects/swash/ . The installation procedure can be found in: https://swash.sourceforge.io/online_doc/swashimp/node4.html
+
+4. Installation of **HOS-ocean**. The latest HOS-ocean version can be downloaded from https://github.com/LHEEA/HOS-ocean . The installation procedure can be found in: https://github.com/LHEEA/HOS-ocean/wiki/Installation
+
+5. Installation of **REEF3D**. The latest REEF3D and DIVEMesh versions can be downloaded from https://github.com/REEF3D . The installation procedure can be found in: https://reef3d.wordpress.com/installation/ . Note: Only REEF3D::FNPF has been tested in dnora.
+
+To run the models within dnora, the paths, where the models are installed, need to be defined in .bashrc, e.g., ::
+
+   export PATH=${PATH}:/home/user/Programs/swan
+
+   export PATH=${PATH}:/home/user/Programs/swash
+
+   export PATH=${PATH}:/home/user/Programs/HOS-ocean/bin
+
+   export PATH=${PATH}:/home/user/Programs/REEF3D_xx/DIVEMesh/bin
+   export PATH=${PATH}:/home/user/Programs/REEF3D_xx/REEF3D/bin
+
+   source ~/.bashrc
+
+
+.. code-block:: rst
+
+3. Fimex is a the File Interpolation, Manipulation and EXtraction library for gridded geospatial data (more info in \url{httpshttps://wiki.met.no/fimex/start}). Fimex is used in DNORA for the preparation of forcing fields (wind). **In case of running the spectral model without wind forcing, the fimex installation can be neglected**.  A detailed installation procedure can be find in https://wiki.met.no/fimex/install. For a quick installation in Linux-Ubuntu, you can follow the steps: open the Synaptic Package Manager (to install it: sudo apt-get install synaptic
+) --> Settings --> Repositories --> Other Software --> Add:  **ppa:met-norway/fimex** to your system's Software Sources (see https://launchpad.net/~met-norway/+archive/ubuntu/fimex). Then, search and mark for installation a latest version of fimex, and press apply installation. Check the installation (usually it is installed in /usr/bin/) by typing in command line: fimex or fimex-xxx where xxx is the version number. In case that only fimex-xxx works then add a symbolic link::
+
+      cd /usr/bin
+      sudo ln -s fimex-xxx fimex
+
+.. code-block:: rst
+
+Folders, filenames and URL's in DNORA
+=====================================
+
+[To be added]
 
 .. toctree::
    :maxdepth: 2
