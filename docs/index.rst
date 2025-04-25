@@ -581,10 +581,53 @@ If the user needs to change something else than the whitecapping coefficient, th
 
 The second function simply executes the model. It runs with OpenMP parallelization. To change the amount of processes, ute the keyword ``nproc=2`` (default: 4).
 
++++++++
+WAVEWATCH III
++++++++
 
+WAVEWATCH III is a bit more complicated to run compared to SWAN, since you need to pre-process the grid, forcing etc. The workflow here still needs to be improved, especially if using a super computer, but running a test locally for now works like this (after exporting all the data etc.)::
+
+   exe = dn.executer.WW3(model)
+   exe.write_grid_file()
+   exe.write_wind_file()
+   exe.write_spectra_file()
+   exe.write_input_file()
+
+   exe.run_grid()
+   exe.run_wind()
+   exe.run_spectra()
+   exe.run_model()
+
+.. code-block:: rst
+
+This assumes that ``DNORA_WW3_PATH`` has been set (see section on environmental variables). Alternatively the path can be provided using the keyword ``model_folder``. Note, that the ``run_model`` method also automatically runs the post-processing programs to get gridded and spectral files from binary to netcdf files (``ounf`` and ``ounp``).
+
+If you are just preparing the forcing an plan on copying the forcing files to a server and running WAVEWATCH III there, then you can speficy where the forcing files will be on the server when writing the input files for the pre-processors::
+
+   exe.write_grid_file(folder_on_server='/server/data/grids')
+   exe.write_wind_file(folder_on_server='/server/data/winds')
+   exe.write_spectra_file(folder_on_server='/server/data/spectra')
+
+.. code-block:: rst
+
+For the input file written for the spectral pre-processor (``write_spectra_file``) you can also specify the method WAVEWATCH III will use to interpolate the boundary spectra: ``method='nearest'`` (default) or ``'linear'``.
+
+WAVEWATCH III can also be run with homogeneous input. You could creaty dummy constant files, but you can also set this when writing the input file::
+
+   exe.write_input_file(homog={"wind": (10, 0)})
+
+.. code-block:: rst
+
+Here, ``(10, 0)`` referres to the ``u`` and ``v`` components respectively. You can also specify a constant current and waterlevel: 
+
+``homog={"wind": (10, 0), "current": (-1,0), "waterlevel": 3}``
 
 Folders, filenames and URL's in DNORA
 =====================================
+
++++++
+Using filenames and folders
++++++
 
 The default file names and directories used in DNORA are defined in the ``export_default.yml``-file. These are names that we deemed to make most sense for specific models, but you can specify other names on export. The names are created based on tags, which can be used both in default names and user specified names.
 
@@ -618,6 +661,7 @@ If you want to export this to a folder that has a nested monthly structure, drop
 This creates the nested folders and writes to: ``ExampleGrid_SWAN/2020/03/windNORA3_20200301_20200330.txt``
 
 These tags are also used by the function that read data. E.g. the url to the NORA3 spectral files is a combination of ``'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/%Y/%m'`` and ``'SPC%Y%m%d00.nc'``-
+
 
 +++++++
 Explanation of tags
@@ -678,38 +722,80 @@ There are a couple more that are used mostly for caching purposes. These are all
    ``'#ModelRun'``: The name of the ModelRun-object containing the data. Default to ``'dnoramodelrun'`` in our example.
 
 
-Download data
+Data sources and environmental variables
 =============================================
-You can easily execute only a part of the workflow. For example, say you only want to download NORA3 wind and wave data around the area of Bergen, Norway for January 2020, but don't really want to worry about any specific model or model grid::
 
-   import dnora as dn
-   area = dn.grid.Grid(lat=(60.0, 60.6), lon=(4.4, 5.9), name="Bergen")
-   
-   model = dn.modelrun.NORA3(area, year=2020, month=1)
-   model.import_wind()
-   model.import_spectra()
++++++++
+Data sources
++++++++
+
+Since the same data might exist in several places, DNORA has formalized different sources to get data from. They are defined in ``dnora.type_manager.data_sources.DataSource``, but the user can refer to them using string if needed:
+
+   ``DataSource.LOCAL``: A local file on e.g. your own computer
+
+   ``DataSource.REMOTE``: A remote server, e.g. MET Norway's thredds-server or the copernicus database
+
+   ``DataSource.CREATION``: Data that is being created on the fly, e.g. a "reader" that creates constant data
+
+   ``DataSource.INTERAL``: Used internally in MET Norway, but can be used to have an alternative pre-defined path to ``LOCAL`` or ``REMOTE``
+
+   ``DataSource.IMMUTABLE``: As ``INTERNAL``
+
+   ``DataSource.UNDEFINED``: Used as a default source in abstract classes etc.
+
++++++++
+Environmental variables
++++++++
+
+DNORA can use enironmental variables to point to fixed locations. That way a folder name that is being used constantly doesn't need to be provided. The environmental variables can be valid for an enitre ``DataSource``, or specific for a ``DataSource`` and data type. A data type specific variable has priority over a general one. For example, to read boundary spectra from an internal source, DNORA first searches for the environmental variable ``DNORA_INTERAL_SPECTRA_PATH``. If that is not found, it uses ``DNORA_INTERNAL_PATH``. 
+
+The enivronmental variables can also be used to specify where the different wave models are installed, e.g. by specifying ``DNORA_SWAN_PATH`` or ``DNORA_WW3_PATH``.
+
+You can set the enivronmental variable in three ways:
+
+1) ``export DNORA_INTERNAL_PATH=/path/to/internal/source``, preferrable in your ``.bashrc``
+2) Set the environmental variable for a project folder only by creating a ``.env`` file with ``DNORA_INTERNAL_PATH=/path/to/internal/source``
+3) Set the environmental variable for a single script: ``os.environ['DNORA_INTERNAL_PATH'] = '/path/to/internal/source'``
+
+
+++++++++
+Data sources for storing bathymetry
+++++++++
+
+Specifically we might want to store bathymetric data in one place, since they are typically being used across several project. For example if we want to use EMODNET data for the first time::
+
+   area = dn.grid.EMODNET(lat=(60.0, 60.6), lon=(4.4, 5.9), name="Bergen")
+   area.import_topo()
 
 .. code-block:: rst
 
-Dnora automatically expands the download area with 20% for wind and 50% for wave spectra to make sure you get data covering the whole area. This might be important when the wave model interpolates the data to its own grid. If you want exactly the area you defined, use the keyword ``expansion_factor=1`` in both import methods.
+The needed tiles will be download into a folder ``'EMODNET/2022'`` in the folder where you run your script. If you then want to use it in another place, the reader won't find it. You can tell the reader to store it in a central place by specifying a folder::
 
-Say you wan't your data in netcdf files, but you want to make sure that your wave spectra have the convention 'coming from'. You can then first set the convention, and use the Netcdf-exporter to write the data::
-
-   model.spectra().set_convention('met')
-
-   exp = dn.exporter.Netcdf(model)
-   exp.export_wind()
-   exp.export_spectra()
+   area.import_topo(folder='/folder/for/bathymetric_data')
 
 .. code-block:: rst
 
-In this case the NORA3 wave spectra actually had the directional convention 'going to', but you don't neew to know that. If the convention would have been right from the start, the ``set_convention``-method would have done nothing. If you would have wanted ERA5 data instead, just change the line to::
+Then this needs to be given every time. The better way is to set an environmental variable::
 
-   model = dn.modelrun.ERA5(area, year=2020, month=1)
+   export DNORA_LOCAL_GRID_PATH=/folder/for/bathymetric_data
 
 .. code-block:: rst
 
+Then all bethymetric data that is automatically be downloaded will be stored there. If you download data manually and place it there (e.g. Kartverket50m), then it will also be found automatically between projects.
 
+If you have an internal common storage that is separate from your own computer, then you can also define a path to that::
+
+   export DNORA_INTERNAL_GRID_PATH=/lustre/projects/wave_modelling/bathymetry
+
+.. code-block:: rst
+
+You obviously access that storage by providing the folder explicitly, but by setting the environmental variable you can just switch the source::
+
+   # These two are now equivalent
+   area.import_topo(folder='/lustre/projects/wave_modelling/bathymetry')
+   area.import_topo(source='internal')
+
+.. code-block:: rst
 
 
 
