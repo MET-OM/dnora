@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=42", "wheel", "setuptools_scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dnora"
+version = "1.4.1"  
+description = "dnora - a software for dynamical downscaling of wave products i.e., NORA3 wave hindcast and WAM4 wave forecast from MET Norway"
+authors = authors = [ { name = "Konstantinos Christakos"}, { name = "Jan-Victor Björkqvist" } ]
+license = {text = "GPLv2"}
+urls = {homepage = "https://github.com/MET-OM/dnora", download = "https://github.com/MET-OM/dnora"}
+
+dependencies = [
+    "matplotlib>=3.1",
+    "numpy>=1.17",
+    "scipy>=1.7",
+    "netCDF4",
+    "pandas",
+    "xarray>=0.20.1",
+    "meshio",
+    "utm",
+    "dask",
+    "pytest",
+    "cmocean",
+    "cartopy",
+    "cdsapi",
+]
+
+[project.urls]
+repository = "http://github.com/MET-OM/dnora"
+
+[tool.setuptools]
+packages = ["dnora"]  
+include-package-data = true
+
