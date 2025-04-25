@@ -6,8 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "dnora"
 version = "1.4.1"  
 description = "dnora - a software for dynamical downscaling of wave products i.e., NORA3 wave hindcast and WAM4 wave forecast from MET Norway"
-authors = authors = [ { name = "Konstantinos Christakos"}, { name = "Jan-Victor Björkqvist" } ]
-license = {text = "GPLv2"}
+authors = [ { name = "Konstantinos Christakos"}, { name = "Jan-Victor Björkqvist" } ]
+license = "GPLv2"
 urls = {homepage = "https://github.com/MET-OM/dnora", download = "https://github.com/MET-OM/dnora"}
 
 dependencies = [
@@ -25,9 +25,6 @@ dependencies = [
     "cartopy",
     "cdsapi",
 ]
-
-[project.urls]
-repository = "http://github.com/MET-OM/dnora"
 
 [tool.setuptools]
 packages = ["dnora"]  
