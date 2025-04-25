@@ -354,11 +354,11 @@ You can also now import boundary spectra and ice simply by calling those import 
 
 .. code-block:: rst
 
+You typically want to import two types of data: gridded or non-gridded. Examples of gridded data are wind, ice and currents. An example of non-gridded data is boundary spectra.
+
 +++++++++++++++++++++
 Import of gridded data
 +++++++++++++++++++++
-
-You typically want to import two types of data: gridded or non-gridded. Examples of gridded data are wind, ice and currents. An example of non-gridded data is boundary spectra.
 
 For gridded data the import-method automaticall gets all data that covers the grid you provided, but expands it by 20% to make sure the edges are covered (needed for interpolation etc.). If the imported area is too small or too large, this can be controlled by a keyword::
 
@@ -583,39 +583,100 @@ The second function simply executes the model. It runs with OpenMP parallelizati
 
 
 
-File names and directories
+Folders, filenames and URL's in DNORA
 =====================================
 
-The default file names and directories used in dnora are defined in the ``defaults.py``-file. Different default can be generated for different models, but the styles are not inherently linked to a certain models (see example below).
+The default file names and directories used in DNORA are defined in the ``export_default.yml``-file. These are names that we deemed to make most sense for specific models, but you can specify other names on export. The names are created based on tags, which can be used both in default names and user specified names.
 
-The default file names and folders used by the different writers are set within the writers, and they convey their preference to the ``ModelRun``-object. These defaults are used if the user doesn't provide anything explicitly. For example, the default file name for writing wind forcing for the SWAN model is::
+Say we have the following setup::
 
-   wind#Forcing#Grid#T0_#T1.asc
+   grid = dn.grid.Grid(lon=(5,10), lat=(55,58), name='ExampleGrid')
+   model = dn.modelrun.NORA3(grid, year=2020, month=3)
+   model.import_spectra()
+   model.import_wind()
 
-
-.. code-block:: rst
-
-where ``#Forcing`` and ``#Grid`` will be replaced by the name of the forcing and grid of the ``ModelRun``-object, and ``#T0`` and ``#T1`` will be replaced by the start and end times, formatted according to the default format: ``%Y%m%d``.
-
-Let's say we want to run an operation version of the SWAN model for the grid name "Sula", and want to have the forcing file name in the format: ``WIND_Sula_2018010106Z.asc``, where the time is the start time. The first way to do this is to provide this information to the method doing the writing, e.g.::
-
-   model.export_forcing(wnd.write.SWAN(), filestring="WIND_#Grid_#T0Z.asc", datestring="%Y%m%d%H")
+   exp = dn.export.SWAN(model)
 
 .. code-block:: rst
 
-If this is used often, then these values can be added to ``defaults.py`` under the name "SWAN_oper". Then we can simply set the preference format upon initialization of the ``ForcingWriter``::
+If we now run ``exp.export_wind()``, then the SWAN defaults are
 
-   model.export_forcing(wnd.write.SWAN(out_format='SWAN_oper'))
+   filename: ``'wind#WIND#GRID#T0_#T1'``
+
+   extension: ``'asc'``
+
+   folder: ``#GRID_SWAN``
+
+This means that a folder will be created and the file will be written to: ``ExampleGrid_SWAN/windNORA3ExampleGrid20200301_20200330.asc`` (we use dense naming because SWAN has character limits in the input file)
+
+If you want to export this to a folder that has a nested monthly structure, drop the grid name from the filename and change the extension to ``'.txt'``::
+
+   exp.export_wind(folder='#GRID_SWAN/#FT0', dateformat_folder='%Y/%m', filename='wind#WIND_#T0_#T1.txt')
 
 .. code-block:: rst
 
-The third level is to actualy create a new template for this type of model runs, which can be done (for example) as a subclass of the ``SWAN``-template::
+This creates the nested folders and writes to: ``ExampleGrid_SWAN/2020/03/windNORA3_20200301_20200330.txt``
 
-   class SWAN_oper(SWAN):
-       def _get_forcing_writer(self):
-           return wnd.write.SWAN(out_format='SWAN_oper')
+These tags are also used by the function that read data. E.g. the url to the NORA3 spectral files is a combination of ``'https://thredds.met.no/thredds/dodsC/windsurfer/mywavewam3km_spectra/%Y/%m'`` and ``'SPC%Y%m%d00.nc'``-
 
-.. code-block:: rst
++++++++
+Explanation of tags
++++++++
+
+
+The following tags referring to objects now mean (example where possible):
+
+   ``'#GRID'``: Name of the grid object ``model.grid()`` (e.g. ``'ExampleGrid'``)
+
+   ``'#WIND'``: Name of the wind forcing object ``model.wind()`` (e.g. ``'NORA3'``)
+
+   ``'#SPECTRA'``: Name of the boundary spectra object ``model.spectra()`` (e.g. ``'NORA3'``)
+
+   ``'#SPECTRA1D'``: Name of the omnidirectional spectra object ``model.spectra1d()`` 
+
+   ``'#ICE'``: Name of the ice object ``model.ice()``
+
+   ``'#WATERLEVEL'``: Name of the waterlevel object ``model.waterlevel()``
+
+   ``'#CURRENT'``: Name of the current object ``model.current()``
+
+
+The following tags refer to the properties of the setup:
+
+
+   ``'#T0'``: Start time of the model run (e.g. ``'20200301T00'`` if given in combination with ``dateformat='%Y%m%dT%H'``) 
+
+   ``'#T1'``: End time of the model run (e.g. ``'20200330T23'`` if given in combination with ``dateformat='%Y%m%dT%H'``)
+
+   ``'#FT0'``: Same as ``'#T0'``, but for folders (e.g. ``'202003'`` if given in combination with ``dateformat_folder='%Y%m'``)
+
+   ``'#FT1'``: Same as ``'#T1'``, but for folders (e.g. ``'202003'`` if given in combination with ``dateformat_folder='%Y%m'``)
+
+   ``'#LON0'``: Eastern edge of object (e.g. ``'05.00'`` if given in combination with ``coord_format='02.2f'`` when exporting ``model.grid()``)
+
+   ``'#LON1'``: Western edge of object (e.g. ``'10.00'`` if given in combination with ``coord_format='02.2f'`` when exporting ``model.grid()``)
+
+   ``'#LAT0'``: Southern edge of object (e.g. ``'05.00'`` if given in combination with ``coord_format='02.2f'`` when exporting ``model.grid()``)
+
+   ``'#LAT1'``: Northern edge of object (e.g. ``'10.00'`` if given in combination with ``coord_format='02.2f'`` when exporting ``model.grid()``)
+
+   ``'#X0'``: Left edge of cartesian object. Format specifiel by ``cartesian_coord_format``
+
+   ``'#X1'``: Right edge of cartesian object. Format specifiel by ``cartesian_coord_format``
+
+   ``'#Y0'``: Lower edge of cartesian object. Format specifiel by ``cartesian_coord_format``
+
+   ``'#Y1'``: Upper edge of cartesian object. Format specifiel by ``cartesian_coord_format``
+
+
+There are a couple more that are used mostly for caching purposes. These are all forced to lowercase:
+
+   ``'#DataType'``: The name of the datatype being exported, e.g. ``'wind'`` when exporting ``model.wind()``
+
+   ``'#ObjectName'``: The name of the object being exported, e.g. ``'nora3'`` when exporting ``model.wind()`` in our example.
+
+   ``'#ModelRun'``: The name of the ModelRun-object containing the data. Default to ``'dnoramodelrun'`` in our example.
+
 
 Download data
 =============================================
@@ -688,8 +749,7 @@ To run the models within dnora, the paths, where the models are installed, need 
 
 .. code-block:: rst
 
-Folders, filenames and URL's in DNORA
-=====================================
+
 
 [To be added]
 
