@@ -188,7 +188,7 @@ However, it does make use of an API provided by (https://github.com/cywhale/gebc
 
 The functionality will be improved in future versions.
 
-Refereces: https://gebco.net, https://github.com/cywhale/gebco
+References: https://gebco.net, https://github.com/cywhale/gebco
 
 +++++++
 Karverket-50m (``dnora.read.grid.KartverketNo50m``)
@@ -623,6 +623,77 @@ Here, ``(10, 0)`` referres to the ``u`` and ``v`` components respectively. You c
 ``homog={"wind": (10, 0), "current": (-1,0), "waterlevel": 3}``
 
 The physics used by WAVEWATCH III (i.e. ST4, ST6) is determined at compile time, and specifying these are therefore not a part of DNORA. If you want to change other setting (such as BETAMAX), this is done in the ``namelists.nml`` file. It is empty by default, so this needs to be done manually for now.
+
+
+Main data sets
+=====================================
+
+DNORA can read data from many different sources, but the main ones are given below, with a breif description and guide to usage.
+
+
+++++++++
+NORA3 (``dnora.modelrun.NORA3``)
+++++++++
+
+**Description**: NORA3 is an atmospheric and wave hindcasts downscaled from ERA5 to a 3 km resolution. The athmospheric hindcast covers North Sea, the Norwegian Sea, and the Barents Sea. The wave hindcast covers a larger area, and uses ERA5 winds outside the atmospheric domain. 
+
+**Availablity in DNORA**: You can download the wind (3 km resolution), wave spectra (stored at about a 30 km resolution) and the ice used to force the wave model (3 km resolution). 
+
+**Steps needed to access data**: None. Available on the MET Norway thredds server. 
+
+**Minimal example**: A minimal example to get NORA3 data for an area and save it as netcdf is::
+
+   import dnora as dn
+   
+   area = dn.grid.Grid(lat=(60.0, 60.6), lon=(4.4, 5.9), name="Bergen")
+   model = dn.modelrun.NORA3(area, year=2020, month=2, day=15)
+   model.import_wind()
+   model.import_spectra()
+   model.import_ice()
+   
+   exp = dn.export.Netcdf(model)
+   exp.export_wind()
+   exp.export_spectra()
+   exp.export_ice()
+   
+.. code-block:: rst
+
+**References**: 
+
+Haakenstad, H., Breivik, Ø., Furevik, B. R., Reistad, M., Bohlinger, P., & Aarnes, O. J. (2021). NORA3: A Nonhydrostatic High-Resolution Hindcast of the North Sea, the Norwegian Sea, and the Barents Sea, Journal of Applied Meteorology and Climatology, 60(10), 1443-1464, https://doi.org/10.1175/JAMC-D-21-0029.1
+
+Breivik, Ø., Carrasco, A., Haakenstad, H., Aarnes, O. J., Behrens, A., Bidlot, J.-R., et al. (2022). The impact of a reduced high-wind Charnock parameter on wave growth with application to the North Sea, the Norwegian Sea, and the Arctic Ocean. Journal of Geophysical Research: Oceans, 127, e2021JC018196. https://doi.org/10.1029/2021JC018196
+
+
+++++++++
+Operational WW3-4km and MEPS (``dnora.modelrun.WW3_4km``)
+++++++++
+
+**Description**: This is the operational wave and wind data of MET Norway that is run four times per day (00, 06, 12 and 18 UTC) for 67 (MEPS) and 73 (WW3) hours. The wave model is a 4 km WAVEWATCH III implementation forced by one deterministic member of the MEPS atmospheric forecasta, which is a 2.5 km Arome model.
+
+**Availablity in DNORA**: You can download the wind (2.5 km resolution) and wave spectra (irregular spacing). Since this is an operational product the files overlap. DNORA automatically patches the data to use the first 6 hours, but uses longer lead times if files are missing to get a continues data set. See more in section "Working with forecast data"
+
+**Steps needed to access data**: None. Available on the MET Norway thredds server. 
+
+**Minimal example**: A minimal example to get WW3 wave spectra and MEPS winds for an area and save it as netcdf is::
+
+   import dnora as dn
+   
+   area = dn.grid.Grid(lat=(60.0, 60.6), lon=(4.4, 5.9), name="Bergen")
+   model = dn.modelrun.WW3_4km(area, year=2020, month=2, day=15)
+   model.import_wind()
+   model.import_spectra()
+   
+   exp = dn.export.Netcdf(model)
+   exp.export_wind()
+   exp.export_spectra()
+
+.. code-block:: rst
+
+**References**: TBA
+
+Working with forecast data
+=====================================
 
 Folders, filenames and URL's in DNORA
 =====================================
