@@ -23,6 +23,7 @@ class FileNames:
     filename: str = None
     folder: str = None
     dateformat: str = None
+    dateformat_folder: str = None
     edge_object: DnoraDataType = None
     time_object: DnoraDataType = None
     start_time: str = None
@@ -65,7 +66,7 @@ class FileNames:
         )
 
     def get_dateformat_folder(self) -> str:
-        return self.dateformat or get_default_value(
+        return self.dateformat_folder or get_default_value(
             "dateformat_folder", self.obj_type, self.primary, self.fallback
         )
 

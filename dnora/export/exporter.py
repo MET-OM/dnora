@@ -59,6 +59,7 @@ class DataExporter:
         filename: str = None,
         folder: str = None,
         dateformat: str = None,
+        dataformat_folder: str = None,
         format: str = None,
         dry_run=False,
         **kwargs,
@@ -123,6 +124,7 @@ class DataExporter:
         filename: str,
         folder: str,
         dateformat: str,
+        dateformat_folder: str,
         writer_function: WriterFunction,
         format: str,
         **kwargs,
@@ -137,6 +139,7 @@ class DataExporter:
             filename=filename,
             folder=folder,
             dateformat=dateformat,
+            dateformat_folder=dateformat_folder,
             edge_object=edge_object,
         )
         if self.dry_run():
