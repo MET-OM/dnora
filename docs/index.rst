@@ -622,6 +622,8 @@ Here, ``(10, 0)`` referres to the ``u`` and ``v`` components respectively. You c
 
 ``homog={"wind": (10, 0), "current": (-1,0), "waterlevel": 3}``
 
+The physics used by WAVEWATCH III (i.e. ST4, ST6) is determined at compile time, and specifying these are therefore not a part of DNORA. If you want to change other setting (such as BETAMAX), this is done in the ``namelists.nml`` file. It is empty by default, so this needs to be done manually for now.
+
 Folders, filenames and URL's in DNORA
 =====================================
 
