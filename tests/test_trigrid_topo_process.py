@@ -36,7 +36,7 @@ def test_min_depth():
     )
     topo_reader = ConstantData(vars={"topo": 999.0})
     grid.import_topo(topo_reader)
-    grid.process_grid(SetMinDepth(depth=1000), raw=True)
+    grid.process_grid(SetMinDepth(min_depth=1000), raw=True)
     np.testing.assert_array_almost_equal(grid.raw().topo().mean(), 1000)
 
     grid.mesh_grid()
@@ -51,7 +51,7 @@ def test_max_depth():
     )
     topo_reader = ConstantData()
     grid.import_topo(topo_reader, topo=999.0)
-    grid.process_grid(SetMaxDepth(depth=100), raw=True)
+    grid.process_grid(SetMaxDepth(max_depth=100), raw=True)
     np.testing.assert_array_almost_equal(grid.raw().topo().mean(), 100)
 
     grid.mesh_grid()
