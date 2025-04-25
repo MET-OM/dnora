@@ -13,7 +13,7 @@ from pathlib import Path
 
 if TYPE_CHECKING:
     from dnora.read.abstract_readers import DataReader
-from dnora.type_manager.data_sources import DataSource
+from dnora.type_manager.data_sources import DataSource, data_source_from_string
 from dnora.type_manager.dnora_types import DnoraDataType
 import matplotlib.pyplot as plt
 from .topo import import_topo
@@ -104,12 +104,12 @@ class Grid(GriddedSkeleton):
     def import_topo(
         self,
         topo_reader: DataReader = None,
-        source: str | DataSource = None,
+        source: str | DataSource = DataSource.LOCAL,
         folder: str = None,
         **kwargs,
     ) -> None:
-        if folder is None:
-            folder = read_environment_variable(DnoraDataType.GRID, DataSource.LOCAL)
+        source = data_source_from_string(source)
+        folder = read_environment_variable(DnoraDataType.GRID, source)
         topo_reader = topo_reader or self._default_reader
         raw_topo = import_topo(self, topo_reader, source, folder, **kwargs)
         self._raw = raw_topo
