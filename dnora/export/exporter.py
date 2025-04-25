@@ -101,6 +101,7 @@ class DataExporter:
             filename,
             folder,
             dateformat,
+            dateformat_folder,
             writer_function=writer_function,
             format=format,
             **kwargs,
