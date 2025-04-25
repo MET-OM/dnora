@@ -46,20 +46,28 @@ class SetMinDepth(GridProcessor):
     are set to land. Otherwise the shallow points are set to min_depth.
     """
 
-    def __init__(self, depth: float = 2.0):
-        self.depth = float(depth)
+    def __init__(self, min_depth: float = 2.0, to_land: bool = False):
+        self.min_depth = float(min_depth)
+        self.to_land = to_land
 
     def __call__(
         self,
         grid: Union[Grid, UnstrGrid],
-        to_land: bool = False,
+        min_depth: float = None,
+        to_land: bool = None,
         ignore_land_mask: bool = False,
         **kwargs,
     ):
-        data = grid.topo()
-        self.to_land = to_land
 
-        shallow_points = data < self.depth
+        if min_depth is None:
+            min_depth = self.min_depth
+
+        if to_land is None:
+            to_land = self.to_land
+
+        data = grid.topo()
+
+        shallow_points = data < min_depth
         if ignore_land_mask:
             mask = shallow_points
         else:
@@ -68,7 +76,7 @@ class SetMinDepth(GridProcessor):
         if to_land:
             new_value = np.nan
         else:
-            new_value = self.depth
+            new_value = min_depth
 
         new_data = copy(data)
         new_data[mask] = new_value
@@ -78,9 +86,9 @@ class SetMinDepth(GridProcessor):
 
     def __str__(self):
         if self.to_land:
-            return f"Setting points shallower than {self.depth} to land (NaN)"
+            return f"Setting shallow points to land (NaN)"
         else:
-            return f"Setting points shallower than {self.depth} to {self.depth}"
+            return f"Setting minimum depth"
 
 
 class SetMaxDepth(GridProcessor):
@@ -90,29 +98,33 @@ class SetMaxDepth(GridProcessor):
     are set to land. Otherwise the shallow points are set to depth.
     """
 
-    def __init__(self, depth: float = 999.0):
-        self.depth = float(depth)
+    def __init__(self, max_depth: float = 999.0):
+        self.max_depth = float(max_depth)
 
     def __call__(
         self,
         grid: Union[Grid, UnstrGrid],
+        max_depth: float = None,
         **kwargs,
     ):
         data = grid.topo()
 
-        deep_points = data > self.depth
+        if max_depth is None:
+            max_depth = self.max_depth
+
+        deep_points = data > max_depth
 
         new_data = copy(data)
         new_data[np.logical_and(deep_points, grid.sea_mask())] = (
-            self.depth
-        )  # Don't touch land points
+            max_depth  # Don't touch land points
+        )
         msg.plain(
             f"Affected {np.count_nonzero(np.logical_and(deep_points, grid.sea_mask()))} points"
         )
         return new_data
 
     def __str__(self):
-        return f"Setting points deeper than {self.depth} to {self.depth}"
+        return f"Capping to a max depth"
 
 
 class SetConstantDepth(GridProcessor):

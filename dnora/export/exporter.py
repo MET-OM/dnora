@@ -59,7 +59,7 @@ class DataExporter:
         filename: str = None,
         folder: str = None,
         dateformat: str = None,
-        format: str = None,
+        dateformat_folder: str = None,
         dry_run=False,
         **kwargs,
     ) -> None:
@@ -100,8 +100,8 @@ class DataExporter:
             filename,
             folder,
             dateformat,
+            dateformat_folder,
             writer_function=writer_function,
-            format=format,
             **kwargs,
         )
 
@@ -123,20 +123,21 @@ class DataExporter:
         filename: str,
         folder: str,
         dateformat: str,
+        dateformat_folder: str,
         writer_function: WriterFunction,
-        format: str,
         **kwargs,
     ) -> list[str]:
         # Controls generation of file names using the proper defaults etc.
-        format = format or self._get_default_format()
+
         edge_object = kwargs.get("edge_object")
         file_object = FileNames(
-            format=format,
+            format=self._get_default_format(),
             obj_type=obj_type,
             model=self.model,
             filename=filename,
             folder=folder,
             dateformat=dateformat,
+            dateformat_folder=dateformat_folder,
             edge_object=edge_object,
         )
         if self.dry_run():

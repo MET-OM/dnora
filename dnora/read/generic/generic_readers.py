@@ -17,7 +17,9 @@ from dnora import msg, utils
 from .constant_funcs import create_constant_array, print_constant_values
 from dnora.read.data_var_decoding import read_data_vars, compile_data_vars
 from copy import copy
-from geo_skeletons import GriddedSkeleton
+from geo_skeletons import GriddedSkeleton, PointSkeleton
+
+import geo_parameters as gp
 
 
 def read_cached_filelist(folder, filename, silent: bool = False):
@@ -64,10 +66,6 @@ class PointNetcdf(SpectralDataReader):
     def caching_strategy() -> CachingStrategy:
         return CachingStrategy.DontCacheMe
 
-    @staticmethod
-    def returning_ds() -> bool:
-        return True
-
     def __init__(self, files: list[str] = None):
         self.files = files
 
@@ -82,7 +80,6 @@ class PointNetcdf(SpectralDataReader):
             ds = xr.open_dataset(filepath)
 
         lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
-        # self.set_convention(ds.attrs.get("dnora_spectral_convention", "undefined"))
         return {"lon": lon, "lat": lat, "x": x, "y": y}
 
     def __call__(
@@ -107,9 +104,28 @@ class PointNetcdf(SpectralDataReader):
             ds = xr.open_dataset(filepath)
             msg.from_file(filepath)
 
-        cls = dnora_objects.get(obj_type)
+        # We are reading an uinstructured Netcdf-files, so can't use a structured class
+        if obj_type == DnoraDataType.GRID:
+            cls = PointSkeleton.add_datavar(gp.ocean.WaterDepth("topo"))
+        else:
+            cls = dnora_objects.get(obj_type)
         # This geo-skeleton method does all the heavy lifting with decoding the Dataset to match the class data variables etc.
-        data = cls.from_ds(ds).sel(inds=inds)
+        data = cls.from_ds(ds)
+
+        if inds is not None:
+            data = data.isel(inds=inds)
+        else:
+            expansion_factor = kwargs.get("expansion_factor", 1.2)
+
+            lon, lat = utils.grid.expand_area(
+                grid.edges(data.core.x_str),
+                grid.edges(data.core.y_str),
+                expansion_factor,
+            )
+            data = data.sel(lon=slice(*lon), lat=slice(*lat))
+        if "time" in data.core.coords():
+            data = data.sel(time=slice(start_time, end_time))
+
         # Set reader convention. This is used by the import method to set correct convention to the instance
         convention = convention or data.meta.get().get(
             "dnora_spectral_convention", "undefined"
@@ -127,10 +143,6 @@ class Netcdf(DataReader):
     @staticmethod
     def caching_strategy() -> CachingStrategy:
         return CachingStrategy.DontCacheMe
-
-    @staticmethod
-    def returning_ds() -> bool:
-        return True
 
     def __init__(self, files: list[str] = None):
         self.files = files
@@ -160,13 +172,17 @@ class Netcdf(DataReader):
             grid.edges("lon"), grid.edges("lat"), expansion_factor
         )
 
-        ds = xr.open_mfdataset(filepath).sel(
-            lon=slice(*lon), lat=slice(*lat), time=slice(start_time, end_time)
-        )
+        cls = dnora_objects.get(obj_type)
+
+        if "time" in cls.core.coords():
+            ds = xr.open_mfdataset(filepath).sel(
+                lon=slice(*lon), lat=slice(*lat), time=slice(start_time, end_time)
+            )
+        else:
+            ds = xr.open_mfdataset(filepath).sel(lon=slice(*lon), lat=slice(*lat))
 
         msg.from_multifile(filepath)
 
-        cls = dnora_objects.get(obj_type)
         # This geo-skeleton method does all the heavy lifting with decoding the Dataset to match the class data variables etc.
         data = cls.from_ds(ds)
 

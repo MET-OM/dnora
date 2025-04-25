@@ -63,15 +63,25 @@ def import_topo(
         if not os.path.exists(aux_funcs.get_url(folder, topo_reader.name())):
             os.mkdir(aux_funcs.get_url(folder, topo_reader.name()))
 
-    coord_dict, data_dict, meta_dict = topo_reader(
+    # start_time, end_time and inds given to satisfy the generic Netcdf-readers
+    # Will need to fix this at some point
+    ds = topo_reader(
         obj_type=DnoraDataType.GRID,
         grid=grid,
         start_time=None,
         end_time=None,
         source=source,
         folder=folder,
+        inds=None,
         **kwargs,
     )
+
+    if not isinstance(ds, tuple):
+        coord_dict = {key: ds.get(key) for key in ["lon", "lat", "x", "y"]}
+        data_dict = {"topo": ds.get("topo").values}
+        meta_dict = ds.attrs
+    else:
+        coord_dict, data_dict, meta_dict = ds
 
     lon, lat, x, y = (
         coord_dict.get("lon"),
@@ -90,10 +100,10 @@ def import_topo(
         return
 
     if utils.grid.is_gridded(topo, lon, lat) or utils.grid.is_gridded(topo, x, y):
-        topo_grid = GriddedTopo(lon=lon, lat=lat, x=x, y=y)
+        topo_grid = GriddedTopo(lon=lon, lat=lat, x=x, y=y, name=topo_reader.name())
         topo_grid.set_spacing(nx=len(x or lon), ny=len(y or lat))
     else:
-        topo_grid = PointTopo(lon=lon, lat=lat, x=x, y=y)
+        topo_grid = PointTopo(lon=lon, lat=lat, x=x, y=y, name=topo_reader.name())
     if zone_number is not None:
         topo_grid.utm.set((zone_number, zone_letter))
 
@@ -116,6 +126,6 @@ def import_topo(
     topo_grid.set_topo(topo)
     # topo_grid = set_metaparameters_in_object(topo_grid, metaparameter_dict, data_dict)
     topo_grid.meta.set(meta_dict)
-    topo_grid.set_sea_mask(topo_grid.topo() > 0)
+    # topo_grid.set_sea_mask(topo_grid.topo() > 0)
 
     return topo_grid
