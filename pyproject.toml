@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dnora"
-version = "1.4.2"  
+version = "1.4.3"  
 description = "dnora - a software for dynamical downscaling of wave products i.e., NORA3 wave hindcast and WAM4 wave forecast from MET Norway"
 authors = [ { name = "Konstantinos Christakos"}, { name = "Jan-Victor Björkqvist" } ]
 urls = {homepage = "https://github.com/MET-OM/dnora", download = "https://github.com/MET-OM/dnora"}
