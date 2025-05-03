@@ -7,7 +7,7 @@ name = "dnora"
 version = "1.4.2"  
 description = "dnora - a software for dynamical downscaling of wave products"
 authors = [ { name = "Konstantinos Christakos"}, { name = "Jan-Victor Björkqvist" } ]
-license = "GPLv2"
+license = "GPL-2.0-only"
 urls = {homepage = "https://github.com/MET-OM/dnora", download = "https://github.com/MET-OM/dnora"}
 
 dependencies = [
