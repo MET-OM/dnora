@@ -1,6 +1,5 @@
 import unittest
 import sys
-sys.path.insert(0, "../../")
 from dnora.grd import Grid
 import numpy as np
 
