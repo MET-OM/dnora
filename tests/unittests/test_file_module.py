@@ -5,7 +5,7 @@ import os
 import yaml
 from dnora import file_module
 
-with open('data/defaults.yml', 'r') as file:
+with open('tests/unittests/data/defaults.yml', 'r') as file:
   defaults = yaml.safe_load(file)
 
 class GetDefaultValues(unittest.TestCase):
