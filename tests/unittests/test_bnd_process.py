@@ -6,23 +6,23 @@ import numpy as np
 from copy import copy
 
 def load_test_spec(shifted=False, math=False):
-	f = np.loadtxt('data/freq.test')
+	f = np.loadtxt('tests/unittests/data/freq.test')
 	if shifted:
 		if math:
-			D = np.loadtxt('data/dir_math_shifted.test')
+			D = np.loadtxt('tests/unittests/data/dir_math_shifted.test')
 		else:
-			D = np.loadtxt('data/dir_shifted.test')
+			D = np.loadtxt('tests/unittests/data/dir_shifted.test')
 	else:
 		if math:
-			D = np.loadtxt('data/dir_math.test')
+			D = np.loadtxt('tests/unittests/data/dir_math.test')
 		else:
-			D = np.loadtxt('data/dir.test')
+			D = np.loadtxt('tests/unittests/data/dir.test')
 
 	S=np.ones((2,2,len(f),len(D)), float)
-	S[0,0,:,:]=np.loadtxt('data/spec1.test')
-	S[0,1,:,:]=np.loadtxt('data/spec2.test')
-	S[1,0,:,:]=np.loadtxt('data/spec3.test')
-	S[1,1,:,:]=np.loadtxt('data/spec4.test')
+	S[0,0,:,:]=np.loadtxt('tests/unittests/data/spec1.test')
+	S[0,1,:,:]=np.loadtxt('tests/unittests/data/spec2.test')
+	S[1,0,:,:]=np.loadtxt('tests/unittests/data/spec3.test')
+	S[1,1,:,:]=np.loadtxt('tests/unittests/data/spec4.test')
 
 	return S, D
 
