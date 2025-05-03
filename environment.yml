@@ -9,7 +9,7 @@ dependencies:
   - netcdf4
   - netcdf-fortran
   - pandas
-  - xarray=>0.20.1
+  - xarray>=0.20.1
   - meshio
   - pip
   - utm
