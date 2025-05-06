@@ -316,10 +316,12 @@ class ModelRun:
 
         if not isinstance(point_picker, NearestGridPoint) and not self.dry_run():
             if not utils.grid.data_covers_grid(obj, self.grid()):
-                msg.warning(f"The imported data (lon: {obj.edges('lon')}, lat: {obj.edges('lat')}) does not cover the grid (lon: {self.grid().edges('lon')}, lat: {self.grid().edges('lat')})! Maybe increase the expansion_factor (now {expansion_factor}) in the import method?")
+                msg.warning(
+                    f"The imported data (lon: {obj.edges('lon')}, lat: {obj.edges('lat')}) does not cover the grid (lon: {self.grid().edges('lon')}, lat: {self.grid().edges('lat')})! Maybe increase the expansion_factor (now {expansion_factor}) in the import method?"
+                )
 
         if obj is None:
-            msg.warning('Could not import any data!!!')
+            msg.warning("Could not import any data!!!")
             return
 
         self[obj_type] = obj
@@ -522,7 +524,15 @@ class ModelRun:
     ) -> None:
 
         self._import_data(
-            DnoraDataType.ICE, name, dry_run, reader, expansion_factor,source, folder, filename, **kwargs
+            DnoraDataType.ICE,
+            name,
+            dry_run,
+            reader,
+            expansion_factor,
+            source,
+            folder,
+            filename,
+            **kwargs,
         )
 
     def spectra_to_1d(
@@ -613,6 +623,10 @@ class ModelRun:
             name=DnoraDataType.SPECTRALGRID.name, freq=freq, dirs=dirs
         )
 
+    def spectral_grid(self) -> Ice:
+        """Returns the spectral grid object if exists."""
+        return self._dnora_objects.get(DnoraDataType.SPECTRALGRID)
+
     def dry_run(self):
         """Checks if method or global ModelRun dryrun is True."""
         return self._dry_run or self._global_dry_run
@@ -648,10 +662,6 @@ class ModelRun:
     def ice(self) -> Ice:
         """Returns the ocean current object if exists."""
         return self._dnora_objects.get(DnoraDataType.ICE)
-
-    def spectral_grid(self) -> Ice:
-        """Returns the spectral grid object if exists."""
-        return self._dnora_objects.get(DnoraDataType.SPECTRALGRID)
 
     def process(
         self, obj_type: DnoraDataType | str, processor: GriddedDataProcessor
