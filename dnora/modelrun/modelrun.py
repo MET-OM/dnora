@@ -593,7 +593,7 @@ class ModelRun:
         freq: np.ndarray | None = None,
         dirs: np.ndarray | None = None,
         freq0: float = 0.04118,
-        nfreq: int = 32,
+        nfreq: int | None = None,
         ndir: int = 36,
         finc: float = 1.1,
         dirshift: float | None = None,
@@ -601,6 +601,8 @@ class ModelRun:
         """Sets spectral grid for model run. Will be used to write input files."""
         if freq is None:
             freq = np.array([freq0 * finc**n for n in np.linspace(0, nfreq - 1, nfreq)])
+        if nfreq is None:
+            nfreq = len(freq)
         if len(freq) < nfreq:
             start_freq = freq[-1]
             add_freq = np.array(
