@@ -2,6 +2,31 @@ import numpy as np
 from scipy import interpolate
 
 
+def jonswap1d(m0, fp, freq, gamma=3.3) -> np.ndarray:
+    alpha = 1  # We will normalize anyway
+    sigma_a = 0.07
+    sigma_b = 0.09
+    g = 9.81
+
+    E_JS = np.zeros((len(m0), len(freq)))
+    for n, (f, m) in enumerate(zip(fp, m0)):
+        E_JS[n, :] = (
+            alpha
+            * g**2
+            * (2 * np.pi) ** -4
+            * freq**-5
+            * np.exp(-5 / 4 * (freq / f) ** -4)
+        )
+        sigma = np.full(len(freq), sigma_a)
+        sigma[freq > f] = sigma_b
+        G_exp = np.exp(-0.5 * ((freq / f - 1) / sigma) ** 2)
+        E_JS[n, :] = E_JS[n, :] * gamma**G_exp
+        var = np.trapz(E_JS[n, :], freq)
+        E_JS[n, :] = E_JS[n, :] * m / var
+
+    return E_JS
+
+
 def interp_spec(f, D, S, fi, Di):
     """Interpolates a spectrum to new frequncy and directions.
     Spectrum is two dimensional (len(f), len(D))
