@@ -23,7 +23,8 @@ from dnora import msg
 from dnora.cacher.cache_decorator import cached_reader
 
 from dnora.defaults import read_environment_variable
-from dnora.read.spectra1d import SpectraTo1D
+from dnora.read.spectra import Spectra1DToSpectra
+from dnora.read.spectra1d import SpectraTo1D, WaveSeriesToJONSWAP1D
 from dnora.read.waveseries import Spectra1DToWaveSeries
 from dnora.type_manager.spectral_conventions import SpectralConvention
 from dnora.pick import Trivial
@@ -582,11 +583,65 @@ class ModelRun:
             **kwargs,
         )
 
+    def spectra1d_to_spectra(
+        self,
+        dry_run: bool = False,
+        name: str | None = None,
+        **kwargs,
+    ):
+        if self.spectra1d() is None:
+            msg.warning("No Spectra1D to convert to Spectra!")
+            return
+
+        if self.waveseries() is not None:
+            dirp = self.waveseries().dirp(squeeze=False)
+
+        spectral_reader = Spectra1DToSpectra(
+            self.spectra1d(), self.spectral_grid().dirs(), dirp=dirp
+        )
+
+        self.import_spectra(
+            reader=spectral_reader,
+            point_picker=Trivial(),
+            dry_run=dry_run,
+            **kwargs,
+        )
+
+    def waveseries_to_spectra1d(
+        self,
+        dry_run: bool = False,
+        **kwargs,
+    ):
+        if self.waveseries() is None:
+            msg.warning("No Waveseries to convert to Spectra!")
+            return
+
+        spectral_reader = WaveSeriesToJONSWAP1D(
+            self.waveseries(), self.spectral_grid().freq()
+        )
+
+        self.import_spectra1d(
+            reader=spectral_reader,
+            point_picker=Trivial(),
+            dry_run=dry_run,
+            **kwargs,
+        )
+
+    def waveseries_to_spectra(
+        self,
+        dry_run: bool = False,
+        **kwargs,
+    ):
+        self.waveseries_to_spectra1d(dry_run=dry_run)
+        self.spectra1d_to_spectra(dry_run=dry_run)
+
     def set_spectral_grid_from_spectra(self, **kwargs):
         if self.spectra() is None:
             msg.warning("No Spectra exists. Can't set spectral grid.")
             return
-        self.set_spectral_grid(freq=self.spectra().freq(), **kwargs)
+        self.set_spectral_grid(
+            freq=self.spectra().freq(), dirs=self.spectra().dirs(), **kwargs
+        )
 
     def set_spectral_grid(
         self,
