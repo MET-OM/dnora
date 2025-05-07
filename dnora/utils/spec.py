@@ -1,5 +1,41 @@
 import numpy as np
 from scipy import interpolate
+import scipy
+
+
+def directional_distribution(freq, fp, dirs):
+    """Calculates directional cos**2s(0.5*theta) distribution of spectrum
+
+    dirs given in degrees"""
+    # Eq. 6.3.22 in Holthuisen (2007), base on observations from Young et al. (1996) and Ewans (1998)
+    sigma = 26.9 * (freq / fp) ** 0.68
+    mask = freq < fp
+    sigma[mask] = 26.9 * (freq[mask] / fp) ** -1.05
+
+    # Inversion of Eq. 6.3.26 in Holthuisen (2007)
+    # Width parameter
+    s = 2 / np.deg2rad(sigma) ** 2 - 1
+    s = np.maximum(s, 1)
+    A2 = scipy.special.gamma(s + 1) / (
+        scipy.special.gamma(s + 1 / 2) * 2 * np.sqrt(np.pi)
+    )
+    theta = np.deg2rad(dirs)
+
+    D = np.zeros((len(freq), len(theta)))
+
+    for n in range(len(freq)):
+        D[n, :] = A2[n] * np.cos(0.5 * theta) ** (2 * s[n])
+
+    return D
+
+
+def add_directional_distribution_to_spectrum(spec1d, D):
+    """Add a directional distribution to the spectrum"""
+    spec2d = np.zeros(D.shape)
+    for n in range(len(theta)):
+        spec2d[:, n] = D[:, n] * spec1d
+
+    return spec2d
 
 
 def jonswap1d(m0, fp, freq, gamma=3.3) -> np.ndarray:
