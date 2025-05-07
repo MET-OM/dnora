@@ -3,11 +3,10 @@ from dnora.spectra import Spectra
 import numpy as np
 
 from dnora.type_manager.spectral_conventions import convert_2d_to_1d, SpectralConvention
-
+from dnora import msg
 from dnora.type_manager.data_sources import DataSource
 from dnora.read.abstract_readers import SpectralDataReader
 from dnora.utils.spec import jonswap1d
-import geo_parameters as gp
 
 
 class SpectraTo1D(SpectralDataReader):
@@ -15,7 +14,6 @@ class SpectraTo1D(SpectralDataReader):
 
     def __init__(self, spectra: Spectra) -> None:
         self._boundary = copy(spectra)
-        # self._boundary._set_convention(SpectralConvention.OCEAN)
 
     def convention(self):
         return convert_2d_to_1d(self._boundary._convention)
@@ -162,6 +160,8 @@ class WaveSeriesToJONSWAP1D(SpectralDataReader):
 
         fp = 1 / self._waveseries.tp(squeeze=False)
         m0 = (self._waveseries.hs(squeeze=False) / 4) ** 2
+
+        msg.plain("Calculating JONSWAP spectra with given Tp and Hs...")
         E = jonswap1d(fp=fp, m0=m0, freq=freq)
 
         obj.set_spec(E)

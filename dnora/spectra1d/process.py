@@ -83,7 +83,7 @@ class CutFrequency(SpectralProcessor):
         return new_spec, new_dirs, new_freq, new_spr, inds
 
     def __str__(self):
-        return f"Cutting frequency range to {self._freq[0]-self._freq[-1]}..."
+        return f"Cutting frequency range to {self._freq[0]}-{self._freq[-1]}..."
 
 
 class OceanToMet(SpectralProcessor):

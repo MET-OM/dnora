@@ -161,6 +161,9 @@ class Spectra1DToSpectra(SpectralDataReader):
 
         spec1d = self._spectra1d.spec(squeeze=False)
         dirp = self._dirp
+        msg.plain(
+            "Calculating directional spectrum from Dirp with spreading using a cos**(2s) distribution..."
+        )
         spec2d = expand_to_directional_spectrum(spec1d, freq=freq, dirs=dirs, dirp=dirp)
 
         obj.set_spec(spec2d)

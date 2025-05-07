@@ -48,7 +48,7 @@ class Spectra(PointSkeleton):
             if old_convention is not None:
                 if old_convention != self.convention():
                     msg.warning(
-                        f"Boundary convention ({self.convention()}) doesn't match that expected by the processor ({old_convention})!"
+                        f"Spectral convention ({self.convention()}) doesn't match that expected by the processor ({old_convention})!"
                     )
 
             new_spec, new_dirs, new_freq, new_inds, new_times = processor(
@@ -62,9 +62,7 @@ class Spectra(PointSkeleton):
 
             if not new_inds:
                 self._ds_manager.set_new_ds(None)
-                msg.warning(
-                    f"No boundary spectra left after processing. Removing all data."
-                )
+                msg.warning(f"No spectra left after processing. Removing all data.")
                 return
 
             del_inds = list(set(self.inds()) - set(new_inds))
