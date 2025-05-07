@@ -3,7 +3,7 @@ from scipy import interpolate
 import scipy
 
 
-def directional_distribution(freq, fp, dirs):
+def directional_distribution(freq, fp, dirs, dirp):
     """Calculates directional cos**2s(0.5*theta) distribution of spectrum
 
     dirs given in degrees"""
@@ -19,6 +19,17 @@ def directional_distribution(freq, fp, dirs):
     A2 = scipy.special.gamma(s + 1) / (
         scipy.special.gamma(s + 1 / 2) * 2 * np.sqrt(np.pi)
     )
+
+    if np.max(dirs) < 7:
+        raise Warning(
+            f"Max value of directional vector is {np.max(dirs)}. Are you sure it is given in degrees?"
+        )
+
+    dirs = dirs - dirp
+
+    mask = dirs > 180
+    dirs[mask] = dirs[mask] - 360
+
     theta = np.deg2rad(dirs)
 
     D = np.zeros((len(freq), len(theta)))
@@ -32,33 +43,55 @@ def directional_distribution(freq, fp, dirs):
 def add_directional_distribution_to_spectrum(spec1d, D):
     """Add a directional distribution to the spectrum"""
     spec2d = np.zeros(D.shape)
-    for n in range(len(theta)):
+    for n in range(D.shape[-1]):
         spec2d[:, n] = D[:, n] * spec1d
 
     return spec2d
 
 
-def jonswap1d(m0, fp, freq, gamma=3.3) -> np.ndarray:
+def expand_to_directional_spectrum(spec1d, freq, dirs, dirp=None):
+    inds = np.argmax(spec1d, axis=2)
+    fp = freq[inds]
+    if dirp is None:
+        dirp = np.zeros(fp.shape)
+    Nt, N, Nf = spec1d.shape
+    spec2d = np.zeros(((Nt, N, Nf, len(dirs))))
+    for n in range(N):
+        for t in range(Nt):
+            D = directional_distribution(freq, fp[t, n], dirs, dirp[t, n])
+            spec2d[t, n, :, :] = add_directional_distribution_to_spectrum(
+                spec1d[t, n, :], D
+            )
+
+    return spec2d
+
+
+def _jonswap_one_spec(m0, fp, freq, gamma) -> np.ndarray:
+    """Calculate one JONSWAP spectrum"""
     alpha = 1  # We will normalize anyway
     sigma_a = 0.07
     sigma_b = 0.09
     g = 9.81
+    E_JS = (
+        alpha * g**2 * (2 * np.pi) ** -4 * freq**-5 * np.exp(-5 / 4 * (freq / fp) ** -4)
+    )
+    sigma = np.full(len(freq), sigma_a)
+    sigma[freq > fp] = sigma_b
+    G_exp = np.exp(-0.5 * ((freq / fp - 1) / sigma) ** 2)
+    E_JS = E_JS * gamma**G_exp
+    var = np.trapz(E_JS, freq)
+    E_JS = E_JS * m0 / var
 
-    E_JS = np.zeros((len(m0), len(freq)))
-    for n, (f, m) in enumerate(zip(fp, m0)):
-        E_JS[n, :] = (
-            alpha
-            * g**2
-            * (2 * np.pi) ** -4
-            * freq**-5
-            * np.exp(-5 / 4 * (freq / f) ** -4)
-        )
-        sigma = np.full(len(freq), sigma_a)
-        sigma[freq > f] = sigma_b
-        G_exp = np.exp(-0.5 * ((freq / f - 1) / sigma) ** 2)
-        E_JS[n, :] = E_JS[n, :] * gamma**G_exp
-        var = np.trapz(E_JS[n, :], freq)
-        E_JS[n, :] = E_JS[n, :] * m / var
+    return E_JS
+
+
+def jonswap1d(m0, fp, freq, gamma=3.3) -> np.ndarray:
+
+    Nt, N = m0.shape
+    E_JS = np.zeros((Nt, N, len(freq)))
+    for n in range(N):
+        for t in range(Nt):
+            E_JS[t, n, :] = _jonswap_one_spec(m0[t, n], fp[t, n], freq, gamma)
 
     return E_JS
 
