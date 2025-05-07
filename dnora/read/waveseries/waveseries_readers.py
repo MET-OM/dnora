@@ -41,15 +41,16 @@ class Spectra1DToWaveSeries(PointDataReader):
 
     def __init__(self, Spectra1D: Spectra1D, freq: tuple = (0, 10_000)) -> None:
         self._Spectra1D = deepcopy(Spectra1D)
-        self._freq = None
-        if Spectra1D.freq()[0] < freq[0] or Spectra1D.freq()[-1] > freq[-1]:
-            try:
-                self._Spectra1D.process(process.CutFrequency(freq))
-                self._freq = freq
-            except AttributeError:
-                msg.warning(
-                    f"Object {self.name()} does not have a process_Spectra1D method!\nNot cutting any frequencies!"
-                )
+        if Spectra1D is not None:
+            self._freq = None
+            if Spectra1D.freq()[0] < freq[0] or Spectra1D.freq()[-1] > freq[-1]:
+                try:
+                    self._Spectra1D.process(process.CutFrequency(freq))
+                    self._freq = freq
+                except AttributeError:
+                    msg.warning(
+                        f"Object {self.name()} does not have a process_Spectra1D method!\nNot cutting any frequencies!"
+                    )
 
     def default_data_source(self) -> DataSource:
         return DataSource.CREATION
