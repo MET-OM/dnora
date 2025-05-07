@@ -114,7 +114,10 @@ def read_data_and_create_object(
         **kwargs,
     )
     if not isinstance(ds, tuple):
-        obj = dnora_class.from_ds(ds, name=name,dynamic=False)
+        obj = dnora_class.from_ds(
+            ds, dynamic=False
+        )  # Giving name=name doesn't work. Bug in geo-skeletons
+        obj.name = name
     else:
         coord_dict, data_dict, meta_dict = ds
         obj = dnora_class(name=name, **coord_dict)
