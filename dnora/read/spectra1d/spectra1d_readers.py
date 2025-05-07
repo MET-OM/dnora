@@ -160,10 +160,16 @@ class WaveSeriesToJONSWAP1D(SpectralDataReader):
         freq = self._freq
         obj = dnora_class(time=time, lon=lon, lat=lat, x=x, y=y, freq=freq)
 
-        fp = 1 / self._waveseries.get(gp.wave.Tp)
-        m0 = (self._waveseries.get(gp.wave.Hs) / 4) ** 2
+        fp = 1 / self._waveseries.tp(squeeze=False)
+        m0 = (self._waveseries.hs(squeeze=False) / 4) ** 2
         E = jonswap1d(fp=fp, m0=m0, freq=freq)
 
         obj.set_spec(E)
         obj = obj.sel(inds=inds)
         return obj.ds()
+
+    def name(self):
+        readername = "JONSWAP"
+        if self._waveseries is not None:
+            readername += f"_{self._waveseries.name}"
+        return readername

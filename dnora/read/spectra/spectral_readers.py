@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 from dnora.process.spectra import RemoveEmpty
 
-
+from dnora.utils.spec import expand_to_directional_spectrum
 import xarray as xr
 import geo_parameters as gp
 from geo_skeletons import PointSkeleton
@@ -100,3 +100,75 @@ class SWAN_Ascii(SpectralDataReader):
         meta_dict = {"source": "Spectral wave data from a SWAN run"}
 
         return coord_dict, data_dict, meta_dict
+
+
+class Spectra1DToSpectra(SpectralDataReader):
+    """Integrates boundary spectra to omnidairectional spectra"""
+
+    def __init__(self, spectra1d, dirs, dirp=None) -> None:
+        self._spectra1d = spectra1d
+        self._dirs = dirs
+        self._dirp = dirp
+
+    def convention(self):
+        return SpectralConvention.MET
+
+    def default_data_source(self) -> DataSource:
+        return DataSource.CREATION
+
+    def get_coordinates(
+        self,
+        grid,
+        start_time,
+        source: DataSource,
+        folder: str,
+        filename: str,
+        **kwargs,
+    ) -> dict:
+        all_points = {
+            "lon": self._spectra1d.lon(strict=True),
+            "lat": self._spectra1d.lat(strict=True),
+            "x": self._spectra1d.x(strict=True),
+            "y": self._spectra1d.y(strict=True),
+        }
+        return all_points
+
+    def __call__(
+        self,
+        obj_type,
+        grid,
+        start_time,
+        end_time,
+        source,
+        folder,
+        filename,
+        inds,
+        dnora_class,
+        **kwargs,
+    ) -> tuple:
+        time = (
+            self._spectra1d.time(data_array=True)
+            .sel(time=slice(start_time, end_time))
+            .values
+        )
+        lon = self._spectra1d.lon(strict=True)
+        lat = self._spectra1d.lat(strict=True)
+        x = self._spectra1d.x(strict=True)
+        y = self._spectra1d.y(strict=True)
+        freq = self._spectra1d.freq()
+        dirs = self._dirs
+        obj = dnora_class(time=time, lon=lon, lat=lat, x=x, y=y, freq=freq, dirs=dirs)
+
+        spec1d = self._spectra1d.spec(squeeze=False)
+        dirp = self._dirp
+        spec2d = expand_to_directional_spectrum(spec1d, freq=freq, dirs=dirs, dirp=dirp)
+
+        obj.set_spec(spec2d)
+        obj = obj.sel(inds=inds)
+        return obj.ds()
+
+    def name(self):
+        readername = "cos2s"
+        if self._spectra1d is not None:
+            readername += f"_{self._spectra1d.name}"
+        return readername
