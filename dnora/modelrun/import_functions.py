@@ -32,15 +32,13 @@ def import_data(
 ) -> DnoraObject:
     """Imports data using DataReader and creates and returns a DNORA object"""
     msg.plain("")
-    msg.print_line()
-    msg.plain("Starting import of data")
-    msg.print_line()
+    msg.print_line(marker="+")
+    msg.plain(f"Starting import of data: {obj_type.name}")
+    msg.print_line(marker="+")
     msg.plain(
         f"Area: {grid.core.x_str}: {grid.edges('lon',native=True)}, {grid.core.y_str}: {grid.edges('lat',native=True)}"
     )
     msg.plain(f"{start_time} - {end_time}")
-
-    msg.header(reader, f"Importing {obj_type.name}...")
 
     if dry_run:
         msg.info("Dry run! No data will be imported.")
@@ -65,6 +63,8 @@ def import_data(
             return
     else:
         inds = np.array([])
+
+    msg.header(reader, f"Importing {obj_type.name}...")
 
     obj = read_data_and_create_object(
         obj_type,
@@ -114,7 +114,10 @@ def read_data_and_create_object(
         **kwargs,
     )
     if not isinstance(ds, tuple):
-        obj = dnora_class.from_ds(ds, name=name,dynamic=False)
+        obj = dnora_class.from_ds(
+            ds, dynamic=False
+        )  # Giving name=name doesn't work. Bug in geo-skeletons
+        obj.name = name
     else:
         coord_dict, data_dict, meta_dict = ds
         obj = dnora_class(name=name, **coord_dict)

@@ -41,13 +41,16 @@ class Spectra1DToWaveSeries(PointDataReader):
 
     def __init__(self, Spectra1D: Spectra1D, freq: tuple = (0, 10_000)) -> None:
         self._Spectra1D = deepcopy(Spectra1D)
-        try:
-            self._Spectra1D.process_Spectra1D(process.CutFrequency(freq))
-        except AttributeError:
-            msg.warning(
-                f"Object {self.name()} does not have a process_Spectra1D method!\nNot cutting any frequencies!"
-            )
-        self._freq = freq
+        if Spectra1D is not None:
+            self._freq = None
+            if Spectra1D.freq()[0] < freq[0] or Spectra1D.freq()[-1] > freq[-1]:
+                try:
+                    self._Spectra1D.process(process.CutFrequency(freq))
+                    self._freq = freq
+                except AttributeError:
+                    msg.warning(
+                        f"Object {self.name()} does not have a process_Spectra1D method!\nNot cutting any frequencies!"
+                    )
 
     def default_data_source(self) -> DataSource:
         return DataSource.CREATION
@@ -71,23 +74,18 @@ class Spectra1DToWaveSeries(PointDataReader):
 
     def __call__(
         self,
+        obj_type,
         grid,
         start_time,
         end_time,
-        source: DataSource,
-        folder: str,
-        filename: str,
+        source,
+        folder,
+        filename,
         inds,
-        parameters: list[MetaParameter] = [
-            gp.wave.Hs,
-            gp.wave.Tm01,
-            gp.wave.Tm02,
-            gp.wave.Tm_10,
-            gp.wave.Dirm,
-        ],
+        dnora_class,
+        parameters: list[MetaParameter] = None,
         **kwargs,
     ) -> tuple:
-        self.name = self._Spectra1D.name
         time = (
             self._Spectra1D.time(data_array=True)
             .sel(time=slice(start_time, end_time))
@@ -98,16 +96,27 @@ class Spectra1DToWaveSeries(PointDataReader):
         x = self._Spectra1D.x(strict=True)
         y = self._Spectra1D.y(strict=True)
 
-        data_dict = {}
-        for wp in parameters:
-            func = get_function(wp)
-            data_dict[wp] = func(self._Spectra1D)
+        obj = dnora_class(time=time, lon=lon, lat=lat, x=x, y=y)
 
-        meta_dict = self._Spectra1D.meta.get()
-        meta_dict["integration_range"] = f"{self._freq[0]}-{self._freq[-1]} Hz"
+        parameters = parameters or obj.core.data_vars()
+        for var in parameters:
+            if not gp.is_gp(var):
+                meta = obj.core.meta_parameter(var)
+            else:
+                meta = var
 
-        coord_dict = {"lon": lon, "lat": lat, "x": x, "y": y, "time": time}
-        return coord_dict, data_dict, meta_dict
+            if meta is not None:
+                func = get_function(meta)
+                if func is not None:
+                    msg.plain(f"{meta.__name__}...")
+                    obj.set(var, func(self._Spectra1D))
+                else:
+                    msg.plain(f"Skipping {meta.__name__}...")
+
+        if self._freq is not None:
+            obj.meta.set({"integration_range": f"{self._freq[0]}-{self._freq[-1]} Hz"})
+
+        return obj.ds()
 
     def name(self) -> str:
         if self._Spectra1D is None:

@@ -2,10 +2,11 @@ from copy import copy
 from dnora.spectra import Spectra
 import numpy as np
 
-from dnora.type_manager.spectral_conventions import convert_2d_to_1d
-
+from dnora.type_manager.spectral_conventions import convert_2d_to_1d, SpectralConvention
+from dnora import msg
 from dnora.type_manager.data_sources import DataSource
 from dnora.read.abstract_readers import SpectralDataReader
+from dnora.utils.spec import jonswap1d
 
 
 class SpectraTo1D(SpectralDataReader):
@@ -13,7 +14,6 @@ class SpectraTo1D(SpectralDataReader):
 
     def __init__(self, spectra: Spectra) -> None:
         self._boundary = copy(spectra)
-        # self._boundary._set_convention(SpectralConvention.OCEAN)
 
     def convention(self):
         return convert_2d_to_1d(self._boundary._convention)
@@ -101,3 +101,75 @@ class SpectraTo1D(SpectralDataReader):
         if self._boundary is None:
             return "EmptyData"
         return self._boundary.name
+
+
+class WaveSeriesToJONSWAP1D(SpectralDataReader):
+    """Integrates boundary spectra to omnidairectional spectra"""
+
+    def __init__(self, waveseries, freq) -> None:
+        self._waveseries = waveseries
+        self._freq = freq
+
+    def convention(self):
+        return SpectralConvention.MET
+
+    def default_data_source(self) -> DataSource:
+        return DataSource.CREATION
+
+    def get_coordinates(
+        self,
+        grid,
+        start_time,
+        source: DataSource,
+        folder: str,
+        filename: str,
+        **kwargs,
+    ) -> dict:
+        all_points = {
+            "lon": self._waveseries.lon(strict=True),
+            "lat": self._waveseries.lat(strict=True),
+            "x": self._waveseries.x(strict=True),
+            "y": self._waveseries.y(strict=True),
+        }
+        return all_points
+
+    def __call__(
+        self,
+        obj_type,
+        grid,
+        start_time,
+        end_time,
+        source,
+        folder,
+        filename,
+        inds,
+        dnora_class,
+        **kwargs,
+    ) -> tuple:
+        time = (
+            self._waveseries.time(data_array=True)
+            .sel(time=slice(start_time, end_time))
+            .values
+        )
+        lon = self._waveseries.lon(strict=True)
+        lat = self._waveseries.lat(strict=True)
+        x = self._waveseries.x(strict=True)
+        y = self._waveseries.y(strict=True)
+        freq = self._freq
+        obj = dnora_class(time=time, lon=lon, lat=lat, x=x, y=y, freq=freq)
+
+        fp = 1 / self._waveseries.tp(squeeze=False)
+        m0 = (self._waveseries.hs(squeeze=False) / 4) ** 2
+
+        msg.plain("Calculating JONSWAP spectra with given Tp and Hs...")
+        E = jonswap1d(fp=fp, m0=m0, freq=freq)
+
+        obj.set_spec(E)
+        obj = obj.sel(inds=inds)
+        return obj.ds()
+
+    def name(self):
+        readername = "JONSWAP"
+        if self._waveseries is not None:
+            readername += f"_{self._waveseries.name}"
+        return readername

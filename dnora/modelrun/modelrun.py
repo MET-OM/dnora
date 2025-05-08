@@ -23,7 +23,8 @@ from dnora import msg
 from dnora.cacher.cache_decorator import cached_reader
 
 from dnora.defaults import read_environment_variable
-from dnora.read.spectra1d import SpectraTo1D
+from dnora.read.spectra import Spectra1DToSpectra
+from dnora.read.spectra1d import SpectraTo1D, WaveSeriesToJONSWAP1D
 from dnora.read.waveseries import Spectra1DToWaveSeries
 from dnora.type_manager.spectral_conventions import SpectralConvention
 from dnora.pick import Trivial
@@ -314,12 +315,18 @@ class ModelRun:
             **kwargs,
         )
 
-        if not isinstance(point_picker, NearestGridPoint) and not self.dry_run():
+        if (
+            not isinstance(point_picker, NearestGridPoint)
+            and not isinstance(point_picker, Trivial)
+            and not self.dry_run()
+        ):
             if not utils.grid.data_covers_grid(obj, self.grid()):
-                msg.warning(f"The imported data (lon: {obj.edges('lon')}, lat: {obj.edges('lat')}) does not cover the grid (lon: {self.grid().edges('lon')}, lat: {self.grid().edges('lat')})! Maybe increase the expansion_factor (now {expansion_factor}) in the import method?")
+                msg.warning(
+                    f"The imported data (lon: {obj.edges('lon')}, lat: {obj.edges('lat')}) does not cover the grid (lon: {self.grid().edges('lon')}, lat: {self.grid().edges('lat')})! Maybe increase the expansion_factor (now {expansion_factor}) in the import method?"
+                )
 
         if obj is None:
-            msg.warning('Could not import any data!!!')
+            msg.warning("Could not import any data!!!")
             return
 
         self[obj_type] = obj
@@ -522,7 +529,15 @@ class ModelRun:
     ) -> None:
 
         self._import_data(
-            DnoraDataType.ICE, name, dry_run, reader, expansion_factor,source, folder, filename, **kwargs
+            DnoraDataType.ICE,
+            name,
+            dry_run,
+            reader,
+            expansion_factor,
+            source,
+            folder,
+            filename,
+            **kwargs,
         )
 
     def spectra_to_1d(
@@ -572,18 +587,72 @@ class ModelRun:
             **kwargs,
         )
 
+    def spectra1d_to_spectra(
+        self,
+        dry_run: bool = False,
+        name: str | None = None,
+        **kwargs,
+    ):
+        if self.spectra1d() is None:
+            msg.warning("No Spectra1D to convert to Spectra!")
+            return
+
+        if self.waveseries() is not None:
+            dirp = self.waveseries().dirp(squeeze=False)
+
+        spectral_reader = Spectra1DToSpectra(
+            self.spectra1d(), self.spectral_grid().dirs(), dirp=dirp
+        )
+
+        self.import_spectra(
+            reader=spectral_reader,
+            point_picker=Trivial(),
+            dry_run=dry_run,
+            **kwargs,
+        )
+
+    def waveseries_to_spectra1d(
+        self,
+        dry_run: bool = False,
+        **kwargs,
+    ):
+        if self.waveseries() is None:
+            msg.warning("No Waveseries to convert to Spectra!")
+            return
+
+        spectral_reader = WaveSeriesToJONSWAP1D(
+            self.waveseries(), self.spectral_grid().freq()
+        )
+
+        self.import_spectra1d(
+            reader=spectral_reader,
+            point_picker=Trivial(),
+            dry_run=dry_run,
+            **kwargs,
+        )
+
+    def waveseries_to_spectra(
+        self,
+        dry_run: bool = False,
+        **kwargs,
+    ):
+        self.waveseries_to_spectra1d(dry_run=dry_run)
+        self.spectra1d_to_spectra(dry_run=dry_run)
+
     def set_spectral_grid_from_spectra(self, **kwargs):
         if self.spectra() is None:
             msg.warning("No Spectra exists. Can't set spectral grid.")
             return
-        self.set_spectral_grid(freq=self.spectra().freq(), **kwargs)
+        self.set_spectral_grid(
+            freq=self.spectra().freq(), dirs=self.spectra().dirs(), **kwargs
+        )
 
     def set_spectral_grid(
         self,
         freq: np.ndarray | None = None,
         dirs: np.ndarray | None = None,
         freq0: float = 0.04118,
-        nfreq: int = 32,
+        nfreq: int | None = None,
         ndir: int = 36,
         finc: float = 1.1,
         dirshift: float | None = None,
@@ -591,6 +660,8 @@ class ModelRun:
         """Sets spectral grid for model run. Will be used to write input files."""
         if freq is None:
             freq = np.array([freq0 * finc**n for n in np.linspace(0, nfreq - 1, nfreq)])
+        if nfreq is None:
+            nfreq = len(freq)
         if len(freq) < nfreq:
             start_freq = freq[-1]
             add_freq = np.array(
@@ -612,6 +683,10 @@ class ModelRun:
         self[DnoraDataType.SPECTRALGRID] = SpectralGrid(
             name=DnoraDataType.SPECTRALGRID.name, freq=freq, dirs=dirs
         )
+
+    def spectral_grid(self) -> Ice:
+        """Returns the spectral grid object if exists."""
+        return self._dnora_objects.get(DnoraDataType.SPECTRALGRID)
 
     def dry_run(self):
         """Checks if method or global ModelRun dryrun is True."""
@@ -648,10 +723,6 @@ class ModelRun:
     def ice(self) -> Ice:
         """Returns the ocean current object if exists."""
         return self._dnora_objects.get(DnoraDataType.ICE)
-
-    def spectral_grid(self) -> Ice:
-        """Returns the spectral grid object if exists."""
-        return self._dnora_objects.get(DnoraDataType.SPECTRALGRID)
 
     def process(
         self, obj_type: DnoraDataType | str, processor: GriddedDataProcessor
