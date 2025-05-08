@@ -9,7 +9,7 @@ from .swan_ascii import decode_lonlat, read_swan_ascii_spec
 import pandas as pd
 import numpy as np
 from dnora.process.spectra import RemoveEmpty
-
+import glob
 from dnora.utils.spec import expand_to_directional_spectrum
 import xarray as xr
 import geo_parameters as gp
@@ -52,7 +52,14 @@ class SWAN_Ascii(SpectralDataReader):
 
         folder = self._folder(folder, source)
         filename = self._filename(filename, source)
+
         url = get_url(folder, filename)
+        url = glob.glob(url)
+        if len(url) > 1:
+            raise ValueError(f"Cannot read several ascii files at once!")
+        else:
+            url = url[0]
+
         with open(url, "r") as file:
             line = file.readline()
             while line:
@@ -83,6 +90,11 @@ class SWAN_Ascii(SpectralDataReader):
         folder = self._folder(folder, source)
         filename = self._filename(filename, source)
         url = get_url(folder, filename)
+        url = glob.glob(url)
+        if len(url) > 1:
+            raise ValueError(f"Cannot read several ascii files at once!")
+        else:
+            url = url[0]
         time, lon, lat, spec, freq, dirs = read_swan_ascii_spec(
             url, start_time=start_time, end_time=end_time
         )
