@@ -142,20 +142,35 @@ class RemoveEmpty(SpectralProcessor):
 class RemoveNanTimes(SpectralProcessor):
     """Remove times when some index has nan-values"""
 
-    def __call__(self, spec, dirs, freq, inds, times) -> tuple:
-        check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
+    def __call__(self, spec, dirs, freq, inds, times, spr=None) -> tuple:
+        spec_dim = check_that_spectra_are_consistent(spec, dirs, freq)
 
         mask = np.full(len(times), True)
         for n in range(len(times)):
-            if np.isnan(spec[n, :, :, :]).any():
-                mask[n] = False
+            if spec_dim == 2:
+                if np.isnan(spec[n, :, :, :]).any():
+                    mask[n] = False
+            elif spec_dim == 1:
+                if np.isnan(spec[n, :, :]).any():
+                    mask[n] = False
 
         new_times = times[mask]
-        new_spec = spec[mask, :, :, :]
+        if spec_dim == 2:
+            new_spec = spec[mask, :, :, :]
+            new_dirs = dirs
+        elif spec_dim == 1:
+            new_spec = spec[mask, :, :]
+            new_dirs = dirs[mask, :, :]
+            new_spr = spr[mask, :, :]
 
-        check_that_spectra_are_consistent(new_spec, dirs, freq, expected_dim=2)
+        check_that_spectra_are_consistent(
+            new_spec, new_dirs, freq, expected_dim=spec_dim
+        )
 
-        return new_spec, dirs, freq, inds, new_times
+        if spec_dim == 2:
+            return new_spec, new_dirs, freq, inds, new_times
+        else:
+            return new_spec, new_dirs, freq, inds, new_times, new_spr
 
     def __str__(self):
         return f"Removing times where at least one point has NaN value..."

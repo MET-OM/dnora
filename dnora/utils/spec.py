@@ -182,18 +182,21 @@ def check_that_spectra_are_consistent(
 ) -> int:
     if spec.shape[-1] == len(dirs) and spec.shape[-2] == len(freq):
         spec_dim = 2
-    elif spec.shape[-1] == len(freq) and spec.shape[-1] == len(dirs):
+    elif spec.shape[-1] == len(freq) and spec.shape == dirs.shape:
         spec_dim = 1
     else:
         spec_dim = -1
 
     if expected_dim is None:
+        if spec_dim not in [1, 2]:
+            raise ValueError("Provided array does not contain valid 1D or 2D spectra!")
         return spec_dim
 
     if spec_dim != expected_dim:
+
         if spec_dim not in [1, 2]:
-            ValueError("Provided array does not contain valid 1D or 2D spectra!")
+            raise ValueError("Provided array does not contain valid 1D or 2D spectra!")
         else:
-            ValueError(
+            raise ValueError(
                 f"Expected {expected_dim} dimensional spectra, but they seem to be {spec_dim} dimensional!"
             )

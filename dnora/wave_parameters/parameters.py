@@ -10,6 +10,8 @@ from typing import Union
 
 from functools import partial
 
+from copy import deepcopy
+
 
 def trapz_or_sum(da):
     """Integrates using trapezodian integration if non-monotone frequency spacing and integrates by summing if monotone frequency spacing"""
@@ -25,12 +27,10 @@ def cos_sin(spec: Union[Spectra, Spectra1D]) -> tuple[xr.DataArray]:
         dD = 360 / len(spec.dirs())
         # Normalizing here so that integration over direction becomes summing
         efth = dD * np.pi / 180 * spec.spec(data_array=True, squeeze=False)
-
         c1 = (np.cos(theta) * efth).sum(dim="dirs")  # Function of frequency
         s1 = (np.sin(theta) * efth).sum(dim="dirs")
     else:
         theta = np.deg2rad(spec.dirm(data_array=True, squeeze=False))
-
         c1 = np.cos(theta) * spec.spec(
             data_array=True, squeeze=False
         )  # Function of frequency
@@ -42,9 +42,8 @@ def cos_sin(spec: Union[Spectra, Spectra1D]) -> tuple[xr.DataArray]:
 def first_fourier_coefficients(spec: Union[Spectra, Spectra1D]) -> tuple[xr.DataArray]:
     c1, s1 = cos_sin(spec)
     m0 = moment(spec, moment=0)
-
-    a1m = trapz_or_sum(c1) / m0
-    b1m = trapz_or_sum(s1) / m0
+    a1m = trapz_or_sum(c1.fillna(0)) / m0
+    b1m = trapz_or_sum(s1.fillna(0)) / m0
 
     return a1m, b1m
 
@@ -156,7 +155,7 @@ def fp(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
         ds = spec.ds()
     inds = ds.spec.argmax(dim="freq")
     # To inherit DataArray to make slicing work
-    freqs = ds.spec
+    freqs = deepcopy(ds.spec)
     freqs.data = np.tile(spec.freq(), [spec.shape("spec")[0], spec.shape("spec")[1], 1])
     fp = freqs[:, :, inds]
     return fp.data

@@ -46,7 +46,7 @@ class SpectralProcessor(ABC):
         return None
 
     @abstractmethod
-    def __call__(self, spec, dirs, freq, spr, inds) -> tuple:
+    def __call__(self, spec, dirs, freq, inds, time, spr) -> tuple:
         """Processes individual spectra and returns them to object.
 
         In addition to the spectra, also the direction and frequency
@@ -57,7 +57,7 @@ class SpectralProcessor(ABC):
         with 1, and 2 dimensional objects so that it can be called by the user
         to modify a single spectra etc.
         """
-        return spec, dirs, freq, spr, inds
+        return spec, dirs, freq, inds, time, spr
 
     @abstractmethod
     def __str__(self):
@@ -71,7 +71,7 @@ class CutFrequency(SpectralProcessor):
     def __init__(self, freq: tuple):
         self._freq = freq
 
-    def __call__(self, spec, dirs, freq, spr, inds) -> tuple:
+    def __call__(self, spec, dirs, freq, inds, time, spr) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=1)
         mask = np.logical_and(freq >= self._freq[0], freq <= self._freq[-1])
         new_freq = freq[mask]
@@ -80,7 +80,7 @@ class CutFrequency(SpectralProcessor):
         new_spec = spec[:, :, mask]
         check_that_spectra_are_consistent(new_spec, new_dirs, new_freq, expected_dim=1)
         check_that_spectra_are_consistent(new_spec, new_spr, new_freq, expected_dim=1)
-        return new_spec, new_dirs, new_freq, new_spr, inds
+        return new_spec, new_dirs, new_freq, inds, time, new_spr
 
     def __str__(self):
         return f"Cutting frequency range to {self._freq[0]}-{self._freq[-1]}..."
@@ -105,11 +105,11 @@ class OceanToMet(SpectralProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.MET
 
-    def __call__(self, spec, dirs, freq, spr, inds) -> tuple:
+    def __call__(self, spec, dirs, freq, inds, time, spr) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=1)
         new_dirs = np.mod(dirs + 180, 360)
         check_that_spectra_are_consistent(spec, new_dirs, freq, expected_dim=1)
-        return spec, new_dirs, freq, spr, inds
+        return spec, new_dirs, freq, inds, time, spr
 
     def __str__(self):
         return "Shifting directions 180 degrees."
@@ -134,11 +134,11 @@ class MetToOcean(SpectralProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.OCEAN
 
-    def __call__(self, spec, dirs, freq, spr, inds) -> tuple:
+    def __call__(self, spec, dirs, freq, inds, time, spr) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=1)
         new_dirs = np.mod(dirs + 180, 360)
         check_that_spectra_are_consistent(spec, new_dirs, freq, expected_dim=1)
-        return spec, new_dirs, freq, spr, inds
+        return spec, new_dirs, freq, inds, time, spr
 
     def __str__(self):
         return "Shifting directions 180 degrees."
@@ -163,11 +163,11 @@ class OceanToMath(SpectralProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.MATH
 
-    def __call__(self, spec, dirs, freq, spr, inds) -> tuple:
+    def __call__(self, spec, dirs, freq, inds, time, spr) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=1)
         new_dirs = np.mod(-dirs + 90, 360)
         check_that_spectra_are_consistent(spec, new_dirs, freq, expected_dim=1)
-        return spec, new_dirs, freq, spr, inds
+        return spec, new_dirs, freq, inds, time, spr
 
     def __str__(self):
         return "Shifting 90 degrees and changing to anti-clockwise."
@@ -192,11 +192,11 @@ class MathToOcean(SpectralProcessor):
     def _convention_out(self) -> str:
         return SpectralConvention.OCEAN
 
-    def __call__(self, spec, dirs, freq, spr, inds) -> tuple:
+    def __call__(self, spec, dirs, freq, inds, time, spr) -> tuple:
         check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=1)
         new_dirs = np.mod(-dirs + 90, 360)
         check_that_spectra_are_consistent(spec, new_dirs, freq, expected_dim=1)
-        return spec, new_dirs, freq, spr, inds
+        return spec, new_dirs, freq, inds, time, spr
 
     def __str__(self):
         return "Shifting 90 degrees and changing to clockwise."
@@ -234,6 +234,8 @@ def spectral_processor_for_convention_change(
             SpectralConvention.MET: [MathToOcean(), OceanToMet()],
         },
     }
+    if current_convention == SpectralConvention.UNDEFINED:
+        return None
 
     if not wanted_convention or (current_convention == wanted_convention):
         return None
