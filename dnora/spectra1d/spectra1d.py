@@ -45,12 +45,13 @@ class Spectra1D(PointSkeleton):
                         f"Spectral convention ({self.convention()}) doesn't match that expected by the processor ({old_convention})!"
                     )
 
-            new_spec, new_dirs, new_freq, new_spr, new_inds = processor(
+            new_spec, new_dirs, new_freq, new_inds, new_time, new_spr = processor(
                 self.spec(squeeze=False),
-                self.dirm(),
+                self.dirm(squeeze=False),
                 self.freq(),
-                self.spr(),
                 self.inds(),
+                self.time(),
+                self.spr(squeeze=False),
             )
 
             new_inds = list(new_inds)
@@ -76,7 +77,7 @@ class Spectra1D(PointSkeleton):
                 y=self.y(strict=True),
                 lon=self.lon(strict=True),
                 lat=self.lat(strict=True),
-                time=self.time(),
+                time=new_time,
                 freq=new_freq,
             )
             self.set_spec(new_spec)
@@ -102,6 +103,12 @@ class Spectra1D(PointSkeleton):
         if self.convention() is None:
             msg.info(
                 "set_convention changes the convention AND the data. No convention is currently set. Use _mark_convention to define a convention without touching the data."
+            )
+            return
+
+        if self.convention() == SpectralConvention.UNDEFINED:
+            msg.info(
+                f"Have no rule to change convention since it is {self.convention()}!"
             )
             return
 
