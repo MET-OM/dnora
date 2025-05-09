@@ -20,15 +20,11 @@ from copy import copy
 from geo_skeletons import GriddedSkeleton, PointSkeleton
 
 import geo_parameters as gp
+import glob
 
 
-def read_cached_filelist(folder, filename, silent: bool = False):
+def read_cached_filelist(filepath):
     """Reads cached files of unstructured data, since they can't be opened simply by open_mfdataset"""
-    if filename is None:
-        raise ValueError("Provide at least one filename!")
-    filepath = get_url(folder, filename, get_list=True)
-    if not silent:
-        msg.from_multifile(filepath)
     dds = []
     ds_top_list = []
     days = list(
@@ -39,7 +35,6 @@ def read_cached_filelist(folder, filename, silent: bool = False):
             ]
         )
     )
-
     days.sort()
     ds_list = []
     points_in_previous_tiles = 0
@@ -57,6 +52,19 @@ def read_cached_filelist(folder, filename, silent: bool = False):
     return ds
 
 
+def create_filelist(filename: str | list[str], folder: str) -> list[str]:
+    """Create a list of filepaths. You can either give one filename, a name with wildcards or a list of names.
+    The folder will be added to the filenames"""
+    if not filename:
+        raise ValueError("Provide at least one filename!")
+
+    filepath = get_url(folder, filename, get_list=True)
+
+    if len(filepath) == 1:
+        filepath = glob.glob(filepath[0])
+    return filepath
+
+
 class PointNetcdf(SpectralDataReader):
     @staticmethod
     def default_data_source() -> DataSource:
@@ -66,18 +74,22 @@ class PointNetcdf(SpectralDataReader):
     def caching_strategy() -> CachingStrategy:
         return CachingStrategy.DontCacheMe
 
-    def __init__(self, files: list[str] = None):
+    def __init__(self, files: list[str] = None, used_for_cache: bool = False):
         self.files = files
+        self._used_for_cache = used_for_cache
 
     def get_coordinates(
         self, grid, start_time, source, folder, filename: list[str] = None, **kwargs
     ):
         filename = filename or self.files
-        if isinstance(filename, list):
-            ds = read_cached_filelist(folder, filename, silent=True)
+        filepath = create_filelist(filename, folder)
+        if len(filepath) > 1:
+            if self._used_for_cache:
+                ds = read_cached_filelist(filepath)
+            else:
+                ds = xr.open_mfdataset(filepath)
         else:
-            filepath = get_url(folder, filename)
-            ds = xr.open_dataset(filepath)
+            ds = xr.open_dataset(filepath[0])
 
         lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
         return {"lon": lon, "lat": lat, "x": x, "y": y}
@@ -97,12 +109,17 @@ class PointNetcdf(SpectralDataReader):
     ):
 
         filename = filename or self.files
-        if isinstance(filename, list):
-            ds = read_cached_filelist(folder, filename)
+        filepath = create_filelist(filename, folder)
+        if len(filepath) > 1:
+            if self._used_for_cache:
+                msg.from_multifile(filepath)
+                ds = read_cached_filelist(filepath)
+            else:
+                msg.from_multifile(filepath)
+                ds = xr.open_mfdataset(filepath)
         else:
-            filepath = get_url(folder, filename)
-            ds = xr.open_dataset(filepath)
             msg.from_file(filepath)
+            ds = xr.open_dataset(filepath[0])
 
         # We are reading an uinstructured Netcdf-files, so can't use a structured class
         if obj_type == DnoraDataType.GRID:

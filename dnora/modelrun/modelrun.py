@@ -407,7 +407,9 @@ class ModelRun:
             **kwargs,
         )
 
-    @cached_reader(DnoraDataType.SPECTRA, dnora.read.generic.PointNetcdf)
+    @cached_reader(
+        DnoraDataType.SPECTRA, dnora.read.generic.PointNetcdf(used_for_cache=True)
+    )
     def import_spectra(
         self,
         reader: SpectralDataReader | None = None,
@@ -434,7 +436,9 @@ class ModelRun:
             **kwargs,
         )
 
-    @cached_reader(DnoraDataType.SPECTRA1D, dnora.read.generic.PointNetcdf)
+    @cached_reader(
+        DnoraDataType.SPECTRA1D, dnora.read.generic.PointNetcdf(used_for_cache=True)
+    )
     def import_spectra1d(
         self,
         reader: SpectralDataReader | None = None,
@@ -462,7 +466,9 @@ class ModelRun:
             **kwargs,
         )
 
-    @cached_reader(DnoraDataType.WAVESERIES, dnora.read.generic.PointNetcdf)
+    @cached_reader(
+        DnoraDataType.WAVESERIES, dnora.read.generic.PointNetcdf(used_for_cache=True)
+    )
     def import_waveseries(
         self,
         reader: PointDataReader | None = None,
