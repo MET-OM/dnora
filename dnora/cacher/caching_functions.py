@@ -73,7 +73,7 @@ def patch_cached_data(mrun_cacher, tiles, kwargs_cache, strategy: CachingStrateg
             end_time=patch_date[1],
         )
 
-        mrun_patch._import_data(**kwargs_cache)
+        mrun_patch._import_data(**kwargs_cache, coverage_warning=False)
 
         ## Merge patch together with what was found in the cached
         if patch_dimension == "time":
