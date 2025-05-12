@@ -2,7 +2,7 @@
 # ![logo](https://user-images.githubusercontent.com/67804784/145466261-f50dbc27-f242-4db0-8d99-e23d0bd0dbbc.png)
 
 
-Welcome to dnora verion 2! The new documentation is still ongoing.
+Welcome to dnora version 2! The new documentation is still ongoing.
 
 You can find the origin dnora in the branch 'main'. Please not that it is no longer mainained.
 
