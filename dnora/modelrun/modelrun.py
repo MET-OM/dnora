@@ -108,7 +108,15 @@ def start_and_end_time_of_run(
 
 
 class ModelRun:
-    _reader_dict: dict[DnoraDataType:ReaderFunction] = {}
+    _reader_dict: dict[DnoraDataType:ReaderFunction] = {
+        DnoraDataType.SPECTRA: dnora.read.generic.PointNetcdf(),
+        DnoraDataType.SPECTRA1D: dnora.read.generic.PointNetcdf(),
+        DnoraDataType.WAVESERIES: dnora.read.generic.PointNetcdf(),
+        DnoraDataType.WIND: dnora.read.generic.Netcdf(),
+        DnoraDataType.ICE: dnora.read.generic.Netcdf(),
+        DnoraDataType.CURRENT: dnora.read.generic.Netcdf(),
+        DnoraDataType.WATERLEVEL: dnora.read.generic.Netcdf(),
+    }
     _point_picker: PointPicker = NearestGridPoint()
 
     def __init__(
