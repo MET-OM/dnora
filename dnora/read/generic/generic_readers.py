@@ -179,10 +179,7 @@ class Netcdf(DataReader):
 
         filename = filename or self.files
 
-        if filename is None:
-            raise ValueError("Provide at least one filename!")
-        filepath = get_url(folder, filename, get_list=True)
-        filepath = [file for file in filepath if os.path.getsize(file) > 0]
+        filepath = create_filelist(filename, folder)
 
         msg.process(f"Using expansion_factor = {expansion_factor:.2f}")
         lon, lat = utils.grid.expand_area(
