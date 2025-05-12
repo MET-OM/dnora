@@ -4,15 +4,15 @@
 
 Welcome to dnora verion 2! The new documentation is still ongoing.
 
-You can find the origin dnora in the branch 'v1'. Please not that it is no longer mainained.
+You can find the origin dnora in the branch 'main'. Please not that it is no longer mainained.
 
 What is dnora? 
 
 dnora is a software for dynamical downscaling of wave products i.e., NORA3 wave hindcast and WAM4 wave forecast from Norwegian Meteorological Institute.
 
-More information in [documentation](https://dnora.readthedocs.io/en/latest/)
+More information in the updated version 2 [documentation](https://dnora2.readthedocs.io/en/latest/)
 
-Examples in [youtube](https://youtu.be/pTmjBnsXNz8) 
+Old examples for dnora-v1 [youtube](https://youtu.be/pTmjBnsXNz8) 
 
 Example of downscaling NORA3 using dnora/SWAN offshore Tromsø, Norway:
 ![dnora](https://user-images.githubusercontent.com/67804784/147151236-b9ef920c-34a2-4da0-9877-6241723eff80.gif)
