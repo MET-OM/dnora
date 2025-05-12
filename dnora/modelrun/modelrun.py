@@ -18,7 +18,7 @@ from dnora.modelrun.import_functions import import_data
 from dnora.type_manager.model_formats import ModelFormat
 from dnora.spectral_grid import SpectralGrid
 
-
+import dnplot
 from dnora import msg
 from dnora.cacher.cache_decorator import cached_reader
 
@@ -141,6 +141,8 @@ class ModelRun:
         self._reference_time = None
         self.name = name
         self._post_processing = None
+
+        self.plot = dnplot.Matplotlib(self)
         self._dnora_objects: dict[DnoraDataType, DnoraObject] = {
             DnoraDataType.GRID: grid,
         }
