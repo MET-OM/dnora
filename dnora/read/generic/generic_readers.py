@@ -190,20 +190,19 @@ class Netcdf(DataReader):
         )
 
         cls = dnora_objects.get(obj_type)
-
-        if "time" in cls.core.coords():
-            ds = xr.open_mfdataset(filepath).sel(
-                lon=slice(*lon), lat=slice(*lat), time=slice(start_time, end_time)
-            )
-        else:
-            ds = xr.open_mfdataset(filepath).sel(lon=slice(*lon), lat=slice(*lat))
-
         msg.from_multifile(filepath)
-
+        ds = xr.open_mfdataset(filepath)
         # This geo-skeleton method does all the heavy lifting with decoding the Dataset to match the class data variables etc.
         data = cls.from_ds(ds)
 
-        return data.ds()
+        if "time" in cls.core.coords():
+            ds = data.ds().sel(time=slice(start_time, end_time))
+        if lon[0] == lon[1] and lat[0] == lat[1]:
+            msg.plain("Reading full file when no area defined...")
+        else:
+            ds = data.ds().sel(lon=slice(*lon), lat=slice(*lat))
+
+        return ds
 
 
 # class Netcdf(DataReader):
