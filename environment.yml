@@ -12,7 +12,7 @@ dependencies:
   - geo-skeletons=0.20.4
   - pip
   - pip:
-    - dnplot==0.3.1
+    - dnplot
   - pytest
   - pytest-cov
   - cdsapi>=0.7.0
