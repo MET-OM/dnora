@@ -18,7 +18,7 @@ from dnora.modelrun.import_functions import import_data
 from dnora.type_manager.model_formats import ModelFormat
 from dnora.spectral_grid import SpectralGrid
 
-
+import dnplot
 from dnora import msg
 from dnora.cacher.cache_decorator import cached_reader
 
@@ -108,7 +108,15 @@ def start_and_end_time_of_run(
 
 
 class ModelRun:
-    _reader_dict: dict[DnoraDataType:ReaderFunction] = {}
+    _reader_dict: dict[DnoraDataType:ReaderFunction] = {
+        DnoraDataType.SPECTRA: dnora.read.generic.PointNetcdf(),
+        DnoraDataType.SPECTRA1D: dnora.read.generic.PointNetcdf(),
+        DnoraDataType.WAVESERIES: dnora.read.generic.PointNetcdf(),
+        DnoraDataType.WIND: dnora.read.generic.Netcdf(),
+        DnoraDataType.ICE: dnora.read.generic.Netcdf(),
+        DnoraDataType.CURRENT: dnora.read.generic.Netcdf(),
+        DnoraDataType.WATERLEVEL: dnora.read.generic.Netcdf(),
+    }
     _point_picker: PointPicker = NearestGridPoint()
 
     def __init__(
@@ -141,6 +149,8 @@ class ModelRun:
         self._reference_time = None
         self.name = name
         self._post_processing = None
+
+        self.plot = dnplot.Matplotlib(self)
         self._dnora_objects: dict[DnoraDataType, DnoraObject] = {
             DnoraDataType.GRID: grid,
         }
@@ -320,7 +330,9 @@ class ModelRun:
             and not isinstance(point_picker, Trivial)
             and not self.dry_run()
         ):
-            if not utils.grid.data_covers_grid(obj, self.grid()):
+            if not utils.grid.data_covers_grid(obj, self.grid()) and kwargs.get(
+                "coverage_warning", True
+            ):
                 msg.warning(
                     f"The imported data (lon: {obj.edges('lon')}, lat: {obj.edges('lat')}) does not cover the grid (lon: {self.grid().edges('lon')}, lat: {self.grid().edges('lat')})! Maybe increase the expansion_factor (now {expansion_factor}) in the import method?"
                 )
@@ -599,7 +611,8 @@ class ModelRun:
 
         if self.waveseries() is not None:
             dirp = self.waveseries().dirp(squeeze=False)
-
+        if self.spectral_grid() is None:
+            raise ValueError("Define a spectral grid with .set_spectral_grid()")
         spectral_reader = Spectra1DToSpectra(
             self.spectra1d(), self.spectral_grid().dirs(), dirp=dirp
         )
@@ -619,6 +632,9 @@ class ModelRun:
         if self.waveseries() is None:
             msg.warning("No Waveseries to convert to Spectra!")
             return
+
+        if self.spectral_grid() is None:
+            raise ValueError("Define a spectral grid with .set_spectral_grid()")
 
         spectral_reader = WaveSeriesToJONSWAP1D(
             self.waveseries(), self.spectral_grid().freq()
@@ -652,17 +668,18 @@ class ModelRun:
         freq: np.ndarray | None = None,
         dirs: np.ndarray | None = None,
         freq0: float = 0.04118,
-        nfreq: int | None = None,
+        nfreq: int = 32,
         ndir: int = 36,
         finc: float = 1.1,
         dirshift: float | None = None,
+        extend_spectra: bool = False,
     ):
         """Sets spectral grid for model run. Will be used to write input files."""
         if freq is None:
             freq = np.array([freq0 * finc**n for n in np.linspace(0, nfreq - 1, nfreq)])
         if nfreq is None:
             nfreq = len(freq)
-        if len(freq) < nfreq:
+        if len(freq) < nfreq and extend_spectra:
             start_freq = freq[-1]
             add_freq = np.array(
                 [

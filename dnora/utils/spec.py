@@ -29,6 +29,8 @@ def directional_distribution(freq, fp, dirs, dirp):
 
     mask = dirs > 180
     dirs[mask] = dirs[mask] - 360
+    mask = dirs < -180
+    dirs[mask] = dirs[mask] + 360
 
     theta = np.deg2rad(dirs)
 
@@ -36,7 +38,6 @@ def directional_distribution(freq, fp, dirs, dirp):
 
     for n in range(len(freq)):
         D[n, :] = A2[n] * np.cos(0.5 * theta) ** (2 * s[n])
-
     return D
 
 

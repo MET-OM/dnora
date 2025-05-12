@@ -2,7 +2,7 @@ from subprocess import Popen
 from abc import ABC, abstractmethod
 from dnora.file_module import FileNames
 from dnora.type_manager.model_formats import ModelFormat
-from .post_processors import PostProcessor, SwashMatToNc, HosOceanToNc
+from .post_processors import PostProcessor, SwashMatToNc, HosOceanToNc, SwanMatToNc
 from dnora import msg
 import shutil
 import os
@@ -35,11 +35,14 @@ class ModelRunner(ABC):
 
 class SWAN(ModelRunner):
     def __init__(self):
-        return
+        self._post_processors = []
 
     def preferred_format(self) -> str:
         """For generation of file name."""
         return ModelFormat.SWAN
+
+    def post_processors(self) -> list[PostProcessor]:
+        return self._post_processors
 
     def __call__(self, file_object, model_folder, nproc=4, **kwargs) -> None:
 
@@ -50,6 +53,22 @@ class SWAN(ModelRunner):
             shutil.copy2(
                 f"{model_folder}/swan.exe", f"{file_object.get_folder()}/swan.exe"
             )
+
+        # Set post processor if mat-output is requested
+        with open(f"{file_object.get_folder()}/{file_object.get_filename()}", "r") as f:
+            line = True
+            file_names_to_convert = []
+            while line:
+                line = f.readline()
+                if ".mat" in line:
+                    mat_file = [f for f in line.split(" ") if ".mat" in f][0]
+                    file_names_to_convert.append(mat_file)
+
+            if file_names_to_convert:
+                msg.info(
+                    "Mat-file output requested. Setting up post-processor to convert to Netcdf..."
+                )
+                self._post_processors = [SwanMatToNc(file_names_to_convert)]
 
         try:
             p = Popen(

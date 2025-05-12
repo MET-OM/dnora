@@ -86,6 +86,7 @@ class SWAN(InputFileWriter):
         file_object: FileNames,
         exported_files: dict[str, list[str]],
         calibrate: dict[str, float] = None,
+        write_mat: bool = False,
         use_wind: bool = True,
         use_waterlevel: bool = True,
         use_spectra: bool = True,
@@ -93,7 +94,13 @@ class SWAN(InputFileWriter):
         use_ice: bool = True,
         structures: list[dict] = None,
     ):
-        """structures given in format:
+        """
+        write_mat = True [default: False]: Write mat-files instead of Netcdf-files
+
+        The mat-files are then post-processed to Netcdf-files by the model runner.
+        This can be used if you have problems compiling SWAN with Netcdf even though Netcdf otherwise works.
+
+        structures given in format:
         E.g. One triangle and one line
         [{'lon': (5,5.1,4.9), 'lat': (60,59.9,59,9), 'trans': 0.3, 'refl': 0.0, 'closed': True, 'name': 'closed triangle'},
         {'lon': (4,4.1), 'lat': (60.1,60.1,60.1),'name': 'breakwater'}
@@ -444,12 +451,16 @@ class SWAN(InputFileWriter):
             file_out.write("$ Generate block-output \n")
             temp_list = forcing_path.split("/")
             forcing_folder = "/".join(temp_list[0:-1])
+
+            extension = ".mat" if write_mat else ".nc"
+            header = "NOHEAD" if write_mat else "HEAD"
+
             file_out.write(
-                "BLOCK 'COMPGRID' HEAD '"
+                f"BLOCK 'COMPGRID' {header} '"
                 + grid.name
                 + "_"
                 + STR_START.split(".")[0]
-                + ".nc"
+                + extension
                 + "' & \n"
             )
             file_out.write(
@@ -465,7 +476,8 @@ class SWAN(InputFileWriter):
                     + grid.name
                     + "_"
                     + STR_START.split(".")[0]
-                    + "_spec.nc"
+                    + "_spec"
+                    + ".nc"
                     + "' & \n"
                 )
                 file_out.write("OUTPUT " + STR_START + " 1 HR \n")
