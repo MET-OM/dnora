@@ -65,7 +65,7 @@ def read_swan_mat_to_ds(filename: str, lon: np.ndarray, lat=np.ndarray) -> xr.Da
         for n, kk in enumerate(keys):
             obj.ind_insert(
                 swan_var,
-                np.where(np.isnan(mat.get(kk)), np.nan, mat.get(kk)),
+                np.flipud(np.where(np.isnan(mat.get(kk)), np.nan, mat.get(kk))),
                 time=n,
             )
 
