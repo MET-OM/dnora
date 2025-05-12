@@ -36,7 +36,9 @@ def read_data_from_cache(mrun_cacher, tiles, cache_reader, kwargs_cache):
     """Read all possible data from cached files"""
     if tiles.relevant_files():
         kwargs_read_cache = copy(kwargs_cache)
-        kwargs_read_cache["reader"] = cache_reader(files=tiles.relevant_files())
+        kwargs_read_cache["reader"] = cache_reader(
+            files=tiles.relevant_files(), used_for_cache=True
+        )
         kwargs_read_cache["source"] = DataSource.LOCAL
         mrun_cacher._import_data(**kwargs_read_cache)
     return mrun_cacher

@@ -161,7 +161,7 @@ class Netcdf(DataReader):
     def caching_strategy() -> CachingStrategy:
         return CachingStrategy.DontCacheMe
 
-    def __init__(self, files: list[str] = None):
+    def __init__(self, files: list[str] = None, **kwargs):
         self.files = files
 
     def __call__(
