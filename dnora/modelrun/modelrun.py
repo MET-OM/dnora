@@ -609,7 +609,8 @@ class ModelRun:
 
         if self.waveseries() is not None:
             dirp = self.waveseries().dirp(squeeze=False)
-
+        if self.spectral_grid() is None:
+            raise ValueError("Define a spectral grid with .set_spectral_grid()")
         spectral_reader = Spectra1DToSpectra(
             self.spectra1d(), self.spectral_grid().dirs(), dirp=dirp
         )
@@ -629,6 +630,9 @@ class ModelRun:
         if self.waveseries() is None:
             msg.warning("No Waveseries to convert to Spectra!")
             return
+
+        if self.spectral_grid() is None:
+            raise ValueError("Define a spectral grid with .set_spectral_grid()")
 
         spectral_reader = WaveSeriesToJONSWAP1D(
             self.waveseries(), self.spectral_grid().freq()
