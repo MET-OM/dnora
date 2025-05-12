@@ -35,6 +35,7 @@ def loop_conventions(list_of_conventions, S, D):
     Snew = copy(S)
     inds = np.array(range(S.shape[0]))
     Dnew = copy(D)
+    freq = np.linspace(0.0345, 0.5476, 30) 
     for n in range(len(list_of_conventions) - 1):
         cur_c = list_of_conventions[n]
         wan_c = list_of_conventions[n + 1]
@@ -43,10 +44,10 @@ def loop_conventions(list_of_conventions, S, D):
         )
         if not isinstance(bnd_processor, list):
             bnd_processor = [bnd_processor]
-
+        
         for processor in bnd_processor:
             Snew, Dnew, _, _, _ = processor(
-                spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
+                spec=Snew, dirs=Dnew, freq=freq, inds=inds, times=None
             )
     return Snew, Dnew
 
@@ -56,6 +57,8 @@ class BoundarySpectralConventionsOcean(unittest.TestCase):
         for dD in [1.0, 2.0, 3.0, 5.0, 6.0, 9.0, 10.0, 15.0, 18.0, 22.5, 30.0, 45.0]:
             D = np.arange(0, 360, dD)
             S = np.array([np.arange(0, 36, dD / 10), np.arange(0, 36, dD / 10)])
+            freq = np.array([[0.1]])
+            S = np.reshape(S, (S.shape[0],len(freq),S.shape[-1]))
             inds = np.array(range(S.shape[0]))
             bnd_processor = (
                 dnora.process.spectra.spectral_processor_for_convention_change(
@@ -64,9 +67,9 @@ class BoundarySpectralConventionsOcean(unittest.TestCase):
                 )
             )
             Snew, Dnew, _, _, _ = bnd_processor(
-                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds, times=None
+                spec=S, dirs=D, freq=freq, inds=inds, times=None
             )
-
+            Snew = np.squeeze(Snew)
             self.assertIsNone(np.testing.assert_almost_equal(Dnew, D))
             stemp = np.mod(np.arange(0, 36, dD / 10) + 18, 36)
             self.assertIsNone(
@@ -78,17 +81,19 @@ class BoundarySpectralConventionsOcean(unittest.TestCase):
             D = np.arange(0, 360, dD)
             S = np.array([np.arange(0, 36, dD / 10), np.arange(0, 36, dD / 10)])
             inds = np.array(range(S.shape[0]))
-
+            freq = np.array([[0.1]])
+            S = np.reshape(S, (S.shape[0],len(freq),S.shape[-1]))
             bnd_processor = (
                 dnora.process.spectra.spectral_processor_for_convention_change(
                     current_convention=SpectralConvention.OCEAN,
                     wanted_convention=SpectralConvention.WW3,
                 )
             )
+            
             Snew, Dnew, _, _, _ = bnd_processor(
-                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds, times=None
+                spec=S, dirs=D, freq=freq, inds=inds, times=None
             )
-
+            Snew = np.squeeze(Snew)
             self.assertIsNone(
                 np.testing.assert_almost_equal(
                     Dnew, np.mod(np.arange(0, -360, -dD) + 90, 360)
@@ -104,7 +109,8 @@ class BoundarySpectralConventionsOcean(unittest.TestCase):
             D = np.arange(0, 360, dD)
             S = np.array([np.arange(0, 36, dD / 10), np.arange(0, 36, dD / 10)])
             inds = np.array(range(S.shape[0]))
-
+            freq = np.array([[0.1]])
+            S = np.reshape(S, (S.shape[0],len(freq),S.shape[-1]))
             bnd_processor = (
                 dnora.process.spectra.spectral_processor_for_convention_change(
                     current_convention=SpectralConvention.OCEAN,
@@ -112,9 +118,9 @@ class BoundarySpectralConventionsOcean(unittest.TestCase):
                 )
             )
             Snew, Dnew, _, _, _ = bnd_processor(
-                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds, times=None
+                spec=S, dirs=D, freq=freq, inds=inds, times=None
             )
-
+            Snew = np.squeeze(Snew)
             self.assertIsNone(np.testing.assert_almost_equal(Dnew, D))
             stemp = np.mod(np.arange(0, -36, -dD / 10) + 9, 36)
             self.assertIsNone(
@@ -126,7 +132,8 @@ class BoundarySpectralConventionsOcean(unittest.TestCase):
             D = np.arange(0, 360, dD)
             S = np.array([np.arange(0, 36, dD / 10), np.arange(0, 36, dD / 10)])
             inds = np.array(range(S.shape[0]))
-
+            freq = np.array([[0.1]])
+            S = np.reshape(S, (S.shape[0],len(freq),S.shape[-1]))
             bnd_processor = (
                 dnora.process.spectra.spectral_processor_for_convention_change(
                     current_convention=SpectralConvention.OCEAN,
@@ -134,7 +141,7 @@ class BoundarySpectralConventionsOcean(unittest.TestCase):
                 )
             )
             Snew, Dnew, _, _, _ = bnd_processor(
-                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds, times=None
+                spec=S, dirs=D, freq=freq, inds=inds, times=None
             )
 
             self.assertIsNone(
@@ -156,7 +163,8 @@ class BoundarySpectralConventionsWW3(unittest.TestCase):
                 ]
             )
             inds = np.array(range(S.shape[0]))
-
+            freq = np.array([[0.1]])
+            S = np.reshape(S, (S.shape[0],len(freq),S.shape[-1]))
             bnd_processor = (
                 dnora.process.spectra.spectral_processor_for_convention_change(
                     current_convention=SpectralConvention.WW3,
@@ -164,9 +172,9 @@ class BoundarySpectralConventionsWW3(unittest.TestCase):
                 )
             )
             Snew, Dnew, _, _, _ = bnd_processor(
-                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds, times=None
+                spec=S, dirs=D, freq=freq, inds=inds, times=None
             )
-
+            Snew = np.squeeze(Snew)
             self.assertIsNone(
                 np.testing.assert_almost_equal(Dnew, np.arange(0, 360, dD))
             )
@@ -187,7 +195,8 @@ class BoundarySpectralConventionsWW3(unittest.TestCase):
                 ]
             )
             inds = np.array(range(S.shape[0]))
-
+            freq = np.array([[0.1]])
+            S = np.reshape(S, (S.shape[0],len(freq),S.shape[-1]))
             bnd_processor = (
                 dnora.process.spectra.spectral_processor_for_convention_change(
                     current_convention=SpectralConvention.WW3,
@@ -198,9 +207,9 @@ class BoundarySpectralConventionsWW3(unittest.TestCase):
             Dnew = copy(D)
             for processor in bnd_processor:
                 Snew, Dnew, _, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
+                    spec=Snew, dirs=Dnew, freq=freq, inds=inds, times=None
                 )
-
+            Snew = np.squeeze(Snew)
             self.assertIsNone(
                 np.testing.assert_almost_equal(Dnew, np.arange(0, 360, dD))
             )
@@ -219,7 +228,8 @@ class BoundarySpectralConventionsWW3(unittest.TestCase):
                 ]
             )
             inds = np.array(range(S.shape[0]))
-
+            freq = np.array([[0.1]])
+            S = np.reshape(S, (S.shape[0],len(freq),S.shape[-1]))
             bnd_processor = (
                 dnora.process.spectra.spectral_processor_for_convention_change(
                     current_convention=SpectralConvention.WW3,
@@ -233,9 +243,9 @@ class BoundarySpectralConventionsWW3(unittest.TestCase):
             Dnew = copy(D)
             for processor in bnd_processor:
                 Snew, Dnew, _, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
+                    spec=Snew, dirs=Dnew, freq=freq, inds=inds, times=None
                 )
-
+            Snew = np.squeeze(Snew)
             self.assertIsNone(
                 np.testing.assert_almost_equal(Dnew, np.arange(0, 360, dD))
             )
@@ -254,7 +264,8 @@ class BoundarySpectralConventionsWW3(unittest.TestCase):
                 ]
             )
             inds = np.array(range(S.shape[0]))
-
+            freq = np.array([[0.1]])
+            S = np.reshape(S, (S.shape[0],len(freq),S.shape[-1]))
             bnd_processor = (
                 dnora.process.spectra.spectral_processor_for_convention_change(
                     current_convention=SpectralConvention.WW3,
@@ -269,9 +280,9 @@ class BoundarySpectralConventionsWW3(unittest.TestCase):
 
             for processor in bnd_processor:
                 Snew, Dnew, _, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
+                    spec=Snew, dirs=Dnew, freq=freq, inds=inds, times=None
                 )
-
+            Snew = np.squeeze(Snew)
             self.assertIsNone(np.testing.assert_almost_equal(Dnew, D))
             self.assertIsNone(
                 np.testing.assert_almost_equal(
@@ -292,7 +303,8 @@ class BoundarySpectralConventionsMet(unittest.TestCase):
                 ]
             )
             inds = np.array(range(S.shape[0]))
-
+            freq = np.array([[0.1]])
+            S = np.reshape(S, (S.shape[0],len(freq),S.shape[-1]))
             bnd_processor = (
                 dnora.process.spectra.spectral_processor_for_convention_change(
                     current_convention=SpectralConvention.MET,
@@ -300,9 +312,9 @@ class BoundarySpectralConventionsMet(unittest.TestCase):
                 )
             )
             Snew, Dnew, _, _, _ = bnd_processor(
-                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds, times=None
+                spec=S, dirs=D, freq=freq, inds=inds, times=None
             )
-
+            Snew = np.squeeze(Snew)
             self.assertIsNone(np.testing.assert_almost_equal(Dnew, D))
             stemp = np.arange(0, 36, dD / 10)
             self.assertIsNone(
@@ -319,7 +331,8 @@ class BoundarySpectralConventionsMet(unittest.TestCase):
                 ]
             )
             inds = np.array(range(S.shape[0]))
-
+            freq = np.array([[0.1]])
+            S = np.reshape(S, (S.shape[0],len(freq),S.shape[-1]))
             bnd_processor = (
                 dnora.process.spectra.spectral_processor_for_convention_change(
                     current_convention=SpectralConvention.MET,
@@ -331,9 +344,9 @@ class BoundarySpectralConventionsMet(unittest.TestCase):
 
             for processor in bnd_processor:
                 Snew, Dnew, _, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
+                    spec=Snew, dirs=Dnew, freq=freq, inds=inds, times=None
                 )
-
+            Snew = np.squeeze(Snew)
             self.assertIsNone(
                 np.testing.assert_almost_equal(
                     Dnew, np.mod(np.arange(0, -360, -dD) + 90, 360)
@@ -354,7 +367,8 @@ class BoundarySpectralConventionsMet(unittest.TestCase):
                 ]
             )
             inds = np.array(range(S.shape[0]))
-
+            freq = np.array([[0.1]])
+            S = np.reshape(S, (S.shape[0],len(freq),S.shape[-1]))
             bnd_processor = (
                 dnora.process.spectra.spectral_processor_for_convention_change(
                     current_convention=SpectralConvention.MET,
@@ -366,9 +380,9 @@ class BoundarySpectralConventionsMet(unittest.TestCase):
 
             for processor in bnd_processor:
                 Snew, Dnew, _, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
+                    spec=Snew, dirs=Dnew, freq=freq, inds=inds, times=None
                 )
-
+            Snew = np.squeeze(Snew)
             self.assertIsNone(np.testing.assert_almost_equal(Dnew, D))
             stemp = np.mod(np.arange(0, -36, -dD / 10) + 9, 36)
             self.assertIsNone(
@@ -385,7 +399,8 @@ class BoundarySpectralConventionsMet(unittest.TestCase):
                 ]
             )
             inds = np.array(range(S.shape[0]))
-
+            freq = np.array([[0.1]])
+            S = np.reshape(S, (S.shape[0],len(freq),S.shape[-1]))
             bnd_processor = (
                 dnora.process.spectra.spectral_processor_for_convention_change(
                     current_convention=SpectralConvention.MET,
@@ -397,9 +412,9 @@ class BoundarySpectralConventionsMet(unittest.TestCase):
 
             for processor in bnd_processor:
                 Snew, Dnew, _, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
+                    spec=Snew, dirs=Dnew, freq=freq, inds=inds, times=None
                 )
-
+            Snew = np.squeeze(Snew)
             self.assertIsNone(
                 np.testing.assert_almost_equal(
                     Dnew, np.mod(np.arange(0, -360, -dD) + 90, 360)
@@ -424,7 +439,8 @@ class BoundarySpectralConventionsMath(unittest.TestCase):
                 ]
             )
             inds = np.array(range(S.shape[0]))
-
+            freq = np.array([[0.1]])
+            S = np.reshape(S, (S.shape[0],len(freq),S.shape[-1]))
             bnd_processor = (
                 dnora.process.spectra.spectral_processor_for_convention_change(
                     current_convention=SpectralConvention.MATH,
@@ -433,9 +449,9 @@ class BoundarySpectralConventionsMath(unittest.TestCase):
             )
 
             Snew, Dnew, _, _, _ = bnd_processor(
-                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds, times=None
+                spec=S, dirs=D, freq=freq, inds=inds, times=None
             )
-
+            Snew = np.squeeze(Snew)
             self.assertIsNone(np.testing.assert_almost_equal(Dnew, D))
             stemp = np.arange(0, 36, dD / 10)
             mask = stemp > 35.999
@@ -452,7 +468,8 @@ class BoundarySpectralConventionsMath(unittest.TestCase):
                 ]
             )
             inds = np.array(range(S.shape[0]))
-
+            freq = np.array([[0.1]])
+            S = np.reshape(S, (S.shape[0],len(freq),S.shape[-1]))
             bnd_processor = (
                 dnora.process.spectra.spectral_processor_for_convention_change(
                     current_convention=SpectralConvention.MATH,
@@ -464,9 +481,8 @@ class BoundarySpectralConventionsMath(unittest.TestCase):
             Dnew = copy(D)
             for processor in bnd_processor:
                 Snew, Dnew, _, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
+                    spec=Snew, dirs=Dnew, freq=freq, inds=inds, times=None
                 )
-
             self.assertIsNone(
                 np.testing.assert_almost_equal(
                     Dnew, np.mod(np.arange(0, -360, -dD) + 90, 360)
@@ -484,7 +500,8 @@ class BoundarySpectralConventionsMath(unittest.TestCase):
                 ]
             )
             inds = np.array(range(S.shape[0]))
-
+            freq = np.array([[0.1]])
+            S = np.reshape(S, (S.shape[0],len(freq),S.shape[-1]))
             bnd_processor = (
                 dnora.process.spectra.spectral_processor_for_convention_change(
                     current_convention=SpectralConvention.MATH,
@@ -496,9 +513,9 @@ class BoundarySpectralConventionsMath(unittest.TestCase):
             Dnew = copy(D)
             for processor in bnd_processor:
                 Snew, Dnew, _, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
+                    spec=Snew, dirs=Dnew, freq=freq, inds=inds, times=None
                 )
-
+            Snew = np.squeeze(Snew)
             self.assertIsNone(np.testing.assert_almost_equal(Dnew, D))
             stemp = np.mod(np.arange(0, 36, dD / 10) + 18, 36)
             self.assertIsNone(np.testing.assert_almost_equal(Snew, [stemp, stemp]))
@@ -513,7 +530,8 @@ class BoundarySpectralConventionsMath(unittest.TestCase):
                 ]
             )
             inds = np.array(range(S.shape[0]))
-
+            freq = np.array([[0.1]])
+            S = np.reshape(S, (S.shape[0],len(freq),S.shape[-1]))
             bnd_processor = (
                 dnora.process.spectra.spectral_processor_for_convention_change(
                     current_convention=SpectralConvention.MATH,
@@ -525,9 +543,9 @@ class BoundarySpectralConventionsMath(unittest.TestCase):
             Dnew = copy(D)
             for processor in bnd_processor:
                 Snew, Dnew, _, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
+                    spec=Snew, dirs=Dnew, freq=freq, inds=inds, times=None
                 )
-
+            Snew = np.squeeze(Snew)
             self.assertIsNone(
                 np.testing.assert_almost_equal(
                     Dnew, np.mod(np.arange(0, -360, -dD) + 90, 360)
@@ -545,7 +563,8 @@ class BoundarySpectralConventionsMathVec(unittest.TestCase):
             D = np.mod(np.arange(0, -360, -dD) + 90, 360)
             S = np.array([np.arange(0, 36, dD / 10), np.arange(0, 36, dD / 10)])
             inds = np.array(range(S.shape[0]))
-
+            freq = np.array([[0.1]])
+            S = np.reshape(S, (S.shape[0],len(freq),S.shape[-1]))
             bnd_processor = (
                 dnora.process.spectra.spectral_processor_for_convention_change(
                     current_convention=SpectralConvention.MATHVEC,
@@ -553,7 +572,7 @@ class BoundarySpectralConventionsMathVec(unittest.TestCase):
                 )
             )
             Snew, Dnew, _, _, _ = bnd_processor(
-                spec=S, dirs=D, freq=np.array([[0.1]]), inds=inds, times=None
+                spec=S, dirs=D, freq=freq, inds=inds, times=None
             )
 
             self.assertIsNone(
@@ -566,7 +585,8 @@ class BoundarySpectralConventionsMathVec(unittest.TestCase):
             D = np.mod(np.arange(0, -360, -dD) + 90, 360)
             S = np.array([np.arange(0, 36, dD / 10), np.arange(0, 36, dD / 10)])
             inds = np.array(range(S.shape[0]))
-
+            freq = np.array([[0.1]])
+            S = np.reshape(S, (S.shape[0],len(freq),S.shape[-1]))
             bnd_processor = (
                 dnora.process.spectra.spectral_processor_for_convention_change(
                     current_convention=SpectralConvention.MATHVEC,
@@ -578,9 +598,9 @@ class BoundarySpectralConventionsMathVec(unittest.TestCase):
             Dnew = copy(D)
             for processor in bnd_processor:
                 Snew, Dnew, _, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
+                    spec=Snew, dirs=Dnew, freq=freq, inds=inds, times=None
                 )
-
+            Snew = np.squeeze(Snew)
             self.assertIsNone(
                 np.testing.assert_almost_equal(Dnew, np.arange(0, 360, dD))
             )
@@ -594,7 +614,8 @@ class BoundarySpectralConventionsMathVec(unittest.TestCase):
             D = np.mod(np.arange(0, -360, -dD) + 90, 360)
             S = np.array([np.arange(0, 36, dD / 10), np.arange(0, 36, dD / 10)])
             inds = np.array(range(S.shape[0]))
-
+            freq = np.array([[0.1]])
+            S = np.reshape(S, (S.shape[0],len(freq),S.shape[-1]))
             bnd_processor = (
                 dnora.process.spectra.spectral_processor_for_convention_change(
                     current_convention=SpectralConvention.MATHVEC,
@@ -606,9 +627,9 @@ class BoundarySpectralConventionsMathVec(unittest.TestCase):
             Dnew = copy(D)
             for processor in bnd_processor:
                 Snew, Dnew, _, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
+                    spec=Snew, dirs=Dnew, freq=freq, inds=inds, times=None
                 )
-
+            Snew = np.squeeze(Snew)
             self.assertIsNone(np.testing.assert_almost_equal(Dnew, D))
             stemp = np.mod(np.arange(0, -36, -dD / 10) + 9, 36)
             mask = stemp > 35.999
@@ -620,7 +641,8 @@ class BoundarySpectralConventionsMathVec(unittest.TestCase):
             D = np.mod(np.arange(0, -360, -dD) + 90, 360)
             S = np.array([np.arange(0, 36, dD / 10), np.arange(0, 36, dD / 10)])
             inds = np.array(range(S.shape[0]))
-
+            freq = np.array([[0.1]])
+            S = np.reshape(S, (S.shape[0],len(freq),S.shape[-1]))
             bnd_processor = (
                 dnora.process.spectra.spectral_processor_for_convention_change(
                     current_convention=SpectralConvention.MATHVEC,
@@ -632,9 +654,9 @@ class BoundarySpectralConventionsMathVec(unittest.TestCase):
             Dnew = copy(D)
             for processor in bnd_processor:
                 Snew, Dnew, _, _, _ = processor(
-                    spec=Snew, dirs=Dnew, freq=np.array([[0.1]]), inds=inds, times=None
+                    spec=Snew, dirs=Dnew, freq=freq, inds=inds, times=None
                 )
-
+            Snew = np.squeeze(Snew)
             self.assertIsNone(
                 np.testing.assert_almost_equal(Dnew, np.arange(0, 360, dD))
             )
