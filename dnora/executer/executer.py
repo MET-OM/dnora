@@ -11,6 +11,7 @@ from dnora.type_manager.dnora_types import file_type_from_string
 from .decorators import add_write_method, add_run_method
 from dnora.defaults import read_environment_variable
 
+
 @add_run_method(DnoraFileType.SPECTRA)
 @add_run_method(DnoraFileType.WIND)
 @add_run_method(DnoraFileType.GRID)
@@ -37,7 +38,8 @@ class ModelExecuter:
     def dry_run(self) -> bool:
         return self._dry_run or self.model.dry_run()
 
-    def _write(self,
+    def _write(
+        self,
         file_type: DnoraFileType | str,
         input_file_writer: InputFileWriter = None,
         filename: str = None,
@@ -99,19 +101,31 @@ class ModelExecuter:
 
         return
 
-    def run_model(self, model_runner: ModelRunner | None = None, model_folder: str='', post_process: bool=True):
+    def run_model(
+        self,
+        model_runner: ModelRunner | None = None,
+        model_folder: str = "",
+        post_process: bool = True,
+        **kwargs,
+    ):
         """Run the main model. Set post_process=False to disable any post-processing that might be defined."""
-        self._run(file_type=DnoraFileType.INPUT, model_runner=model_runner, model_folder=model_folder, post_process=post_process)
-        
+        self._run(
+            file_type=DnoraFileType.INPUT,
+            model_runner=model_runner,
+            model_folder=model_folder,
+            post_process=post_process,
+            **kwargs,
+        )
+
     def _run(
         self,
         file_type: DnoraFileType | str,
         model_runner: ModelRunner | None = None,
-        model_folder: str = '',
+        model_folder: str = "",
         input_file: str | None = None,
         folder: str | None = None,
         dateformat: str | None = None,
-        post_process: bool = True, 
+        post_process: bool = True,
         post_processors: list[PostProcessor] | None = None,
         dry_run: bool = False,
         **kwargs,
@@ -125,7 +139,9 @@ class ModelExecuter:
 
         # Find location of model executable
         # E.g. For writing GRID and a preferred format of WW3 search for DNORA_GRID_WW3_PATH and DNORA_WW3_PATH
-        model_folder = model_folder or read_environment_variable(file_type, model_runner.preferred_format())
+        model_folder = model_folder or read_environment_variable(
+            file_type, model_runner.preferred_format()
+        )
 
         # Option 1) Use user provided
         # Option 2) Use knowledge of where has been exported
@@ -148,22 +164,30 @@ class ModelExecuter:
         if not self.dry_run():
             model_runner(
                 file_object=file_object,
-                model_folder=model_folder, 
+                model_folder=model_folder,
                 **kwargs,
             )
         else:
             msg.info("Dry run! Model will not run.")
 
-
         post_processors = post_processors or model_runner.post_processors()
 
         if post_processors and post_process:
-            self.post_process(post_processors, file_object, model_folder,  **kwargs)
+            self.post_process(post_processors, file_object, model_folder, **kwargs)
 
     def post_process(
-        self, post_processors: list[PostProcessor], file_object: FileNames, model_folder, **kwargs
+        self,
+        post_processors: list[PostProcessor],
+        file_object: FileNames,
+        model_folder,
+        **kwargs,
     ) -> None:
         """Post processes model run output, e.g. convert to netcdf or move files"""
         for post_processor in post_processors:
             msg.header(post_processor, "Post processing...")
-            post_processor(model=self.model, file_object=file_object, model_folder=model_folder, **kwargs)
+            post_processor(
+                model=self.model,
+                file_object=file_object,
+                model_folder=model_folder,
+                **kwargs,
+            )
