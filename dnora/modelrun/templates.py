@@ -33,9 +33,15 @@ class ERA5(ModelRun):
     }
 
 
-class NOAA(ModelRun):
+class PacIOOS(ModelRun):
     _reader_dict = {
-        DnoraDataType.WIND: dnora.read.wind.noaa.GFS(),
+        DnoraDataType.WIND: dnora.read.wind.noaa.PacIOOS(),
+    }
+
+
+class NCEP(ModelRun):
+    _reader_dict = {
+        DnoraDataType.WIND: dnora.read.wind.noaa.NCEP(),
     }
 
 
@@ -52,12 +58,14 @@ class WW3_4km(ModelRun):
         DnoraDataType.WIND: dnora.read.wind.metno.MEPS(),
     }
 
+
 class CLIMAREST(ModelRun):
     _reader_dict = {
         DnoraDataType.SPECTRA: dnora.read.spectra.metno.CLIMAREST(),
         DnoraDataType.WIND: dnora.read.wind.metno.CLIMAREST(),
         DnoraDataType.ICE: dnora.read.ice.metno.CLIMAREST(),
     }
+
 
 # class NCHMF(ModelRun):
 #     _reader_dict = {
