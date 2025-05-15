@@ -65,6 +65,8 @@ def basic_xarray_read(
             f[time_var] = f[time_var].assign_attrs({"units": time_reference_str})
             f = xr.decode_cf(f)
 
+        # We want exact minutes to slice accurately
+        f[time_var] = f[time_var].dt.round("min")
         ds = f.sel(**{time_var: slice(start_time, end_time)})
 
         # Make sure longitude is between -180 and 180 (E.g. GFS has 0 to 360)
