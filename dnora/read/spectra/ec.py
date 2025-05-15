@@ -9,7 +9,7 @@ from dnora.process.spectra import RemoveEmpty
 # Import abstract classes and needed instances of them
 from dnora.read.abstract_readers import SpectralDataReader
 from dnora.grid import Grid
-import cdsapi
+
 from dnora.type_manager.data_sources import DataSource
 from dnora.cacher.caching_strategies import CachingStrategy
 
@@ -44,6 +44,12 @@ def download_era5_from_cds(
     given area and time period"""
     start_time = pd.Timestamp(start_time)
     end_time = pd.Timestamp(end_time)
+    
+    try:
+        import cdsapi
+    except ImportError as e:
+        msg.advice("The cdsapi package is required to use ECWMF products! Install by e.g. 'conda install cdsapi'")
+        raise e
     c = cdsapi.Client()
 
     filename = f"{folder}/EC_ERA5.nc"

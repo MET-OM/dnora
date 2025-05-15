@@ -1,7 +1,6 @@
 import xarray as xr
 
 import os, glob
-import cdsapi
 
 # Import objects
 from dnora.grid import Grid
@@ -30,6 +29,11 @@ def download_era5_from_cds(
     given area and time period"""
     start_time = pd.Timestamp(start_time)
     end_time = pd.Timestamp(end_time)
+    try:
+        import cdsapi
+    except ImportError as e:
+        msg.advice("The cdsapi package is required to use ECWMF products! Install by e.g. 'conda install cdsapi'")
+        raise e
     c = cdsapi.Client()
 
     filename = f"{folder}/ERA5_cds_temp.nc"
