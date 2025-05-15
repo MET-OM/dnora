@@ -16,7 +16,4 @@ dependencies:
   - pip:
     - dnplot
   - python-dotenv
-  - fimex=1.8.1
   - progressbar
-  - matplotlib
-  - cmocean

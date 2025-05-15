@@ -5,7 +5,7 @@ from dnora.type_manager.dnora_types import DnoraDataType
 from dnora.utils.distance import lon_in_km
 from subprocess import call
 from typing import Callable
-
+from dnora import msg
 
 def create_fimex_xy_strings(
     lon: tuple[float, float], lat: tuple[float, float], resolution_in_km: float
@@ -150,7 +150,13 @@ def pyfimex(
     reduceTime_end,
     ensemble_member=False,
 ):
-    import pyfimex0 as pyfi
+    try:
+        import pyfimex0 as pyfi
+    except ImportError as e:
+        msg.advice("You are trying to use a reader that relies on fimex to regrid data, and chosen to use program='pyfimex' (default), but looks like it is not installed.")
+        msg.plain("If you have an independet installation of fimex, use program='fimex' when importing data.")
+        msg.plain("If you don't have fimex at all, you can install the python version with e.g. 'conda install fimex=1.8.1'")
+        raise e
 
     r = pyfi.createFileReader("netcdf", input_file)
     inter_ll = pyfi.createInterpolator(r)
