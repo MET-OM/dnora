@@ -1,9 +1,9 @@
 from dnora.read.ds_read_functions import  setup_temp_dir
 from dnora.type_manager.dnora_types import DnoraDataType
 import os
-import copernicusmarine
 import pandas as pd
 import xarray as xr
+
 def ds_cmems_read(
     start_time: pd.Timestamp,
     end_time: pd.Timestamp,
@@ -20,6 +20,12 @@ def ds_cmems_read(
     temp_dir = setup_temp_dir(data_type, name)
 
     cred_file = os.path.expanduser("~/.copernicusmarine/.copernicusmarine-credentials")
+    try:
+        import copernicusmarine
+    except ImportError as e:
+        msg.advice("The Copernicus Marine Service Toolbox is required to use ECWMF products! Install by e.g. 'conda install copernicusmarine'")
+        raise e
+    
     if not os.path.isfile(cred_file):
         msg.advice(
             f"No credentials file {cred_file} was found. Login for the first time to create it."
