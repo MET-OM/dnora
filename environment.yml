@@ -16,4 +16,6 @@ dependencies:
   - pip:
     - dnplot
   - python-dotenv
+  - cdsapi>=0.7.6
+  - fimex=1.8.1
   - progressbar
