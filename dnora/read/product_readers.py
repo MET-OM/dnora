@@ -111,7 +111,7 @@ class ProductReader(DataReader):
         )
 
         if kwargs.get("program"):  # i.e. 'pyfimex'
-            ds_creator_function = partial(ds_creator_function, program=program)
+            ds_creator_function = partial(ds_creator_function, program=kwargs.get("program"))
 
         ds_list = read_ds_list(
             start_times,
