@@ -125,7 +125,6 @@ class ProductReader(DataReader):
             lead_time=self.file_structure.lead_time,
         )
         if not ds_list:
-            msg.warning("No data found!")
             return None
 
         time_var = self.product_configuration.time_var or find_time_var_in_ds(
