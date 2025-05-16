@@ -19,7 +19,7 @@ class FileStructure:
     offset: int = 0
     tile: str = None
 
-    def create_time_stamps(self, start_time: str, end_time: str):
+    def create_time_stamps(self, start_time: str, end_time: str, last_file: str = ''):
         if self.stride is None:
             start_times, end_times = [start_time], [end_time]
             file_times = start_times
@@ -35,7 +35,7 @@ class FileStructure:
                 end_time,
                 stride=self.stride,
                 hours_per_file=self.hours_per_file,
-                last_file=self.last_file,
+                last_file=(last_file or self.last_file),
                 lead_time=self.lead_time,
                 offset=self.offset,
             )

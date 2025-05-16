@@ -26,6 +26,27 @@ from dnora.read.fimex_functions import ds_fimex_read
 from dnora.read.ds_read_functions import read_ds_list, setup_temp_dir
 import calendar
 
+from dnora.read.product_readers import ProductReader
+from dnora.read.product_configuration import ProductConfiguration
+from dnora.read.ds_read_functions import ftp_read
+from dnora.read.file_structure import FileStructure
+
+
+class ECMWF(ProductReader):
+    """Connects to MET Norways ftp server and downloads the ECMWF operational atmospheric data that covers Vietnam
+    """
+
+    product_configuration = ProductConfiguration(
+        filename="vietnam_atmos_%Y%m%d_00.nc",
+        default_folders={
+        },
+        ds_creator_function=ftp_read,
+        data_vars=["x_wind_10m", "y_wind_10m"],
+        default_data_source=DataSource.REMOTE,
+    )
+
+    file_structure = FileStructure(stride=24, hours_per_file=160)
+
 
 def ds_xarray_read(
     start_time: pd.Timestamp,

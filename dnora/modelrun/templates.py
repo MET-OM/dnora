@@ -67,9 +67,9 @@ class CLIMAREST(ModelRun):
     }
 
 
-# class NCHMF(ModelRun):
-#     _reader_dict = {
-#         DnoraDataType.SPECTRA: dnora.read.spectra.nchmf.SWAN(),
-#         DnoraDataType.WIND: dnora.read.wind.nchmf.Oper(),
-#         DnoraDataType.WATERLEVEL: dnora.read.waterlevel.cmems.Global(),
-#     }
+class NCHMF(ModelRun):
+    _reader_dict = {
+        #DnoraDataType.SPECTRA: dnora.read.spectra.nchmf.SWAN(),
+        DnoraDataType.WIND: dnora.read.wind.nchmf.ECMWF(),
+        DnoraDataType.WATERLEVEL: dnora.read.waterlevel.cmems.Global(),
+    }

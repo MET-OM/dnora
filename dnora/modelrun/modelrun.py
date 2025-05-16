@@ -28,9 +28,9 @@ from dnora.read.spectra1d import SpectraTo1D, WaveSeriesToJONSWAP1D
 from dnora.read.waveseries import Spectra1DToWaveSeries
 from dnora.type_manager.spectral_conventions import SpectralConvention
 from dnora.pick import Trivial
-
+import datetime
 from dnora.export.templates import Cacher
-from dnora.aux_funcs import get_url, get_first_file
+
 import dnora.read.generic
 from dnora.read.abstract_readers import (
     DataReader,
@@ -290,21 +290,22 @@ class ModelRun:
         # if point_mask is None:
         #     point_mask = self.grid().sea_mask()
         if self.forecast_mode():
-            if hasattr(reader, "hours_per_file"):
+
+            if hasattr(reader.file_structure, "hours_per_file"):
                 start_time = self._reference_time
-                kwargs["lead_time"] = kwargs.get("lead_time", self._lead_time)
                 kwargs["last_file"] = kwargs.get(
                     "last_file",
-                    get_first_file(
-                        start_time, reader.stride, lead_time=kwargs.get("lead_time")
+                    utils.time.get_first_file(
+                        start_time, reader.file_structure.stride, lead_time=kwargs.get("lead_time", 0)
                     ),
                 )
-                kwargs["lead_time"] = kwargs.get("lead_time", self._lead_time)
                 end_time = min(
                     kwargs.get("last_file")
-                    + pd.Timedelta(hours=reader.hours_per_file - 1),
+                    + pd.Timedelta(hours=reader.file_structure.hours_per_file - 1),
                     self.end_time(),
                 )
+            else:
+                start_time, end_time = self.start_time(), self.end_time()    
         else:
             start_time, end_time = self.start_time(), self.end_time()
 
@@ -898,18 +899,17 @@ class ModelRun:
         self._source = DataSource.UNDEFINED
 
     def activate_forecast_mode(
-        self, reference_time: str = None, lead_time: int = 0
+        self, reference_time: str = None, forecast_length: int = 48
     ) -> None:
-        reference_time = reference_time or self.start_time()
+        reference_time = reference_time or pd.to_datetime(datetime.datetime.now()).round('h')
         self._reference_time = pd.to_datetime(reference_time)
-        self._lead_time = lead_time
-        if lead_time > 0:
-            self._time = pd.date_range(
-                reference_time,
-                pd.to_datetime(reference_time) + pd.Timedelta(hours=lead_time),
-                freq="h",
-            )
-        msg.info(f"Activating forecast mode with reference time {reference_time}")
+        
+        self._time = pd.date_range(
+            reference_time,
+            pd.to_datetime(reference_time) + pd.Timedelta(hours=forecast_length),
+            freq="h",
+        )
+        msg.info(f"Activating forecast mode with reference time {reference_time} and length {forecast_length:.0f} h")
 
     def deactivate_forecast_mode(self) -> None:
         self._reference_time = None

@@ -9,7 +9,61 @@ from dnora.type_manager.dnora_types import DnoraDataType
 
 from typing import Callable
 import geo_parameters as gp
+import ftplib
 
+import os
+def get_rc_credentials(rc_file: str) -> tuple[str]:
+
+
+    # Define the path to your configuration file
+    config_path = os.path.expanduser(f'~/{rc_file}')
+
+    # Initialize a dictionary to store the credentials
+    config = {}
+
+    try:
+        with open(config_path, 'r') as file:
+            for line in file:
+                # Strip whitespace and split the line into key and value
+                key, value = line.strip().split(':', 1)
+                config[key.strip()] = value.strip()
+        
+        # Retrieve the username and password
+        ftp_username = config['ftp_username']
+        ftp_password = config['ftp_password']
+
+    except FileNotFoundError:
+        print(f"Configuration file not found at {config_path}")
+
+    return ftp_username, ftp_password
+
+
+def ftp_read(
+    start_time: pd.Timestamp,
+    end_time: pd.Timestamp,
+    url: str,
+    ## Partial variables from ProductReader
+    lon: tuple[float],
+    lat: tuple[float],
+    name: str,
+    data_type: DnoraDataType,
+    data_vars: list[str],
+    ## Partial variables in ProductConfiguration
+    **kwargs
+
+):   
+    temp_dir = setup_temp_dir(data_type, name)
+
+    username, password = get_rc_credentials('.nchmf_ecmwfrc')
+    ftp = ftplib.FTP('fog.met.no')
+    ftp.login(username, password)
+    ftp.cwd("/")
+    
+    local_file = f"{temp_dir}/{name}_{url}"
+    with open(local_file, "wb") as lf:
+        ftp.retrbinary(f"RETR {url}", lf.write)
+    ds = xr.open_dataset(local_file)[data_vars]
+    return ds.sel(time=slice(start_time, end_time))
 
 def find_time_var_in_ds(ds):
     """Tries to identify the time variable in a dataset"""
@@ -168,7 +222,7 @@ def read_one_ds(
                 try_next_file = False
                 keep_trying = False
 
-        except (OSError, RuntimeError):  # xr gives OSError, fimex gives RuntimeError
+        except (OSError, RuntimeError, ftplib.error_perm):  # xr gives OSError, fimex gives RuntimeError
             msg.plain(f"SKIPPING, file not found: {url}")
             try_next_file = True
 

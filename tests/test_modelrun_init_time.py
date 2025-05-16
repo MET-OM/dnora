@@ -14,7 +14,7 @@ def test_forecast_init():
     t0 = "2020-01-01 00:00"
     t1 = "2020-01-01 10:00"
     model = ModelRun()
-    model.activate_forecast_mode(reference_time=t0, lead_time=10)
+    model.activate_forecast_mode(reference_time=t0, forecast_length=10)
 
     pd.testing.assert_index_equal(pd.date_range(t0, t1, freq="h"), model.time())
 
