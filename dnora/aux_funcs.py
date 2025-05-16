@@ -10,17 +10,7 @@ import os
 #
 
 
-def get_first_file(
-    start_time: str,
-    stride: int,
-    lead_time: int = 0,
-    offset: int = 0,
-):
 
-    _, _, file_times = create_time_stamps(
-        start_time, start_time, stride, lead_time=lead_time, offset=offset
-    )
-    return file_times[0]
 
 
 def check_if_file(filename: str, halt=False) -> bool:
