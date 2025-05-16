@@ -71,16 +71,11 @@ def basic_xarray_read(
 
         # Make sure longitude is between -180 and 180 (E.g. GFS has 0 to 360)
         lon_str = gp.grid.Lon.find_me_in_ds(ds, return_first=True)
-        if not lon_str and "lon" in ds.coords:
-            lon_str = "lon"
-        else:
-            lon_str = "longitude"
+        if not lon_str:
+            lon_str = "lon" if "lon" in ds.coords else "longitude"
         lat_str = gp.grid.Lat.find_me_in_ds(ds, return_first=True)
-        if not lat_str and "lat" in ds.coords:
-            lat_str = "lat"
-        else:
-            lat_str = "latitude"
-
+        if not lat_str:
+            lon_str = "lat" if "lat" in ds.coords else "latitude"
         if np.where(ds[lon_str].data > 180)[0]:
             ds = ds.assign_coords(
                 **{
@@ -100,7 +95,7 @@ def basic_xarray_read(
         if inds is not None and hasattr(ds, inds_var):
             ds = ds.isel(**{inds_var: inds})
 
-        if data_vars is not None:
+        if data_vars:
             ds = ds[data_vars]
 
     return ds
