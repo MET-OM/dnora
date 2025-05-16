@@ -98,8 +98,6 @@ class ProductReader(DataReader):
             grid.edges("lon"), grid.edges("lat"), expansion_factor
         )
 
-        msg.process(f"Applying {program}")
-
         ds_creator_function = partial(
             self.product_configuration.ds_creator_function,
             lon=lon,

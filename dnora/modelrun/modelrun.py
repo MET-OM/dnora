@@ -909,7 +909,7 @@ class ModelRun:
             pd.to_datetime(reference_time) + pd.Timedelta(hours=forecast_length),
             freq="h",
         )
-        msg.info(f"Activating forecast mode with reference time {reference_time}")
+        msg.info(f"Activating forecast mode with reference time {reference_time} and length {forecast_length:.0f} h")
 
     def deactivate_forecast_mode(self) -> None:
         self._reference_time = None
