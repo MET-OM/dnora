@@ -67,8 +67,9 @@ class NorKyst800(ProductReader):
         ds_creator_function=partial(
             ds_fimex_read,
             resolution_in_km=0.8,
-            data_vars=["u", "v"],
+            
         ),
+        data_vars=["u", "v"],
         default_data_source=DataSource.REMOTE,
         url_function=get_norkyst800_urls,
         ds_aliases={"u": gp.ocean.XCurrent, "v": gp.ocean.YCurrent},

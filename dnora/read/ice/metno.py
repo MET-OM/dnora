@@ -39,8 +39,9 @@ class NORA3(ProductReader):
         ds_creator_function=partial(
             ds_fimex_read,
             resolution_in_km=3,
-            data_vars=["SIC", "SIT"],
+            
         ),
+        data_vars=["SIC", "SIT"],
         default_data_source=DataSource.REMOTE,
     )
 
@@ -71,8 +72,9 @@ class Barents25(ProductReader):
         ds_creator_function=partial(
             ds_fimex_read,
             resolution_in_km=2.5,
-            data_vars=["ice_concentration", "ice_thickness"],
+            
         ),
+        data_vars=["ice_concentration", "ice_thickness"],
         default_data_source=DataSource.REMOTE,
     )
 
@@ -88,8 +90,8 @@ class CLIMAREST(ProductReader):
         ds_creator_function=partial(
             ds_fimex_read,
             resolution_in_km=3.0,
-            data_vars=["sic"],
         ),
+        data_vars=["sic"],
         default_data_source=DataSource.LOCAL,
     )
 
