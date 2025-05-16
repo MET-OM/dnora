@@ -3,7 +3,7 @@ from dnora.type_manager.dnora_types import DnoraDataType
 import os
 import pandas as pd
 import xarray as xr
-
+from dnora import msg
 def ds_cmems_read(
     start_time: pd.Timestamp,
     end_time: pd.Timestamp,
