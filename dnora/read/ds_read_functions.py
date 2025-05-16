@@ -76,7 +76,7 @@ def basic_xarray_read(
         lat_str = gp.grid.Lat.find_me_in_ds(ds, return_first=True)
         if not lat_str:
             lon_str = "lat" if "lat" in ds.coords else "latitude"
-        if np.where(ds[lon_str].data > 180)[0]:
+        if np.where(ds[lon_str].data > 180)[0].size > 0:
             ds = ds.assign_coords(
                 **{
                     lon_str: np.where(
