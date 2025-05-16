@@ -81,14 +81,15 @@ def basic_xarray_read(
         else:
             lat_str = "latitude"
 
-        ds = ds.assign_coords(
-            **{
-                lon_str: np.where(
-                    ds[lon_str].data > 180, ds[lon_str].data - 360, ds[lon_str].data
-                )
-            },
-        )
-        ds = ds.sortby(lon_str)
+        if np.where(ds[lon_str].data > 180)[0]:
+            ds = ds.assign_coords(
+                **{
+                    lon_str: np.where(
+                        ds[lon_str].data > 180, ds[lon_str].data - 360, ds[lon_str].data
+                    )
+                },
+            )
+            ds = ds.sortby(lon_str)
 
         if lon is not None and lat is not None:
             if len([c for c in ds.get(lat_str).shape if c > 1]) == 1:
