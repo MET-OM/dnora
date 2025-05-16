@@ -75,7 +75,6 @@ class ProductReader(DataReader):
         folder: str,
         filename: str,
         expansion_factor: float = 1.2,
-        program: str = "pyfimex",
         dnora_class=None,
         tile: str | None = None,
         **kwargs,
@@ -83,8 +82,12 @@ class ProductReader(DataReader):
         """Reads in all gridded data for given area and time"""
         tile = tile or self._tile
         tile_name = self.product_configuration.tile_names.get(tile)
-        folder = self._folder(folder, source, tile=tile, tile_name=tile_name, strict=False)
-        filename = self._filename(filename, source, tile=tile, tile_name=tile_name, strict=False)
+        folder = self._folder(
+            folder, source, tile=tile, tile_name=tile_name, strict=False
+        )
+        filename = self._filename(
+            filename, source, tile=tile, tile_name=tile_name, strict=False
+        )
         start_times, end_times, file_times = self.file_structure.create_time_stamps(
             start_time, end_time
         )
@@ -98,16 +101,18 @@ class ProductReader(DataReader):
             grid.edges("lon"), grid.edges("lat"), expansion_factor
         )
 
-        msg.process(f"Applying {program}")
-
         ds_creator_function = partial(
             self.product_configuration.ds_creator_function,
             lon=lon,
             lat=lat,
             data_type=obj_type,
             name=self.name(),
-            program=program,
+            data_vars=self.product_configuration.data_vars,
         )
+
+        if kwargs.get("program"):  # i.e. 'pyfimex'
+            ds_creator_function = partial(ds_creator_function, program=kwargs.get("program"))
+
         ds_list = read_ds_list(
             start_times,
             end_times,
@@ -120,13 +125,17 @@ class ProductReader(DataReader):
             lead_time=self.file_structure.lead_time,
         )
         if not ds_list:
-            msg.warning("No data found!")
             return None
-        msg.info("Merging dataset together (this might take a while)...")
+
         time_var = self.product_configuration.time_var or find_time_var_in_ds(
             ds_list[0]
         )
-        ds = xr.concat(ds_list, dim=time_var, coords="minimal")
+        if len(ds_list) > 1:
+            msg.info("Merging dataset together (this might take a while)...")
+
+            ds = xr.concat(ds_list, dim=time_var, coords="minimal")
+        else:
+            ds = ds_list[0]
 
         ds, kwargs = self.product_configuration.ds_pre_processor(ds)
         ds_aliases = self.product_configuration.ds_aliases

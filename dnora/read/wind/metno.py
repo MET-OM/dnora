@@ -52,8 +52,9 @@ class NORA3(ProductReader):
         ds_creator_function=partial(
             ds_fimex_read,
             resolution_in_km=3,
-            data_vars=["wind_speed", "wind_direction"],
+            
         ),
+        data_vars=["wind_speed", "wind_direction"],
         default_data_source=DataSource.REMOTE,
     )
 
@@ -76,8 +77,9 @@ class MyWave3km(ProductReader):
         ds_creator_function=partial(
             ds_fimex_read,
             resolution_in_km=3,
-            data_vars=["ff", "dd"],
+            
         ),
+        data_vars=["ff", "dd"],
         default_data_source=DataSource.REMOTE,
     )
 
@@ -137,9 +139,9 @@ class MEPS(ProductReader):
         ds_creator_function=partial(
             ds_fimex_read,
             resolution_in_km=2.5,
-            data_vars=["x_wind_10m", "y_wind_10m"],
             extra_commands=meps_extra_fimex_commands,
         ),
+        data_vars=["x_wind_10m", "y_wind_10m"],
         default_data_source=DataSource.REMOTE,
         url_function=get_meps_urls,
     )
@@ -205,8 +207,8 @@ class NORA3_fp(ProductReader):
         ds_creator_function=partial(
             ds_fimex_read,
             resolution_in_km=3,
-            data_vars=["wind_speed", "wind_direction"],
         ),
+        data_vars=["wind_speed", "wind_direction"],
         default_data_source=DataSource.REMOTE,
         url_function=get_nora3fp_urls,
     )
@@ -221,8 +223,8 @@ class CLIMAREST(ProductReader):
         ds_creator_function=partial(
             ds_fimex_read,
             resolution_in_km=3.0,
-            data_vars=["uas", "vas"],
         ),
+        data_vars=["uas", "vas"],
         default_data_source=DataSource.LOCAL,
         ds_aliases = {'uas': gp.wind.XWind, 'vas': gp.wind.YWind}
     )

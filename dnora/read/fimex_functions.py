@@ -102,7 +102,7 @@ def ds_fimex_read(
     nc_fimex = f"dnora_{data_type.name.lower()}_temp/{name}_{start_time.strftime('%Y%m%d%H%M')}_fimex.nc"
     if program not in ["fimex", "pyfimex"]:
         raise ValueError("program need to be 'fimex' or 'pyfimex'!")
-
+    msg.process(f"Applying {program}")
     if extra_fimex_commands:
         ensemble_member = True
     else:

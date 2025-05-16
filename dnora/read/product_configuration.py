@@ -13,7 +13,6 @@ def get_constant_url(folder, filename, file_times, **kwargs) -> list[str]:
     return [get_url(folder, filename, file_time) for file_time in file_times]
 
 
-
 """ds_creator function will get called once with partial using the following arguments:
 
     lon=lon, #tuple
@@ -30,6 +29,7 @@ def get_constant_url(folder, filename, file_times, **kwargs) -> list[str]:
     
     Needs to return an xr.Dataset"""
 
+
 @dataclass
 class ProductConfiguration:
     filename: str = "model_output_%Y%m.nc"
@@ -40,6 +40,7 @@ class ProductConfiguration:
     default_data_source: DataSource = DataSource.UNDEFINED
     convention: SpectralConvention = SpectralConvention.UNDEFINED
     ds_creator_function: callable = basic_xarray_read
+    data_vars: list[str] = field(default_factory=list)
     ds_aliases: dict[str, str] = field(default_factory=dict)
     core_aliases: dict[str, str] = field(default_factory=dict)
     # only_vars: field(default_factory=dict)

@@ -34,6 +34,7 @@ def basic_xarray_read(
     inds_var: str = "inds",
     data_vars: list[str] = None,
     chunks=None,
+    time_reference_str: str = "",
     **kwargs,
 ):
     """Reads a single file into an Xarray Dataset:
@@ -49,30 +50,52 @@ def basic_xarray_read(
     5) If data_vars is given, then dataset is cut to those data variables
     """
     with xr.open_dataset(
-        url, decode_times=(not dt_for_time_stamps_in_hours), chunks=chunks
+        url,
+        decode_times=(not dt_for_time_stamps_in_hours and not time_reference_str),
+        chunks=chunks,
     ) as f:
         time_var = time_var or find_time_var_in_ds(f)
-
         if dt_for_time_stamps_in_hours:
             times = pd.date_range(
                 start_time, end_time, freq=f"{dt_for_time_stamps_in_hours}h"
             )
             f[time_var] = times
+        elif time_reference_str:
+            f = f.assign_attrs({"units": time_reference_str})
+            f[time_var] = f[time_var].assign_attrs({"units": time_reference_str})
+            f = xr.decode_cf(f)
 
+        # We want exact minutes to slice accurately
+        f[time_var] = f[time_var].dt.round("min")
         ds = f.sel(**{time_var: slice(start_time, end_time)})
+
+        # Make sure longitude is between -180 and 180 (E.g. GFS has 0 to 360)
+        lon_str = gp.grid.Lon.find_me_in_ds(ds, return_first=True)
+        if not lon_str:
+            lon_str = "lon" if "lon" in ds.coords else "longitude"
+        lat_str = gp.grid.Lat.find_me_in_ds(ds, return_first=True)
+        if not lat_str:
+            lon_str = "lat" if "lat" in ds.coords else "latitude"
+        if np.where(ds[lon_str].data > 180)[0].size > 0:
+            ds = ds.assign_coords(
+                **{
+                    lon_str: np.where(
+                        ds[lon_str].data > 180, ds[lon_str].data - 360, ds[lon_str].data
+                    )
+                },
+            )
+            ds = ds.sortby(lon_str)
+
         if lon is not None and lat is not None:
-            lon_str = gp.grid.Lon.find_me_in_ds(ds, return_first=True) or "longitude"
-            lat_str = gp.grid.Lon.find_me_in_ds(ds, return_first=True) or "latitude"
-            if lon is not None and lat is not None:
-                if len([c for c in ds.lat.shape if c > 1]) == 1:
-                    ds = ds.sel(**{lat_str: slice(*lat)})
-                if len([c for c in ds.lon.shape if c > 1]) == 1:
-                    ds = ds.sel(**{lon_str: slice(*lon)})
+            if len([c for c in ds.get(lat_str).shape if c > 1]) == 1:
+                ds = ds.sel(**{lat_str: slice(*lat)})
+            if len([c for c in ds.get(lon_str).shape if c > 1]) == 1:
+                ds = ds.sel(**{lon_str: slice(*lon)})
 
         if inds is not None and hasattr(ds, inds_var):
             ds = ds.isel(**{inds_var: inds})
 
-        if data_vars is not None:
+        if data_vars:
             ds = ds[data_vars]
 
     return ds
