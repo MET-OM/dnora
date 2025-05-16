@@ -23,7 +23,7 @@ import geo_parameters as gp
 
 
 class PacIOOS(ProductReader):
-    """Reads GFS wind data from the best estimate files. 2h data for 5 days.
+    """Reads GFS wind data from the best estimate files. 3h data for 5 days.
 
     Creator: NOAA National Centers for Environmental Prediction (NCEP)
     Publisher: Pacific Islands Ocean Observing System (PacIOOS)
