@@ -45,11 +45,12 @@ class SWAN(ModelRunner):
         return self._post_processors
 
     def __call__(self, file_object, model_folder, nproc=4, **kwargs) -> None:
-
         if model_folder:
+            msg.plain(f"{model_folder}/swanrun >>> {file_object.get_folder()}/swanrun")
             shutil.copy2(
                 f"{model_folder}/swanrun", f"{file_object.get_folder()}/swanrun"
             )
+            msg.plain(f"{model_folder}/swan.exe >>> {file_object.get_folder()}/swan.exe")
             shutil.copy2(
                 f"{model_folder}/swan.exe", f"{file_object.get_folder()}/swan.exe"
             )
@@ -71,6 +72,7 @@ class SWAN(ModelRunner):
                 self._post_processors = [SwanMatToNc(file_names_to_convert)]
 
         try:
+            msg.plain(f"swanrun -input {file_object.get_filename()} -omp {nproc}")
             p = Popen(
                 ["swanrun", "-input", file_object.get_filename(), "-omp", f"{nproc}"],
                 cwd=file_object.get_folder(),
