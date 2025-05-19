@@ -106,6 +106,7 @@ class ModelExecuter:
         model_runner: ModelRunner | None = None,
         model_folder: str = "",
         post_process: bool = True,
+        dry_run: bool = False, 
         **kwargs,
     ):
         """Run the main model. Set post_process=False to disable any post-processing that might be defined."""
@@ -114,6 +115,7 @@ class ModelExecuter:
             model_runner=model_runner,
             model_folder=model_folder,
             post_process=post_process,
+            dry_run=dry_run,
             **kwargs,
         )
 
