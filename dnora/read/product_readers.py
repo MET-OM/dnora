@@ -91,7 +91,9 @@ class ProductReader(DataReader):
         msg.info(
             f"Getting {obj_type} from {self.name()} from {start_time} to {end_time}"
         )
-        setup_temp_dir(obj_type, self.name())
+        
+        temp_dir_name = setup_temp_dir(obj_type, self.name())
+        filename = filename or f"temp_dir_name/{self.name()}_temp"
         # Define area to search in
         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
         lon, lat = utils.grid.expand_area(
@@ -103,10 +105,12 @@ class ProductReader(DataReader):
             lon=lon,
             lat=lat,
             data_type=obj_type,
+            dnora_class=dnora_class,
             name=self.name(),
             program=program,
             data_vars=self.product_configuration.data_vars,
         )
+
         ds_list = read_ds_list(
             start_times,
             end_times,
