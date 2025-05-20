@@ -91,6 +91,7 @@ def ds_fimex_read(
     name: str,
     program: str = "pyfimex",  #'fimex' or 'pyfimex'
     extra_commands: list[str] = None,
+    **kwargs
 ) -> xr.Dataset:
     if extra_commands is None:
         extra_fimex_commands = []
