@@ -36,7 +36,7 @@ def ds_polytope_read(
     # If this becomes slow, we need to think about 3D interpolation / resuing weights
     for n in range(Nt):
         u10i[n,:,:] = griddata(list(zip(lons, lats)), u10[n,:], (Xi, Yi), method='nearest')
-        v10i[n,:,:] = griddata(list(zip(lons, lats)), u10[n,:], (Xi, Yi), method='nearest')
+        v10i[n,:,:] = griddata(list(zip(lons, lats)), v10[n,:], (Xi, Yi), method='nearest')
     
     data = dnora_class(lon=xi, lat=yi, time=ds.time+ds.step)
     data.set_u(u10i)
