@@ -1,22 +1,6 @@
-# Requirements
-# pip install polytope-client
-
-
-# import os
-
-# from pathlib import Path
-# import os
-
 import pandas as pd
-from dnora.grid import Grid
 from dnora.type_manager.data_sources import DataSource
-from dnora.read.abstract_readers import DataReader
 
-from dnora.cacher.caching_strategies import CachingStrategy
-from dnora.read.ds_read_functions import setup_temp_dir
-
-from dnora.type_manager.dnora_types import DnoraDataType
-from dnora import utils
 import xarray as xr
 import numpy as np
 from dnora import msg
@@ -24,9 +8,6 @@ from scipy.interpolate import griddata
 from dnora.read.product_readers import ProductReader
 from dnora.read.product_configuration import ProductConfiguration
 from dnora.read.file_structure import FileStructure
-
-
-
 
 
 def ds_polytope_read(
@@ -77,7 +58,7 @@ def download_ecmwf_from_destine(start_time, end_time, lon, lat, folder: str) -> 
     #filename = f"{folder}/ECMWF_temp.grib" # Switch to this in production. Then the files will be cleaned out
     filename = f"{folder}/destine_temp.grib"
     times = pd.date_range(start_time, end_time, freq="1d")
-    # years = [f"{y:4.0f}" for y in utils.time.int_list_of_years(start_time, end_time)]
+
     years = list(set(times.strftime("%Y")))
     years.sort()
     months = list(set(times.strftime("%m")))
@@ -114,74 +95,3 @@ class ECMWF(ProductReader):
     )
 
     file_structure = FileStructure(stride=24, hours_per_file=24)
-# class ECMWF(DataReader):
-#     """Reads ECMWF wind data"""
-
-#     def default_data_source(self) -> DataSource:
-#         return DataSource.REMOTE
-
-#     def caching_strategy(self) -> CachingStrategy:
-#         return CachingStrategy.SinglePatch
-
-#     def __call__(
-#         self,
-#         obj_type,
-#         grid: Grid,
-#         start_time: str,
-#         end_time: str,
-#         source: DataSource,
-#         expansion_factor: float = 1.2,
-#         dnora_class=None,
-#         **kwargs,
-#     ):
-#         """Reads boundary spectra between given times and given area around
-#         the Grid object."""
-
-#         msg.info(f"Getting ECMWF wind forcing from {start_time} to {end_time}")
-#         temp_folder = setup_temp_dir(DnoraDataType.WIND, self.name())
-
-#         # Define area to search in
-#         lon, lat = utils.grid.expand_area(
-#             grid.edges("lon"), grid.edges("lat"), expansion_factor)#, dlon=0.25, dlat=0.25)
-
-#         grib_file = download_ecmwf_from_destine(
-#             start_time, end_time, lon=lon, lat=lat, folder=temp_folder
-#         )
-        
-#         ds = xr.open_dataset(grib_file, engine='cfgrib', decode_timedelta=True)
-
-
-#         lon, lat, u10, v10 = ds.u10.longitude.values, ds.u10.latitude.values, ds.u10.values, ds.v10.values
-                
-#         xi = np.linspace(min(lon), max(lon), 100)
-#         yi = np.linspace(min(lat), max(lat), 80)
-#         Xi, Yi = np.meshgrid(xi, yi)
-#         Nt= len(ds.step)
-#         u10i = np.zeros((Nt, len(yi), len(xi)))
-#         v10i = np.zeros((Nt, len(yi), len(xi)))
-#         # If this becomes slow, we need to think about 3D interpolation / resuing weights
-#         for n in range(Nt):
-#             u10i[n,:,:] = griddata(list(zip(lon, lat)), u10[n,:], (Xi, Yi), method='nearest')
-#             v10i[n,:,:] = griddata(list(zip(lon, lat)), u10[n,:], (Xi, Yi), method='nearest')
-        
-#         data = dnora_class(lon=xi, lat=yi, time=ds.time+ds.step)
-#         data.set_u(u10i)
-#         data.set_v(v10i)
-#         return data.sel(time=slice(start_time, end_time)).ds()
-#         breakpoint()
-#         # #interpolator = LinearNDInterpolator(list(zip(ds., y)), data)
-#         # wind_forcing = wind_forcing.sel(valid_time=slice(start_time, end_time))
-
-#         # time = wind_forcing.valid_time.values
-
-#         # coord_dict = {
-#         #     "lon": wind_forcing.longitude.values,
-#         #     "lat": wind_forcing.latitude.values,
-#         #     "time": time,
-#         # }
-#         # data_dict = {"u": wind_forcing.u10.data, "v": wind_forcing.v10.data}
-        # meta_dict = wind_forcing.attrs
-
-        # return coord_dict, data_dict, meta_dict
-
-
