@@ -25,22 +25,24 @@ def ds_polytope_read(
     )
     
     ds = xr.open_dataset(grib_file, engine='cfgrib', decode_timedelta=True)
-    lon, lat, u10, v10 = ds.u10.longitude.values, ds.u10.latitude.values, ds.u10.values, ds.v10.values
-            
-    xi = np.linspace(min(lon), max(lon), 100)
-    yi = np.linspace(min(lat), max(lat), 80)
+    lons, lats, u10, v10 = ds.u10.longitude.values, ds.u10.latitude.values, ds.u10.values, ds.v10.values
+    xi = np.arange(min(lons), max(lons), 1/8)
+    yi = np.arange(min(lats), max(lats), 1/30)
     Xi, Yi = np.meshgrid(xi, yi)
+    
     Nt = len(ds.step)
     u10i = np.zeros((Nt, len(yi), len(xi)))
     v10i = np.zeros((Nt, len(yi), len(xi)))
     # If this becomes slow, we need to think about 3D interpolation / resuing weights
     for n in range(Nt):
-        u10i[n,:,:] = griddata(list(zip(lon, lat)), u10[n,:], (Xi, Yi), method='nearest')
-        v10i[n,:,:] = griddata(list(zip(lon, lat)), u10[n,:], (Xi, Yi), method='nearest')
+        u10i[n,:,:] = griddata(list(zip(lons, lats)), u10[n,:], (Xi, Yi), method='nearest')
+        v10i[n,:,:] = griddata(list(zip(lons, lats)), u10[n,:], (Xi, Yi), method='nearest')
     
     data = dnora_class(lon=xi, lat=yi, time=ds.time+ds.step)
     data.set_u(u10i)
     data.set_v(v10i)
+    data = data.sel(lon=slice(*lon), lat=slice(*lat))
+
     return data.sel(time=slice(start_time, end_time)).ds()
 
 def download_ecmwf_from_destine(start_time, end_time, lon, lat, folder: str) -> str:
