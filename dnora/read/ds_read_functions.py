@@ -222,8 +222,8 @@ def read_one_ds(
                 try_next_file = False
                 keep_trying = False
 
-        except (OSError, RuntimeError, ftplib.error_perm):  # xr gives OSError, fimex gives RuntimeError
-            msg.plain(f"SKIPPING, file not found: {url}")
+        except (OSError, RuntimeError, ftplib.error_perm) as e:  # xr gives OSError, fimex gives RuntimeError
+            msg.plain(f'SKIPPING! Got error "{e}" while reading {url}')
             try_next_file = True
 
         if try_next_file:
