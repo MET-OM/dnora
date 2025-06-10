@@ -132,12 +132,17 @@ WW3:
     filename: 'ww3_grid'
     extension: 'nml'
   wind_file:
-    filename: 'ww3_prnc'
+    filename: 'ww3_prnc_wind'
     extension: 'nml'
   spectra_file:
     filename: 'ww3_bounc'
     extension: 'nml'
-
+  current_file:
+    filename: 'ww3_prnc_current'
+    extension: 'nml'
+  ice_file:
+    filename: 'ww3_prnc_ice'
+    extension: 'nml'
 
 HOS_OCEAN:
   grid:
