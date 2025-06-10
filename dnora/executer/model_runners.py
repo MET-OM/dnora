@@ -2,6 +2,7 @@ from subprocess import Popen
 from abc import ABC, abstractmethod
 from dnora.file_module import FileNames
 from dnora.type_manager.model_formats import ModelFormat
+from dnora.type_manager.dnora_types import DnoraFileType
 from .post_processors import PostProcessor, SwashMatToNc, HosOceanToNc, SwanMatToNc
 from dnora import msg
 import shutil
@@ -110,6 +111,7 @@ class SWASH(ModelRunner):
 
         p.wait()
 
+WW3_DEFAULT_INPUTFILE_NAMES = {DnoraFileType.WIND: 'ww3_prnc.nml', DnoraFileType.SPECTRA: 'ww3_bounc.nml',DnoraFileType.GRID: 'ww3_grid.nml', DnoraFileType.INPUT: 'ww3_shel.nml', DnoraFileType.CURRENT: 'ww3_prcn.nml', DnoraFileType.ICE: 'ww3_prnc.nml'}
 
 class WW3(ModelRunner):
     def __init__(self, program: str):
@@ -136,7 +138,17 @@ class WW3(ModelRunner):
             msg.copy_file(from_file, to_file)
             shutil.copy(from_file, to_file)
 
-        filename_out = f"{file_object.get_folder()}/ww3_{self.program}.out"
+        # Copy the inputfile to the standard name
+        if self.program in ['shel','grid','bounc','prnc']:
+            from_file = file_object.get_filename()
+            to_file = WW3_DEFAULT_INPUTFILE_NAMES.get(file_object.obj_type)
+            if from_file != to_file:
+                msg.copy_file(from_file, to_file)
+                shutil.copy(file_object.get_filepath(), f"{file_object.get_folder()}/{to_file}")
+        if self.program == 'prnc':        
+            filename_out = f"{file_object.get_folder()}/ww3_{self.program}_{file_object.obj_type.name.lower()}.out"
+        else:
+            filename_out = f"{file_object.get_folder()}/ww3_{self.program}.out"
         msg.info(f"Running ww3_{self.program}...")
         msg.to_file(filename_out)
         with open(filename_out, "w") as outfile:
