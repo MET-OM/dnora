@@ -1,5 +1,5 @@
 import numpy as np
-
+from dnora.type_manager.dnora_types import DnoraFileType
 from ...file_module import split_filepath, add_folder_to_filename
 
 def write_block(folder: str,fn: str, fout):
@@ -199,7 +199,8 @@ def ww3_grid(
 
 def ww3_prnc(
     filename: str,
-    wind_exported_to: list[str],
+    forcing_exported_to: list[str],
+    forcing_type: DnoraFileType,
     minwind: float = None,
 ) -> None:
     """Writes ww3_prnc.nml file"""
@@ -209,7 +210,7 @@ def ww3_prnc(
             block = fin.read()
         fout.write(block)
 
-    def write_forcing():
+    def write_wind():
         fout.write("&FORCING_NML\n")
         fout.write("FORCING%FIELD%WINDS          = T\n")
         fout.write("FORCING%GRID%LATLON          = T\n")
@@ -217,13 +218,28 @@ def ww3_prnc(
             fout.write(f"FORCING%MINWIND              = {minwind}\n")
         fout.write("/\n")
 
+    def write_current():
+        fout.write("&FORCING_NML\n")
+        fout.write("FORCING%FIELD%CURRENTS       = T\n")
+        fout.write("FORCING%GRID%LATLON          = T\n")
+        fout.write("/\n")
+
+    def write_waterlevel():
+        fout.write("&FORCING_NML\n")
+        fout.write("FORCING%FIELD%WATER_LEVELS       = T\n")
+        fout.write("FORCING%GRID%LATLON          = T\n")
+        fout.write("/\n")
+
     def write_file():
         fout.write("&FILE_NML\n")
-        fout.write(f"  FILE%FILENAME      = '{wind_exported_to[-1]}'\n")
+        fout.write(f"  FILE%FILENAME      = '{forcing_exported_to[-1]}'\n")
         fout.write("  FILE%LONGITUDE     = 'lon'\n")
         fout.write("  FILE%LATITUDE      = 'lat'\n")
-        fout.write("  FILE%VAR(1)        = 'u'\n")
-        fout.write("  FILE%VAR(2)        = 'v'\n")
+        if forcing_type in [DnoraFileType.WIND, DnoraFileType.CURRENT]:
+            fout.write("  FILE%VAR(1)        = 'u'\n")
+            fout.write("  FILE%VAR(2)        = 'v'\n")
+        elif forcing_type == DnoraFileType.WATERLEVEL:
+            fout.write("  FILE%VAR(1)        = 'eta'\n")
         fout.write("/\n")
 
     folder = __file__[:-17] + "/metadata/ww3_prnc/"
@@ -231,16 +247,18 @@ def ww3_prnc(
         write_block("header.txt")
         fout.write("\n")
         write_block("forcing.txt")
-        write_forcing()
+        if forcing_type==DnoraFileType.WIND:
+            write_wind()
+        elif forcing_type==DnoraFileType.CURRENT:
+            write_current()
+        elif forcing_type==DnoraFileType.WATERLEVEL:
+            write_waterlevel()
         write_block("file.txt")
         write_file()
         write_block("footer.txt")
 
 
 def ww3_specfile_list(outfile: str, list_of_filenames: list[str]):
-    # for n in range(len(list_of_filenames)):
-    #     fn, __ = split_filepath(list_of_filenames[n])
-    #     list_of_filenames[n] = fn
     with open(outfile, "w") as fout:
         for fn in list_of_filenames:
             fout.write(f"{fn}\n")

@@ -140,6 +140,9 @@ WW3:
   current_file:
     filename: 'ww3_prnc_current'
     extension: 'nml'
+  waterlevel_file:
+    filename: 'ww3_prnc_waterlevel'
+    extension: 'nml'
   ice_file:
     filename: 'ww3_prnc_ice'
     extension: 'nml'

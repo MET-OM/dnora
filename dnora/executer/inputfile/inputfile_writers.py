@@ -1088,9 +1088,13 @@ class WW3Grid(InputFileWriter):
         return filename
 
 
-class WW3Wind(InputFileWriter):
+class WW3Forcing(InputFileWriter):
+
+    def __init__(self, forcing_type: DnoraFileType) -> None:
+        self._file_type = forcing_type
+
     def file_type(self) -> DnoraFileType:
-        return DnoraFileType.WIND
+        return self._file_type
 
     def __call__(
         self,
@@ -1104,10 +1108,11 @@ class WW3Wind(InputFileWriter):
             filename = file_object.get_folder() + "/ww3_prnc.nml"
         else:
             filename = file_object.get_filepath()
+
         wind_exported_to = apply_folder_on_server(
-            exported_files["wind"], folder_on_server
+            exported_files[self.file_type().name.lower()], folder_on_server
         )
-        ww3_prnc(filename, wind_exported_to)
+        ww3_prnc(filename, wind_exported_to, forcing_type=self.file_type())
 
         return filename
 
