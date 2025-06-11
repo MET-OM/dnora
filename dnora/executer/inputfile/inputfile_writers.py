@@ -1112,7 +1112,13 @@ class WW3Forcing(InputFileWriter):
         wind_exported_to = apply_folder_on_server(
             exported_files[self.file_type().name.lower()], folder_on_server
         )
-        ww3_prnc(filename, wind_exported_to, forcing_type=self.file_type())
+        if self.file_type() == DnoraFileType.ICE:
+            if model[self.file_type().name].get('sic',strict=True) is not None:
+                 ww3_prnc(f"{filename}.sic", wind_exported_to, forcing_type=self.file_type(), subtype='sic')
+            if model[self.file_type().name].get('sit',strict=True) is not None:
+                ww3_prnc(f"{filename}.sit", wind_exported_to, forcing_type=self.file_type(), subtype='sit')
+        else:
+            ww3_prnc(filename, wind_exported_to, forcing_type=self.file_type())
 
         return filename
 

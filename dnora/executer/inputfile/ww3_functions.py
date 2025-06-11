@@ -201,7 +201,8 @@ def ww3_prnc(
     filename: str,
     forcing_exported_to: list[str],
     forcing_type: DnoraFileType,
-    minwind: float = None,
+    subtype: str | None = None,
+    minwind: float | None = None,
 ) -> None:
     """Writes ww3_prnc.nml file"""
 
@@ -230,7 +231,17 @@ def ww3_prnc(
         fout.write("FORCING%GRID%LATLON          = T\n")
         fout.write("/\n")
 
-    def write_file():
+    def write_ice(subtype: str):
+        fout.write("&FORCING_NML\n")
+        if subtype == 'sic':
+            fout.write("FORCING%FIELD%ICE_PARAM3       = T\n")
+        elif subtype == 'sit':
+            fout.write("FORCING%FIELD%ICE_PARAM1       = T\n")
+        fout.write("FORCING%GRID%LATLON          = T\n")
+        fout.write("/\n")
+
+
+    def write_file(subtype: str | None):
         fout.write("&FILE_NML\n")
         fout.write(f"  FILE%FILENAME      = '{forcing_exported_to[-1]}'\n")
         fout.write("  FILE%LONGITUDE     = 'lon'\n")
@@ -240,6 +251,8 @@ def ww3_prnc(
             fout.write("  FILE%VAR(2)        = 'v'\n")
         elif forcing_type == DnoraFileType.WATERLEVEL:
             fout.write("  FILE%VAR(1)        = 'eta'\n")
+        elif forcing_type == DnoraFileType.ICE:
+            fout.write(f"  FILE%VAR(1)        = '{subtype}'\n")
         fout.write("/\n")
 
     folder = __file__[:-17] + "/metadata/ww3_prnc/"
@@ -253,8 +266,10 @@ def ww3_prnc(
             write_current()
         elif forcing_type==DnoraFileType.WATERLEVEL:
             write_waterlevel()
+        elif forcing_type==DnoraFileType.ICE:
+            write_ice(subtype)
         write_block("file.txt")
-        write_file()
+        write_file(subtype)
         write_block("footer.txt")
 
 
