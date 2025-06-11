@@ -33,7 +33,7 @@ class WW3(ModelExecuter):
         DnoraFileType.WATERLEVEL: inputfile.WW3Forcing(DnoraFileType.WATERLEVEL),
         DnoraFileType.SPECTRA: inputfile.WW3Spectra(),
     }
-    _model_runners = {DnoraFileType.GRID: model_runners.WW3('grid'), DnoraFileType.WIND: model_runners.WW3('prnc'), DnoraFileType.SPECTRA: model_runners.WW3('bounc'), DnoraFileType.INPUT: model_runners.WW3('shel')}
+    _model_runners = {DnoraFileType.GRID: model_runners.WW3('grid'), DnoraFileType.WIND: model_runners.WW3('prnc'), DnoraFileType.SPECTRA: model_runners.WW3('bounc'), DnoraFileType.INPUT: model_runners.WW3('shel'), DnoraFileType.CURRENT: model_runners.WW3('prnc'), DnoraFileType.WATERLEVEL: model_runners.WW3('prnc')}
 
     def _get_default_format(self):
         return ModelFormat.WW3
