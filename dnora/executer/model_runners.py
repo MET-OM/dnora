@@ -132,37 +132,49 @@ class WW3(ModelRunner):
 
     def __call__(self, file_object, model_folder, nproc=4, **kwargs) -> None:
 
+        # Copy model executables if needed
         if model_folder:
             from_file = f"{model_folder}/ww3_{self.program}"
             to_file = file_object.get_folder()
             msg.copy_file(from_file, to_file)
             shutil.copy(from_file, to_file)
 
-        # Copy the inputfile to the standard name
+        # Target input file, e.g. ww3_prnc.nml
+        to_file = WW3_DEFAULT_INPUTFILE_NAMES.get(file_object.obj_type)
+
+        # Written input files, e.g. 'ww3_prcn_wind.nml', or ['ww3_prnc_ice.nml.sic', 'ww3_prnc_ice.nml.sit']
         if self.program in ['shel','grid','bounc','prnc']:
-            from_file = file_object.get_filename()
-            to_file = WW3_DEFAULT_INPUTFILE_NAMES.get(file_object.obj_type)
+            from_files = [file_object.get_filename()]
+            out_files = [f"{file_object.get_folder()}/ww3_{self.program}"]
+            if file_object.obj_type == DnoraFileType.ICE:
+                from_files = [f"{from_files[0]}.sic", f"{from_files[0]}.sit"]
+                out_files = [f"{out_files[0]}_sic", f"{out_files[0]}_sit"]
+            out_files = [f"{of}.out" for of in out_files]
+                
+        for (from_file, out_file) in zip(from_files, out_files):
+            from_path = f"{file_object.get_folder()}/{from_file}"
+            if not os.path.exists(from_path):
+                msg.plain(f"{from_path} not found. Skipping...")
+                continue
             if from_file != to_file:
+                
                 msg.copy_file(from_file, to_file)
-                shutil.copy(file_object.get_filepath(), f"{file_object.get_folder()}/{to_file}")
-        if self.program == 'prnc':        
-            filename_out = f"{file_object.get_folder()}/ww3_{self.program}_{file_object.obj_type.name.lower()}.out"
-        else:
-            filename_out = f"{file_object.get_folder()}/ww3_{self.program}.out"
-        msg.info(f"Running ww3_{self.program}...")
-        msg.to_file(filename_out)
-        with open(filename_out, "w") as outfile:
-            try:
-                p = Popen(
-                    [f"ww3_{self.program}"],
-                    cwd=file_object.get_folder(),
-                    stdout=outfile,
-                )
-                p.wait()
-            except FileNotFoundError:
-                msg.advice(
-                    f"ww3_{self.program} not found! 1) Set the environmental variable DNORA_WW3_PATH=/path/to/swashfolder or 2) provide keyword model_folder=/path/to/ww3folder"
-                )
+                shutil.copy(from_path, f"{file_object.get_folder()}/{to_file}")
+                
+            msg.info(f"Running ww3_{self.program}...")
+            msg.to_file(out_file)
+            with open(out_file, "w") as outfile:
+                try:
+                    p = Popen(
+                        [f"ww3_{self.program}"],
+                        cwd=file_object.get_folder(),
+                        stdout=outfile,
+                    )
+                    p.wait()
+                except FileNotFoundError:
+                    msg.advice(
+                        f"ww3_{self.program} not found! 1) Set the environmental variable DNORA_WW3_PATH=/path/to/swashfolder or 2) provide keyword model_folder=/path/to/ww3folder"
+                    )
 
         return
 
