@@ -111,7 +111,7 @@ class SWASH(ModelRunner):
 
         p.wait()
 
-WW3_DEFAULT_INPUTFILE_NAMES = {DnoraFileType.WIND: 'ww3_prnc.nml', DnoraFileType.SPECTRA: 'ww3_bounc.nml',DnoraFileType.GRID: 'ww3_grid.nml', DnoraFileType.INPUT: 'ww3_shel.nml', DnoraFileType.CURRENT: 'ww3_prcn.nml', DnoraFileType.ICE: 'ww3_prnc.nml'}
+WW3_DEFAULT_INPUTFILE_NAMES = {DnoraFileType.SPECTRA: 'ww3_bounc.nml',DnoraFileType.GRID: 'ww3_grid.nml', DnoraFileType.WIND: 'ww3_prnc.nml', DnoraFileType.INPUT: 'ww3_shel.nml', DnoraFileType.CURRENT: 'ww3_prnc.nml', DnoraFileType.WATERLEVEL: 'ww3_prnc.nml', DnoraFileType.ICE: 'ww3_prnc.nml'}
 
 class WW3(ModelRunner):
     def __init__(self, program: str):
