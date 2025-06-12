@@ -41,7 +41,9 @@ def ds_polytope_read(
     data = dnora_class(lon=xi, lat=yi, time=ds.time+ds.step)
     data.set_u(u10i)
     data.set_v(v10i)
-    data = data.sel(lon=slice(*lon), lat=slice(*lat))
+    ilon = (np.where(xi<lon[0])[0][-1], np.where(xi>lon[1])[0][0])
+    ilat = (np.where(yi<lat[0])[0][-1], np.where(yi>lat[1])[0][0])
+    data = data.sel(lon=slice(*(xi[ilon[0]], xi[ilon[1]])), lat=slice(*(yi[ilat[0]], yi[ilat[1]])))
 
     return data.sel(time=slice(start_time, end_time)).ds()
 
@@ -57,15 +59,8 @@ def download_ecmwf_from_destine(start_time, end_time, lon, lat, folder: str) -> 
         raise e
     c = Client(address='polytope.lumi.apps.dte.destination-earth.eu')
 
-    #filename = f"{folder}/ECMWF_temp.grib" # Switch to this in production. Then the files will be cleaned out
-    filename = f"{folder}/destine_temp.grib"
-    times = pd.date_range(start_time, end_time, freq="1d")
-
-    years = list(set(times.strftime("%Y")))
-    years.sort()
-    months = list(set(times.strftime("%m")))
-    months.sort()
-    days = [f"{n:02.0f}" for n in range(1, 32)]
+    filename = f"{folder}/ECMWF_temp.grib" # Switch to this in production. Then the files will be cleaned out
+    #filename = f"{folder}/destine_temp.grib"
     request_winds = {
         'class': 'd1',
         'expver': '0001',
@@ -77,15 +72,11 @@ def download_ecmwf_from_destine(start_time, end_time, lon, lat, folder: str) -> 
         'time': '00',
         'step': '0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23',
         "area":[int(np.ceil(lat[1])), int(np.floor(lon[0])), int(np.floor(lat[0])), int(np.ceil(lon[1]))],
-        "year": years,
-        "month": months,
-        "day": days,
     }
+    date_str = start_time.strftime('%Y%m%d')
+    request_winds['date'] = date_str
     
-    #date_str = '20250511'
-    #request_winds['date'] = date_str
-    
-    #c.retrieve('destination-earth', request_winds, filename)
+    c.retrieve('destination-earth', request_winds, filename)
     return filename
 
 class ECMWF(ProductReader):
