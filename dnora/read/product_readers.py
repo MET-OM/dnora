@@ -147,7 +147,7 @@ class ProductReader(DataReader):
         )
 
         # in case the ds_creator_function didn't crop it
-        ds = points.ds().sel(**{"lat": slice(*lat), "lon": slice(*lon)})
+        #ds = points.ds().sel(**{"lat": slice(*lat), "lon": slice(*lon)})
         return ds
 
 
