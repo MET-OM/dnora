@@ -8,7 +8,7 @@ from scipy.interpolate import griddata
 from dnora.read.product_readers import ProductReader
 from dnora.read.product_configuration import ProductConfiguration
 from dnora.read.file_structure import FileStructure
-
+from dnora import utils
 
 def ds_polytope_read(
     start_time: pd.Timestamp,
@@ -26,8 +26,9 @@ def ds_polytope_read(
     
     ds = xr.open_dataset(grib_file, engine='cfgrib', decode_timedelta=True)
     lons, lats, u10, v10 = ds.u10.longitude.values, ds.u10.latitude.values, ds.u10.values, ds.v10.values
-    xi = np.arange(min(lons), max(lons), 1/8)
-    yi = np.arange(min(lats), max(lats), 1/30)
+    native_dlon, native_dlat = 1/8, 1/30
+    xi = np.arange(min(lons), max(lons), native_dlon)
+    yi = np.arange(min(lats), max(lats), native_dlat)
     Xi, Yi = np.meshgrid(xi, yi)
     
     Nt = len(ds.step)
@@ -41,10 +42,9 @@ def ds_polytope_read(
     data = dnora_class(lon=xi, lat=yi, time=ds.time+ds.step)
     data.set_u(u10i)
     data.set_v(v10i)
-    ilon = (np.where(xi<lon[0])[0][-1], np.where(xi>lon[1])[0][0])
-    ilat = (np.where(yi<lat[0])[0][-1], np.where(yi>lat[1])[0][0])
-    data = data.sel(lon=slice(*(xi[ilon[0]], xi[ilon[1]])), lat=slice(*(yi[ilat[0]], yi[ilat[1]])))
-
+    lo, la = utils.grid.expand_area(lon, lat, expansion_factor=1, dlon=native_dlon, dlat=native_dlat)
+    data = data.sel(lon=slice(*lo), lat=slice(*la))
+    
     return data.sel(time=slice(start_time, end_time)).ds()
 
 def download_ecmwf_from_destine(start_time, end_time, lon, lat, folder: str) -> str:
