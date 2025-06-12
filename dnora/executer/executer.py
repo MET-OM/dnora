@@ -13,6 +13,9 @@ from dnora.defaults import read_environment_variable
 
 
 @add_run_method(DnoraFileType.SPECTRA)
+@add_run_method(DnoraFileType.ICE)
+@add_run_method(DnoraFileType.WATERLEVEL)
+@add_run_method(DnoraFileType.CURRENT)
 @add_run_method(DnoraFileType.WIND)
 @add_run_method(DnoraFileType.GRID)
 @add_write_method(DnoraFileType.INPUT)
