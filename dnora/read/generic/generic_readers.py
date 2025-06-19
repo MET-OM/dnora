@@ -91,7 +91,14 @@ class PointNetcdf(SpectralDataReader):
         else:
             ds = xr.open_dataset(filepath[0])
 
-        lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
+        try:
+            points = PointSkeleton.from_ds(ds)
+        except ValueError:
+            points = GriddedSkeleton.from_ds(ds)
+
+        lon, lat = points.lonlat(strict=True)
+        x,y = points.xy(strict=True)
+
         return {"lon": lon, "lat": lat, "x": x, "y": y}
 
     def __call__(
@@ -127,6 +134,7 @@ class PointNetcdf(SpectralDataReader):
         else:
             cls = dnora_objects.get(obj_type)
         # This geo-skeleton method does all the heavy lifting with decoding the Dataset to match the class data variables etc.
+        breakpoint()
         data = cls.from_ds(ds)
 
         if inds is not None:
