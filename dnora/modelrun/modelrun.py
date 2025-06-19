@@ -155,11 +155,16 @@ class ModelRun:
             DnoraDataType.GRID: grid,
         }
         self._consistency_check(
-            objects_to_ignore_get=[DnoraDataType.TRIGRID, DnoraDataType.SPECTRALGRID],
+            objects_to_ignore_get=[
+                DnoraDataType.TRIGRID,
+                DnoraDataType.SPECTRALGRID,
+                DnoraDataType.WAVEGRID,
+            ],
             objects_to_ignore_import=[
                 DnoraDataType.GRID,
                 DnoraDataType.TRIGRID,
                 DnoraDataType.SPECTRALGRID,
+                DnoraDataType.WAVEGRID,
             ],
         )
 
@@ -296,7 +301,9 @@ class ModelRun:
                 kwargs["last_file"] = kwargs.get(
                     "last_file",
                     utils.time.get_first_file(
-                        start_time, reader.file_structure.stride, lead_time=kwargs.get("lead_time", 0)
+                        start_time,
+                        reader.file_structure.stride,
+                        lead_time=kwargs.get("lead_time", 0),
                     ),
                 )
                 end_time = min(
@@ -305,7 +312,7 @@ class ModelRun:
                     self.end_time(),
                 )
             else:
-                start_time, end_time = self.start_time(), self.end_time()    
+                start_time, end_time = self.start_time(), self.end_time()
         else:
             start_time, end_time = self.start_time(), self.end_time()
 
@@ -901,15 +908,19 @@ class ModelRun:
     def activate_forecast_mode(
         self, reference_time: str = None, forecast_length: int = 48
     ) -> None:
-        reference_time = reference_time or pd.to_datetime(datetime.datetime.now()).round('h')
+        reference_time = reference_time or pd.to_datetime(
+            datetime.datetime.now()
+        ).round("h")
         self._reference_time = pd.to_datetime(reference_time)
-        
+
         self._time = pd.date_range(
             reference_time,
             pd.to_datetime(reference_time) + pd.Timedelta(hours=forecast_length),
             freq="h",
         )
-        msg.info(f"Activating forecast mode with reference time {reference_time} and length {forecast_length:.0f} h")
+        msg.info(
+            f"Activating forecast mode with reference time {reference_time} and length {forecast_length:.0f} h"
+        )
 
     def deactivate_forecast_mode(self) -> None:
         self._reference_time = None
