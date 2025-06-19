@@ -1,4 +1,4 @@
-from geo_skeletons import Gridded
+from geo_skeletons import GriddedSkeleton
 from geo_skeletons.decorators import add_mask, add_time, add_datavar, add_magnitude
 import geo_parameters as gp
 
@@ -35,5 +35,5 @@ import geo_parameters as gp
 @add_datavar(gp.wave.Hs)
 @add_mask(name="buoy", coord_group="grid", default_value=1)
 @add_time(grid_coord=False)
-class WaveGrid(Griddedkeleton):
+class WaveGrid(GriddedSkeleton):
     pass
