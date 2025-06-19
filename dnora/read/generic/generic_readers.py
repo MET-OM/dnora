@@ -91,7 +91,14 @@ class PointNetcdf(SpectralDataReader):
         else:
             ds = xr.open_dataset(filepath[0])
 
-        lon, lat, x, y = utils.grid.get_coordinates_from_ds(ds)
+        try:
+            points = PointSkeleton.from_ds(ds)
+        except ValueError:
+            points = GriddedSkeleton.from_ds(ds)
+
+        lon, lat = points.lonlat(strict=True)
+        x, y = points.xy(strict=True)
+
         return {"lon": lon, "lat": lat, "x": x, "y": y}
 
     def __call__(
@@ -103,6 +110,7 @@ class PointNetcdf(SpectralDataReader):
         source: DataSource,
         folder: str,
         inds: list[int],
+        dnora_class=None,
         filename: list[str] = None,
         convention: SpectralConvention | str | None = None,
         **kwargs,
@@ -123,11 +131,38 @@ class PointNetcdf(SpectralDataReader):
 
         # We are reading an uinstructured Netcdf-files, so can't use a structured class
         if obj_type == DnoraDataType.GRID:
-            cls = PointSkeleton.add_datavar(gp.ocean.WaterDepth("topo"))
+            point_cls = PointSkeleton.add_datavar(gp.ocean.WaterDepth("topo"))
+            gridded_cls = dnora_objects.get(obj_type)
+        elif obj_type == DnoraDataType.WAVESERIES:
+            point_cls = dnora_objects.get(obj_type)
+            gridded_cls = dnora_objects.get(DnoraDataType.WAVEGRID)
         else:
-            cls = dnora_objects.get(obj_type)
+            point_cls = dnora_objects.get(obj_type)
+            gridded_cls = None
+
+        try:
+            raw_data = point_cls.from_ds(ds)
+        except ValueError:  # Netcdf file was gridded?
+            if gridded_cls is None:
+                raise TypeError(f"Cannot import {obj_type} from gridded files!")
+            raw_data = gridded_cls.from_ds(ds)
+
         # This geo-skeleton method does all the heavy lifting with decoding the Dataset to match the class data variables etc.
-        data = cls.from_ds(ds)
+
+        if raw_data.is_gridded():
+            lon, lat = raw_data.lonlat(strict=True)
+            x, y = raw_data.xy(strict=True)
+            coord_dict = {
+                key: value
+                for key, value in raw_data.coord_dict().items()
+                if key not in ["lon", "lat", "x", "y"]
+            }
+            data = point_cls(lon=lon, lat=lat, x=x, y=y, **coord_dict)
+            for var in raw_data.core.data_vars():
+                if raw_data.get(var, strict=True) is not None:
+                    data.set(var, np.reshape(raw_data.get(var), data.shape(var)))
+        else:
+            data = raw_data
 
         if inds is not None:
             data = data.isel(inds=inds)
@@ -141,6 +176,10 @@ class PointNetcdf(SpectralDataReader):
             )
             data = data.sel(lon=slice(*lon), lat=slice(*lat))
         if "time" in data.core.coords():
+            if data.time()[0] > end_time or data.time()[-1] < start_time:
+                raise ValueError(
+                    f"Time in file {data.time()[0]} - {data.time()[-1]} does not cover requested time span {start_time} - {end_time}!"
+                )
             data = data.sel(time=slice(start_time, end_time))
 
         # Set reader convention. This is used by the import method to set correct convention to the instance

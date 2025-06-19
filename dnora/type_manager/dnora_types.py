@@ -12,6 +12,7 @@ class DnoraDataType(Enum):
     WATERLEVEL = auto()
     ICE = auto()
     WAVESERIES = auto()
+    WAVEGRID = auto()
     SPECTRALGRID = auto()
 
 
@@ -25,6 +26,7 @@ class DnoraFileType(Enum):
     WATERLEVEL = auto()
     ICE = auto()
     WAVESERIES = auto()
+    WAVEGRID = auto()
     INPUT = auto()
 
 
