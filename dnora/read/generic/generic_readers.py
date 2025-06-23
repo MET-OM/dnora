@@ -164,7 +164,6 @@ class PointNetcdf(SpectralDataReader):
                     ii = np.argsort(llon)
                     ds = ds.isel(**{lon_str: ii})
 
-            breakpoint()
             raw_data = gridded_cls.from_ds(ds, ds_aliases=ds_aliases)
 
         # This geo-skeleton method does all the heavy lifting with decoding the Dataset to match the class data variables etc.
