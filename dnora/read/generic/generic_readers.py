@@ -113,9 +113,10 @@ class PointNetcdf(SpectralDataReader):
         dnora_class=None,
         filename: list[str] = None,
         convention: SpectralConvention | str | None = None,
+        ds_aliases: dict | None = None,
         **kwargs,
     ):
-
+        ds_aliases = ds_aliases or {}
         filename = filename or self.files
         filepath = create_filelist(filename, folder)
         if len(filepath) > 1:
@@ -128,7 +129,6 @@ class PointNetcdf(SpectralDataReader):
         else:
             msg.from_file(filepath)
             ds = xr.open_dataset(filepath[0])
-
         # We are reading an uinstructured Netcdf-files, so can't use a structured class
         if obj_type == DnoraDataType.GRID:
             point_cls = PointSkeleton.add_datavar(gp.ocean.WaterDepth("topo"))
@@ -141,14 +141,31 @@ class PointNetcdf(SpectralDataReader):
             gridded_cls = None
 
         try:
-            raw_data = point_cls.from_ds(ds)
+            raw_data = point_cls.from_ds(ds, ds_aliases=ds_aliases)
         except ValueError:  # Netcdf file was gridded?
             if gridded_cls is None:
                 raise TypeError(f"Cannot import {obj_type} from gridded files!")
-            raw_data = gridded_cls.from_ds(ds)
+
+            # Check longitude and latitude orders and conventions
+            lat_str = "latitude" if "latitude" in ds.coords else "lat"
+            if lat_str in ds.coords:
+                if (
+                    np.mean(np.diff(ds[lat_str])) < 1
+                ):  # flip ds to have latitudes ascending
+                    ds = ds.isel(**{lat_str: slice(None, None, -1)})
+
+            lon_str = "longitude" if "longitude" in ds.coords else "lon"
+            if lon_str in ds.coords:
+                if np.max(ds[lon_str]) > 180:
+                    llon = ds[lon_str].values
+                    mask = llon > 180
+                    llon[mask] = llon[mask] - 360
+                    ii = np.argsort(llon)
+                    ds = ds.isel(**{lon_str: ii})
+
+            raw_data = gridded_cls.from_ds(ds, ds_aliases=ds_aliases)
 
         # This geo-skeleton method does all the heavy lifting with decoding the Dataset to match the class data variables etc.
-
         if raw_data.is_gridded():
             lon, lat = raw_data.lonlat(strict=True)
             x, y = raw_data.xy(strict=True)
