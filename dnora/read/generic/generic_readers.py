@@ -147,6 +147,7 @@ class PointNetcdf(SpectralDataReader):
                 raise TypeError(f"Cannot import {obj_type} from gridded files!")
 
             # Check longitude and latitude orders and conventions
+            # This should be moved to be a part of the GeoSkeletons package
             lat_str = "latitude" if "latitude" in ds.coords else "lat"
             if lat_str in ds.coords:
                 if (
@@ -159,10 +160,11 @@ class PointNetcdf(SpectralDataReader):
                 if np.max(ds[lon_str]) > 180:
                     llon = ds[lon_str].values
                     mask = llon > 180
-                    llon[mask] = llon[mask] - 360
+                    llon[mask] = llon[mask] - 360  # This modifies the values in the ds
                     ii = np.argsort(llon)
                     ds = ds.isel(**{lon_str: ii})
 
+            breakpoint()
             raw_data = gridded_cls.from_ds(ds, ds_aliases=ds_aliases)
 
         # This geo-skeleton method does all the heavy lifting with decoding the Dataset to match the class data variables etc.
