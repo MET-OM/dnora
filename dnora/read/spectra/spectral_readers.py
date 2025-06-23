@@ -108,7 +108,7 @@ class SWAN_Ascii(SpectralDataReader):
         }
 
         data_dict = {
-            "spec": spec[:,inds,:,:] * 180 / np.pi
+            "spec": spec[:, inds, :, :] * 180 / np.pi
         }  # SWAN normalizes using degrees, we want normal radians normalization
         meta_dict = {"source": "Spectral wave data from a SWAN run"}
 
@@ -125,6 +125,9 @@ class Spectra1DToSpectra(SpectralDataReader):
 
     def convention(self):
         return SpectralConvention.MET
+
+    def post_processing(self):
+        return RemoveEmpty(0)
 
     def default_data_source(self) -> DataSource:
         return DataSource.CREATION
