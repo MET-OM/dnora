@@ -1,14 +1,16 @@
 import numpy as np
+import xarray as xr
 
 
 def data_covers_grid(skeleton, grid):
     """Checks if a given skeleton covers a given grid"""
-    for coord in ['lon', 'lat']:
+    for coord in ["lon", "lat"]:
         if skeleton.edges(coord)[0] > grid.edges(coord)[0]:
             return False
         if skeleton.edges(coord)[-1] < grid.edges(coord)[-1]:
             return False
     return True
+
 
 def identify_boundary_edges(boundary_mask: np.ndarray) -> list[str]:
     """Identifies which edges has some boundary points
@@ -212,3 +214,25 @@ def get_coordinates_from_ds(ds, return_dict: bool = False) -> tuple:
 
 def all_none(val) -> bool:
     return not [a for a in val if a is not None]
+
+
+def reorder_lon_lat_in_ds(ds) -> xr.Dataset:
+    """Reorder the Dataset so that latitudes are increasing and longitudes are from -180 to 180"""
+    lat_str = "latitude" if "latitude" in ds.coords else "lat"
+    breakpoint()
+    if lat_str in ds.coords:
+
+        if np.mean(np.diff(ds[lat_str])) < 1:  # flip ds to have latitudes ascending
+
+            ds = ds.isel(**{lat_str: slice(None, None, -1)})
+
+    lon_str = "longitude" if "longitude" in ds.coords else "lon"
+    if lon_str in ds.coords:
+        if np.max(ds[lon_str]) > 180:
+            llon = ds[lon_str].values
+            mask = llon > 180
+            llon[mask] = llon[mask] - 360  # This modifies the values in the ds
+            ii = np.argsort(llon)
+            ds = ds.isel(**{lon_str: ii})
+
+    return ds
