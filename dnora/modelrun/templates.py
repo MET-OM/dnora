@@ -67,9 +67,17 @@ class CLIMAREST(ModelRun):
     }
 
 
+class DestinE(ModelRun):
+    _reader_dict = {
+        DnoraDataType.SPECTRA: dnora.read.spectra.destine.ECMWF(),
+        DnoraDataType.WIND: dnora.read.wind.destine.ECMWF(),
+        DnoraDataType.ICE: dnora.read.ice.destine.ECMWF(),
+    }
+
+
 class NCHMF(ModelRun):
     _reader_dict = {
-        #DnoraDataType.SPECTRA: dnora.read.spectra.nchmf.SWAN(),
+        # DnoraDataType.SPECTRA: dnora.read.spectra.nchmf.SWAN(),
         DnoraDataType.WIND: dnora.read.wind.nchmf.ECMWF(),
         DnoraDataType.WATERLEVEL: dnora.read.waterlevel.cmems.Global(),
     }
