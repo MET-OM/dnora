@@ -1,6 +1,6 @@
 import pandas as pd
 from dnora.type_manager.data_sources import DataSource
-
+from dnora.type_manager.dnora_types import DnoraDataType
 import xarray as xr
 import numpy as np
 from dnora import msg
@@ -11,6 +11,7 @@ from dnora.type_manager.spectral_conventions import SpectralConvention
 from dnora.read.abstract_readers import SpectralDataReader
 from pathlib import Path
 from dnora.process.spectra import RemoveEmpty
+import glob
 
 
 def download_ecmwf_from_destine(start_time, end_time, filename: str) -> str:
@@ -46,6 +47,39 @@ def download_ecmwf_from_destine(start_time, end_time, filename: str) -> str:
     c.retrieve("destination-earth", request_waves, filename)
 
 
+def download_ecmwf_coordinates_from_destine(start_time, end_time, filename: str) -> str:
+    """Downloads 10 m wind data DestinE ClimateDT data portfolio data from the Destine Earth Store System  for a
+    given area and time period"""
+    start_time = pd.Timestamp(start_time)
+    end_time = pd.Timestamp(end_time)
+    try:
+        from polytope.api import Client
+    except ImportError as e:
+        msg.advice(
+            "The polytope package is required to acces these data! Install by e.g. 'python -m pip install polytope-client' and 'conda install cfgrib eccodes=2.41.0'"
+        )
+        raise e
+    c = Client(address="polytope.lumi.apps.dte.destination-earth.eu")
+
+    request_waves = {
+        "class": "d1",
+        "expver": "0001",
+        "dataset": "extremes-dt",
+        "stream": "wave",
+        "type": "fc",
+        "levtype": "sfc",
+        # Tm02/Hs/Dirm/Tp/Tm
+        "param": "140221",
+        # "param": "140229/140229",
+        "time": "00",
+        "step": "0",
+    }
+    date_str = start_time.strftime("%Y%m%d")
+    request_waves["date"] = date_str
+
+    c.retrieve("destination-earth", request_waves, filename)
+
+
 class ECMWF(SpectralDataReader):
     def convention(self) -> str:
         return SpectralConvention.MET
@@ -62,8 +96,18 @@ class ECMWF(SpectralDataReader):
     def get_coordinates(
         self, grid, start_time, source: DataSource, folder: str, **kwargs
     ) -> dict:
-        folder = Path(__file__).parent
-        ds = xr.open_dataset(f"{folder}/destine_waves_lon_lat.nc")
+        """The download of the file take place already here so we don't have to do it twice"""
+        if not folder:
+            folder = setup_temp_dir(
+                DnoraDataType.SPECTRA, self.name(), clean_old_files=False
+            )
+        grib_file = f"{folder}/coordinates_ECMWF_destine.grib"
+
+        if glob.glob(grib_file):
+            msg.from_file(grib_file)
+        else:
+            download_ecmwf_coordinates_from_destine(start_time, start_time, grib_file)
+        ds = xr.open_dataset(grib_file, engine="cfgrib", decode_timedelta=True)
         return {"lat": ds.latitude.values, "lon": ds.longitude.values}
 
     def __call__(
@@ -85,9 +129,7 @@ class ECMWF(SpectralDataReader):
         )
 
         if not folder:
-            folder = setup_temp_dir(
-                obj_type, self.name(), clean_old_files=filename is None
-            )
+            folder = setup_temp_dir(obj_type, self.name(), clean_old_files=not filename)
         temp_file = filename or f"{self.name()}_temp.grib"
         grib_file = f"{folder}/{temp_file}"
 
