@@ -83,17 +83,21 @@ class ProductReader(DataReader):
         """Reads in all gridded data for given area and time"""
         tile = tile or self._tile
         tile_name = self.product_configuration.tile_names.get(tile)
-        folder = self._folder(folder, source, tile=tile, tile_name=tile_name, strict=False)
-        filename = self._filename(filename, source, tile=tile, tile_name=tile_name, strict=False)
+        folder = self._folder(
+            folder, source, tile=tile, tile_name=tile_name, strict=False
+        )
+        filename = self._filename(
+            filename, source, tile=tile, tile_name=tile_name, strict=False
+        )
         start_times, end_times, file_times = self.file_structure.create_time_stamps(
-            start_time, end_time, kwargs.get('last_file', '')
+            start_time, end_time, kwargs.get("last_file", "")
         )
         msg.info(
             f"Getting {obj_type} from {self.name()} from {start_time} to {end_time}"
         )
-        
+
         temp_dir_name = setup_temp_dir(obj_type, self.name())
-        filename = filename or f"temp_dir_name/{self.name()}_temp"
+        filename = filename or f"{temp_dir_name}/{self.name()}_temp"
         # Define area to search in
         msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
         lon, lat = utils.grid.expand_area(
@@ -147,7 +151,7 @@ class ProductReader(DataReader):
         )
 
         # in case the ds_creator_function didn't crop it
-        #ds = points.ds().sel(**{"lat": slice(*lat), "lon": slice(*lon)})
+        # ds = points.ds().sel(**{"lat": slice(*lat), "lon": slice(*lon)})
         return ds
 
 
