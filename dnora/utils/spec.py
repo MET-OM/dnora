@@ -81,7 +81,8 @@ def _jonswap_one_spec(m0, fp, freq, gamma) -> np.ndarray:
     G_exp = np.exp(-0.5 * ((freq / fp - 1) / sigma) ** 2)
     E_JS = E_JS * gamma**G_exp
     var = np.trapz(E_JS, freq)
-    E_JS = E_JS * m0 / var
+    if var > 0:
+        E_JS = E_JS * m0 / var
 
     return E_JS
 
