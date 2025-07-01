@@ -219,8 +219,12 @@ class SpectralProductReader(SpectralDataReader):
         tile = tile or self._tile
         tile_name = self.product_configuration.tile_names.get(tile)
 
-        folder = self._folder(folder, source, tile=tile, tile_name=tile_name)
-        filename = self._filename(filename, source, tile=tile, tile_name=tile_name)
+        folder = self._folder(
+            folder, source, tile=tile, tile_name=tile_name, strict=False
+        )
+        filename = self._filename(
+            filename, source, tile=tile, tile_name=tile_name, strict=False
+        )
 
         if self.file_structure.stride is None:
             # Points scattered between files with all times in each file
@@ -255,8 +259,12 @@ class SpectralProductReader(SpectralDataReader):
         """Reads in all boundary spectra between the given times and at for the given indeces"""
         tile = tile or self._tile
         tile_name = self.product_configuration.tile_names.get(tile)
-        folder = self._folder(folder, source, tile=tile, tile_name=tile_name)
-        filename = self._filename(filename, source, tile=tile, tile_name=tile_name)
+        folder = self._folder(
+            folder, source, tile=tile, tile_name=tile_name, strict=False
+        )
+        filename = self._filename(
+            filename, source, tile=tile, tile_name=tile_name, strict=False
+        )
         msg.info(
             f"Getting boundary spectra from {self.name()} from {start_time} to {end_time}"
         )
