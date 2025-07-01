@@ -14,11 +14,20 @@ from dnora.process.spectra import RemoveEmpty
 import glob
 
 
-def download_ecmwf_from_destine(start_time, end_time, filename: str) -> str:
-    """Downloads 10 m wind data DestinE ClimateDT data portfolio data from the Destine Earth Store System  for a
-    given area and time period"""
+def download_ecmwf_from_destine(start_time, filename: str, end_time=None) -> None:
+    """Downloads wave data from DestinE. If no end_time is given, a minimal query is done to get the coordinates of the points"""
+
     start_time = pd.Timestamp(start_time)
+
+    if end_time is None:
+        params = "140221"
+        steps = "0"
+        end_time = start_time
+    else:
+        params = "140229/140230/140231"
+        steps = "0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23"
     end_time = pd.Timestamp(end_time)
+
     try:
         from polytope.api import Client
     except ImportError as e:
@@ -37,42 +46,9 @@ def download_ecmwf_from_destine(start_time, end_time, filename: str) -> str:
         "levtype": "sfc",
         # Tm02/Hs/Dirm/Tp/Tm
         # "param": "140221/140229/140230/140231/140232",
-        "param": "140229/140230/140231",
+        "param": params,
         "time": "00",
-        "step": "0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23",
-    }
-    date_str = start_time.strftime("%Y%m%d")
-    request_waves["date"] = date_str
-
-    c.retrieve("destination-earth", request_waves, filename)
-
-
-def download_ecmwf_coordinates_from_destine(start_time, end_time, filename: str) -> str:
-    """Downloads 10 m wind data DestinE ClimateDT data portfolio data from the Destine Earth Store System  for a
-    given area and time period"""
-    start_time = pd.Timestamp(start_time)
-    end_time = pd.Timestamp(end_time)
-    try:
-        from polytope.api import Client
-    except ImportError as e:
-        msg.advice(
-            "The polytope package is required to acces these data! Install by e.g. 'python -m pip install polytope-client' and 'conda install cfgrib eccodes=2.41.0'"
-        )
-        raise e
-    c = Client(address="polytope.lumi.apps.dte.destination-earth.eu")
-
-    request_waves = {
-        "class": "d1",
-        "expver": "0001",
-        "dataset": "extremes-dt",
-        "stream": "wave",
-        "type": "fc",
-        "levtype": "sfc",
-        # Tm02/Hs/Dirm/Tp/Tm
-        "param": "140221",
-        # "param": "140229/140229",
-        "time": "00",
-        "step": "0",
+        "step": steps,
     }
     date_str = start_time.strftime("%Y%m%d")
     request_waves["date"] = date_str
@@ -106,7 +82,7 @@ class ECMWF(SpectralDataReader):
         if glob.glob(grib_file):
             msg.from_file(grib_file)
         else:
-            download_ecmwf_coordinates_from_destine(start_time, start_time, grib_file)
+            download_ecmwf_from_destine(start_time, grib_file)
         ds = xr.open_dataset(grib_file, engine="cfgrib", decode_timedelta=True)
         return {"lat": ds.latitude.values, "lon": ds.longitude.values}
 
@@ -135,7 +111,7 @@ class ECMWF(SpectralDataReader):
 
         # If a filename is not given, then call the API to download data
         if filename is None:
-            download_ecmwf_from_destine(start_time, end_time, grib_file)
+            download_ecmwf_from_destine(start_time, grib_file, end_time)
         else:
             msg.from_file(grib_file)
 
