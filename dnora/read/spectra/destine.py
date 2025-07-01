@@ -90,7 +90,6 @@ def destine_wave_ds_read(
             ds.valid_time.values >= start_time, ds.valid_time.values <= end_time
         )
     )[0]
-    # ds = ds.sel(valid_time=slice(start_time, end_time))
     ds = ds.isel(step=ii)
     msg.plain("Calculating JONSWAP spectra with given Hs and Tp...")
     fp = 1 / ds.pp1d.values
@@ -132,11 +131,10 @@ class ECMWF(SpectralProductReader):
     def get_coordinates(
         self, grid, start_time, source: DataSource, folder: str, **kwargs
     ) -> dict:
-        """The download of the file take place already here so we don't have to do it twice"""
-        if not folder:
-            folder = setup_temp_dir(
-                DnoraDataType.SPECTRA, self.name(), clean_old_files=False
-            )
+        """We only want to do a minimal download to get the coordinates"""
+        folder = setup_temp_dir(
+            DnoraDataType.SPECTRA, self.name(), clean_old_files=False
+        )
         grib_file = f"{folder}/coordinates_ECMWF_destine.grib"
 
         if glob.glob(grib_file):
@@ -145,56 +143,3 @@ class ECMWF(SpectralProductReader):
             download_ecmwf_from_destine(start_time, grib_file)
         ds = xr.open_dataset(grib_file, engine="cfgrib", decode_timedelta=True)
         return {"lat": ds.latitude.values, "lon": ds.longitude.values}
-
-    # def __call__(
-    #     self,
-    #     obj_type,
-    #     grid,
-    #     start_time,
-    #     end_time,
-    #     source: DataSource,
-    #     folder: str,
-    #     filename: str,
-    #     inds,
-    #     dnora_class=None,
-    #     **kwargs,
-    # ) -> tuple[dict]:
-    #     """Reads in all boundary spectra between the given times and at for the given indeces"""
-    #     msg.info(
-    #         f"Getting Destine boundary spectra using JONSWAP fits from {start_time} to {end_time}"
-    #     )
-
-    #     if not folder:
-    #         folder = setup_temp_dir(obj_type, self.name(), clean_old_files=not filename)
-    #     temp_file = filename or f"{self.name()}_temp.grib"
-    #     grib_file = f"{folder}/{temp_file}"
-
-    #     # If a filename is not given, then call the API to download data
-    #     if filename is None:
-    #         read_destine_wave_ds(start_time, end_time, grib_file)
-    #     else:
-    #         msg.from_file(grib_file)
-
-    #     ds = xr.open_dataset(grib_file, engine="cfgrib", decode_timedelta=True)
-    #     ds = ds.isel(values=inds)
-
-    #     msg.plain("Calculating JONSWAP spectra with given Hs and Tp...")
-    #     fp = 1 / ds.pp1d.values
-    #     m0 = ds.swh.values**2 / 16
-    #     freq0: float = 0.04118
-    #     nfreq: int = 32
-    #     finc: float = 1.1
-    #     freq = np.array([freq0 * finc**n for n in np.linspace(0, nfreq - 1, nfreq)])
-    #     dirs = np.linspace(0, 350, 36)
-    #     E = utils.spec.jonswap1d(fp=fp, m0=m0, freq=freq)
-
-    #     msg.plain(
-    #         "Expanding to cos**2s directinal distribution around mean direction..."
-    #     )
-    #     Ed = utils.spec.expand_to_directional_spectrum(
-    #         E, freq, dirs, dirp=ds.mwd.values
-    #     )
-    #     obj = dnora_class.from_ds(ds, freq=freq, dirs=dirs, time=ds.valid_time.values)
-    #     obj.set_spec(Ed)
-
-    #     return obj.ds()
