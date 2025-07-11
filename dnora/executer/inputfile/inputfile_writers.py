@@ -1113,10 +1113,20 @@ class WW3Forcing(InputFileWriter):
             exported_files[self.file_type().name.lower()], folder_on_server
         )
         if self.file_type() == DnoraFileType.ICE:
-            if model[self.file_type().name].get('sic',strict=True) is not None:
-                 ww3_prnc(f"{filename}.sic", wind_exported_to, forcing_type=self.file_type(), subtype='sic')
-            if model[self.file_type().name].get('sit',strict=True) is not None:
-                ww3_prnc(f"{filename}.sit", wind_exported_to, forcing_type=self.file_type(), subtype='sit')
+            if model[self.file_type().name].get("sic", strict=True) is not None:
+                ww3_prnc(
+                    f"{filename}.sic",
+                    wind_exported_to,
+                    forcing_type=self.file_type(),
+                    subtype="sic",
+                )
+            if model[self.file_type().name].get("sit", strict=True) is not None:
+                ww3_prnc(
+                    f"{filename}.sit",
+                    wind_exported_to,
+                    forcing_type=self.file_type(),
+                    subtype="sit",
+                )
         else:
             ww3_prnc(filename, wind_exported_to, forcing_type=self.file_type())
 
@@ -1198,6 +1208,8 @@ class WW3(InputFileWriter):
         forcing["wind"] = model.wind() is not None
         forcing["waterlevel"] = model.waterlevel() is not None
         forcing["current"] = model.current() is not None
+        forcing["sit"] = model.ice().sit(strict=True) is not None
+        forcing["sic"] = model.ice().sic(strict=True) is not None
 
         ww3_shel(filename, start_time, end_time, forcing, homog, spectral_output)
         # Make inputfiles for the post-processing

@@ -2,10 +2,12 @@ import numpy as np
 from dnora.type_manager.dnora_types import DnoraFileType
 from ...file_module import split_filepath, add_folder_to_filename
 
-def write_block(folder: str,fn: str, fout):
+
+def write_block(folder: str, fn: str, fout):
     with open(f"{folder}{fn}", "r") as fin:
         block = fin.read()
     fout.write(block)
+
 
 def ww3_grid(
     grid,
@@ -233,13 +235,12 @@ def ww3_prnc(
 
     def write_ice(subtype: str):
         fout.write("&FORCING_NML\n")
-        if subtype == 'sic':
+        if subtype == "sic":
             fout.write("FORCING%FIELD%ICE_CONC       = T\n")
-        elif subtype == 'sit':
+        elif subtype == "sit":
             fout.write("FORCING%FIELD%ICE_PARAM1       = T\n")
         fout.write("FORCING%GRID%LATLON          = T\n")
         fout.write("/\n")
-
 
     def write_file(subtype: str | None):
         fout.write("&FILE_NML\n")
@@ -260,13 +261,13 @@ def ww3_prnc(
         write_block("header.txt")
         fout.write("\n")
         write_block("forcing.txt")
-        if forcing_type==DnoraFileType.WIND:
+        if forcing_type == DnoraFileType.WIND:
             write_wind()
-        elif forcing_type==DnoraFileType.CURRENT:
+        elif forcing_type == DnoraFileType.CURRENT:
             write_current()
-        elif forcing_type==DnoraFileType.WATERLEVEL:
+        elif forcing_type == DnoraFileType.WATERLEVEL:
             write_waterlevel()
-        elif forcing_type==DnoraFileType.ICE:
+        elif forcing_type == DnoraFileType.ICE:
             write_ice(subtype)
         write_block("file.txt")
         write_file(subtype)
@@ -318,7 +319,7 @@ def ww3_shel(
     end_time: str,
     forcing: dict[str, bool],
     homog: dict[str, tuple[float, float]],
-    spectral_output: bool, 
+    spectral_output: bool,
 ):
     def write_block(fn: str):
         with open(f"{folder}{fn}", "r") as fin:
@@ -338,6 +339,8 @@ def ww3_shel(
             "wind": "WINDS",
             "waterlevel": "WATER_LEVELS",
             "current": "CURRENTS",
+            "sic": "ICE_CONC",
+            "sit": "ICE_PARAM1",
         }
         for field_type in FORCING_NAMES:
             if homog.get(field_type) is not None:
@@ -360,9 +363,7 @@ def ww3_shel(
             "  TYPE%FIELD%LIST     = 'HS LM TP DIR SPR DP T02 T0M1 T01 UST CHA DPT WND USS TUS TAW TWO TOC FAW FOC PHS PTP PTM10 PT01 PT02 PDIR PDP MXE MXH MXHC SDMH SDMHC ABR UBR FBB TBB CGE WCC WBT'\n"
         )
         if spectral_output:
-            fout.write(
-                f"  TYPE%POINT%FILE     = 'spectral_points.list'\n"
-            )
+            fout.write(f"  TYPE%POINT%FILE     = 'spectral_points.list'\n")
         fout.write("/\n")
 
     def write_date():
@@ -372,7 +373,7 @@ def ww3_shel(
         dt = {"FIELD": "3600", "POINT": "3600", "RESTART": "3600"}
         output_types = ["FIELD", "RESTART"]
         if spectral_output:
-            output_types.append('POINT')
+            output_types.append("POINT")
         for output_type in output_types:
             fout.write(
                 f"  DATE%{output_type}%START         = '{start_times[output_type]}'\n"
@@ -424,13 +425,13 @@ def ww3_shel(
         write_block("footer.txt")
 
 
-def ww3_ounf(filename:str, start_time:str, count: int, stride: int):
+def ww3_ounf(filename: str, start_time: str, count: int, stride: int):
     def write_field():
         fout.write("&FIELD_NML\n")
         fout.write(
             "  FIELD%LIST     = 'HS LM TP DIR SPR DP T02 T0M1 T01 UST CHA DPT WND USS TUS TAW TWO TOC FAW FOC PHS PTP PTM10 PT01 PT02 PDIR PDP MXE MXH MXHC SDMH SDMHC ABR UBR FBB TBB CGE WCC WBT'\n"
         )
-        
+
         fout.write(f"  FIELD%TIMESTART  = '{start_time}'\n")
         fout.write(f"  FIELD%TIMECOUNT  = '{count:.0f}'\n")
         fout.write(f"  FIELD%TIMESTRIDE  = '{stride:.0f}'\n")
@@ -439,10 +440,9 @@ def ww3_ounf(filename:str, start_time:str, count: int, stride: int):
 
     def write_file():
         fout.write("&FILE_NML\n")
-        fout.write(
-            "  FILE%NETCDF     = 3\n"
-        )
+        fout.write("  FILE%NETCDF     = 3\n")
         fout.write("/\n")
+
     folder = __file__[:-17] + "/metadata/ww3_ounf/"
     with open(filename, "w") as fout:
         write_block(folder, "header.txt", fout)
@@ -450,9 +450,10 @@ def ww3_ounf(filename:str, start_time:str, count: int, stride: int):
         write_field()
         write_block(folder, "file.txt", fout)
         write_file()
-        write_block(folder,"footer.txt", fout)
+        write_block(folder, "footer.txt", fout)
 
-def ww3_ounp(filename:str, start_time:str, count: int, stride: int):
+
+def ww3_ounp(filename: str, start_time: str, count: int, stride: int):
     def write_point():
         fout.write("&POINT_NML\n")
         fout.write(f"  POINT%TIMESTART  = '{start_time}'\n")
@@ -463,22 +464,19 @@ def ww3_ounp(filename:str, start_time:str, count: int, stride: int):
 
     def write_file():
         fout.write("&FILE_NML\n")
-        fout.write(
-            "  FILE%NETCDF     = 3\n"
-        )
+        fout.write("  FILE%NETCDF     = 3\n")
         fout.write("/\n")
+
     def write_spectra():
         fout.write("&SPECTRA_NML\n")
-        fout.write(
-            "  SPECTRA%OUTPUT     = 3\n"
-        )
+        fout.write("  SPECTRA%OUTPUT     = 3\n")
         fout.write("/\n")
+
     def write_param():
         fout.write("&PARAM_NML\n")
-        fout.write(
-            "  PARAM%OUTPUT     = 6\n"
-        )
+        fout.write("  PARAM%OUTPUT     = 6\n")
         fout.write("/\n")
+
     def write_source():
         fout.write("&SOURCE_NML\n")
         fout.write("/\n")
@@ -496,4 +494,4 @@ def ww3_ounp(filename:str, start_time:str, count: int, stride: int):
         write_param()
         write_block(folder, "source.txt", fout)
         write_source()
-        write_block(folder,"footer.txt", fout)
+        write_block(folder, "footer.txt", fout)
