@@ -368,9 +368,9 @@ def ww3_shel(
 
     def write_date():
         fout.write("&OUTPUT_DATE_NML\n")
-        start_times = {"FIELD": start_time, "POINT": start_time, "RESTART": end_time}
+        start_times = {"FIELD": start_time, "POINT": start_time, "RESTART": start_time}
         end_times = {"FIELD": end_time, "POINT": end_time, "RESTART": end_time}
-        dt = {"FIELD": "3600", "POINT": "3600", "RESTART": "3600"}
+        dt = {"FIELD": "3600", "POINT": "3600", "RESTART": "86400"}
         output_types = ["FIELD", "RESTART"]
         if spectral_output:
             output_types.append("POINT")
