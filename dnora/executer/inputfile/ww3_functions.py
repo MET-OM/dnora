@@ -360,7 +360,7 @@ def ww3_shel(
     def write_output():
         fout.write("&OUTPUT_TYPE_NML\n")
         fout.write(
-            "  TYPE%FIELD%LIST     = 'HS TP DIR DP DPT T02 T0M1 T01 WND ICE PHS PTP PTM10 PT01 PT02 PDIR'\n"
+            "  TYPE%FIELD%LIST     = 'HS TP DIR DP DPT T02 T0M1 T01 WND ICE PHS PTP PTM10 PT01 PT02 PDIR PDP'\n"
         )
         if spectral_output:
             fout.write(f"  TYPE%POINT%FILE     = 'spectral_points.list'\n")
@@ -429,7 +429,7 @@ def ww3_ounf(filename: str, start_time: str, count: int, stride: int):
     def write_field():
         fout.write("&FIELD_NML\n")
         fout.write(
-            "  FIELD%LIST     = 'HS LM TP DIR SPR DP T02 T0M1 T01 UST CHA DPT WND USS TUS TAW TWO TOC FAW FOC PHS PTP PTM10 PT01 PT02 PDIR PDP MXE MXH MXHC SDMH SDMHC ABR UBR FBB TBB CGE WCC WBT'\n"
+            "  FIELD%LIST     = 'HS TP DIR DP DPT T02 T0M1 T01 WND ICE PHS PTP PTM10 PT01 PT02 PDIR PDP'\n"
         )
 
         fout.write(f"  FIELD%TIMESTART  = '{start_time}'\n")
