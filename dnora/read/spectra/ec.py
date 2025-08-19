@@ -44,11 +44,13 @@ def download_era5_from_cds(
     given area and time period"""
     start_time = pd.Timestamp(start_time)
     end_time = pd.Timestamp(end_time)
-    
+
     try:
         import cdsapi
     except ImportError as e:
-        msg.advice("The cdsapi package is required to use ECWMF products! Install by e.g. 'conda install cdsapi'")
+        msg.advice(
+            "The cdsapi package is required to use ECWMF products! Install by e.g. 'conda install cdsapi'"
+        )
         raise e
     c = cdsapi.Client()
 
@@ -148,21 +150,24 @@ class ERA5(SpectralDataReader):
             os.mkdir(temp_folder)
             print("Creating folder %s..." % temp_folder)
 
-        msg.plain("Removing old files from temporary folder...")
-        for f in glob.glob(f"{temp_folder}/EC_ERA5.nc"):
-            os.remove(f)
+        if not kwargs.get("skip_download", False):
+            msg.plain("Removing old files from temporary folder...")
+            for f in glob.glob(f"{temp_folder}/EC_ERA5.nc"):
+                os.remove(f)
 
-        nc_file = download_era5_from_cds(
-            start_time,
-            end_time,
-            lon=self._given_grid.edges("lon"),
-            lat=self._given_grid.edges("lat"),
-            dlon=self.dlon,
-            dlat=self.dlat,
-            folder=temp_folder,
-        )
-
+            nc_file = download_era5_from_cds(
+                start_time,
+                end_time,
+                lon=self._given_grid.edges("lon"),
+                lat=self._given_grid.edges("lat"),
+                dlon=self.dlon,
+                dlat=self.dlat,
+                folder=temp_folder,
+            )
+        else:
+            nc_file = f"{temp_folder}/EC_ERA5.nc"
         bnd_spec = xr.open_dataset(nc_file)
+
         bnd_spec = renormalize_era5_spec(bnd_spec)
 
         freq = bnd_spec.frequency.values
@@ -180,13 +185,20 @@ class ERA5(SpectralDataReader):
             ),
         )
         ct = 0
-        for n, lo in enumerate(bnd_spec.longitude.values):
-            for k, la in enumerate(bnd_spec.latitude.values):
-                lon[ct] = bnd_spec.longitude[n]
-                lat[ct] = bnd_spec.latitude[k]
+        era5_lats = bnd_spec.latitude.values[::-1]
+        era5_lons = bnd_spec.longitude.values
+        for n, la in enumerate(era5_lats):
+            for k, lo in enumerate(era5_lons):
+                lon[ct] = lo
+                lat[ct] = la
                 # This is time, dir, freq, station
-                spec[:, :, :, ct] = bnd_spec.d2fd.values[:, :, :, k, n]
+                spec[:, :, :, ct] = bnd_spec.d2fd.values[:, :, :, n, k]
                 ct += 1
+
+        # Check that the points decoded from the file is consistent with the created points given to the PointPicker
+        glon, glat = self._given_grid.lonlat()
+        np.testing.assert_array_almost_equal(lon, glon)
+        np.testing.assert_array_almost_equal(lat, glat)
 
         # Inds given by point picker
         lon = lon[inds]
