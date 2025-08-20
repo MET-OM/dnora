@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from dnora.modelrun.modelrun import ModelRun
     from dnora.file_module import FileNames
 
-from dnora.utils.grid import create_swan_segment_coords
+
 from dnora import msg, file_module
 from dnora.type_manager.dnora_types import DnoraFileType
 from .ww3_functions import (
@@ -26,6 +26,19 @@ from .ww3_functions import (
     ww3_ounf,
     ww3_ounp,
     ww3_spectral_output_list,
+)
+
+from .swan_functions import (
+    swan_header,
+    swan_grid,
+    swan_spectra,
+    swan_wind,
+    swan_waterlevel,
+    swan_current,
+    swan_ice,
+    swan_structures,
+    swan_spectral_output_points,
+    swan_homog_spectra,
 )
 
 
@@ -93,6 +106,7 @@ class SWAN(InputFileWriter):
         use_current: bool = True,
         use_ice: bool = True,
         structures: list[dict] = None,
+        homog: dict = None,
     ):
         """
         write_mat = True [default: False]: Write mat-files instead of Netcdf-files
@@ -100,88 +114,37 @@ class SWAN(InputFileWriter):
         The mat-files are then post-processed to Netcdf-files by the model runner.
         This can be used if you have problems compiling SWAN with Netcdf even though Netcdf otherwise works.
 
-        structures given in format:
-        E.g. One triangle and one line
-        [{'lon': (5,5.1,4.9), 'lat': (60,59.9,59,9), 'trans': 0.3, 'refl': 0.0, 'closed': True, 'name': 'closed triangle'},
-        {'lon': (4,4.1), 'lat': (60.1,60.1,60.1),'name': 'breakwater'}
-        ]
+        STRUCTURES:
+            structures given in format:
+            E.g. One triangle and one line
+            [{'lon': (5,5.1,4.9), 'lat': (60,59.9,59,9), 'trans': 0.3, 'refl': 0.0, 'closed': True, 'name': 'closed triangle'},
+            {'lon': (4,4.1), 'lat': (60.1,60.1,60.1),'name': 'breakwater'}
+            ]
 
-        'trans' is the transparency (0 completely blocked, 1 completely open)
-        'refl' is the reflection (default 0.0)
+            'trans' is the transparency (0 completely blocked, 1 completely open)
+            'refl' is the reflection (default 0.0)
 
-        if 'trans' or 'refl' is not given for an object, then the previous object's values are used.
-        Especially, if values are only given for the first object, then they are used for all objects.
+            if 'trans' or 'refl' is not given for an object, then the previous object's values are used.
+            Especially, if values are only given for the first object, then they are used for all objects.
 
-        'closed': True [default False] means that the first point is repeated in the input file, thus effectively closing the structure
+            'closed': True [default False] means that the first point is repeated in the input file, thus effectively closing the structure
 
-        'name' is optional, but will be printed to the swn file if provided to give a better overview
+            'name' is optional, but will be printed to the swn file if provided to give a better overview
+
+        STATIONARY MODE
+            To use homogeneous input, set all the variables in order as: homog = {'wind': (10,220)}
         """
-        forcing = model.wind()
-        boundary = model.spectra()
-        waterlevel = model.waterlevel()
-        oceancurrent = model.current()
-        ice = model.ice()
-        grid = model.grid()
-        grid_path = exported_files["grid"][-1]
-        forcing_path = exported_files["wind"][-1]
-        boundary_path = exported_files["spectra"][-1]
-        oceancurrent_path = exported_files["current"][-1]
-        waterlevel_path = exported_files["waterlevel"][-1]
-        ice_path = exported_files["ice"]
 
         filename = file_object.get_filepath()
-
         structures = structures or []
-
-        if calibrate is None:
-            calibrate = {}
-
-        if forcing is None and use_wind == True:
-            msg.info(
-                "No wind object provided. Wind information will NOT be written to SWAN input file!"
-            )
-            use_wind = False
-
-        if waterlevel is None and use_waterlevel == True:
-            msg.info(
-                "No waterlevel object provided. Waterlevel information will NOT be written to SWAN input file!"
-            )
-            use_waterlevel = False
-
-        if oceancurrent is None and use_current == True:
-            msg.info(
-                "No current object provided. OceanCurrent information will NOT be written to SWAN input file!"
-            )
-            use_current = False
-
-        if boundary is None and use_spectra == True:
-            msg.info(
-                "No spectra object provided. Spectra information will NOT be written to SWAN input file!"
-            )
-            use_spectra = False
-
-        if ice is None and use_ice == True:
-            msg.info(
-                "No ice object provided. Ice information will NOT be written to SWAN input file!"
-            )
-            use_ice = False
+        calibrate = calibrate or {}
+        homog = homog or {}
 
         # Define start and end times of model run
         DATE_START = model.time(crop_with="all")[0]
         DATE_END = model.time(crop_with="all")[-1]
         STR_START = DATE_START.strftime("%Y%m%d.%H%M%S")
         STR_END = DATE_END.strftime("%Y%m%d.%H%M%S")
-        HOTSTART_FILE = (
-            "hotstart_"
-            + grid.name
-            + "_"
-            + (pd.Timestamp(DATE_START) - pd.Timedelta(hours=1)).strftime("%Y%m%d%H%M")
-        )
-
-        spec_lon, spec_lat = grid.output_points()
-
-        delta_X = np.round(np.diff(grid.edges("lon")), 5)[0]
-        delta_Y = np.round(np.diff(grid.edges("lat")), 5)[0]
 
         factor = {}
         for calib_type in ["wind", "waterlevel", "current", "ice"]:
@@ -191,225 +154,97 @@ class SWAN(InputFileWriter):
         factor["wcap"] = calibrate.get("wcap") or self.default_calibrations.get("wcap")
 
         with open(filename, "w") as file_out:
-            file_out.write("$************************HEADING************************\n")
-            file_out.write("$ \n")
-            file_out.write(" PROJ '" + grid.name + "' 'T24' \n")
-            file_out.write("$ \n")
-            file_out.write("$*******************MODEL INPUT*************************\n")
-            file_out.write("$ \n")
-            file_out.write("SET NAUT \n")
-            file_out.write("$ \n")
-            file_out.write("MODE NONSTATIONARY TWOD \n")
-            file_out.write("COORD SPHE CCM \n")
-            file_out.write(
-                "CGRID "
-                + str(grid.lon()[0])
-                + " "
-                + str(grid.lat()[0])
-                + " 0. "
-                + str(delta_X)
-                + " "
-                + str(delta_Y)
-                + " "
-                + str(grid.nx() - 1)
-                + " "
-                + str(grid.ny() - 1)
-                + " CIRCLE %d %f %f %d \n"
-                % (self.n_dir, self.f_low, self.f_high, self.n_freq)
-            )
-            file_out.write("$ \n")
+            swan_header(file_out, model.grid().name)
+            if homog:
+                file_out.write("MODE STATIONARY TWOD \n")
+            else:
+                file_out.write("MODE NONSTATIONARY TWOD \n")
 
-            file_out.write(
-                "INPGRID BOTTOM "
-                + str(grid.lon()[0])
-                + " "
-                + str(grid.lat()[0])
-                + " 0. "
-                + str(grid.nx() - 1)
-                + " "
-                + str(grid.ny() - 1)
-                + " "
-                + str((delta_X / (grid.nx() - 1)).round(8))
-                + " "
-                + str((delta_Y / (grid.ny() - 1)).round(8))
-                + "\n"
+            swan_grid(
+                file_out,
+                model.grid(),
+                exported_files["grid"][-1],
+                self.n_dir,
+                self.f_low,
+                self.f_high,
+                self.n_freq,
             )
-            file_out.write(
-                "READINP BOTTOM 1 '" + grid_path.split("/")[-1] + "' 3 0 FREE \n"
-            )
-            file_out.write("$ \n")
-            if use_spectra:
-                lons, lats = create_swan_segment_coords(
-                    grid.boundary_mask(), grid.edges("lon"), grid.edges("lat")
+
+            if use_spectra and not homog:
+                swan_spectra(
+                    file_out,
+                    model.grid(),
+                    model.spectra(),
+                    exported_files["spectra"][-1],
+                )
+            elif homog.get("spectra") is not None:
+                swan_homog_spectra(
+                    file_out,
+                    model.grid(),
+                    homog.get("spectra"),
                 )
 
-                bound_string = "BOUNDSPEC SEGMENT XY"
-
-                for lon, lat in zip(lons, lats):
-                    bound_string += f" {lon:.4f} {lat:.4f}"
-                bound_string += " VARIABLE FILE 0 "
-                bound_string += f"'{boundary_path.split('/')[-1]}'\n"
-                file_out.write(bound_string)
-
-                # file_out.write('BOU NEST \''+boundary_path.split('/')[-1]+'\' OPEN \n')
-                file_out.write("$ \n")
-
-            if use_wind:
+            if use_wind and not homog:
                 self.output_var = self.output_var + " WIND"
-                delta_Xf = np.round(np.diff(forcing.edges("lon")), 5)[0]
-                delta_Yf = np.round(np.diff(forcing.edges("lat")), 5)[0]
-
-                file_out.write(
-                    "INPGRID WIND "
-                    + str(forcing.lon()[0].round(3))
-                    + " "
-                    + str(forcing.lat()[0].round(3))
-                    + " 0. "
-                    + str(forcing.nx() - 1)
-                    + " "
-                    + str(forcing.ny() - 1)
-                    + " "
-                    + str((delta_Xf / (forcing.nx() - 1)).round(6))
-                    + " "
-                    + str((delta_Yf / (forcing.ny() - 1)).round(6))
-                    + " NONSTATIONARY "
-                    + STR_START
-                    + f" {forcing.dt():.0f} HR "
-                    + STR_END
-                    + "\n"
+                swan_wind(
+                    file_out,
+                    model.wind(),
+                    STR_START,
+                    STR_END,
+                    factor["wind"],
+                    exported_files["wind"][-1],
                 )
-
-                file_out.write(
-                    "READINP WIND "
-                    + str(factor["wind"])
-                    + "  '"
-                    + forcing_path.split("/")[-1]
-                    + "' 3 0 0 1 FREE \n"
-                )
-                file_out.write("$ \n")
             else:
-                file_out.write("WIND 0 0 \n")  # no wind forcing
+                homog_wind = homog.get("wind", (0, 0))
+                file_out.write(f"WIND {homog_wind[0]:.2f} {homog_wind[1]:.0f}\n")
 
-            if use_waterlevel:
+            if use_waterlevel and not homog:
                 self.output_var = self.output_var + " WATLEV"
-                delta_Xf = np.round(np.diff(waterlevel.edges("lon")), 5)[0]
-                delta_Yf = np.round(np.diff(waterlevel.edges("lat")), 5)[0]
-
-                file_out.write(
-                    "INPGRID WLEV "
-                    + str(waterlevel.lon()[0])
-                    + " "
-                    + str(waterlevel.lat()[0])
-                    + " 0. "
-                    + str(waterlevel.nx() - 1)
-                    + " "
-                    + str(waterlevel.ny() - 1)
-                    + " "
-                    + str((delta_Xf / (waterlevel.nx() - 1)).round(6))
-                    + " "
-                    + str((delta_Yf / (waterlevel.ny() - 1)).round(6))
-                    + " NONSTATIONARY "
-                    + STR_START
-                    + f" {waterlevel.dt():.0f} HR "
-                    + STR_END
-                    + "\n"
+                swan_waterlevel(
+                    file_out,
+                    model.waterlevel(),
+                    STR_START,
+                    STR_END,
+                    factor["waterlevel"],
+                    exported_files["waterlevel"][-1],
                 )
 
-                file_out.write(
-                    "READINP WLEV "
-                    + str(factor["waterlevel"])
-                    + "  '"
-                    + waterlevel_path.split("/")[-1]
-                    + "' 3 0 1 FREE \n"
-                )
-                file_out.write("$ \n")
-            else:
-                pass
-
-            if use_current:
+            if use_current and not homog:
                 self.output_var = self.output_var + " VEL"
-                # delta_Xf = np.round(np.abs(oceancurrent.lon()[-1] - oceancurrent.lon()[0]), 5)
-                # delta_Yf = np.round(np.abs(oceancurrent.lat()[-1] - oceancurrent.lat()[0]), 5)
-                delta_Xf = np.round(np.diff(oceancurrent.edges("lon")), 5)[0]
-                delta_Yf = np.round(np.diff(oceancurrent.edges("lat")), 5)[0]
-
-                file_out.write(
-                    "INPGRID CUR "
-                    + str(oceancurrent.lon()[0].round(3))
-                    + " "
-                    + str(oceancurrent.lat()[0].round(3))
-                    + " 0. "
-                    + str(oceancurrent.nx() - 1)
-                    + " "
-                    + str(oceancurrent.ny() - 1)
-                    + " "
-                    + str((delta_Xf / (oceancurrent.nx() - 1)).round(6))
-                    + " "
-                    + str((delta_Yf / (oceancurrent.ny() - 1)).round(6))
-                    + " EXC 32767 NONSTATIONARY "
-                    + STR_START
-                    + f" {oceancurrent.dt():.0f} HR "
-                    + STR_END
-                    + " \n"
+                swan_current(
+                    file_out,
+                    model.current(),
+                    STR_START,
+                    STR_END,
+                    factor["current"],
+                    exported_files["current"][-1],
                 )
 
-                file_out.write(
-                    "READINP CUR "
-                    + str(factor["current"])
-                    + "  '"
-                    + oceancurrent_path.split("/")[-1]
-                    + "' 3 0 0 1 FREE \n"
+            if use_ice and not homog:
+                swan_ice(
+                    file_out,
+                    model.ice(),
+                    STR_START,
+                    STR_END,
+                    factor["ice"],
+                    exported_files["ice"],
                 )
-                file_out.write("$ \n")
-            else:
-                pass
 
-            if use_ice:
-                delta_Xf = np.round(np.diff(ice.edges("lon")), 5)[0]
-                delta_Yf = np.round(np.diff(ice.edges("lat")), 5)[0]
-                for i in range(len(ice_path)):
-                    if ice_path[i].split("/")[-1].startswith("sic") or ice_path[
-                        i
-                    ].split("/")[-1].startswith("ice"):
-                        ICE_NAME = "AICE"
-                    elif ice_path[i].split("/")[-1].startswith("sit"):
-                        ICE_NAME = "HICE"
-                    # self.output_var = self.output_var + " " + ICE_NAME # comment due to AICE/HICE not available as output in nc-format in SWAN
-                    file_out.write(
-                        "INPGRID "
-                        + ICE_NAME
-                        + " "
-                        + str(ice.lon()[0].round(3))
-                        + " "
-                        + str(ice.lat()[0].round(3))
-                        + " 0. "
-                        + str(ice.nx() - 1)
-                        + " "
-                        + str(ice.ny() - 1)
-                        + " "
-                        + str((delta_Xf / (ice.nx() - 1)).round(6))
-                        + " "
-                        + str((delta_Yf / (ice.ny() - 1)).round(6))
-                        + " NONSTATIONARY "
-                        + STR_START
-                        + f" {ice.dt():.0f} HR "
-                        + STR_END
-                        + " \n"
-                    )
-                    file_out.write(
-                        "READINP "
-                        + ICE_NAME
-                        + " "
-                        + str(factor["ice"])
-                        + "  '"
-                        + ice_path[i].split("/")[-1]
-                        + "' \n"
-                    )
-                    file_out.write("$ \n")
-            else:
-                pass
+            HOTSTART_FILE = (
+                "hotstart_"
+                + model.grid().name
+                + "_"
+                + (pd.Timestamp(DATE_START) - pd.Timedelta(hours=1)).strftime(
+                    "%Y%m%d%H%M"
+                )
+            )
 
-            if os.path.isfile(grid_path.split("/")[0] + "/" + HOTSTART_FILE) is True:
+            if (
+                os.path.isfile(
+                    exported_files["grid"][-1].split("/")[0] + "/" + HOTSTART_FILE
+                )
+                is True
+            ):
                 file_out.write("INITIAL HOTSTART '" + HOTSTART_FILE + "'" "\n")
 
             file_out.write("GEN3 WESTH cds2=" + str(factor["wcap"]) + " AGROW" + "\n")
@@ -418,46 +253,22 @@ class SWAN(InputFileWriter):
             file_out.write("NUM ACCUR NONST 1 \n")
             file_out.write("$ \n")
 
-            trans = None
-            refl = 0.0
-            closed = False
-            for structure in structures:
-                trans = structure.get("trans") or trans
-                if trans is None:
-                    raise ValueError(
-                        "Provide a value for the transparency of the structure with the dict key 'trans' in every structure. To use a constant transparency, only provide it in the first structure."
-                    )
-                refl = structure.get("refl") or refl
+            swan_structures(file_out, structures)
 
-                if structure.get("name") is not None:
-                    file_out.write(f"$ --- {structure.get('name')}")
-                    if structure.get("closed"):
-                        file_out.write(f" [closed]")
-                    file_out.write(f" ---\n")
-
-                file_out.write(f"OBSTACLE TRANS {trans:.2f} REFL {refl:.2f} LINE")
-                for lon, lat in zip(structure.get("lon"), structure.get("lat")):
-                    file_out.write(f" {lon:.6f} {lat:.6f}")
-
-                if structure.get("closed"):
-                    file_out.write(
-                        f" {structure.get('lon')[0]:.6f} {structure.get('lat')[0]:.6f}"
-                    )
-                file_out.write("\n")
-                # 5.918541 62.442135 5.921974 62.444498
+            # 5.918541 62.442135 5.921974 62.444498
 
             file_out.write("$*******************************************************\n")
 
             file_out.write("$ Generate block-output \n")
-            temp_list = forcing_path.split("/")
-            forcing_folder = "/".join(temp_list[0:-1])
+            # temp_list = forcing_path.split("/")
+            # forcing_folder = "/".join(temp_list[0:-1])
 
             extension = ".mat" if write_mat else ".nc"
             header = "NOHEAD" if write_mat else "HEAD"
 
             file_out.write(
                 f"BLOCK 'COMPGRID' {header} '"
-                + grid.name
+                + model.grid().name
                 + "_"
                 + STR_START.split(".")[0]
                 + extension
@@ -467,22 +278,9 @@ class SWAN(InputFileWriter):
                 "LAY 1 " + self.output_var + " OUTPUT " + STR_START + " 1 HR \n"
             )
             file_out.write("$ \n")
-            if len(spec_lon) > 0:
-                file_out.write("POINTS 'pkt' &\n")
-                for slon, slat in zip(spec_lon, spec_lat):
-                    file_out.write(str(slon) + " " + str(slat) + " &\n")
-                file_out.write(
-                    "SPECOUT 'pkt' SPEC2D ABS '"
-                    + grid.name
-                    + "_"
-                    + STR_START.split(".")[0]
-                    + "_spec"
-                    + ".nc"
-                    + "' & \n"
-                )
-                file_out.write("OUTPUT " + STR_START + " 1 HR \n")
-            else:
-                pass
+
+            swan_spectral_output_points(file_out, model.grid(), STR_START)
+
             file_out.write(
                 "COMPUTE "
                 + STR_START
@@ -492,7 +290,7 @@ class SWAN(InputFileWriter):
             )
             file_out.write(
                 "HOTFILE 'hotstart_"
-                + grid.name
+                + model.grid().name
                 + "_"
                 + STR_END.replace(".", "")[:-2]
                 + "'"
@@ -1113,10 +911,20 @@ class WW3Forcing(InputFileWriter):
             exported_files[self.file_type().name.lower()], folder_on_server
         )
         if self.file_type() == DnoraFileType.ICE:
-            if model[self.file_type().name].get('sic',strict=True) is not None:
-                 ww3_prnc(f"{filename}.sic", wind_exported_to, forcing_type=self.file_type(), subtype='sic')
-            if model[self.file_type().name].get('sit',strict=True) is not None:
-                ww3_prnc(f"{filename}.sit", wind_exported_to, forcing_type=self.file_type(), subtype='sit')
+            if model[self.file_type().name].get("sic", strict=True) is not None:
+                ww3_prnc(
+                    f"{filename}.sic",
+                    wind_exported_to,
+                    forcing_type=self.file_type(),
+                    subtype="sic",
+                )
+            if model[self.file_type().name].get("sit", strict=True) is not None:
+                ww3_prnc(
+                    f"{filename}.sit",
+                    wind_exported_to,
+                    forcing_type=self.file_type(),
+                    subtype="sit",
+                )
         else:
             ww3_prnc(filename, wind_exported_to, forcing_type=self.file_type())
 
