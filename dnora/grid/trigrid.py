@@ -27,6 +27,7 @@ import geo_parameters as gp
 @add_datavar(name="triangles", coord_group="gridpoint")
 @add_coord(name="corner", grid_coord=False)
 @add_coord(name="ntriang", grid_coord=False)
+@add_mask(name="waveseries", coord_group="grid", default_value=0)
 @add_mask(name="boundary", coord_group="grid", default_value=0)
 @add_mask(name="output", coord_group="grid", default_value=0)
 @add_mask(
