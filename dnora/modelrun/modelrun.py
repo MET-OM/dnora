@@ -281,6 +281,8 @@ class ModelRun:
         source,
         folder,
         filename,
+        dateformat: str = None,
+        dateformat_folder: str = None,
         point_mask=None,
         point_picker=None,
         post_process: bool = True,
@@ -318,6 +320,18 @@ class ModelRun:
         else:
             start_time, end_time = self.start_time(), self.end_time()
 
+        edge_object = kwargs.get("edge_object")
+        file_object = FileNames(
+            format=self._get_default_format(),
+            obj_type=obj_type,
+            model=self,
+            filename=filename,
+            folder=folder,
+            dateformat=dateformat,
+            dateformat_folder=dateformat_folder,
+            edge_object=edge_object,
+        )
+
         obj = import_data(
             grid=self.grid(),
             start_time=start_time,
@@ -328,8 +342,8 @@ class ModelRun:
             reader=reader,
             expansion_factor=expansion_factor,
             source=source,
-            folder=folder,
-            filename=filename,
+            folder=file_object.get_folder(),
+            filename=file_object.get_filename(),
             point_picker=point_picker,
             point_mask=point_mask,
             **kwargs,
