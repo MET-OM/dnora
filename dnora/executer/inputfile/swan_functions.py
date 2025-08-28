@@ -251,6 +251,12 @@ def swan_current(
 def swan_ice(file_out, ice, STR_START, STR_END, factor: float, ice_path: str) -> None:
     """Writes ice information to SWAN input file"""
 
+    if ice is None:
+        msg.info(
+            "No ice object provided. Ice information will NOT be written to SWAN input file!"
+        )
+        return
+
     delta_Xf = np.round(np.diff(ice.edges("lon")), 5)[0]
     delta_Yf = np.round(np.diff(ice.edges("lat")), 5)[0]
     for i in range(len(ice_path)):
@@ -298,6 +304,8 @@ def swan_structures(file_out, structures: list[dict]) -> None:
     trans = None
     refl = 0.0
     closed = False
+    if structures:
+        file_out.write("$ Define obstacles (structures) \n")
     for structure in structures:
         trans = structure.get("trans") or trans
         if trans is None:
@@ -323,11 +331,12 @@ def swan_structures(file_out, structures: list[dict]) -> None:
         file_out.write("\n")
 
 
-def swan_spectral_output_points(file_out, grid, STR_START: str) -> None:
+def swan_spectral_output_points(file_out, grid, STR_START: str, homog: bool) -> None:
     """Writes a list of spectral output points set in grid"""
     spec_lon, spec_lat = grid.output_points()
     if len(spec_lon) == 0:
         return
+    file_out.write("$ Generate spectral output \n")
     file_out.write("POINTS 'pkt' &\n")
     for slon, slat in zip(spec_lon, spec_lat):
         file_out.write(str(slon) + " " + str(slat) + " &\n")
@@ -337,7 +346,9 @@ def swan_spectral_output_points(file_out, grid, STR_START: str) -> None:
         + "_"
         + STR_START.split(".")[0]
         + "_spec"
-        + ".nc"
-        + "' & \n"
+        + ".nc'"
     )
-    file_out.write("OUTPUT " + STR_START + " 1 HR \n")
+    if not homog:
+        file_out.write(" & \n OUTPUT " + STR_START + " 1 HR")
+
+    file_out.write(" \n")

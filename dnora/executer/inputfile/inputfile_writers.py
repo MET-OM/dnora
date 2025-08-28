@@ -274,20 +274,21 @@ class SWAN(InputFileWriter):
                 + extension
                 + "' & \n"
             )
-            file_out.write(
-                "LAY 1 " + self.output_var + " OUTPUT " + STR_START + " 1 HR \n"
-            )
+            file_out.write("LAY 1 " + self.output_var)
+            if not homog:
+                file_out.write(" OUTPUT " + STR_START + " 1 HR ")
+            file_out.write("\n")
             file_out.write("$ \n")
 
-            swan_spectral_output_points(file_out, model.grid(), STR_START)
+            swan_spectral_output_points(file_out, model.grid(), STR_START, homog)
 
-            file_out.write(
-                "COMPUTE "
-                + STR_START
-                + " %d MIN " % self.swan_timestep
-                + STR_END
-                + "\n"
-            )
+            file_out.write("COMPUTE")
+            if not homog:
+                file_out.write(
+                    " " + STR_START + " %d MIN " % self.swan_timestep + STR_END
+                )
+            file_out.write("\n")
+
             file_out.write(
                 "HOTFILE 'hotstart_"
                 + model.grid().name
