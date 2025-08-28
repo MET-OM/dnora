@@ -296,7 +296,9 @@ class ModelRun:
         #     point_mask = self.grid().sea_mask()
         if self.forecast_mode():
 
-            if hasattr(reader.file_structure, "hours_per_file"):
+            if hasattr(reader, "file_structure") and hasattr(
+                reader.file_structure, "hours_per_file"
+            ):
                 start_time = self._reference_time
                 kwargs["last_file"] = kwargs.get(
                     "last_file",
