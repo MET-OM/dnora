@@ -114,6 +114,7 @@ class PointNetcdf(SpectralDataReader):
         filename: list[str] = None,
         convention: SpectralConvention | str | None = None,
         ds_aliases: dict | None = None,
+        pick_dimensions: dict | None = None,
         **kwargs,
     ):
         ds_aliases = ds_aliases or {}
@@ -129,6 +130,10 @@ class PointNetcdf(SpectralDataReader):
         else:
             msg.from_file(filepath)
             ds = xr.open_dataset(filepath[0])
+
+        if pick_dimensions is not None:
+            ds = ds.sel(**pick_dimensions)
+
         # We are reading an uinstructured Netcdf-files, so can't use a structured class
         if obj_type == DnoraDataType.GRID:
             point_cls = PointSkeleton.add_datavar(gp.ocean.WaterDepth("topo"))
@@ -231,9 +236,11 @@ class Netcdf(DataReader):
         folder: str,
         filename: list[str] = None,
         expansion_factor=1.2,
+        ds_aliases: dict | None = None,
+        pick_dimensions: dict | None = None,
         **kwargs,
     ):
-
+        ds_aliases = ds_aliases or {}
         filename = filename or self.files
 
         filepath = create_filelist(filename, folder)
@@ -246,8 +253,11 @@ class Netcdf(DataReader):
         cls = dnora_objects.get(obj_type)
         msg.from_multifile(filepath)
         ds = xr.open_mfdataset(filepath)
+
+        if pick_dimensions is not None:
+            ds = ds.sel(**pick_dimensions)
         # This geo-skeleton method does all the heavy lifting with decoding the Dataset to match the class data variables etc.
-        data = cls.from_ds(ds)
+        data = cls.from_ds(ds, ds_aliases=ds_aliases)
 
         if "time" in cls.core.coords():
             ds = data.ds().sel(time=slice(start_time, end_time))
