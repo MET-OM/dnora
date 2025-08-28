@@ -132,6 +132,7 @@ class PointNetcdf(SpectralDataReader):
             ds = xr.open_dataset(filepath[0])
 
         if pick_dimensions is not None:
+            msg.process(f"Picking following dimensions from file: {pick_dimensions}")
             ds = ds.sel(**pick_dimensions)
 
         # We are reading an uinstructured Netcdf-files, so can't use a structured class
@@ -255,6 +256,7 @@ class Netcdf(DataReader):
         ds = xr.open_mfdataset(filepath)
 
         if pick_dimensions is not None:
+            msg.process(f"Picking following dimensions from file: {pick_dimensions}")
             ds = ds.sel(**pick_dimensions)
         # This geo-skeleton method does all the heavy lifting with decoding the Dataset to match the class data variables etc.
         data = cls.from_ds(ds, ds_aliases=ds_aliases)
