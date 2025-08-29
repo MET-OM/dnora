@@ -321,16 +321,31 @@ class ModelRun:
             start_time, end_time = self.start_time(), self.end_time()
 
         edge_object = kwargs.get("edge_object")
-        file_object = FileNames(
-            format=self._get_default_format(),
-            obj_type=obj_type,
-            model=self,
-            filename=filename,
-            folder=folder,
-            dateformat=dateformat,
-            dateformat_folder=dateformat_folder,
-            edge_object=edge_object,
-        )
+
+        # For user provided filename or folder apply possible dateformats
+        # Defaults applied, which might be different from the Reader's defaults
+        if filename is not None or folder is not None:
+            file_object = FileNames(
+                format=self._get_default_format(),
+                obj_type=obj_type,
+                model=self,
+                filename=filename,
+                folder=folder,
+                dateformat=dateformat,
+                dateformat_folder=dateformat_folder,
+                edge_object=edge_object,
+            )
+
+        # If they are given as None then keep None and apply Reader's defaults
+        if filename is not None:
+            filename_to_use = file_object.get_filename()
+        else:
+            filename_to_use = filename
+
+        if folder is not None:
+            folder_to_use = file_object.get_folder()
+        else:
+            folder_to_use = folder
 
         obj = import_data(
             grid=self.grid(),
@@ -342,8 +357,8 @@ class ModelRun:
             reader=reader,
             expansion_factor=expansion_factor,
             source=source,
-            folder=file_object.get_folder(),
-            filename=file_object.get_filename(),
+            folder=folder_to_use,
+            filename=filename_to_use,
             point_picker=point_picker,
             point_mask=point_mask,
             **kwargs,
