@@ -170,8 +170,9 @@ class PointNetcdf(SpectralDataReader):
                     ii = np.argsort(llon)
                     ds = ds.isel(**{lon_str: ii})
 
-            raw_data = gridded_cls.from_ds(ds, ds_aliases=ds_aliases)
-
+            raw_data = gridded_cls.from_ds(
+                ds, ds_aliases=ds_aliases, verbose=kwargs.get("verbose", False)
+            )
         # This geo-skeleton method does all the heavy lifting with decoding the Dataset to match the class data variables etc.
         if raw_data.is_gridded():
             lon, lat = raw_data.lonlat(strict=True)
@@ -259,7 +260,7 @@ class Netcdf(DataReader):
             msg.process(f"Picking following dimensions from file: {pick_dimensions}")
             ds = ds.sel(**pick_dimensions)
         # This geo-skeleton method does all the heavy lifting with decoding the Dataset to match the class data variables etc.
-        data = cls.from_ds(ds, ds_aliases=ds_aliases)
+        data = cls.from_ds(ds, ds_aliases=ds_aliases, verbose=kwargs.get("verbose", False)
 
         if "time" in cls.core.coords():
             ds = data.ds().sel(time=slice(start_time, end_time))
