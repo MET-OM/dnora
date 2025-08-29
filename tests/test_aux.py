@@ -3,7 +3,6 @@ import sys
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, "../../")
 from dnora.utils.time import create_time_stamps
 from dnora.aux_funcs import get_url
 
