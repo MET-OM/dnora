@@ -185,7 +185,8 @@ class SWAN(InputFileWriter):
                 )
 
             if use_wind and not homog:
-                self.output_var = self.output_var + " WIND"
+                if model.wind() is not None:
+                    self.output_var = self.output_var + " WIND"
                 swan_wind(
                     file_out,
                     model.wind(),
@@ -199,7 +200,8 @@ class SWAN(InputFileWriter):
                 file_out.write(f"WIND {homog_wind[0]:.2f} {homog_wind[1]:.0f}\n")
 
             if use_waterlevel and not homog:
-                self.output_var = self.output_var + " WATLEV"
+                if model.waterlevel() is not None:
+                    self.output_var = self.output_var + " WATLEV"
                 swan_waterlevel(
                     file_out,
                     model.waterlevel(),
@@ -210,7 +212,8 @@ class SWAN(InputFileWriter):
                 )
 
             if use_current and not homog:
-                self.output_var = self.output_var + " VEL"
+                if model.current() is not None:
+                    self.output_var = self.output_var + " VEL"
                 swan_current(
                     file_out,
                     model.current(),
