@@ -1,0 +1,33 @@
+! -------------------------------------------------------------------- !
+! Define output dates via OUTPUT_DATE_NML namelist
+!
+! * start and stop times are with format 'yyyymmdd hhmmss'
+! * if time stride is equal '0', then output is disabled
+! * time stride is given in seconds
+!
+! * namelist must be terminated with /
+! * definitions & defaults:
+!     DATE%FIELD%START         =  '19680606 000000'
+!     DATE%FIELD%STRIDE        =  '0'
+!     DATE%FIELD%STOP          =  '19680607 000000'
+!     DATE%POINT%START         =  '19680606 000000'
+!     DATE%POINT%STRIDE        =  '0'
+!     DATE%POINT%STOP          =  '19680607 000000'
+!     DATE%TRACK%START         =  '19680606 000000'
+!     DATE%TRACK%STRIDE        =  '0'
+!     DATE%TRACK%STOP          =  '19680607 000000'
+!     DATE%RESTART%START       =  '19680606 000000'
+!     DATE%RESTART%STRIDE      =  '0'
+!     DATE%RESTART%STOP        =  '19680607 000000'
+!     DATE%BOUNDARY%START      =  '19680606 000000'
+!     DATE%BOUNDARY%STRIDE     =  '0'
+!     DATE%BOUNDARY%STOP       =  '19680607 000000'
+!     DATE%PARTITION%START     =  '19680606 000000'
+!     DATE%PARTITION%STRIDE    =  '0'
+!     DATE%PARTITION%STOP      =  '19680607 000000'
+!     DATE%COUPLING%START      =  '19680606 000000'
+!     DATE%COUPLING%STRIDE     =  '0'
+!     DATE%COUPLING%STOP       =  '19680607 000000'
+!
+!     DATE%RESTART             =  '19680606 000000' '0' '19680607 000000'
+! -------------------------------------------------------------------- !

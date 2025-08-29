@@ -1,0 +1,18 @@
+! -------------------------------------------------------------------- !
+! Define top-level model parameters via DOMAIN_NML namelist
+!
+! * IOSTYP defines the output server mode for parallel implementation.
+!             0 : No data server processes, direct access output from
+!                 each process (requires true parallel file system).
+!             1 : No data server process. All output for each type 
+!                 performed by process that performs computations too.
+!             2 : Last process is reserved for all output, and does no
+!                 computing.
+!             3 : Multiple dedicated output processes.
+!
+! * namelist must be terminated with /
+! * definitions & defaults:
+!     DOMAIN%IOSTYP =  1                 ! Output server type
+!     DOMAIN%START  = '19680606 000000'  ! Start date for the entire model 
+!     DOMAIN%STOP   = '19680607 000000'  ! Stop date for the entire model
+! -------------------------------------------------------------------- !

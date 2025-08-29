@@ -1,0 +1,39 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - v2
+    tags:
+      - v*
+  pull_request:
+    branches:
+      - v2
+    tags:
+      - v*
+jobs:
+  tests:
+    name: pytests (${{ matrix.os }} - ${{ matrix.python-version }}, Miniforge3)
+    runs-on: ${{ matrix.os }}-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      matrix:
+        os: ["ubuntu"]
+        python-version: [ '3.10' ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          environment-file: environment.yml
+          python-version: ${{ matrix.python-version }}
+          miniforge-version: latest
+          miniforge-variant: Miniforge3
+      - name: Run tests
+        run: |
+          conda activate test
+          pip install .
+          cd tests
+          python -m pytest -m "not remote" -vs --log-cli-level=debug --import-mode=append
+

@@ -1,0 +1,1 @@
+from .waveseries import WaveSeries

@@ -1,0 +1,54 @@
+! -------------------------------------------------------------------- !
+! Define the unstructured grid type via UNST_NML namelist
+! - only for UNST grids -
+!
+! * The minimum grid size is 3x3.
+!
+! * &MISC namelist must be removed
+!
+! * The depth value must have negative values under the mean sea level
+!
+! * The map value must be set as :
+!    -2 : Excluded boundary point (covered by ice)
+!    -1 : Excluded sea point (covered by ice)
+!     0 : Excluded land point
+!     1 : Sea point
+!     2 : Active boundary point
+!     3 : Excluded grid point
+!     7 : Ice point
+!
+! * the file must be a GMESH grid file containing node and element lists.
+!
+! * Extra open boundary list file with UGOBCFILE in namelist &UNST
+!   An example is given in regtest ww3_tp2.7
+!
+! * value <= scale_fac * value_read
+!
+! * IDLA : Layout indicator :
+!                  1   : Read line-by-line bottom to top. (default)
+!                  2   : Like 1, single read statement.
+!                  3   : Read line-by-line top to bottom.
+!                  4   : Like 3, single read statement.
+! * IDFM : format indicator :
+!                  1   : Free format. (default)
+!                  2   : Fixed format.
+!                  3   : Unformatted.
+! * FORMAT : element format to read :
+!               '(....)'  : auto detected (default)
+!               '(f10.6)' : float type
+!
+! * Example :
+!      IDF  SF   IDLA  IDFM   FORMAT       FILENAME
+!      20  -1.   4     2     '(20f10.2)'  'ngug.msh'
+!
+! * namelist must be terminated with /
+! * definitions & defaults:
+!     UNST%SF             = 1.       ! unst scale factor
+!     UNST%FILENAME       = 'unset'  ! unst filename
+!     UNST%IDF            = 20       ! unst file unit number
+!     UNST%IDLA           = 1        ! unst layout indicator
+!     UNST%IDFM           = 1        ! unst format indicator
+!     UNST%FORMAT         = '(....)' ! unst formatted read format
+!
+!     UNST%UGOBCFILE      = 'unset'  ! additional boundary list file
+! -------------------------------------------------------------------- !

@@ -1,0 +1,178 @@
+# Keeps track of all file names etc that are used as defaults in DNORA
+# When constructing filenames use underscore '_' as a separator, since that will automatically be cleaned out if unused
+# Do dot use a dash '-', since that is needed to mark negative longitudes and latitudes
+
+list_of_placeholders:
+  - '#ModelRun' # Replaced with the name of the ModelRun
+  - '#DataType' # Replaced with the type of data, e.g. 'wind' if writing a Wind-object
+  - '#ObjectName' # Replaced with the name of the object, e.g. 'nora3' when writing wind taken from NORA3
+  - '#T0' # Replaced with start time of ModelRun using the format specified in 'dateformat'
+  - '#T1' # Replaced with end time of ModelRun using the format specified in 'dateformat'
+  - '#FT0' # Replaced with start time of ModelRun using the format specified in 'dateformat_folder'
+  - '#FT1' # Replaced with end time of ModelRun using the format specified in 'dateformat_folder'
+  - '#LON0' # Replaced with eastern edge of the object
+  - '#LAT0' # Replaced with southern edge of the object
+  - '#LON1' # Replaced with western edge of the object
+  - '#LAT1' # Replaced with northern edge of the object
+  - '#X0' # Replaced with left edge of the object
+  - '#Y0' # Replaced with lower edge of the object
+  - '#X1' # Replaced with right edge of the object
+  - '#Y1' # Replaced with upper edge of the object
+
+# #GRID etc. will ge replaced by the Grid name (in lowercase)
+# Any part (starting and ending with '_') of the name containing an unused tag (#) will be cleaned away
+MODELRUN:
+  folder: 'output'
+  filename: 'dnorafile'
+  dateformat: '%Y%m%dT%H%M'
+  dateformat_folder: '%Y'
+  coord_format: '010.7f'
+  cartesian_coord_format: '04.1f'
+  extension: 'nc'
+  grid:
+    folder: 'output'
+    filename: 'grid_#GRID'
+    dateformat: '%Y%m%dT%H%M'
+  wind:
+    folder: 'output'
+    filename: 'wind_#WIND_#GRID_#T0_#T1'
+    dateformat: '%Y%m%dT%H%M'
+  spectra:
+    folder: 'output'
+    filename: 'spec2d_#SPECTRA_#GRID_#T0_#T1'
+    dateformat: '%Y%m%dT%H%M'
+  spectra1d:
+    folder: 'output'
+    filename: 'spec1d_#SPECTRA1D_#GRID_#T0_#T1'
+    dateformat: '%Y%m%dT%H%M'
+  waveseries:
+    folder: 'output'
+    filename: 'waveseries_#WAVESERIES_#GRID_#T0_#T1'
+    dateformat: '%Y%m%dT%H%M'
+  current:
+    folder: 'output'
+    filename: 'current_#CURRENT_#GRID_#T0_#T1'
+    dateformat: '%Y%m%dT%H%M'
+  waterlevel:
+    folder: 'output'
+    filename: 'waterlevel_#WATERLEVEL_#GRID_#T0_#T1'
+    dateformat: '%Y%m%dT%H%M'
+  ice:
+    folder: 'output'
+    filename: 'ice_#ICE_#GRID_#T0_#T1'
+    dateformat: '%Y%m%dT%H%M'  
+  input_file:
+    folder: 'output'
+    filename: 'inputfile_#GRID_#WIND_#SPECTRA_#CURRENT_#T0_#T1_#LON_#LAT'
+    dateformat: '%Y%m%dT%H%M'
+    extension: 'txt'
+
+SWAN:
+  dateformat: '%Y%m%d'
+  folder: '#GRID_SWAN'
+  extension: 'asc'
+  grid:
+    filename: '#GRID_SWAN'
+    extension: 'bot'
+  wind:
+    filename: 'wind#WIND#GRID#T0_#T1'
+  spectra:
+    filename: 'spec#SPECTRA#GRID#T0_#T1'
+  ice:
+    filename: 'ice#ICE#GRID#T0_#T1'
+  waterlevel:
+    filename: 'wlvl#WATERLEVEL#GRID#T0_#T1'
+  current:
+    filename: 'cur#CURRENT#GRID#T0_#T1'
+  input_file:
+    filename: 'input_#T0_#GRID'
+    folder: '#GRID_SWAN'
+    extension: 'swn'
+
+SWASH:
+  dateformat: '%Y%m%d'
+  extension: 'asc'
+  folder: '#GRID_SWASH'
+  grid:
+    filename: '#GRID_SWASH'
+    extension: 'bot'
+  wind:
+    filename: 'wind#WIND#GRID#T0_#T1'
+  spectra:
+    filename: 'spec#SPECTRA#GRID#T0#T1'
+  input_file:
+    filename: 'input_#T0_#T1_#GRID'
+    folder: '#GRID_SWASH'
+    extension: 'sws'
+
+WW3:
+  folder: '#GRID_WW3'
+  grid:
+    filename: '#GRID'
+    extension: 'txt'
+  spectra:
+    filename: 'ww3_spec_E#LON0N#LAT0_#SPECTRA_#GRID_#T0_#T1'
+    extension: 'nc'
+  wind:
+    filename: 'wind_#WIND_#GRID_#T0_#T1'
+    extension: 'nc'
+  current:
+    filename: 'current_#CURRENT_#GRID_#T0_#T1'
+    extension: 'nc'  
+  ice:
+    filename: 'ice_#ICE_#GRID_#T0_#T1'
+    extension: 'nc'    
+  waterlevel:
+    filename: 'waterlevel_#WATERLEVEL_#GRID_#T0_#T1'
+    extension: 'nc'     
+  input_file:
+    filename: ''
+    extension: 'nml'
+  grid_file:
+    filename: 'ww3_grid'
+    extension: 'nml'
+  wind_file:
+    filename: 'ww3_prnc_wind'
+    extension: 'nml'
+  spectra_file:
+    filename: 'ww3_bounc'
+    extension: 'nml'
+  current_file:
+    filename: 'ww3_prnc_current'
+    extension: 'nml'
+  waterlevel_file:
+    filename: 'ww3_prnc_waterlevel'
+    extension: 'nml'
+  ice_file:
+    filename: 'ww3_prnc_ice'
+    extension: 'nml'
+
+HOS_OCEAN:
+  grid:
+    filename: '#GRID_HOS_ocean'
+  input_file:
+    filename: 'input_HOS'
+    folder: 'MyHOS_oceanFolder'
+    extension: 'dat'
+
+REEF3D:
+  grid:
+    filename: 'geo'
+    folder: '#GRID_REEF3D'
+    extension: 'dat'
+  spectra1d:
+    filename: 'spectrum-file'
+    folder: '#GRID_REEF3D'
+    extension: 'dat'
+  input_file:
+    filename: 'ctrl'
+    folder: '#GRID_REEF3D'
+    extension: 'txt'
+
+CACHE:
+  filename: '#ObjectName_#DataType_#LON0E_#LAT0N_#T0'
+  dateformat: '%Y-%m-%d'
+  dateformat_folder: '%Y/%m'
+  coord_format: '03.0f'
+  extension: 'nc'
+  folder: '#DataType_cache/#ObjectName/#FT0'
