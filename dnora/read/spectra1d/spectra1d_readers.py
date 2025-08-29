@@ -158,6 +158,12 @@ class WaveSeriesToJONSWAP1D(SpectralDataReader):
         freq = self._freq
         obj = dnora_class(time=time, lon=lon, lat=lat, x=x, y=y, freq=freq)
 
+        if self._waveseries.tp(strict=True) is None:
+            raise ValueError("No peak period defined!")
+
+        if self._waveseries.hs(strict=True) is None:
+            raise ValueError("No significant wave height defined!")
+
         fp = 1 / self._waveseries.tp(squeeze=False)
         m0 = (self._waveseries.hs(squeeze=False) / 4) ** 2
 
