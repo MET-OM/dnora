@@ -23,6 +23,8 @@ SWAN_VARS = {
     "TPsmoo": gp.wave.Tp,
     "RTpeak": gp.wave.Tp,
     "PkDir": gp.wave.Dirp,
+    "Vel_x": gp.ocean.XCurrent,
+    "Vel_y": gp.ocean.YCurrent,
 }
 
 
@@ -41,7 +43,6 @@ def read_swan_mat_to_ds(filename: str, lon: np.ndarray, lat=np.ndarray) -> xr.Da
     # This creates a dict with keys
     # 'Hsig_20200215_000000', 'RTpeak_20200215_000000', 'TPsmoo_20200215_000000' ...
     mat = scipy.io.loadmat(filename)
-
     # Create class
     wave_grid = GriddedSkeleton.add_time()
     for key, value in SWAN_VARS.items():
