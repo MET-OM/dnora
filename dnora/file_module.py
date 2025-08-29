@@ -130,9 +130,12 @@ class FileNames:
         y: tuple[float, float] = None,
         clean: bool = True,
     ) -> str:
-        folder = self.folder or get_default_value(
-            "folder", self.obj_type, self.primary, self.fallback
-        )
+        if self.folder is not None:
+            folder = self.folder
+        else:
+            folder = get_default_value(
+                "folder", self.obj_type, self.primary, self.fallback
+            )
 
         start_time = start_time or self.get_start_time()
         end_time = end_time or self.get_end_time()
