@@ -43,6 +43,7 @@ jobs:
 
 
       - name: Build wheels
+        if: matrix.python-version == '3.10' && matrix.os == 'ubuntu'
         run: |
           conda activate test
           conda install conda-forge::poetry
