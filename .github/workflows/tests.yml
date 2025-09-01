@@ -25,7 +25,7 @@ jobs:
 
       - name: Configure Conda to only use conda-forge
         run: |
-          conda config --remove channels defaults || echo "defaults channel not present"
+          conda config --remove channels defaults
           conda config --add channels conda-forge
           conda config --set channel_priority strict
 
