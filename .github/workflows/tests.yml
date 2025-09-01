@@ -11,7 +11,7 @@ on:
 
 jobs:
   tests:
-    name: pytests (${{ matrix.os }} - ${{ matrix.python-version }}, Mambaforge)
+    name: pytests (${{ matrix.os }} - ${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}-latest
     defaults:
       run:
@@ -22,12 +22,19 @@ jobs:
         python-version: [ '3.10' ]
     steps:
       - uses: actions/checkout@v4
+
+      - name: Configure Conda to only use conda-forge
+        run: |
+          conda config --remove channels defaults || echo "defaults channel not present"
+          conda config --add channels conda-forge
+          conda config --set channel_priority strict
+          
       - uses: conda-incubator/setup-miniconda@v3
         with:
           environment-file: environment.yml
           python-version: ${{ matrix.python-version }}
           miniforge-version: latest
-          miniforge-variant: Mambaforge
+          miniforge-variant: Miniforge3
       - name: Run tests
         run: |
           conda activate test
