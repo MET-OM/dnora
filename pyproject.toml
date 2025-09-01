@@ -20,16 +20,18 @@ dependencies = [
     "geo-skeletons>=0.20.4",
     "python-dotenv",
     "cdsapi>=0.7.6",
-    "fimex==1.8.1",
     "progressbar"
-]
-
-[project.optional-dependencies]
-test = [
-    "pytest>=7.0"
 ]
 readme = "README.md"
 license = {file = "LICENSE"}
 
+[project.optional-dependencies]
+test = ["pytest>=7.0"]
+
+
+
 [tool.setuptools]
 license-files = ["LICENSE"]
+
+[tool.setuptools_scm]
+write_to = "dnora/_version.py"
