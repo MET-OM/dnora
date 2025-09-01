@@ -20,14 +20,14 @@ from geo_skeletons.decorators import (
 )
 
 import geo_parameters as gp
-
+from typing import Union, Optional
 
 @add_datavar(gp.wave.Efth("spec"), coord_group="all", default_value=0.0)
 @add_direction(grid_coord=False)
 @add_frequency(grid_coord=False)
 @add_time(grid_coord=True)
 class Spectra(PointSkeleton):
-    def process(self, spectral_processors: list[SpectralProcessor] | None = None):
+    def process(self, spectral_processors: Optional[list[SpectralProcessor]] = None):
         """Process all the individual spectra of the boundary object.
 
         E.g. change convention form WW3 to Oceanic, interpolate spectra to
@@ -141,7 +141,7 @@ class Spectra(PointSkeleton):
         if not silent:
             msg.plain(f"Spectral convention is now: {self.convention()}")
 
-    def convention(self) -> SpectralConvention | None:
+    def convention(self) -> Union[SpectralConvention,None]:
         """Returns the convention (WW3/OCEAN/MET/MATH/MATHVEC) of the spectra"""
         if not hasattr(self, "_convention"):
             return None

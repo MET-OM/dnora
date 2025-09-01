@@ -4,7 +4,7 @@ import xarray as xr
 from geo_skeletons.decorators import add_mask, add_datavar, add_coord
 
 from dnora import msg
-
+from typing import Union
 from .mesh import Mesher, Interpolate
 from .process import GridProcessor
 from pathlib import Path
@@ -111,7 +111,7 @@ class TriGrid(PointSkeleton):
     def import_topo(
         self,
         topo_reader: DataReader = None,
-        source: str | DataSource = None,
+        source: Union[str, DataSource] = None,
         folder: str = None,
         **kwargs,
     ) -> None:

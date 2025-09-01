@@ -1,7 +1,7 @@
 import numpy as np
 from dnora.type_manager.dnora_types import DnoraFileType
-from ...file_module import split_filepath, add_folder_to_filename
-
+from dnora.file_module import split_filepath, add_folder_to_filename
+from typing import Union
 def write_block(folder: str,fn: str, fout):
     with open(f"{folder}{fn}", "r") as fin:
         block = fin.read()
@@ -201,8 +201,8 @@ def ww3_prnc(
     filename: str,
     forcing_exported_to: list[str],
     forcing_type: DnoraFileType,
-    subtype: str | None = None,
-    minwind: float | None = None,
+    subtype: Union[str, None] = None,
+    minwind: Union[float, None] = None,
 ) -> None:
     """Writes ww3_prnc.nml file"""
 
@@ -241,7 +241,7 @@ def ww3_prnc(
         fout.write("/\n")
 
 
-    def write_file(subtype: str | None):
+    def write_file(subtype: Union[str, None]):
         fout.write("&FILE_NML\n")
         fout.write(f"  FILE%FILENAME      = '{forcing_exported_to[-1]}'\n")
         fout.write("  FILE%LONGITUDE     = 'lon'\n")

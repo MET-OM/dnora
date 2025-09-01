@@ -3,7 +3,7 @@ from copy import copy
 import pandas as pd
 import numpy as np
 
-from typing import Union, TYPE_CHECKING
+from typing import Union, TYPE_CHECKING, Optional
 import os
 from dnora import utils
 
@@ -121,7 +121,7 @@ class ModelRun:
 
     def __init__(
         self,
-        grid: Grid | None = None,
+        grid: Opional[Grid] = None,
         start_time: str = None,
         end_time: str = None,
         year: int = None,
@@ -191,7 +191,7 @@ class ModelRun:
         name: str,
         dry_run: bool,
         reader: ReaderFunction,
-        source: DataSource | str,
+        source: Union[DataSource, str],
         folder: str,
     ) -> tuple[ReaderFunction, str]:
         """Sets up readers, names and dry runs porperties for import of object."""
@@ -411,13 +411,13 @@ class ModelRun:
     @cached_reader(DnoraDataType.WIND, dnora.read.generic.Netcdf)
     def import_wind(
         self,
-        reader: DataReader | None = None,
+        reader: Optional[DataReader] = None,
         expansion_factor: float = 1.2,
-        name: str | None = None,
+        name: Optional[str] = None,
         dry_run: bool = False,
-        source: str | DataSource = DataSource.UNDEFINED,
-        folder: str | None = None,
-        filename: str | None = None,
+        source: Union[str, DataSource] = DataSource.UNDEFINED,
+        folder: Optional[str] = None,
+        filename: Optional[str] = None,
         **kwargs,
     ) -> None:
         """Import wind data from a source using the given reader"""
@@ -436,13 +436,13 @@ class ModelRun:
     @cached_reader(DnoraDataType.WATERLEVEL, dnora.read.generic.Netcdf)
     def import_waterlevel(
         self,
-        reader: DataReader | None = None,
+        reader: Optional[DataReader] = None,
         expansion_factor: float = 1.2,
-        name: str | None = None,
+        name: Optional[str] = None,
         dry_run: bool = False,
-        source: str | DataSource = DataSource.UNDEFINED,
-        folder: str | None = None,
-        filename: str | None = None,
+        source: Union[str, DataSource] = DataSource.UNDEFINED,
+        folder: Optional[str] = None,
+        filename: Optional[str] = None,
         **kwargs,
     ) -> None:
         """Import waterlevel data from a source using the given reader"""
@@ -461,14 +461,14 @@ class ModelRun:
     @cached_reader(DnoraDataType.SPECTRA, dnora.read.generic.PointNetcdf)
     def import_spectra(
         self,
-        reader: SpectralDataReader | None = None,
-        point_picker: PointPicker | None = None,
+        reader: Optional[SpectralDataReader] = None,
+        point_picker: Optional[PointPicker] = None,
         expansion_factor: float = 1.5,
-        name: str | None = None,
+        name: Optional[str] = None,
         dry_run: bool = False,
-        source: str | DataSource = DataSource.UNDEFINED,
-        folder: str | None = None,
-        filename: str | None = None,
+        source: Union[str, DataSource] = DataSource.UNDEFINED,
+        folder: Optional[str] = None,
+        filename: Optional[str] = None,
         **kwargs,
     ) -> None:
         self._import_data(
@@ -488,14 +488,14 @@ class ModelRun:
     @cached_reader(DnoraDataType.SPECTRA1D, dnora.read.generic.PointNetcdf)
     def import_spectra1d(
         self,
-        reader: SpectralDataReader | None = None,
-        point_picker: PointPicker | None = None,
+        reader: Optional[SpectralDataReader] = None,
+        point_picker: Optional[PointPicker] = None,
         expansion_factor: float = 1.5,
-        name: str | None = None,
+        name: Optional[str] = None,
         dry_run: bool = False,
-        source: str | DataSource = DataSource.UNDEFINED,
-        folder: str | None = None,
-        filename: str | None = None,
+        source: Union[str, DataSource] = DataSource.UNDEFINED,
+        folder: Optional[str] = None,
+        filename: Optional[str] = None,
         **kwargs,
     ) -> None:
 
@@ -516,14 +516,14 @@ class ModelRun:
     @cached_reader(DnoraDataType.WAVESERIES, dnora.read.generic.PointNetcdf)
     def import_waveseries(
         self,
-        reader: PointDataReader | None = None,
-        point_picker: PointPicker | None = None,
+        reader: Optional[PointDataReader] = None,
+        point_picker: Optional[PointPicker] = None,
         expansion_factor: float = 1.5,
-        name: str | None = None,
+        name: Optional[str] = None,
         dry_run: bool = False,
-        source: str | DataSource = DataSource.UNDEFINED,
-        folder: str | None = None,
-        filename: str | None = None,
+        source: Union[str, DataSource] = DataSource.UNDEFINED,
+        folder: Optional[str] = None,
+        filename: Optional[str] = None,
         **kwargs,
     ) -> None:
 
@@ -544,13 +544,13 @@ class ModelRun:
     @cached_reader(DnoraDataType.CURRENT, dnora.read.generic.Netcdf)
     def import_current(
         self,
-        reader: DataReader | None = None,
+        reader: Optional[DataReader] = None,
         expansion_factor: float = 1.2,
-        name: str | None = None,
+        name: Optional[str] = None,
         dry_run: bool = False,
-        source: str | DataSource = DataSource.UNDEFINED,
-        folder: str | None = None,
-        filename: str | None = None,
+        source: Union[str, DataSource] = DataSource.UNDEFINED,
+        folder: Optional[str] = None,
+        filename: Optional[str] = None,
         **kwargs,
     ) -> None:
 
@@ -569,13 +569,13 @@ class ModelRun:
     @cached_reader(DnoraDataType.ICE, dnora.read.generic.Netcdf)
     def import_ice(
         self,
-        reader: DataReader | None = None,
+        reader: Optional[DataReader] = None,
         expansion_factor: float = 1.2,
-        name: str | None = None,
+        name: Optional[str] = None,
         dry_run: bool = False,
-        source: str | DataSource = DataSource.UNDEFINED,
-        folder: str | None = None,
-        filename: str | None = None,
+        source: Union[str, DataSource] = DataSource.UNDEFINED,
+        folder: Optional[str] = None,
+        filename: Optional[str] = None,
         **kwargs,
     ) -> None:
 
@@ -594,7 +594,7 @@ class ModelRun:
     def spectra_to_1d(
         self,
         dry_run: bool = False,
-        name: str | None = None,
+        name: Optional[str] = None,
         **kwargs,
     ):
         if self.spectra() is None:
@@ -641,7 +641,7 @@ class ModelRun:
     def spectra1d_to_spectra(
         self,
         dry_run: bool = False,
-        name: str | None = None,
+        name: Optional[str] = None,
         **kwargs,
     ):
         if self.spectra1d() is None:
@@ -704,13 +704,13 @@ class ModelRun:
 
     def set_spectral_grid(
         self,
-        freq: np.ndarray | None = None,
-        dirs: np.ndarray | None = None,
+        freq: Optional[np.ndarray] = None,
+        dirs: Optional[np.ndarray] = None,
         freq0: float = 0.04118,
         nfreq: int = 32,
         ndir: int = 36,
         finc: float = 1.1,
-        dirshift: float | None = None,
+        dirshift: Optional[float] = None,
         extend_spectra: bool = False,
     ):
         """Sets spectral grid for model run. Will be used to write input files."""
@@ -781,7 +781,7 @@ class ModelRun:
         return self._dnora_objects.get(DnoraDataType.ICE)
 
     def process(
-        self, obj_type: DnoraDataType | str, processor: GriddedDataProcessor
+        self, obj_type: Union[DnoraDataType, str], processor: GriddedDataProcessor
     ) -> None:
         """Processes data of a gridded object with a given processor and sets that processed data to ModelRun"""
         if processor is None:
@@ -809,7 +809,7 @@ class ModelRun:
                 dict_of_object_names[obj_type] = self.get(obj_type).name
         return dict_of_object_names
 
-    def data_exported_to(self, obj_type: DnoraDataType | str) -> str:
+    def data_exported_to(self, obj_type: Union[DnoraDataType, str]) -> str:
         """Returns the path the object (e.g. grid) was exported to.
 
         If object has not been exported, the default filename is returned as
@@ -831,7 +831,7 @@ class ModelRun:
             files[dnora_type.name.lower()] = self.data_exported_to(dnora_type)
         return files
 
-    def input_file_exported_to(self, file_type: DnoraFileType | str) -> str:
+    def input_file_exported_to(self, file_type: Union[DnoraFileType, str]) -> str:
         """Returns the path the object (e.g. grid) was exported to.
 
         If object has not been exported, the default filename is returned as
@@ -848,7 +848,7 @@ class ModelRun:
         ]  # Want a list of strings
         return self._input_file_exported_to.get(file_type, default_name)
 
-    def time(self, crop_with: list[DnoraDataType | str] = None):
+    def time(self, crop_with: list[Union[DnoraDataType, str]] = None):
         """Returns times of ModelRun
         crop_with = ['Forcing', 'Boundary'] gives time period covered by those objects
         crop_with = 'all' crops with all objects"""
@@ -883,27 +883,27 @@ class ModelRun:
         crop = True: Give the period that is covered by all objects (Forcing etc.)"""
         return self.time(crop_with=crop_with)[-1]
 
-    def __getitem__(self, obj_type: DnoraDataType | str) -> DnoraObject:
+    def __getitem__(self, obj_type: Union[DnoraDataType, str]) -> DnoraObject:
         """Gets an Dnora item"""
         obj_type = data_type_from_string(obj_type)
         return self._dnora_objects[obj_type]
 
-    def get(self, obj_type: DnoraDataType | str) -> DnoraObject | None:
+    def get(self, obj_type: Union[DnoraDataType, str]) -> Optional[DnoraObject]:
         """Gets an Dnora item and returns None is it doesn't exist"""
         obj_type = data_type_from_string(obj_type)
         return self._dnora_objects.get(obj_type)
 
-    def __setitem__(self, obj_type: DnoraDataType | str, value: DnoraObject) -> None:
+    def __setitem__(self, obj_type: Union[DnoraDataType, str], value: DnoraObject) -> None:
         """Sets a Dnora item"""
         obj_type = data_type_from_string(obj_type)
         self._dnora_objects[obj_type] = value
 
-    def __delitem__(self, obj_type: DnoraDataType | str) -> None:
+    def __delitem__(self, obj_type: Union[DnoraDataType, str]) -> None:
         """Delets a Dnora item"""
         obj_type = data_type_from_string(obj_type)
         del self._dnora_objects[obj_type]
 
-    def _get_reader(self, obj_type: DnoraDataType | str) -> ReaderFunction:
+    def _get_reader(self, obj_type: Union[DnoraDataType, str]) -> ReaderFunction:
         obj_type = data_type_from_string(obj_type)
         return self._reader_dict.get(obj_type)
 

@@ -1,5 +1,5 @@
 from enum import Enum
-
+from typing import Union
 
 class SpectralConvention(Enum):
     """Conventions of BoundarySpectra (2D)"""
@@ -52,7 +52,7 @@ def convert_2d_to_1d(convention_2d: SpectralConvention):
 
 
 def spectral_convention_from_string(
-    convention_str: str | SpectralConvention,
+    convention_str: Union[str, SpectralConvention],
 ) -> SpectralConvention:
     if convention_str is None:
         return None

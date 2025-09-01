@@ -1,7 +1,7 @@
 import numpy as np
 from copy import copy
 from abc import ABC, abstractmethod
-
+from typing import Optional
 from dnora.utils.spec import (
     interp_spec,
     shift_spec,
@@ -182,9 +182,9 @@ class ReGridDirs(SpectralProcessor):
 
     def __init__(
         self,
-        res: int | None = None,
-        first_dir: int | None = None,
-        nbins: int | None = None,
+        res:  Optional[int] = None,
+        first_dir: Optional[int] = None,
+        nbins: Optional[int] = None,
     ) -> None:
         self.first_dir = copy(first_dir)
         if res is not None and nbins is not None:

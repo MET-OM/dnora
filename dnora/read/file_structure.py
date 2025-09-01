@@ -2,6 +2,7 @@ from dnora.utils.time import create_time_stamps
 from dataclasses import dataclass
 from dnora.utils.time import create_monthly_stamps, create_yearly_stamps
 
+from typing import Union
 
 @dataclass
 class FileStructure:
@@ -12,7 +13,7 @@ class FileStructure:
     None if all data is in one file (but points can be spread across different files)
     """
 
-    stride: int | str | None = None
+    stride: Union[int, str, None] = None
     hours_per_file: int = None
     lead_time: int = 0
     last_file: str = ""

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from dnora.read.abstract_readers import DataReader
@@ -39,7 +39,7 @@ class PointTopo(PointSkeleton):
 def import_topo(
     grid,
     topo_reader: DataReader = None,
-    source: str | DataSource = None,
+    source: Union[str, DataSource] = None,
     folder: str = None,
     **kwargs,
 ) -> GriddedTopo:

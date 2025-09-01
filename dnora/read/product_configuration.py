@@ -5,7 +5,7 @@ from dnora.read.ds_read_functions import basic_xarray_read
 from dnora.type_manager.dnora_types import DnoraDataType
 from typing import Callable
 from dnora.aux_funcs import get_url
-
+from typing import Optional
 
 def get_constant_url(folder, filename, file_times, **kwargs) -> list[str]:
     """Applies the same folder and filename to all file_times to get url.
@@ -35,7 +35,7 @@ class ProductConfiguration:
     filename: str = "model_output_%Y%m.nc"
     default_filenames: dict[DataSource, str] = field(default_factory=dict)
     default_folders: dict[DataSource, str] = field(default_factory=dict)
-    tile: str | None = None
+    tile: Optional[str] = None
     tile_names: dict[str, str] = field(default_factory=dict)
     default_data_source: DataSource = DataSource.UNDEFINED
     convention: SpectralConvention = SpectralConvention.UNDEFINED

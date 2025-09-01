@@ -10,7 +10,7 @@ from pathlib import Path
 from dnora.type_manager.dnora_types import file_type_from_string
 from .decorators import add_write_method, add_run_method
 from dnora.defaults import read_environment_variable
-
+from typing import Union, Optional
 
 @add_run_method(DnoraFileType.SPECTRA)
 @add_run_method(DnoraFileType.ICE)
@@ -43,7 +43,7 @@ class ModelExecuter:
 
     def _write(
         self,
-        file_type: DnoraFileType | str,
+        file_type: Union[DnoraFileType, str],
         input_file_writer: InputFileWriter = None,
         filename: str = None,
         folder: str = None,
@@ -106,7 +106,7 @@ class ModelExecuter:
 
     def run_model(
         self,
-        model_runner: ModelRunner | None = None,
+        model_runner: Optional[ModelRunner] = None,
         model_folder: str = "",
         post_process: bool = True,
         dry_run: bool = False, 
@@ -124,14 +124,14 @@ class ModelExecuter:
 
     def _run(
         self,
-        file_type: DnoraFileType | str,
-        model_runner: ModelRunner | None = None,
+        file_type: Union[DnoraFileType, str],
+        model_runner: Optional[ModelRunner] = None,
         model_folder: str = "",
-        input_file: str | None = None,
-        folder: str | None = None,
-        dateformat: str | None = None,
+        input_file: Optional[str] = None,
+        folder: Optional[str] = None,
+        dateformat: Optional[str] = None,
         post_process: bool = True,
-        post_processors: list[PostProcessor] | None = None,
+        post_processors: Optional[list[PostProcessor]] = None,
         dry_run: bool = False,
         **kwargs,
     ) -> None:

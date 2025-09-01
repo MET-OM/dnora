@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 from geo_skeletons import GriddedSkeleton
 import numpy as np
 import xarray as xr
@@ -104,7 +104,7 @@ class Grid(GriddedSkeleton):
     def import_topo(
         self,
         topo_reader: DataReader = None,
-        source: str | DataSource = DataSource.LOCAL,
+        source: Union[str, DataSource] = DataSource.LOCAL,
         folder: str = None,
         **kwargs,
     ) -> None:

@@ -16,7 +16,7 @@ from dnora import msg
 import xarray as xr
 from dnora import utils
 
-
+from typing import Union, Optional
 class ProductReader(DataReader):
     """This should not be used directly, but is a template for model specific implementations"""
 
@@ -34,14 +34,12 @@ class ProductReader(DataReader):
 
     def __init__(
         self,
-        stride: (
-            int | str | None
-        ) = None,  # Integer is number of hours, 'month' for monthly files
-        hours_per_file: int | None = None,  # None for stride = 'month'
-        last_file: str | None = None,
-        lead_time: int | None = None,
-        offset: int | None = None,
-        tile: str | None = None,
+        stride: Union[int, str, None] = None,  # Integer is number of hours, 'month' for monthly files
+        hours_per_file: Optional[int] = None,  # None for stride = 'month'
+        last_file: Optional[str] = None,
+        lead_time: Optional[int] = None,
+        offset: Optional[int] = None,
+        tile: Optional[str] = None,
     ) -> None:
         if stride is not None:
             self.file_structure.stride = stride
@@ -77,7 +75,7 @@ class ProductReader(DataReader):
         expansion_factor: float = 1.2,
         program: str = "pyfimex",
         dnora_class=None,
-        tile: str | None = None,
+        tile: Optional[str] = None,
         **kwargs,
     ) -> tuple[dict]:
         """Reads in all gridded data for given area and time"""
@@ -164,14 +162,12 @@ class SpectralProductReader(SpectralDataReader):
 
     def __init__(
         self,
-        stride: (
-            int | str | None
-        ) = None,  # Integer is number of hours, 'month' for monthly files
-        hours_per_file: int | None = None,  # None for stride = 'month'
-        last_file: str | None = None,
-        lead_time: int | None = None,
-        offset: int | None = None,
-        tile: str | None = None,
+        stride: Union[int, str, None] = None,  # Integer is number of hours, 'month' for monthly files
+        hours_per_file: Optional[int] = None,  # None for stride = 'month'
+        last_file: Optional[str] = None,
+        lead_time: Optional[int] = None,
+        offset: Optional[int] = None,
+        tile: Optional[str] = None,
     ) -> None:
         if stride is not None:
             self.file_structure.stride = stride
@@ -204,7 +200,7 @@ class SpectralProductReader(SpectralDataReader):
         source: DataSource,
         folder: str,
         filename: str,
-        tile: str | None = None,
+        tile: Optional[str] = None,
         **kwargs,
     ) -> dict:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
@@ -239,7 +235,7 @@ class SpectralProductReader(SpectralDataReader):
         filename: str,
         inds,
         dnora_class=None,
-        tile: str | None = None,
+        tile: Optional[str] = None,
         verbose: bool = False,
         add_datavars: list = None,
         **kwargs,

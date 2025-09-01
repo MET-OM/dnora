@@ -4,7 +4,7 @@ import numpy as np
 import netCDF4
 
 # Import abstract classes and needed instances of them
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from dnora.modelrun.modelrun import ModelRun
@@ -55,7 +55,7 @@ class SpectraWriter(DataWriter):
             self._convention = SpectralConvention[self._convention.upper()]
         return self._convention
 
-    def set_convention(self, convention: SpectralConvention | str) -> None:
+    def set_convention(self, convention: Union[SpectralConvention, str]) -> None:
         if isinstance(convention, str):
             self._convention = SpectralConvention[convention.upper()]
         else:
@@ -65,7 +65,7 @@ class SpectraWriter(DataWriter):
 class WW3(SpectraWriter):
     def __init__(
         self,
-        convention: SpectralConvention | str = SpectralConvention.WW3,
+        convention: Union[SpectralConvention, str] = SpectralConvention.WW3,
         one_file: bool = None,
     ) -> None:
         if one_file is not None:
@@ -85,7 +85,7 @@ class WW3(SpectraWriter):
         var_names: dict = None,
         one_file: bool = True,
         squeeze_lonlat: bool = False,
-        convention: SpectralConvention | str | None = None,
+        convention: Union[SpectralConvention, str, None] = None,
         **kwargs,
     ) -> list[str]:
         """You can change the variable names by giving a dictionary e.g. var_names = {'efth': 'SPEC'}

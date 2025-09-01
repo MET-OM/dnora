@@ -21,7 +21,7 @@ from geo_skeletons import GriddedSkeleton, PointSkeleton
 
 import geo_parameters as gp
 import glob
-
+from typing import Union, Optional
 
 def read_cached_filelist(filepath):
     """Reads cached files of unstructured data, since they can't be opened simply by open_mfdataset"""
@@ -52,7 +52,7 @@ def read_cached_filelist(filepath):
     return ds
 
 
-def create_filelist(filename: str | list[str], folder: str) -> list[str]:
+def create_filelist(filename: Union[str, list[str]], folder: str) -> list[str]:
     """Create a list of filepaths. You can either give one filename, a name with wildcards or a list of names.
     The folder will be added to the filenames"""
     if not filename:
@@ -112,9 +112,9 @@ class PointNetcdf(SpectralDataReader):
         inds: list[int],
         dnora_class=None,
         filename: list[str] = None,
-        convention: SpectralConvention | str | None = None,
-        ds_aliases: dict | None = None,
-        pick_dimensions: dict | None = None,
+        convention: Union[SpectralConvention, str, None] = None,
+        ds_aliases: Optional[dict] = None,
+        pick_dimensions: Optional[dict] = None,
         **kwargs,
     ):
         ds_aliases = ds_aliases or {}
@@ -238,8 +238,8 @@ class Netcdf(DataReader):
         folder: str,
         filename: list[str] = None,
         expansion_factor=1.2,
-        ds_aliases: dict | None = None,
-        pick_dimensions: dict | None = None,
+        ds_aliases: Optional[dict] = None,
+        pick_dimensions: Optional[dict] = None,
         **kwargs,
     ):
         ds_aliases = ds_aliases or {}
@@ -299,7 +299,7 @@ class ConstantData(SpectralDataReader):
         vars: dict = None,
         coords: dict = None,
         peaks: dict = None,
-        convention: SpectralConvention | str = SpectralConvention.OCEAN,
+        convention: Union[SpectralConvention, str] = SpectralConvention.OCEAN,
         debug_cache: bool = False,
     ):
         if debug_cache:

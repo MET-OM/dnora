@@ -7,7 +7,7 @@ from dnora.type_manager.data_sources import DataSource
 from dnora.type_manager.spectral_conventions import SpectralConvention
 from dnora.aux_funcs import get_url
 import re
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union, Optional
 
 if TYPE_CHECKING:
     from type_manager.dnora_types import DnoraDataType
@@ -91,8 +91,8 @@ class DataReader(ABC):
         self,
         folder: str,
         source: DataSource,
-        tile: str | None = None,
-        tile_name: str | None = None,
+        tile: Optional[str] = None,
+        tile_name: Optional[str] = None,
         strict:bool = True, 
     ) -> str:
         default_folder = self._default_folders.get(source)
@@ -126,8 +126,8 @@ class DataReader(ABC):
         self,
         filename: str,
         source: DataSource,
-        tile: str | None = None,
-        tile_name: str | None = None,
+        tile: Optional[str] = None,
+        tile_name: Optional[str] = None,
         strict:bool = True, 
     ) -> str:
         if filename is None:
@@ -169,7 +169,7 @@ class PointDataReader(DataReader):
 
 class SpectralDataReader(PointDataReader):
 
-    def set_convention(self, convention: SpectralConvention | str) -> None:
+    def set_convention(self, convention: Union[SpectralConvention, str]) -> None:
         if isinstance(convention, str):
             self._convention = SpectralConvention[convention.upper()]
         else:

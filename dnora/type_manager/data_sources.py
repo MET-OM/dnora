@@ -1,5 +1,5 @@
 from enum import Enum, auto
-
+from typing import Union
 
 class DataSource(Enum):
     LOCAL = auto()
@@ -10,7 +10,7 @@ class DataSource(Enum):
     UNDEFINED = auto()
 
 
-def data_source_from_string(data_str: str | DataSource) -> DataSource:
+def data_source_from_string(data_str: Union[str,DataSource]) -> DataSource:
     if isinstance(data_str, DataSource):
         return data_str
     return DataSource[data_str.upper()]

@@ -1,5 +1,5 @@
 from enum import Enum, auto
-
+from typing import Union
 
 class DnoraDataType(Enum):
     GRID = auto()
@@ -30,13 +30,13 @@ class DnoraFileType(Enum):
     INPUT = auto()
 
 
-def data_type_from_string(obj_str: str | DnoraDataType) -> DnoraDataType:
+def data_type_from_string(obj_str: Union[str, DnoraDataType]) -> DnoraDataType:
     if isinstance(obj_str, str):
         obj_str = DnoraDataType[obj_str.upper()]
     return obj_str
 
 
-def file_type_from_string(obj_str: str | DnoraFileType) -> DnoraFileType:
+def file_type_from_string(obj_str: Union[str, DnoraFileType]) -> DnoraFileType:
     if isinstance(obj_str, str):
         obj_str = DnoraFileType[obj_str.upper()]
     return obj_str

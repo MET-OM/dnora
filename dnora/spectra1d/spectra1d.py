@@ -12,7 +12,7 @@ from geo_skeletons.decorators import add_time, add_frequency, add_datavar
 
 from .process import SpectralProcessor
 import geo_parameters as gp
-
+from typing import Union, Optional
 
 @add_datavar(name=gp.wave.Ef("spec"), coord_group="all", default_value=0.0)
 @add_datavar(name=gp.wave.Dirm("dirm"), coord_group="all", default_value=0.0)
@@ -22,7 +22,7 @@ import geo_parameters as gp
 class Spectra1D(PointSkeleton):
     meta_dict = {"spec": gp.wave.Ef, "dirm": gp.wave.Dirm, "spr": gp.wave.Spr}
 
-    def process(self, spectral_processors: list[SpectralProcessor] | None = None):
+    def process(self, spectral_processors: Optional[list[SpectralProcessor]] = None):
         """Process all the individual spectra of the spectra object.
 
         E.g. change convention form Meteorological to Oceanic, interpolate spectra to, or multiply everything with a constant.
@@ -131,7 +131,7 @@ class Spectra1D(PointSkeleton):
         self.meta.append({"dnora_spectral_convention": self.convention().value})
         print(f"Spectral convention is now: {self.convention()}")
 
-    def convention(self) -> SpectralConvention | None:
+    def convention(self) -> Union[SpectralConvention, None]:
         """Returns the convention (OCEAN/MET/MATH) of the spectra"""
         if not hasattr(self, "_convention"):
             return None

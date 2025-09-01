@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import pandas as pd
 import re
 from dnora import msg
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from dnora.modelrun import ModelRun
@@ -17,7 +17,7 @@ from dnora.type_manager.model_formats import ModelFormat
 @dataclass
 class FileNames:
     model: ModelRun
-    obj_type: DnoraDataType | DnoraFileType = None
+    obj_type: Union[DnoraDataType, DnoraFileType] = None
     obj_name: str = None
     format: ModelFormat = ModelFormat.MODELRUN
     filename: str = None

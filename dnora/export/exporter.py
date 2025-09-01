@@ -41,7 +41,7 @@ class DataExporter:
     def _get_default_format(self) -> str:
         return ModelFormat.MODELRUN
 
-    def _get_writer(self, obj_type: DnoraDataType | DnoraFileType) -> WriterFunction:
+    def _get_writer(self, obj_type: Union[DnoraDataType, DnoraFileType]) -> WriterFunction:
         return self._writer_dict.get(obj_type, self._get_default_writer())
 
     # def _get_spectral_convention(self) -> SpectralConvention:
@@ -53,9 +53,9 @@ class DataExporter:
 
     def export(
         self,
-        obj_type: DnoraDataType | str,
+        obj_type: Union[DnoraDataType, str],
         writer: WriterFunction = None,
-        spectral_convention: SpectralConvention | str = None,
+        spectral_convention: Union[SpectralConvention, str] = None,
         filename: str = None,
         folder: str = None,
         dateformat: str = None,

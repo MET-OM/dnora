@@ -5,11 +5,7 @@ from pathlib import Path
 
 import re
 import os
-
-
-#
-
-
+from typing import Union
 
 
 
@@ -84,7 +80,7 @@ def u_v_from_speed_dir(ws, wdir) -> tuple[float, float]:
 def get_url(
     folder: str,
     filename: str,
-    time_stamp: pd.DatetimeIndex | str = None,
+    time_stamp: Union[pd.DatetimeIndex, str] = None,
     get_list: bool = False,
 ) -> str:
     if not isinstance(filename, list):

@@ -29,7 +29,7 @@ from dnora.read.ds_read_functions import read_ds_list, read_first_ds
 from functools import partial
 from dnora.read.data_var_decoding import read_data_vars, compile_data_vars
 from dnora.read.file_structure import FileStructure
-
+from typing import Union, Optional
 
 def ds_xarray_read(start_time, end_time, url):
     ds = xr.open_dataset(url).sel(time=slice(start_time, end_time))
@@ -176,13 +176,11 @@ class WW3Unstruct(PointDataReader):
 
     def __init__(
         self,
-        stride: (
-            int | str | None
-        ) = None,  # Integer is number of hours, 'month' for monthly files
-        hours_per_file: int | None = None,  # None for stride = 'month'
+        stride: Union[int, str, None] = None,  # Integer is number of hours, 'month' for monthly files
+        hours_per_file: Optional[int] = None,  # None for stride = 'month'
         last_file: str = "",
         lead_time: int = 0,
-        offset: int | None = None,
+        offset: Optional[int] = None,
     ) -> None:
         if stride is not None:
             self.stride = stride
@@ -346,13 +344,11 @@ class SWANnc(PointDataReader):
 
     def __init__(
         self,
-        stride: (
-            int | str | None
-        ) = None,  # Integer is number of hours, 'month' for monthly files
-        hours_per_file: int | None = None,  # None for stride = 'month'
+        stride: Union[int, str, None] = None,  # Integer is number of hours, 'month' for monthly files
+        hours_per_file: Optional[int] = None,  # None for stride = 'month'
         last_file: str = "",
         lead_time: int = 0,
-        offset: int | None = None,
+        offset: Optional[int] = None,
     ) -> None:
         if stride is not None:
             self.stride = stride
