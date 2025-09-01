@@ -9,9 +9,8 @@ dependencies:
   - xarray>=0.20.1
   - netcdf4
   - meshio
-  - scipy
-  - geo-skeletons>=0.20.4
-  - pyarrow>=14.0.1
+  - geo-skeletons=0.20.*
+  - pytest
   - pip
   - pip:
     - dnplot
