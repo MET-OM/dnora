@@ -23,12 +23,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Configure Conda to only use conda-forge
-        run: |
-          conda config --remove channels defaults
-          conda config --add channels conda-forge
-          conda config --set channel_priority strict
-
       - uses: conda-incubator/setup-miniconda@v3
         with:
           environment-file: environment.yml
