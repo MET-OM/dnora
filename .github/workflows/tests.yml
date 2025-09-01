@@ -28,7 +28,7 @@ jobs:
           conda config --remove channels defaults || echo "defaults channel not present"
           conda config --add channels conda-forge
           conda config --set channel_priority strict
-          
+
       - uses: conda-incubator/setup-miniconda@v3
         with:
           environment-file: environment.yml
@@ -38,6 +38,7 @@ jobs:
       - name: Run tests
         run: |
           conda activate test
+          pip install .
           pytest -vs --log-cli-level=debug -m "not remote"
 
 
