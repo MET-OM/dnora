@@ -11,7 +11,7 @@ on:
 
 jobs:
   tests:
-    name: pytests (${{ matrix.os }}, Miniforge3)
+    name: pytests (${{ matrix.os }} - ${{ matrix.python-version }}, Mambaforge)
     runs-on: ${{ matrix.os }}-latest
     defaults:
       run:
@@ -22,16 +22,12 @@ jobs:
         python-version: [ '3.10' ]
     steps:
       - uses: actions/checkout@v4
-      - name: Configure Conda to use conda-forge
-        run: |
-          conda config --add channels conda-forge
-          conda config --set channel_priority strict
       - uses: conda-incubator/setup-miniconda@v3
         with:
           environment-file: environment.yml
           python-version: ${{ matrix.python-version }}
           miniforge-version: latest
-          miniforge-variant: Miniforge3
+          miniforge-variant: Mambaforge
       - name: Run tests
         run: |
           conda activate test
@@ -64,7 +60,7 @@ jobs:
         with:
           python-version: '3.10'
           miniforge-version: latest
-          miniforge-variant: Miniforge3
+          miniforge-variant: Mambaforge
       - name: Publish to PyPi
         env:
           TWINE_USERNAME: __token__
