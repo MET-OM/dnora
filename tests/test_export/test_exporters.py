@@ -28,7 +28,10 @@ def test_ww3_spectral_export_one_file():
         np.full((24, 3), [10, 11, 12]), ds.latitude.values
     )
     if os.path.isdir("TestGrid_WW3"):
-        shutil.rmtree("TestGrid_WW3", onerror=handle_remove_readonly)
+        try:
+            shutil.rmtree("TestGrid_WW3", onerror=handle_remove_readonly)
+        except PermissionError:
+            pass
 
 
 def test_ww3_spectral_export_three_files():
@@ -52,7 +55,10 @@ def test_ww3_spectral_export_three_files():
             np.full((24, 1), [lat]), ds.latitude.values
         )
     if os.path.isdir("TestGrid_WW3"):
-        shutil.rmtree("TestGrid_WW3", onerror=handle_remove_readonly)
+        try:
+            shutil.rmtree("TestGrid_WW3", onerror=handle_remove_readonly)
+        except PermissionError:
+            pass
 
 
 def test_ww3_spectral_export_squeeze_lonlat():
@@ -67,4 +73,7 @@ def test_ww3_spectral_export_squeeze_lonlat():
     np.testing.assert_array_almost_equal([0, 1, 2], ds.longitude.values)
     np.testing.assert_array_almost_equal([10, 11, 12], ds.latitude.values)
     if os.path.isdir("TestGrid_WW3"):
-        shutil.rmtree("TestGrid_WW3", onerror=handle_remove_readonly)
+        try:
+            shutil.rmtree("TestGrid_WW3", onerror=handle_remove_readonly)
+        except PermissionError:
+            pass
