@@ -118,7 +118,7 @@ def test_spectra(grid):
     assert nml_dict["BOUND_NML"]["BOUND"]["VERBOSE"] == "1"
     assert nml_dict["BOUND_NML"]["BOUND"]["FILE"] == "'spectral_boundary_files.list'"
     with open("TestGrid_WW3/spectral_boundary_files.list", "r") as file:
-        assert file.readline()[0:7] == "/lustre" or file.readline()[0:7] == "\lustre"
+        assert Path(file.readline()[0:7]).as_posix() == "/lustre"
 
     cleanup()
 
