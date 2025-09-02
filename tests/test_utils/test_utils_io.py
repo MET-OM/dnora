@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from dnora.utils.time import create_time_stamps
-from dnora.aux_funcs import get_url
+from dnora.utils.io import get_url
 
 
 def test_get_url():
