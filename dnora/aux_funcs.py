@@ -9,14 +9,6 @@ from typing import Union
 
 
 
-def check_if_file(filename: str, halt=False) -> bool:
-    """Checks if a file exists and halts with an error if halt=True"""
-    exists = os.path.isfile(filename)
-    if not exists and halt:
-        raise FileNotFoundError(f"DNORA cannot find file {filename}")
-    return exists
-
-
 def check_if_folder(folder: str, create: bool = True) -> bool:
     """Creates a folder if it does not exist, and returns True if it
     already existed."""
