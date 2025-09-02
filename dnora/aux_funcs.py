@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from pathlib import Path, PosixPath
+from pathlib import Path
 
 import re
 import os
@@ -95,16 +95,18 @@ def get_url(
         # If we are on a Windows machine, then / will be replaced by \
         # If we have an url, then we still want /
         if 'http' in str(url_temp) or 'ftp' in str(url_temp):
-            url_temp = PosixPath(url_temp)
+            url_temp = url_temp.as_posix()
+        else:
+            url_temp =str(url_temp)
         
-        url_temp = re.sub("https:/", "https://", str(url_temp), 1)
-        url_temp = re.sub("http:/", "http://", str(url_temp), 1)
-        url_temp = re.sub("ftp:/", "ftp://", str(url_temp), 1)
+        url_temp = re.sub("https:/", "https://", url_temp, 1)
+        url_temp = re.sub("http:/", "http://", url_temp, 1)
+        url_temp = re.sub("ftp:/", "ftp://", url_temp, 1)
         
         if time_stamp is not None:
             for floor_hour in range(1, 24):
                 hfloor = int(np.floor(time_stamp.hour / floor_hour) * floor_hour)
-                url_temp = re.sub(f"\[{floor_hour}\]", f"{hfloor:02.0f}", str(url_temp))
+                url_temp = re.sub(f"\[{floor_hour}\]", f"{hfloor:02.0f}", url_temp)
 
         url.append(url_temp)
     if len(url) == 1 and not get_list:
