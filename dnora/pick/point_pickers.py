@@ -4,13 +4,11 @@ from abc import ABC, abstractmethod
 from typing import Union
 from geo_skeletons import PointSkeleton
 
-# Import objects
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from dnora.grid import Grid, TriGrid
 
-# Import aux_funcsiliry functions
 from dnora import msg, utils
 
 

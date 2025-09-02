@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 from copy import copy
 import scipy.ndimage as ndimage
 
-# Import aux_funcsility functions
 from dnora import msg
 from typing import Union, TYPE_CHECKING
 
