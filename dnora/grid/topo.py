@@ -15,7 +15,6 @@ from dnora import msg, utils
 from dnora.defaults import read_environment_variable
 import os
 
-from dnora.aux_funcs import set_metaparameters_in_object
 import geo_parameters as gp
 from dnora.type_manager.dnora_types import DnoraDataType
 
@@ -124,8 +123,6 @@ def import_topo(
         )
 
     topo_grid.set_topo(topo)
-    # topo_grid = set_metaparameters_in_object(topo_grid, metaparameter_dict, data_dict)
     topo_grid.meta.set(meta_dict)
-    # topo_grid.set_sea_mask(topo_grid.topo() > 0)
 
     return topo_grid
