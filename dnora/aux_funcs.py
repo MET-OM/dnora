@@ -8,22 +8,6 @@ import os
 from typing import Union
 
 
-
-def check_if_folder(folder: str, create: bool = True) -> bool:
-    """Creates a folder if it does not exist, and returns True if it
-    already existed."""
-
-    if folder == "":
-        existed = True
-    else:
-        existed = os.path.isdir(folder)
-
-    if not existed:
-        os.mkdir(folder)
-
-    return existed
-
-
 def get_url(
     folder: str,
     filename: str,
