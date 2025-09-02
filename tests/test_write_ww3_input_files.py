@@ -5,9 +5,15 @@ import os
 import shutil
 
 
+def handle_remove_readonly(func, path, exc_info):
+    """Clear the read-only bit and reattempt the removal."""
+    os.chmod(path, stat.S_IWRITE)  # Change to writable
+    func(path)
+
+
 def cleanup():
     if os.path.isdir("TestGrid_WW3"):
-        shutil.rmtree("TestGrid_WW3")
+        shutil.rmtree("TestGrid_WW3", onerror=handle_remove_readonly)
 
 
 @pytest.fixture(scope="session")

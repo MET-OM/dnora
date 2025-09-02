@@ -4,6 +4,12 @@ import os
 import shutil
 
 
+def handle_remove_readonly(func, path, exc_info):
+    """Clear the read-only bit and reattempt the removal."""
+    os.chmod(path, stat.S_IWRITE)  # Change to writable
+    func(path)
+
+
 def test_write_spectral_cache():
     grid = dn.grid.Grid(lon=(4, 11), lat=(60, 65))
     grid.set_spacing(dlon=1, dlat=1)
@@ -12,7 +18,7 @@ def test_write_spectral_cache():
         grid, start_time="2020-01-31 00:00", end_time="2020-02-02 01:00"
     )
     if os.path.isdir("spectra_cache"):
-        shutil.rmtree("spectra_cache")
+        shutil.rmtree("spectra_cache", onerror=handle_remove_readonly)
 
     model.import_spectra(
         dn.read.generic.ConstantData(debug_cache=True), write_cache=True
@@ -40,4 +46,4 @@ def test_write_spectral_cache():
     assert len(feb_files) == days * lat_tiles * lon_tiles
 
     if os.path.isdir("spectra_cache"):
-        shutil.rmtree("spectra_cache")
+        shutil.rmtree("spectra_cache", onerror=handle_remove_readonly)
