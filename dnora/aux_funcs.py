@@ -68,20 +68,3 @@ def get_url(
         return os.path.expanduser(url[0])
     else:
         return [os.path.expanduser(u) for u in url]
-
-
-def set_metaparameters_in_object(obj, metaparameter_dict, data_dict):
-    for key, value in data_dict.items():
-        metaparameter = metaparameter_dict.get(
-            key
-        )  # Check if metaparameter provided by reader
-
-        if metaparameter is None:
-            # DNORA object usually has specified the metaparameters
-            if hasattr(obj, "meta_dict"):
-                metaparameter = obj.meta_dict.get(key)
-
-        if metaparameter is not None:
-            obj.set_metadata(metaparameter.meta_dict(), name=key)
-
-    return obj
