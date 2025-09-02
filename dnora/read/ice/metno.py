@@ -1,21 +1,11 @@
 from dnora.type_manager.data_sources import DataSource
-from dnora.type_manager.dnora_types import DnoraDataType
-from dnora.read.abstract_readers import DataReader
 from dnora.read.fimex_functions import ds_fimex_read
-from dnora.read.ds_read_functions import read_ds_list, setup_temp_dir
 from dnora.read.file_structure import FileStructure
 from dnora.grid import Grid
-from dnora import msg
-from dnora import utils
-from dnora.aux_funcs import get_url
 from functools import partial
-import xarray as xr
 import re
-import numpy as np
-import pandas as pd
 from dnora.read.product_readers import ProductReader
-from dnora.read.product_configuration import ProductConfiguration, get_constant_url
-from dnora.read.fimex_functions import ds_fimex_read
+from dnora.read.product_configuration import ProductConfiguration
 
 
 class NORA3(ProductReader):

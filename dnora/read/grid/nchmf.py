@@ -1,26 +1,15 @@
 from __future__ import annotations
-
-import xarray as xr
-from abc import ABC, abstractmethod
 import numpy as np
 from typing import TYPE_CHECKING
-import json
-from urllib.request import urlopen
-import re
-
 if TYPE_CHECKING:
     from dnora.grid import Grid, TriGrid
 from dnora.read.abstract_readers import DataReader
-from dnora.aux_funcs import get_url
+from dnora.utils.io import get_url
 from dnora import utils
 from dnora import msg
 from typing import Union
 import os
 from dnora.type_manager.data_sources import DataSource
-import dask
-from pathlib import Path
-import meshio
-
 from dnora.type_manager.dnora_types import DnoraDataType
 
 

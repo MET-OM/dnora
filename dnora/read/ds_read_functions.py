@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from .file_structure import FileStructure
 import os, glob
-from dnora.aux_funcs import get_url
+from dnora.utils.io import get_url
 from dnora import msg
 from dnora.type_manager.dnora_types import DnoraDataType
 

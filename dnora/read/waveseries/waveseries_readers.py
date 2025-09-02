@@ -2,26 +2,20 @@ import xarray as xr
 import numpy as np
 from copy import deepcopy
 import pandas as pd
-from abc import ABC, abstractmethod
-from typing import Union
+from abc import ABC
 from dnora.grid import Grid
 import geo_parameters as gp
 from pathlib import Path
 from geo_skeletons import GriddedSkeleton
-
-# Import aux_funcsiliry functions
 from dnora import msg, utils
 
-# from .conventions import Spectra1DlConvention
-import geo_parameters as gp
 from geo_parameters.metaparameter import MetaParameter
 
 from dnora.spectra1d import Spectra1D, process
-from dnora.aux_funcs import get_url
 from dnora.utils.time import create_monthly_stamps
 from dnora.read.abstract_readers import PointDataReader
 from dnora.waveseries import wave_parameters
-import inspect
+
 from dnora.type_manager.dnora_types import DnoraDataType
 from dnora.type_manager.data_sources import DataSource
 from dnora.wave_parameters.parameters import get_function

@@ -1,8 +1,7 @@
-from copy import copy
 import numpy as np
 import xarray as xr
 from subprocess import call
-import os, glob
+import os
 import pandas as pd
 from functools import partial
 from dnora.read.file_structure import FileStructure
@@ -13,15 +12,12 @@ from dnora.grid import Grid
 
 # Import aux_funcsiliry functions
 from dnora import msg
-from dnora.aux_funcs import get_url
 from dnora import utils
 
 from dnora.type_manager.data_sources import DataSource
 from dnora.type_manager.dnora_types import DnoraDataType
 from dnora.read.abstract_readers import DataReader
-from dnora.read.fimex_functions import ds_fimex_read
 from dnora.read.ds_read_functions import read_ds_list, setup_temp_dir
-import calendar
 
 from dnora.read.product_readers import ProductReader
 from dnora.read.product_configuration import ProductConfiguration

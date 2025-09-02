@@ -12,7 +12,7 @@ from dnora.type_manager.data_sources import DataSource
 from dnora.type_manager.spectral_conventions import convert_2d_to_1d, SpectralConvention
 
 from dnora.type_manager.dnora_objects import dnora_objects
-from dnora.aux_funcs import get_url
+from dnora.utils.io import get_url
 from dnora import msg, utils
 from .constant_funcs import create_constant_array, print_constant_values
 from dnora.read.data_var_decoding import read_data_vars, compile_data_vars

@@ -18,7 +18,7 @@ import os
 import geo_parameters as gp
 from dnora.type_manager.dnora_types import DnoraDataType
 
-from dnora import aux_funcs
+from dnora.utils.io import get_url
 
 
 @add_mask(name="sea", coord_group="grid", default_value=1, opposite_name="land")
@@ -59,8 +59,8 @@ def import_topo(
     if folder and source == DataSource.LOCAL:
         if not os.path.exists(os.path.expanduser(folder)):
             os.mkdir(folder)
-        if not os.path.exists(aux_funcs.get_url(folder, topo_reader.name())):
-            os.mkdir(aux_funcs.get_url(folder, topo_reader.name()))
+        if not os.path.exists(get_url(folder, topo_reader.name())):
+            os.mkdir(get_url(folder, topo_reader.name()))
 
     # start_time, end_time and inds given to satisfy the generic Netcdf-readers
     # Will need to fix this at some point

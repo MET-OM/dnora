@@ -1,36 +1,25 @@
 from copy import copy
-import numpy as np
-import xarray as xr
-from subprocess import call
-import os, glob
-
-# Import objects
+import os
 from dnora.grid import Grid
 
 # Import abstract classes
-from dnora.read.abstract_readers import DataReader
 from dnora.type_manager.data_sources import DataSource
 from dnora.read.file_structure import FileStructure
 
 # Import aux_funcsiliry functions
-from dnora import msg
-from dnora.aux_funcs import (
-    get_url,
-)
+from dnora.utils.io import get_url
 from dnora import utils
 
-from dnora.type_manager.dnora_types import DnoraDataType
-from dnora.read.ds_read_functions import read_ds_list, setup_temp_dir
 from functools import partial
 from dnora.read.fimex_functions import ds_fimex_read
 from dnora.read.ds_read_functions import basic_xarray_read
 from dnora.read.product_readers import ProductReader
-from dnora.read.product_configuration import ProductConfiguration, get_constant_url
+from dnora.read.product_configuration import ProductConfiguration
 import pandas as pd
 import re
 from dnora.process.gridded import FillNaNs
 import geo_parameters as gp
-from dnora.read.ds_read_functions import basic_xarray_read
+
 
 
 def get_norkyst800_urls(folder: str, filename: str, file_times: list[str], **kwargs):

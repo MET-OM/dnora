@@ -2,6 +2,7 @@ import os
 import re
 from pathlib import Path
 import pandas as pd
+from typing import Union
 def set_nested_value(dictionary, keys, value):
     for key in keys[:-1]:  # Iterate through all keys except the last one
         dictionary = dictionary[key]

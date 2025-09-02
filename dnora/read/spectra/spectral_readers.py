@@ -4,7 +4,6 @@ from dnora.utils.time import create_time_stamps
 from dnora.type_manager.data_sources import DataSource
 from dnora.type_manager.dnora_types import DnoraDataType
 from dnora.read.abstract_readers import SpectralDataReader
-from dnora.aux_funcs import get_url
 from .swan_ascii import decode_lonlat, read_swan_ascii_spec
 import pandas as pd
 import numpy as np
@@ -14,7 +13,7 @@ from dnora.utils.spec import expand_to_directional_spectrum
 import xarray as xr
 import geo_parameters as gp
 from geo_skeletons import PointSkeleton
-
+from dnora.utils.io import get_url
 
 class SWAN_Ascii(SpectralDataReader):
     def convention(self) -> SpectralConvention:

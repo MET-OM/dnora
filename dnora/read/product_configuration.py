@@ -4,7 +4,7 @@ from dnora.type_manager.data_sources import DataSource
 from dnora.read.ds_read_functions import basic_xarray_read
 from dnora.type_manager.dnora_types import DnoraDataType
 from typing import Callable
-from dnora.aux_funcs import get_url
+from dnora.utils.io import get_url
 from typing import Optional
 
 def get_constant_url(folder, filename, file_times, **kwargs) -> list[str]:
