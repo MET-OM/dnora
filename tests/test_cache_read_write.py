@@ -5,6 +5,13 @@ import glob
 import xarray as xr
 import numpy as np
 import pandas as pd
+from pathlib import Path
+
+
+def handle_remove_readonly(func, path, exc_info):
+    """Clear the read-only bit and reattempt the removal."""
+    os.chmod(path, stat.S_IWRITE)  # Change to writable
+    func(path)
 
 
 def test_write_wind():
@@ -15,25 +22,29 @@ def test_write_wind():
     model = dn.modelrun.ModelRun(
         grid, start_time="2020-01-31 00:00", end_time="2020-02-02 01:00"
     )
-    if os.path.isdir("wind_cache"):
-        shutil.rmtree("wind_cache")
+    wind_cache = Path("wind_cache")
+    if wind_cache.exists():
+        shutil.rmtree(wind_cache, onerror=handle_remove_readonly)
 
     # Automatically uses expansion factor 1.2, so tiles 55-60 also included
     model.import_wind(
         dn.read.generic.ConstantData(debug_cache=True), u=1, v=2, write_cache=True
     )
-    assert glob.glob("wind_cache/constantdata/*") == ["wind_cache/constantdata/2020"]
-    assert set(glob.glob("wind_cache/constantdata/2020/*")) == {
-        "wind_cache/constantdata/2020/01",
-        "wind_cache/constantdata/2020/02",
+    assert sorted(wind_cache.glob("constantdata/*")) == [
+        wind_cache / "constantdata/2020"
+    ]
+    assert set(wind_cache.glob("constantdata/2020/*")) == {
+        wind_cache / "constantdata/2020/01",
+        wind_cache / "constantdata/2020/02",
     }
-    jan_files = glob.glob("wind_cache/constantdata/2020/01/*")
+
+    jan_files = list(wind_cache.glob("constantdata/2020/01/*"))
     days = 1
     lat_tiles = 3  # 55-60, 60-65, 65-70
     lon_tiles = 3  # 0-5, 5-10, 10-15
     assert len(jan_files) == days * lat_tiles * lon_tiles
 
-    feb_files = glob.glob("wind_cache/constantdata/2020/02/*")
+    feb_files = list(wind_cache.glob("constantdata/2020/02/*"))
     days = 2
     lat_tiles = 3  # 55-60, 60-65, 65-70
     lon_tiles = 3  # 0-5, 5-10, 10-15
@@ -42,8 +53,9 @@ def test_write_wind():
 
 def test_content_of_cached_wind_files():
     """Test that the cached files actually have the data they should."""
-    all_files = glob.glob("wind_cache/constantdata/2020/01/*") + glob.glob(
-        "wind_cache/constantdata/2020/02/*"
+    wind_cache = Path("wind_cache")
+    all_files = list(wind_cache.glob("constantdata/2020/01/*")) + list(
+        wind_cache.glob("constantdata/2020/02/*")
     )
     ds = xr.open_mfdataset(all_files)
     np.testing.assert_array_almost_equal(ds.lon.values, np.arange(0, 15, 1))
@@ -63,8 +75,10 @@ def test_write_spectra():
     model = dn.modelrun.ModelRun(
         grid, start_time="2020-01-31 00:00", end_time="2020-02-02 01:00"
     )
-    if os.path.isdir("spectra_cache"):
-        shutil.rmtree("spectra_cache")
+
+    spectra_cache = Path("spectra_cache")
+    if spectra_cache.exists():
+        shutil.rmtree(spectra_cache, onerror=handle_remove_readonly)
 
     # Automatically uses expansion_factor=1.5, so:
     # lat tiles 65-70 and 70-75 included
@@ -73,21 +87,27 @@ def test_write_spectra():
     model.import_spectra(
         dn.read.generic.ConstantData(debug_cache=True), write_cache=True
     )
-    assert glob.glob("spectra_cache/constantdata/*") == [
-        "spectra_cache/constantdata/2020"
+
+    # Cross-platform assertion for the constantdata directory
+    assert sorted(spectra_cache.glob("constantdata/*")) == [
+        spectra_cache / "constantdata/2020"
     ]
-    assert set(glob.glob("spectra_cache/constantdata/2020/*")) == {
-        "spectra_cache/constantdata/2020/01",
-        "spectra_cache/constantdata/2020/02",
+
+    # Cross-platform assertion for the subdirectories under 2020
+    assert set(spectra_cache.glob("constantdata/2020/*")) == {
+        spectra_cache / "constantdata/2020/01",
+        spectra_cache / "constantdata/2020/02",
     }
-    jan_files = glob.glob("spectra_cache/constantdata/2020/01/*")
+
+    # Check the number of files in January (constantdata/2020/01)
+    jan_files = list(spectra_cache.glob("constantdata/2020/01/*"))
     days = 1
     lat_tiles = 3  # 55-60, 60-65, 65-70
-    lon_tiles = 3  #  0-5, 5-10, 10-15
-    
+    lon_tiles = 3  # 0-5, 5-10, 10-15
     assert len(jan_files) == days * lat_tiles * lon_tiles
 
-    feb_files = glob.glob("spectra_cache/constantdata/2020/02/*")
+    # Check the number of files in February (constantdata/2020/02)
+    feb_files = list(spectra_cache.glob("constantdata/2020/02/*"))
     days = 2
     lat_tiles = 3  # 55-60, 60-65, 65-70
     lon_tiles = 3  # 0-5, 5-10, 10-15
@@ -150,7 +170,7 @@ def test_read_subset_of_cached_wind_data():
     model.import_wind(
         dn.read.generic.ConstantData(debug_cache=True),
         read_cache=True,
-        dont_patch=True, 
+        dont_patch=True,
     )
 
     ds = model.wind().ds()
@@ -164,7 +184,7 @@ def test_read_subset_of_cached_wind_data():
     assert times[-1].strftime("%Y-%m-%d %H:%M") == "2020-02-02 14:00"
 
     if os.path.isdir("wind_cache"):
-        shutil.rmtree("wind_cache")
+        shutil.rmtree("wind_cache", onerror=handle_remove_readonly)
 
 
 def test_read_subset_of_cached_spectral_data():
@@ -199,7 +219,7 @@ def test_read_subset_of_cached_spectral_data():
         dn.read.generic.ConstantData(debug_cache=True),
         read_cache=True,
         point_picker=dn.pick.Area(),
-        dont_patch=True
+        dont_patch=True,
     )
 
     ds = model.spectra().ds()
@@ -215,4 +235,4 @@ def test_read_subset_of_cached_spectral_data():
     assert times[-1].strftime("%Y-%m-%d %H:%M") == "2020-02-02 14:00"
 
     if os.path.isdir("spectra_cache"):
-        shutil.rmtree("spectra_cache")
+        shutil.rmtree("spectra_cache", onerror=handle_remove_readonly)
