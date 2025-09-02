@@ -13,10 +13,7 @@ from dnora.grid import Grid
 
 # Import aux_funcsiliry functions
 from dnora import msg
-from dnora.aux_funcs import (
-    u_v_from_speed_dir,
-    get_url,
-)
+from dnora.aux_funcs import get_url
 from dnora import utils
 
 from dnora.type_manager.data_sources import DataSource
