@@ -32,51 +32,6 @@ def check_if_folder(folder: str, create: bool = True) -> bool:
     return existed
 
 
-# -----------------------------------------------------------------------------
-# MISC STAND ALONE FUNCTIONS
-# # -----------------------------------------------------------------------------
-# def read_ww3_info(
-#     filename,
-# ) -> tuple[float, float, float, float, float, float, int, int]:
-#     """Read grid specification from the GridName_info.txt file"""
-#     with open(filename, "r") as f:
-#         lines = f.readlines()
-
-#     for n in range(len(lines)):
-#         line = lines[n].split()
-
-#         if len(line):
-#             if line[0] == "lon:":
-#                 lon_min = float(line[1])
-#                 lon_max = float(line[3][0:-1])
-#                 lat_min = float(line[5])
-#                 lat_max = float(line[7])
-#             elif line[0] == "dlon,":
-#                 dlon = float(line[3][0:-1])
-#                 dlat = float(line[4])
-#             elif line[0] == "nx,":
-#                 nx = int(line[3])
-#                 ny = int(line[5])
-#     return lon_min, lon_max, lat_min, lat_max, dlon, dlat, nx, ny
-
-
-def u_v_from_speed_dir(ws, wdir) -> tuple[float, float]:
-    """Converts wind speed and direction (from) to u and v components."""
-
-    # see http://tornado.sfsu.edu/geosciences/classes/m430/Wind/WindDirection.html
-    u = -ws * (np.sin(np.deg2rad(wdir)))
-    v = -ws * (np.cos(np.deg2rad(wdir)))
-
-    return u, v
-
-
-# def speed_dir_from_u_v(u, v) -> tuple[float, float]:
-#     """Convert component to speed and direction (from)"""
-#     ws = (u**2 + v**2) ** 0.5
-#     wdir = np.mod((90 - np.rad2deg(np.arctan2(v, u))) + 180, 360)
-#     return ws, wdir
-
-
 def get_url(
     folder: str,
     filename: str,
