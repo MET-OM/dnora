@@ -2,6 +2,8 @@ import dnora as dn
 import glob
 import os
 import shutil
+import stat
+from pathlib import Path
 
 
 def handle_remove_readonly(func, path, exc_info):
@@ -23,14 +25,15 @@ def test_write_spectral_cache():
     model.import_spectra(
         dn.read.generic.ConstantData(debug_cache=True), write_cache=True
     )
-    assert glob.glob("spectra_cache/constantdata/*") == [
-        "spectra_cache/constantdata/2020"
+    spectra_cache = Path("spectra_cache")
+    assert list(spectra_cache.glob("constantdata/*")) == [
+        spectra_cache / "constantdata/2020"
     ]
-    assert set(glob.glob("spectra_cache/constantdata/2020/*")) == {
-        "spectra_cache/constantdata/2020/01",
-        "spectra_cache/constantdata/2020/02",
-    }
-    jan_files = glob.glob("spectra_cache/constantdata/2020/01/*")
+    assert sorted(spectra_cache.glob("constantdata/2020/*")) == [
+        spectra_cache / "constantdata/2020/01",
+        spectra_cache / "constantdata/2020/02",
+    ]
+    jan_files = list(spectra_cache.glob("constantdata/2020/01/*"))
     days = 1
     # Area: lon: (4.00, 11.00), (60.00, 65.00)
     # >>> Using expansion_factor = 1.50 <<<
@@ -39,7 +42,7 @@ def test_write_spectral_cache():
     lon_tiles = 3  # 0-5, 5-10, 10-15
     assert len(jan_files) == days * lat_tiles * lon_tiles
 
-    feb_files = glob.glob("spectra_cache/constantdata/2020/02/*")
+    feb_files = list(spectra_cache.glob("constantdata/2020/02/*"))
     days = 2
     lat_tiles = 3  # 55-60, 60-65, 65-70
     lon_tiles = 3  # 0-5, 5-10, 10-15

@@ -3,6 +3,8 @@ import dnora as dn
 from dnora.utils.io import read_ww3_nml
 import os
 import shutil
+import stat
+from pathlib import Path
 
 
 def handle_remove_readonly(func, path, exc_info):
@@ -43,11 +45,11 @@ def test_grid(grid):
     exe.write_grid_file(folder_on_server="/lustre/folder/myfolder")
     nml_dict = read_ww3_nml("TestGrid_WW3/ww3_grid.nml")
     assert (
-        nml_dict["DEPTH_NML"]["DEPTH"]["FILENAME"]
+        Path(nml_dict["DEPTH_NML"]["DEPTH"]["FILENAME"]).as_posix()
         == "'/lustre/folder/myfolder/TestGrid_bathy.txt'"
     )
     assert (
-        nml_dict["MASK_NML"]["MASK"]["FILENAME"]
+        Path(nml_dict["MASK_NML"]["MASK"]["FILENAME"]).as_posix()
         == "'/lustre/folder/myfolder/TestGrid_mapsta.txt'"
     )
     cleanup()
@@ -78,7 +80,7 @@ def test_wind(grid):
     exe.write_wind_file(folder_on_server="/lustre/folder/myfolder")
     nml_dict = read_ww3_nml("TestGrid_WW3/ww3_prnc_wind.nml")
     assert (
-        nml_dict["FILE_NML"]["FILE"]["FILENAME"]
+        Path(nml_dict["FILE_NML"]["FILE"]["FILENAME"]).as_posix()
         == "'/lustre/folder/myfolder/wind_ConstantData_TestGrid_20200101T0000_20200131T2300.nc'"
     )
     assert nml_dict["FILE_NML"]["FILE"]["LONGITUDE"] == "'lon'"
@@ -116,7 +118,7 @@ def test_spectra(grid):
     assert nml_dict["BOUND_NML"]["BOUND"]["VERBOSE"] == "1"
     assert nml_dict["BOUND_NML"]["BOUND"]["FILE"] == "'spectral_boundary_files.list'"
     with open("TestGrid_WW3/spectral_boundary_files.list", "r") as file:
-        assert file.readline()[0:7] == "/lustre"
+        assert file.readline()[0:7] == "/lustre" or file.readline()[0:7] == "\lustre"
 
     cleanup()
 

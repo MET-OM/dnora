@@ -5,6 +5,7 @@ import shutil
 import pytest
 import numpy as np
 from dnora.type_manager.spectral_conventions import SpectralConvention
+import stat
 
 
 def handle_remove_readonly(func, path, exc_info):

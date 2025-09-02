@@ -4,6 +4,13 @@ import pytest
 from pathlib import Path
 import os
 import shutil
+import stat
+
+
+def handle_remove_readonly(func, path, exc_info):
+    """Clear the read-only bit and reattempt the removal."""
+    os.chmod(path, stat.S_IWRITE)  # Change to writable
+    func(path)
 
 
 @pytest.fixture(scope="session")
@@ -20,7 +27,7 @@ def model():
 
 def cleanup():
     if os.path.isdir("GridName_SWAN"):
-        shutil.rmtree("GridName_SWAN")
+        shutil.rmtree("GridName_SWAN", onerror=handle_remove_readonly)
 
 
 def test_swan_writer_wind(model):
@@ -30,7 +37,8 @@ def test_swan_writer_wind(model):
     exp.export_wind(filename=fn)
     filepath = Path(f"GridName_SWAN/{fn}")
     assert filepath.is_file()
-    assert os.path.getsize(filepath) == 29808
+    # Windows has different file size
+    assert os.path.getsize(filepath) == 29808 or os.path.getsize(filepath) == 30384
     cleanup()
 
 
@@ -41,7 +49,7 @@ def test_swan_writer_current(model):
     exp.export_current(filename=fn)
     filepath = Path(f"GridName_SWAN/{fn}")
     assert filepath.is_file()
-    assert os.path.getsize(filepath) == 29808
+    assert os.path.getsize(filepath) == 29808 or os.path.getsize(filepath) == 30384
     cleanup()
 
 
@@ -52,7 +60,7 @@ def test_swan_writer_waterlevel(model):
     exp.export_waterlevel(filename=fn)
     filepath = Path(f"GridName_SWAN/{fn}")
     assert filepath.is_file()
-    assert os.path.getsize(filepath) == 14904
+    assert os.path.getsize(filepath) == 14904 or os.path.getsize(filepath) == 15192
     cleanup()
 
 
@@ -63,7 +71,7 @@ def test_swan_writer_ice(model):
     exp.export_ice(filename=fn)
     filepath = Path(f"GridName_SWAN/{fn}")
     assert filepath.is_file()
-    assert os.path.getsize(filepath) == 14904
+    assert os.path.getsize(filepath) == 14904 or os.path.getsize(filepath) == 15192
 
     fn = "swan_test_sit.asc"
     exp.export_ice(filename=fn, data_vars=["sit"])

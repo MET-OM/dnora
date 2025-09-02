@@ -6,6 +6,7 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 from pathlib import Path
+import stat
 
 
 def handle_remove_readonly(func, path, exc_info):

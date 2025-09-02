@@ -4,13 +4,13 @@ import numpy as np
 import os
 import yaml
 from dnora import file_module
-
+from pathlib import Path
 from dnora.type_manager.dnora_types import DnoraDataType, DnoraFileType
 from dnora.defaults import read_defaults
 
-defaults = read_defaults('export_defaults.yml', from_module=True)
+defaults = read_defaults("export_defaults.yml", from_module=True)
 
-#with open("data/defaults.yml", "r") as file:
+# with open("data/defaults.yml", "r") as file:
 #    defaults = yaml.safe_load(file)
 
 
@@ -70,7 +70,7 @@ class GetDefaultValues(unittest.TestCase):
 class AddFolder(unittest.TestCase):
     def test_basic(self):
         path = file_module.add_folder_to_filename(filename="filename", folder="folder")
-        self.assertEqual(path, "folder/filename")
+        self.assertEqual(Path(path).as_posix(), "folder/filename")
 
     def test_empty_file(self):
         path = file_module.add_folder_to_filename(filename="", folder="folder")
@@ -84,7 +84,7 @@ class AddFolder(unittest.TestCase):
         path = file_module.add_folder_to_filename(
             filename="filename.asc", folder="folder"
         )
-        self.assertEqual(path, "folder/filename.asc")
+        self.assertEqual(Path(path).as_posix(), "folder/filename.asc")
 
 
 class SplitPath(unittest.TestCase):
@@ -113,7 +113,7 @@ class SplitPath(unittest.TestCase):
             filepath="folder1/folder2/filename.asc"
         )
         self.assertEqual(filename, "filename.asc")
-        self.assertEqual(folder, "folder1/folder2")
+        self.assertEqual(Path(folder).as_posix(), "folder1/folder2")
 
 
 class Clean(unittest.TestCase):

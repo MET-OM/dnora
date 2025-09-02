@@ -3,6 +3,7 @@ import xarray as xr
 import numpy as np
 import os
 import shutil
+import stat
 
 
 def handle_remove_readonly(func, path, exc_info):
