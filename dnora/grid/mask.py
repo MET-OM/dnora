@@ -1,9 +1,6 @@
 import numpy as np
-from typing import List
 from abc import ABC, abstractmethod
-
-# Import aux_funcsiliry functions
-from dnora import msg, aux_funcs
+from dnora import msg
 from geo_skeletons import PointSkeleton
 
 
@@ -160,7 +157,7 @@ class MidPoint(MaskSetter):
     can be set.
     """
 
-    def __init__(self, edges: List[str] = ["N", "S", "E", "W"]) -> None:
+    def __init__(self, edges: list[str] = ["N", "S", "E", "W"]) -> None:
         self.edges = [edge.upper() for edge in edges]
 
     def __call__(self, grid):
