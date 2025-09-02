@@ -27,7 +27,6 @@ from dnora.read.spectra import Spectra1DToSpectra
 from dnora.read.spectra1d import SpectraTo1D, WaveSeriesToJONSWAP1D
 from dnora.read.waveseries import Spectra1DToWaveSeries
 from dnora.type_manager.spectral_conventions import SpectralConvention
-from dnora.pick import Trivial
 import datetime
 from dnora.export.templates import Cacher
 
@@ -62,8 +61,6 @@ if TYPE_CHECKING:
 
     from dnora.read.abstract_readers import ReaderFunction
 from dnora.type_manager.dnora_objects import dnora_objects
-from typing import Optional
-
 
 def start_and_end_time_of_run(
     start_time: Optional[str],
