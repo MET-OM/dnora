@@ -2,6 +2,7 @@ import dnora as dn
 import numpy as np
 from copy import copy
 from dnora.type_manager.spectral_conventions import SpectralConvention
+import os
 
 
 def load_test_spec(shifted=False, math=False):
@@ -22,10 +23,18 @@ def load_test_spec(shifted=False, math=False):
             D = np.linspace(0.0, 345.0, 24)  # np.loadtxt('data/dir.test')
 
     S = np.ones((2, 2, len(f), len(D)), float)
-    S[0, 0, :, :] = np.loadtxt("data/spec1.test")
-    S[0, 1, :, :] = np.loadtxt("data/spec2.test")
-    S[1, 0, :, :] = np.loadtxt("data/spec3.test")
-    S[1, 1, :, :] = np.loadtxt("data/spec4.test")
+
+    # Get the current file's directory (the test file's directory)
+    current_dir = os.path.dirname(__file__)
+    # Construct the absolute path to the data file
+    data_file1 = os.path.join(current_dir, "data", "spec1.test")
+    data_file2 = os.path.join(current_dir, "data", "spec2.test")
+    data_file3 = os.path.join(current_dir, "data", "spec3.test")
+    data_file4 = os.path.join(current_dir, "data", "spec4.test")
+    S[0, 0, :, :] = np.loadtxt(data_file1)
+    S[0, 1, :, :] = np.loadtxt(data_file2)
+    S[1, 0, :, :] = np.loadtxt(data_file3)
+    S[1, 1, :, :] = np.loadtxt(data_file4)
 
     return S, D
 
