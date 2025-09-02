@@ -100,7 +100,7 @@ class SplitPath(unittest.TestCase):
 
     def test_empty_folder(self):
         filename, folder = file_module.split_filepath(filepath="/filename")
-        self.assertEqual(folder, "/") or self.assertEqual(folder, "\\")
+        self.assertEqual(Path(folder).as_posix(), "/")
         self.assertEqual(filename, "filename")
 
     def test_with_extension(self):
