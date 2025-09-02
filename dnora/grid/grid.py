@@ -5,7 +5,7 @@ import numpy as np
 import xarray as xr
 from geo_skeletons.decorators import add_mask, add_datavar
 
-from dnora import aux_funcs, msg
+from dnora import msg
 
 from .mesh import Mesher, Interpolate
 from .process import GridProcessor
@@ -52,37 +52,6 @@ class Grid(GriddedSkeleton):
         grid.set_topo(topo)
         return grid
 
-    @classmethod
-    def from_ww3_grid(cls, gridname: str, folder: str = ""):
-        """Recreate a WW3 grid object based on the _info, _bathy and _mapsta files"""
-
-        filename = Path(folder) / f"{gridname}_info.txt"
-
-        print(filename)
-        (
-            lon_min,
-            lon_max,
-            lat_min,
-            lat_max,
-            dlon,
-            dlat,
-            NX,
-            NY,
-        ) = aux_funcs.read_ww3_info(filename)
-
-        filename = Path(folder).joinpath(f"{gridname}_bathy.txt")
-        topo = np.loadtxt(filename).reshape((NY, NX))
-        filename = Path(folder).joinpath(f"{gridname}_mapsta.txt")
-        mask = (
-            np.loadtxt(filename).reshape((NY, NX)) == 2
-        )  # Boundary points given as value 2
-
-        grid = cls(lon=(lon_min, lon_max), lat=(lat_min, lat_max), name=gridname)
-        grid.set_spacing(nx=NX, ny=NY)
-        grid.set_topo(topo)
-        grid.set_boundary_mask(mask)
-
-        return grid
 
     def plot(self) -> None:
         vmin, vmax = np.min(self.topo()), np.max(self.topo())
