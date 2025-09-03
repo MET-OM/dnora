@@ -10,7 +10,7 @@ from dnora.read.ds_read_functions import (
     setup_temp_dir,
     read_list_of_spatial_ds,
 )
-from dnora.read.fimex_functions import ds_fimex_read
+
 from geo_skeletons import PointSkeleton
 from dnora import msg
 import xarray as xr
