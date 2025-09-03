@@ -7,7 +7,7 @@ name = "dnora"
 description = "dnora - a software for dynamical downscaling of wave products i.e., NORA3 wave hindcast and WAM4 wave forecast from MET Norway"
 authors = [ { name = "Konstantinos Christakos", email = "konstantinosc@met.no"}, { name = "Jan-Victor Björkqvist", email = "janvb@met.no" } ]
 urls = {homepage = "https://github.com/MET-OM/dnora", download = "https://github.com/MET-OM/dnora"}
-requires-python = ">=3.9, <3.13"
+requires-python = ">=3.9, <3.11"
 dependencies = [
     "matplotlib>=3.1",
     "numpy>=1.17",
