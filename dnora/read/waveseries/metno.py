@@ -3,7 +3,6 @@ from dnora.read.waveseries import WW3Unstruct
 import geo_parameters as gp
 from dnora.read.abstract_readers import PointDataReader
 from dnora.read.ds_read_functions import read_ds_list, read_first_ds
-from .waveseries_readers import ds_xarray_read
 import xarray as xr
 import numpy as np
 from dnora import utils
