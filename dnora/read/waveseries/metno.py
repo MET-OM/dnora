@@ -13,8 +13,10 @@ from dnora.read.ds_read_functions import basic_xarray_read
 from dnora.read.file_structure import FileStructure
 import geo_parameters as gp
 from dnora.read.aliases import WW3_DS_ALIASES
+from dnora.read.depreciation_decorator import deprecated_class_call
 
 
+@deprecated_class_call("MET Norway's", "metno", "waveseries")
 class NORAC(SpectralProductReader):
     product_configuration = ProductConfiguration(
         filename="ww3.%Y%m.nc",
@@ -32,6 +34,7 @@ class NORAC(SpectralProductReader):
     )
 
 
+@deprecated_class_call("MET Norway's", "metno", "waveseries")
 class E39(SpectralProductReader):
     product_configuration = ProductConfiguration(
         filename="%Y%m_E39_#TILENAME_wave.nc",

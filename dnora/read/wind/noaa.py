@@ -5,8 +5,10 @@ from dnora.read.file_structure import FileStructure
 from dnora.read.ds_read_functions import basic_xarray_read
 from functools import partial
 import geo_parameters as gp
+from dnora.read.depreciation_decorator import deprecated_class_call
 
 
+@deprecated_class_call("NOAA", "noaa", "wind")
 class PacIOOS(ProductReader):
     """Reads GFS wind data from the best estimate files. 3h data for 5 days.
 
@@ -29,6 +31,7 @@ class PacIOOS(ProductReader):
     file_structure = FileStructure()
 
 
+@deprecated_class_call("NOAA", "noaa", "wind")
 class NCEP(ProductReader):
     """Reads GFS wind data from the NCEP thredds server
 
@@ -51,6 +54,7 @@ class NCEP(ProductReader):
     file_structure = FileStructure(stride=6, hours_per_file=385)
 
 
+@deprecated_class_call("NOAA", "noaa", "wind")
 class NCEP1h(ProductReader):
     """Reads GFS wind data from the NCEP thredds server
 

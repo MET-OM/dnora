@@ -7,8 +7,10 @@ from .waveseries_readers import ds_xarray_read
 import xarray as xr
 import numpy as np
 from dnora import utils
+from dnora.read.depreciation_decorator import deprecated_class_call
 
 
+@deprecated_class_call("NCHMF", "nchmf", "spectra")
 class SWAN4km(SWANnc):
     stride = 24  # int (for hourly), or 'month'
     hours_per_file = 84  # int (if not monthly files)

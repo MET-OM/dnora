@@ -6,7 +6,10 @@ from dnora.read.cmems_functions import ds_cmems_read
 from dnora.read.product_readers import ProductReader
 from dnora.read.product_configuration import ProductConfiguration
 from dnora.process.gridded import FillNaNs
+from dnora.read.depreciation_decorator import deprecated_class_call
 
+
+@deprecated_class_call("CMEMS", "cmems", "waterlevel")
 class Global(ProductReader):
     """The Operational Mercator global ocean analysis and forecast system at 1/12 degree is providing 10 days of 3D global
     ocean forecasts updated daily. The time series is aggregated in time in order to reach a two full year's time series
@@ -20,18 +23,19 @@ class Global(ProductReader):
     DOI (product): https://doi.org/10.48670/moi-00016
     https://data.marine.copernicus.eu/product/GLOBAL_ANALYSISFORECAST_PHY_001_024/description
     """
+
     product_configuration = ProductConfiguration(
         ds_creator_function=partial(
-            ds_cmems_read, dataset_id="cmems_mod_glo_phy_anfc_0.083deg_PT1H-m",
-        variables=["zos"],minimum_depth=0.49402499198913574,
-        maximum_depth=0.49402499198913574
+            ds_cmems_read,
+            dataset_id="cmems_mod_glo_phy_anfc_0.083deg_PT1H-m",
+            variables=["zos"],
+            minimum_depth=0.49402499198913574,
+            maximum_depth=0.49402499198913574,
         ),
         default_data_source=DataSource.REMOTE,
-        
     )
-    
+
     file_structure = FileStructure()
 
     def post_processing(self):
         return FillNaNs(0)
-

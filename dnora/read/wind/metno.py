@@ -8,6 +8,7 @@ from functools import partial
 from dnora.read.file_structure import FileStructure
 import re
 import geo_parameters as gp
+
 # Import objects
 from dnora.grid import Grid
 
@@ -25,8 +26,10 @@ from dnora.read.fimex_functions import ds_fimex_read
 from dnora.read.ds_read_functions import read_ds_list, setup_temp_dir
 import calendar
 from dnora.read.fimex_functions import ds_fimex_read
+from dnora.read.depreciation_decorator import deprecated_class_call
 
 
+@deprecated_class_call("MET Norway's", "metno", "wind")
 class NORA3(ProductReader):
     """Reads wind data (from monthly files 'arome3km_1hr_YYYYMM.nc') of the NORA3 hindcast directly from MET Norways servers.
 
@@ -49,7 +52,6 @@ class NORA3(ProductReader):
         ds_creator_function=partial(
             ds_fimex_read,
             resolution_in_km=3,
-            
         ),
         data_vars=["wind_speed", "wind_direction"],
         default_data_source=DataSource.REMOTE,
@@ -58,6 +60,7 @@ class NORA3(ProductReader):
     file_structure = FileStructure(stride="month")
 
 
+@deprecated_class_call("MET Norway's", "metno", "wind")
 class MyWave3km(ProductReader):
     """Reads wind data from the MyWave 3km hindcast directly from MET Norways
     servers. You should probably use NORA3 because:
@@ -74,7 +77,6 @@ class MyWave3km(ProductReader):
         ds_creator_function=partial(
             ds_fimex_read,
             resolution_in_km=3,
-            
         ),
         data_vars=["ff", "dd"],
         default_data_source=DataSource.REMOTE,
@@ -122,6 +124,7 @@ def meps_extra_fimex_commands(start_time, end_time, url) -> list[str]:
         return []
 
 
+@deprecated_class_call("MET Norway's", "metno", "wind")
 class MEPS(ProductReader):
     """Reads wind data from MET Norways MEPS forecast.
 
@@ -183,6 +186,7 @@ def get_nora3fp_urls(
     return urls
 
 
+@deprecated_class_call("MET Norway's", "metno", "wind")
 class NORA3_fp(ProductReader):
     """Reads wind data of the NORA3 hindcast directly from MET Norways servers.
 
@@ -214,6 +218,8 @@ class NORA3_fp(ProductReader):
         stride=1, hours_per_file=1, last_file="", lead_time=4
     )
 
+
+@deprecated_class_call("MET Norway's", "metno", "wind")
 class CLIMAREST(ProductReader):
     product_configuration = ProductConfiguration(
         filename="wind_HCLIM43_MPIESM12LR_3hr_%Y_%m.nc",
@@ -223,9 +229,9 @@ class CLIMAREST(ProductReader):
         ),
         data_vars=["uas", "vas"],
         default_data_source=DataSource.LOCAL,
-        ds_aliases = {'uas': gp.wind.XWind, 'vas': gp.wind.YWind}
+        ds_aliases={"uas": gp.wind.XWind, "vas": gp.wind.YWind},
     )
-    
+
     file_structure = FileStructure(
         stride="month",
     )

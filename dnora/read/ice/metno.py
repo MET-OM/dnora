@@ -6,8 +6,10 @@ from functools import partial
 import re
 from dnora.read.product_readers import ProductReader
 from dnora.read.product_configuration import ProductConfiguration
+from dnora.read.depreciation_decorator import deprecated_class_call
 
 
+@deprecated_class_call("MET Norway's", "metno", "ice")
 class NORA3(ProductReader):
     """Reads wind data (from monthly files 'arome3km_1hr_YYYYMM.nc') of the NORA3 hindcast directly from MET Norways servers.
 
@@ -29,7 +31,6 @@ class NORA3(ProductReader):
         ds_creator_function=partial(
             ds_fimex_read,
             resolution_in_km=3,
-            
         ),
         data_vars=["SIC", "SIT"],
         default_data_source=DataSource.REMOTE,
@@ -41,6 +42,7 @@ class NORA3(ProductReader):
     )
 
 
+@deprecated_class_call("MET Norway's", "metno", "ice")
 class Barents25(ProductReader):
     """Reads sea ice data of the Barents 2.5 km operational ocean model directly from MET Norways servers.
 
@@ -62,7 +64,6 @@ class Barents25(ProductReader):
         ds_creator_function=partial(
             ds_fimex_read,
             resolution_in_km=2.5,
-            
         ),
         data_vars=["ice_concentration", "ice_thickness"],
         default_data_source=DataSource.REMOTE,
@@ -74,6 +75,7 @@ class Barents25(ProductReader):
     )
 
 
+@deprecated_class_call("MET Norway's", "metno", "ice")
 class CLIMAREST(ProductReader):
     product_configuration = ProductConfiguration(
         filename="sic_HCLIM43_MPIESM12LR_3hr_%Y_%m.nc",

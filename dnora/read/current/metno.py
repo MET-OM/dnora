@@ -19,7 +19,7 @@ import pandas as pd
 import re
 from dnora.process.gridded import FillNaNs
 import geo_parameters as gp
-
+from dnora.read.depreciation_decorator import deprecated_class_call
 
 
 def get_norkyst800_urls(folder: str, filename: str, file_times: list[str], **kwargs):
@@ -37,6 +37,7 @@ def get_norkyst800_urls(folder: str, filename: str, file_times: list[str], **kwa
     return urls
 
 
+@deprecated_class_call("MET Norway's", "metno", "current")
 class NorKyst800(ProductReader):
     """Reads ocean_current data of the NorKyst800 archieve directly from MET Norways servers.
 
@@ -56,7 +57,6 @@ class NorKyst800(ProductReader):
         ds_creator_function=partial(
             ds_fimex_read,
             resolution_in_km=0.8,
-            
         ),
         data_vars=["u", "v"],
         default_data_source=DataSource.REMOTE,
@@ -74,6 +74,7 @@ class NorKyst800(ProductReader):
         return FillNaNs(0)
 
 
+@deprecated_class_call("MET Norway's", "metno", "current")
 class NorFjords160(ProductReader):
     """ """
 

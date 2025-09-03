@@ -5,7 +5,10 @@ from dnora.type_manager.spectral_conventions import SpectralConvention
 # Import aux_funcsiliry functions
 from dnora.type_manager.data_sources import DataSource
 from dnora.read.spectra import SWAN as SWANBase
+from dnora.read.depreciation_decorator import deprecated_class_call
 
+
+@deprecated_class_call("NCHMF", "nchmf", "spectra")
 class SWAN(SWANBase):
     """covers the East Sea"""
 

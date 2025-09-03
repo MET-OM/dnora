@@ -21,6 +21,8 @@ from dnora.read.ds_read_functions import setup_temp_dir
 
 from dnora.type_manager.dnora_types import DnoraDataType
 
+from dnora.read.depreciation_decorator import deprecated_class_call
+
 
 def download_era5_from_cds(
     start_time, end_time, lon, lat, folder="dnora_wnd_temp"
@@ -32,7 +34,9 @@ def download_era5_from_cds(
     try:
         import cdsapi
     except ImportError as e:
-        msg.advice("The cdsapi package is required to use ECWMF products! Install by e.g. 'conda install cdsapi'")
+        msg.advice(
+            "The cdsapi package is required to use ECWMF products! Install by e.g. 'conda install cdsapi'"
+        )
         raise e
     c = cdsapi.Client()
 
@@ -120,6 +124,7 @@ def download_era5_from_cds(
     return filename
 
 
+@deprecated_class_call("ERA5", "era5", "wind")
 class ERA5(DataReader):
     """Reads ERA5 wind data"""
 

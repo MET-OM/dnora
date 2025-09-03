@@ -21,6 +21,7 @@ from dnora.utils.time import (
     int_list_of_years,
 )
 from dnora.type_manager.spectral_conventions import SpectralConvention
+from dnora.read.depreciation_decorator import deprecated_class_call
 
 
 def renormalize_era5_spec(bnd_spec):
@@ -88,6 +89,7 @@ def download_era5_from_cds(
     return filename
 
 
+@deprecated_class_call("ERA5", "era5", "spectra")
 class ERA5(SpectralDataReader):
     def __init__(self, dlon: float = None, dlat: float = None):
         """Default dlon=dlat=0.1. If only dlon given, dlon=dlat and vice versa."""

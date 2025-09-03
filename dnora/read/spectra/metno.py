@@ -12,8 +12,10 @@ from functools import partial
 from dnora.read.ds_read_functions import basic_xarray_read
 import geo_parameters as gp
 from dnora.read.aliases import WW3_DS_ALIASES
+from dnora.read.depreciation_decorator import deprecated_class_call
 
 
+@deprecated_class_call("MET Norway's", "metno", "spectra")
 class WAM4km(SpectralProductReader):
     product_configuration = ProductConfiguration(
         filename="MyWave_wam4_SPC_%Y%m%dT%HZ.nc",
@@ -35,6 +37,7 @@ class WAM4km(SpectralProductReader):
         return RemoveEmpty()
 
 
+@deprecated_class_call("MET Norway's", "metno", "spectra")
 class NORA3(SpectralProductReader):
     product_configuration = ProductConfiguration(
         filename="SPC%Y%m%d00.nc",
@@ -54,6 +57,7 @@ class NORA3(SpectralProductReader):
     )
 
 
+@deprecated_class_call("MET Norway's", "metno", "spectra")
 class WW3_4km(SpectralProductReader):
     """Operational WW3 for Norwegian waters"""
 
@@ -78,6 +82,7 @@ class WW3_4km(SpectralProductReader):
         return RemoveEmpty()
 
 
+@deprecated_class_call("MET Norway's", "metno", "spectra")
 class WAM800(SpectralProductReader):
     product_configuration = ProductConfiguration(
         filename="MyWave_wam800_#TILESPC_%Y%m%dT%HZ.nc",
@@ -105,6 +110,7 @@ class WAM800(SpectralProductReader):
     )
 
 
+@deprecated_class_call("MET Norway's", "metno", "spectra")
 class NORAC(SpectralProductReader):
     product_configuration = ProductConfiguration(
         filename="ww3_spec.%Y%m.nc",
@@ -119,6 +125,7 @@ class NORAC(SpectralProductReader):
     )
 
 
+@deprecated_class_call("MET Norway's", "metno", "spectra")
 class WAM3(SpectralProductReader):
     product_configuration = ProductConfiguration(
         filename="MyWave_wam3_SPC_%Y%m%dT%HZ.nc",
@@ -140,6 +147,7 @@ class WAM3(SpectralProductReader):
     )
 
 
+@deprecated_class_call("MET Norway's", "metno", "spectra")
 class CLIMAREST(SpectralProductReader):
     product_configuration = ProductConfiguration(
         filename="CLIMAREST_*_spec_2040_2070.nc",
