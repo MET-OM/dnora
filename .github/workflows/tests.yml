@@ -54,23 +54,21 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     if: "startsWith(github.ref, 'refs/tags/')"
-    needs: [ tests ]  # Ensure the `tests` job creates the artifact
+    needs: [ tests ]
     steps:
-      - uses: actions/checkout@v4  # Checkout the code
       - uses: actions/download-artifact@v4
         with:
           name: wheels
-          path: dist  # Extract the artifact to the `dist/` directory
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: conda-incubator/setup-miniconda@v3
         with:
           python-version: '3.10'
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip setuptools wheel twine
-      - name: Publish to PyPI
+          miniforge-version: latest
+          miniforge-variant: Miniforge3
+      - name: Publish to PyPi
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run: |
-          twine upload --skip-existing dist/*
+          pip install typing-extensions
+          pip install --upgrade twine wheels setuptools
+          twine upload --skip-existing *
