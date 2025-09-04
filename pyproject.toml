@@ -17,7 +17,7 @@ dependencies = [
     "xarray>=0.20.1",
     "netCDF4",
     "meshio",
-    "geo-skeletons=0.20.*",
+    "geo-skeletons>=0.20.9",
     "python-dotenv",
     "progressbar",
     "pyarrow",
