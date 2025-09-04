@@ -19,6 +19,15 @@ The package contains functions that:
 
 Installing **DNORA**
 =============================================
+
+Easiest way to install dnora is to use pip:
+
+.. code-block:: bash
+
+   $ pip install dnora
+
+Alternatively you can clone the github repository:
+
 1. Install anaconda3 or miniconda3
 2. Clone dnora:
 
@@ -33,7 +42,7 @@ Installing **DNORA**
 
   $ conda config --add channels conda-forge
   $ conda env create -f environment.yml
-  $ conda activate dnora
+  $ conda activate dnora2
   $ pip install -e .
   
 To update the enviroment using a new environment.yml, run:
