@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dnora"
-version = "2.0.3"
+version = "2.0.4"
 description = "dnora - a software for dynamical downscaling of wave products"
 authors = [ { name = "Konstantinos Christakos", email = "konstantinosc@met.no"}, { name = "Jan-Victor Björkqvist", email = "janvb@met.no" } ]
 urls = {homepage = "https://github.com/MET-OM/dnora", download = "https://github.com/MET-OM/dnora"}
