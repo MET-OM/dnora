@@ -70,5 +70,5 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run: |
           pip install typing-extensions
-          pip install --upgrade twine
+          pip install --upgrade setuptools wheel twine
           twine upload --skip-existing *
