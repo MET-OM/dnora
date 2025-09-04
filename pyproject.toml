@@ -28,8 +28,6 @@ license = {file = "LICENSE"}
 [project.optional-dependencies]
 test = ["pytest>=7.0"]
 
-
-
 [tool.setuptools]
 license-files = ["LICENSE"]
 

@@ -3,7 +3,7 @@ name: Tests
 on:
   push:
     branches:
-      - newmain
+      - main
     tags:
       - v*
   pull_request:
@@ -36,7 +36,6 @@ jobs:
           cd tests
           pytest -vs --log-cli-level=debug -m "not remote"
 
-
       - name: Build wheels
         if: matrix.python-version == '3.10' && matrix.os == 'ubuntu'
         run: |
@@ -64,7 +63,7 @@ jobs:
         with:
           python-version: '3.10'
           miniforge-version: latest
-          miniforge-variant: Mambaforge
+          miniforge-variant: Miniforge3
       - name: Publish to PyPi
         env:
           TWINE_USERNAME: __token__
