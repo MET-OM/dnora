@@ -1,0 +1,34 @@
+! -------------------------------------------------------------------- !
+! Define the type 1, spectra via SPECTRA_NML namelist
+!
+! Table of 1-D spectra content : 
+!   - time, station id, station name, longitude, latitude
+!   - frequency : unit Hz, center band frequency - linear log scale (XFR factor)
+!   - ffp, f, th1m, sth1m, alpha : 1D spectral parameters
+!   - dpt, ust, wnd, wnddir : mean parameters
+!
+! Transfert file content :
+!   - time, station id, station name, longitude, latitude 
+!   - frequency : unit Hz, center band frequency - linear log scale (XFR factor)
+!   - frequency1 : unit Hz, lower band frequency
+!   - frequency2 : unit Hz, upper band frequency
+!   - direction : unit degree, convention to, origin East, trigonometric order
+!   - efth(time,station,frequency,direction) : 2D spectral density
+!   - dpt, wnd, wnddir, cur, curdir : mean parameters
+!
+! Spectral partitioning content : 
+!   - time, station id, station name, longitude, latitude
+!   - npart : number of partitions
+!   - hs, tp, lm, th1m, sth1m, ws, tm10, t01, t02 : partitioned parameters
+!   - dpt, wnd, wnddir, cur, curdir : mean parameters
+!
+!
+! * namelist must be terminated with /
+! * definitions & defaults:
+!     SPECTRA%OUTPUT        = 3            ! 1: Print plots
+!                                          ! 2: Table of 1-D spectra
+!                                          ! 3: Transfer file
+!                                          ! 4: Spectral partitioning
+!     SPECTRA%SCALE_FAC     = 1            ! Scale factor (-1=disabled)
+!     SPECTRA%OUTPUT_FAC    = 0            ! Output factor (0=normalized)
+! -------------------------------------------------------------------- !

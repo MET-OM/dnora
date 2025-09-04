@@ -1,0 +1,36 @@
+! -------------------------------------------------------------------- !
+! Define the depth to preprocess via DEPTH_NML namelist
+! - for RECT and CURV grids -
+!
+! * if no obstruction subgrid, need to set &MISC FLAGTR = 0
+!
+! * The depth value must have negative values under the mean sea level
+!
+! * value <= value_read * scale_fac
+!
+! * IDLA : Layout indicator :
+!                  1   : Read line-by-line bottom to top.  (default)
+!                  2   : Like 1, single read statement.
+!                  3   : Read line-by-line top to bottom.
+!                  4   : Like 3, single read statement.
+! * IDFM : format indicator :
+!                  1   : Free format.  (default)
+!                  2   : Fixed format.
+!                  3   : Unformatted.
+! * FORMAT : element format to read :
+!               '(....)'  : auto detected  (default)
+!               '(f10.6)' : float type
+!
+! * Example :
+!      IDF  SF     IDLA  IDFM   FORMAT    FILENAME
+!      50   0.001  1     1     '(....)'  'GLOB-30M.bot'
+!
+! * namelist must be terminated with /
+! * definitions & defaults:
+!     DEPTH%SF             = 1.       ! scale factor
+!     DEPTH%FILENAME       = 'unset'  ! filename
+!     DEPTH%IDF            = 50       ! file unit number
+!     DEPTH%IDLA           = 1        ! layout indicator
+!     DEPTH%IDFM           = 1        ! format indicator
+!     DEPTH%FORMAT         = '(....)' ! formatted read format
+! -------------------------------------------------------------------- !

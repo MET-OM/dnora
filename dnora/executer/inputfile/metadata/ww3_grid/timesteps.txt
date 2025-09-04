@@ -1,0 +1,31 @@
+! -------------------------------------------------------------------- !
+! Define the timesteps parameterization via TIMESTEPS_NML namelist
+!
+! * It is highly recommended to set up time steps which are multiple 
+!   between them. 
+!
+! * The first time step to calculate is the maximum CFL time step
+!   which depend on the lowest frequency FREQ1 previously set up and the
+!   lowest spatial grid resolution in meters DXY.
+!   reminder : 1 degree=60minutes // 1minute=1mile // 1mile=1.852km
+!   The formula for the CFL time is :
+!   Tcfl = DXY / (G / (FREQ1*4*Pi) ) with the constants Pi=3,14 and G=9.8m/s²;
+!   DTXY  ~= 90% Tcfl
+!   DTMAX ~= 3 * DTXY   (maximum global time step limit)
+!
+! * The refraction time step depends on how strong can be the current velocities
+!   on your grid :
+!   DTKTH ~= DTMAX / 2   ! in case of no or light current velocities
+!   DTKTH ~= DTMAX / 10  ! in case of strong current velocities
+!
+! * The source terms time step is usually defined between 5s and 60s.
+!   A common value is 10s.
+!   DTMIN ~= 10
+!
+! * namelist must be terminated with /
+! * definitions & defaults:
+!     TIMESTEPS%DTMAX      = 0.         ! maximum global time step (s)
+!     TIMESTEPS%DTXY       = 0.         ! maximum CFL time step for x-y (s)
+!     TIMESTEPS%DTKTH      = 0.         ! maximum CFL time step for k-th (s)
+!     TIMESTEPS%DTMIN      = 0.         ! minimum source term time step (s)
+! -------------------------------------------------------------------- !

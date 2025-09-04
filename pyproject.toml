@@ -4,26 +4,32 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dnora"
-version = "1.4.3"  
-description = "dnora - a software for dynamical downscaling of wave products i.e., NORA3 wave hindcast and WAM4 wave forecast from MET Norway"
-authors = [ { name = "Konstantinos Christakos"}, { name = "Jan-Victor Björkqvist" } ]
+version = "2.0.0"
+description = "dnora - a software for dynamical downscaling of wave products"
+authors = [ { name = "Konstantinos Christakos", email = "konstantinosc@met.no"}, { name = "Jan-Victor Björkqvist", email = "janvb@met.no" } ]
 urls = {homepage = "https://github.com/MET-OM/dnora", download = "https://github.com/MET-OM/dnora"}
-
+requires-python = ">=3.9, <3.11"
 dependencies = [
     "matplotlib>=3.1",
     "numpy>=1.17",
     "scipy>=1.7",
-    "netCDF4",
     "pandas",
     "xarray>=0.20.1",
+    "netCDF4",
     "meshio",
-    "utm",
-    "dask",
-    "pytest",
-    "cmocean",
-    "cartopy",
-    "cdsapi",
+    "geo-skeletons>=0.20.4",
+    "python-dotenv",
+    "cdsapi>=0.7.6",
+    "progressbar"
 ]
+readme = "README.md"
+license = {file = "LICENSE"}
+
+[project.optional-dependencies]
+test = ["pytest>=7.0"]
 
 [tool.setuptools]
-license-files = []
+license-files = ["LICENSE"]
+
+[tool.setuptools_scm]
+write_to = "dnora/_version.py"
