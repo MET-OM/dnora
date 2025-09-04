@@ -28,7 +28,7 @@ dnora is a software for dynamical downscaling of wave products i.e., NORA3 wave 
 
 # Documentation
 
-Please  [documentation](https://dnora2.readthedocs.io/en/latest/) for dnora is still ongoing, but can be found at:
+Please  [documentation](https://dnora.readthedocs.io/en/latest/) for dnora is still ongoing, but can be found at:
 
 Old examples for dnora-v1 on [youtube](https://youtu.be/pTmjBnsXNz8) 
 
