@@ -51,6 +51,13 @@ To update the enviroment using a new environment.yml, run:
 
    $ conda env update --file environment.yml --prune
 
+4. Installation in JupyterHub platforms such as WEKEO:
+
+.. code-block:: bash
+
+   $ conda create -n dnora python=3.10 fimex=1.8.1
+   $ python -m pip install dnora
+
 Basic example
 =============================================
 
