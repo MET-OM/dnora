@@ -20,13 +20,14 @@ The package contains functions that:
 Installing **DNORA**
 =============================================
 
-Easiest way to install dnora is to use pip:
+Quick Installation: 
+The easiest way to install dnora is to use pip:
 
 .. code-block:: bash
 
    $ pip install dnora
 
-Alternatively you can clone the github repository:
+Alternatively, you can clone the GitHub repository:
 
 1. Install anaconda3 or miniconda3
 2. Clone dnora:
@@ -36,7 +37,7 @@ Alternatively you can clone the github repository:
    $ git clone https://github.com/MET-OM/dnora.git
    $ cd dnora/
 
-3. Create environment with the required dependencies and install dnora
+3. Create an environment with the required dependencies and install dnora
 
 .. code-block:: bash
 
@@ -45,13 +46,13 @@ Alternatively you can clone the github repository:
   $ conda activate dnora2
   $ pip install .
   
-To update the enviroment using a new environment.yml, run:
+To update the environment using a new environment.yml, run:
 
 .. code-block:: bash
 
    $ conda env update --file environment.yml --prune
 
-4. Installation in JupyterHub platforms such as WEKEO:
+For JupyterHub platforms such as WEKEO, please use:
 
 .. code-block:: bash
 
