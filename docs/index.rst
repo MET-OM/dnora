@@ -57,6 +57,7 @@ For JupyterHub platforms such as WEKEO, please use:
 .. code-block:: bash
 
    $ conda create -n dnora python=3.10 fimex=1.8.1
+   $ conda activate dnora
    $ python -m pip install dnora
 
 Basic example
