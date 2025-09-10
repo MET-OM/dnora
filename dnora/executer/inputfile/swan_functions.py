@@ -316,7 +316,7 @@ def swan_structures(file_out, structures: list[dict]) -> None:
 
         if structure.get("name") is not None:
             file_out.write(f"$ --- {structure.get('name')}")
-            if structure.get("closed") and len(structure.get("lon")) > 2:
+            if structure.get("closed", closed) and len(structure.get("lon")) > 2:
                 file_out.write(f" [closed]")
             file_out.write(f" ---\n")
 
@@ -324,7 +324,7 @@ def swan_structures(file_out, structures: list[dict]) -> None:
         for lon, lat in zip(structure.get("lon"), structure.get("lat")):
             file_out.write(f" {lon:.6f} {lat:.6f}")
 
-        if structure.get("closed") and len(structure.get("lon")) > 2:
+        if structure.get("closed", closed) and len(structure.get("lon")) > 2:
             file_out.write(
                 f" {structure.get('lon')[0]:.6f} {structure.get('lat')[0]:.6f}"
             )
