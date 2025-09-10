@@ -199,7 +199,7 @@ class SWAN(InputFileWriter):
                 homog_wind = homog.get("wind")
                 if isinstance(homog_wind, tuple):
                     ff, dd = homog_wind
-                    warning_message = f'Giving homogeneous wind as a tuple is deprecated and will be removed in further versions. Use "wind": {{"ff": {ff}, "dd": {dd}}} instead of "wind": ({ff}, {dd})'
+                    warning_message = f'Giving stationary wind as a tuple is deprecated and will be removed in further versions. Use "wind": {{"ff": {ff}, "dd": {dd}}} instead of "wind": ({ff}, {dd})'
                     warnings.simplefilter("always", DeprecationWarning)
                     warnings.warn(
                         warning_message,
