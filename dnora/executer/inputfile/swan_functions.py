@@ -307,16 +307,16 @@ def swan_structures(file_out, structures: list[dict]) -> None:
     if structures:
         file_out.write("$ Define obstacles (structures) \n")
     for structure in structures:
-        trans = structure.get("trans") or trans
+        trans = structure.get("trans", trans)
         if trans is None:
             raise ValueError(
                 "Provide a value for the transparency of the structure with the dict key 'trans' in every structure. To use a constant transparency, only provide it in the first structure."
             )
-        refl = structure.get("refl") or refl
+        refl = structure.get("refl", refl)
 
         if structure.get("name") is not None:
             file_out.write(f"$ --- {structure.get('name')}")
-            if structure.get("closed"):
+            if structure.get("closed", closed) and len(structure.get("lon")) > 2:
                 file_out.write(f" [closed]")
             file_out.write(f" ---\n")
 
@@ -324,7 +324,7 @@ def swan_structures(file_out, structures: list[dict]) -> None:
         for lon, lat in zip(structure.get("lon"), structure.get("lat")):
             file_out.write(f" {lon:.6f} {lat:.6f}")
 
-        if structure.get("closed"):
+        if structure.get("closed", closed) and len(structure.get("lon")) > 2:
             file_out.write(
                 f" {structure.get('lon')[0]:.6f} {structure.get('lat')[0]:.6f}"
             )

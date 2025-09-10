@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from dnora.modelrun.modelrun import ModelRun
     from dnora.file_module import FileNames
 
-
+import warnings
 from dnora import msg, file_module
 from dnora.type_manager.dnora_types import DnoraFileType
 from .ww3_functions import (
@@ -196,8 +196,22 @@ class SWAN(InputFileWriter):
                     exported_files["wind"][-1],
                 )
             else:
-                homog_wind = homog.get("wind", (0, 0))
-                file_out.write(f"WIND {homog_wind[0]:.2f} {homog_wind[1]:.0f}\n")
+                homog_wind = homog.get("wind")
+                if isinstance(homog_wind, tuple):
+                    ff, dd = homog_wind
+                    warning_message = f'Giving stationary wind as a tuple is deprecated and will be removed in further versions. Use "wind": {{"ff": {ff}, "dd": {dd}}} instead of "wind": ({ff}, {dd})'
+                    warnings.simplefilter("always", DeprecationWarning)
+                    warnings.warn(
+                        warning_message,
+                        DeprecationWarning,
+                        stacklevel=2,  # Points to the user's code
+                    )
+                elif homog_wind is None:
+                    ff, dd = 0,0
+                else:
+                    ff, dd = homog_wind['ff'], homog_wind['dd']
+
+                file_out.write(f"WIND {ff:.2f} {dd:.0f}\n")
 
             if use_waterlevel and not homog:
                 if model.waterlevel() is not None:
