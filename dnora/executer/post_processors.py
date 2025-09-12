@@ -8,7 +8,7 @@ import geo_parameters as gp
 from geo_skeletons import GriddedSkeleton
 from dnora import msg
 import pathlib
-
+from datetime import datetime
 
 SWAN_VARS = {
     "Hsig": gp.wave.Hs,
@@ -53,12 +53,18 @@ def read_swan_mat_to_ds(filename: str, lon: np.ndarray, lat=np.ndarray) -> xr.Da
     keys.sort()
     start_time = "T".join(keys[0].split("_")[1:])
     end_time = "T".join(keys[-1].split("_")[1:])
+    if not start_time and not end_time:  # Stationary run
+        start_time = f"{datetime.today():%Y-%m-%d %H:00}"
+        end_time = f"{datetime.today():%Y-%m-%d %H:00}"
 
     obj = wave_grid(lon=lon, lat=lat, time=(start_time, end_time))
 
     for swan_var, param in SWAN_VARS.items():
 
-        keys = [a for a in mat.keys() if swan_var == "_".join(a.split("_")[0:-2])]
+        if swan_var in mat.keys():  # Stationary run
+            keys = [swan_var]
+        else:
+            keys = [a for a in mat.keys() if swan_var == "_".join(a.split("_")[0:-2])]
 
         keys.sort()
         if keys:
