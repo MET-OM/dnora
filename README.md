@@ -5,15 +5,27 @@
 Welcome to dnora version 2!
 
 
-# Quick Installation
+# Quick Installation 💻
 
 To install the latest version of dnora with pip:
 
 ```shell
 $ pip install dnora 
 ```
+The tool is also compatible with WEkEO Jupyter Lab, allowing seamless integration and use. For instructions on how to install dnora in WEkEO, please refer [here](https://docs.google.com/document/d/15MKSDBaykpkUQyKRKcCPbVlzFDf7lOIMmdjbtRQhMBc/edit?usp=drive_link).
 
-The latest version of the old 'v1' dnora is 1.4.3, and can be installed with:
+# Alternative installation 💻
+
+```shell
+$ git clone https://github.com/MET-OM/dnora.git
+$ cd dnora/
+$ conda config --add channels conda-forge
+$ conda env create -f environment.yml
+$ conda activate dnora2
+$ pip install .
+```
+ 
+The latest version of the old 👴 'v1' dnora is 1.4.3, and can be installed with:
 
 ```shell
 $ pip install dnora==1.4.3 
@@ -26,7 +38,7 @@ You can find the code of the origin dnora v1 in the branch 'v1' on GitHub. Pleas
 
 dnora is a software for dynamical downscaling of wave products i.e., NORA3 wave hindcast and WW3 wave forecast from [Norwegian Meteorological Institute](https://www.met.no/) and ERA5 from [ECMWF](https://www.ecmwf.int/).
 
-# Documentation
+# Documentation 📚
 
 Please  [documentation](https://dnora.readthedocs.io/en/latest/) for dnora is still ongoing, but can be found at:
 
