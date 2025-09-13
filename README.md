@@ -44,6 +44,9 @@ Please  [documentation](https://dnora.readthedocs.io/en/latest/) for dnora is st
 
 Old examples for dnora-v1 on [youtube](https://youtu.be/pTmjBnsXNz8) 
 
+# Tutorials 📜
+Several examples/scripts to help you start with dnora can be found at [dnora_tutorials](https://github.com/MET-OM/dnora_tutorials)
+
 # Example output
 
 Example of downscaling NORA3 using dnora/SWAN offshore Tromsø, Norway:
