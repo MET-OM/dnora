@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 import warnings
 from dnora import msg, file_module
-from dnora.type_manager.dnora_types import DnoraFileType
+from dnora.type_manager.dnora_types import DnoraFileType, DnoraDataType
 from .ww3_functions import (
     ww3_grid,
     ww3_prnc,
@@ -67,6 +67,29 @@ class Null(InputFileWriter):
         **kwargs,
     ) -> str:
         return ""
+
+
+def recuresively_find_parent_object_and_filename(model, obj_type: DnoraDataType):
+    """Searches for e.g. a Wind object and goes back through parent runs to find the first run that has wind information"""
+    obj = None
+    active_model = model
+    exported_from_self = True
+    while True:
+        obj = active_model.get(obj_type)
+        if obj is not None:
+            if exported_from_self:
+                obj_file = str(
+                    Path(active_model.data_exported_to(obj_type)[-1]).stem
+                ) + str(Path(active_model.data_exported_to(obj_type)[-1]).suffix)
+            else:
+                obj_file = str(
+                    Path(active_model.data_exported_to(obj_type)[-1]).resolve()
+                )
+            return obj, obj_file
+        active_model = active_model.parent()
+        exported_from_self = False
+        if active_model is None:
+            return None, None
 
 
 class SWAN(InputFileWriter):
@@ -207,19 +230,12 @@ class SWAN(InputFileWriter):
                 )
 
             if use_wind and not homog:
-                if model.wind() is not None or model.parent().wind() is not None:
+                wind_object, wind_file = recuresively_find_parent_object_and_filename(
+                    model, DnoraDataType.WIND
+                )
+
+                if wind_object is not None:
                     self.output_var.append("WIND")
-
-                if model.wind() is None:
-                    wind_object = model.parent().wind()
-                    wind_file = str(
-                        Path(model.parent().data_exported_to("wind")[-1]).resolve()
-                    )
-
-                else:
-                    wind_object = model.wind()
-                    wind_path = Path(exported_files["wind"][-1])
-                    wind_file = str(wind_path.stem + wind_path.suffix)
 
                 swan_wind(
                     file_out,
