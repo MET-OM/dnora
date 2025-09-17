@@ -210,8 +210,6 @@ class SWAN(InputFileWriter):
                         model.parent().input_file_exported_to(DnoraFileType.INPUT)[-1]
                     ).parent
                 )
-
-            if model.parent() is not None:
                 nest_file = str(Path(parent_folder).resolve())
                 file_out.write(f"BOUN NEST &\n'{nest_file}/bspec.asc' &\nOPEN\n")
 
@@ -264,37 +262,53 @@ class SWAN(InputFileWriter):
                 file_out.write(f"WIND {ff:.2f} {dd:.0f}\n")
 
             if use_waterlevel and not homog:
-                if model.waterlevel() is not None:
+                waterlevel_object, waterlevel_file = (
+                    recuresively_find_parent_object_and_filename(
+                        model, DnoraDataType.WATERLEVEL
+                    )
+                )
+                if waterlevel_object is not None:
                     self.output_var.append("WATLEV")
+
                 swan_waterlevel(
                     file_out,
-                    model.waterlevel(),
+                    waterlevel_object,
                     STR_START,
                     STR_END,
                     factor["waterlevel"],
-                    exported_files["waterlevel"][-1],
+                    waterlevel_file,
                 )
 
             if use_current and not homog:
-                if model.current() is not None:
+                current_object, current_file = (
+                    recuresively_find_parent_object_and_filename(
+                        model, DnoraDataType.CURRENT
+                    )
+                )
+
+                if current_object is not None:
                     self.output_var.append("VEL")
+
                 swan_current(
                     file_out,
-                    model.current(),
+                    current_object,
                     STR_START,
                     STR_END,
                     factor["current"],
-                    exported_files["current"][-1],
+                    current_file,
                 )
 
             if use_ice and not homog:
+                ice_object, ice_file = recuresively_find_parent_object_and_filename(
+                    model, DnoraDataType.ICE
+                )
                 swan_ice(
                     file_out,
-                    model.ice(),
+                    ice_object,
                     STR_START,
                     STR_END,
                     factor["ice"],
-                    exported_files["ice"],
+                    ice_file,
                 )
 
             HOTSTART_FILE = (
