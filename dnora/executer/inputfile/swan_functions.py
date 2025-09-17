@@ -83,10 +83,8 @@ def swan_spectra(file_out, grid, spectra, boundary_path: str) -> None:
     """Writes information about boundary spectra to SWAN input file"""
 
     if spectra is None:
-        msg.info(
-            "No spectra object provided. Spectra information will NOT be written to SWAN input file!"
-        )
         return
+    msg.plain("Adding boundary spectra to SWAN input file")
 
     lons, lats = create_swan_segment_coords(
         grid.boundary_mask(), grid.edges("lon"), grid.edges("lat")
@@ -106,6 +104,7 @@ def swan_spectra(file_out, grid, spectra, boundary_path: str) -> None:
 def swan_homog_spectra(file_out, grid, homog: dict) -> None:
     """Writes stationary boundary conditions to SWAN input file"""
     gamma = homog.get("gamma", 3.3)
+    msg.plain("Adding constant JONSWAP boundary to SWAN input file")
     file_out.write(f"BOUND SHAP JON {gamma} PEAK DSPR POWER\n")
     for side in identify_boundary_edges(grid.boundary_mask()):
         boundary = homog.get(side)
@@ -143,10 +142,8 @@ def swan_wind(
     """Writes wind information to SWAN input file"""
 
     if forcing is None:
-        msg.info(
-            "No wind object provided. Wind information will NOT be written to SWAN input file!"
-        )
         return
+    msg.plain("Adding wind forcing to SWAN input file")
 
     delta_Xf = np.round(np.diff(forcing.edges("lon")), 5)[0]
     delta_Yf = np.round(np.diff(forcing.edges("lat")), 5)[0]
@@ -181,10 +178,8 @@ def swan_waterlevel(
 ) -> None:
     """Writes waterlevel information to SWAN input file"""
     if waterlevel is None:
-        msg.info(
-            "No waterlevel object provided. Waterlevel information will NOT be written to SWAN input file!"
-        )
         return
+    msg.plain("Adding waterlevel forcing to SWAN input file")
 
     delta_Xf = np.round(np.diff(waterlevel.edges("lon")), 5)[0]
     delta_Yf = np.round(np.diff(waterlevel.edges("lat")), 5)[0]
@@ -225,10 +220,9 @@ def swan_current(
     """Writes current information to SWAN input file"""
 
     if current is None:
-        msg.info(
-            "No current object provided. OceanCurrent information will NOT be written to SWAN input file!"
-        )
         return
+
+    msg.plain("Adding current forcing to SWAN input file")
 
     delta_Xf = np.round(np.diff(current.edges("lon")), 5)[0]
     delta_Yf = np.round(np.diff(current.edges("lat")), 5)[0]
@@ -267,10 +261,8 @@ def swan_ice(file_out, ice, STR_START, STR_END, factor: float, ice_path: str) ->
     """Writes ice information to SWAN input file"""
 
     if ice is None:
-        msg.info(
-            "No ice object provided. Ice information will NOT be written to SWAN input file!"
-        )
         return
+    msg.plain("Adding iceforcing to SWAN input file")
 
     delta_Xf = np.round(np.diff(ice.edges("lon")), 5)[0]
     delta_Yf = np.round(np.diff(ice.edges("lat")), 5)[0]
@@ -321,6 +313,7 @@ def swan_structures(file_out, structures: list[dict]) -> None:
     closed = False
     if structures:
         file_out.write("$ Define obstacles (structures) \n")
+        msg.plain("Adding list of structtures to SWAN input file")
     for structure in structures:
         trans = structure.get("trans", trans)
         if trans is None:
@@ -351,6 +344,7 @@ def swan_spectral_output_points(file_out, grid, STR_START: str, homog: bool) -> 
     spec_lon, spec_lat = grid.output_points()
     if len(spec_lon) == 0:
         return
+    msg.plain("Listing spectral output points to SWAN input file")
     file_out.write("$ Generate spectral output \n")
     file_out.write("POINTS 'pkt' &\n")
     for slon, slat in zip(spec_lon, spec_lat):
