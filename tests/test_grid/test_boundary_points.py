@@ -6,8 +6,8 @@ from dnora.utils.grid import (
     identify_boundary_edges,
     create_ordered_boundary_list,
     get_coords_for_boundary_edges,
-    create_swan_segment_coords,
 )
+from dnora.executer.inputfile.swan_functions import create_swan_segment_coords
 import numpy as np
 from copy import copy
 
