@@ -44,6 +44,11 @@ def creat_swan_input_grid_string(grid) -> str:
     return input_grid_string
 
 
+def swan_output_for_nest(file_out, nested_grid) -> None:
+    file_out.write(f"NGRID 'bspec' {create_swan_grid_string(nested_grid)}\n")
+    file_out.write(f"NESTout 'bspec' 'bspec.asc'\n")
+
+
 def swan_header(file_out, grid_name: str) -> None:
     """Writes header information to SWAN input file"""
     file_out.write("$************************HEADING************************\n")
@@ -70,7 +75,7 @@ def swan_grid(
     file_out.write("$ \n")
 
     file_out.write("INPGRID BOTTOM " + creat_swan_input_grid_string(grid) + "\n")
-    file_out.write("READINP BOTTOM 1 '" + grid_path.split("/")[-1] + "' 3 0 FREE \n")
+    file_out.write("READINP BOTTOM 1 '" + grid_path.split("/")[-1] + "'&\n 3 0 FREE \n")
     file_out.write("$ \n")
 
 
@@ -91,7 +96,7 @@ def swan_spectra(file_out, grid, spectra, boundary_path: str) -> None:
 
     for lon, lat in zip(lons, lats):
         bound_string += f" {lon:.4f} {lat:.4f}"
-    bound_string += " VARIABLE FILE 0 "
+    bound_string += " VARIABLE FILE 0 &\n"
     bound_string += f"'{boundary_path.split('/')[-1]}'\n"
     file_out.write(bound_string)
 
@@ -165,13 +170,8 @@ def swan_wind(
         + STR_END
         + "\n"
     )
-
     file_out.write(
-        "READINP WIND "
-        + str(factor)
-        + "  '"
-        + forcing_path.split("/")[-1]
-        + "' 3 0 0 1 FREE \n"
+        "READINP WIND " + str(factor) + "  &\n'" + forcing_path + "' &\n3 0 0 1 FREE \n"
     )
     file_out.write("$ \n")
 

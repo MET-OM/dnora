@@ -39,6 +39,7 @@ from .swan_functions import (
     swan_structures,
     swan_spectral_output_points,
     swan_homog_spectra,
+    swan_output_for_nest,
 )
 
 
@@ -76,7 +77,7 @@ class SWAN(InputFileWriter):
         f_high=1.0,
         n_freq=31,
         n_dir=36,
-        output_var="HSIGN RTP TPS PDIR TM01 TMM10 DIR DSPR DEP",
+        output_var: list[str] = None,
     ):
         self.default_calibrations = {
             "wind": 1,
@@ -90,7 +91,17 @@ class SWAN(InputFileWriter):
         self.f_high = f_high
         self.n_freq = n_freq
         self.n_dir = n_dir
-        self.output_var = output_var
+        self.output_var = output_var or [
+            "HSIGN",
+            "RTP",
+            "TPS",
+            "PDIR",
+            "TM01",
+            "TMM10",
+            "DIR",
+            "DSPR",
+            "DEP",
+        ]
         return
 
     def __call__(
@@ -170,6 +181,17 @@ class SWAN(InputFileWriter):
                 self.n_freq,
             )
 
+            if model.parent() is not None:
+                parent_folder = str(
+                    Path(
+                        model.parent().input_file_exported_to(DnoraFileType.INPUT)[-1]
+                    ).parent
+                )
+
+            if model.parent() is not None:
+                nest_file = str(Path(parent_folder).resolve())
+                file_out.write(f"BOUN NEST &\n'{nest_file}/bspec.asc' &\nOPEN\n")
+
             if use_spectra and not homog:
                 swan_spectra(
                     file_out,
@@ -185,15 +207,27 @@ class SWAN(InputFileWriter):
                 )
 
             if use_wind and not homog:
-                if model.wind() is not None:
-                    self.output_var = self.output_var + " WIND"
+                if model.wind() is not None or model.parent().wind() is not None:
+                    self.output_var.append("WIND")
+
+                if model.wind() is None:
+                    wind_object = model.parent().wind()
+                    wind_file = str(
+                        Path(model.parent().data_exported_to("wind")[-1]).resolve()
+                    )
+
+                else:
+                    wind_object = model.wind()
+                    wind_path = Path(exported_files["wind"][-1])
+                    wind_file = str(wind_path.stem + wind_path.suffix)
+
                 swan_wind(
                     file_out,
-                    model.wind(),
+                    wind_object,
                     STR_START,
                     STR_END,
                     factor["wind"],
-                    exported_files["wind"][-1],
+                    wind_file,
                 )
             else:
                 homog_wind = homog.get("wind")
@@ -207,15 +241,15 @@ class SWAN(InputFileWriter):
                         stacklevel=2,  # Points to the user's code
                     )
                 elif homog_wind is None:
-                    ff, dd = 0,0
+                    ff, dd = 0, 0
                 else:
-                    ff, dd = homog_wind['ff'], homog_wind['dd']
+                    ff, dd = homog_wind["ff"], homog_wind["dd"]
 
                 file_out.write(f"WIND {ff:.2f} {dd:.0f}\n")
 
             if use_waterlevel and not homog:
                 if model.waterlevel() is not None:
-                    self.output_var = self.output_var + " WATLEV"
+                    self.output_var.append("WATLEV")
                 swan_waterlevel(
                     file_out,
                     model.waterlevel(),
@@ -227,7 +261,7 @@ class SWAN(InputFileWriter):
 
             if use_current and not homog:
                 if model.current() is not None:
-                    self.output_var = self.output_var + " VEL"
+                    self.output_var.append("VEL")
                 swan_current(
                     file_out,
                     model.current(),
@@ -291,13 +325,17 @@ class SWAN(InputFileWriter):
                 + extension
                 + "' & \n"
             )
-            file_out.write("LAY 1 " + self.output_var)
+
+            file_out.write("LAY 1 " + " ".join(set(self.output_var)))
             if not homog:
                 file_out.write(" OUTPUT " + STR_START + " 1 HR ")
             file_out.write("\n")
             file_out.write("$ \n")
 
             swan_spectral_output_points(file_out, model.grid(), STR_START, homog)
+
+            if model.nest() is not None:
+                swan_output_for_nest(file_out, model.nest().grid())
 
             file_out.write("COMPUTE")
             if not homog:

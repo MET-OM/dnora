@@ -5,6 +5,8 @@ def add_export_method(obj_type: DnoraDataType):
     def wrapper(c):
         def export(self, *args, **kwargs) -> None:
             self.export(obj_type, *args, **kwargs)
+            if self._nest is not None:
+                self._nest.export(obj_type, *args, **kwargs)
 
         exec(f"c.export_{obj_type.name.lower()} = export")
         return c

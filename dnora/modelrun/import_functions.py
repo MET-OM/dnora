@@ -114,8 +114,8 @@ def read_data_and_create_object(
         **kwargs,
     )
     if ds is None:
-        raise ValueError('No data found!')
-        
+        raise ValueError("No data found!")
+
     if not isinstance(ds, tuple):
         obj = dnora_class.from_ds(
             ds, dynamic=False

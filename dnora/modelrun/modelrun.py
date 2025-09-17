@@ -148,6 +148,7 @@ class ModelRun:
         self.name = name
         self._post_processing = None
         self._nest = None
+        self._parent = None
 
         self.plot = dnplot.Matplotlib(self)
         self._dnora_objects: dict[DnoraDataType, DnoraObject] = {
@@ -746,10 +747,15 @@ class ModelRun:
             grid, start_time=self.start_time(), end_time=self.end_time()
         )
         msg.header(self.nest(), f"Setting up a nested run {grid.name}...")
+        self.nest()._parent = self
 
     def nest(self) -> ModelRun:
-        """Returns the spectral grid object if exists."""
+        """Returns the nested ModelRun object"""
         return self._nest
+
+    def parent(self) -> ModelRun:
+        """Returns the parent ModelRun object of the nested ModelRun."""
+        return self._parent
 
     def spectral_grid(self) -> Ice:
         """Returns the spectral grid object if exists."""
