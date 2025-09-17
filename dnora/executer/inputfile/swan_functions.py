@@ -84,7 +84,7 @@ def swan_spectra(file_out, grid, spectra, boundary_path: str) -> None:
 
     if spectra is None:
         return
-    msg.plain("Adding boundary spectra to SWAN input file")
+    msg.plain(f"Adding boundary spectra to SWAN input file: {boundary_path}")
 
     lons, lats = create_swan_segment_coords(
         grid.boundary_mask(), grid.edges("lon"), grid.edges("lat")
@@ -95,7 +95,7 @@ def swan_spectra(file_out, grid, spectra, boundary_path: str) -> None:
     for lon, lat in zip(lons, lats):
         bound_string += f" {lon:.4f} {lat:.4f}"
     bound_string += " VARIABLE FILE 0 &\n"
-    bound_string += f"'{boundary_path.split('/')[-1]}'\n"
+    bound_string += f"'{boundary_path}'\n"
     file_out.write(bound_string)
 
     file_out.write("$ \n")
@@ -143,7 +143,7 @@ def swan_wind(
 
     if forcing is None:
         return
-    msg.plain("Adding wind forcing to SWAN input file")
+    msg.plain(f"Adding wind forcing to SWAN input file: {forcing_path}")
 
     delta_Xf = np.round(np.diff(forcing.edges("lon")), 5)[0]
     delta_Yf = np.round(np.diff(forcing.edges("lat")), 5)[0]
@@ -179,7 +179,7 @@ def swan_waterlevel(
     """Writes waterlevel information to SWAN input file"""
     if waterlevel is None:
         return
-    msg.plain("Adding waterlevel forcing to SWAN input file")
+    msg.plain(f"Adding waterlevel forcing to SWAN input file: {waterlevel_path}")
 
     delta_Xf = np.round(np.diff(waterlevel.edges("lon")), 5)[0]
     delta_Yf = np.round(np.diff(waterlevel.edges("lat")), 5)[0]
@@ -205,11 +205,7 @@ def swan_waterlevel(
     )
 
     file_out.write(
-        "READINP WLEV "
-        + str(factor)
-        + "  '"
-        + waterlevel_path.split("/")[-1]
-        + "' 3 0 1 FREE \n"
+        "READINP WLEV " + str(factor) + "  '" + waterlevel_path + "' 3 0 1 FREE \n"
     )
     file_out.write("$ \n")
 
@@ -222,7 +218,7 @@ def swan_current(
     if current is None:
         return
 
-    msg.plain("Adding current forcing to SWAN input file")
+    msg.plain(f"Adding current forcing to SWAN input file: {current_path}")
 
     delta_Xf = np.round(np.diff(current.edges("lon")), 5)[0]
     delta_Yf = np.round(np.diff(current.edges("lat")), 5)[0]
@@ -248,11 +244,7 @@ def swan_current(
     )
 
     file_out.write(
-        "READINP CUR "
-        + str(factor)
-        + "  '"
-        + current_path.split("/")[-1]
-        + "' 3 0 0 1 FREE \n"
+        "READINP CUR " + str(factor) + "  '" + current_path + "' 3 0 0 1 FREE \n"
     )
     file_out.write("$ \n")
 
@@ -262,7 +254,7 @@ def swan_ice(file_out, ice, STR_START, STR_END, factor: float, ice_path: str) ->
 
     if ice is None:
         return
-    msg.plain("Adding iceforcing to SWAN input file")
+    msg.plain(f"Adding iceforcing to SWAN input file: {ice_path}")
 
     delta_Xf = np.round(np.diff(ice.edges("lon")), 5)[0]
     delta_Yf = np.round(np.diff(ice.edges("lat")), 5)[0]
@@ -296,13 +288,7 @@ def swan_ice(file_out, ice, STR_START, STR_END, factor: float, ice_path: str) ->
             + " \n"
         )
         file_out.write(
-            "READINP "
-            + ICE_NAME
-            + " "
-            + str(factor)
-            + "  '"
-            + ice_path[i].split("/")[-1]
-            + "' \n"
+            "READINP " + ICE_NAME + " " + str(factor) + "  '" + ice_path[i] + "' \n"
         )
         file_out.write("$ \n")
 

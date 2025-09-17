@@ -212,14 +212,23 @@ class SWAN(InputFileWriter):
                 )
                 nest_file = str(Path(parent_folder).resolve())
                 file_out.write(f"BOUN NEST &\n'{nest_file}/bspec.asc' &\nOPEN\n")
+                msg.plain(
+                    f"Adding boundary spectra to SWAN input file: {nest_file}/bspec.asc"
+                )
 
             if use_spectra and not homog:
-                swan_spectra(
-                    file_out,
-                    model.grid(),
-                    model.spectra(),
-                    exported_files["spectra"][-1],
+                spectral_object, spectral_file = (
+                    recuresively_find_parent_object_and_filename(
+                        model, DnoraDataType.SPECTRA
+                    )
                 )
+                if model.spectra() is not None:
+                    swan_spectra(
+                        file_out,
+                        model.grid(),
+                        spectral_object,
+                        spectral_file,
+                    )
             elif homog.get("spectra") is not None:
                 swan_homog_spectra(
                     file_out,
