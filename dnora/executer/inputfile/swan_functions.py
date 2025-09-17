@@ -1,7 +1,12 @@
 import numpy as np
-from dnora.utils.grid import identify_boundary_edges
+from dnora.utils.grid import (
+    identify_boundary_edges,
+    create_ordered_boundary_list,
+    get_coords_for_boundary_edges,
+)
 
 from dnora import msg
+
 
 def create_swan_segment_coords(boundary_mask, lon_edges, lat_edges):
     """Createsa longitude and latitude arrays for the SWAN BOUND SEGEMENT
@@ -68,14 +73,6 @@ def swan_grid(
     file_out.write("READINP BOTTOM 1 '" + grid_path.split("/")[-1] + "' 3 0 FREE \n")
     file_out.write("$ \n")
 
-
-    if current is None:
-        msg.info(
-            "No current object provided. OceanCurrent information will NOT be written to SWAN input file!"
-        )
-        return
-
-    delta_Xf = np.round(np.diff(current.edges("lon")), 5)[0]
 
 def swan_spectra(file_out, grid, spectra, boundary_path: str) -> None:
     """Writes information about boundary spectra to SWAN input file"""
@@ -169,14 +166,6 @@ def swan_wind(
         + "\n"
     )
 
-
-    if current is None:
-        msg.info(
-            "No current object provided. OceanCurrent information will NOT be written to SWAN input file!"
-        )
-        return
-
-    delta_Xf = np.round(np.diff(current.edges("lon")), 5)[0]
     file_out.write(
         "READINP WIND "
         + str(factor)
@@ -272,8 +261,7 @@ def swan_current(
         + "' 3 0 0 1 FREE \n"
     )
     file_out.write("$ \n")
-    delta_X = np.round(np.diff(grid.edges("lon")), 5)[0]
-    delta_Y = np.round(np.diff(grid.edges("lat")), 5)[0]
+
 
 def swan_ice(file_out, ice, STR_START, STR_END, factor: float, ice_path: str) -> None:
     """Writes ice information to SWAN input file"""
@@ -291,14 +279,6 @@ def swan_ice(file_out, ice, STR_START, STR_END, factor: float, ice_path: str) ->
             -1
         ].startswith("ice"):
             ICE_NAME = "AICE"
-
-    if current is None:
-        msg.info(
-            "No current object provided. OceanCurrent information will NOT be written to SWAN input file!"
-        )
-        return
-
-    delta_Xf = np.round(np.diff(current.edges("lon")), 5)[0]
         elif ice_path[i].split("/")[-1].startswith("sit"):
             ICE_NAME = "HICE"
         # self.output_var = self.output_var + " " + ICE_NAME # comment due to AICE/HICE not available as output in nc-format in SWAN
@@ -325,11 +305,6 @@ def swan_ice(file_out, ice, STR_START, STR_END, factor: float, ice_path: str) ->
         )
         file_out.write(
             "READINP "
-        + " "
-        + str((delta_Xf / (waterlevel.nx() - 1)).round(6))
-        + " "
-        + str((delta_Yf / (waterlevel.ny() - 1)).round(6))
-        + " NONSTATIONARY "
             + ICE_NAME
             + " "
             + str(factor)
