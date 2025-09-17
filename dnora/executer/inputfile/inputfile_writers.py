@@ -311,6 +311,8 @@ class SWAN(InputFileWriter):
                 ice_object, ice_file = recuresively_find_parent_object_and_filename(
                     model, DnoraDataType.ICE
                 )
+                if not isinstance(ice_file, list):
+                    ice_file = [ice_file]
                 swan_ice(
                     file_out,
                     ice_object,

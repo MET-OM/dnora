@@ -6,6 +6,7 @@ from dnora.utils.grid import (
 )
 
 from dnora import msg
+from pathlib import Path
 
 
 def create_swan_segment_coords(boundary_mask, lon_edges, lat_edges):
@@ -259,12 +260,11 @@ def swan_ice(file_out, ice, STR_START, STR_END, factor: float, ice_path: str) ->
     delta_Xf = np.round(np.diff(ice.edges("lon")), 5)[0]
     delta_Yf = np.round(np.diff(ice.edges("lat")), 5)[0]
     for i in range(len(ice_path)):
-        if ice_path[i].split("/")[-1].startswith("sic") or ice_path[i].split("/")[
-            -1
-        ].startswith("ice"):
+        if str(Path(ice_path[i]).stem).startswith("ice"):
             ICE_NAME = "AICE"
-        elif ice_path[i].split("/")[-1].startswith("sit"):
+        elif str(Path(ice_path[i]).stem).startswith("sit"):
             ICE_NAME = "HICE"
+
         # self.output_var = self.output_var + " " + ICE_NAME # comment due to AICE/HICE not available as output in nc-format in SWAN
         file_out.write(
             "INPGRID "
