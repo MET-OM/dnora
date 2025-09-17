@@ -100,7 +100,7 @@ class WAM800(SpectralProductReader):
         },
         ds_creator_function=partial(basic_xarray_read, inds_var="x"),
         convention=SpectralConvention.OCEAN,
-        default_data_source=DataSource.IMMUTABLE,
+        default_data_source=DataSource.REMOTE,
         ds_aliases={"SPEC": gp.wave.Efth},
     )
 
