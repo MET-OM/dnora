@@ -1,7 +1,42 @@
 import numpy as np
-from dnora.utils.grid import create_swan_segment_coords, identify_boundary_edges
+from dnora.utils.grid import identify_boundary_edges
 
 from dnora import msg
+
+def create_swan_segment_coords(boundary_mask, lon_edges, lat_edges):
+    """Createsa longitude and latitude arrays for the SWAN BOUND SEGEMENT
+    command based on boundary mask.
+    Identifies edges (north, south etc.) and sets all the points on the edges
+    as boundary points.
+    If no continuous boundary can be identified, it returns empty list.
+    """
+
+    edge_list = identify_boundary_edges(boundary_mask)
+    clean_edge_list = create_ordered_boundary_list(edge_list)
+    lon, lat = get_coords_for_boundary_edges(clean_edge_list, lon_edges, lat_edges)
+    return lon, lat
+
+
+def create_swan_grid_string(grid) -> str:
+    """Creates a string to be used for the grid definition of the SWAN input file:
+
+    '5.21 62.25 0. 1.45 0.64 99 149'"""
+    delta_X = np.round(np.diff(grid.edges("lon")), 5)[0]
+    delta_Y = np.round(np.diff(grid.edges("lat")), 5)[0]
+
+    grid_string = f"{str(grid.lon()[0])} {str(grid.lat()[0])} 0. {str(delta_X)} {str(delta_Y)} {str(grid.nx() - 1)} {str(grid.ny() - 1)}"
+
+    return grid_string
+
+
+def creat_swan_input_grid_string(grid) -> str:
+    """Creates a string to be used for the definition forcing files the SWAN input file:
+
+    '5.065 62.186 0. 29 28 0.058349 0.027027'"""
+    delta_X = np.diff(grid.edges("lon"))[0]
+    delta_Y = np.diff(grid.edges("lat"))[0]
+    input_grid_string = f"{str(grid.lon()[0])} {str(grid.lat()[0])} 0. {str(grid.nx() - 1)} {str(grid.ny() - 1)} {str((delta_X / (grid.nx() - 1)).round(8))} {str((delta_Y / (grid.ny() - 1)).round(8))}"
+    return input_grid_string
 
 
 def swan_header(file_out, grid_name: str) -> None:
@@ -20,44 +55,27 @@ def swan_grid(
     file_out, grid, grid_path: str, n_dir: int, f_low: float, f_high: float, n_freq: int
 ) -> None:
     """Writes grid specifications to SWAN input file"""
-    delta_X = np.round(np.diff(grid.edges("lon")), 5)[0]
-    delta_Y = np.round(np.diff(grid.edges("lat")), 5)[0]
+
     file_out.write("COORD SPHE CCM \n")
     file_out.write(
         "CGRID "
-        + str(grid.lon()[0])
-        + " "
-        + str(grid.lat()[0])
-        + " 0. "
-        + str(delta_X)
-        + " "
-        + str(delta_Y)
-        + " "
-        + str(grid.nx() - 1)
-        + " "
-        + str(grid.ny() - 1)
+        + create_swan_grid_string(grid)
         + " CIRCLE %d %f %f %d \n" % (n_dir, f_low, f_high, n_freq)
     )
     file_out.write("$ \n")
 
-    file_out.write(
-        "INPGRID BOTTOM "
-        + str(grid.lon()[0])
-        + " "
-        + str(grid.lat()[0])
-        + " 0. "
-        + str(grid.nx() - 1)
-        + " "
-        + str(grid.ny() - 1)
-        + " "
-        + str((delta_X / (grid.nx() - 1)).round(8))
-        + " "
-        + str((delta_Y / (grid.ny() - 1)).round(8))
-        + "\n"
-    )
+    file_out.write("INPGRID BOTTOM " + creat_swan_input_grid_string(grid) + "\n")
     file_out.write("READINP BOTTOM 1 '" + grid_path.split("/")[-1] + "' 3 0 FREE \n")
     file_out.write("$ \n")
 
+
+    if current is None:
+        msg.info(
+            "No current object provided. OceanCurrent information will NOT be written to SWAN input file!"
+        )
+        return
+
+    delta_Xf = np.round(np.diff(current.edges("lon")), 5)[0]
 
 def swan_spectra(file_out, grid, spectra, boundary_path: str) -> None:
     """Writes information about boundary spectra to SWAN input file"""
@@ -151,6 +169,14 @@ def swan_wind(
         + "\n"
     )
 
+
+    if current is None:
+        msg.info(
+            "No current object provided. OceanCurrent information will NOT be written to SWAN input file!"
+        )
+        return
+
+    delta_Xf = np.round(np.diff(current.edges("lon")), 5)[0]
     file_out.write(
         "READINP WIND "
         + str(factor)
@@ -246,7 +272,8 @@ def swan_current(
         + "' 3 0 0 1 FREE \n"
     )
     file_out.write("$ \n")
-
+    delta_X = np.round(np.diff(grid.edges("lon")), 5)[0]
+    delta_Y = np.round(np.diff(grid.edges("lat")), 5)[0]
 
 def swan_ice(file_out, ice, STR_START, STR_END, factor: float, ice_path: str) -> None:
     """Writes ice information to SWAN input file"""
@@ -264,6 +291,14 @@ def swan_ice(file_out, ice, STR_START, STR_END, factor: float, ice_path: str) ->
             -1
         ].startswith("ice"):
             ICE_NAME = "AICE"
+
+    if current is None:
+        msg.info(
+            "No current object provided. OceanCurrent information will NOT be written to SWAN input file!"
+        )
+        return
+
+    delta_Xf = np.round(np.diff(current.edges("lon")), 5)[0]
         elif ice_path[i].split("/")[-1].startswith("sit"):
             ICE_NAME = "HICE"
         # self.output_var = self.output_var + " " + ICE_NAME # comment due to AICE/HICE not available as output in nc-format in SWAN
@@ -290,6 +325,11 @@ def swan_ice(file_out, ice, STR_START, STR_END, factor: float, ice_path: str) ->
         )
         file_out.write(
             "READINP "
+        + " "
+        + str((delta_Xf / (waterlevel.nx() - 1)).round(6))
+        + " "
+        + str((delta_Yf / (waterlevel.ny() - 1)).round(6))
+        + " NONSTATIONARY "
             + ICE_NAME
             + " "
             + str(factor)
