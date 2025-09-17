@@ -62,6 +62,7 @@ if TYPE_CHECKING:
     from dnora.read.abstract_readers import ReaderFunction
 from dnora.type_manager.dnora_objects import dnora_objects
 
+
 def start_and_end_time_of_run(
     start_time: Optional[str],
     end_time: Optional[str],
@@ -146,6 +147,7 @@ class ModelRun:
         self._reference_time = None
         self.name = name
         self._post_processing = None
+        self._nest = None
 
         self.plot = dnplot.Matplotlib(self)
         self._dnora_objects: dict[DnoraDataType, DnoraObject] = {
@@ -737,6 +739,18 @@ class ModelRun:
             name=DnoraDataType.SPECTRALGRID.name, freq=freq, dirs=dirs
         )
 
+    def set_nested_grid(self, grid: Grid) -> None:
+        """Sets up a nested run for the provided grid"""
+
+        self._nest = self.__class__(
+            grid, start_time=self.start_time(), end_time=self.end_time()
+        )
+        msg.header(self.nest(), f"Setting up a nested run {grid.name}...")
+
+    def nest(self) -> ModelRun:
+        """Returns the spectral grid object if exists."""
+        return self._nest
+
     def spectral_grid(self) -> Ice:
         """Returns the spectral grid object if exists."""
         return self._dnora_objects.get(DnoraDataType.SPECTRALGRID)
@@ -890,7 +904,9 @@ class ModelRun:
         obj_type = data_type_from_string(obj_type)
         return self._dnora_objects.get(obj_type)
 
-    def __setitem__(self, obj_type: Union[DnoraDataType, str], value: DnoraObject) -> None:
+    def __setitem__(
+        self, obj_type: Union[DnoraDataType, str], value: DnoraObject
+    ) -> None:
         """Sets a Dnora item"""
         obj_type = data_type_from_string(obj_type)
         self._dnora_objects[obj_type] = value
