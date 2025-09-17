@@ -127,8 +127,10 @@ class ModelExecuter:
             **kwargs,
         )
 
-        if self._nest is not None:
-            self._nest._run(
+        nest = self._nest
+
+        while nest is not None:
+            nest._run(
                 file_type=DnoraFileType.INPUT,
                 model_runner=model_runner,
                 model_folder=model_folder,
@@ -136,6 +138,7 @@ class ModelExecuter:
                 dry_run=dry_run,
                 **kwargs,
             )
+            nest = nest._nest
 
     def _run(
         self,

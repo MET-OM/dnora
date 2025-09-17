@@ -53,6 +53,9 @@ class DataExporter:
     def __init__(self, model, include_nest: bool = True):
         self.model = model
         if include_nest and model.nest() is not None:
+            msg.process(
+                f"Including nested grid {model.nest().grid().name} inside {model.grid().name}"
+            )
             self._nest = self.__class__(model.nest())
         else:
             self._nest = None

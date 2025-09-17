@@ -746,7 +746,10 @@ class ModelRun:
         self._nest = self.__class__(
             grid, start_time=self.start_time(), end_time=self.end_time()
         )
-        msg.header(self.nest(), f"Setting up a nested run {grid.name}...")
+        msg.header(
+            self.nest(),
+            f"Setting up a nested run {grid.name} inside {self.grid().name}...",
+        )
         self.nest()._parent = self
 
     def nest(self) -> ModelRun:
