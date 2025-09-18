@@ -4,7 +4,7 @@ from dnora.read.generic import ConstantData
 from dnora.type_manager.dnora_types import DnoraDataType
 import dnora
 import warnings
-
+import dnora.read.wind, dnora.read.spectra, dnora.read.spectra1d, dnora.read.waveseries, dnora.read.ice, dnora.read.waterlevel, dnora.read.current, dnora.read.grid
 
 # DEPRECIATE = ["nora3", "era5", "noaa", "nchmf"]
 DEPRECIATE = []
