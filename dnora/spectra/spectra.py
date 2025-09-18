@@ -1,7 +1,10 @@
 from copy import copy
 
 # Import objects
-from dnora.type_manager.spectral_conventions import SpectralConvention
+from dnora.type_manager.spectral_conventions import (
+    SpectralConvention,
+    spectral_convention_from_string,
+)
 from dnora.process.spectra import spectral_processor_for_convention_change
 
 # Import abstract classes and needed instances of them
@@ -21,6 +24,9 @@ from geo_skeletons.decorators import (
 
 import geo_parameters as gp
 from typing import Union, Optional
+
+import numpy as np
+
 
 @add_datavar(gp.wave.Efth("spec"), coord_group="all", default_value=0.0)
 @add_direction(grid_coord=False)
@@ -136,13 +142,29 @@ class Spectra(PointSkeleton):
         self, convention: SpectralConvention, silent: bool = False
     ) -> None:
         """Marks new convention in metadata etc. but does nothing to the spectra"""
+        directions_consistent_with_convention(self.dirs(), convention)
         self._convention = convention
         self.meta.append({"dnora_spectral_convention": self.convention().value})
         if not silent:
             msg.plain(f"Spectral convention is now: {self.convention()}")
 
-    def convention(self) -> Union[SpectralConvention,None]:
+    def convention(self) -> Union[SpectralConvention, None]:
         """Returns the convention (WW3/OCEAN/MET/MATH/MATHVEC) of the spectra"""
         if not hasattr(self, "_convention"):
             return None
         return copy(self._convention)
+
+
+def directions_consistent_with_convention(dirs, convention) -> bool:
+    convention = spectral_convention_from_string(convention)
+    if convention in [SpectralConvention.WW3, SpectralConvention.MATHVEC]:
+        if np.all(np.diff(dirs) > 0):
+            raise Warning(
+                f"Marking convention {convention}, but directional vector is monotonically increasing! ({dirs})"
+            )
+
+    else:
+        if not np.all(np.diff(dirs) > 0):
+            raise Warning(
+                f"Marking convention {convention}, but directional vector is NOT monotonically increasing! ({dirs})"
+            )
