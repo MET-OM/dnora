@@ -157,6 +157,10 @@ class Spectra(PointSkeleton):
 
 def directions_consistent_with_convention(dirs, convention) -> bool:
     convention = spectral_convention_from_string(convention)
+    if convention in [SpectralConvention.UNDEFINED]:
+        raise Warning(
+            f"Marking convention {convention}, so cannot keep track of wave directionality! {dirs}"
+        )
     if convention in [SpectralConvention.WW3, SpectralConvention.MATHVEC]:
         if np.all(np.diff(dirs) > 0):
             raise Warning(
