@@ -24,8 +24,13 @@ def timevec():
 
 
 @pytest.fixture(scope="session")
-def timevec2025():
-    return pd.date_range("2025-04-01 00:00:00", "2025-04-01 23:00:00", freq="1h")
+def timevec202508():
+    return pd.date_range("2025-08-01 00:00:00", "2025-08-01 23:00:00", freq="1h")
+
+
+@pytest.fixture(scope="session")
+def timevec202505():
+    return pd.date_range("2025-05-01 00:00:00", "2025-05-01 23:00:00", freq="1h")
 
 
 @pytest.mark.remote
@@ -36,10 +41,10 @@ def test_nora3(grid, timevec):
 
 
 @pytest.mark.remote
-def test_nora3_2025(grid, timevec2025):
-    model = dn.modelrun.ModelRun(grid, year=2025, month=4, day=1)
+def test_nora3_2025(grid, timevec202505):
+    model = dn.modelrun.ModelRun(grid, year=2025, month=5, day=1)
     model.import_wind(dn.read.wind.metno.NORA3(), program="pyfimex")
-    assert np.all(model.wind().time() == timevec2025)
+    assert np.all(model.wind().time() == timevec202505)
 
 
 @pytest.mark.remote
@@ -76,6 +81,13 @@ def test_meps_url():
     assert "subset" in urls[1]
     assert "det" in urls[2]
     assert "det" in urls[3]
+
+
+@pytest.mark.remote
+def test_meps_det_subset2025(grid, timevec202508):
+    model = dn.modelrun.ModelRun(grid, year=2025, month=8, day=1)
+    model.import_wind(dn.read.wind.metno.MEPS())
+    assert np.all(model.wind().time() == timevec202508)
 
 
 @pytest.mark.remote
