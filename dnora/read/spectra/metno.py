@@ -69,7 +69,7 @@ class WW3_4km(SpectralProductReader):
         },
         tile="POI",
         ds_creator_function=partial(basic_xarray_read, inds_var="x"),
-        convention=SpectralConvention.WW3,
+        convention=SpectralConvention.OCEAN,
         default_data_source=DataSource.REMOTE,
     )
 
@@ -169,3 +169,6 @@ class CLIMAREST(SpectralProductReader):
 
     def post_processing(self):
         return RemoveNanTimes()
+
+
+WW3
