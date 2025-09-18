@@ -169,6 +169,3 @@ class CLIMAREST(SpectralProductReader):
 
     def post_processing(self):
         return RemoveNanTimes()
-
-
-WW3
