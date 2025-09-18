@@ -21,7 +21,8 @@ dependencies = [
     "python-dotenv",
     "progressbar",
     "pyarrow",
-    "dnplot"
+    "dnplot",
+    "dask[dataframe]"
 ]
 readme = "README.md"
 license = {file = "LICENSE"}
