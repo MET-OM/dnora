@@ -46,7 +46,7 @@ class NORA3(ProductReader):
     product_configuration = ProductConfiguration(
         filename="arome3km_1hr_%Y%m.nc",
         default_folders={
-            DataSource.REMOTE: "https://thredds.met.no/thredds/dodsC/nora3_subset_atmos/atm_hourly",
+            DataSource.REMOTE: "https://thredds.met.no/thredds/dodsC/nora3_subset_atmos/atm_hourly_v2",
             DataSource.INTERNAL: "NORA3/atmosphere/atm_hourly",
         },
         ds_creator_function=partial(
