@@ -41,15 +41,24 @@ class DataExporter:
     def _get_default_format(self) -> str:
         return ModelFormat.MODELRUN
 
-    def _get_writer(self, obj_type: Union[DnoraDataType, DnoraFileType]) -> WriterFunction:
+    def _get_writer(
+        self, obj_type: Union[DnoraDataType, DnoraFileType]
+    ) -> WriterFunction:
         return self._writer_dict.get(obj_type, self._get_default_writer())
 
     # def _get_spectral_convention(self) -> SpectralConvention:
     #     """Used only if method is not defined, such as for GeneralWritingFunctions that just dump everything to montly netcdf-files."""
     #     return SpectralConvention.OCEAN
 
-    def __init__(self, model):
+    def __init__(self, model, include_nest: bool = True):
         self.model = model
+        if include_nest and model.nest() is not None:
+            msg.process(
+                f"Including nested grid {model.nest().grid().name} inside {model.grid().name}"
+            )
+            self._nest = self.__class__(model.nest())
+        else:
+            self._nest = None
 
     def export(
         self,
@@ -68,14 +77,19 @@ class DataExporter:
         writer_function = self._setup_export(obj_type, writer, dry_run)
 
         if not self.dry_run():
+            if not self._silent:
+                if self.model.get(obj_type) is not None:
+                    data_name = f" from {self.model[obj_type].name}"
+                else:
+                    data_name = ""
+                msg.header(
+                    writer_function,
+                    f"Writing {obj_type.name} data" + data_name,
+                )
+
             if self.model.get(obj_type) is None:
                 msg.info(f"No {obj_type.name} data exists. Won't export anything.")
                 return
-            if not self._silent:
-                msg.header(
-                    writer_function,
-                    f"Writing {obj_type.name} data from {self.model[obj_type].name}",
-                )
 
             if spectral_convention is None:
                 try:  # GeneralWritingFunction might not have this method defined

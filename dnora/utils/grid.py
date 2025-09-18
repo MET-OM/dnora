@@ -3,12 +3,13 @@ import numpy as np
 
 def data_covers_grid(skeleton, grid):
     """Checks if a given skeleton covers a given grid"""
-    for coord in ['lon', 'lat']:
+    for coord in ["lon", "lat"]:
         if skeleton.edges(coord)[0] > grid.edges(coord)[0]:
             return False
         if skeleton.edges(coord)[-1] < grid.edges(coord)[-1]:
             return False
     return True
+
 
 def identify_boundary_edges(boundary_mask: np.ndarray) -> list[str]:
     """Identifies which edges has some boundary points
@@ -118,20 +119,6 @@ def get_coords_for_boundary_edges(
             lat.append(lat_edges[0])
 
     return np.array(lon), np.array(lat)
-
-
-def create_swan_segment_coords(boundary_mask, lon_edges, lat_edges):
-    """Createsa longitude and latitude arrays for the SWAN BOUND SEGEMENT
-    command based on boundary mask.
-    Identifies edges (north, south etc.) and sets all the points on the edges
-    as boundary points.
-    If no continuous boundary can be identified, it returns empty list.
-    """
-
-    edge_list = identify_boundary_edges(boundary_mask)
-    clean_edge_list = create_ordered_boundary_list(edge_list)
-    lon, lat = get_coords_for_boundary_edges(clean_edge_list, lon_edges, lat_edges)
-    return lon, lat
 
 
 def is_gridded(data: np.ndarray, lon: np.ndarray, lat: np.ndarray) -> bool:

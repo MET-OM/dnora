@@ -12,6 +12,7 @@ from .decorators import add_write_method, add_run_method
 from dnora.defaults import read_environment_variable
 from typing import Union, Optional
 
+
 @add_run_method(DnoraFileType.SPECTRA)
 @add_run_method(DnoraFileType.ICE)
 @add_run_method(DnoraFileType.WATERLEVEL)
@@ -35,8 +36,12 @@ class ModelExecuter:
     def _get_default_format(self) -> str:
         return ModelFormat.MODELRUN
 
-    def __init__(self, model):
+    def __init__(self, model, include_nest: bool = True):
         self.model = model
+        if include_nest and model.nest() is not None:
+            self._nest = self.__class__(model.nest())
+        else:
+            self._nest = None
 
     def dry_run(self) -> bool:
         return self._dry_run or self.model.dry_run()
@@ -109,7 +114,7 @@ class ModelExecuter:
         model_runner: Optional[ModelRunner] = None,
         model_folder: str = "",
         post_process: bool = True,
-        dry_run: bool = False, 
+        dry_run: bool = False,
         **kwargs,
     ):
         """Run the main model. Set post_process=False to disable any post-processing that might be defined."""
@@ -121,6 +126,19 @@ class ModelExecuter:
             dry_run=dry_run,
             **kwargs,
         )
+
+        nest = self._nest
+
+        while nest is not None:
+            nest._run(
+                file_type=DnoraFileType.INPUT,
+                model_runner=model_runner,
+                model_folder=model_folder,
+                post_process=post_process,
+                dry_run=dry_run,
+                **kwargs,
+            )
+            nest = nest._nest
 
     def _run(
         self,

@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 from dnora.cacher.caching_strategies import CachingStrategy
 
 from dnora.process.gridded import FillNaNs
+from dnora.utils.io import get_url
 
 
 class DataReader(ABC):
@@ -93,16 +94,16 @@ class DataReader(ABC):
         source: DataSource,
         tile: Optional[str] = None,
         tile_name: Optional[str] = None,
-        strict:bool = True, 
+        strict: bool = True,
     ) -> str:
         default_folder = self._default_folders.get(source)
         if source in [DataSource.REMOTE, DataSource.LOCAL]:
             folder = folder or default_folder
             if folder is not None:
-                if tile is not None:
-                    folder = re.sub("#TILE", tile, folder)
                 if tile_name is not None:
                     folder = re.sub("#TILENAME", tile_name, folder)
+                if tile is not None:
+                    folder = re.sub("#TILE", tile, folder)
                 return folder
         else:
             if folder is None:
@@ -119,8 +120,7 @@ class DataReader(ABC):
                 return folder
         if strict:
             raise ValueError(f"No folder is defined for source {source}!")
-        return ''
-        
+        return ""
 
     def _filename(
         self,
@@ -128,17 +128,17 @@ class DataReader(ABC):
         source: DataSource,
         tile: Optional[str] = None,
         tile_name: Optional[str] = None,
-        strict:bool = True, 
+        strict: bool = True,
     ) -> str:
         if filename is None:
             filename = self._default_filenames.get(source)
         if filename is None:
             filename = self._default_filename
         if filename is None:
-            if strict: 
+            if strict:
                 raise ValueError(f"No filename is defined for source {source}!")
-            return ''
-            
+            return ""
+
         if tile_name is not None:
             filename = re.sub("#TILENAME", tile_name, filename)
         if tile is not None:

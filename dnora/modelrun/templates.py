@@ -4,7 +4,7 @@ from dnora.read.generic import ConstantData
 from dnora.type_manager.dnora_types import DnoraDataType
 import dnora
 import warnings
-from functools import wraps
+import dnora.read.wind, dnora.read.spectra, dnora.read.spectra1d, dnora.read.waveseries, dnora.read.ice, dnora.read.waterlevel, dnora.read.current, dnora.read.grid
 
 # DEPRECIATE = ["nora3", "era5", "noaa", "nchmf"]
 DEPRECIATE = []
@@ -52,7 +52,7 @@ class Constant(ModelRun):
     }
 
 
-@deprecated_class("MET Norway's", "metno")
+# @deprecated_class("MET Norway's", "metno")
 class NORA3(ModelRun):
     _reader_dict = {
         DnoraDataType.SPECTRA: dnora.read.spectra.metno.NORA3(),
@@ -61,7 +61,7 @@ class NORA3(ModelRun):
     }
 
 
-@deprecated_class("MET Norway's", "metno")
+# @deprecated_class("MET Norway's", "metno")
 class WAM4km(ModelRun):
     _reader_dict = {
         DnoraDataType.SPECTRA: dnora.read.spectra.metno.WAM4km(),
@@ -69,7 +69,7 @@ class WAM4km(ModelRun):
     }
 
 
-@deprecated_class("MET Norway's", "metno")
+# @deprecated_class("MET Norway's", "metno")
 class WW3_4km(ModelRun):
     _reader_dict = {
         DnoraDataType.SPECTRA: dnora.read.spectra.metno.WW3_4km(),
@@ -77,7 +77,7 @@ class WW3_4km(ModelRun):
     }
 
 
-@deprecated_class("MET Norway's", "metno")
+# @deprecated_class("MET Norway's", "metno")
 class CLIMAREST(ModelRun):
     _reader_dict = {
         DnoraDataType.SPECTRA: dnora.read.spectra.metno.CLIMAREST(),
@@ -86,7 +86,7 @@ class CLIMAREST(ModelRun):
     }
 
 
-@deprecated_class("ERA5", "era5")
+# @deprecated_class("ERA5", "era5")
 class ERA5(ModelRun):
     _reader_dict = {
         DnoraDataType.SPECTRA: dnora.read.spectra.ec.ERA5(),
@@ -95,21 +95,21 @@ class ERA5(ModelRun):
     }
 
 
-@deprecated_class("NOAA", "noaa")
+# @deprecated_class("NOAA", "noaa")
 class PacIOOS(ModelRun):
     _reader_dict = {
         DnoraDataType.WIND: dnora.read.wind.noaa.PacIOOS(),
     }
 
 
-@deprecated_class("NOAA", "noaa")
+# @deprecated_class("NOAA", "noaa")
 class NCEP(ModelRun):
     _reader_dict = {
         DnoraDataType.WIND: dnora.read.wind.noaa.NCEP(),
     }
 
 
-@deprecated_class("NCHMF", "nchmf")
+# @deprecated_class("NCHMF", "nchmf")
 class NCHMF(ModelRun):
     _reader_dict = {
         # DnoraDataType.SPECTRA: dnora.read.spectra.nchmf.SWAN(),

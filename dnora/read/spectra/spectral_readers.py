@@ -14,6 +14,21 @@ import xarray as xr
 import geo_parameters as gp
 from geo_skeletons import PointSkeleton
 from dnora.utils.io import get_url
+from dnora.read.generic import PointNetcdf
+
+
+class SWAN_Nc(PointNetcdf):
+    def convention(self) -> str:
+        return SpectralConvention.MET
+
+    def __call__(self, *args, **kwargs):
+        ds = super().__call__(*args, **kwargs)
+        theta = ds.dirs.values
+        dd = np.mod(np.rad2deg(theta) + 360, 360)
+        ds["dirs"] = np.round(dd, 2)
+        ds = ds.sortby("dirs")
+        return ds
+
 
 class SWAN_Ascii(SpectralDataReader):
     def convention(self) -> SpectralConvention:

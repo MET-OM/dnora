@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 import warnings
 from dnora import msg, file_module
-from dnora.type_manager.dnora_types import DnoraFileType
+from dnora.type_manager.dnora_types import DnoraFileType, DnoraDataType
 from .ww3_functions import (
     ww3_grid,
     ww3_prnc,
@@ -39,6 +39,7 @@ from .swan_functions import (
     swan_structures,
     swan_spectral_output_points,
     swan_homog_spectra,
+    swan_output_for_nest,
 )
 
 
@@ -68,6 +69,29 @@ class Null(InputFileWriter):
         return ""
 
 
+def recuresively_find_parent_object_and_filename(model, obj_type: DnoraDataType):
+    """Searches for e.g. a Wind object and goes back through parent runs to find the first run that has wind information"""
+    obj = None
+    active_model = model
+    exported_from_self = True
+    while True:
+        obj = active_model.get(obj_type)
+        if obj is not None:
+            if exported_from_self:
+                obj_file = str(
+                    Path(active_model.data_exported_to(obj_type)[-1]).stem
+                ) + str(Path(active_model.data_exported_to(obj_type)[-1]).suffix)
+            else:
+                obj_file = str(
+                    Path(active_model.data_exported_to(obj_type)[-1]).resolve()
+                )
+            return obj, obj_file
+        active_model = active_model.parent()
+        exported_from_self = False
+        if active_model is None:
+            return None, None
+
+
 class SWAN(InputFileWriter):
     def __init__(
         self,
@@ -76,7 +100,7 @@ class SWAN(InputFileWriter):
         f_high=1.0,
         n_freq=31,
         n_dir=36,
-        output_var="HSIGN RTP TPS PDIR TM01 TMM10 DIR DSPR DEP",
+        output_var: list[str] = None,
     ):
         self.default_calibrations = {
             "wind": 1,
@@ -90,7 +114,17 @@ class SWAN(InputFileWriter):
         self.f_high = f_high
         self.n_freq = n_freq
         self.n_dir = n_dir
-        self.output_var = output_var
+        self.output_var = output_var or [
+            "HSIGN",
+            "RTP",
+            "TPS",
+            "PDIR",
+            "TM01",
+            "TMM10",
+            "DIR",
+            "DSPR",
+            "DEP",
+        ]
         return
 
     def __call__(
@@ -170,13 +204,31 @@ class SWAN(InputFileWriter):
                 self.n_freq,
             )
 
-            if use_spectra and not homog:
-                swan_spectra(
-                    file_out,
-                    model.grid(),
-                    model.spectra(),
-                    exported_files["spectra"][-1],
+            if model.parent() is not None:
+                parent_folder = str(
+                    Path(
+                        model.parent().input_file_exported_to(DnoraFileType.INPUT)[-1]
+                    ).parent
                 )
+                nest_file = str(Path(parent_folder).resolve())
+                file_out.write(f"BOUN NEST &\n'{nest_file}/bspec.asc' &\nOPEN\n")
+                msg.plain(
+                    f"Adding boundary spectra to SWAN input file: {nest_file}/bspec.asc"
+                )
+
+            if use_spectra and not homog:
+                spectral_object, spectral_file = (
+                    recuresively_find_parent_object_and_filename(
+                        model, DnoraDataType.SPECTRA
+                    )
+                )
+                if model.spectra() is not None:
+                    swan_spectra(
+                        file_out,
+                        model.grid(),
+                        spectral_object,
+                        spectral_file,
+                    )
             elif homog.get("spectra") is not None:
                 swan_homog_spectra(
                     file_out,
@@ -185,15 +237,20 @@ class SWAN(InputFileWriter):
                 )
 
             if use_wind and not homog:
-                if model.wind() is not None:
-                    self.output_var = self.output_var + " WIND"
+                wind_object, wind_file = recuresively_find_parent_object_and_filename(
+                    model, DnoraDataType.WIND
+                )
+
+                if wind_object is not None:
+                    self.output_var.append("WIND")
+
                 swan_wind(
                     file_out,
-                    model.wind(),
+                    wind_object,
                     STR_START,
                     STR_END,
                     factor["wind"],
-                    exported_files["wind"][-1],
+                    wind_file,
                 )
             else:
                 homog_wind = homog.get("wind")
@@ -207,44 +264,62 @@ class SWAN(InputFileWriter):
                         stacklevel=2,  # Points to the user's code
                     )
                 elif homog_wind is None:
-                    ff, dd = 0,0
+                    ff, dd = 0, 0
                 else:
-                    ff, dd = homog_wind['ff'], homog_wind['dd']
+                    ff, dd = homog_wind["ff"], homog_wind["dd"]
 
                 file_out.write(f"WIND {ff:.2f} {dd:.0f}\n")
 
             if use_waterlevel and not homog:
-                if model.waterlevel() is not None:
-                    self.output_var = self.output_var + " WATLEV"
+                waterlevel_object, waterlevel_file = (
+                    recuresively_find_parent_object_and_filename(
+                        model, DnoraDataType.WATERLEVEL
+                    )
+                )
+                if waterlevel_object is not None:
+                    self.output_var.append("WATLEV")
+
                 swan_waterlevel(
                     file_out,
-                    model.waterlevel(),
+                    waterlevel_object,
                     STR_START,
                     STR_END,
                     factor["waterlevel"],
-                    exported_files["waterlevel"][-1],
+                    waterlevel_file,
                 )
 
             if use_current and not homog:
-                if model.current() is not None:
-                    self.output_var = self.output_var + " VEL"
+                current_object, current_file = (
+                    recuresively_find_parent_object_and_filename(
+                        model, DnoraDataType.CURRENT
+                    )
+                )
+
+                if current_object is not None:
+                    self.output_var.append("VEL")
+
                 swan_current(
                     file_out,
-                    model.current(),
+                    current_object,
                     STR_START,
                     STR_END,
                     factor["current"],
-                    exported_files["current"][-1],
+                    current_file,
                 )
 
             if use_ice and not homog:
+                ice_object, ice_file = recuresively_find_parent_object_and_filename(
+                    model, DnoraDataType.ICE
+                )
+                if not isinstance(ice_file, list):
+                    ice_file = [ice_file]
                 swan_ice(
                     file_out,
-                    model.ice(),
+                    ice_object,
                     STR_START,
                     STR_END,
                     factor["ice"],
-                    exported_files["ice"],
+                    ice_file,
                 )
 
             HOTSTART_FILE = (
@@ -291,13 +366,17 @@ class SWAN(InputFileWriter):
                 + extension
                 + "' & \n"
             )
-            file_out.write("LAY 1 " + self.output_var)
+
+            file_out.write("LAY 1 " + " ".join(set(self.output_var)))
             if not homog:
                 file_out.write(" OUTPUT " + STR_START + " 1 HR ")
             file_out.write("\n")
             file_out.write("$ \n")
 
             swan_spectral_output_points(file_out, model.grid(), STR_START, homog)
+
+            if model.nest() is not None:
+                swan_output_for_nest(file_out, model.nest().grid())
 
             file_out.write("COMPUTE")
             if not homog:

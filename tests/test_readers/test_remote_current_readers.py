@@ -43,7 +43,7 @@ def test_norkyst800_2017(grid, timevec2017):
     assert model.current().u(strict=True) is not None
     assert model.current().v(strict=True) is not None
 
-
+@pytest.mark.internal
 @pytest.mark.remote
 def test_norfjords160(grid160, timevec):
     model = dn.modelrun.ModelRun(grid160, year=2022, month=4, day=1)
