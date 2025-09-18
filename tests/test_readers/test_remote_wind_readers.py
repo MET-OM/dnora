@@ -23,11 +23,23 @@ def timevec():
     return pd.date_range("2022-04-01 00:00:00", "2022-04-01 23:00:00", freq="1h")
 
 
+@pytest.fixture(scope="session")
+def timevec2025():
+    return pd.date_range("2025-04-01 00:00:00", "2025-04-01 23:00:00", freq="1h")
+
+
 @pytest.mark.remote
 def test_nora3(grid, timevec):
     model = dn.modelrun.ModelRun(grid, year=2022, month=4, day=1)
     model.import_wind(dn.read.wind.metno.NORA3(), program="pyfimex")
     assert np.all(model.wind().time() == timevec)
+
+
+@pytest.mark.remote
+def test_nora3_2025(grid, timevec2025):
+    model = dn.modelrun.ModelRun(grid, year=2025, month=4, day=1)
+    model.import_wind(dn.read.wind.metno.NORA3(), program="pyfimex")
+    assert np.all(model.wind().time() == timevec2025)
 
 
 @pytest.mark.remote
