@@ -147,7 +147,7 @@ class ModelRun:
         self._reference_time = None
         self.name = name
         self._post_processing = None
-        self._nest = None
+        self._nest = {}
         self._parent = None
 
         self.plot = dnplot.Matplotlib(self)
@@ -742,18 +742,30 @@ class ModelRun:
 
     def set_nested_grid(self, grid: Grid) -> None:
         """Sets up a nested run for the provided grid"""
+        if grid.name in self._nest.keys():
+            raise ValueError(f"A nested grid named '{grid.name}' allready exists!")
 
-        self._nest = self.__class__(
+        self._nest[grid.name] = self.__class__(
             grid, start_time=self.start_time(), end_time=self.end_time()
         )
         msg.header(
-            self.nest(),
+            self.nest(get_dict=True)[grid.name],
             f"Setting up a nested run {grid.name} inside {self.grid().name}...",
         )
-        self.nest()._parent = self
+        self.nest(get_dict=True)[grid.name]._parent = self
 
-    def nest(self) -> ModelRun:
-        """Returns the nested ModelRun object"""
+    def nest(self, get_dict: bool = False) -> ModelRun:
+        """Returns a dict of nested ModelRuns.
+
+        A single object is returned if:
+        Only one exists AND get_dict = False [default]"""
+
+        if get_dict or len(self._nest) > 1:
+            return self._nest
+        elif len(self._nest) == 1:
+            key, value = next(iter(self._nest.items()))
+            return value
+
         return self._nest
 
     def parent(self) -> ModelRun:
