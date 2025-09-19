@@ -46,8 +46,10 @@ def creat_swan_input_grid_string(grid) -> str:
 
 
 def swan_output_for_nest(file_out, nested_grid, nest_start_time) -> None:
-    file_out.write(f"NGRID 'bspec' {create_swan_grid_string(nested_grid)}\n")
-    file_out.write(f"NESTout 'bspec' 'bspec.asc'")
+    file_out.write(
+        f"NGRID '{nested_grid.name}' {create_swan_grid_string(nested_grid)}\n"
+    )
+    file_out.write(f"NESTout '{nested_grid.name}' 'bspec_{nested_grid.name}.asc'")
     if nest_start_time:
         file_out.write(f" OUTPUT {nest_start_time:%Y%m%d.%H%M00} 1 HR\n")
     else:

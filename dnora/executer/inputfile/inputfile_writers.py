@@ -211,9 +211,11 @@ class SWAN(InputFileWriter):
                     ).parent
                 )
                 nest_file = str(Path(parent_folder).resolve())
-                file_out.write(f"BOUN NEST &\n'{nest_file}/bspec.asc' &\nOPEN\n")
+                file_out.write(
+                    f"BOUN NEST &\n'{nest_file}/bspec_{model.grid().name}.asc' &\nOPEN\n"
+                )
                 msg.plain(
-                    f"Adding boundary spectra to SWAN input file: {nest_file}/bspec.asc"
+                    f"Adding boundary spectra to SWAN input file: {nest_file}/bspec_{model.grid().name}.asc"
                 )
 
             if use_spectra and not homog:
