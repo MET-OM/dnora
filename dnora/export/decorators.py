@@ -6,11 +6,8 @@ def add_export_method(obj_type: DnoraDataType):
         def export(self, *args, **kwargs) -> None:
             self.export(obj_type, *args, **kwargs)
 
-            nest = self._nest
-
-            while nest is not None:
-                nest.export(obj_type, *args, **kwargs)
-                nest = nest._nest
+            for __, single_nest in self._nest.items():
+                exec(f"single_nest.export_{obj_type.name.lower()}(*args, **kwargs)")
 
         exec(f"c.export_{obj_type.name.lower()} = export")
         return c

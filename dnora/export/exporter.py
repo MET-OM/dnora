@@ -52,13 +52,11 @@ class DataExporter:
 
     def __init__(self, model, include_nest: bool = True):
         self.model = model
-        if include_nest and model.nest() is not None:
-            msg.process(
-                f"Including nested grid {model.nest().grid().name} inside {model.grid().name}"
-            )
-            self._nest = self.__class__(model.nest())
-        else:
-            self._nest = None
+        self._nest = {}
+        if include_nest and model.nest():
+            for name, nest in self.model.nest(get_dict=True).items():
+                msg.process(f"Including nested grid {name} inside {model.grid().name}")
+                self._nest[name] = self.__class__(nest)
 
     def export(
         self,
@@ -78,18 +76,22 @@ class DataExporter:
 
         if not self.dry_run():
             if not self._silent:
-                if self.model.get(obj_type) is not None:
-                    data_name = f" from {self.model[obj_type].name}"
-                else:
-                    data_name = ""
+                if self.model.get(obj_type) is None:
+                    return
+                    # if self.model.parent() is None or (
+                    #     self.model.parent() is not None
+                    #     and self.model.parent().get(obj_type) is not None
+                    #     and self.model.parent().get(obj_type).name
+                    #     == self.model[obj_type].name
+                    # ):
                 msg.header(
                     writer_function,
-                    f"Writing {obj_type.name} data" + data_name,
+                    f"Writing {obj_type.name} data from {self.model[obj_type].name}",
                 )
 
-            if self.model.get(obj_type) is None:
-                msg.info(f"No {obj_type.name} data exists. Won't export anything.")
-                return
+            # if self.model.get(obj_type) is None:
+            #     msg.info(f"No {obj_type.name} data exists. Won't export anything.")
+            #     return
 
             if spectral_convention is None:
                 try:  # GeneralWritingFunction might not have this method defined

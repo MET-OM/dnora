@@ -377,12 +377,13 @@ class SWAN(InputFileWriter):
 
             swan_spectral_output_points(file_out, model.grid(), STR_START, homog)
 
-            if model.nest() is not None:
-                if not homog:
-                    nest_start_time = model.nest().start_time()
-                else:
-                    nest_start_time = None
-                swan_output_for_nest(file_out, model.nest().grid(), nest_start_time)
+            if model.nest():
+                for __, nest in model.nest(get_dict=True).items():
+                    if not homog:
+                        nest_start_time = nest.start_time()
+                    else:
+                        nest_start_time = None
+                    swan_output_for_nest(file_out, nest.grid(), nest_start_time)
 
             file_out.write("COMPUTE")
             if not homog:
