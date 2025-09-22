@@ -111,31 +111,72 @@ def swan_spectra(file_out, grid, spectra, boundary_path: str) -> None:
 def swan_homog_spectra(file_out, grid, homog: dict) -> None:
     """Writes stationary boundary conditions to SWAN input file"""
     gamma = homog.get("gamma", 3.3)
-    msg.plain("Adding constant JONSWAP boundary to SWAN input file")
+    msg.plain(f"Adding constant JONSWAP (gamma={gamma}) boundary to SWAN input file")
     file_out.write(f"BOUND SHAP JON {gamma} PEAK DSPR POWER\n")
-    for side in identify_boundary_edges(grid.boundary_mask()):
+    set_edges = identify_boundary_edges(grid.boundary_mask())
+    for side in ["N", "W", "E", "S"]:
         boundary = homog.get(side)
         if boundary is None:
             boundary = (
                 homog  ## If only one set of parameters have been giiven for all sides
             )
 
-        hs = boundary.get("hs")
-        if hs is None:
-            raise ValueError(
-                f"No stationary boundary condition 'hs' given for boundary '{side}'"
+        hs = boundary.get("hs", None)
+        tp = boundary.get("tp", None)
+        dirp = boundary.get("dirp", None)
+
+        if side in set_edges:
+            if hs is None:
+                raise ValueError(
+                    f"No stationary boundary condition 'hs' given for boundary '{side}'"
+                )
+            if tp is None:
+                raise ValueError(
+                    f"No stationary boundary condition 'tp' given for boundary '{side}'"
+                )
+            if dirp is None:
+                raise ValueError(
+                    f"No stationary boundary condition 'dirp' given for boundary '{side}'"
+                )
+
+        if side == "N":
+            if side in set_edges:
+                msg.plain(
+                    " " * 11 + f"--- [{hs:.2f} m, {tp:.2f} s, {dirp:.2f} deg] ---"
+                )
+            else:
+                msg.plain(" " * 11 + "-" * 37)
+
+        if side == "W":
+            ew_string = ""
+            msg.plain(" " * 11 + "|" + " " * 35 + "|")
+            msg.plain(" " * 11 + "|" + " " * 35 + "|")
+            if side in set_edges:
+                ew_string += f"[{hs:.2f} m, {tp:.2f} s, {dirp:.2f} deg]"
+            else:
+                ew_string += " " * 11 + "|" + " " * 17
+
+        if side == "E":
+
+            if side in set_edges:
+                ew_string += " " * 7 + f"[{hs:.2f} m, {tp:.2f} s, {dirp:.2f} deg]"
+            else:
+                ew_string += " " * 18 + "|"
+            msg.plain(ew_string)
+            msg.plain(" " * 11 + "|" + " " * 35 + "|")
+            msg.plain(" " * 11 + "|" + " " * 35 + "|")
+
+        if side == "S":
+            if side in set_edges:
+                msg.plain(
+                    " " * 11 + f"--- [{hs:.2f} m, {tp:.2f} s, {dirp:.2f} deg] ---"
+                )
+            else:
+                msg.plain(" " * 11 + "-" * 37)
+        if side in set_edges:
+            file_out.write(
+                f"BOUND SIDE {side} CONST PAR {hs:.1f} {tp:.1f} {dirp:.0f}\n"
             )
-        tp = boundary.get("tp")
-        if tp is None:
-            raise ValueError(
-                f"No stationary boundary condition 'tp' given for boundary '{side}'"
-            )
-        dirp = boundary.get("dirp")
-        if dirp is None:
-            raise ValueError(
-                f"No stationary boundary condition 'dirp' given for boundary '{side}'"
-            )
-        file_out.write(f"BOUND SIDE {side} CONST PAR {hs:.1f} {tp:.1f} {dirp:.0f}\n")
 
 
 def swan_wind(
