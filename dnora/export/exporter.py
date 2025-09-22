@@ -53,9 +53,14 @@ class DataExporter:
     def __init__(self, model, include_nest: bool = True):
         self.model = model
         self._nest = {}
+        if not self.model.parent():
+            msg.header(self, "Initializing model exporter...")
+            msg.plain(f"Exporting data from '{model.grid().name}'")
         if include_nest and model.nest():
             for name, nest in self.model.nest(get_dict=True).items():
-                msg.process(f"Including nested grid {name} inside {model.grid().name}")
+                msg.plain(
+                    f"Exporting data from '{name}' nested inside '{model.grid().name}'"
+                )
                 self._nest[name] = self.__class__(nest)
 
     def export(
