@@ -231,7 +231,7 @@ class SWAN(InputFileWriter):
                         spectral_object,
                         spectral_file,
                     )
-            elif homog.get("spectra") is not None:
+            elif homog.get("spectra") is not None and not model.parent():
                 swan_homog_spectra(
                     file_out,
                     model.grid(),
