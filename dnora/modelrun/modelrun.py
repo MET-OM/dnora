@@ -9,6 +9,7 @@ from dnora import utils
 
 # Import objects
 from dnora.grid import Grid, TriGrid
+from dnora.grid.mask import Edges
 
 from dnora.file_module import FileNames
 
@@ -751,6 +752,9 @@ class ModelRun:
         msg.header(
             self.nest(get_dict=True)[grid.name],
             f"Setting up a nested run {grid.name} inside {self.grid().name}...",
+        )
+        self.nest(get_dict=True)[grid.name].grid().set_boundary_points(
+            Edges(edges=["N", "W", "S", "E"])
         )
         self.nest(get_dict=True)[grid.name]._parent = self
 
