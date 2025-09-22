@@ -25,17 +25,10 @@ class SWAN(DataWriter):
         filename = file_object.get_filepath()
         grid = model.grid()
 
-        mask_out = np.ones(grid.topo().shape)
-        mask_out[grid.sea_mask()] = 0
         if grid.boundary_mask().size > 0:
             msg.info(
                 f"Setting {sum(sum(np.logical_and(grid.boundary_mask(), grid.sea_mask()))):d} boundary points in grid..."
             )
-            mask_out[np.logical_and(grid.boundary_mask(), grid.sea_mask())] = 2
-
-        # output_file = grid.filename(filestring=filestring, extension='bot')
-
-        # msg.to_file(output_path)
         np.savetxt(filename, grid.topo(), delimiter="\t", fmt="%1.2f")
 
         return filename
