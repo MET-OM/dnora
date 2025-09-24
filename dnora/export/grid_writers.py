@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 from dnora import msg
 from dnora import file_module
 from dnora.type_manager.dnora_types import DnoraDataType
+import progressbar
 
 
 class SWAN(DataWriter):
@@ -85,6 +86,46 @@ class WW3(DataWriter):
             np.savetxt(output_file, mask_out.ravel(), delimiter=",", fmt="%1.0f")
 
         return output_files
+
+
+class SWANTriangular(DataWriter):
+    """Writes the grid to SWAN unstructured format (Triangle)"""
+
+    def __call__(
+        self, model: ModelRun, file_object: FileNames, obj_type: DnoraDataType, **kwargs
+    ) -> str:
+        filename_ele = file_object.get_filepath(extension="ele")
+        filename_node = file_object.get_filepath(extension="node")
+        grid = model.grid()
+        if grid.is_gridded():
+            raise TypeError("The provided grid is not an unstructured grid!")
+        msg.plain("Writing list of nodes...")
+        with open(filename_node, "w") as f:
+            f.write(f"{grid.nx()} 2 1 1")
+
+            bar = progressbar.ProgressBar(maxval=grid.nx())
+            bar.start()
+            for n in grid.inds():
+                f.write(
+                    f"\n{n+1} {grid.lon()[n]} {grid.lat()[n]} {grid.topo()[n]} {int(grid.boundary_mask()[n])}"
+                )
+                bar.update(n + 1)
+            bar.finish()
+
+        msg.plain("Writing triangles...")
+        with open(filename_ele, "w") as f:
+            f.write(f"{len(grid.ntriang())} 3 0")
+
+            bar = progressbar.ProgressBar(maxval=len(grid.ntriang()))
+            bar.start()
+            for n in grid.ntriang():
+                f.write(
+                    f"\n{n+1} {grid.triangles()[n,0]} {grid.triangles()[n,1]} {grid.triangles()[n,2]}"
+                )
+                bar.update(n + 1)
+            bar.finish()
+
+        return [filename_node, filename_ele]
 
 
 class WW3Triangular(DataWriter):
