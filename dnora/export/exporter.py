@@ -83,6 +83,8 @@ class DataExporter:
         **kwargs,
     ) -> None:
         obj_type = data_type_from_string(obj_type)
+        if obj_type == DnoraDataType.GRID and not self.model.grid().is_gridded():
+            obj_type = DnoraDataType.TRIGRID
         spectral_convention = spectral_convention_from_string(spectral_convention)
 
         if obj_type == DnoraDataType.GRID and not self.model.grid().is_gridded():
@@ -93,20 +95,10 @@ class DataExporter:
             if not self._silent:
                 if self.model.get(obj_type) is None:
                     return
-                    # if self.model.parent() is None or (
-                    #     self.model.parent() is not None
-                    #     and self.model.parent().get(obj_type) is not None
-                    #     and self.model.parent().get(obj_type).name
-                    #     == self.model[obj_type].name
-                    # ):
                 msg.header(
                     writer_function,
                     f"Writing {obj_type.name} data from {self.model[obj_type].name}",
                 )
-
-            # if self.model.get(obj_type) is None:
-            #     msg.info(f"No {obj_type.name} data exists. Won't export anything.")
-            #     return
 
             if spectral_convention is None:
                 try:  # GeneralWritingFunction might not have this method defined
@@ -140,7 +132,6 @@ class DataExporter:
         self, obj_type: DnoraDataType, writer_function, dry_run: bool
     ) -> WriterFunction:
         self._dry_run = dry_run
-
         writer_function = writer_function or self._get_writer(obj_type)
 
         if writer_function is None:

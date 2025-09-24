@@ -1035,11 +1035,15 @@ class ModelRun:
     def __getitem__(self, obj_type: Union[DnoraDataType, str]) -> DnoraObject:
         """Gets an Dnora item"""
         obj_type = data_type_from_string(obj_type)
+        if obj_type == DnoraDataType.TRIGRID:
+            obj_type = DnoraDataType.GRID  # Saved as this in dict
         return self._dnora_objects[obj_type]
 
     def get(self, obj_type: Union[DnoraDataType, str]) -> Optional[DnoraObject]:
         """Gets an Dnora item and returns None is it doesn't exist"""
         obj_type = data_type_from_string(obj_type)
+        if obj_type == DnoraDataType.TRIGRID:
+            obj_type = DnoraDataType.GRID  # Saved as this in dict
         return self._dnora_objects.get(obj_type)
 
     def __setitem__(

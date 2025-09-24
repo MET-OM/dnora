@@ -34,6 +34,7 @@ class SWAN(DataExporter):
         DnoraDataType.CURRENT: data_writers.SWAN(),
         DnoraDataType.ICE: data_writers.SWAN(),
         DnoraDataType.GRID: grid_writers.SWAN(),
+        DnoraDataType.TRIGRID: grid_writers.SWANTriangular(),
     }
 
     def _get_default_format(self):

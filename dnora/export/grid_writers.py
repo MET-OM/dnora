@@ -99,7 +99,7 @@ class SWANTriangular(DataWriter):
         grid = model.grid()
         if grid.is_gridded():
             raise TypeError("The provided grid is not an unstructured grid!")
-        msg.plain("Writing list of nodes...")
+        msg.plain(f"Writing list of {grid.nx()} nodes...")
         with open(filename_node, "w") as f:
             f.write(f"{grid.nx()} 2 1 1")
 
@@ -112,7 +112,7 @@ class SWANTriangular(DataWriter):
                 bar.update(n + 1)
             bar.finish()
 
-        msg.plain("Writing triangles...")
+        msg.plain(f"Writing {len(grid.ntriang())} triangles...")
         with open(filename_ele, "w") as f:
             f.write(f"{len(grid.ntriang())} 3 0")
 
