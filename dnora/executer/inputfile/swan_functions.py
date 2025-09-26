@@ -69,7 +69,13 @@ def swan_header(file_out, grid_name: str) -> None:
 
 
 def swan_grid(
-    file_out, grid, grid_path: str, n_dir: int, f_low: float, f_high: float, n_freq: int
+    file_out,
+    grid,
+    grid_paths: str,
+    n_dir: int,
+    f_low: float,
+    f_high: float,
+    n_freq: int,
 ) -> None:
     """Writes grid specifications to SWAN input file"""
 
@@ -88,13 +94,21 @@ def swan_grid(
         )
     file_out.write("$ \n")
 
-    if grid.is_gridded():
+    bot_file = [filename for filename in grid_paths if filename.endswith(".bot")]
+
+    if not grid.is_gridded():
+        file_out.write(
+            f"READ UNSTRUC TRIA '{Path(grid_paths[-1]).with_suffix('').name}'\n"
+        )
+        if bot_file:
+            file_out.write("INPGRID BOT UNSTRUCTURED\n")
+            file_out.write(f"READINP BOT UNSTRUC 1 '{bot_file[-1]}'\n")
+
+    else:
         file_out.write("INPGRID BOTTOM " + creat_swan_input_grid_string(grid) + "\n")
         file_out.write(
-            "READINP BOTTOM 1 '" + grid_path.split("/")[-1] + "'&\n 3 0 FREE \n"
+            "READINP BOTTOM 1 '" + Path(grid_paths[-1]).name + "'&\n 3 0 FREE \n"
         )
-    else:
-        file_out.write(f"READ UNSTRUC TRIA '{Path(grid_path).with_suffix('').name}'\n")
 
     file_out.write("$ \n")
 

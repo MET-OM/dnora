@@ -5,5 +5,6 @@ from .grid_readers import (
     MshFile,
     TriangleEleReader,
     UnstructBotReader,
+    BotReader,
 )
 from . import nchmf

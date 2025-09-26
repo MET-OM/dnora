@@ -99,7 +99,7 @@ class Grid(GriddedSkeleton):
 
         topo = mesher(self.raw().topo().ravel(), x, y, xQ, yQ, **kwargs)
         print(mesher)
-
+        breakpoint()
         self.set_topo(topo)
         grid_name = self.name
         self.meta.set(

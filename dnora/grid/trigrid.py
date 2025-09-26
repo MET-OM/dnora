@@ -118,7 +118,7 @@ class TriGrid(PointSkeleton):
     def from_triangle(
         cls,
         filename: str,
-        folder: str,
+        folder: str = "",
         read_topo: bool = True,
         name: str = None,
         **kwargs,
@@ -154,10 +154,10 @@ class TriGrid(PointSkeleton):
                         **kwargs,
                     )
 
-            if np.all(np.isnan(tri_grid.raw().topo())):
+            if tri_grid.raw() is None or np.all(np.isnan(tri_grid.raw().topo())):
                 msg.blank()
                 msg.info(
-                    f"No bathymetry information found in {filename}.node. Import it separately if needed!"
+                    f"No bathymetry information found in. Import it separately if needed!"
                 )
             else:
                 tri_grid.mesh_grid(TrivialMesher())
