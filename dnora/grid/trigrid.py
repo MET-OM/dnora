@@ -23,6 +23,8 @@ import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 import geo_parameters as gp
 
+from pathlib import Path
+
 
 @add_datavar(name="triangles", coord_group="gridpoint")
 @add_coord(name="corner", grid_coord=False)
@@ -91,8 +93,14 @@ class TriGrid(PointSkeleton):
         return tri_grid
 
     @classmethod
-    def from_msh(cls, filename: str, read_topo: bool = True, **kwargs):
-        tri_grid = cls.generate(triang_reader=MshReader(), filename=filename, **kwargs)
+    def from_msh(
+        cls, filename: str, read_topo: bool = True, name: str = None, **kwargs
+    ):
+        if not name:
+            name = Path(filename).with_suffix("").name
+        tri_grid = cls.generate(
+            triang_reader=MshReader(), filename=filename, name=name, **kwargs
+        )
 
         if read_topo:
             tri_grid.import_topo(topo_MshFile(), filename=filename)

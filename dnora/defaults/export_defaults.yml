@@ -51,6 +51,8 @@ SWAN:
   grid:
     filename: '#GRID_SWAN'
     extension: 'bot'
+  trigrid:
+    filename: '#GRID_SWAN'
   wind:
     filename: 'wind#WIND#GRID#T0_#T1'
   spectra:

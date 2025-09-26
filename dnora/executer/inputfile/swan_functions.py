@@ -74,15 +74,28 @@ def swan_grid(
     """Writes grid specifications to SWAN input file"""
 
     file_out.write("COORD SPHE CCM \n")
-    file_out.write(
-        "CGRID "
-        + create_swan_grid_string(grid)
-        + " CIRCLE %d %f %f %d \n" % (n_dir, f_low, f_high, n_freq)
-    )
+    if grid.is_gridded():
+        file_out.write(
+            "CGRID "
+            + create_swan_grid_string(grid)
+            + " CIRCLE %d %f %f %d \n" % (n_dir, f_low, f_high, n_freq)
+        )
+    else:
+        file_out.write(
+            "CGRID UNSTRUC"
+            + " CIRCLE %d %f %f %d \n" % (n_dir, f_low, f_high, n_freq)
+            + "\n"
+        )
     file_out.write("$ \n")
 
-    file_out.write("INPGRID BOTTOM " + creat_swan_input_grid_string(grid) + "\n")
-    file_out.write("READINP BOTTOM 1 '" + grid_path.split("/")[-1] + "'&\n 3 0 FREE \n")
+    if grid.is_gridded():
+        file_out.write("INPGRID BOTTOM " + creat_swan_input_grid_string(grid) + "\n")
+        file_out.write(
+            "READINP BOTTOM 1 '" + grid_path.split("/")[-1] + "'&\n 3 0 FREE \n"
+        )
+    else:
+        file_out.write(f"READ UNSTRUC TRIA '{Path(grid_path).with_suffix('').name}'\n")
+
     file_out.write("$ \n")
 
 
@@ -93,14 +106,17 @@ def swan_spectra(file_out, grid, spectra, boundary_path: str) -> None:
         return
     msg.plain(f"Adding boundary spectra to SWAN input file: {boundary_path}")
 
-    lons, lats = create_swan_segment_coords(
-        grid.boundary_mask(), grid.edges("lon"), grid.edges("lat")
-    )
+    if grid.is_gridded():
+        lons, lats = create_swan_segment_coords(
+            grid.boundary_mask(), grid.edges("lon"), grid.edges("lat")
+        )
 
-    bound_string = "BOUNDSPEC SEGMENT XY"
+        bound_string = "BOUNDSPEC SEGMENT XY"
 
-    for lon, lat in zip(lons, lats):
-        bound_string += f" {lon:.4f} {lat:.4f}"
+        for lon, lat in zip(lons, lats):
+            bound_string += f" {lon:.4f} {lat:.4f}"
+    else:
+        bound_string = "BOUNDSPEC SIDE 1"
     bound_string += " VARIABLE FILE 0 &\n"
     bound_string += f"'{boundary_path}'\n"
     file_out.write(bound_string)
