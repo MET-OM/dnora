@@ -1,1 +1,1 @@
-from .triangulation_readers import MshReader, SmsReader
+from .triangulation_readers import MshReader, SmsReader, TriangleReader

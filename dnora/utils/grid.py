@@ -126,10 +126,14 @@ def is_gridded(data: np.ndarray, lon: np.ndarray, lat: np.ndarray) -> bool:
     if lon is None or lat is None:
         return False
 
-    if data.shape == (len(lat), len(lon)):
+    if data.squeeze().shape == (len(lat), len(lon)):
         return True
 
-    if len(data.shape) == 1 and len(lat) == data.shape[0] and len(lon) == data.shape[0]:
+    if (
+        len(data.squeeze().shape) == 1
+        and len(lat) == data.squeeze().shape[0]
+        and len(lon) == data.squeeze().shape[0]
+    ):
         return False
 
     raise Exception(

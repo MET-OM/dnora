@@ -56,11 +56,11 @@ def import_topo(
     if folder is None:
         folder = ""
 
-    if folder and source == DataSource.LOCAL:
-        if not os.path.exists(os.path.expanduser(folder)):
-            os.mkdir(folder)
-        if not os.path.exists(get_url(folder, topo_reader.name())):
-            os.mkdir(get_url(folder, topo_reader.name()))
+    # if folder and source == DataSource.LOCAL:
+    #     if not os.path.exists(os.path.expanduser(folder)):
+    #         os.mkdir(folder)
+    #     if not os.path.exists(get_url(folder, topo_reader.name())):
+    #         os.mkdir(get_url(folder, topo_reader.name()))
 
     # start_time, end_time and inds given to satisfy the generic Netcdf-readers
     # Will need to fix this at some point
