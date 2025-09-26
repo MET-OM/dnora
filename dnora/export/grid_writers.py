@@ -111,23 +111,18 @@ class SWANTriangular(DataWriter):
         )
         output_files = [filename_node]
         with open(filename_node, "w") as f:
-            if separate_bot:
-                f.write(f"{grid.nx()} 2 0 1")
-            else:
-                f.write(f"{grid.nx()} 2 1 1")
+            f.write(f"{grid.nx()} 2 {int(not separate_bot)} 1")
 
             bar = progressbar.ProgressBar(maxval=grid.nx())
             bar.start()
             for n in grid.inds():
 
                 if separate_bot:
-                    f.write(
-                        f"\n{n+1} {grid.lon()[n]} {grid.lat()[n]} {int(grid.boundary_mask()[n])}"
-                    )
+                    f.write(f"\n{n+1} {grid.lon()[n]} {grid.lat()[n]}")
                 else:
-                    f.write(
-                        f"\n{n+1} {grid.lon()[n]} {grid.lat()[n]} {grid.topo()[n]} {int(grid.boundary_mask()[n])}"
-                    )
+                    f.write(f"\n{n+1} {grid.lon()[n]} {grid.lat()[n]} {grid.topo()[n]}")
+
+                f.write(f" {int(grid.boundary_mask()[n])}")
                 bar.update(n + 1)
             bar.finish()
 

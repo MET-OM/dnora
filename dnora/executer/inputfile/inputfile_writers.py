@@ -211,15 +211,15 @@ class SWAN(InputFileWriter):
             else:
                 file_out.write("MODE NONSTATIONARY TWOD \n")
 
-            file_path = (
-                exported_files["grid"][-1]
+            file_paths = (
+                exported_files["grid"]
                 if model.grid().is_gridded()
-                else exported_files["trigrid"][-1]
+                else exported_files["trigrid"]
             )
             swan_grid(
                 file_out,
                 model.grid(),
-                file_path,
+                file_paths,
                 self.n_dir,
                 self.f_low,
                 self.f_high,

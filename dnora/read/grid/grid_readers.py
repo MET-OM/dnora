@@ -369,6 +369,79 @@ class TriangleEleReader(DataReader):
         return f"Reading topography from {self.filename}."
 
 
+class BotReader(DataReader):
+    def default_data_source(self) -> DataSource:
+        return DataSource.LOCAL
+
+    def __call__(
+        self,
+        obj_type: DnoraDataType,
+        grid: Union[Grid, TriGrid],
+        start_time,
+        end_time,
+        source: DataSource,
+        folder: str,
+        lon: np.ndarray[float],
+        lat: np.ndarray[float],
+        filename: str = None,
+        expansion_factor: float = 1.2,
+        zone_number: int = None,
+        zone_letter: str = None,
+        depth_negative: bool = False,
+        **kwargs,
+    ) -> tuple:
+
+        self.filename = Path(folder) / Path(filename).with_suffix(".bot")
+        msg.from_file(self.filename)
+
+        topo = np.loadtxt(self.filename)
+        if depth_negative:
+            msg.plain(
+                "Flipping signs to make depths positive. Capping resulting negative values to 0."
+            )
+            topo = -topo
+            topo = np.maximum(topo, 0)
+
+        topo_x = np.linspace(lon[0], lon[1], topo.shape[1])
+        topo_y = np.linspace(lat[0], lat[1], topo.shape[0])
+
+        if zone_number is None or zone_letter is None:
+            xedges, yedges = utils.grid.expand_area(
+                grid.edges("lon"), grid.edges("lat"), expansion_factor
+            )
+        else:
+            xedges, yedges = utils.grid.expand_area(
+                grid.edges("x"), grid.edges("y"), expansion_factor
+            )
+
+        mask1 = np.logical_and(topo_x >= xedges[0], topo_x <= xedges[1])
+        mask2 = np.logical_and(topo_y >= yedges[0], topo_y <= yedges[1])
+        topo_x = topo_x[mask1]
+        topo_y = topo_y[mask2]
+
+        topo = topo[mask2, :]
+        topo = topo[:, mask1]
+        if zone_number is None or zone_letter is None:
+            msg.plain(
+                f"No utm-zone, e.g. zone_number=33, zone_letter='W', provided. Assuming data in {self.filename} is in lon-lat!"
+            )
+            coord_dict = {"lon": topo_x, "lat": topo_y}
+        else:
+            coord_dict = {"x": topo_x, "y": topo_y}
+
+        data_dict = {
+            "topo": topo,
+            "zone_number": zone_number,
+            "zone_letter": zone_letter,
+        }
+        meta_dict = {"source": self.filename}
+
+        return coord_dict, data_dict, meta_dict
+
+    def __str__(self):
+        return f"Reading topography from {self.filename}."
+
+
 class UnstructBotReader(DataReader):
     def default_data_source(self) -> DataSource:
         return DataSource.LOCAL
@@ -394,9 +467,10 @@ class UnstructBotReader(DataReader):
         with open(self.filename, "r") as f:
             number_of_points = f.readline().split()
             if len(number_of_points) > 1:
-                raise Exception(
-                    f"First line of file should contain one number (number of nodes)!"
+                msg.info(
+                    f"First line of file should contain one number (number of nodes). Maybe a gridded file?"
                 )
+                return
             number_of_points = int(number_of_points[0])
             if number_of_points != len(lon):
                 raise ValueError(

@@ -21,14 +21,30 @@ from dnora.type_manager.dnora_types import DnoraDataType
 from dnora.utils.io import get_url
 
 
-@add_mask(name="sea", coord_group="grid", default_value=1, opposite_name="land")
+@add_mask(
+    name="sea",
+    coord_group="grid",
+    default_value=1,
+    opposite_name="land",
+    triggered_by="topo",
+    valid_range=(0, None),
+    range_inclusive=False,
+)
 @add_datavar(name=gp.ocean.WaterDepth("topo"), default_value=999.0, coord_group="grid")
 class GriddedTopo(GriddedSkeleton):
     _default_reader = None
     pass
 
 
-@add_mask(name="sea", coord_group="grid", default_value=1, opposite_name="land")
+@add_mask(
+    name="sea",
+    coord_group="grid",
+    default_value=1,
+    opposite_name="land",
+    triggered_by="topo",
+    valid_range=(0, None),
+    range_inclusive=False,
+)
 @add_datavar(name=gp.ocean.WaterDepth("topo"), default_value=999.0, coord_group="grid")
 class PointTopo(PointSkeleton):
     _default_reader = None
@@ -75,6 +91,11 @@ def import_topo(
         **kwargs,
     )
 
+    if ds is None:
+        msg.blank()
+        msg.info("Reader didn't return any data. Aborting.")
+        return
+
     if not isinstance(ds, tuple):
         coord_dict = {key: ds.get(key) for key in ["lon", "lat", "x", "y"]}
         data_dict = {"topo": ds.get("topo").values}
@@ -95,7 +116,8 @@ def import_topo(
     )
 
     if 0 in topo.shape:
-        msg.warning("Imported topography seems to be empty. Maybe using wrong tile?")
+        msg.blank()
+        msg.info("Imported topography seems to be empty. Maybe using wrong tile?")
         return
 
     if utils.grid.is_gridded(topo, lon, lat) or utils.grid.is_gridded(topo, x, y):
