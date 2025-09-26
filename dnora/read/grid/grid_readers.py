@@ -23,6 +23,7 @@ import meshio
 from dnora.type_manager.dnora_types import DnoraDataType
 from .emodnet_functions import find_tile, get_covering_tiles, download_tile
 import dask.dataframe as dd
+from dnora.read.triang.triangle_functions import read_node
 
 
 class EMODNET(DataReader):
@@ -273,6 +274,146 @@ class MshFile(DataReader):
         topo_x = mesh.points[:, 0]
         topo_y = mesh.points[:, 1]
         topo = mesh.points[:, 2]
+
+        if zone_number is None or zone_letter is None:
+            xedges, yedges = utils.grid.expand_area(
+                grid.edges("lon"), grid.edges("lat"), expansion_factor
+            )
+        else:
+            xedges, yedges = utils.grid.expand_area(
+                grid.edges("x"), grid.edges("y"), expansion_factor
+            )
+
+        mask1 = np.logical_and(topo_x >= xedges[0], topo_x <= xedges[1])
+        mask2 = np.logical_and(topo_y >= yedges[0], topo_y <= yedges[1])
+        mask = np.logical_and(mask1, mask2)
+        topo_x = topo_x[mask]
+        topo_y = topo_y[mask]
+        topo = topo[mask]
+        if zone_number is None or zone_letter is None:
+            msg.plain(
+                f"No utm-zone, e.g. zone_number=33, zone_letter='W', provided. Assuming data in {self.filename} is in lon-lat!"
+            )
+            coord_dict = {"lon": topo_x, "lat": topo_y}
+        else:
+            coord_dict = {"x": topo_x, "y": topo_y}
+
+        data_dict = {
+            "topo": topo,
+            "zone_number": zone_number,
+            "zone_letter": zone_letter,
+        }
+        meta_dict = {"source": self.filename}
+
+        return coord_dict, data_dict, meta_dict
+
+    def __str__(self):
+        return f"Reading topography from {self.filename}."
+
+
+class TriangleEleReader(DataReader):
+    def default_data_source(self) -> DataSource:
+        return DataSource.LOCAL
+
+    def __call__(
+        self,
+        obj_type: DnoraDataType,
+        grid: Union[Grid, TriGrid],
+        start_time,
+        end_time,
+        source: DataSource,
+        folder: str,
+        filename: str = None,
+        expansion_factor: float = 1.2,
+        zone_number: int = None,
+        zone_letter: str = None,
+        **kwargs,
+    ) -> tuple:
+        self.filename = Path(folder) / Path(filename).with_suffix(".node")
+        msg.from_file(self.filename)
+        topo_x, topo_y, topo, __ = read_node(self.filename.with_suffix(""))
+
+        if zone_number is None or zone_letter is None:
+            xedges, yedges = utils.grid.expand_area(
+                grid.edges("lon"), grid.edges("lat"), expansion_factor
+            )
+        else:
+            xedges, yedges = utils.grid.expand_area(
+                grid.edges("x"), grid.edges("y"), expansion_factor
+            )
+
+        mask1 = np.logical_and(topo_x >= xedges[0], topo_x <= xedges[1])
+        mask2 = np.logical_and(topo_y >= yedges[0], topo_y <= yedges[1])
+        mask = np.logical_and(mask1, mask2)
+        topo_x = topo_x[mask]
+        topo_y = topo_y[mask]
+        topo = topo[mask]
+        if zone_number is None or zone_letter is None:
+            msg.plain(
+                f"No utm-zone, e.g. zone_number=33, zone_letter='W', provided. Assuming data in {self.filename} is in lon-lat!"
+            )
+            coord_dict = {"lon": topo_x, "lat": topo_y}
+        else:
+            coord_dict = {"x": topo_x, "y": topo_y}
+
+        data_dict = {
+            "topo": topo,
+            "zone_number": zone_number,
+            "zone_letter": zone_letter,
+        }
+        meta_dict = {"source": self.filename}
+
+        return coord_dict, data_dict, meta_dict
+
+    def __str__(self):
+        return f"Reading topography from {self.filename}."
+
+
+class UnstructBotReader(DataReader):
+    def default_data_source(self) -> DataSource:
+        return DataSource.LOCAL
+
+    def __call__(
+        self,
+        obj_type: DnoraDataType,
+        grid: Union[Grid, TriGrid],
+        start_time,
+        end_time,
+        source: DataSource,
+        folder: str,
+        lon: np.ndarray[float],
+        lat: np.ndarray[float],
+        filename: str = None,
+        expansion_factor: float = 1.2,
+        zone_number: int = None,
+        zone_letter: str = None,
+        **kwargs,
+    ) -> tuple:
+        self.filename = Path(folder) / Path(filename).with_suffix(".bot")
+        msg.from_file(self.filename)
+        with open(self.filename, "r") as f:
+            number_of_points = f.readline().split()
+            if len(number_of_points) > 1:
+                raise Exception(
+                    f"First line of file should contain one number (number of nodes)!"
+                )
+            number_of_points = int(number_of_points[0])
+            if number_of_points != len(lon):
+                raise ValueError(
+                    f"Number of points in bot-file is {number_of_points}, but given longitude vector is {len(lon)} long. They need to match!"
+                )
+
+            if number_of_points != len(lat):
+                raise ValueError(
+                    f"Number of points in bot-file is {number_of_points}, but given latitude vector is {len(lat)} long. They need to match!"
+                )
+
+            topo = np.zeros((number_of_points, 1))
+
+            for n, line in enumerate(f):
+                topo[n] = float(line.split()[1])
+
+        topo_x, topo_y = lon, lat
 
         if zone_number is None or zone_letter is None:
             xedges, yedges = utils.grid.expand_area(

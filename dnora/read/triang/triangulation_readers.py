@@ -9,6 +9,11 @@ from dnora.type_manager.data_sources import DataSource
 import xarray as xr
 from dnora.read.abstract_readers import DataReader
 
+from pathlib import Path
+from dnora.read.triang.triangle_functions import read_node, read_ele
+
+from dnora import msg
+
 
 class SmsReader(DataReader):
     def __call__(
@@ -72,7 +77,6 @@ class MshReader(DataReader):
 
         # types = None  # This is not used in DNORA and I have no idea what it is
         # nodes = np.array((range(len(mesh.points[:, 0]))))
-
         if utm[0] is None:
             coord_dict = {"lon": x, "lat": y}
         else:
@@ -88,3 +92,34 @@ class MshReader(DataReader):
 
     def __str__(self):
         return f"Reading triangular grid from Msh-file {self.filename}."
+
+
+class TriangleReader(DataReader):
+    def __call__(
+        self,
+        source: DataSource,
+        folder: str,
+        filename: str = None,
+        utm: tuple[int, str] = (None, None),
+    ) -> tuple:
+        self.filename = Path(folder) / Path(filename)
+
+        msg.from_file(self.filename.with_suffix(".node"))
+        x, y, _, boundaries = read_node(self.filename)
+        boundaries = np.where(boundaries)[0]
+        msg.from_file(self.filename.with_suffix(".ele"))
+        tri = read_ele(self.filename)
+        if utm[0] is None:
+            coord_dict = {"lon": x, "lat": y}
+        else:
+            coord_dict = {"x": x, "y": y}
+        return (
+            tri,
+            coord_dict,
+            boundaries,
+            utm[0],
+            utm[1],
+        )
+
+    def __str__(self):
+        return f"Reading triangular grid from Triangle files {self.filename}."

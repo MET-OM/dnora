@@ -92,29 +92,60 @@ class SWANTriangular(DataWriter):
     """Writes the grid to SWAN unstructured format (Triangle)"""
 
     def __call__(
-        self, model: ModelRun, file_object: FileNames, obj_type: DnoraDataType, **kwargs
+        self,
+        model: ModelRun,
+        file_object: FileNames,
+        obj_type: DnoraDataType,
+        separate_bot: bool = False,
+        **kwargs,
     ) -> str:
         filename_ele = file_object.get_filepath(extension="ele")
         filename_node = file_object.get_filepath(extension="node")
+        filename_bot = file_object.get_filepath(extension="bot")
+
         grid = model.grid()
         if grid.is_gridded():
             raise TypeError("The provided grid is not an unstructured grid!")
         msg.plain(
             f"Writing list of {grid.nx()} nodes ({sum(grid.boundary_mask())} boundary nodes)..."
         )
+        output_files = [filename_node]
         with open(filename_node, "w") as f:
-            f.write(f"{grid.nx()} 2 1 1")
+            if separate_bot:
+                f.write(f"{grid.nx()} 2 0 1")
+            else:
+                f.write(f"{grid.nx()} 2 1 1")
 
             bar = progressbar.ProgressBar(maxval=grid.nx())
             bar.start()
             for n in grid.inds():
-                f.write(
-                    f"\n{n+1} {grid.lon()[n]} {grid.lat()[n]} {grid.topo()[n]} {int(grid.boundary_mask()[n])}"
-                )
+
+                if separate_bot:
+                    f.write(
+                        f"\n{n+1} {grid.lon()[n]} {grid.lat()[n]} {int(grid.boundary_mask()[n])}"
+                    )
+                else:
+                    f.write(
+                        f"\n{n+1} {grid.lon()[n]} {grid.lat()[n]} {grid.topo()[n]} {int(grid.boundary_mask()[n])}"
+                    )
                 bar.update(n + 1)
             bar.finish()
 
+        if separate_bot:
+            output_files.append(filename_bot)
+            msg.plain(f"Writing bathymetry to separate bot-file...")
+
+            with open(filename_bot, "w") as f:
+                f.write(f"{grid.nx()}")
+                bar = progressbar.ProgressBar(maxval=grid.nx())
+                bar.start()
+                for n in grid.inds():
+                    f.write(f"\n{n+1} {grid.topo()[n]}")
+                    bar.update(n + 1)
+                bar.finish()
+
         msg.plain(f"Writing {len(grid.ntriang())} triangles...")
+        output_files.append(filename_ele)
         with open(filename_ele, "w") as f:
             f.write(f"{len(grid.ntriang())} 3 0")
 
@@ -127,7 +158,7 @@ class SWANTriangular(DataWriter):
                 bar.update(n + 1)
             bar.finish()
 
-        return [filename_node, filename_ele]
+        return output_files
 
 
 class WW3Triangular(DataWriter):

@@ -8,8 +8,12 @@ from typing import Union
 from .mesh import Mesher, Interpolate
 from .process import GridProcessor
 from pathlib import Path
-from dnora.read.grid.grid_readers import MshFile as topo_MshFile
-from dnora.read.triang import MshReader
+from dnora.read.grid.grid_readers import (
+    MshFile as topo_MshFile,
+    TriangleEleReader,
+    UnstructBotReader,
+)
+from dnora.read.triang import MshReader, TriangleReader
 from .tri_arangers import TriAranger
 from .mesh import Trivial as TrivialMesher
 from dnora.read.abstract_readers import DataReader
@@ -22,7 +26,7 @@ from .topo import import_topo
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 import geo_parameters as gp
-
+import os
 from pathlib import Path
 
 
@@ -67,6 +71,8 @@ class TriGrid(PointSkeleton):
         name: str = "LonelyGrid",
         **kwargs,
     ):
+
+        msg.header(triang_reader, "Importing triangulation...")
         (
             tri,
             coord_dict,
@@ -103,8 +109,58 @@ class TriGrid(PointSkeleton):
         )
 
         if read_topo:
-            tri_grid.import_topo(topo_MshFile(), filename=filename)
+            tri_grid.import_topo(topo_MshFile(), filename=filename, **kwargs)
             tri_grid.mesh_grid(TrivialMesher())
+
+        return tri_grid
+
+    @classmethod
+    def from_triangle(
+        cls,
+        filename: str,
+        folder: str,
+        read_topo: bool = True,
+        name: str = None,
+        **kwargs,
+    ):
+        if not name:
+            name = Path(filename).with_suffix("").name
+        tri_grid = cls.generate(
+            triang_reader=TriangleReader(),
+            filename=filename,
+            folder=folder,
+            name=name,
+            **kwargs,
+        )
+        if read_topo:
+
+            msg.blank()
+            msg.info(f"Trying to import topography from same {filename}.node file...")
+            tri_grid.import_topo(
+                TriangleEleReader(), filename=filename, folder=folder, **kwargs
+            )
+            if np.all(np.isnan(tri_grid.raw().topo())):
+                if os.path.exists(Path(folder) / Path(filename).with_suffix(".bot")):
+                    msg.blank()
+                    msg.info(
+                        f"No bathymetry information found in {filename}.node. Trying to read from {filename}.bot..."
+                    )
+                    tri_grid.import_topo(
+                        UnstructBotReader(),
+                        filename=filename,
+                        folder=folder,
+                        lon=tri_grid.lon(),
+                        lat=tri_grid.lat(),
+                        **kwargs,
+                    )
+
+            if np.all(np.isnan(tri_grid.raw().topo())):
+                msg.blank()
+                msg.info(
+                    f"No bathymetry information found in {filename}.node. Import it separately if needed!"
+                )
+            else:
+                tri_grid.mesh_grid(TrivialMesher())
 
         return tri_grid
 
