@@ -14,7 +14,6 @@ from geo_parameters.metaparameter import MetaParameter
 from dnora.spectra1d import Spectra1D, process
 from dnora.utils.time import create_monthly_stamps
 from dnora.read.abstract_readers import PointDataReader
-from dnora.waveseries import wave_parameters
 
 from dnora.type_manager.dnora_types import DnoraDataType
 from dnora.type_manager.data_sources import DataSource
@@ -24,6 +23,7 @@ from functools import partial
 from dnora.read.data_var_decoding import read_data_vars, compile_data_vars
 from dnora.read.file_structure import FileStructure
 from typing import Union, Optional
+
 
 def ds_xarray_read(start_time, end_time, url):
     ds = xr.open_dataset(url).sel(time=slice(start_time, end_time))
@@ -170,7 +170,9 @@ class WW3Unstruct(PointDataReader):
 
     def __init__(
         self,
-        stride: Union[int, str, None] = None,  # Integer is number of hours, 'month' for monthly files
+        stride: Union[
+            int, str, None
+        ] = None,  # Integer is number of hours, 'month' for monthly files
         hours_per_file: Optional[int] = None,  # None for stride = 'month'
         last_file: str = "",
         lead_time: int = 0,
@@ -338,7 +340,9 @@ class SWANnc(PointDataReader):
 
     def __init__(
         self,
-        stride: Union[int, str, None] = None,  # Integer is number of hours, 'month' for monthly files
+        stride: Union[
+            int, str, None
+        ] = None,  # Integer is number of hours, 'month' for monthly files
         hours_per_file: Optional[int] = None,  # None for stride = 'month'
         last_file: str = "",
         lead_time: int = 0,
