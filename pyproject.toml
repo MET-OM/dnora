@@ -8,7 +8,7 @@ version = "2.1.0"
 description = "dnora - a software for dynamical downscaling of wave products"
 authors = [ { name = "Konstantinos Christakos", email = "konstantinosc@met.no"}, { name = "Jan-Victor Björkqvist", email = "janvb@met.no" } ]
 urls = {homepage = "https://github.com/MET-OM/dnora", download = "https://github.com/MET-OM/dnora"}
-requires-python = ">=3.9, <3.11"
+requires-python = ">=3.9, <=3.13"
 dependencies = [
     "matplotlib>=3.1",
     "numpy>=1.17",
