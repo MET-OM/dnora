@@ -52,7 +52,6 @@ class Grid(GriddedSkeleton):
         grid.set_topo(topo)
         return grid
 
-
     def plot(self) -> None:
         vmin, vmax = np.min(self.topo()), np.max(self.topo())
         if vmax - vmin < 20:
@@ -102,7 +101,11 @@ class Grid(GriddedSkeleton):
         print(mesher)
 
         self.set_topo(topo)
-        self.meta.set(self.raw().meta.get())
+        grid_name = self.name
+        self.meta.set(
+            self.raw().meta.get()
+        )  # This might overwrite the name of the grid with the name of the raw topography
+        self.name = grid_name
         self.meta.set(self.raw().ds().topo.attrs, name="topo")
 
     def process_grid(
