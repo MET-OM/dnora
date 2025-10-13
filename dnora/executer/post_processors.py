@@ -20,7 +20,7 @@ SWAN_VARS = {
     "Windv_y": gp.wind.YWind,
     "Dspr": gp.wave.Spr,
     "Dir": gp.wave.Dirm,
-    "TPsmoo": gp.wave.Tp,
+    "TPsmoo": gp.wave.Tp("tps"),
     "RTpeak": gp.wave.Tp,
     "PkDir": gp.wave.Dirp,
     "Vel_x": gp.ocean.XCurrent,
