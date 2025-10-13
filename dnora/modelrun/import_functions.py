@@ -149,7 +149,7 @@ def read_data_and_create_object(
                 else:
                     obj.set(name, value)
 
-        obj.meta.set(meta_dict)
+        obj.meta.append(meta_dict)
         if (
             meta_dict.get("zone_number") is not None
             and meta_dict.get("zone_letter") is not None
