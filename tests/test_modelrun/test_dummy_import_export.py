@@ -81,9 +81,8 @@ def test_conventions():
 
     # Check 1D spectra convention
     model.spectra_to_1d()
-    assert model.spectra1d().convention() == SpectralConvention.OCEAN
     mdir = int(np.median(model.spectra1d().dirm(dask=False)))
-    assert mdir == 0
+    assert mdir == 180
 
     model.spectra_to_waveseries()  # Converts sepctra to MET before feeding into WaveSeries
 
@@ -103,7 +102,6 @@ def test_conventions():
     )
 
     model.spectra_to_1d()
-    assert model.spectra1d().convention() == SpectralConvention.MET
     mdir = int(np.median(model.spectra1d().dirm(dask=False)))
     assert mdir == 180
     model.spectra_to_waveseries()
@@ -121,9 +119,8 @@ def test_conventions():
     )
 
     model.spectra_to_1d()
-    assert model.spectra1d().convention() == SpectralConvention.MATH
     mdir = int(np.median(model.spectra1d().dirm(dask=False)))
-    assert mdir == 90
+    assert mdir == 180
     model.spectra_to_waveseries()
     mdir = int(np.median(model.waveseries().dirm(dask=False)))
     assert mdir == 180
@@ -140,9 +137,8 @@ def test_conventions():
     )
 
     model.spectra_to_1d()
-    assert model.spectra1d().convention() == SpectralConvention.OCEAN
     mdir = int(np.median(model.spectra1d().dirm(dask=False)))
-    assert mdir == 0
+    assert mdir == 180
     model.spectra_to_waveseries()
     mdir = int(np.median(model.waveseries().dirm(dask=False)))
     assert mdir == 180
@@ -158,8 +154,7 @@ def test_conventions():
     )
 
     model.spectra_to_1d()
-    assert model.spectra1d().convention() == SpectralConvention.MATH
     mdir = int(np.median(model.spectra1d().dirm(dask=False)))
-    assert mdir == 90
+    assert mdir == 180
     mdir = int(np.median(model.waveseries().dirm(dask=False)))
     assert mdir == 180

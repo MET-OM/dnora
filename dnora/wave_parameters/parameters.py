@@ -107,7 +107,9 @@ def wm(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
     return 2 * np.pi * func(spec)
 
 
-def dirm(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
+def dirm_from(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
+    if isinstance(spec, Spectra):
+        spec.set_convention(SpectralConvention.MET)
     a1m, b1m = first_fourier_coefficients(spec)
     thetam = np.arctan2(b1m, a1m)
     dirm = np.mod(thetam * 180 / np.pi, 360)
@@ -115,16 +117,8 @@ def dirm(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
     return dirm.data
 
 
-def dirm_from(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
-    if spec.convention() is not None:
-        spec.set_convention(SpectralConvention.MET)
-    return dirm(spec)
-
-
 def dirm_to(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
-    if spec.convention() is not None:
-        spec.set_convention(SpectralConvention.OCEAN)
-    return dirm(spec)
+    return np.mod(dirm_from(spec) + 180, 360)
 
 
 def sprm(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
@@ -166,8 +160,9 @@ def tp(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
     return 1 / fpeak
 
 
-def dirp(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
+def dirp_from(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
     if isinstance(spec, Spectra):
+        spec.set_convention(SpectralConvention.MET)
         c1, s1 = cos_sin(spec)
         # efth normalization is wrong, but since it is just a constant it won't affect argmax
         efth = spec.spec(data_array=True, dask=False, squeeze=False).sum(dim="dirs")
@@ -184,16 +179,8 @@ def dirp(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
     return dirs
 
 
-def dirp_from(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
-    if spec.convention() is not None:
-        spec.set_convention(SpectralConvention.MET)
-    return dirp(spec)
-
-
 def dirp_to(spec: Union[Spectra, Spectra1D]) -> np.ndarray:
-    if spec.convention() is not None:
-        spec.set_convention(SpectralConvention.OCEAN)
-    return dirp(spec)
+    return np.mod(dirp_from(spec) + 180, 360)
 
 
 def get_function(param: gp.metaparameter.MetaParameter) -> callable:

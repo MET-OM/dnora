@@ -1,22 +1,21 @@
-from copy import copy
+from copy import deepcopy
 from dnora.spectra import Spectra
 import numpy as np
 
-from dnora.type_manager.spectral_conventions import convert_2d_to_1d, SpectralConvention
+from dnora.type_manager.spectral_conventions import SpectralConvention
 from dnora import msg
 from dnora.type_manager.data_sources import DataSource
-from dnora.read.abstract_readers import SpectralDataReader
+from dnora.read.abstract_readers import PointDataReader
 from dnora.utils.spec import jonswap1d
 
 
-class SpectraTo1D(SpectralDataReader):
+class SpectraTo1D(PointDataReader):
     """Integrates boundary spectra to omnidairectional spectra"""
 
     def __init__(self, spectra: Spectra) -> None:
-        self._boundary = copy(spectra)
-
-    def convention(self):
-        return convert_2d_to_1d(self._boundary._convention)
+        self._boundary = deepcopy(spectra)
+        if self._boundary is not None:
+            self._boundary.set_convention(SpectralConvention.MET)
 
     def default_data_source(self) -> DataSource:
         return DataSource.CREATION
@@ -93,7 +92,7 @@ class SpectraTo1D(SpectralDataReader):
             "freq": freq,
         }
         data_dict = {"spec": spec, "dirm": mdir, "spr": spr}
-        meta_dict = copy(self._boundary.ds().attrs)
+        meta_dict = deepcopy(self._boundary.ds().attrs)
 
         return coord_dict, data_dict, meta_dict
 
@@ -103,15 +102,12 @@ class SpectraTo1D(SpectralDataReader):
         return self._boundary.name
 
 
-class WaveSeriesToJONSWAP1D(SpectralDataReader):
+class WaveSeriesToJONSWAP1D(PointDataReader):
     """Integrates boundary spectra to omnidairectional spectra"""
 
     def __init__(self, waveseries, freq) -> None:
         self._waveseries = waveseries
         self._freq = freq
-
-    def convention(self):
-        return SpectralConvention.MET
 
     def default_data_source(self) -> DataSource:
         return DataSource.CREATION

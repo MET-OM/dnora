@@ -9,7 +9,7 @@ from dnora import utils
 from pathlib import Path
 from dnora.type_manager.dnora_types import DnoraDataType
 from dnora.type_manager.data_sources import DataSource
-from dnora.type_manager.spectral_conventions import convert_2d_to_1d, SpectralConvention
+from dnora.type_manager.spectral_conventions import SpectralConvention
 
 from dnora.type_manager.dnora_objects import dnora_objects
 from dnora.utils.io import get_url
@@ -22,6 +22,7 @@ from geo_skeletons import GriddedSkeleton, PointSkeleton
 import geo_parameters as gp
 import glob
 from typing import Union, Optional
+
 
 def read_cached_filelist(filepath):
     """Reads cached files of unstructured data, since they can't be opened simply by open_mfdataset"""

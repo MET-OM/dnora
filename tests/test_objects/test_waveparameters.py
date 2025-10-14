@@ -18,7 +18,6 @@ def spec1d():
     spec.set_spec(2)
     spec.set_dirm(0)
     spec.set_spr(30)
-    spec._mark_convention(SpectralConvention.OCEAN)
     return spec
 
 
@@ -53,7 +52,6 @@ def spec1dmono():
     spr_val[:, :, 2] = 30
     spec.set_spr(spr_val)
 
-    spec._mark_convention(SpectralConvention.OCEAN)
     return spec
 
 
@@ -174,19 +172,19 @@ def test_dirm(spec, spec1d, specmono, spec1dmono):
     dirm = func(spec)
     np.testing.assert_almost_equal(np.mean(dirm), 270)
     dirm = func(spec1d)
-    np.testing.assert_almost_equal(np.mean(dirm), 180)
+    np.testing.assert_almost_equal(np.mean(dirm), 0)
 
     func = get_function(gp.wave.DirmTo)
     assert func is not None
     dirm = func(spec)
     np.testing.assert_almost_equal(np.mean(dirm), 90)
     dirm = func(spec1d)
-    np.testing.assert_almost_equal(np.mean(dirm), 0)
+    np.testing.assert_almost_equal(np.mean(dirm), 180)
 
     dirm = func(specmono)
     np.testing.assert_almost_equal(np.mean(dirm), 90)
     dirm = func(spec1dmono)
-    np.testing.assert_almost_equal(np.mean(dirm), 0)
+    np.testing.assert_almost_equal(np.mean(dirm), 180)
 
 
 def test_sprm(spec, spec1d, specmono, spec1dmono):
@@ -253,7 +251,7 @@ def test_dirp(spec1dmono, specmono):
     func = get_function(gp.wave.Dirp)
     assert func is not None
     dirp = func(spec1dmono)
-    np.testing.assert_almost_equal(dirp, 180, decimal=5)
+    np.testing.assert_almost_equal(dirp, 0, decimal=5)
 
     dirp = func(specmono)
     np.testing.assert_almost_equal(dirp, 270, decimal=5)
@@ -261,7 +259,7 @@ def test_dirp(spec1dmono, specmono):
     func = get_function(gp.wave.DirpTo)
     assert func is not None
     dirp = func(spec1dmono)
-    np.testing.assert_almost_equal(dirp, 0, decimal=5)
+    np.testing.assert_almost_equal(dirp, 180, decimal=5)
 
     dirp = func(specmono)
     np.testing.assert_almost_equal(dirp, 90, decimal=5)

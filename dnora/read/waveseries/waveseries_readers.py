@@ -11,7 +11,8 @@ from dnora import msg, utils
 
 from geo_parameters.metaparameter import MetaParameter
 
-from dnora.spectra1d import Spectra1D, process
+from dnora.spectra1d import Spectra1D
+from dnora.process.spectra import CutFrequency
 from dnora.utils.time import create_monthly_stamps
 from dnora.read.abstract_readers import PointDataReader
 
@@ -39,12 +40,10 @@ class Spectra1DToWaveSeries(PointDataReader):
             self._freq = None
             if Spectra1D.freq()[0] < freq[0] or Spectra1D.freq()[-1] > freq[-1]:
                 try:
-                    self._Spectra1D.process(process.CutFrequency(freq))
+                    self._Spectra1D.process(CutFrequency(freq))
                     self._freq = freq
                 except AttributeError:
-                    msg.warning(
-                        f"Object {self.name()} does not have a process_Spectra1D method!\nNot cutting any frequencies!"
-                    )
+                    pass
 
     def default_data_source(self) -> DataSource:
         return DataSource.CREATION

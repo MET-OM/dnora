@@ -10,11 +10,11 @@ dependencies:
   - xarray>=0.20.1
   - netcdf4
   - meshio
-  - geo-skeletons=0.20.*
+  - geo-skeletons>=0.20.14
   - pytest
   - pip
   - pip:
-    - dnplot
+    - dnplot>=0.4.0
   - python-dotenv
   - cdsapi>=0.7.6
   - progressbar

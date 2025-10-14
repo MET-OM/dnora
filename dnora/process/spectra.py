@@ -75,7 +75,7 @@ class SpectralProcessor(ABC):
         return None
 
     @abstractmethod
-    def __call__(self, spec, dirs, freq, inds) -> tuple:
+    def __call__(self, spec, dirs, freq, inds, times, sprm) -> tuple:
         """Processes individual spectra and returns them to object.
 
         In addition to the spectra, also the direction and frequency
@@ -101,14 +101,49 @@ class Multiply(SpectralProcessor):
         self.calib_spec = calib_spec
         return
 
-    def __call__(self, spec, dirs, freq, inds, times) -> tuple:
-        check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
+    def __call__(self, spec, dirs, freq, inds, times, spr=None) -> tuple:
+        spec_dim = 1 if spr is not None else 2
+        check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=spec_dim)
         new_spec = spec * self.calib_spec
-        check_that_spectra_are_consistent(new_spec, dirs, freq, expected_dim=2)
-        return new_spec, dirs, freq, inds, times
+        check_that_spectra_are_consistent(new_spec, dirs, freq, expected_dim=spec_dim)
+
+        if spec_dim == 1:
+            return new_spec, dirs, freq, inds, times, spr
+        else:
+            return new_spec, dirs, freq, inds, times
 
     def __str__(self):
         return f"Multiplying spectral values with {self.calib_spec}"
+
+
+class CutFrequency(SpectralProcessor):
+    """Cuts the spectrum down to a certain frequency range"""
+
+    def __init__(self, freq: tuple):
+        self._freq = freq
+
+    def __call__(self, spec, dirs, freq, inds, time, spr=None) -> tuple:
+        spec_dim = 1 if spr is not None else 2
+        check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=spec_dim)
+        mask = np.logical_and(freq >= self._freq[0], freq <= self._freq[-1])
+        new_freq = freq[mask]
+        if spr is not None:
+            new_spr = spr[:, :, mask]
+            new_dirs = dirs[:, :, mask]
+        else:
+            new_dirs = dirs
+        new_spec = spec[:, :, mask]
+        check_that_spectra_are_consistent(
+            new_spec, new_dirs, new_freq, expected_dim=spec_dim
+        )
+
+        if spec_dim == 1:
+            return new_spec, new_dirs, new_freq, inds, time, new_spr
+        else:
+            return new_spec, new_dirs, new_freq, inds, time
+
+    def __str__(self):
+        return f"Cutting frequency range to {self._freq[0]}-{self._freq[-1]}..."
 
 
 class RemoveEmpty(SpectralProcessor):
@@ -117,23 +152,30 @@ class RemoveEmpty(SpectralProcessor):
     def __init__(self, threshold: float = 0.01) -> None:
         self.threshold = threshold
 
-    def __call__(self, spec, dirs, freq, inds, times) -> tuple:
-        check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=2)
+    def __call__(self, spec, dirs, freq, inds, times, spr=None) -> tuple:
+        spec_dim = 1 if spr is not None else 2
+        check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=spec_dim)
 
         mask = np.full(len(inds), True)
         for n in inds:
             if (
-                np.max(spec[:, n, :, :]) < self.threshold
-                or np.isnan(spec[:, n, :, :]).any()
+                np.max(spec[:, n, ...]) < self.threshold
+                or np.isnan(spec[:, n, ...]).any()
             ):
                 mask[n] = False
 
         new_inds = inds[mask]
-        new_spec = spec[:, mask, :, :]
+        new_spec = spec[:, mask, ...]
+        if spec_dim == 1:
+            new_dirs = dirs[:, mask, ...]
+            new_spr = spr[:, mask, ...]
 
-        check_that_spectra_are_consistent(new_spec, dirs, freq, expected_dim=2)
+        check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=spec_dim)
 
-        return new_spec, dirs, freq, new_inds, times
+        if spec_dim == 1:
+            return new_spec, new_dirs, freq, new_inds, times, new_spr
+        else:
+            return new_spec, dirs, freq, new_inds, times
 
     def __str__(self):
         return f"Removing spectra with all values less than {self.threshold} or with NaN's..."
@@ -143,7 +185,8 @@ class RemoveNanTimes(SpectralProcessor):
     """Remove times when some index has nan-values"""
 
     def __call__(self, spec, dirs, freq, inds, times, spr=None) -> tuple:
-        spec_dim = check_that_spectra_are_consistent(spec, dirs, freq)
+        spec_dim = 1 if spr is not None else 2
+        check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=spec_dim)
 
         mask = np.full(len(times), True)
         for n in range(len(times)):
@@ -182,7 +225,7 @@ class ReGridDirs(SpectralProcessor):
 
     def __init__(
         self,
-        res:  Optional[int] = None,
+        res: Optional[int] = None,
         first_dir: Optional[int] = None,
         nbins: Optional[int] = None,
     ) -> None:

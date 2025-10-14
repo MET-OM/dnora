@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Union
 
+
 class SpectralConvention(Enum):
     """Conventions of BoundarySpectra (2D)"""
 
@@ -35,20 +36,6 @@ class SpectralConvention(Enum):
     WW3 = "ww3"
 
     UNDEFINED = "undefined"
-
-
-def convert_2d_to_1d(convention_2d: SpectralConvention):
-    """Determine the correct 1d convention from a 2d convention.
-
-    If a 1d convention is given, the identical convetnion is returned."""
-    if convention_2d in [SpectralConvention.OCEAN, SpectralConvention.WW3]:
-        convention_1d = SpectralConvention.OCEAN
-    elif convention_2d in [SpectralConvention.MATH, SpectralConvention.MATHVEC]:
-        convention_1d = SpectralConvention.MATH
-    else:
-        convention_1d = SpectralConvention.MET
-
-    return convention_1d
 
 
 def spectral_convention_from_string(

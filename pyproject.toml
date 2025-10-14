@@ -17,11 +17,11 @@ dependencies = [
     "xarray>=0.20.1",
     "netCDF4",
     "meshio",
-    "geo-skeletons>=0.20.9",
+    "geo-skeletons>=0.20.14",
     "python-dotenv",
     "progressbar",
     "pyarrow",
-    "dnplot",
+    "dnplot>=0.4.2",
     "dask[dataframe]"
 ]
 readme = "README.md"
