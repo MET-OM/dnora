@@ -14,7 +14,7 @@ dependencies:
   - pytest
   - pip
   - pip:
-    - dnplot>=0.4.0
+    - dnplot>=0.4.2
   - python-dotenv
   - cdsapi>=0.7.6
   - progressbar
