@@ -43,9 +43,7 @@ class Spectra1DToWaveSeries(PointDataReader):
                     self._Spectra1D.process(CutFrequency(freq))
                     self._freq = freq
                 except AttributeError:
-                    msg.warning(
-                        f"Object {self.name()} does not have a process_Spectra1D method!\nNot cutting any frequencies!"
-                    )
+                    pass
 
     def default_data_source(self) -> DataSource:
         return DataSource.CREATION
