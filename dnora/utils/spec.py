@@ -181,23 +181,21 @@ def shift_spec(spec, D, shift=0):
 def check_that_spectra_are_consistent(
     spec, dirs, freq, expected_dim: int = None
 ) -> int:
+    possible_shapes = []
     if spec.shape[-1] == len(dirs) and spec.shape[-2] == len(freq):
-        spec_dim = 2
-    elif spec.shape[-1] == len(freq) and spec.shape == dirs.shape:
-        spec_dim = 1
-    else:
-        spec_dim = -1
+        possible_shapes.append(2)
+    if spec.shape[-1] == len(freq) and spec.shape == dirs.shape:
+        possible_shapes.append(1)
 
     if expected_dim is None:
-        if spec_dim not in [1, 2]:
+        if 1 not in possible_shapes and 2 not in possible_shapes:
             raise ValueError("Provided array does not contain valid 1D or 2D spectra!")
-        return spec_dim
+        return possible_shapes
 
-    if spec_dim != expected_dim:
-
-        if spec_dim not in [1, 2]:
+    if expected_dim not in possible_shapes:
+        if 1 not in possible_shapes and 2 not in possible_shapes:
             raise ValueError("Provided array does not contain valid 1D or 2D spectra!")
         else:
             raise ValueError(
-                f"Expected {expected_dim} dimensional spectra, but they seem to be {spec_dim} dimensional!"
+                f"Expected {expected_dim} dimensional spectra, but they seem to be {possible_shapes} dimensional!"
             )
