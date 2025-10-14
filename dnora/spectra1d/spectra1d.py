@@ -58,10 +58,10 @@ class Spectra1D(PointSkeleton):
             metadata = self.meta.get()
 
             self._init_structure(
-                x=self.x(strict=True),
-                y=self.y(strict=True),
-                lon=self.lon(strict=True),
-                lat=self.lat(strict=True),
+                x=self.x(strict=True, inds=new_inds),
+                y=self.y(strict=True, inds=new_inds),
+                lon=self.lon(strict=True, inds=new_inds),
+                lat=self.lat(strict=True, inds=new_inds),
                 time=new_time,
                 freq=new_freq,
             )
