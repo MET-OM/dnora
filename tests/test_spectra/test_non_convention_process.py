@@ -76,3 +76,33 @@ def test_remove_empty_1d(spec1d):
     spec1d.process(dn.process.spectra.RemoveEmpty(threshold=0.01))
     np.testing.assert_almost_equal(spec1d.lon(), np.array([3]))
     np.testing.assert_almost_equal(spec1d.lat(), np.array([12]))
+
+
+def test_remove_nantimes(spec):
+    assert spec.time(datetime=False) == [
+        "2020-01-01 00:00:00",
+        "2020-01-01 01:00:00",
+        "2020-01-01 02:00:00",
+    ]
+    data = spec.spec()
+    data[1, 0, :, :] = np.nan
+    spec.process(dn.process.spectra.RemoveNanTimes())
+    assert spec.time(datetime=False) == [
+        "2020-01-01 00:00:00",
+        "2020-01-01 02:00:00",
+    ]
+
+
+def test_remove_nantimes_1d(spec1d):
+    assert spec1d.time(datetime=False) == [
+        "2020-01-01 00:00:00",
+        "2020-01-01 01:00:00",
+        "2020-01-01 02:00:00",
+    ]
+    data = spec1d.spec()
+    data[1, 0, :] = np.nan
+    spec1d.process(dn.process.spectra.RemoveNanTimes())
+    assert spec1d.time(datetime=False) == [
+        "2020-01-01 00:00:00",
+        "2020-01-01 02:00:00",
+    ]
