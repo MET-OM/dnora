@@ -75,7 +75,7 @@ class SpectralProcessor(ABC):
         return None
 
     @abstractmethod
-    def __call__(self, spec, dirs, freq, inds) -> tuple:
+    def __call__(self, spec, dirs, freq, inds, times) -> tuple:
         """Processes individual spectra and returns them to object.
 
         In addition to the spectra, also the direction and frequency
@@ -109,6 +109,37 @@ class Multiply(SpectralProcessor):
 
     def __str__(self):
         return f"Multiplying spectral values with {self.calib_spec}"
+
+
+class CutFrequency(SpectralProcessor):
+    """Cuts the spectrum down to a certain frequency range"""
+
+    def __init__(self, freq: tuple):
+        self._freq = freq
+
+    def __call__(self, spec, dirs, freq, inds, time, spr=None) -> tuple:
+        expected_dim = 1 if spr is not None else 2
+        check_that_spectra_are_consistent(spec, dirs, freq, expected_dim=expected_dim)
+        mask = np.logical_and(freq >= self._freq[0], freq <= self._freq[-1])
+        new_freq = freq[mask]
+        new_dirs = dirs[:, :, mask]
+        if spr is not None:
+            new_spr = spr[:, :, mask]
+        new_spec = spec[:, :, mask]
+        check_that_spectra_are_consistent(
+            new_spec, new_dirs, new_freq, expected_dim=expected_dim
+        )
+        check_that_spectra_are_consistent(
+            new_spec, new_spr, new_freq, expected_dim=expected_dim
+        )
+
+        if expected_dim == 1:
+            return new_spec, new_dirs, new_freq, inds, time, new_spr
+        else:
+            return new_spec, new_dirs, new_freq, inds, time
+
+    def __str__(self):
+        return f"Cutting frequency range to {self._freq[0]}-{self._freq[-1]}..."
 
 
 class RemoveEmpty(SpectralProcessor):
@@ -182,7 +213,7 @@ class ReGridDirs(SpectralProcessor):
 
     def __init__(
         self,
-        res:  Optional[int] = None,
+        res: Optional[int] = None,
         first_dir: Optional[int] = None,
         nbins: Optional[int] = None,
     ) -> None:

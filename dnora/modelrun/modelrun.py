@@ -628,7 +628,6 @@ class ModelRun:
                 return
 
         name = self.spectra1d().name
-        self.spectra1d().set_convention(SpectralConvention.MET)
         waveseries_reader = Spectra1DToWaveSeries(self.spectra1d(), freq)
 
         self.import_waveseries(

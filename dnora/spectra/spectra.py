@@ -7,10 +7,8 @@ from dnora.type_manager.spectral_conventions import (
 )
 from dnora.process.spectra import spectral_processor_for_convention_change
 
-# Import abstract classes and needed instances of them
 from dnora.process.spectra import SpectralProcessor
 
-# Import default values and aux_funcsiliry functions
 from dnora import msg
 
 from geo_skeletons import PointSkeleton
@@ -19,7 +17,6 @@ from geo_skeletons.decorators import (
     add_frequency,
     add_direction,
     add_datavar,
-    add_magnitude,
 )
 
 import geo_parameters as gp
@@ -131,9 +128,6 @@ class Spectra(PointSkeleton):
         )
 
         if spectral_processor is None:
-            # msg.info(
-            #     f"Convention ({self.convention()}) already equals wanted convention ({convention})."
-            # )
             return
 
         self.process(spectral_processor)
