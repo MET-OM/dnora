@@ -21,7 +21,7 @@ dependencies = [
     "python-dotenv",
     "progressbar",
     "pyarrow",
-    "dnplot>=0.4.0",
+    "dnplot>=0.4.2",
     "dask[dataframe]"
 ]
 readme = "README.md"
