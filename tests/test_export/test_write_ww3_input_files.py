@@ -260,3 +260,45 @@ def test_shel_homog_current(grid):
     assert nml_dict["HOMOG_INPUT_NML"]["HOMOG_INPUT(1)"]["VALUE1"] == "0"
     assert nml_dict["HOMOG_INPUT_NML"]["HOMOG_INPUT(1)"]["VALUE2"] == "3"
     cleanup()
+
+
+def test_ounp(grid):
+    cleanup()
+    model = dn.modelrun.Constant(
+        grid, start_time="2020-01-30 00:00", end_time="2020-01-31 23:00"
+    )
+    model.import_wind()
+    exe = dn.executer.WW3(model)
+    exe.write_input_file(homog={"wind": (0, 3)})
+    nml_dict = read_ww3_nml("TestGrid_WW3/ww3_ounp.nml")
+    assert nml_dict["POINT_NML"]["POINT"]["TIMESTART"] == "'20200130000000'"
+    assert nml_dict["POINT_NML"]["POINT"]["TIMECOUNT"] == "'48'"
+    assert nml_dict["POINT_NML"]["POINT"]["TIMESTRIDE"] == "'3600'"
+    assert nml_dict["POINT_NML"]["POINT"]["TIMESPLIT"] == "6"
+
+    assert nml_dict["FILE_NML"]["FILE"]["NETCDF"] == "3"
+    assert nml_dict["SPECTRA_NML"]["SPECTRA"]["OUTPUT"] == "3"
+    assert nml_dict["PARAM_NML"]["PARAM"]["OUTPUT"] == "6"
+    cleanup()
+
+
+def test_ounf(grid):
+    cleanup()
+    model = dn.modelrun.Constant(
+        grid, start_time="2020-01-30 00:00", end_time="2020-01-31 23:00"
+    )
+    model.import_wind()
+    exe = dn.executer.WW3(model)
+    exe.write_input_file(homog={"wind": (0, 3)})
+    nml_dict = read_ww3_nml("TestGrid_WW3/ww3_ounf.nml")
+    assert nml_dict["FIELD_NML"]["FIELD"]["TIMESTART"] == "'20200130000000'"
+    assert nml_dict["FIELD_NML"]["FIELD"]["TIMECOUNT"] == "'48'"
+    assert nml_dict["FIELD_NML"]["FIELD"]["TIMESTRIDE"] == "'3600'"
+    assert nml_dict["FIELD_NML"]["FIELD"]["TIMESPLIT"] == "6"
+    assert nml_dict["FIELD_NML"]["FIELD"][
+        "LIST"
+    ] == "'HS LM TP DIR SPR DP T02 T0M1 T01 UST CHA DPT WND USS TUS TAW TWO TOC FAW FOC PHS PTP PTM10 PT01 PT02 PDIR PDP MXE MXH MXHC SDMH SDMHC ABR UBR FBB TBB CGE WCC WBT'".replace(
+        " ", ""
+    )
+    assert nml_dict["FILE_NML"]["FILE"]["NETCDF"] == "3"
+    cleanup()
