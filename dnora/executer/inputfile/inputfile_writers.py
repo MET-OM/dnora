@@ -1114,7 +1114,8 @@ class WW3(InputFileWriter):
         ww3_shel(filename, start_time, end_time, forcing, homog, spectral_output)
         # Make inputfiles for the post-processing
         ounf_filename = file_object.get_folder() + "/ww3_ounf.nml"
+        ounp_filename = file_object.get_folder() + "/ww3_ounp.nml"
         ww3_ounf(ounf_filename, start_time, len(model.time()), 3600)
-        ww3_ounp(ounf_filename, start_time, len(model.time()), 3600)
+        ww3_ounp(ounp_filename, start_time, len(model.time()), 3600)
 
-        return [filename, ounf_filename]
+        return [filename, ounf_filename, ounp_filename]
