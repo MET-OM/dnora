@@ -1,6 +1,7 @@
 from enum import Enum, auto
 from typing import Union
 
+
 class DnoraDataType(Enum):
     GRID = auto()
     TRIGRID = auto()
