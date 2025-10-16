@@ -133,7 +133,7 @@ class WW3Triangular(DataWriter):
             ).transpose()
             fmt_bound = "%10.0f%10.0f%10.0f%10.0f%10.0f%10.0f"
 
-            N_ele = len(grid.tri())
+            N_ele = len(grid.ntriang())
             arr_ele = np.stack(
                 [
                     np.arange(1, N_ele + 1) + N_bound,
@@ -142,15 +142,15 @@ class WW3Triangular(DataWriter):
                     N_ele * [0],
                     np.arange(1, N_ele + 1),
                     N_ele * [0],
-                    grid.tri()[:, 0] + 1,
-                    grid.tri()[:, 1] + 1,
-                    grid.tri()[:, 2] + 1,
+                    grid.triangles()[:, 0] + 1,
+                    grid.triangles()[:, 1] + 1,
+                    grid.triangles()[:, 2] + 1,
                 ]
             ).transpose()
             fmt_ele = "%8.0f%8.0f%8.0f%8.0f%8.0f%8.0f%8.0f%8.0f%8.0f"
 
             f.write("$Elements\n")
-            f.write(f"{len(grid.tri())+len(grid.boundary_points()[0]):12.0f}\n")
+            f.write(f"{len(grid.triangles())+len(grid.boundary_points()[0]):12.0f}\n")
             np.savetxt(f, arr_bound, fmt=fmt_bound)
             np.savetxt(f, arr_ele, fmt=fmt_ele)
             f.write("$EndElements\n")
