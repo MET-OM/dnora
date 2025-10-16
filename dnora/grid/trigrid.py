@@ -135,9 +135,10 @@ class TriGrid(PointSkeleton):
         print(mesher)
 
         self.set_topo(topo)
-
+        grid_name = self.name
         self.meta.set(self.raw().meta.get())
         self.meta.set(self.raw().ds().topo.attrs, name="topo")
+        self.name = grid_name
 
     def process_grid(
         self, grid_processor: GridProcessor = None, raw: bool = False, **kwargs

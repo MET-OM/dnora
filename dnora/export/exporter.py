@@ -77,8 +77,11 @@ class DataExporter:
     ) -> None:
         obj_type = data_type_from_string(obj_type)
         spectral_convention = spectral_convention_from_string(spectral_convention)
-        writer_function = self._setup_export(obj_type, writer, dry_run)
 
+        if obj_type == DnoraDataType.GRID and not self.model.grid().is_gridded():
+            writer_function = self._setup_export(DnoraDataType.TRIGRID, writer, dry_run)
+        else:
+            writer_function = self._setup_export(obj_type, writer, dry_run)
         if not self.dry_run():
             if not self._silent:
                 if self.model.get(obj_type) is None:

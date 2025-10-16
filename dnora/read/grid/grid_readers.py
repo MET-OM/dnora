@@ -265,6 +265,7 @@ class MshFile(DataReader):
         expansion_factor: float = 1.2,
         zone_number: int = None,
         zone_letter: str = None,
+        **kwargs,
     ) -> tuple:
         self.filename = filename
         mesh = meshio.read(filename)
@@ -274,7 +275,7 @@ class MshFile(DataReader):
         topo = mesh.points[:, 2]
 
         if zone_number is None or zone_letter is None:
-            xedges, yedges = expand_area(
+            xedges, yedges = utils.grid.expand_area(
                 grid.edges("lon"), grid.edges("lat"), expansion_factor
             )
         else:
