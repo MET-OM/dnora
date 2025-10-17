@@ -49,6 +49,7 @@ class Constant(ModelRun):
         DnoraDataType.WATERLEVEL: ConstantData(),
         DnoraDataType.CURRENT: ConstantData(),
         DnoraDataType.WAVESERIES: ConstantData(),
+        DnoraDataType.OCEAN: ConstantData(),
     }
 
 
