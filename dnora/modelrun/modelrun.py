@@ -788,23 +788,23 @@ class ModelRun:
         return self.get(DnoraDataType.TRIGRID) or self.get(DnoraDataType.GRID)
 
     def wind(self) -> Wind:
-        """Returns the forcing object if exists."""
+        """Returns the wind object if exists."""
         return self._dnora_objects.get(DnoraDataType.WIND)
 
     def spectra(self) -> Spectra:
-        """Returns the boundary object if exists."""
+        """Returns the spectral object if exists."""
         return self._dnora_objects.get(DnoraDataType.SPECTRA)
 
     def spectra1d(self) -> Spectra1D:
-        """Returns the spectral object if exists."""
+        """Returns the 1d spectral object if exists."""
         return self._dnora_objects.get(DnoraDataType.SPECTRA1D)
 
     def waveseries(self) -> WaveSeries:
-        """Returns the wave series object if exists."""
+        """Returns the waveseries object if exists."""
         return self._dnora_objects.get(DnoraDataType.WAVESERIES)
 
     def waterlevel(self) -> WaterLevel:
-        """Returns the water level object if exists."""
+        """Returns the waterlevel object if exists."""
         return self._dnora_objects.get(DnoraDataType.WATERLEVEL)
 
     def current(self) -> Current:
@@ -812,7 +812,7 @@ class ModelRun:
         return self._dnora_objects.get(DnoraDataType.CURRENT)
 
     def ice(self) -> Ice:
-        """Returns the ocean current object if exists."""
+        """Returns the Ice current object if exists."""
         return self._dnora_objects.get(DnoraDataType.ICE)
 
     def process(
