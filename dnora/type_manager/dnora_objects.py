@@ -10,6 +10,7 @@ from dnora.waterlevel import WaterLevel
 from dnora.current import Current
 from dnora.ice import Ice
 from dnora.wavegrid import WaveGrid
+from dnora.ocean import Ocean
 
 DnoraObject = Union[
     Grid,
@@ -22,6 +23,7 @@ DnoraObject = Union[
     Current,
     Ice,
     WaveGrid,
+    Ocean,
 ]
 
 dnora_objects = {
@@ -35,4 +37,5 @@ dnora_objects = {
     DnoraDataType.WATERLEVEL: WaterLevel,
     DnoraDataType.CURRENT: Current,
     DnoraDataType.ICE: Ice,
+    DnoraDataType.OCEAN: Ocean,
 }
