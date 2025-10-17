@@ -15,6 +15,7 @@ class DnoraDataType(Enum):
     WAVESERIES = auto()
     WAVEGRID = auto()
     SPECTRALGRID = auto()
+    OCEAN = auto()
 
 
 class DnoraFileType(Enum):
@@ -29,6 +30,7 @@ class DnoraFileType(Enum):
     WAVESERIES = auto()
     WAVEGRID = auto()
     INPUT = auto()
+    OCEAN = auto()
 
 
 def data_type_from_string(obj_str: Union[str, DnoraDataType]) -> DnoraDataType:
