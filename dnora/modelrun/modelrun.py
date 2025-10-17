@@ -116,6 +116,7 @@ class ModelRun:
         DnoraDataType.ICE: dnora.read.generic.Netcdf(),
         DnoraDataType.CURRENT: dnora.read.generic.Netcdf(),
         DnoraDataType.WATERLEVEL: dnora.read.generic.Netcdf(),
+        DnoraDataType.OCEAN: dnora.read.generic.Netcdf(),
     }
     _point_picker: PointPicker = NearestGridPoint()
 
