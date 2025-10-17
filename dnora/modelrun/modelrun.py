@@ -835,15 +835,15 @@ class ModelRun:
         return self._dnora_objects.get(DnoraDataType.WATERLEVEL)
 
     def current(self) -> Current:
-        """Returns the ocean current object if exists."""
+        """Returns the current object if exists."""
         return self._dnora_objects.get(DnoraDataType.CURRENT)
 
     def ice(self) -> Ice:
-        """Returns the Ice current object if exists."""
+        """Returns the Ice object if exists."""
         return self._dnora_objects.get(DnoraDataType.ICE)
 
     def ocean(self) -> Ocean:
-        """Returns the Ice current object if exists."""
+        """Returns the ocean object if exists."""
         return self._dnora_objects.get(DnoraDataType.OCEAN)
 
     def process(
