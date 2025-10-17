@@ -16,6 +16,7 @@ from geo_parameters.metaparameter import MetaParameter
 import geo_parameters as gp
 
 
+@add_run_method(DnoraFileType.OCEAN)
 @add_run_method(DnoraFileType.INPUT)
 @add_run_method(DnoraFileType.SPECTRA)
 @add_run_method(DnoraFileType.ICE)
@@ -33,6 +34,7 @@ import geo_parameters as gp
 @add_write_method(DnoraFileType.WATERLEVEL)
 @add_write_method(DnoraFileType.CURRENT)
 @add_write_method(DnoraFileType.ICE)
+@add_write_method(DnoraFileType.OCEAN)
 class ModelExecuter:
     _input_file_writers = {}
     _model_runners = {}
