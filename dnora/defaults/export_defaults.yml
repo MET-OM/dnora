@@ -23,48 +23,16 @@ list_of_placeholders:
 # Any part (starting and ending with '_') of the name containing an unused tag (#) will be cleaned away
 MODELRUN:
   folder: 'output'
-  filename: 'dnorafile'
+  filename: '#DataType_#ObjectName_#GRID_#T0_#T1'
   dateformat: '%Y%m%dT%H%M'
   dateformat_folder: '%Y'
   coord_format: '010.7f'
   cartesian_coord_format: '04.1f'
   extension: 'nc'
   grid:
-    folder: 'output'
-    filename: 'grid_#GRID'
-    dateformat: '%Y%m%dT%H%M'
-  wind:
-    folder: 'output'
-    filename: 'wind_#WIND_#GRID_#T0_#T1'
-    dateformat: '%Y%m%dT%H%M'
-  spectra:
-    folder: 'output'
-    filename: 'spec2d_#SPECTRA_#GRID_#T0_#T1'
-    dateformat: '%Y%m%dT%H%M'
-  spectra1d:
-    folder: 'output'
-    filename: 'spec1d_#SPECTRA1D_#GRID_#T0_#T1'
-    dateformat: '%Y%m%dT%H%M'
-  waveseries:
-    folder: 'output'
-    filename: 'waveseries_#WAVESERIES_#GRID_#T0_#T1'
-    dateformat: '%Y%m%dT%H%M'
-  current:
-    folder: 'output'
-    filename: 'current_#CURRENT_#GRID_#T0_#T1'
-    dateformat: '%Y%m%dT%H%M'
-  waterlevel:
-    folder: 'output'
-    filename: 'waterlevel_#WATERLEVEL_#GRID_#T0_#T1'
-    dateformat: '%Y%m%dT%H%M'
-  ice:
-    folder: 'output'
-    filename: 'ice_#ICE_#GRID_#T0_#T1'
-    dateformat: '%Y%m%dT%H%M'  
+    filename: '#DataType_#ObjectName'
   input_file:
-    folder: 'output'
     filename: 'inputfile_#GRID_#WIND_#SPECTRA_#CURRENT_#T0_#T1_#LON_#LAT'
-    dateformat: '%Y%m%dT%H%M'
     extension: 'txt'
 
 SWAN:
