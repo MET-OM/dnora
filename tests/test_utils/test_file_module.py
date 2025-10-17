@@ -30,7 +30,7 @@ class GetDefaultValues(unittest.TestCase):
             primary=defaults["SWAN"],
             fallback=defaults["MODELRUN"],
         )
-        self.assertEqual(filename, "spec1d_#SPECTRA1D_#GRID_#T0_#T1")
+        self.assertEqual(filename, "#DataType_#ObjectName_#GRID_#T0_#T1")
 
     def test_folder(self):
         filename = file_module.get_default_value(
