@@ -57,6 +57,7 @@ if TYPE_CHECKING:
         WaveSeries,
         Current,
         Ice,
+        Ocean,
         DnoraObject,
     )
 
@@ -592,6 +593,31 @@ class ModelRun:
             **kwargs,
         )
 
+    @cached_reader(DnoraDataType.OCEAN, dnora.read.generic.Netcdf)
+    def import_ocean(
+        self,
+        reader: Optional[DataReader] = None,
+        expansion_factor: float = 1.2,
+        name: Optional[str] = None,
+        dry_run: bool = False,
+        source: Union[str, DataSource] = DataSource.UNDEFINED,
+        folder: Optional[str] = None,
+        filename: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+
+        self._import_data(
+            DnoraDataType.OCEAN,
+            name,
+            dry_run,
+            reader,
+            expansion_factor,
+            source,
+            folder,
+            filename,
+            **kwargs,
+        )
+
     def spectra_to_1d(
         self,
         dry_run: bool = False,
@@ -814,6 +840,10 @@ class ModelRun:
     def ice(self) -> Ice:
         """Returns the Ice current object if exists."""
         return self._dnora_objects.get(DnoraDataType.ICE)
+
+    def ocean(self) -> Ocean:
+        """Returns the Ice current object if exists."""
+        return self._dnora_objects.get(DnoraDataType.OCEAN)
 
     def process(
         self, obj_type: Union[DnoraDataType, str], processor: GriddedDataProcessor
