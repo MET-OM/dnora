@@ -76,7 +76,7 @@ class ModelExecuter:
         input_file_writer = input_file_writer or self._input_file_writers.get(file_type)
 
         if input_file_writer is None:
-            msg.info("No InputFileWriter defines. Won't do anything.")
+            msg.info("No InputFileWriter defined. Won't do anything.")
             return
 
         msg.header(input_file_writer, "Writing model input file...")
