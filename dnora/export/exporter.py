@@ -22,6 +22,7 @@ WriterFunction = Union[
 ]
 
 
+@add_export_method(DnoraDataType.OCEAN)
 @add_export_method(DnoraDataType.GRID)
 @add_export_method(DnoraDataType.TRIGRID)
 @add_export_method(DnoraDataType.WIND)
@@ -45,10 +46,6 @@ class DataExporter:
         self, obj_type: Union[DnoraDataType, DnoraFileType]
     ) -> WriterFunction:
         return self._writer_dict.get(obj_type, self._get_default_writer())
-
-    # def _get_spectral_convention(self) -> SpectralConvention:
-    #     """Used only if method is not defined, such as for GeneralWritingFunctions that just dump everything to montly netcdf-files."""
-    #     return SpectralConvention.OCEAN
 
     def __init__(self, model, include_nest: bool = True):
         self.model = model

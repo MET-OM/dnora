@@ -49,7 +49,7 @@ def read_cached_filelist(filepath):
                 points_in_previous_tiles += len(one_ds.inds)
                 ds_list.append(one_ds)
 
-    ds = xr.concat(ds_list, dim="inds")
+    ds = xr.concat(ds_list, dim="inds", join="outer")
     return ds
 
 

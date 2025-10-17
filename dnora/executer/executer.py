@@ -13,6 +13,7 @@ from dnora.defaults import read_environment_variable
 from typing import Union, Optional
 
 
+@add_run_method(DnoraFileType.OCEAN)
 @add_run_method(DnoraFileType.INPUT)
 @add_run_method(DnoraFileType.SPECTRA)
 @add_run_method(DnoraFileType.ICE)
@@ -30,6 +31,7 @@ from typing import Union, Optional
 @add_write_method(DnoraFileType.WATERLEVEL)
 @add_write_method(DnoraFileType.CURRENT)
 @add_write_method(DnoraFileType.ICE)
+@add_write_method(DnoraFileType.OCEAN)
 class ModelExecuter:
     _input_file_writers = {}
     _model_runners = {}
@@ -74,7 +76,7 @@ class ModelExecuter:
         input_file_writer = input_file_writer or self._input_file_writers.get(file_type)
 
         if input_file_writer is None:
-            msg.info("No InputFileWriter defines. Won't do anything.")
+            msg.info("No InputFileWriter defined. Won't do anything.")
             return
 
         msg.header(input_file_writer, "Writing model input file...")
