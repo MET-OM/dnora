@@ -7,13 +7,17 @@ from .post_processors import PostProcessor, SwashMatToNc, HosOceanToNc, SwanMatT
 from dnora import msg
 import shutil
 import os
+import json
+import xarray as xr
+import numpy as np
+import pandas as pd
 
 
 class ModelRunner(ABC):
     """Runs the model."""
 
-    def __init__(self, model):
-        self.model = model
+    def __init__(self):
+        pass
 
     @abstractmethod
     def preferred_format(self) -> str:
@@ -51,7 +55,9 @@ class SWAN(ModelRunner):
             shutil.copy2(
                 f"{model_folder}/swanrun", f"{file_object.get_folder()}/swanrun"
             )
-            msg.plain(f"{model_folder}/swan.exe >>> {file_object.get_folder()}/swan.exe")
+            msg.plain(
+                f"{model_folder}/swan.exe >>> {file_object.get_folder()}/swan.exe"
+            )
             shutil.copy2(
                 f"{model_folder}/swan.exe", f"{file_object.get_folder()}/swan.exe"
             )
@@ -88,9 +94,6 @@ class SWAN(ModelRunner):
 
 
 class SWASH(ModelRunner):
-    def __init__(self):
-        pass
-
     def preferred_format(self) -> str:
         """For generation of file name."""
         return ModelFormat.SWASH
@@ -111,7 +114,17 @@ class SWASH(ModelRunner):
 
         p.wait()
 
-WW3_DEFAULT_INPUTFILE_NAMES = {DnoraFileType.SPECTRA: 'ww3_bounc.nml',DnoraFileType.GRID: 'ww3_grid.nml', DnoraFileType.WIND: 'ww3_prnc.nml', DnoraFileType.INPUT: 'ww3_shel.nml', DnoraFileType.CURRENT: 'ww3_prnc.nml', DnoraFileType.WATERLEVEL: 'ww3_prnc.nml', DnoraFileType.ICE: 'ww3_prnc.nml'}
+
+WW3_DEFAULT_INPUTFILE_NAMES = {
+    DnoraFileType.SPECTRA: "ww3_bounc.nml",
+    DnoraFileType.GRID: "ww3_grid.nml",
+    DnoraFileType.WIND: "ww3_prnc.nml",
+    DnoraFileType.INPUT: "ww3_shel.nml",
+    DnoraFileType.CURRENT: "ww3_prnc.nml",
+    DnoraFileType.WATERLEVEL: "ww3_prnc.nml",
+    DnoraFileType.ICE: "ww3_prnc.nml",
+}
+
 
 class WW3(ModelRunner):
     def __init__(self, program: str):
@@ -143,24 +156,24 @@ class WW3(ModelRunner):
         to_file = WW3_DEFAULT_INPUTFILE_NAMES.get(file_object.obj_type)
 
         # Written input files, e.g. 'ww3_prcn_wind.nml', or ['ww3_prnc_ice.nml.sic', 'ww3_prnc_ice.nml.sit']
-        if self.program in ['shel','grid','bounc','prnc']:
+        if self.program in ["shel", "grid", "bounc", "prnc"]:
             from_files = [file_object.get_filename()]
             out_files = [f"{file_object.get_folder()}/ww3_{self.program}"]
             if file_object.obj_type == DnoraFileType.ICE:
                 from_files = [f"{from_files[0]}.sic", f"{from_files[0]}.sit"]
                 out_files = [f"{out_files[0]}_sic", f"{out_files[0]}_sit"]
             out_files = [f"{of}.out" for of in out_files]
-                
-        for (from_file, out_file) in zip(from_files, out_files):
+
+        for from_file, out_file in zip(from_files, out_files):
             from_path = f"{file_object.get_folder()}/{from_file}"
             if not os.path.exists(from_path):
                 msg.plain(f"{from_path} not found. Skipping...")
                 continue
             if from_file != to_file:
-                
+
                 msg.copy_file(from_file, to_file)
                 shutil.copy(from_path, f"{file_object.get_folder()}/{to_file}")
-                
+
             msg.info(f"Running ww3_{self.program}...")
             msg.to_file(out_file)
             with open(out_file, "w") as outfile:
@@ -217,3 +230,62 @@ class REEF3D(ModelRunner):
                 cwd=model_folder,
             )
         p.wait()
+
+
+class VesselIcing(ModelRunner):
+    def preferred_format(self) -> str:
+        """For generation of file name."""
+        return ModelFormat.VESSEL_ICING
+
+    def __call__(self, file_object: FileNames, model_folder: str) -> None:
+        try:
+            import mi_fieldcalc as mifc
+        except ImportError:
+            raise ImportError(
+                "Icing model is not installed! Install it with 'conda install mi-fieldcalc'"
+            )
+        with open(file_object.get_filepath(), "r") as f:
+            config = json.load(f)
+
+        data = {key: xr.open_dataset(value) for key, value in config.items()}
+        """V vesselIcingMincog(const V sal, const V wave, const V x_wind, const V y_wind, const V airtemp, const V rh,
+                        const V sst, const V p, const V Pw, /*const V aice,*/ const V depth, const V vs,
+                        const V alpha, const V zmin, const V zmax, const int alt)"""
+
+        msg.plain(f"Calculating icing:")
+        hs = data.get("wavegrid").hs.values
+        sss = data.get("ocean").sss.values
+        uwnd = data.get("wind").u.values
+        vwnd = data.get("wind").v.values
+        t2m = np.full(data.get("ocean").sss.shape, -20.0)
+        relh = np.full(data.get("ocean").sss.shape, 80.0)
+        sst = data.get("ocean").sst.values
+        eta = data.get("waterlevel").eta.values
+        tm = data.get("wavegrid").tm01.values
+        sic = data.get("ice").sic.values
+        topo = data.get("grid").topo.values
+        time = data.get("wind").time.values
+        msg.plain(
+            f"{pd.to_datetime(time):%Y-%m-%d %H:%M}: Mean over grid: wind={np.mean(uwnd):.2f}, {np.mean(vwnd):.2f}, t2m={np.mean(t2m):.2f}, r={np.mean(relh):.2f}, sst={np.mean(sst):.2f}, sss={np.mean(sss):.2f}, hs={np.mean(hs):.2f}, tm={np.mean(tm):.2f}, sic={np.mean(sic):.2f}, depth={np.mean(topo):.2f}, waterlevel={np.mean(eta):.2f}"
+        )
+        icing = mifc.vesselIcingMincog(
+            sss,
+            hs,
+            uwnd,
+            vwnd,
+            t2m,  # t2m
+            relh,  # r
+            sst,
+            eta,
+            tm,
+            sic,
+            topo,
+            5,  # vs
+            3.14,  # alpha
+            4,  # zmin
+            4,  # zmax
+            1,  # alt
+            -1e20,  # undef
+        )
+        msg.plain(f"Mean icing over grid: {np.mean(icing):.4f}")
+        breakpoint()

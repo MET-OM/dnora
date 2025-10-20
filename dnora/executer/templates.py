@@ -108,3 +108,15 @@ class WW3(ModelExecuter):
 
     def _get_default_format(self):
         return ModelFormat.WW3
+
+
+class VesselIcing(ModelExecuter):
+    def _get_default_format(self):
+        return ModelFormat.VESSEL_ICING
+
+    _input_file_writers = {
+        DnoraFileType.INPUT: inputfile.VesselIcing(),
+    }
+    _model_runners = {
+        DnoraFileType.INPUT: model_runners.VesselIcing(),
+    }

@@ -179,3 +179,29 @@ class SWAN(DataWriter):
                     ct += 1
 
         return filename
+
+
+class VesselIcing(DataWriter):
+    _data_vars = {
+        DnoraDataType.GRID: ["topo"],
+        DnoraDataType.WAVEGRID: ["hs", "tm01"],
+        DnoraDataType.OCEAN: ["sst", "sss"],
+        DnoraDataType.WIND: ["u", "v"],
+        DnoraDataType.WATERLEVEL: ["eta"],
+        DnoraDataType.ICE: ["sic"],
+    }
+
+    def __call__(
+        self,
+        model: ModelRun,
+        file_object: FileNames,
+        obj_type: DnoraDataType,
+        monthly_files: bool = False,
+        daily_files: bool = False,
+        **kwargs,
+    ) -> str:
+        ds = model.get(obj_type).ds()[self._data_vars[obj_type]]
+        if hasattr(ds, "time"):
+            ds = ds.isel(time=0)
+        ds.to_netcdf(file_object.get_filepath())
+        return file_object.get_filepath()
