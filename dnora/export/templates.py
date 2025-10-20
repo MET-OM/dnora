@@ -76,3 +76,11 @@ class REEF3D(DataExporter):
 
     def _get_default_format(self):
         return ModelFormat.REEF3D
+
+
+class VesselIcing(DataExporter):
+    def _get_default_writer(self) -> WriterFunction:
+        return data_writers.VesselIcing()
+
+    def _get_default_format(self):
+        return ModelFormat.VESSEL_ICING
