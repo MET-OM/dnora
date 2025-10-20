@@ -13,6 +13,7 @@ from dnora.defaults import read_environment_variable
 from typing import Union, Optional
 
 
+@add_run_method(DnoraFileType.WAVEGRID)
 @add_run_method(DnoraFileType.OCEAN)
 @add_run_method(DnoraFileType.INPUT)
 @add_run_method(DnoraFileType.SPECTRA)
@@ -32,6 +33,7 @@ from typing import Union, Optional
 @add_write_method(DnoraFileType.CURRENT)
 @add_write_method(DnoraFileType.ICE)
 @add_write_method(DnoraFileType.OCEAN)
+@add_write_method(DnoraFileType.WAVEGRID)
 class ModelExecuter:
     _input_file_writers = {}
     _model_runners = {}

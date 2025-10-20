@@ -117,6 +117,7 @@ class ModelRun:
         DnoraDataType.CURRENT: dnora.read.generic.Netcdf(),
         DnoraDataType.WATERLEVEL: dnora.read.generic.Netcdf(),
         DnoraDataType.OCEAN: dnora.read.generic.Netcdf(),
+        DnoraDataType.WAVEGRID: dnora.read.generic.Netcdf(),
     }
     _point_picker: PointPicker = NearestGridPoint()
 
@@ -609,6 +610,31 @@ class ModelRun:
 
         self._import_data(
             DnoraDataType.OCEAN,
+            name,
+            dry_run,
+            reader,
+            expansion_factor,
+            source,
+            folder,
+            filename,
+            **kwargs,
+        )
+
+    @cached_reader(DnoraDataType.WAVEGRID, dnora.read.generic.Netcdf)
+    def import_wavegrid(
+        self,
+        reader: Optional[DataReader] = None,
+        expansion_factor: float = 1.2,
+        name: Optional[str] = None,
+        dry_run: bool = False,
+        source: Union[str, DataSource] = DataSource.UNDEFINED,
+        folder: Optional[str] = None,
+        filename: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+        """Import wavegrid data from a source using the given reader"""
+        self._import_data(
+            DnoraDataType.WAVEGRID,
             name,
             dry_run,
             reader,
