@@ -201,7 +201,5 @@ class VesselIcing(DataWriter):
         **kwargs,
     ) -> str:
         ds = model.get(obj_type).ds()[self._data_vars[obj_type]]
-        if hasattr(ds, "time"):
-            ds = ds.isel(time=0)
         ds.to_netcdf(file_object.get_filepath())
         return file_object.get_filepath()
