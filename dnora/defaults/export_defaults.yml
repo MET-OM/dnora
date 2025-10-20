@@ -41,7 +41,7 @@ VESSEL_ICING:
   grid:
     filename: 'topo_#GRID'
   input_file:
-    filename: 'ml-fieldcalc'
+    filename: 'mi-fieldcalc'
     extension: 'json'
 
 SWAN:

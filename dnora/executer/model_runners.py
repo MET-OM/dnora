@@ -253,39 +253,61 @@ class VesselIcing(ModelRunner):
                         const V alpha, const V zmin, const V zmax, const int alt)"""
 
         msg.plain(f"Calculating icing:")
-        hs = data.get("wavegrid").hs.values
-        sss = data.get("ocean").sss.values
-        uwnd = data.get("wind").u.values
-        vwnd = data.get("wind").v.values
-        t2m = np.full(data.get("ocean").sss.shape, -20.0)
-        relh = np.full(data.get("ocean").sss.shape, 80.0)
-        sst = data.get("ocean").sst.values
-        eta = data.get("waterlevel").eta.values
-        tm = data.get("wavegrid").tm01.values
-        sic = data.get("ice").sic.values
-        topo = data.get("grid").topo.values
-        time = data.get("wind").time.values
-        msg.plain(
-            f"{pd.to_datetime(time):%Y-%m-%d %H:%M}: Mean over grid: wind={np.mean(uwnd):.2f}, {np.mean(vwnd):.2f}, t2m={np.mean(t2m):.2f}, r={np.mean(relh):.2f}, sst={np.mean(sst):.2f}, sss={np.mean(sss):.2f}, hs={np.mean(hs):.2f}, tm={np.mean(tm):.2f}, sic={np.mean(sic):.2f}, depth={np.mean(topo):.2f}, waterlevel={np.mean(eta):.2f}"
+        icing = []
+        for time in data.get("wind").time.values:
+            hs = data.get("wavegrid").sel(time=time).hs.values
+            sss = data.get("ocean").sel(time=time).sss.values
+            uwnd = data.get("wind").sel(time=time).u.values
+            vwnd = data.get("wind").sel(time=time).v.values
+            t2m = np.full(data.get("ocean").sel(time=time).sss.shape, -20.0)
+            relh = np.full(data.get("ocean").sel(time=time).sss.shape, 80.0)
+            sst = data.get("ocean").sel(time=time).sst.values
+            eta = data.get("waterlevel").sel(time=time).eta.values
+            tm = data.get("wavegrid").sel(time=time).tm01.values
+            sic = data.get("ice").sel(time=time).sic.values
+            topo = data.get("grid").topo.values
+            msg.plain(f"{pd.to_datetime(time):%Y-%m-%d %H:%M}")
+            msg.plain(
+                f"\t<< Mean over grid: wind=({np.mean(uwnd):.2f}, {np.mean(vwnd):.2f}), t2m={np.mean(t2m):.2f}, r={np.mean(relh):.2f}, sst={np.mean(sst):.2f}, sss={np.mean(sss):.2f}, hs={np.mean(hs):.2f}, tm={np.mean(tm):.2f}, sic={np.mean(sic):.2f}, depth={np.mean(topo):.2f}, waterlevel={np.mean(eta):.2f}"
+            )
+            icing.append(
+                mifc.vesselIcingMincog(
+                    sss,
+                    hs,
+                    uwnd,
+                    vwnd,
+                    t2m,  # t2m
+                    relh,  # r
+                    sst,
+                    eta,
+                    tm,
+                    sic,
+                    topo,
+                    5,  # vs
+                    3.14,  # alpha
+                    4,  # zmin
+                    4,  # zmax
+                    1,  # alt
+                    -1e20,  # undef
+                )
+            )
+            msg.plain(f"\t>> Mean icing over grid: {np.mean(icing):.4f}")
+
+        # Add icing variable to Dataset
+        coords = {
+            "lon": data.get("wind").lon,
+            "lat": data.get("wind").lat,
+            "time": data.get("wind").time,
+        }
+        da = xr.DataArray(
+            np.stack(icing, axis=0),
+            dims=("time", "lat", "lon"),
+            coords=coords,
+            name="icing",
         )
-        icing = mifc.vesselIcingMincog(
-            sss,
-            hs,
-            uwnd,
-            vwnd,
-            t2m,  # t2m
-            relh,  # r
-            sst,
-            eta,
-            tm,
-            sic,
-            topo,
-            5,  # vs
-            3.14,  # alpha
-            4,  # zmin
-            4,  # zmax
-            1,  # alt
-            -1e20,  # undef
-        )
-        msg.plain(f"Mean icing over grid: {np.mean(icing):.4f}")
-        breakpoint()
+        da.attrs["grid_mapping"] = "crs"
+        da.attrs["long_name"] = "MINCOG icing"
+        da.attrs["units"] = "mm/h"
+        outfile = f"{file_object.get_folder()}/mi-fieldcalc.nc"
+        msg.to_file(outfile)
+        da.to_netcdf(outfile)
