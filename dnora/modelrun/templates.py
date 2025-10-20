@@ -50,6 +50,7 @@ class Constant(ModelRun):
         DnoraDataType.CURRENT: ConstantData(),
         DnoraDataType.WAVESERIES: ConstantData(),
         DnoraDataType.OCEAN: ConstantData(),
+        DnoraDataType.WAVEGRID: ConstantData(),
     }
 
 
