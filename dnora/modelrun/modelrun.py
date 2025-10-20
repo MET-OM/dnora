@@ -58,6 +58,7 @@ if TYPE_CHECKING:
         Current,
         Ice,
         Ocean,
+        WaveGrid,
         DnoraObject,
     )
 
@@ -871,6 +872,10 @@ class ModelRun:
     def ocean(self) -> Ocean:
         """Returns the ocean object if exists."""
         return self._dnora_objects.get(DnoraDataType.OCEAN)
+
+    def wavegrid(self) -> WaveGrid:
+        """Returns the wavegrid object if exists."""
+        return self._dnora_objects.get(DnoraDataType.WAVEGRID)
 
     def process(
         self, obj_type: Union[DnoraDataType, str], processor: GriddedDataProcessor
