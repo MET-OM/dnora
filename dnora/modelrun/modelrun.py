@@ -872,6 +872,10 @@ class ModelRun:
         """Returns the ocean object if exists."""
         return self._dnora_objects.get(DnoraDataType.OCEAN)
 
+    def wavegrid(self) -> Ocean:
+        """Returns the wavegrid object if exists."""
+        return self._dnora_objects.get(DnoraDataType.WAVEGRID)
+
     def process(
         self, obj_type: Union[DnoraDataType, str], processor: GriddedDataProcessor
     ) -> None:
