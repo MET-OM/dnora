@@ -338,6 +338,8 @@ def ww3_shel(
             "wind": "WINDS",
             "waterlevel": "WATER_LEVELS",
             "current": "CURRENTS",
+            "sic": "ICE_CONC",
+            "sit": "ICE_PARAM1",
         }
         for field_type in FORCING_NAMES:
             if homog.get(field_type) is not None:
