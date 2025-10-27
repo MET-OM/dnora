@@ -52,6 +52,7 @@ class ModelExecuter:
             for name, nest in self.model.nest(get_dict=True).items():
                 msg.plain(f"Will execute '{name}' inside '{model.grid().name}'")
                 self._nest[name] = self.__class__(nest)
+        self.set_output_vars(self.output_vars)
 
     def dry_run(self) -> bool:
         return self._dry_run or self.model.dry_run()
@@ -123,6 +124,7 @@ class ModelExecuter:
                 self.model,
                 file_object,
                 exported_files=self.model.exported_files(),
+                output_vars=self.output_vars,
                 **kwargs,
             )
             if not isinstance(output_files, list):
