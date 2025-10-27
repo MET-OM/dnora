@@ -53,6 +53,7 @@ class InputFileWriter(ABC):
         model: ModelRun,
         file_object: FileNames,
         exported_files: dict[str, list[str]],
+        output_vars: list[str],
         **kwargs,
     ) -> Union[str, list[str]]:
         pass
@@ -64,6 +65,7 @@ class Null(InputFileWriter):
         model: ModelRun,
         file_object: FileNames,
         exported_files: dict[str, list[str]],
+        output_vars: list[str],
         **kwargs,
     ) -> str:
         return ""
@@ -100,7 +102,6 @@ class SWAN(InputFileWriter):
         f_high=1.0,
         n_freq=31,
         n_dir=36,
-        output_var: list[str] = None,
     ):
         self.default_calibrations = {
             "wind": 1,
@@ -114,17 +115,6 @@ class SWAN(InputFileWriter):
         self.f_high = f_high
         self.n_freq = n_freq
         self.n_dir = n_dir
-        self.output_var = output_var or [
-            "HSIGN",
-            "RTP",
-            "TPS",
-            "PDIR",
-            "TM01",
-            "TMM10",
-            "DIR",
-            "DSPR",
-            "DEP",
-        ]
         return
 
     def __call__(
@@ -132,6 +122,7 @@ class SWAN(InputFileWriter):
         model: ModelRun,
         file_object: FileNames,
         exported_files: dict[str, list[str]],
+        output_vars: list[str],
         calibrate: dict[str, float] = None,
         write_mat: bool = False,
         use_wind: bool = True,
@@ -243,8 +234,8 @@ class SWAN(InputFileWriter):
                     model, DnoraDataType.WIND
                 )
 
-                if wind_object is not None:
-                    self.output_var.append("WIND")
+                if wind_object is not None and "WIND" not in output_vars:
+                    output_vars.append("WIND")
 
                 swan_wind(
                     file_out,
@@ -278,8 +269,8 @@ class SWAN(InputFileWriter):
                         model, DnoraDataType.WATERLEVEL
                     )
                 )
-                if waterlevel_object is not None:
-                    self.output_var.append("WATLEV")
+                if waterlevel_object is not None and "WATLEV" not in output_vars:
+                    output_vars.append("WATLEV")
 
                 swan_waterlevel(
                     file_out,
@@ -297,8 +288,8 @@ class SWAN(InputFileWriter):
                     )
                 )
 
-                if current_object is not None:
-                    self.output_var.append("VEL")
+                if current_object is not None and "VEL" not in output_vars:
+                    output_vars.append("VEL")
 
                 swan_current(
                     file_out,
@@ -369,7 +360,7 @@ class SWAN(InputFileWriter):
                 + "' & \n"
             )
 
-            file_out.write("LAY 1 " + " ".join(set(self.output_var)))
+            file_out.write("LAY 1 " + " ".join(output_vars))
             if not homog:
                 file_out.write(" OUTPUT " + STR_START + " 1 HR ")
             file_out.write("\n")
@@ -411,6 +402,7 @@ class SWASH(InputFileWriter):
         model: ModelRun,
         file_object: FileNames,
         exported_files: dict[str, list[str]],
+        output_vars: list[str],
         boundary: str,
         bound_side_command: str = "BOU SIDE #BOUNDARY CCW CON REG #HS #TP #DIRP ",
         dt: float = 0.001,  # [s]
@@ -530,6 +522,7 @@ class REEF3D(InputFileWriter):
         model: ModelRun,
         file_object: FileNames,
         exported_files: dict[str, list[str]],
+        output_vars: list[str],
         option: str = "REEF3D",
         edges: list[str] = ["W"],
         nproc: int = 1,
@@ -804,6 +797,7 @@ class HOS_ocean(InputFileWriter):
         model: ModelRun,
         file_object: FileNames,
         exported_files: dict[str, list[str]],
+        output_vars: list[str],
         **kwargs,
     ) -> str:
         # Create input file name
@@ -1084,6 +1078,7 @@ class WW3(InputFileWriter):
         model: ModelRun,
         file_object: FileNames,
         exported_files: dict[str, list[str]],
+        output_vars: list[str],
         homog: dict[tuple[float, float]] = None,
         **kwargs,
     ) -> str:
@@ -1111,11 +1106,13 @@ class WW3(InputFileWriter):
         forcing["waterlevel"] = model.waterlevel() is not None
         forcing["current"] = model.current() is not None
 
-        ww3_shel(filename, start_time, end_time, forcing, homog, spectral_output)
+        ww3_shel(
+            filename, start_time, end_time, forcing, homog, spectral_output, output_vars
+        )
         # Make inputfiles for the post-processing
         ounf_filename = file_object.get_folder() + "/ww3_ounf.nml"
         ounp_filename = file_object.get_folder() + "/ww3_ounp.nml"
-        ww3_ounf(ounf_filename, start_time, len(model.time()), 3600)
+        ww3_ounf(ounf_filename, start_time, len(model.time()), 3600, output_vars)
         ww3_ounp(ounp_filename, start_time, len(model.time()), 3600)
 
         return [filename, ounf_filename, ounp_filename]
