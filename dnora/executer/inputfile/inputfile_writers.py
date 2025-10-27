@@ -100,7 +100,6 @@ class SWAN(InputFileWriter):
         f_high=1.0,
         n_freq=31,
         n_dir=36,
-        output_var: list[str] = None,
     ):
         self.default_calibrations = {
             "wind": 1,
@@ -114,17 +113,6 @@ class SWAN(InputFileWriter):
         self.f_high = f_high
         self.n_freq = n_freq
         self.n_dir = n_dir
-        self.output_var = output_var or [
-            "HSIGN",
-            "RTP",
-            "TPS",
-            "PDIR",
-            "TM01",
-            "TMM10",
-            "DIR",
-            "DSPR",
-            "DEP",
-        ]
         return
 
     def __call__(
@@ -132,6 +120,7 @@ class SWAN(InputFileWriter):
         model: ModelRun,
         file_object: FileNames,
         exported_files: dict[str, list[str]],
+        output_vars: list[str],
         calibrate: dict[str, float] = None,
         write_mat: bool = False,
         use_wind: bool = True,
@@ -369,7 +358,7 @@ class SWAN(InputFileWriter):
                 + "' & \n"
             )
 
-            file_out.write("LAY 1 " + " ".join(set(self.output_var)))
+            file_out.write("LAY 1 " + " ".join(set(output_vars)))
             if not homog:
                 file_out.write(" OUTPUT " + STR_START + " 1 HR ")
             file_out.write("\n")
