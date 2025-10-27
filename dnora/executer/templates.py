@@ -21,6 +21,8 @@ class SWAN(ModelExecuter):
         gp.ocean.WaterDepth: "DEPTH",
         gp.wind.Wind: "WIND",
         gp.wave.Tm02: "TM02",
+        gp.ocean.Current: "VEL",
+        gp.ocean.WaterLevel: "WATLEV",
     }
     _output_vars = [
         gp.wave.Hs,
@@ -67,6 +69,10 @@ class WW3(ModelExecuter):
         gp.wave.Fp: "FP",
         gp.wave.Km: "WNM",
         gp.wave.HsIG: "HIG",
+        gp.wave.Current: "CUR",
+        gp.ocean.WaterLevel: "WLV",
+        gp.ocean.IceFraction: "ICE",
+        gp.ocean.IceThickness: "IC1",
     }
     _output_vars = [
         gp.wave.Hs,
