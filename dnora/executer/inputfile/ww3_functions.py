@@ -234,7 +234,7 @@ def ww3_prnc(
     def write_ice(subtype: str):
         fout.write("&FORCING_NML\n")
         if subtype == 'sic':
-            fout.write("FORCING%FIELD%ICE_PARAM3       = T\n")
+            fout.write("FORCING%FIELD%ICE_CONC       = T\n")
         elif subtype == 'sit':
             fout.write("FORCING%FIELD%ICE_PARAM1       = T\n")
         fout.write("FORCING%GRID%LATLON          = T\n")
@@ -338,6 +338,8 @@ def ww3_shel(
             "wind": "WINDS",
             "waterlevel": "WATER_LEVELS",
             "current": "CURRENTS",
+            "sic": "ICE_CONC",
+            "sit": "ICE_PARAM1",
         }
         for field_type in FORCING_NAMES:
             if homog.get(field_type) is not None:
