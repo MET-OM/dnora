@@ -53,6 +53,7 @@ class InputFileWriter(ABC):
         model: ModelRun,
         file_object: FileNames,
         exported_files: dict[str, list[str]],
+        output_vars: list[str],
         **kwargs,
     ) -> Union[str, list[str]]:
         pass
@@ -64,6 +65,7 @@ class Null(InputFileWriter):
         model: ModelRun,
         file_object: FileNames,
         exported_files: dict[str, list[str]],
+        output_vars: list[str],
         **kwargs,
     ) -> str:
         return ""
@@ -400,6 +402,7 @@ class SWASH(InputFileWriter):
         model: ModelRun,
         file_object: FileNames,
         exported_files: dict[str, list[str]],
+        output_vars: list[str],
         boundary: str,
         bound_side_command: str = "BOU SIDE #BOUNDARY CCW CON REG #HS #TP #DIRP ",
         dt: float = 0.001,  # [s]
@@ -519,6 +522,7 @@ class REEF3D(InputFileWriter):
         model: ModelRun,
         file_object: FileNames,
         exported_files: dict[str, list[str]],
+        output_vars: list[str],
         option: str = "REEF3D",
         edges: list[str] = ["W"],
         nproc: int = 1,
@@ -793,6 +797,7 @@ class HOS_ocean(InputFileWriter):
         model: ModelRun,
         file_object: FileNames,
         exported_files: dict[str, list[str]],
+        output_vars: list[str],
         **kwargs,
     ) -> str:
         # Create input file name
