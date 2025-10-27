@@ -41,7 +41,7 @@ class ModelExecuter:
     _input_file_writers = {}
     _model_runners = {}
     _output_var_aliases = {}
-    output_vars = []
+    _output_vars = []
 
     def _get_default_format(self) -> str:
         return ModelFormat.MODELRUN
@@ -56,7 +56,7 @@ class ModelExecuter:
             for name, nest in self.model.nest(get_dict=True).items():
                 msg.plain(f"Will execute '{name}' inside '{model.grid().name}'")
                 self._nest[name] = self.__class__(nest)
-        self.set_output_vars(self.output_vars)
+        self.set_output_vars(self._output_vars)
 
     def dry_run(self) -> bool:
         return self._dry_run or self.model.dry_run()
@@ -67,7 +67,7 @@ class ModelExecuter:
         verbose: bool = False,
     ) -> None:
         """Set the output variables that will be used when running the model"""
-        self.output_vars = []
+        self._output_vars = []
         self.add_output_vars(output_vars=output_vars, verbose=verbose)
 
     def add_output_vars(
@@ -82,7 +82,7 @@ class ModelExecuter:
             if isinstance(var, str):
                 if verbose:
                     msg.plain(f"Mapping '{var}' >> '{var}'")
-                self.output_vars.append(var)
+                self._output_vars.append(var)
             elif gp.is_gp(var):
                 key = var.find_me_in(self._output_var_aliases.keys(), return_first=True)
                 if key is None:
@@ -93,7 +93,7 @@ class ModelExecuter:
                     model_var = self._output_var_aliases.get(key)
                     if verbose:
                         msg.plain(f"Mapping {key} >> '{model_var}'")
-                    self.output_vars.append(model_var)
+                    self._output_vars.append(model_var)
             else:
                 raise TypeError(
                     f"Variables need to be of type 'str' or geo-parameters, not {var}!"
@@ -152,7 +152,7 @@ class ModelExecuter:
                 self.model,
                 file_object,
                 exported_files=self.model.exported_files(),
-                output_vars=self.output_vars,
+                output_vars=self._output_vars,
                 **kwargs,
             )
             if not isinstance(output_files, list):
