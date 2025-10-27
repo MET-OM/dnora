@@ -1073,6 +1073,7 @@ class WW3(InputFileWriter):
         model: ModelRun,
         file_object: FileNames,
         exported_files: dict[str, list[str]],
+        output_vars: list[str],
         homog: dict[tuple[float, float]] = None,
         **kwargs,
     ) -> str:
@@ -1100,11 +1101,13 @@ class WW3(InputFileWriter):
         forcing["waterlevel"] = model.waterlevel() is not None
         forcing["current"] = model.current() is not None
 
-        ww3_shel(filename, start_time, end_time, forcing, homog, spectral_output)
+        ww3_shel(
+            filename, start_time, end_time, forcing, homog, spectral_output, output_vars
+        )
         # Make inputfiles for the post-processing
         ounf_filename = file_object.get_folder() + "/ww3_ounf.nml"
         ounp_filename = file_object.get_folder() + "/ww3_ounp.nml"
-        ww3_ounf(ounf_filename, start_time, len(model.time()), 3600)
+        ww3_ounf(ounf_filename, start_time, len(model.time()), 3600, output_vars)
         ww3_ounp(ounp_filename, start_time, len(model.time()), 3600)
 
         return [filename, ounf_filename, ounp_filename]
