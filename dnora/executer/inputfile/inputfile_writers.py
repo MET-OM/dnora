@@ -360,7 +360,7 @@ class SWAN(InputFileWriter):
                 + "' & \n"
             )
 
-            file_out.write("LAY 1 " + " ".join(set(output_vars)))
+            file_out.write("LAY 1 " + " ".join(output_vars))
             if not homog:
                 file_out.write(" OUTPUT " + STR_START + " 1 HR ")
             file_out.write("\n")
