@@ -19,7 +19,7 @@ class SWAN(ModelExecuter):
         gp.wave.Dirp: "PDIR",
         gp.ocean.WaterDepth: "DEP",
     }
-    output_vars = [
+    _output_vars = [
         gp.wave.Hs,
         gp.wave.Tp,
         "RTP",
@@ -58,7 +58,7 @@ class WW3(ModelExecuter):
         gp.ocean.WaterDepth: "DPT",
         gp.wind.Wind: "WND",
     }
-    output_vars = [
+    _output_vars = [
         gp.wave.Hs,
         gp.wave.Tp,
         gp.wave.Tm01,
