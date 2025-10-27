@@ -61,15 +61,39 @@ class ModelExecuter:
     def dry_run(self) -> bool:
         return self._dry_run or self.model.dry_run()
 
-    def set_output_vars(self, output_vars: list[Union[MetaParameter, str]]) -> None:
+    def set_output_vars(
+        self,
+        output_vars: list[Union[MetaParameter, str]],
+        verbose: bool = False,
+    ) -> None:
         """Set the output variables that will be used when running the model"""
         self.output_vars = []
+        self.add_output_vars(output_vars=output_vars, verbose=verbose)
+
+    def add_output_vars(
+        self,
+        output_vars: list[Union[MetaParameter, str]],
+        verbose: bool = False,
+    ) -> None:
+        """Adds output variables for the wave model while keeping the old ones"""
+        if not isinstance(output_vars, list):
+            output_vars = [output_vars]
         for var in output_vars:
             if isinstance(var, str):
+                if verbose:
+                    msg.plain(f"Mapping '{var}' >> '{var}'")
                 self.output_vars.append(var)
             elif gp.is_gp(var):
                 key = var.find_me_in(self._output_var_aliases.keys(), return_first=True)
-                self.output_vars.append(self._output_var_aliases.get(key))
+                if key is None:
+                    msg.info(
+                        f"Cannot find variable {var} in the alias list! Skipping..."
+                    )
+                else:
+                    model_var = self._output_var_aliases.get(key)
+                    if verbose:
+                        msg.plain(f"Mapping {key} >> '{model_var}'")
+                    self.output_vars.append(model_var)
             else:
                 raise TypeError(
                     f"Variables need to be of type 'str' or geo-parameters, not {var}!"
