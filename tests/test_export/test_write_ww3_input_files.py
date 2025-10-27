@@ -295,10 +295,9 @@ def test_ounf(grid):
     assert nml_dict["FIELD_NML"]["FIELD"]["TIMECOUNT"] == "'48'"
     assert nml_dict["FIELD_NML"]["FIELD"]["TIMESTRIDE"] == "'3600'"
     assert nml_dict["FIELD_NML"]["FIELD"]["TIMESPLIT"] == "6"
+
     assert nml_dict["FIELD_NML"]["FIELD"][
         "LIST"
-    ] == "'HS LM TP DIR SPR DP T02 T0M1 T01 UST CHA DPT WND USS TUS TAW TWO TOC FAW FOC PHS PTP PTM10 PT01 PT02 PDIR PDP MXE MXH MXHC SDMH SDMHC ABR UBR FBB TBB CGE WCC WBT'".replace(
-        " ", ""
-    )
+    ] == "'HS TP T01 T02 T0M1 DIR DP SPR WND UST DPT'".replace(" ", "")
     assert nml_dict["FILE_NML"]["FILE"]["NETCDF"] == "3"
     cleanup()
