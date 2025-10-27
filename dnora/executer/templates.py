@@ -3,12 +3,32 @@ from . import model_runners
 from . import inputfile
 from dnora.type_manager.model_formats import ModelFormat
 from dnora.type_manager.dnora_types import DnoraFileType
+import geo_parameters as gp
 
 
 class SWAN(ModelExecuter):
 
     _input_file_writers = {DnoraFileType.INPUT: inputfile.SWAN()}
     _model_runners = {DnoraFileType.INPUT: model_runners.SWAN()}
+    _output_var_aliases = {
+        gp.wave.Hs: "HSIGN",
+        gp.wave.Tp: "TPS",
+        gp.wave.Tm01: "TM01",
+        gp.wave.Tm_10: "TMM10",
+        gp.wave.Dirm: "DIR",
+        gp.wave.Dirp: "PDIR",
+        gp.ocean.WaterDepth: "DEP",
+    }
+    output_vars = [
+        gp.wave.Hs,
+        gp.wave.Tp,
+        "RTP",
+        gp.wave.Tm01,
+        gp.wave.Tm_10,
+        gp.wave.Dirm,
+        gp.wave.Dirp,
+        gp.ocean.WaterDepth,
+    ]
 
     def _get_default_format(self):
         return ModelFormat.SWAN
@@ -34,7 +54,15 @@ class WW3(ModelExecuter):
         DnoraFileType.ICE: inputfile.WW3Forcing(DnoraFileType.ICE),
         DnoraFileType.SPECTRA: inputfile.WW3Spectra(),
     }
-    _model_runners = {DnoraFileType.GRID: model_runners.WW3('grid'), DnoraFileType.WIND: model_runners.WW3('prnc'), DnoraFileType.SPECTRA: model_runners.WW3('bounc'), DnoraFileType.INPUT: model_runners.WW3('shel'), DnoraFileType.CURRENT: model_runners.WW3('prnc'), DnoraFileType.WATERLEVEL: model_runners.WW3('prnc'),DnoraFileType.ICE: model_runners.WW3('prnc')}
+    _model_runners = {
+        DnoraFileType.GRID: model_runners.WW3("grid"),
+        DnoraFileType.WIND: model_runners.WW3("prnc"),
+        DnoraFileType.SPECTRA: model_runners.WW3("bounc"),
+        DnoraFileType.INPUT: model_runners.WW3("shel"),
+        DnoraFileType.CURRENT: model_runners.WW3("prnc"),
+        DnoraFileType.WATERLEVEL: model_runners.WW3("prnc"),
+        DnoraFileType.ICE: model_runners.WW3("prnc"),
+    }
 
     def _get_default_format(self):
         return ModelFormat.WW3
