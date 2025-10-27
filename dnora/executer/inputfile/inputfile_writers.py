@@ -234,8 +234,8 @@ class SWAN(InputFileWriter):
                     model, DnoraDataType.WIND
                 )
 
-                if wind_object is not None:
-                    self.output_var.append("WIND")
+                if wind_object is not None and "WIND" not in output_vars:
+                    output_vars.append("WIND")
 
                 swan_wind(
                     file_out,
@@ -269,8 +269,8 @@ class SWAN(InputFileWriter):
                         model, DnoraDataType.WATERLEVEL
                     )
                 )
-                if waterlevel_object is not None:
-                    self.output_var.append("WATLEV")
+                if waterlevel_object is not None and "WATLEV" not in output_vars:
+                    output_vars.append("WATLEV")
 
                 swan_waterlevel(
                     file_out,
@@ -288,8 +288,8 @@ class SWAN(InputFileWriter):
                     )
                 )
 
-                if current_object is not None:
-                    self.output_var.append("VEL")
+                if current_object is not None and "VEL" not in output_vars:
+                    output_vars.append("VEL")
 
                 swan_current(
                     file_out,
