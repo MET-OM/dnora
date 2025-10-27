@@ -12,6 +12,9 @@ from .decorators import add_write_method, add_run_method
 from dnora.defaults import read_environment_variable
 from typing import Union, Optional
 
+from geo_parameters.metaparameter import MetaParameter
+import geo_parameters as gp
+
 
 @add_run_method(DnoraFileType.WAVEGRID)
 @add_run_method(DnoraFileType.OCEAN)
@@ -37,6 +40,7 @@ from typing import Union, Optional
 class ModelExecuter:
     _input_file_writers = {}
     _model_runners = {}
+    _output_var_aliases = {}
 
     def _get_default_format(self) -> str:
         return ModelFormat.MODELRUN
@@ -54,6 +58,20 @@ class ModelExecuter:
 
     def dry_run(self) -> bool:
         return self._dry_run or self.model.dry_run()
+
+    def set_output_vars(self, output_vars: list[Union[MetaParameter, str]]) -> None:
+        """Set the output variables that will be used when running the model"""
+        self.output_vars = []
+        for var in output_vars:
+            if isinstance(var, str):
+                self.output_vars.append(var)
+            elif gp.is_gp(var):
+                key = var.find_me_in(self._output_var_aliases.keys(), return_first=True)
+                self.output_vars.append(self._output_var_aliases.get(key))
+            else:
+                raise TypeError(
+                    f"Variables need to be of type 'str' or geo-parameters, not {var}!"
+                )
 
     def _write(
         self,
