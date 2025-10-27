@@ -17,7 +17,7 @@ class SWAN(ModelExecuter):
         gp.wave.Tm_10: "TMM10",
         gp.wave.Dirm: "DIR",
         gp.wave.Dirp: "PDIR",
-        gp.wave.Sprm: "DSPR",
+        gp.wave.Spr: "DSPR",
         gp.ocean.WaterDepth: "DEPTH",
         gp.wind.Wind: "WIND",
     }
