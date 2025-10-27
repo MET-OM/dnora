@@ -20,6 +20,7 @@ class SWAN(ModelExecuter):
         gp.wave.Spr: "DSPR",
         gp.ocean.WaterDepth: "DEPTH",
         gp.wind.Wind: "WIND",
+        gp.wave.Tm02: "TM02",
     }
     _output_vars = [
         gp.wave.Hs,
@@ -27,6 +28,7 @@ class SWAN(ModelExecuter):
         "RTP",
         gp.wave.Tm01,
         gp.wave.Tm_10,
+        gp.wave.Tm02,
         gp.wave.Dirm,
         gp.wave.Dirp,
         gp.wave.Spr,
@@ -61,6 +63,10 @@ class WW3(ModelExecuter):
         gp.wind.FrictionVelocity: "UST",
         gp.ocean.WaterDepth: "DPT",
         gp.wind.Wind: "WND",
+        gp.wave.Stokes: "USS",
+        gp.wave.Fp: "FP",
+        gp.wave.Km: "WNM",
+        gp.wave.HsIG: "HIG",
     }
     _output_vars = [
         gp.wave.Hs,

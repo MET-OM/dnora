@@ -78,6 +78,7 @@ class ModelExecuter:
         """Adds output variables for the wave model while keeping the old ones"""
         if not isinstance(output_vars, list):
             output_vars = [output_vars]
+
         for var in output_vars:
             if isinstance(var, str):
                 if verbose:
