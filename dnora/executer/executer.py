@@ -41,6 +41,7 @@ class ModelExecuter:
     _input_file_writers = {}
     _model_runners = {}
     _output_var_aliases = {}
+    output_vars = []
 
     def _get_default_format(self) -> str:
         return ModelFormat.MODELRUN
