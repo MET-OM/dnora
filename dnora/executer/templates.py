@@ -17,7 +17,9 @@ class SWAN(ModelExecuter):
         gp.wave.Tm_10: "TMM10",
         gp.wave.Dirm: "DIR",
         gp.wave.Dirp: "PDIR",
-        gp.ocean.WaterDepth: "DEP",
+        gp.wave.Sprm: "DSPR",
+        gp.ocean.WaterDepth: "DEPTH",
+        gp.wind.Wind: "WIND",
     }
     _output_vars = [
         gp.wave.Hs,
@@ -27,7 +29,9 @@ class SWAN(ModelExecuter):
         gp.wave.Tm_10,
         gp.wave.Dirm,
         gp.wave.Dirp,
+        gp.wave.Spr,
         gp.ocean.WaterDepth,
+        gp.wind.Wind,
     ]
 
     def _get_default_format(self):
