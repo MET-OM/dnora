@@ -361,7 +361,7 @@ def ww3_shel(
 
     def write_output():
         fout.write("&OUTPUT_TYPE_NML\n")
-        wave_vars = " ".join(set(output_vars))
+        wave_vars = " ".join(output_vars)
         fout.write(f"  TYPE%FIELD%LIST     = '{wave_vars}'\n")
         if spectral_output:
             fout.write(f"  TYPE%POINT%FILE     = 'spectral_points.list'\n")
@@ -430,7 +430,7 @@ def ww3_ounf(
     filename: str, start_time: str, count: int, stride: int, output_vars: list[str]
 ):
     def write_field():
-        wave_vars = " ".join(set(output_vars))
+        wave_vars = " ".join(output_vars)
         fout.write("&FIELD_NML\n")
         fout.write(f"  FIELD%LIST     = '{wave_vars}'\n")
 
