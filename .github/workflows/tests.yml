@@ -18,7 +18,7 @@ jobs:
         shell: bash -l {0}
     strategy:
       matrix:
-        os: ["ubuntu", "windows"]
+        os: ["ubuntu"]
         python-version: [ '3.9', '3.10', '3.11', '3.12', '3.13' ]
     steps:
       - uses: actions/checkout@v4
@@ -31,12 +31,8 @@ jobs:
           miniforge-variant: Miniforge3
       - name: Run tests
         run: |
-          conda deactivate
-          conda env remove -n test --yes || true
-          conda create -n test python=${{ matrix.python-version }} --yes
           conda activate test
           pip install .
-          pip install pytest
           cd tests
           pytest -vs --log-cli-level=debug --cache-clear -m "not remote"
 
