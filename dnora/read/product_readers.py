@@ -17,6 +17,8 @@ import xarray as xr
 from dnora import utils
 
 from typing import Union, Optional
+
+
 class ProductReader(DataReader):
     """This should not be used directly, but is a template for model specific implementations"""
 
@@ -34,7 +36,9 @@ class ProductReader(DataReader):
 
     def __init__(
         self,
-        stride: Union[int, str, None] = None,  # Integer is number of hours, 'month' for monthly files
+        stride: Union[
+            int, str, None
+        ] = None,  # Integer is number of hours, 'month' for monthly files
         hours_per_file: Optional[int] = None,  # None for stride = 'month'
         last_file: Optional[str] = None,
         lead_time: Optional[int] = None,
@@ -81,10 +85,14 @@ class ProductReader(DataReader):
         """Reads in all gridded data for given area and time"""
         tile = tile or self._tile
         tile_name = self.product_configuration.tile_names.get(tile)
-        folder = self._folder(folder, source, tile=tile, tile_name=tile_name, strict=False)
-        filename = self._filename(filename, source, tile=tile, tile_name=tile_name, strict=False)
+        folder = self._folder(
+            folder, source, tile=tile, tile_name=tile_name, strict=False
+        )
+        filename = self._filename(
+            filename, source, tile=tile, tile_name=tile_name, strict=False
+        )
         start_times, end_times, file_times = self.file_structure.create_time_stamps(
-            start_time, end_time, kwargs.get('last_file', '')
+            start_time, end_time, kwargs.get("last_file", "")
         )
         msg.info(
             f"Getting {obj_type} from {self.name()} from {start_time} to {end_time}"
@@ -162,7 +170,9 @@ class SpectralProductReader(SpectralDataReader):
 
     def __init__(
         self,
-        stride: Union[int, str, None] = None,  # Integer is number of hours, 'month' for monthly files
+        stride: Union[
+            int, str, None
+        ] = None,  # Integer is number of hours, 'month' for monthly files
         hours_per_file: Optional[int] = None,  # None for stride = 'month'
         last_file: Optional[str] = None,
         lead_time: Optional[int] = None,
@@ -272,7 +282,7 @@ class SpectralProductReader(SpectralDataReader):
                     points = points.absorb(data, dim="inds")
         else:
             start_times, end_times, file_times = self.file_structure.create_time_stamps(
-                start_time, end_time
+                start_time, end_time, kwargs.get("last_file", "")
             )
 
             ds_creator_function = partial(
