@@ -1105,6 +1105,12 @@ class WW3(InputFileWriter):
         forcing["wind"] = model.wind() is not None
         forcing["waterlevel"] = model.waterlevel() is not None
         forcing["current"] = model.current() is not None
+        forcing["sit"] = (
+            model.ice() is not None and model.ice().get("sit", strict=True) is not None
+        )
+        forcing["sic"] = (
+            model.ice() is not None and model.ice().get("sic", strict=True) is not None
+        )
 
         ww3_shel(
             filename, start_time, end_time, forcing, homog, spectral_output, output_vars
