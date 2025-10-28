@@ -338,25 +338,20 @@ def ww3_shel(
     def write_input():
         fout.write("&INPUT_NML\n")
         FORCING_NAMES = {
-            "wind": "WINDS",
-            "waterlevel": "WATER_LEVELS",
-            "current": "CURRENTS",
-            "sic": "ICE_CONC",
-            "sit": "ICE_PARAM1",
+            "WINDS": "wind",
+            "WATER_LEVELS": "waterlevel",
+            "CURRENTS": "current",
+            "ICE_CONC": "sic",
+            "ICE_PARAM1": "sit",
         }
-        for field_type in FORCING_NAMES:
-            if homog.get(field_type) is not None:
-                fout.write(
-                    f"  INPUT%FORCING%{FORCING_NAMES[field_type]}         = 'H'\n"
-                )
-            elif forcing.get(field_type):
-                fout.write(
-                    f"  INPUT%FORCING%{FORCING_NAMES[field_type]}         = 'T'\n"
-                )
+        for field_type, name in FORCING_NAMES.items():
+
+            if homog.get(name) is not None:
+                fout.write(f"  INPUT%FORCING%{field_type}         = 'H'\n")
+            elif forcing.get(name):
+                fout.write(f"  INPUT%FORCING%{field_type}         = 'T'\n")
             else:
-                fout.write(
-                    f"  INPUT%FORCING%{FORCING_NAMES[field_type]}         = 'F'\n"
-                )
+                fout.write(f"  INPUT%FORCING%{field_type}         = 'F'\n")
         fout.write("/\n")
 
     def write_output():
