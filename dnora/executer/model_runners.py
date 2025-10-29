@@ -12,6 +12,9 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 
+from dnora.type_manager.dnora_objects import dnora_objects
+from dnora.type_manager.dnora_types import data_type_from_string
+
 
 class ModelRunner(ABC):
     """Runs the model."""
@@ -230,6 +233,35 @@ class REEF3D(ModelRunner):
                 cwd=model_folder,
             )
         p.wait()
+
+
+class VesselIcingPreProcessor(ModelRunner):
+    def __init__(self, data_type: str) -> None:
+        self._data_type = data_type
+
+    def preferred_format(self) -> str:
+        """For generation of file name."""
+        return ModelFormat.VESSEL_ICING
+
+    def __call__(self, file_object: FileNames, model_folder: str) -> None:
+        with open(f"{file_object.get_folder()}/mi-fieldcalc.json", "r") as f:
+            config = json.load(f)
+
+        obj_type_common = data_type_from_string("grid")
+        obj_common = dnora_objects.get(obj_type_common)
+        common_grid = obj_common.from_ds(xr.open_dataset(config.get("grid")))
+
+        if self._data_type == "grid":
+            out_data = common_grid
+        else:
+            obj_type = data_type_from_string(self._data_type)
+            obj = dnora_objects.get(obj_type)
+            raw_data = obj.from_ds(xr.open_dataset(config.get(self._data_type)))
+            new_data = raw_data.resample.grid(common_grid, verbose=True)
+
+        outfile = f"{file_object.get_folder()}/mi-fieldcalc_{self._data_type}.nc"
+        msg.to_file(outfile)
+        out_data.ds().to_netcdf(outfile)
 
 
 class VesselIcing(ModelRunner):
