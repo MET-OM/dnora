@@ -50,6 +50,7 @@ class ModelExecuter:
 
     def __init__(self, model, include_nest: bool = True):
         self.model = model
+        self.model._input_file_export_format["general"] = self._get_default_format()
         self._nest = {}
         if not self.model.parent():
             msg.header(self, "Initializing model executer...")
@@ -163,6 +164,7 @@ class ModelExecuter:
 
         msg.to_multifile(output_files)
         self.model._input_file_exported_to[file_type] = output_files
+        self.model._input_file_export_format[file_type] = self._get_default_format()
 
         return
 

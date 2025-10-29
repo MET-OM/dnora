@@ -51,6 +51,7 @@ class DataExporter:
 
     def __init__(self, model, include_nest: bool = True):
         self.model = model
+        self.model._data_export_format["general"] = self._get_default_format()
         self._nest = {}
         if not self.model.parent():
             msg.header(self, "Initializing model exporter...")
@@ -178,7 +179,7 @@ class DataExporter:
         # Store name and location where file was written
         old_files = self.model._data_exported_to.get(obj_type, [])
         self.model._data_exported_to[obj_type] = old_files + output_files
-
+        self.model._data_export_format[obj_type] = self._get_default_format()
         if not self._silent:
             msg.to_multifile(output_files)
 
