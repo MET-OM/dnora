@@ -17,6 +17,7 @@ import geo_parameters as gp
 
 
 @add_run_method(DnoraFileType.ATMOSPHERE)
+@add_run_method(DnoraFileType.WAVESERIES)
 @add_run_method(DnoraFileType.WAVEGRID)
 @add_run_method(DnoraFileType.OCEAN)
 @add_run_method(DnoraFileType.INPUT)
