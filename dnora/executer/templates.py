@@ -119,8 +119,10 @@ class VesselIcing(ModelExecuter):
     }
     _model_runners = {
         DnoraFileType.INPUT: model_runners.VesselIcing(),
+        DnoraFileType.GRID: model_runners.VesselIcingPreProcessor("grid"),
         DnoraFileType.WIND: model_runners.VesselIcingPreProcessor("wind"),
         DnoraFileType.WAVEGRID: model_runners.VesselIcingPreProcessor("wavegrid"),
+        DnoraFileType.WAVEGRID: model_runners.VesselIcingPreProcessor("waveseries"),
         DnoraFileType.ICE: model_runners.VesselIcingPreProcessor("ice"),
         DnoraFileType.WATERLEVEL: model_runners.VesselIcingPreProcessor("waterlevel"),
         DnoraFileType.OCEAN: model_runners.VesselIcingPreProcessor("ocean"),

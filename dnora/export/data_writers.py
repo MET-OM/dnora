@@ -185,6 +185,7 @@ class VesselIcing(DataWriter):
     _data_vars = {
         DnoraDataType.GRID: ["topo"],
         DnoraDataType.WAVEGRID: ["hs", "tm01"],
+        DnoraDataType.WAVESERIES: ["hs", "tm01"],
         DnoraDataType.OCEAN: ["sst", "sss"],
         DnoraDataType.WIND: ["u", "v"],
         DnoraDataType.WATERLEVEL: ["eta"],

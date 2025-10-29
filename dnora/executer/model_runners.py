@@ -257,9 +257,12 @@ class VesselIcingPreProcessor(ModelRunner):
             obj_type = data_type_from_string(self._data_type)
             obj = dnora_objects.get(obj_type)
             raw_data = obj.from_ds(xr.open_dataset(config.get(self._data_type)))
-            new_data = raw_data.resample.grid(common_grid, verbose=True)
+            out_data = raw_data.resample.grid(common_grid, verbose=True)
 
-        outfile = f"{file_object.get_folder()}/mi-fieldcalc_{self._data_type}.nc"
+        if self._data_type in ["wavegrid", "waveseries"]:
+            outfile = f"{file_object.get_folder()}/mi-fieldcalc_wave.nc"
+        else:
+            outfile = f"{file_object.get_folder()}/mi-fieldcalc_{self._data_type}.nc"
         msg.to_file(outfile)
         out_data.ds().to_netcdf(outfile)
 

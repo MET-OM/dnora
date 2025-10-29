@@ -80,7 +80,15 @@ class VesselIcing(InputFileWriter):
         exported_files: dict[str, list[str]],
         **kwargs,
     ) -> str:
-        data_types = ["grid", "wind", "ocean", "waterlevel", "ice", "wavegrid"]
+        data_types = [
+            "grid",
+            "wind",
+            "ocean",
+            "waterlevel",
+            "ice",
+            "wavegrid",
+            "waveseries",
+        ]
         config = {data: exported_files.get(data)[-1] for data in data_types}
 
         with open(file_object.get_filepath(), "w") as f:
