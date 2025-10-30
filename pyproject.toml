@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dnora"
-version = "2.3.1"
+version = "2.3.2"
 description = "dnora - a software for dynamical downscaling of wave products"
 authors = [ { name = "Konstantinos Christakos", email = "konstantinosc@met.no"}, { name = "Jan-Victor Björkqvist", email = "janvb@met.no" } ]
 urls = {homepage = "https://github.com/MET-OM/dnora", download = "https://github.com/MET-OM/dnora"}
-requires-python = ">=3.9, <=3.13"
+requires-python = ">=3.9"
 dependencies = [
     "matplotlib>=3.1",
     "numpy>=1.17",
@@ -17,11 +17,11 @@ dependencies = [
     "xarray>=0.20.1",
     "netCDF4",
     "meshio",
-    "geo-skeletons>=0.20.14",
+    "geo-skeletons>=0.21.1",
     "python-dotenv",
     "progressbar",
     "pyarrow",
-    "dnplot>=0.4.2",
+    "dnplot>=0.4.3",
     "dask[dataframe]"
 ]
 readme = "README.md"
