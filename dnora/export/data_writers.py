@@ -201,6 +201,11 @@ class VesselIcing(DataWriter):
         daily_files: bool = False,
         **kwargs,
     ) -> str:
-        ds = model.get(obj_type).ds()[self._data_vars[obj_type]]
+        vars_to_select = [
+            var
+            for var in self._data_vars[obj_type]
+            if model.get(obj_type).get(var, strict=True) is not None
+        ]
+        ds = model.get(obj_type).ds()[vars_to_select]
         ds.to_netcdf(file_object.get_filepath())
         return file_object.get_filepath()
