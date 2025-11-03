@@ -290,20 +290,20 @@ class VesselIcing(ModelRunner):
         msg.plain(f"Calculating icing:")
         icing = []
         for time in data.get("wind").time.values:
-            hs = data.get("wavegrid").sel(time=time).hs.values
+            hs = data.get("wave").sel(time=time).hs.values
             sss = data.get("ocean").sel(time=time).sss.values
             uwnd = data.get("wind").sel(time=time).u.values
             vwnd = data.get("wind").sel(time=time).v.values
-            t2m = np.full(data.get("ocean").sel(time=time).sss.shape, -20.0)
-            relh = np.full(data.get("ocean").sel(time=time).sss.shape, 80.0)
+            t2m = data.get("atmosphere").sel(time=time).t2m.values
+            relh = data.get("atmosphere").sel(time=time).r.values
             sst = data.get("ocean").sel(time=time).sst.values
-            eta = data.get("waterlevel").sel(time=time).eta.values
-            tm = data.get("wavegrid").sel(time=time).tm01.values
+            mslp = data.get("atmosphere").sel(time=time).mslp.values
+            tm = data.get("wave").sel(time=time).tm01.values
             sic = data.get("ice").sel(time=time).sic.values
             topo = data.get("grid").topo.values
             msg.plain(f"{pd.to_datetime(time):%Y-%m-%d %H:%M}")
             msg.plain(
-                f"\t<< Mean over grid: wind=({np.mean(uwnd):.2f}, {np.mean(vwnd):.2f}), t2m={np.mean(t2m):.2f}, r={np.mean(relh):.2f}, sst={np.mean(sst):.2f}, sss={np.mean(sss):.2f}, hs={np.mean(hs):.2f}, tm={np.mean(tm):.2f}, sic={np.mean(sic):.2f}, depth={np.mean(topo):.2f}, waterlevel={np.mean(eta):.2f}"
+                f"\t<< Mean over grid: wind=({np.mean(uwnd):.2f}, {np.mean(vwnd):.2f}), t2m={np.mean(t2m):.2f}, r={np.mean(relh):.2f}, sst={np.mean(sst):.2f}, sss={np.mean(sss):.2f}, hs={np.mean(hs):.2f}, tm={np.mean(tm):.2f}, sic={np.mean(sic):.2f}, depth={np.mean(topo):.2f}, mspl={np.mean(mslp):.0f}"
             )
             icing.append(
                 mifc.vesselIcingMincog(
@@ -314,7 +314,7 @@ class VesselIcing(ModelRunner):
                     t2m,  # t2m
                     relh,  # r
                     sst,
-                    eta,
+                    mslp,
                     tm,
                     sic,
                     topo,
