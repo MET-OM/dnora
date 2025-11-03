@@ -104,7 +104,7 @@ class ModelExecuter:
                     f"Variables need to be of type 'str' or geo-parameters, not {var}!"
                 )
 
-    def write_preprocess_files(self):
+    def write_pre_process_files(self):
         """Calls the write file methods for all the objects (i.e. write_grid_file(), wrtie_wind_file() etc."""
         for obj_type in DnoraDataType:
             if self.model.get(obj_type) is not None:
