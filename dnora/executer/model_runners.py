@@ -279,10 +279,14 @@ class VesselIcing(ModelRunner):
             raise ImportError(
                 "Icing model is not installed! Install it with 'conda install mi-fieldcalc'"
             )
-        with open(file_object.get_filepath(), "r") as f:
-            config = json.load(f)
 
-        data = {key: xr.open_dataset(value) for key, value in config.items()}
+        # Standard names for pre-processed files
+
+        folder = file_object.get_folder()
+        data = {
+            item: xr.open_dataset(f"{folder}/mi-fieldcalc_{item}.nc")
+            for item in ["wave", "wind", "ice", "ocean", "atmosphere", "grid"]
+        }
         """V vesselIcingMincog(const V sal, const V wave, const V x_wind, const V y_wind, const V airtemp, const V rh,
                         const V sst, const V p, const V Pw, /*const V aice,*/ const V depth, const V vs,
                         const V alpha, const V zmin, const V zmax, const int alt)"""
