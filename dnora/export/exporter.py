@@ -22,6 +22,7 @@ WriterFunction = Union[
 ]
 
 
+@add_export_method(DnoraDataType.ATMOSPHERE)
 @add_export_method(DnoraDataType.WAVEGRID)
 @add_export_method(DnoraDataType.OCEAN)
 @add_export_method(DnoraDataType.GRID)
