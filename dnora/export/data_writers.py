@@ -188,8 +188,8 @@ class VesselIcing(DataWriter):
         DnoraDataType.WAVESERIES: ["hs", "tm01", "lon", "lat"],
         DnoraDataType.OCEAN: ["sst", "sss"],
         DnoraDataType.WIND: ["u", "v"],
-        DnoraDataType.WATERLEVEL: ["eta"],
         DnoraDataType.ICE: ["sic"],
+        DnoraDataType.ATMOSPHERE: ["t2m", "mslp", "r"],
     }
 
     def __call__(
@@ -201,6 +201,10 @@ class VesselIcing(DataWriter):
         daily_files: bool = False,
         **kwargs,
     ) -> str:
+        if model.get(obj_type) is None:
+            msg.info(
+                f"Skipping export of object {obj_type}, since it is not used for VesselIcing!"
+            )
         vars_to_select = [
             var
             for var in self._data_vars[obj_type]
