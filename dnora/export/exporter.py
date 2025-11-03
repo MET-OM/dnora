@@ -63,6 +63,13 @@ class DataExporter:
                 )
                 self._nest[name] = self.__class__(nest)
 
+    def export_all(self):
+        """Exports all objects that are not empty"""
+        for obj_type in DnoraDataType:
+            if self.get(obj_type) is not None:
+                # Use this instead of calling self.export to get export of possible nested grids right
+                exec(f"self.export_{obj_type.name.lower()}")
+
     def export(
         self,
         obj_type: Union[DnoraDataType, str],
