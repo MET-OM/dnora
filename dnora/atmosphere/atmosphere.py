@@ -4,6 +4,7 @@ import geo_parameters as gp
 import numpy as np
 
 
+@add_datavar(name=gp.atm.MeanSeaLevelPressure("mslp"), default_value=np.nan)
 @add_datavar(name=gp.atm.RelativeHumidity("r"), default_value=np.nan)
 @add_datavar(name=gp.atm.AirTemperature("t2m"), default_value=np.nan)
 @add_time(grid_coord=True)
