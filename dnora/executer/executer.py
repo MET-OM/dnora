@@ -111,7 +111,7 @@ class ModelExecuter:
                 # Use this instead of calling self.export to get export of possible nested grids right
                 exec(f"self.write_{obj_type.name.lower()}_file()")
 
-    def preprocess(self):
+    def pre_process(self):
         """Calls the run methods for all the objects (i.e. run_grid(), run_wind() etc."""
         for obj_type in DnoraDataType:
             if self.model.get(obj_type) is not None:
