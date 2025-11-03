@@ -51,6 +51,7 @@ class Constant(ModelRun):
         DnoraDataType.WAVESERIES: ConstantData(),
         DnoraDataType.OCEAN: ConstantData(),
         DnoraDataType.WAVEGRID: ConstantData(),
+        DnoraDataType.ATMOSPHERE: ConstantData(),
     }
 
 

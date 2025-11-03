@@ -11,6 +11,7 @@ dependencies:
   - netcdf4
   - meshio
   - geo-skeletons>=0.21.1
+  - geo-parameters>=0.11.0
   - pytest
   - pip
   - pip:

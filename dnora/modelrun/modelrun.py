@@ -119,6 +119,7 @@ class ModelRun:
         DnoraDataType.WATERLEVEL: dnora.read.generic.Netcdf(),
         DnoraDataType.OCEAN: dnora.read.generic.Netcdf(),
         DnoraDataType.WAVEGRID: dnora.read.generic.Netcdf(),
+        DnoraDataType.ATMOSPHERE: dnora.read.generic.Netcdf(),
     }
     _point_picker: PointPicker = NearestGridPoint()
 
@@ -646,6 +647,31 @@ class ModelRun:
             **kwargs,
         )
 
+    @cached_reader(DnoraDataType.ATMOSPHERE, dnora.read.generic.Netcdf)
+    def import_atmosphere(
+        self,
+        reader: Optional[DataReader] = None,
+        expansion_factor: float = 1.2,
+        name: Optional[str] = None,
+        dry_run: bool = False,
+        source: Union[str, DataSource] = DataSource.UNDEFINED,
+        folder: Optional[str] = None,
+        filename: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+
+        self._import_data(
+            DnoraDataType.ATMOSPHERE,
+            name,
+            dry_run,
+            reader,
+            expansion_factor,
+            source,
+            folder,
+            filename,
+            **kwargs,
+        )
+
     def spectra_to_1d(
         self,
         dry_run: bool = False,
@@ -876,6 +902,10 @@ class ModelRun:
     def wavegrid(self) -> WaveGrid:
         """Returns the wavegrid object if exists."""
         return self._dnora_objects.get(DnoraDataType.WAVEGRID)
+
+    def atmosphere(self) -> Atmosphere:
+        """Returns the atmospher object if exists."""
+        return self._dnora_objects.get(DnoraDataType.ATMOSPHERE)
 
     def process(
         self, obj_type: Union[DnoraDataType, str], processor: GriddedDataProcessor
