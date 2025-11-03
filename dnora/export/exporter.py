@@ -68,7 +68,7 @@ class DataExporter:
         for obj_type in DnoraDataType:
             if self.model.get(obj_type) is not None:
                 # Use this instead of calling self.export to get export of possible nested grids right
-                exec(f"self.export_{obj_type.name.lower()}")
+                exec(f"self.export_{obj_type.name.lower()}()")
 
     def export(
         self,

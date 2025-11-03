@@ -104,6 +104,20 @@ class ModelExecuter:
                     f"Variables need to be of type 'str' or geo-parameters, not {var}!"
                 )
 
+    def write_preprocess_files(self):
+        """Calls the write file methods for all the objects (i.e. write_grid_file(), wrtie_wind_file() etc."""
+        for obj_type in DnoraDataType:
+            if self.model.get(obj_type) is not None:
+                # Use this instead of calling self.export to get export of possible nested grids right
+                exec(f"self.write_{obj_type.name.lower()}_file()")
+
+    def preprocess(self):
+        """Calls the run methods for all the objects (i.e. run_grid(), run_wind() etc."""
+        for obj_type in DnoraDataType:
+            if self.model.get(obj_type) is not None:
+                # Use this instead of calling self.export to get export of possible nested grids right
+                exec(f"self.run_{obj_type.name.lower()}()")
+
     def _write(
         self,
         file_type: Union[DnoraFileType, str],
