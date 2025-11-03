@@ -84,10 +84,10 @@ class VesselIcing(InputFileWriter):
             "grid",
             "wind",
             "ocean",
-            "waterlevel",
             "ice",
             "wavegrid",
             "waveseries",
+            "atmosphere",
         ]
         config = {data: exported_files.get(data)[-1] for data in data_types}
 
