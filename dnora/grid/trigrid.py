@@ -101,8 +101,8 @@ class TriGrid(PointSkeleton):
         return tri_grid
 
     @classmethod
-    def from_txt(cls, filename: str, **kwargs):
-        tri_grid = cls.generate(triang_reader=TxtReader(), filename=filename, **kwargs)
+    def from_txt(cls, filename: str, boundary_filename: str = None, **kwargs):
+        tri_grid = cls.generate(triang_reader=TxtReader(), filename=filename, boundary_filename=boundary_filename,**kwargs)
 
         return tri_grid
 

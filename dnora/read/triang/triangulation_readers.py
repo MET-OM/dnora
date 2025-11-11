@@ -94,7 +94,8 @@ class TxtReader(DataReader):
         self,
         source: DataSource,
         folder: str,
-        filename: str = None,
+        filename: str,
+        boundary_filename: str,
         utm: tuple[int, str] = (None, None),
     ) -> tuple:
         self.filename = filename
@@ -121,8 +122,14 @@ class TxtReader(DataReader):
             coord_dict = {"lon": x, "lat": y}
         else:
             coord_dict = {"x": x, "y": y}
-
         edges = []
+        if boundary_filename is not None:
+            with open(boundary_filename,'r') as f:
+                line = f.readline()
+                while line:
+                    edges.append(int(line))
+                    line = f.readline()
+        
         return (
             tri,
             coord_dict,
