@@ -88,3 +88,48 @@ class MshReader(DataReader):
 
     def __str__(self):
         return f"Reading triangular grid from Msh-file {self.filename}."
+
+class TxtReader(DataReader):
+    def __call__(
+        self,
+        source: DataSource,
+        folder: str,
+        filename: str = None,
+        utm: tuple[int, str] = (None, None),
+    ) -> tuple:
+        self.filename = filename
+        with open(filename,'r') as f:
+            n_of_nodes = int(f.readline())
+            x,y = np.full(n_of_nodes, np.nan), np.full(n_of_nodes, np.nan)
+            for n in range(n_of_nodes):
+                line = f.readline()
+                xi, yi = line.split(' ')
+                x[n] = float(xi)
+                y[n] = float(yi)
+
+            n_of_triangles = int(f.readline())
+            tri = np.full((n_of_triangles, 3), -1).astype(int)
+            for n in range(n_of_triangles):
+                line = f.readline()
+                t0, t1, t2 = line.split(' ')
+                tri[n,0] = int(t0)
+                tri[n,1] = int(t1)
+                tri[n,2] = int(t2)
+            if np.min(tri) == 1:
+                tri = tri -1
+        if utm[0] is None:
+            coord_dict = {"lon": x, "lat": y}
+        else:
+            coord_dict = {"x": x, "y": y}
+
+        edges = []
+        return (
+            tri,
+            coord_dict,
+            edges,
+            utm[0],
+            utm[1],
+        )
+
+    def __str__(self):
+        return f"Reading triangular grid from Msh-file {self.filename}."

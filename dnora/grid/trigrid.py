@@ -9,7 +9,7 @@ from .mesh import Mesher, Interpolate
 from .process import GridProcessor
 from pathlib import Path
 from dnora.read.grid.grid_readers import MshFile as topo_MshFile
-from dnora.read.triang import MshReader
+from dnora.read.triang import MshReader, TxtReader
 from .tri_arangers import TriAranger
 from .mesh import Trivial as TrivialMesher
 from dnora.read.abstract_readers import DataReader
@@ -83,7 +83,7 @@ class TriGrid(PointSkeleton):
             corner=range(3),
         )
         if zone_number is not None:
-            tri_grid.set_utm((zone_number, zone_letter))
+            tri_grid.utm.set((zone_number, zone_letter))
         edge_nodes = np.array(edge_nodes)
         edge_nodes = edge_nodes.astype(int)
         tri_grid._update_boundary(edge_nodes)
@@ -97,6 +97,12 @@ class TriGrid(PointSkeleton):
         if read_topo:
             tri_grid.import_topo(topo_MshFile(), filename=filename)
             tri_grid.mesh_grid(TrivialMesher())
+
+        return tri_grid
+
+    @classmethod
+    def from_txt(cls, filename: str, **kwargs):
+        tri_grid = cls.generate(triang_reader=TxtReader(), filename=filename, **kwargs)
 
         return tri_grid
 
