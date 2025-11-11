@@ -106,6 +106,30 @@ class TriGrid(PointSkeleton):
 
         return tri_grid
 
+    def to_lonlat(self):
+        """Gives an identical grid but in lon, lat coordinates"""
+        cls = self.__class__
+        lon, lat = self.lonlat()
+        new_grid = cls(lon=lon, lat=lat, name=self.name, ntriang=range(len(self.triangles())), corner=range(3))
+        new_grid.set_triangles(self.triangles())
+        new_grid.set_boundary_mask(self.boundary_mask())
+        new_grid.utm.set(self.utm.zone())
+        new_grid.topo(self.topo(strict=True))
+        
+        return new_grid
+
+    def to_xy(self):
+        """Gives an identical grid but in x, y coordinates"""
+        cls = self.__class__
+        x, y = self.xy()
+        new_grid = cls(x=x, y=y, name=self.name, ntriang=range(len(self.triangles())), corner=range(3))
+        new_grid.set_triangles(self.triangles())
+        new_grid.set_boundary_mask(self.boundary_mask())
+        new_grid.utm.set(self.utm.zone())
+        new_grid.topo(self.topo(strict=True))
+        
+        return new_grid
+
     @classmethod
     def from_netcdf(cls, filename: str, folder: str = ""):
         filepath = Path(folder).joinpath(filename)
@@ -189,7 +213,9 @@ class TriGrid(PointSkeleton):
             cont = plt.tricontourf(
                 tri, self.topo(), cmap=cmocean.cm.deep, levels=levels
             )
-        cbar = plt.colorbar(cont, label=f"Water depth [m]")
+            cbar = plt.colorbar(cont, label=f"Water depth [m]")
+        else:
+            plt.triplot(tri, color='black', linewidth=0.5)
         plt.xlabel(self.core.x_str)
         plt.ylabel(self.core.y_str)
 
