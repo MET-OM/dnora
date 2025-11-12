@@ -79,6 +79,57 @@ def create_fimex_command(
     return fimex_command
 
 
+def cut_rotated_lonlat_to_lonlat(longrid, latgrid, lon_range, lat_range):
+    """
+    Find the minimal indices of the rotated grid (x, y) that fully cover the regular lon/lat range,
+    ensuring the resulting range fits strictly inside the given longitude and latitude bounds.
+
+    Parameters:
+    - longrid: 2D array of longitudes corresponding to the rotated x/y grid.
+    - latgrid: 2D array of latitudes corresponding to the rotated x/y grid.
+    - lon_range: Tuple of (min_lon, max_lon) defining the longitude range to cut.
+    - lat_range: Tuple of (min_lat, max_lat) defining the latitude range to cut.
+
+    Returns:
+    - indsx: Tuple of (start, end) indices for the x dimension.
+    - indsy: Tuple of (start, end) indices for the y dimension.
+    """
+    def covers_grid():
+        c1 = np.all(np.max(longrid[y_min:y_max, x_min:x_max], axis=1) < lon_range[0])
+        c2 = np.all(np.min(longrid[y_min:y_max, x_min:x_max], axis=1) > lon_range[1])
+        c3 = np.all(np.max(latgrid[y_min:y_max, x_min:x_max], axis=0) < lat_range[0])
+        c4 = np.all(np.min(latgrid[y_min:y_max, x_min:x_max], axis=0) > lat_range[1])
+        return c1 and c2 and c3 and c4
+    # Ensure the inputs are NumPy arrays
+    longrid = np.asarray(longrid)
+    latgrid = np.asarray(latgrid)
+
+    # Logical masks to find points within the desired lon/lat range
+    lon_mask = (longrid >= lon_range[0]) & (longrid <= lon_range[1])
+    lat_mask = (latgrid >= lat_range[0]) & (latgrid <= lat_range[1])
+    
+    # Combined mask to find where both conditions are met
+    combined_mask = lon_mask & lat_mask
+    
+    # Find the indices of the True values in the mask
+    y_indices, x_indices = np.where(combined_mask)
+    
+    # If no points satisfy the condition, raise an error
+    if len(x_indices) == 0 or len(y_indices) == 0:
+        raise ValueError("No grid points found within the specified longitude/latitude range.")
+    
+    # Get the bounding box indices
+    x_min, x_max = x_indices.min(), x_indices.max() + 1  # +1 because slicing is exclusive
+    y_min, y_max = y_indices.min(), y_indices.max() + 1  # +1 because slicing is exclusive
+
+    dx = int((x_max-x_min)*1.5/2)
+    dy = int((y_max-y_min)*1.5/2)
+    x_min = np.maximum(x_min-dx, 0)
+    y_min = np.maximum(y_min-dy, 0)
+    x_max = np.minimum(x_max+dx, longrid.shape[1])
+    y_max = np.minimum(y_max+dy, latgrid.shape[0])
+
+    return (x_min-dx, x_max+dx), (y_min-dy, y_max+dy)
 def ds_fimex_read(
     start_time,
     end_time,
@@ -100,8 +151,8 @@ def ds_fimex_read(
         extra_fimex_commands = extra_commands.copy()
 
     nc_fimex = f"dnora_{data_type.name.lower()}_temp/{name}_{start_time.strftime('%Y%m%d%H%M')}_fimex.nc"
-    if program not in ["fimex", "pyfimex"]:
-        raise ValueError("program need to be 'fimex' or 'pyfimex'!")
+    if program not in ["fimex", "pyfimex", "scipy"]:
+        raise ValueError("program need to be 'fimex', 'pyfimex' or 'scipy'!")
     msg.process(f"Applying {program}")
     if extra_fimex_commands:
         ensemble_member = True
@@ -120,6 +171,7 @@ def ds_fimex_read(
             reduceTime_end=end_time.strftime("%Y-%m-%dT%H:%M:%S"),
             ensemble_member=ensemble_member,
         )
+        ds = xr.open_dataset(nc_fimex).squeeze()
     elif program == "fimex":
         fimex_command = create_fimex_command(
             nc_fimex,
@@ -134,8 +186,34 @@ def ds_fimex_read(
         for command in extra_fimex_commands:
             fimex_command.insert(-2, command)
         call(fimex_command)
-    ds = xr.open_dataset(nc_fimex).squeeze()
+        ds = xr.open_dataset(nc_fimex).squeeze()
+    elif program =='scipy':
+        ds = xr.open_dataset(url)
+        longrid, latgrid = ds.longitude.values, ds.latitude.values
+        indsx, indsy = cut_rotated_lonlat_to_lonlat(longrid=longrid, latgrid=latgrid, lon_range=lon, lat_range=lat)
+        from dnora.type_manager.dnora_objects import dnora_objects
+        
+        cut_ds = ds.isel(x=slice(*indsx), y=slice(*indsy))[data_vars].sel(time=slice(start_time,end_time))
+        cut_ds.to_netcdf('test_nora3.nc')
+        #x, y = cut_d
+        from dnora.waveseries import WaveSeries 
+        cls = dnora_objects.get(data_type)
+        new_grid = cls(lon=(lon[0], lon[1]), lat=(lat[0],lat[1]), time=cut_ds.time)
+        new_grid.set_spacing(dm=resolution_in_km*1000)
+        
+        x, y = cut_ds.longitude.values.ravel(), cut_ds.latitude.values.ravel()
+        stack_ds = cut_ds.stack(inds=("y", "x"))
+        data = WaveSeries(lon=x, lat=y, time=cut_ds.time)
+        orig_ds = data.ds(compile=True)
+        for var in new_grid.core.data_vars() + new_grid.core.magnitudes()+new_grid.core.directions():
+            meta = new_grid.core.meta_parameter(var)
+            ds_var = meta.find_me_in_ds(stack_ds)
+            orig_var =  meta.find_me_in_ds(orig_ds)
+            if ds_var:
+                data.set(orig_var[0], stack_ds[ds_var[0]].data)
 
+        new_data = data.resample.grid(new_grid, method='linear')
+        ds = new_data.ds()
     return ds
 
 
