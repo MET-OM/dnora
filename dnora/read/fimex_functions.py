@@ -6,7 +6,8 @@ from dnora.utils.distance import lon_in_km
 from subprocess import call
 from typing import Callable
 from dnora import msg
-
+from geo_skeletons import PointSkeleton
+from geo_skeletons.managers.resample_manager import create_new_class
 def create_fimex_xy_strings(
     lon: tuple[float, float], lat: tuple[float, float], resolution_in_km: float
 ) -> tuple[str, str]:
@@ -195,23 +196,24 @@ def ds_fimex_read(
         from dnora.type_manager.dnora_objects import dnora_objects
         
         cut_ds = ds.isel(x=slice(*indsx), y=slice(*indsy))[data_vars].sel(time=slice(start_time,end_time))
-        cut_ds.to_netcdf('test_nora3.nc')
-        #x, y = cut_d
-        from dnora.waveseries import WaveSeries 
+
         cls = dnora_objects.get(data_type)
         new_grid = cls(lon=(lon[0], lon[1]), lat=(lat[0],lat[1]), time=cut_ds.time)
         new_grid.set_spacing(dm=resolution_in_km*1000)
         
         x, y = cut_ds.longitude.values.ravel(), cut_ds.latitude.values.ravel()
         stack_ds = cut_ds.stack(inds=("y", "x"))
-        data = WaveSeries(lon=x, lat=y, time=cut_ds.time)
+        
+        # Create unstructured version of the class we use
+        ucls = create_new_class(new_grid, PointSkeleton(lon=x, lat=y))
+
+        data = ucls(lon=x, lat=y, time=cut_ds.time)
         orig_ds = data.ds(compile=True)
         for var in new_grid.core.data_vars() + new_grid.core.magnitudes()+new_grid.core.directions():
             meta = new_grid.core.meta_parameter(var)
             ds_var = meta.find_me_in_ds(stack_ds)
-            orig_var =  meta.find_me_in_ds(orig_ds)
             if ds_var:
-                data.set(orig_var[0], stack_ds[ds_var[0]].data)
+                data.set(var, stack_ds[ds_var[0]].data)
 
         new_data = data.resample.grid(new_grid, method='linear')
         ds = new_data.ds()
