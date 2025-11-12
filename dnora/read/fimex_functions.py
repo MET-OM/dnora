@@ -8,6 +8,7 @@ from typing import Callable
 from dnora import msg
 from geo_skeletons import PointSkeleton
 from geo_skeletons.managers.resample_manager import create_new_class
+from dnora.type_manager.dnora_objects import dnora_objects
 def create_fimex_xy_strings(
     lon: tuple[float, float], lat: tuple[float, float], resolution_in_km: float
 ) -> tuple[str, str]:
@@ -123,6 +124,7 @@ def cut_rotated_lonlat_to_lonlat(longrid, latgrid, lon_range, lat_range):
     x_min, x_max = x_indices.min(), x_indices.max() + 1  # +1 because slicing is exclusive
     y_min, y_max = y_indices.min(), y_indices.max() + 1  # +1 because slicing is exclusive
 
+    # This will expand to something that is "big enough" even if we have a 45 degree rotation (hopefully)
     dx = int((x_max-x_min)*1.5/2)
     dy = int((y_max-y_min)*1.5/2)
     x_min = np.maximum(x_min-dx, 0)
@@ -191,24 +193,24 @@ def ds_fimex_read(
     elif program =='scipy':
         msg.info("Using 'scipy' to interpolate instead of fimex. This is still experimental and can also be slow.")
         ds = xr.open_dataset(url)
+        # Cut down the grid to make it faster
         longrid, latgrid = ds.longitude.values, ds.latitude.values
         indsx, indsy = cut_rotated_lonlat_to_lonlat(longrid=longrid, latgrid=latgrid, lon_range=lon, lat_range=lat)
-        from dnora.type_manager.dnora_objects import dnora_objects
-        
         cut_ds = ds.isel(x=slice(*indsx), y=slice(*indsy))[data_vars].sel(time=slice(start_time,end_time))
 
+        # Ravel the spatial dimensions of the dataset
+        x, y = cut_ds.longitude.values.ravel(), cut_ds.latitude.values.ravel()
+        stack_ds = cut_ds.stack(inds=("y", "x"))
+
+        # Set the new grid we want to interpolate to
         cls = dnora_objects.get(data_type)
         new_grid = cls(lon=(lon[0], lon[1]), lat=(lat[0],lat[1]), time=cut_ds.time)
         new_grid.set_spacing(dm=resolution_in_km*1000)
         
-        x, y = cut_ds.longitude.values.ravel(), cut_ds.latitude.values.ravel()
-        stack_ds = cut_ds.stack(inds=("y", "x"))
-        
         # Create unstructured version of the class we use
         ucls = create_new_class(new_grid, PointSkeleton(lon=x, lat=y))
-
         data = ucls(lon=x, lat=y, time=cut_ds.time)
-        orig_ds = data.ds(compile=True)
+ 
         for var in new_grid.core.data_vars() + new_grid.core.magnitudes()+new_grid.core.directions():
             meta = new_grid.core.meta_parameter(var)
             ds_var = meta.find_me_in_ds(stack_ds)
