@@ -188,6 +188,7 @@ def ds_fimex_read(
         call(fimex_command)
         ds = xr.open_dataset(nc_fimex).squeeze()
     elif program =='scipy':
+        msg.info("Using 'scipy' to interpolate instead of fimex. This is still experimental and can also be slow.")
         ds = xr.open_dataset(url)
         longrid, latgrid = ds.longitude.values, ds.latitude.values
         indsx, indsy = cut_rotated_lonlat_to_lonlat(longrid=longrid, latgrid=latgrid, lon_range=lon, lat_range=lat)
