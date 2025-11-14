@@ -448,11 +448,12 @@ def create_datvar_val_dict(kwargs, default_values, object_vars):
     )  # Given explicitly since not yet added to class
 
     datavar_list = list(object_vars) + new_vars
-
     data_dict = {}
     for key in datavar_list:
-        default = default_values.get(key, default_values["default"])
-        data_dict[key] = new_vars_dict.get(key, kwargs.get(key, default))
+        #default = default_values.get(key, default_values["default"])
+        val = new_vars_dict.get(key, kwargs.get(key))
+        if val is not None:
+            data_dict[key] = val
 
     return data_dict
 
