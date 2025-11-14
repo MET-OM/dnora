@@ -305,12 +305,15 @@ class VesselIcing(ModelRunner):
             tm = data.get("wave").sel(time=time).tm01.values
             sic = data.get("ice").sel(time=time).sic.values
             topo = data.get("grid").topo.values
-            msg.plain(f"{pd.to_datetime(time):%Y-%m-%d %H:%M}")
-            msg.plain(
-                f"\t<< Mean over grid: wind=({np.mean(uwnd):.2f}, {np.mean(vwnd):.2f}), t2m={np.mean(t2m):.2f}, r={np.mean(relh):.2f}, sst={np.mean(sst):.2f}, sss={np.mean(sss):.2f}, hs={np.mean(hs):.2f}, tm={np.mean(tm):.2f}, sic={np.mean(sic):.2f}, depth={np.mean(topo):.2f}, mspl={np.mean(mslp):.0f}"
+            msg.plain(f"{pd.to_datetime(time):%Y-%m-%d %H:%M}: Values for mean over grid:")
+            msg.plain(f"\tAtmosphere << wind=({np.mean(uwnd):.2f}, {np.mean(vwnd):.2f}) m/s, t2m={np.mean(t2m):.1f} C, r={np.mean(relh):.2f} [-], mspl={np.mean(mslp)/100:.1f} hPa")
+            msg.plain(f"\tOcean << sst={np.mean(sst):.1f} C, sss={np.mean(sss):.1f} ppt, sic={np.mean(sic):.2f} [-], depth={np.mean(topo):.1f} m"
             )
             if np.any(sic>=0.4):
                 msg.info(f"Sea spray icing not defined for sea ice concentration >= 0.4. Will be set to NaN in grid.")
+            msg.plain(f"\tWaves << hs={np.mean(hs):.1f} m, tm={np.mean(tm):.1f} s")
+            
+
             icing.append(
                 mifc.vesselIcingMincog(
                     sss,
@@ -333,7 +336,7 @@ class VesselIcing(ModelRunner):
                 )
             )
 
-            msg.plain(f"\t>> Mean icing over grid: {np.mean(icing[-1]):.1f} mm/h")
+            msg.plain(f"\tMean icing over grid >> {np.mean(icing[-1]):.1f} mm/h")
 
         # Add icing variable to Dataset
         coords = {
@@ -350,6 +353,6 @@ class VesselIcing(ModelRunner):
         da.attrs["grid_mapping"] = "crs"
         da.attrs["long_name"] = "MINCOG icing"
         da.attrs["units"] = "mm/h"
-        outfile = f"{file_object.get_folder()}/mi-fieldcalc.nc"
+        outfile = f"{file_object.get_folder()}/mi-fieldcalc_{pd.Timestamp(data.get("wind").time.values[0]):%Y%m%dT%H%M}_{pd.Timestamp(data.get("wind").time.values[-1]):%Y%m%dT%H%M}.nc"
         msg.to_file(outfile)
         da.to_netcdf(outfile)
