@@ -298,9 +298,9 @@ class VesselIcing(ModelRunner):
             sss = data.get("ocean").sel(time=time).sss.values
             uwnd = data.get("wind").sel(time=time).u.values
             vwnd = data.get("wind").sel(time=time).v.values
-            t2m = data.get("atmosphere").sel(time=time).t2m.values
-            relh = data.get("atmosphere").sel(time=time).r.values
-            sst = data.get("ocean").sel(time=time).sst.values
+            t2m = data.get("atmosphere").sel(time=time).t2m.values-272.15 # K -> C
+            relh = data.get("atmosphere").sel(time=time).r.values/100 # % -> fraction
+            sst = data.get("ocean").sel(time=time).sst.values-272.15 # K -> C
             mslp = data.get("atmosphere").sel(time=time).mslp.values
             tm = data.get("wave").sel(time=time).tm01.values
             sic = data.get("ice").sel(time=time).sic.values
@@ -309,6 +309,8 @@ class VesselIcing(ModelRunner):
             msg.plain(
                 f"\t<< Mean over grid: wind=({np.mean(uwnd):.2f}, {np.mean(vwnd):.2f}), t2m={np.mean(t2m):.2f}, r={np.mean(relh):.2f}, sst={np.mean(sst):.2f}, sss={np.mean(sss):.2f}, hs={np.mean(hs):.2f}, tm={np.mean(tm):.2f}, sic={np.mean(sic):.2f}, depth={np.mean(topo):.2f}, mspl={np.mean(mslp):.0f}"
             )
+            if np.any(sic>=0.4):
+                msg.info(f"Sea spray icing not defined for sea ice concentration >= 0.4. Will be set to NaN in grid.")
             icing.append(
                 mifc.vesselIcingMincog(
                     sss,
@@ -327,10 +329,11 @@ class VesselIcing(ModelRunner):
                     4,  # zmin
                     4,  # zmax
                     1,  # alt
-                    -1e20,  # undef
+                    np.nan,  # undef
                 )
             )
-            msg.plain(f"\t>> Mean icing over grid: {np.mean(icing):.4f}")
+
+            msg.plain(f"\t>> Mean icing over grid: {np.mean(icing[-1]):.1f} mm/h")
 
         # Add icing variable to Dataset
         coords = {
