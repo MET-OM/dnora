@@ -72,7 +72,7 @@ class Null(InputFileWriter):
         return ""
 
 
-class VesselIcing(InputFileWriter):
+class MINCOG(InputFileWriter):
     def __call__(
         self,
         model: ModelRun,

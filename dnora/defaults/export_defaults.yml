@@ -41,7 +41,7 @@ MINCOG:
   grid:
     filename: 'topo_#GRID'
   input_file:
-    filename: 'mi-fieldcalc'
+    filename: 'mincog'
     extension: 'json'
 
 SWAN:

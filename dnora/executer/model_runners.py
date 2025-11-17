@@ -244,7 +244,7 @@ class MINCOGPreProcessor(ModelRunner):
         return ModelFormat.MINCOG
 
     def __call__(self, file_object: FileNames, model_folder: str) -> None:
-        with open(f"{file_object.get_folder()}/mi-fieldcalc.json", "r") as f:
+        with open(f"{file_object.get_folder()}/mincog.json", "r") as f:
             config = json.load(f)
 
         obj_type_common = data_type_from_string("grid")
@@ -260,9 +260,9 @@ class MINCOGPreProcessor(ModelRunner):
             out_data = raw_data.resample.grid(common_grid, verbose=True)
 
         if self._data_type in ["wavegrid", "waveseries"]:
-            outfile = f"{file_object.get_folder()}/mi-fieldcalc_wave.nc"
+            outfile = f"{file_object.get_folder()}/mincog_wave.nc"
         else:
-            outfile = f"{file_object.get_folder()}/mi-fieldcalc_{self._data_type}.nc"
+            outfile = f"{file_object.get_folder()}/mincog_{self._data_type}.nc"
         msg.to_file(outfile)
         out_data.ds().to_netcdf(outfile)
 
@@ -295,7 +295,7 @@ class MINCOG(ModelRunner):
 
         folder = file_object.get_folder()
         data = {
-            item: xr.open_dataset(f"{folder}/mi-fieldcalc_{item}.nc")
+            item: xr.open_dataset(f"{folder}/mincog_{item}.nc")
             for item in ["wave", "wind", "ice", "ocean", "atmosphere", "grid"]
         }
         """V vesselIcingMincog(const V sal, const V wave, const V x_wind, const V y_wind, const V airtemp, const V rh,
@@ -366,6 +366,6 @@ class MINCOG(ModelRunner):
         da.attrs["units"] = "mm/h"
         start_str = f"{pd.Timestamp(data.get('wind').time.values[0]):%Y%m%dT%H%M}"
         end_str = f"{pd.Timestamp(data.get('wind').time.values[-1]):%Y%m%dT%H%M}"
-        outfile = f"{file_object.get_folder()}/mi-fieldcalc_{start_str}_{end_str}.nc"
+        outfile = f"{file_object.get_folder()}/mincog_{start_str}_{end_str}.nc"
         msg.to_file(outfile)
         da.to_netcdf(outfile)

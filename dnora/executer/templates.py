@@ -123,7 +123,7 @@ class MINCOG(ModelExecuter):
         return ModelFormat.MINCOG
 
     _input_file_writers = {
-        DnoraFileType.INPUT: inputfile.VesselIcing(),
+        DnoraFileType.INPUT: inputfile.MINCOG(),
     }
     _model_runners = {
         DnoraFileType.INPUT: model_runners.MINCOG(),
