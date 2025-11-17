@@ -35,8 +35,8 @@ MODELRUN:
     filename: 'inputfile_#GRID_#WIND_#SPECTRA_#CURRENT_#T0_#T1_#LON_#LAT'
     extension: 'txt'
 
-VESSEL_ICING:
-  folder: '#GRID_ICING'
+MINCOG:
+  folder: '#GRID_MINCOG'
   filename: '#DataType_#ObjectName_#GRID_#T0'
   grid:
     filename: 'topo_#GRID'

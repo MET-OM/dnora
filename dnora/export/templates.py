@@ -78,9 +78,9 @@ class REEF3D(DataExporter):
         return ModelFormat.REEF3D
 
 
-class VesselIcing(DataExporter):
+class MINCOG(DataExporter):
     def _get_default_writer(self) -> WriterFunction:
-        return data_writers.VesselIcing()
+        return data_writers.MINCOG()
 
     def _get_default_format(self):
-        return ModelFormat.VESSEL_ICING
+        return ModelFormat.MINCOG

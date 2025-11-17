@@ -235,13 +235,13 @@ class REEF3D(ModelRunner):
         p.wait()
 
 
-class VesselIcingPreProcessor(ModelRunner):
+class MINCOGPreProcessor(ModelRunner):
     def __init__(self, data_type: str) -> None:
         self._data_type = data_type
 
     def preferred_format(self) -> str:
         """For generation of file name."""
-        return ModelFormat.VESSEL_ICING
+        return ModelFormat.MINCOG
 
     def __call__(self, file_object: FileNames, model_folder: str) -> None:
         with open(f"{file_object.get_folder()}/mi-fieldcalc.json", "r") as f:
@@ -267,17 +267,28 @@ class VesselIcingPreProcessor(ModelRunner):
         out_data.ds().to_netcdf(outfile)
 
 
-class VesselIcing(ModelRunner):
+class MINCOG(ModelRunner):
+    """Marine Icing model for the Norwegian COast Guard
+
+    The MINCOG model python implementation is a part of MET Norway's field calculation packae (mi-fieldcald)
+    mi-fieldcalc if available in conda: 'conda install mi-fieldcalc'
+    
+    References:
+    https://github.com/metno/mi-fieldcalc
+    Samuelsen (2017): https://munin.uit.no/handle/10037/11801
+    Samuelsen et al. (2017): https://doi.org/10.1016/j.coldregions.2016.11.002
+    Samuelsen et al. (2018): https://doi.org/10.1002/qj.3174"""
+
     def preferred_format(self) -> str:
         """For generation of file name."""
-        return ModelFormat.VESSEL_ICING
+        return ModelFormat.MINCOG
 
     def __call__(self, file_object: FileNames, model_folder: str) -> None:
         try:
             import mi_fieldcalc as mifc
         except ImportError:
             raise ImportError(
-                "Icing model is not installed! Install it with 'conda install mi-fieldcalc'"
+                "MINCOG Icing model is not installed! Install it with 'conda install mi-fieldcalc'"
             )
 
         # Standard names for pre-processed files

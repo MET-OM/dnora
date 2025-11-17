@@ -181,7 +181,7 @@ class SWAN(DataWriter):
         return filename
 
 
-class VesselIcing(DataWriter):
+class MINCOG(DataWriter):
     _data_vars = {
         DnoraDataType.GRID: ["topo"],
         DnoraDataType.WAVEGRID: ["hs", "tm01"],

@@ -110,20 +110,28 @@ class WW3(ModelExecuter):
         return ModelFormat.WW3
 
 
-class VesselIcing(ModelExecuter):
+class MINCOG(ModelExecuter):
+    """Marine Icing model for the Norwegian COast Guard
+    
+    References:
+    https://github.com/metno/mi-fieldcalc
+    Samuelsen (2017): https://munin.uit.no/handle/10037/11801
+    Samuelsen et al. (2017): https://doi.org/10.1016/j.coldregions.2016.11.002
+    Samuelsen et al. (2018): https://doi.org/10.1002/qj.3174
+    """
     def _get_default_format(self):
-        return ModelFormat.VESSEL_ICING
+        return ModelFormat.MINCOG
 
     _input_file_writers = {
         DnoraFileType.INPUT: inputfile.VesselIcing(),
     }
     _model_runners = {
-        DnoraFileType.INPUT: model_runners.VesselIcing(),
-        DnoraFileType.GRID: model_runners.VesselIcingPreProcessor("grid"),
-        DnoraFileType.WIND: model_runners.VesselIcingPreProcessor("wind"),
-        DnoraFileType.WAVEGRID: model_runners.VesselIcingPreProcessor("wavegrid"),
-        DnoraFileType.WAVESERIES: model_runners.VesselIcingPreProcessor("waveseries"),
-        DnoraFileType.ICE: model_runners.VesselIcingPreProcessor("ice"),
-        DnoraFileType.OCEAN: model_runners.VesselIcingPreProcessor("ocean"),
-        DnoraFileType.ATMOSPHERE: model_runners.VesselIcingPreProcessor("atmosphere"),
+        DnoraFileType.INPUT: model_runners.MINCOG(),
+        DnoraFileType.GRID: model_runners.MINCOGPreProcessor("grid"),
+        DnoraFileType.WIND: model_runners.MINCOGPreProcessor("wind"),
+        DnoraFileType.WAVEGRID: model_runners.MINCOGPreProcessor("wavegrid"),
+        DnoraFileType.WAVESERIES: model_runners.MINCOGPreProcessor("waveseries"),
+        DnoraFileType.ICE: model_runners.MINCOGPreProcessor("ice"),
+        DnoraFileType.OCEAN: model_runners.MINCOGPreProcessor("ocean"),
+        DnoraFileType.ATMOSPHERE: model_runners.MINCOGPreProcessor("atmosphere"),
     }
