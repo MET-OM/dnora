@@ -353,6 +353,8 @@ class VesselIcing(ModelRunner):
         da.attrs["grid_mapping"] = "crs"
         da.attrs["long_name"] = "MINCOG icing"
         da.attrs["units"] = "mm/h"
-        outfile = f"{file_object.get_folder()}/mi-fieldcalc_{pd.Timestamp(data.get("wind").time.values[0]):%Y%m%dT%H%M}_{pd.Timestamp(data.get("wind").time.values[-1]):%Y%m%dT%H%M}.nc"
+        start_str = f"{pd.Timestamp(data.get('wind').time.values[0]):%Y%m%dT%H%M}"
+        end_str = f"{pd.Timestamp(data.get('wind').time.values[-1]):%Y%m%dT%H%M}"
+        outfile = f"{file_object.get_folder()}/mi-fieldcalc_{start_str}_{end_str}.nc"
         msg.to_file(outfile)
         da.to_netcdf(outfile)
