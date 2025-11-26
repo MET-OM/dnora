@@ -20,7 +20,9 @@ def test_gridded_data_on_gridded_grid_cartesian():
         end_time,
         source=None,
         folder=None,
+        topo=1.0
     )
+
     assert len(coord_dict.keys()) == 2
     assert coord_dict.get("lon") is None
     assert coord_dict.get("lat") is None
@@ -83,6 +85,7 @@ def test_point_data_on_gridded_grid_cartesian():
         end_time,
         source=None,
         folder=None,
+        dirm=20,
     )
     assert len(coord_dict.keys()) == 4
     assert coord_dict.get("lon") is None
@@ -94,9 +97,10 @@ def test_point_data_on_gridded_grid_cartesian():
     assert list(coord_dict.get("time").strftime("%Y-%m-%d %h%m")) == list(
         pd.date_range(start_time, end_time, freq="h").strftime("%Y-%m-%d %h%m")
     )
-    assert set(data_dict.keys()) == {"spr", "dirm", "spec"}
+    assert set(data_dict.keys()) == {"dirm", "spec"}
     assert data_dict.get("spec").shape == (hours, grid.ny() * grid.nx(), 10)
     np.testing.assert_almost_equal(data_dict.get("spec"), 2.0)
+    np.testing.assert_almost_equal(data_dict.get("dirm"), 20.)
     # np.testing.assert_almost_equal(data_dict.get("v"), 5.0)
 
     assert meta_dict == {}
@@ -128,7 +132,7 @@ def test_point_data_on_gridded_grid_spherical():
     assert list(coord_dict.get("time").strftime("%Y-%m-%d %h%m")) == list(
         pd.date_range(start_time, end_time, freq="h").strftime("%Y-%m-%d %h%m")
     )
-    assert set(data_dict.keys()) == {"spr", "dirm", "spec"}
+    assert set(data_dict.keys()) == {"spec"}
     assert data_dict.get("spec").shape == (hours, grid.ny() * grid.nx(), 10)
     np.testing.assert_almost_equal(data_dict.get("spec"), 2.0)
     # np.testing.assert_almost_equal(data_dict.get("v"), 5.0)
@@ -214,6 +218,7 @@ def test_gridded_data_on_gridded_grid_force_spherical():
         source=None,
         folder=None,
         force_type="spherical",
+        topo=1,
     )
     assert len(coord_dict.keys()) == 2
     assert coord_dict.get("x") is None
@@ -255,7 +260,7 @@ def test_point_data_on_gridded_grid_force_cartesian():
     assert list(coord_dict.get("time").strftime("%Y-%m-%d %h%m")) == list(
         pd.date_range(start_time, end_time, freq="h").strftime("%Y-%m-%d %h%m")
     )
-    assert set(data_dict.keys()) == {"spr", "dirm", "spec"}
+    assert set(data_dict.keys()) == {"spec"}
     assert data_dict.get("spec").shape == (hours, grid.ny() * grid.nx(), 10)
     np.testing.assert_almost_equal(data_dict.get("spec"), 2.0)
     # np.testing.assert_almost_equal(data_dict.get("v"), 5.0)
