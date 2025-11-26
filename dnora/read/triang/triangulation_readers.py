@@ -114,8 +114,8 @@ class TxtReader(DataReader):
                 line = f.readline()
                 t0, t1, t2 = line.split(' ')
                 tri[n,0] = int(t0)
-                tri[n,1] = int(t1)
-                tri[n,2] = int(t2)
+                tri[n,1] = int(t2) # Flip rotation
+                tri[n,2] = int(t1)
             if np.min(tri) == 1:
                 tri = tri -1
         if utm[0] is None:

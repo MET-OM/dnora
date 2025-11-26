@@ -198,7 +198,7 @@ class TriGrid(PointSkeleton):
         mask = mask_setter(self)
         self.set_waveseries_mask(mask)
 
-    def plot(self) -> None:
+    def plot(self, edge_numbers: bool=False) -> None:
         vmin, vmax = np.min(self.topo()), np.max(self.topo())
         if vmax - vmin < 20:
             levels = np.linspace(vmin, vmax, np.floor(vmax - vmin + 1).astype(int))
@@ -214,8 +214,22 @@ class TriGrid(PointSkeleton):
                 tri, self.topo(), cmap=cmocean.cm.deep, levels=levels
             )
             cbar = plt.colorbar(cont, label=f"Water depth [m]")
-        else:
-            plt.triplot(tri, color='black', linewidth=0.5)
+        plt.triplot(tri, color='black', linewidth=0.5)
+        from .tri_arangers import get_boundary_edges, get_boundary_nodes
+        bnd_edges = get_boundary_edges(self.triangles())
+
+
+
+        blon, blat = self.boundary_points()
+        plt.scatter(blon, blat, 4,'r')
+        
+        if edge_numbers:
+            bnd_nodes = get_boundary_nodes(bnd_edges)
+            bnd_nodes = bnd_nodes[0::20]
+            
+            lon,lat=self.lonlat()
+            for i, b in enumerate(bnd_nodes):
+                plt.text(lon[b], lat[b], str(b), fontsize=10, color="red")
         plt.xlabel(self.core.x_str)
         plt.ylabel(self.core.y_str)
 
@@ -226,26 +240,29 @@ class TriGrid(PointSkeleton):
         bnd_nodes, tri, nodes, x, y = tri_aranger(
             self.inds(),
             np.where(self.boundary_mask())[0],
-            self.tri(),
+            self.triangles(),
             self.x(native=True),
             self.y(native=True),
         )
 
-        x, y = self.xy(strict=True)
-        lon, lat = self.lonlat(strict=True)
+        if self.core.is_cartesian():
+            coords = {'x':x, 
+                      'y':y}
+        else:
+            coords = {'lon':x, 'lat':y}
         self._init_structure(
-            x=x,
-            y=y,
-            lon=lon,
-            lat=lat,
             name=self.name,
             ntriang=range(tri.shape[0]),
             corner=range(3),
+            **coords
         )
 
         self._update_boundary(bnd_nodes)
         self.set_triangles(tri)
 
+    def set_boundary_inds(self, boundary_inds: list[int]) -> None:
+        self._update_boundary(boundary_inds)
+        
     def _update_boundary(self, boundary_inds):
         mask = np.array([ind in boundary_inds for ind in self.inds()])
         self.set_boundary_mask(mask)
