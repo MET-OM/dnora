@@ -17,6 +17,7 @@ import geo_parameters as gp
 
 
 @add_run_method(DnoraFileType.ATMOSPHERE)
+@add_run_method(DnoraFileType.WAVESERIES)
 @add_run_method(DnoraFileType.WAVEGRID)
 @add_run_method(DnoraFileType.OCEAN)
 @add_run_method(DnoraFileType.INPUT)
@@ -50,6 +51,7 @@ class ModelExecuter:
 
     def __init__(self, model, include_nest: bool = True):
         self.model = model
+        self.model._input_file_export_format["general"] = self._get_default_format()
         self._nest = {}
         if not self.model.parent():
             msg.header(self, "Initializing model executer...")
@@ -101,6 +103,20 @@ class ModelExecuter:
                 raise TypeError(
                     f"Variables need to be of type 'str' or geo-parameters, not {var}!"
                 )
+
+    def write_pre_process_files(self):
+        """Calls the write file methods for all the objects (i.e. write_grid_file(), wrtie_wind_file() etc."""
+        for obj_type in DnoraDataType:
+            if self.model.get(obj_type) is not None:
+                # Use this instead of calling self.export to get export of possible nested grids right
+                exec(f"self.write_{obj_type.name.lower()}_file()")
+
+    def pre_process(self):
+        """Calls the run methods for all the objects (i.e. run_grid(), run_wind() etc."""
+        for obj_type in DnoraDataType:
+            if self.model.get(obj_type) is not None:
+                # Use this instead of calling self.export to get export of possible nested grids right
+                exec(f"self.run_{obj_type.name.lower()}()")
 
     def _write(
         self,
@@ -163,6 +179,7 @@ class ModelExecuter:
 
         msg.to_multifile(output_files)
         self.model._input_file_exported_to[file_type] = output_files
+        self.model._input_file_export_format[file_type] = self._get_default_format()
 
         return
 

@@ -6,6 +6,7 @@ import pandas as pd
 import re
 import os
 from pathlib import Path
+import json
 
 # Import objects
 from typing import TYPE_CHECKING, Union
@@ -69,6 +70,30 @@ class Null(InputFileWriter):
         **kwargs,
     ) -> str:
         return ""
+
+
+class MINCOG(InputFileWriter):
+    def __call__(
+        self,
+        model: ModelRun,
+        file_object: FileNames,
+        exported_files: dict[str, list[str]],
+        **kwargs,
+    ) -> str:
+        data_types = [
+            "grid",
+            "wind",
+            "ocean",
+            "ice",
+            "wavegrid",
+            "waveseries",
+            "atmosphere",
+        ]
+        config = {data: exported_files.get(data)[-1] for data in data_types}
+
+        with open(file_object.get_filepath(), "w") as f:
+            json.dump(config, f, indent=4)
+        return file_object.get_filepath()
 
 
 def recuresively_find_parent_object_and_filename(model, obj_type: DnoraDataType):

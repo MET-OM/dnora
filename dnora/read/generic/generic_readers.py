@@ -276,7 +276,6 @@ class Netcdf(DataReader):
 
 
 class ConstantData(SpectralDataReader):
-    _class_default_var_values = {"default": 1.0}
     _class_default_coord_values = {
         "freq": np.linspace(0.1, 1, 10),
         "dirs": np.linspace(0, 350, 36),
@@ -309,9 +308,7 @@ class ConstantData(SpectralDataReader):
             self._caching_strategy = CachingStrategy.DontCacheMe
 
         """E.g. ConstantData(vars={'u':1, 'v':2})"""
-        vars = vars or {}
-        self._default_var_values = copy(self._class_default_var_values)
-        self._default_var_values.update(vars)
+        self._vars = vars or {}
 
         coords = coords or {}
         self._default_coord_values = copy(self._class_default_coord_values)
@@ -415,9 +412,10 @@ class ConstantData(SpectralDataReader):
         # Get values for data variables
         dnora_obj = dnora_objects.get(obj_type)
 
+        data_variables = self._vars
+        data_variables.update(kwargs)
         data_val_dict = create_datvar_val_dict(
-            kwargs,
-            default_values=self._default_var_values,
+            data_variables,
             object_vars=dnora_obj.core.data_vars(),
         )
         data_dict = {}
@@ -440,7 +438,7 @@ class ConstantData(SpectralDataReader):
         return coord_dict, data_dict, meta_dict
 
 
-def create_datvar_val_dict(kwargs, default_values, object_vars):
+def create_datvar_val_dict(kwargs, object_vars):
     """Creates a dictionary of data variables and values"""
     new_vars_dict = kwargs.get("new_vars", {})
     new_vars = list(
@@ -448,11 +446,12 @@ def create_datvar_val_dict(kwargs, default_values, object_vars):
     )  # Given explicitly since not yet added to class
 
     datavar_list = list(object_vars) + new_vars
-
     data_dict = {}
     for key in datavar_list:
-        default = default_values.get(key, default_values["default"])
-        data_dict[key] = new_vars_dict.get(key, kwargs.get(key, default))
+        #default = default_values.get(key, default_values["default"])
+        val = new_vars_dict.get(key, kwargs.get(key))
+        if val is not None:
+            data_dict[key] = val
 
     return data_dict
 

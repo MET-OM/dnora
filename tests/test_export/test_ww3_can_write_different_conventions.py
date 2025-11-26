@@ -61,7 +61,7 @@ def dirs_are_math(spectra):
 
 def test_ww3_writes_ww3(model):
     cleanup()
-    model.import_spectra()
+    model.import_spectra(spec=1.0)
     check_that_spectra_is_consistent(model.spectra(), SpectralConvention.OCEAN)
     check_that_peak_dir_is_right(model.spectra(), 0.0)
     exp = dn.export.WW3(model)
@@ -71,6 +71,7 @@ def test_ww3_writes_ww3(model):
     exp.export_spectra(
         folder="ww3_pytest", filename="spec_in_ww3"
     )  # Default exports (i.e. converts) to WW3 format
+    
     check_that_spectra_is_consistent(model.spectra(), SpectralConvention.WW3)
     check_that_peak_dir_is_right(model.spectra(), 0.0)
     dirs_are_math(model.spectra())
@@ -91,7 +92,7 @@ def test_ww3_writes_ww3(model):
 
 def test_ww3_writes_ocean(model):
     cleanup()
-    model.import_spectra()
+    model.import_spectra(spec=1.0)
     check_that_spectra_is_consistent(model.spectra(), SpectralConvention.OCEAN)
     check_that_peak_dir_is_right(model.spectra(), 0.0)
     exp = dn.export.WW3(model)
@@ -122,7 +123,7 @@ def test_ww3_writes_ocean(model):
 
 def test_ww3_writes_met(model):
     cleanup()
-    model.import_spectra()
+    model.import_spectra(spec=1.0)
     check_that_spectra_is_consistent(model.spectra(), SpectralConvention.OCEAN)
     check_that_peak_dir_is_right(model.spectra(), 0.0)
     exp = dn.export.WW3(model)
@@ -150,7 +151,7 @@ def test_ww3_writes_met(model):
 
 def test_ww3_writes_math(model):
     cleanup()
-    model.import_spectra()
+    model.import_spectra(spec=1.0)
     check_that_spectra_is_consistent(model.spectra(), SpectralConvention.OCEAN)
     check_that_peak_dir_is_right(model.spectra(), 0.0)
     exp = dn.export.WW3(model)
@@ -178,7 +179,7 @@ def test_ww3_writes_math(model):
 
 def test_ww3_writes_mathvec(model):
     cleanup()
-    model.import_spectra()
+    model.import_spectra(spec=1.0)
     check_that_spectra_is_consistent(model.spectra(), SpectralConvention.OCEAN)
     check_that_peak_dir_is_right(model.spectra(), 0.0)
     exp = dn.export.WW3(model)

@@ -36,7 +36,7 @@ def test_import_export():
     model = modelrun.ModelRun(grid=grid, start_time=start_time, end_time=end_time)
 
     model.import_wind(ConstantData())
-    model.import_spectra(ConstantData(), point_picker=pick.Trivial())
+    model.import_spectra(ConstantData(), point_picker=pick.Trivial(), spec=1.0)
     model.spectra_to_waveseries()
     model.import_waterlevel(ConstantData())
 
@@ -65,7 +65,7 @@ def test_conventions():
     # Import constant spectra in oceanic convention with one component going north
     model.import_spectra(
         ConstantData(peaks={"freq": None}, convention=SpectralConvention.OCEAN),
-        point_picker=pick.Trivial(),
+        point_picker=pick.Trivial(), spec=1.0,
     )
 
     assert model.spectra().convention() == SpectralConvention.OCEAN

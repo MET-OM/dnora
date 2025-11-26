@@ -51,6 +51,7 @@ class DataExporter:
 
     def __init__(self, model, include_nest: bool = True):
         self.model = model
+        self.model._data_export_format["general"] = self._get_default_format()
         self._nest = {}
         if not self.model.parent():
             msg.header(self, "Initializing model exporter...")
@@ -61,6 +62,13 @@ class DataExporter:
                     f"Exporting data from '{name}' nested inside '{model.grid().name}'"
                 )
                 self._nest[name] = self.__class__(nest)
+
+    def export_all(self):
+        """Exports all objects that are not empty"""
+        for obj_type in DnoraDataType:
+            if self.model.get(obj_type) is not None:
+                # Use this instead of calling self.export to get export of possible nested grids right
+                exec(f"self.export_{obj_type.name.lower()}()")
 
     def export(
         self,
@@ -178,7 +186,7 @@ class DataExporter:
         # Store name and location where file was written
         old_files = self.model._data_exported_to.get(obj_type, [])
         self.model._data_exported_to[obj_type] = old_files + output_files
-
+        self.model._data_export_format[obj_type] = self._get_default_format()
         if not self._silent:
             msg.to_multifile(output_files)
 

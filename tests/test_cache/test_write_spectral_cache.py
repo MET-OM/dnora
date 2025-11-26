@@ -23,7 +23,7 @@ def test_write_spectral_cache():
         shutil.rmtree("spectra_cache", onerror=handle_remove_readonly)
 
     model.import_spectra(
-        dn.read.generic.ConstantData(debug_cache=True), write_cache=True
+        dn.read.generic.ConstantData(debug_cache=True), write_cache=True, spec=1.0
     )
     spectra_cache = Path("spectra_cache")
     assert list(spectra_cache.glob("constantdata/*")) == [

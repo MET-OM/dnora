@@ -146,7 +146,9 @@ class ModelRun:
         )
         self._time = pd.date_range(start_time, end_time, freq="h")
         self._data_exported_to: dict[DnoraDataType, list[str]] = {}
+        self._data_export_format: dict[DnoraDataType, list[str]] = {}
         self._input_file_exported_to: dict[DnoraFileType, list[str]] = {}
+        self._input_file_export_format: dict[DnoraFileType, list[str]] = {}
         self._global_dry_run = dry_run
         self._dry_run = False  # Set by methods
         self._source = DataSource.UNDEFINED
@@ -943,10 +945,14 @@ class ModelRun:
         a best guess
         """
         obj_type = data_type_from_string(obj_type)
-
+        export_format = (
+            self._data_export_format.get(obj_type)
+            or self._data_export_format.get("general")
+            or self._get_default_format()
+        )
         default_name = [
             FileNames(
-                model=self, format=self._get_default_format(), obj_type=obj_type
+                model=self, format=export_format, obj_type=obj_type
             ).get_filepath()
         ]  # Want a list of strings
         return self._data_exported_to.get(obj_type, default_name)
@@ -965,14 +971,19 @@ class ModelRun:
         a best guess
         """
         file_type = file_type_from_string(file_type)
-
+        export_format = (
+            self._input_file_export_format.get(file_type)
+            or self._input_file_export_format.get("general")
+            or self._get_default_format()
+        )
         default_name = [
             FileNames(
                 model=self,
-                format=self._get_default_format(),
+                format=export_format,
                 obj_type=file_type,
             ).get_filepath()
         ]  # Want a list of strings
+
         return self._input_file_exported_to.get(file_type, default_name)
 
     def time(self, crop_with: list[Union[DnoraDataType, str]] = None):
