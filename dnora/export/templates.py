@@ -52,12 +52,10 @@ class SWASH(DataExporter):
 
 
 class WW3(DataExporter):
+    def _get_default_writer(self) -> WriterFunction:
+        return data_writers.Netcdf()
     _writer_dict = {
         DnoraDataType.SPECTRA: spectra_writers.WW3(),
-        DnoraDataType.WIND: data_writers.Netcdf(),
-        DnoraDataType.CURRENT: data_writers.Netcdf(),
-        DnoraDataType.ICE: data_writers.Netcdf(),
-        DnoraDataType.WATERLEVEL: data_writers.Netcdf(),
         DnoraDataType.GRID: grid_writers.WW3(),
         DnoraDataType.TRIGRID: grid_writers.WW3Triangular(),
     }
