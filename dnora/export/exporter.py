@@ -163,6 +163,7 @@ class DataExporter:
             dateformat_folder=dateformat_folder,
             edge_object=edge_object,
         )
+
         if self.dry_run():
             if not self._silent:
                 msg.info("Dry run! No files will be written.")

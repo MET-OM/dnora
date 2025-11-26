@@ -83,12 +83,15 @@ def write_monthly_nc_files(
         t0 = f"{month.strftime('%Y-%m-01')}"
         d1 = monthrange(int(month.strftime("%Y")), int(month.strftime("%m")))[1]
         t1 = f"{month.strftime(f'%Y-%m-{d1}')}"
-
-        outfile = file_object.get_filepath(start_time=month)
+        file_start = max(dnora_obj.time()[0],pd.to_datetime(t0))
+        file_end = min(dnora_obj.time()[-1],pd.to_datetime(t1))
+        outfile = file_object.get_filepath(start_time=file_start, end_time=file_end)
 
         outfile = file_module.clean_filename(outfile)
         if os.path.exists(outfile):
             os.remove(outfile)
+        file_object.create_folder(start_time=month)
+
         dnora_obj.ds().sel(time=slice(t0, t1)).to_netcdf(outfile)
 
         output_files.append(outfile)
@@ -103,17 +106,14 @@ def write_daily_nc_files(dnora_obj: DnoraDataType, file_object: FileNames) -> li
     for day in dnora_obj.days():
         t0 = f"{day.strftime('%Y-%m-%d 00:00')}"
         t1 = f"{day.strftime(f'%Y-%m-%d 23:59')}"
-
-        outfile = file_object.get_filepath(start_time=day)
+        file_start = max(dnora_obj.time()[0],pd.to_datetime(t0))
+        file_end = min(dnora_obj.time()[-1],pd.to_datetime(t1))
+        outfile = file_object.get_filepath(start_time=file_start, end_time=file_end)
 
         outfile = file_module.clean_filename(outfile)
         if os.path.exists(outfile):
             os.remove(outfile)
         file_object.create_folder(start_time=day)
-        # if dnora_obj.meta.get().get("dummy") == "True":
-        #     with open(outfile, "w") as __:
-        #         pass
-        # else:
 
         dnora_obj.ds().sel(time=slice(t0, t1)).to_netcdf(outfile)
 
