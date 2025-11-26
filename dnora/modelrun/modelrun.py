@@ -57,6 +57,8 @@ if TYPE_CHECKING:
         WaveSeries,
         Current,
         Ice,
+        Ocean,
+        WaveGrid,
         DnoraObject,
     )
 
@@ -115,6 +117,9 @@ class ModelRun:
         DnoraDataType.ICE: dnora.read.generic.Netcdf(),
         DnoraDataType.CURRENT: dnora.read.generic.Netcdf(),
         DnoraDataType.WATERLEVEL: dnora.read.generic.Netcdf(),
+        DnoraDataType.OCEAN: dnora.read.generic.Netcdf(),
+        DnoraDataType.WAVEGRID: dnora.read.generic.Netcdf(),
+        DnoraDataType.ATMOSPHERE: dnora.read.generic.Netcdf(),
     }
     _point_picker: PointPicker = NearestGridPoint()
 
@@ -141,7 +146,9 @@ class ModelRun:
         )
         self._time = pd.date_range(start_time, end_time, freq="h")
         self._data_exported_to: dict[DnoraDataType, list[str]] = {}
+        self._data_export_format: dict[DnoraDataType, list[str]] = {}
         self._input_file_exported_to: dict[DnoraFileType, list[str]] = {}
+        self._input_file_export_format: dict[DnoraFileType, list[str]] = {}
         self._global_dry_run = dry_run
         self._dry_run = False  # Set by methods
         self._source = DataSource.UNDEFINED
@@ -592,6 +599,81 @@ class ModelRun:
             **kwargs,
         )
 
+    @cached_reader(DnoraDataType.OCEAN, dnora.read.generic.Netcdf)
+    def import_ocean(
+        self,
+        reader: Optional[DataReader] = None,
+        expansion_factor: float = 1.2,
+        name: Optional[str] = None,
+        dry_run: bool = False,
+        source: Union[str, DataSource] = DataSource.UNDEFINED,
+        folder: Optional[str] = None,
+        filename: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+
+        self._import_data(
+            DnoraDataType.OCEAN,
+            name,
+            dry_run,
+            reader,
+            expansion_factor,
+            source,
+            folder,
+            filename,
+            **kwargs,
+        )
+
+    @cached_reader(DnoraDataType.WAVEGRID, dnora.read.generic.Netcdf)
+    def import_wavegrid(
+        self,
+        reader: Optional[DataReader] = None,
+        expansion_factor: float = 1.2,
+        name: Optional[str] = None,
+        dry_run: bool = False,
+        source: Union[str, DataSource] = DataSource.UNDEFINED,
+        folder: Optional[str] = None,
+        filename: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+        """Import wavegrid data from a source using the given reader"""
+        self._import_data(
+            DnoraDataType.WAVEGRID,
+            name,
+            dry_run,
+            reader,
+            expansion_factor,
+            source,
+            folder,
+            filename,
+            **kwargs,
+        )
+
+    @cached_reader(DnoraDataType.ATMOSPHERE, dnora.read.generic.Netcdf)
+    def import_atmosphere(
+        self,
+        reader: Optional[DataReader] = None,
+        expansion_factor: float = 1.2,
+        name: Optional[str] = None,
+        dry_run: bool = False,
+        source: Union[str, DataSource] = DataSource.UNDEFINED,
+        folder: Optional[str] = None,
+        filename: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+
+        self._import_data(
+            DnoraDataType.ATMOSPHERE,
+            name,
+            dry_run,
+            reader,
+            expansion_factor,
+            source,
+            folder,
+            filename,
+            **kwargs,
+        )
+
     def spectra_to_1d(
         self,
         dry_run: bool = False,
@@ -788,32 +870,44 @@ class ModelRun:
         return self.get(DnoraDataType.TRIGRID) or self.get(DnoraDataType.GRID)
 
     def wind(self) -> Wind:
-        """Returns the forcing object if exists."""
+        """Returns the wind object if exists."""
         return self._dnora_objects.get(DnoraDataType.WIND)
 
     def spectra(self) -> Spectra:
-        """Returns the boundary object if exists."""
+        """Returns the spectral object if exists."""
         return self._dnora_objects.get(DnoraDataType.SPECTRA)
 
     def spectra1d(self) -> Spectra1D:
-        """Returns the spectral object if exists."""
+        """Returns the 1d spectral object if exists."""
         return self._dnora_objects.get(DnoraDataType.SPECTRA1D)
 
     def waveseries(self) -> WaveSeries:
-        """Returns the wave series object if exists."""
+        """Returns the waveseries object if exists."""
         return self._dnora_objects.get(DnoraDataType.WAVESERIES)
 
     def waterlevel(self) -> WaterLevel:
-        """Returns the water level object if exists."""
+        """Returns the waterlevel object if exists."""
         return self._dnora_objects.get(DnoraDataType.WATERLEVEL)
 
     def current(self) -> Current:
-        """Returns the ocean current object if exists."""
+        """Returns the current object if exists."""
         return self._dnora_objects.get(DnoraDataType.CURRENT)
 
     def ice(self) -> Ice:
-        """Returns the ocean current object if exists."""
+        """Returns the Ice object if exists."""
         return self._dnora_objects.get(DnoraDataType.ICE)
+
+    def ocean(self) -> Ocean:
+        """Returns the ocean object if exists."""
+        return self._dnora_objects.get(DnoraDataType.OCEAN)
+
+    def wavegrid(self) -> WaveGrid:
+        """Returns the wavegrid object if exists."""
+        return self._dnora_objects.get(DnoraDataType.WAVEGRID)
+
+    def atmosphere(self) -> Atmosphere:
+        """Returns the atmospher object if exists."""
+        return self._dnora_objects.get(DnoraDataType.ATMOSPHERE)
 
     def process(
         self, obj_type: Union[DnoraDataType, str], processor: GriddedDataProcessor
@@ -851,10 +945,14 @@ class ModelRun:
         a best guess
         """
         obj_type = data_type_from_string(obj_type)
-
+        export_format = (
+            self._data_export_format.get(obj_type)
+            or self._data_export_format.get("general")
+            or self._get_default_format()
+        )
         default_name = [
             FileNames(
-                model=self, format=self._get_default_format(), obj_type=obj_type
+                model=self, format=export_format, obj_type=obj_type
             ).get_filepath()
         ]  # Want a list of strings
         return self._data_exported_to.get(obj_type, default_name)
@@ -873,14 +971,19 @@ class ModelRun:
         a best guess
         """
         file_type = file_type_from_string(file_type)
-
+        export_format = (
+            self._input_file_export_format.get(file_type)
+            or self._input_file_export_format.get("general")
+            or self._get_default_format()
+        )
         default_name = [
             FileNames(
                 model=self,
-                format=self._get_default_format(),
+                format=export_format,
                 obj_type=file_type,
             ).get_filepath()
         ]  # Want a list of strings
+
         return self._input_file_exported_to.get(file_type, default_name)
 
     def time(self, crop_with: list[Union[DnoraDataType, str]] = None):

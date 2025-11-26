@@ -1,6 +1,7 @@
 from enum import Enum, auto
 from typing import Union
 
+
 class DnoraDataType(Enum):
     GRID = auto()
     TRIGRID = auto()
@@ -14,6 +15,8 @@ class DnoraDataType(Enum):
     WAVESERIES = auto()
     WAVEGRID = auto()
     SPECTRALGRID = auto()
+    OCEAN = auto()
+    ATMOSPHERE = auto()
 
 
 class DnoraFileType(Enum):
@@ -28,6 +31,8 @@ class DnoraFileType(Enum):
     WAVESERIES = auto()
     WAVEGRID = auto()
     INPUT = auto()
+    OCEAN = auto()
+    ATMOSPHERE = auto()
 
 
 def data_type_from_string(obj_str: Union[str, DnoraDataType]) -> DnoraDataType:

@@ -76,3 +76,11 @@ class REEF3D(DataExporter):
 
     def _get_default_format(self):
         return ModelFormat.REEF3D
+
+
+class MINCOG(DataExporter):
+    def _get_default_writer(self) -> WriterFunction:
+        return data_writers.MINCOG()
+
+    def _get_default_format(self):
+        return ModelFormat.MINCOG

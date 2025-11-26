@@ -179,3 +179,37 @@ class SWAN(DataWriter):
                     ct += 1
 
         return filename
+
+
+class MINCOG(DataWriter):
+    _data_vars = {
+        DnoraDataType.GRID: ["topo"],
+        DnoraDataType.WAVEGRID: ["hs", "tm01"],
+        DnoraDataType.WAVESERIES: ["hs", "tm01", "lon", "lat"],
+        DnoraDataType.OCEAN: ["sst", "sss"],
+        DnoraDataType.WIND: ["u", "v"],
+        DnoraDataType.ICE: ["sic"],
+        DnoraDataType.ATMOSPHERE: ["t2m", "mslp", "r"],
+    }
+
+    def __call__(
+        self,
+        model: ModelRun,
+        file_object: FileNames,
+        obj_type: DnoraDataType,
+        monthly_files: bool = False,
+        daily_files: bool = False,
+        **kwargs,
+    ) -> str:
+        if model.get(obj_type) is None:
+            msg.info(
+                f"Skipping export of object {obj_type}, since it is not used for VesselIcing!"
+            )
+        vars_to_select = [
+            var
+            for var in self._data_vars[obj_type]
+            if model.get(obj_type).get(var, strict=True) is not None
+        ]
+        ds = model.get(obj_type).ds()[vars_to_select]
+        ds.to_netcdf(file_object.get_filepath())
+        return file_object.get_filepath()

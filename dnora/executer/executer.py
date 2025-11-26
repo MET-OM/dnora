@@ -16,6 +16,10 @@ from geo_parameters.metaparameter import MetaParameter
 import geo_parameters as gp
 
 
+@add_run_method(DnoraFileType.ATMOSPHERE)
+@add_run_method(DnoraFileType.WAVESERIES)
+@add_run_method(DnoraFileType.WAVEGRID)
+@add_run_method(DnoraFileType.OCEAN)
 @add_run_method(DnoraFileType.INPUT)
 @add_run_method(DnoraFileType.SPECTRA)
 @add_run_method(DnoraFileType.ICE)
@@ -33,6 +37,9 @@ import geo_parameters as gp
 @add_write_method(DnoraFileType.WATERLEVEL)
 @add_write_method(DnoraFileType.CURRENT)
 @add_write_method(DnoraFileType.ICE)
+@add_write_method(DnoraFileType.OCEAN)
+@add_write_method(DnoraFileType.WAVEGRID)
+@add_write_method(DnoraFileType.ATMOSPHERE)
 class ModelExecuter:
     _input_file_writers = {}
     _model_runners = {}
@@ -44,6 +51,7 @@ class ModelExecuter:
 
     def __init__(self, model, include_nest: bool = True):
         self.model = model
+        self.model._input_file_export_format["general"] = self._get_default_format()
         self._nest = {}
         if not self.model.parent():
             msg.header(self, "Initializing model executer...")
@@ -96,6 +104,20 @@ class ModelExecuter:
                     f"Variables need to be of type 'str' or geo-parameters, not {var}!"
                 )
 
+    def write_pre_process_files(self):
+        """Calls the write file methods for all the objects (i.e. write_grid_file(), wrtie_wind_file() etc."""
+        for obj_type in DnoraDataType:
+            if self.model.get(obj_type) is not None:
+                # Use this instead of calling self.export to get export of possible nested grids right
+                exec(f"self.write_{obj_type.name.lower()}_file()")
+
+    def pre_process(self):
+        """Calls the run methods for all the objects (i.e. run_grid(), run_wind() etc."""
+        for obj_type in DnoraDataType:
+            if self.model.get(obj_type) is not None:
+                # Use this instead of calling self.export to get export of possible nested grids right
+                exec(f"self.run_{obj_type.name.lower()}()")
+
     def _write(
         self,
         file_type: Union[DnoraFileType, str],
@@ -119,7 +141,7 @@ class ModelExecuter:
         input_file_writer = input_file_writer or self._input_file_writers.get(file_type)
 
         if input_file_writer is None:
-            msg.info("No InputFileWriter defines. Won't do anything.")
+            msg.info("No InputFileWriter defined. Won't do anything.")
             return
 
         msg.header(input_file_writer, "Writing model input file...")
@@ -157,6 +179,7 @@ class ModelExecuter:
 
         msg.to_multifile(output_files)
         self.model._input_file_exported_to[file_type] = output_files
+        self.model._input_file_export_format[file_type] = self._get_default_format()
 
         return
 
