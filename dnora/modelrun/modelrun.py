@@ -1108,6 +1108,7 @@ class ModelRun:
 
     def deactivate_forecast_mode(self) -> None:
         self._reference_time = None
+        self._stride = None
         msg.info(f"Deactivating forecast mode")
 
     def forecast_mode(self) -> None:
