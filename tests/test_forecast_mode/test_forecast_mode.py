@@ -1,6 +1,14 @@
 from dnora.modelrun import ModelRun
 import pandas as pd
 
+def test_forecast_no_init():
+    
+    model = ModelRun()
+    
+    assert model._stride is None
+    assert not model.forecast_mode()
+
+
 def test_forecast_init():
     t0 = "2020-01-01 00:00"
     t1 = "2020-01-01 10:00"
