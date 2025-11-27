@@ -1077,8 +1077,21 @@ class ModelRun:
         self._source = DataSource.UNDEFINED
 
     def activate_forecast_mode(
-        self, reference_time: str = None, forecast_length: int = 48
+        self, reference_time: str = None, forecast_length: int = 48, stride: int =None
     ) -> None:
+        """Activates the forecast mode:
+        
+        reference_time is the start time of the forecast
+        forecast_length [h] is the length of the forecast
+            - Note, that reference_time = '2020-01-01 00:00', forecast_length = 1
+              runs the model for '2020-01-01 00:00' - '2020-01-01 01:00'
+              i.e. the output file will have 2 hours of data.
+        stride [h] (default None) gives information of how often the forecast is intended to be run
+            - stride = 12 means that we assume that the next forecast will start in 12 hours from the current start time
+              The implementation is up to the models, but typically you can expect that a restart file will be written after 12 hours
+              stride = None (default) means that this consideration is not done (typically restart at en of run)
+        """
+        self._stride = stride
         reference_time = reference_time or pd.to_datetime(
             datetime.datetime.now()
         ).round("h")
