@@ -172,6 +172,7 @@ class ModelExecuter:
                 file_object,
                 exported_files=self.model.exported_files(),
                 output_vars=self._output_vars,
+                stride = self.model._stride,
                 **kwargs,
             )
             if not isinstance(output_files, list):

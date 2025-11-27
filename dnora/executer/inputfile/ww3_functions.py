@@ -1,8 +1,8 @@
 import numpy as np
 from dnora.type_manager.dnora_types import DnoraFileType
 from dnora.file_module import split_filepath, add_folder_to_filename
-from typing import Union
-
+from typing import Union, Optional
+import pandas as pd
 
 def write_block(folder: str, fn: str, fout):
     with open(f"{folder}{fn}", "r") as fin:
@@ -318,6 +318,7 @@ def ww3_shel(
     filename: str,
     start_time: str,
     end_time: str,
+    stride: Optional[int], 
     forcing: dict[str, bool],
     homog: dict[str, tuple[float, float]],
     spectral_output: bool,
@@ -364,9 +365,17 @@ def ww3_shel(
 
     def write_date():
         fout.write("&OUTPUT_DATE_NML\n")
-        start_times = {"FIELD": start_time, "POINT": start_time, "RESTART": end_time}
+        if stride is None:
+            stride_str = "3600"
+            restart_start = end_time
+        else:
+            stride_str = f"{3600*stride:.0f}"
+            restart_start = (pd.to_datetime(start_time)+pd.Timedelta(stride, 'h')).strftime('%Y%m%d %H%M00')
+
+        start_times = {"FIELD": start_time, "POINT": start_time, "RESTART": restart_start}
         end_times = {"FIELD": end_time, "POINT": end_time, "RESTART": end_time}
-        dt = {"FIELD": "3600", "POINT": "3600", "RESTART": "3600"}
+
+        dt = {"FIELD": "3600", "POINT": "3600", "RESTART": stride_str}
         output_types = ["FIELD", "RESTART"]
         if spectral_output:
             output_types.append("POINT")
