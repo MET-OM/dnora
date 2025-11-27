@@ -153,6 +153,7 @@ class ModelRun:
         self._dry_run = False  # Set by methods
         self._source = DataSource.UNDEFINED
         self._reference_time = None
+        self._stride = None
         self.name = name
         self._post_processing = None
         self._nest = {}
