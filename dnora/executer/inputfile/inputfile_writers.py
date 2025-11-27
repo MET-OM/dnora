@@ -9,7 +9,7 @@ from pathlib import Path
 import json
 
 # Import objects
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union, Optional
 
 if TYPE_CHECKING:
     from dnora.modelrun.modelrun import ModelRun
@@ -157,6 +157,7 @@ class SWAN(InputFileWriter):
         use_ice: bool = True,
         structures: list[dict] = None,
         homog: dict = None,
+        **kwargs
     ):
         """
         write_mat = True [default: False]: Write mat-files instead of Netcdf-files
@@ -1104,7 +1105,8 @@ class WW3(InputFileWriter):
         file_object: FileNames,
         exported_files: dict[str, list[str]],
         output_vars: list[str],
-        homog: dict[tuple[float, float]] = None,
+        stride: Optional[int], 
+        homog: Optional[dict[tuple[float, float]]] = None,
         **kwargs,
     ) -> str:
         """To use homogeneous input, set all the variables in order as: homog = {'wind': [1,4]}"""
@@ -1138,7 +1140,7 @@ class WW3(InputFileWriter):
         )
 
         ww3_shel(
-            filename, start_time, end_time, forcing, homog, spectral_output, output_vars
+            filename, start_time, end_time, stride, forcing, homog, spectral_output, output_vars
         )
         # Make inputfiles for the post-processing
         ounf_filename = file_object.get_folder() + "/ww3_ounf.nml"
