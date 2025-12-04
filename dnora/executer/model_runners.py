@@ -265,6 +265,7 @@ class MINCOGPreProcessor(ModelRunner):
             outfile = f"{file_object.get_folder()}/mincog_{self._data_type}.nc"
         msg.to_file(outfile)
         out_data.ds().to_netcdf(outfile)
+        return outfile
 
 
 class MINCOG(ModelRunner):
@@ -283,7 +284,7 @@ class MINCOG(ModelRunner):
         """For generation of file name."""
         return ModelFormat.MINCOG
 
-    def __call__(self, file_object: FileNames, model_folder: str) -> None:
+    def __call__(self, file_object: FileNames, model_folder: str, **kwargs) -> None:
         try:
             import mi_fieldcalc as mifc
         except ImportError:
@@ -364,8 +365,12 @@ class MINCOG(ModelRunner):
         da.attrs["grid_mapping"] = "crs"
         da.attrs["long_name"] = "MINCOG icing"
         da.attrs["units"] = "mm/h"
+        if kwargs.get('metadata') is not None:
+            da = da.assign_attrs(**kwargs.get('metadata'))
         start_str = f"{pd.Timestamp(data.get('wind').time.values[0]):%Y%m%dT%H%M}"
         end_str = f"{pd.Timestamp(data.get('wind').time.values[-1]):%Y%m%dT%H%M}"
         outfile = f"{file_object.get_folder()}/mincog_{start_str}_{end_str}.nc"
         msg.to_file(outfile)
         da.to_netcdf(outfile)
+
+        return outfile
