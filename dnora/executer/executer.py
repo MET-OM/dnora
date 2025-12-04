@@ -52,6 +52,7 @@ class ModelExecuter:
     def __init__(self, model, include_nest: bool = True):
         self.model = model
         self.model._input_file_export_format["general"] = self._get_default_format()
+        self._model_output_files: dict[DnoraDataType, list[str]] = {}
         self._nest = {}
         if not self.model.parent():
             msg.header(self, "Initializing model executer...")
@@ -248,11 +249,15 @@ class ModelExecuter:
         msg.header(model_runner, "Running model...")
         msg.plain(f"Using input file: {file_object.get_filepath()}")
         if not self.dry_run():
-            model_runner(
+            outfile = model_runner(
                 file_object=file_object,
                 model_folder=model_folder,
                 **kwargs,
             )
+            if outfile is not None:
+                if not isinstance(outfile,list):
+                    outfile = [outfile]
+                self._model_output_files[file_type] = outfile
         else:
             msg.info("Dry run! Model will not run.")
 
@@ -277,3 +282,32 @@ class ModelExecuter:
                 model_folder=model_folder,
                 **kwargs,
             )
+
+    def _output_file(self, obj_type: Union[DnoraFileType, str]) -> str:
+        """Returns the path the object (e.g. grid) was exported to.
+
+        If object has not been exported, the default filename is returned as
+        a best guess
+        """
+        obj_type = file_type_from_string(obj_type)
+        export_format = (
+            self._data_export_format.get(obj_type)
+            or self._data_export_format.get("general")
+            or self._get_default_format()
+        )
+        default_name = [
+            FileNames(
+                model=self, format=export_format, obj_type=obj_type
+            ).get_filepath()
+        ]  # Want a list of strings
+        return self._data_exported_to.get(obj_type, default_name)
+
+    def output_files(self) -> dict:
+        """Gives a dict of the exported files"""
+        files = {}
+        for dnora_type in DnoraFileType:
+            dnora_type = file_type_from_string(dnora_type)
+            output_files = self._model_output_files.get(dnora_type)
+            if output_files is not None:
+                files[dnora_type.name.lower()] = output_files
+        return files
