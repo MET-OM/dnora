@@ -82,7 +82,7 @@ def download_era5_from_cds(
         "area": f"{lat[1]}/{lon[0]}/{lat[0]}/{lon[1]}",  # north, west, south, east
         "grid": f"{dlat}/{dlon}",
         "type": "an",
-        "format": "netcdf",
+        "data_format": "netcdf",
     }
 
     c.retrieve("reanalysis-era5-complete", cds_command, filename)

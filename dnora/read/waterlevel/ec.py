@@ -75,7 +75,7 @@ def download_GTSM_from_cds(start_time, end_time, folder="dnora_wlv_temp") -> str
         months = months[0]
 
     cds_command = {
-        "format": "tgz",
+        "data_format": "tgz",
         "variable": ["total_water_level"],
         "experiment": "reanalysis",
         "temporal_aggregation": "hourly",

@@ -77,7 +77,7 @@ def download_era5_from_cds(
 
     cds_command = {
         "product_type": "reanalysis",
-        "format": "netcdf",
+        "data_format": "netcdf",
         "variable": [
             "10m_u_component_of_wind",
             "10m_v_component_of_wind",
