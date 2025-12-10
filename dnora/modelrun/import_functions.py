@@ -196,11 +196,8 @@ def pick_points(
     ## Only take points that are reasonable close to the wanted grid
     ## This speeds up the searcg considerably, especially if we have points over 84 lat
     ## since then the fast cartesian searhc is not possible
-    ## Set a limit for angles close to 90 and -90 lat and -180 and 180 longitude
     slon, slat = grid.edges("lon"), grid.edges("lat")
-    eps = 1e-12
-    search_grid = Grid(lat=(max(slat[0] - 3, -90 + eps), min(slat[1] + 3, 90 - eps)),
-                        lon=(max(slon[0] - 6, -180 + eps), min(slon[1] + 6, 180 - eps)))
+    search_grid = Grid(lat=(slat[0] - 3, slat[1] + 3), lon=(slon[0] - 6, slon[1] + 6))
     if isinstance(point_picker, NearestGridPoint):
         search_inds = Area()(search_grid, all_points, expansion_factor=1)
     else:
