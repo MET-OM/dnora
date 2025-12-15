@@ -47,3 +47,14 @@ def domain_size_in_km(
     km_y = distance_2points(lat[0], lon[0], lat[1], lon[0])
 
     return km_x, km_y
+
+def assert_lon_almost_equal(lon1, lon2, decimal=6):
+    """
+    Assert that two longitude arrays are almost equal,
+    accounting for wraparound at ±180°.
+    """
+    lon1 = np.asarray(lon1)
+    lon2 = np.asarray(lon2)
+
+    diff = (lon1 - lon2 + 180) % 360 - 180
+    np.testing.assert_array_almost_equal(diff, 0.0, decimal=decimal)

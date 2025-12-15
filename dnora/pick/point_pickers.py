@@ -112,7 +112,7 @@ class Area(PointPicker):
             )
             x_all, y_all = all_points.lonlat()
 
-        maskx = np.logical_and(x_all >= x[0], x_all <= x[1])
+        maskx = np.logical_and(x_all >= x[0], x_all <= x[1]) # TODO: handle edge cases +/- 180 longitude
         masky = np.logical_and(y_all >= y[0], y_all <= y[1])
         mask = np.logical_and(maskx, masky)
 

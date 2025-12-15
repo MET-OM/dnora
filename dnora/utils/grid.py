@@ -1,5 +1,6 @@
 import numpy as np
-
+from sklearn.cluster import KMeans
+import pandas as pd
 
 def data_covers_grid(skeleton, grid):
     """Checks if a given skeleton covers a given grid"""
@@ -199,3 +200,30 @@ def get_coordinates_from_ds(ds, return_dict: bool = False) -> tuple:
 
 def all_none(val) -> bool:
     return not [a for a in val if a is not None]
+
+def cluster_points(point_file: str | np.ndarray = None,
+                   lon: list | np.ndarray = None,
+                   lat: list | np.ndarray = None,
+                   N_cluster: int = 5) -> list[np.ndarray]:
+    """Clusters boundary points into N clusters using KMeans.
+    Returns a list of arrays, each array containing the lon-lat points of a cluster.
+    """
+    if isinstance(point_file, np.ndarray):
+        points = point_file
+    elif isinstance(point_file, str):
+        points = pd.read_csv(point_file,sep='\\s+', names=['lon', 'lat'])
+        points = np.column_stack((points['lon'].values, points['lat'].values))
+    elif lon is not None and lat is not None:
+        points = np.column_stack((lon, lat))
+    else:
+        raise ValueError("Either point_file or lon and lat must be provided.")
+    
+    kmeans = KMeans(n_clusters=N_cluster, random_state=0).fit(points)
+    labels = kmeans.labels_
+
+    clustered_points = []
+    for cluster_id in range(N_cluster):
+        cluster_points = points[labels == cluster_id]
+        clustered_points.append(cluster_points)
+    return clustered_points
+
