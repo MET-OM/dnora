@@ -227,8 +227,14 @@ def pick_points(
     ## Set a limit for angles close to 90 and -90 lat and -180 and 180 longitude
     slon, slat = grid.edges("lon"), grid.edges("lat")
     eps = 1e-12
-    search_grid = Grid(lat=(max(slat[0] - 3, -90 + eps), min(slat[1] + 3, 90 - eps)),
-                        lon=(max(slon[0] - 6, -180 + eps), min(slon[1] + 6, 180 - eps)))
+    if grid.core.x_str == 'lon' and  clustered_around_lon180(grid.lon()):
+        lon0 = float(np.min(grid.lon()[grid.lon() > 0]))
+        lon1 = float(np.max(grid.lon()[grid.lon() < 0]))
+        search_grid = Grid(lat=(max(slat[0] - 3, -90 + eps), min(slat[1] + 3, 90 - eps)),
+                        lon=(lon0 - 6, lon1 + 6))
+    else:
+        search_grid = Grid(lat=(max(slat[0] - 3, -90 + eps), min(slat[1] + 3, 90 - eps)),
+                        lon=(max(slon[0] - 6, -180 + eps), min(slon[1] + 6, 180 - eps))) 
     if isinstance(point_picker, NearestGridPoint):
         search_inds = Area()(search_grid, all_points, expansion_factor=1)
     else:
