@@ -143,6 +143,7 @@ def expand_area(
     expansion_factor: float,
     dlon: float = 0.0,
     dlat: float = 0.0,
+    cross_180: bool = False,
 ) -> tuple[float, float, float, float]:
     """
     Expands a lon-lat bounding box with an expansion factor.
@@ -154,8 +155,8 @@ def expand_area(
     expansion_factor=1.2 gives (59.9, 61.1)
     expansion_factor=1.2 and dlat = 0.25 gives (59.75, 61.25)
     """
-
-    expand_lon = (lon[1] - lon[0]) * (expansion_factor - 1) * 0.5
+    delta_lon = ((lon[1] - lon[0] + 180) % 360) - 180
+    expand_lon = (delta_lon) * (expansion_factor - 1) * 0.5
     expand_lat = (lat[1] - lat[0]) * (expansion_factor - 1) * 0.5
 
     expand_lon = np.maximum(expand_lon, dlon)
@@ -164,6 +165,9 @@ def expand_area(
     new_lon = lon[0] - expand_lon, lon[1] + expand_lon
     new_lat = lat[0] - expand_lat, lat[1] + expand_lat
 
+    if not cross_180:
+        new_lon = max(new_lon[0], -180.0), min(new_lon[1], 180.0)
+    new_lat = max(new_lat[0], -90.0), min(new_lat[1], 90.0)
     return new_lon, new_lat
 
 
@@ -217,8 +221,19 @@ def cluster_points(point_file: str | np.ndarray = None,
         points = np.column_stack((lon, lat))
     else:
         raise ValueError("Either point_file or lon and lat must be provided.")
-    
-    kmeans = KMeans(n_clusters=N_cluster, random_state=0).fit(points)
+
+    # Convert lon/lat → XYZ unit sphere
+    lon_rad = np.radians(points[:,0])
+    lat_rad = np.radians(points[:,1])
+
+    x = np.cos(lat_rad) * np.cos(lon_rad)
+    y = np.cos(lat_rad) * np.sin(lon_rad)
+    z = np.sin(lat_rad)
+
+    points_xyz = np.column_stack((x, y, z))
+
+    # ---- KMEANS ON 3D XYZ ----
+    kmeans = KMeans(n_clusters=N_cluster, random_state=0).fit(points_xyz)
     labels = kmeans.labels_
 
     clustered_points = []
