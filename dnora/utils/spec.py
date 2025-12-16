@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import interpolate
 import scipy
-
+import xarray as xr
 
 def directional_distribution(freq, fp, dirs, dirp):
     """Calculates directional cos**2s(0.5*theta) distribution of spectrum
@@ -199,3 +199,23 @@ def check_that_spectra_are_consistent(
             raise ValueError(
                 f"Expected {expected_dim} dimensional spectra, but they seem to be {possible_shapes} dimensional!"
             )
+
+
+def concatenate_2dspectra_along_inds(spec_list):
+    """Concatenate 2D spectra along spatial coordinate.
+    """
+    datasets = []
+    offset = 0
+
+    for spec in spec_list:
+        ds = spec._ds_manager.ds()
+        n = ds.sizes["inds"]
+        ds = ds.assign_coords(inds=np.arange(offset, offset + n))
+        offset += n
+        datasets.append(ds)
+
+    merged = xr.concat(datasets, dim="inds")
+
+    out = spec_list[0]
+    out._ds_manager.set_new_ds(merged)
+    return out
