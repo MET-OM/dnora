@@ -12,7 +12,11 @@ import numpy as np
 from dnora.pick import PointPicker, Area, NearestGridPoint
 from geo_skeletons import PointSkeleton
 from dnora import msg
-
+from dnora.utils.distance import clustered_around_lon180
+from dnora.utils.grid import cluster_points
+from dnora.utils.spec import concatenate_2dspectra_along_inds
+from dnora.grid import TriGrid
+from dnora.grid.mask import All
 
 def import_data(
     grid: Grid,
@@ -28,6 +32,7 @@ def import_data(
     filename: str,
     point_mask=None,
     point_picker=None,
+    max_calls: int = None,
     **kwargs,
 ) -> DnoraObject:
     """Imports data using DataReader and creates and returns a DNORA object"""
