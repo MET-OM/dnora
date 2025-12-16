@@ -40,9 +40,32 @@ def import_data(
     msg.print_line(marker="+")
     msg.plain(f"Starting import of data: {obj_type.name}")
     msg.print_line(marker="+")
-    msg.plain(
-        f"Area: {grid.core.x_str}: {grid.edges('lon',native=True)}, {grid.core.y_str}: {grid.edges('lat',native=True)}"
+
+    if grid.core.x_str == 'lon' and clustered_around_lon180(grid.lon()):
+        lon0 = float(np.min(grid.lon()[grid.lon() > 0]))
+        lon1 = float(np.max(grid.lon()[grid.lon() < 0]))
+        msg.plain(
+        f"Area: {grid.core.x_str}: {(lon0, lon1)}, "
+        f"{grid.core.y_str}: {grid.edges('lat',native=True)}"
     )
+    else:
+        msg.plain(
+            f"Area: {grid.core.x_str}: {grid.edges('lon',native=True)}, "
+            f"{grid.core.y_str}: {grid.edges('lat',native=True)}"
+        )
+    
+    if max_calls is not None:
+        msg.plain(f"Max calls set to {max_calls}. Clustering will be used if needed.")
+        clustered_points = cluster_points(lon = grid.lon(), lat = grid.lat(), N_cluster = max_calls)
+        msg.plain(f"Number of clusters created: {len(clustered_points)}")
+        for i, cluster in enumerate(clustered_points):
+            if clustered_around_lon180(cluster[:,0]):
+                lon0 = float(np.min(cluster[cluster[:,0] > 0][:,0]))
+                lon1 = float(np.max(cluster[cluster[:,0] < 0][:,0]))
+                msg.plain(f"Area cluster {i}: lon: {lon0:.2f} to {lon1:.2f}, lat: {cluster[:,1].min():.2f} to {cluster[:,1].max():.2f}")
+            else:   
+                msg.plain(f"Area cluster {i}: lon: {cluster[:,0].min():.2f} to {cluster[:,0].max():.2f}, lat: {cluster[:,1].min():.2f} to {cluster[:,1].max():.2f}")
+
     msg.plain(f"{start_time} - {end_time}")
 
     if dry_run:
