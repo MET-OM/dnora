@@ -301,6 +301,7 @@ class ModelRun:
         point_mask=None,
         point_picker=None,
         post_process: bool = True,
+        max_calls: Optional[int] = None,
         **kwargs,
     ):
         """Performs import and returns DNORA object"""
@@ -376,6 +377,7 @@ class ModelRun:
             filename=filename_to_use,
             point_picker=point_picker,
             point_mask=point_mask,
+            max_calls=max_calls,
             **kwargs,
         )
 
