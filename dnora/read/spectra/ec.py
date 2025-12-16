@@ -5,7 +5,7 @@ import numpy as np
 from typing import Tuple
 import pandas as pd
 from dnora.process.spectra import RemoveEmpty
-from dnora.utils.distance import assert_lon_almost_equal
+from dnora.utils.distance import assert_lon_almost_equal, clustered_around_lon180
 
 # Import abstract classes and needed instances of them
 from dnora.read.abstract_readers import SpectralDataReader
@@ -128,8 +128,7 @@ class ERA5(SpectralDataReader):
         lon = np.floor(np.array(grid.edges("lon")) / self.dlon) * self.dlon
         lat = np.floor(np.array(grid.edges("lat")) / self.dlat) * self.dlat
 
-        if checklon := np.all(grid.lon()[grid.lon() < 0] < -90) and np.all(
-                         grid.lon()[grid.lon() >= 0] > 90): #if the longitudes are centered around 180
+        if checklon := clustered_around_lon180(grid.lon()): #if the longitudes are centered around 180
             lon = grid.lon()
             lon = lon % 360 - 180
             lon = np.floor(np.array([np.min(lon),np.max(lon)]) / self.dlon) * self.dlon
@@ -171,10 +170,14 @@ class ERA5(SpectralDataReader):
             msg.plain("Removing old files from temporary folder...")
             for f in glob.glob(f"{temp_folder}/EC_ERA5.nc"):
                 os.remove(f)
-            if checklon := np.all(grid.lon()[grid.lon() < 0] < -90) and np.all(
-                         grid.lon()[grid.lon() >= 0] > 90): #if the longitudes are centered around 180
-                lon0 = np.min(grid.lon()[grid.lon() > 0]) - round(self._given_grid.dlon(),1)
-                lon1 = np.max(grid.lon()[grid.lon() < 0]) + round(self._given_grid.dlon(),1)
+            if checklon := clustered_around_lon180(grid.lon()): #if the longitudes are centered around 180
+                dlon = self.dlon
+                lon0 = np.min(grid.lon()[grid.lon() > 0])
+                lon1 = np.max(grid.lon()[grid.lon() < 0])
+                
+                lon0 = np.floor(lon0 / dlon) * dlon - dlon
+                lon1 = np.floor(lon1 / dlon) * dlon + dlon
+
                 nc_file = download_era5_from_cds(
                     start_time,
                     end_time,
