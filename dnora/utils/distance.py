@@ -58,3 +58,18 @@ def assert_lon_almost_equal(lon1, lon2, decimal=6):
 
     diff = (lon1 - lon2 + 180) % 360 - 180
     np.testing.assert_array_almost_equal(diff, 0.0, decimal=decimal)
+
+def clustered_around_lon180(lon: np.ndarray) -> bool:
+    """
+    Check if longitudes are clustered around the ±180° meridian.
+    """
+    lon = np.asarray(lon)
+
+    neg = lon[lon < 0]
+    pos = lon[lon >= 0]
+
+    # Must have values on both sides
+    if neg.size == 0 or pos.size == 0:
+        return False
+
+    return np.all(neg < -90) and np.all(pos > 90)
