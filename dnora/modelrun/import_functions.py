@@ -71,43 +71,95 @@ def import_data(
     if dry_run:
         msg.info("Dry run! No data will be imported.")
         return
+    inds_cluster = None
+    if max_calls is not None:
+        if not dnora_objects.get(obj_type).is_gridded():
+            msg.header(point_picker, "Choosing points to import...")
+            msg.plain("Point picking with clustering...")
 
-    if not dnora_objects.get(obj_type).is_gridded():
-        msg.header(point_picker, "Choosing points to import...")
-        inds = pick_points(
-            grid,
+            inds_cluster = []
+            obj_list = []
+            for i, cluster in enumerate(clustered_points):
+                msg.plain(f"\nPicking points for cluster {i}...")
+                lon,lat = cluster[:,0], cluster[:,1]
+                points = TriGrid(lon=lon[:], lat=lat[:], name=f"{grid.name}_cluster_{i}")
+                points.set_boundary_points(All())
+                # pts_mask = points.boundary
+                inds = pick_points(
+                    points,
+                    reader,
+                    start_time,
+                    point_picker,
+                    expansion_factor,
+                    points.boundary_mask(),
+                    source,
+                    folder,
+                    filename,
+                    **kwargs,
+                )
+                if len(inds) < 1:
+                    msg.warning("PointPicker didn't find any points. Aborting import of data.")
+                    return
+                inds_cluster.append(inds)
+
+                msg.plain(f"\nImporting data for cluster {i}...")
+                obj = read_data_and_create_object(
+                    obj_type,
+                    reader,
+                    expansion_factor,
+                    points,
+                    start_time,
+                    end_time,
+                    name,
+                    source,
+                    folder,
+                    filename,
+                    inds,
+                    **kwargs,
+                )
+                obj_list.append(obj)
+            if obj_type == DnoraDataType.SPECTRA and name == 'ERA5':
+                msg.plain("Concatenating data from all clusters...")
+                obj = concatenate_2dspectra_along_inds(obj_list)
+                msg.plain("Concatenation done.")
+        else:
+            inds_cluster = np.array([])
+
+    else:
+        if not dnora_objects.get(obj_type).is_gridded():
+            msg.header(point_picker, "Choosing points to import...")
+            inds = pick_points(
+                grid,
+                reader,
+                start_time,
+                point_picker,
+                expansion_factor,
+                point_mask,
+                source,
+                folder,
+                filename,
+                **kwargs,
+            )
+            if len(inds) < 1:
+                msg.warning("PointPicker didn't find any points. Aborting import of data.")
+                return
+        else:
+            inds = np.array([])
+        msg.header(reader, f"Importing {obj_type.name}...")
+        obj = read_data_and_create_object(
+            obj_type,
             reader,
-            start_time,
-            point_picker,
             expansion_factor,
-            point_mask,
+            grid,
+            start_time,
+            end_time,
+            name,
             source,
             folder,
             filename,
+            inds,
             **kwargs,
         )
-        if len(inds) < 1:
-            msg.warning("PointPicker didn't find any points. Aborting import of data.")
-            return
-    else:
-        inds = np.array([])
-
-    msg.header(reader, f"Importing {obj_type.name}...")
-
-    obj = read_data_and_create_object(
-        obj_type,
-        reader,
-        expansion_factor,
-        grid,
-        start_time,
-        end_time,
-        name,
-        source,
-        folder,
-        filename,
-        inds,
-        **kwargs,
-    )
     return obj
 
 
