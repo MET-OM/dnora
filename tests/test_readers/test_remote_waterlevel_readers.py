@@ -30,10 +30,10 @@ def cleanup():
 @pytest.mark.remote
 def test_era5(grid, timevec):
     cleanup()
-    model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=1)
+    model = dn.modelrun.ModelRun(grid, start_time='2023-04-30 00:00', end_time='2023-05-01 23:00')
     model.import_waterlevel(dn.read.waterlevel.ec.GTSM_ERA5())
 
-    assert np.all(model.waterlevel().time() == timevec)
+    assert np.all(model.waterlevel().time() == pd.date_range('2023-04-30 00:00', '2023-05-01 23:00', freq="1h"))
 
     grid_is_covered(grid, model.waterlevel())
     cleanup()
