@@ -187,7 +187,8 @@ class GTSM_ERA5(DataReader):
         # )
 
         # print(waterlevel_gridded)
-        coord_dict = {"lon": lon_local, "lat": lat_local, "time": time}
+
+        coord_dict = {"lon": lon_local, "lat": lat_local, "time": time_tot}
         data_dict = {"eta": grid_tot}
         meta_dict = {"description": "Waterlevel from GTSM/ERA5"}
 
