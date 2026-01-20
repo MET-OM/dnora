@@ -1,9 +1,8 @@
-from dnora.read.ds_read_functions import  setup_temp_dir
-from dnora.type_manager.dnora_types import DnoraDataType
 import os
 import pandas as pd
 import xarray as xr
 from dnora import msg
+
 def ds_cmems_read(
     start_time: pd.Timestamp,
     end_time: pd.Timestamp,
@@ -11,14 +10,11 @@ def ds_cmems_read(
     ## Partial variables from ProductReader
     lon: tuple[float],
     lat: tuple[float],
-    name: str,
-    data_type: DnoraDataType,
     ## Partial variables in ProductConfiguration
     **kwargs
 
 ):   
-    temp_dir = setup_temp_dir(data_type, name)
-
+    
     cred_file = os.path.expanduser("~/.copernicusmarine/.copernicusmarine-credentials")
     try:
         import copernicusmarine
@@ -32,8 +28,7 @@ def ds_cmems_read(
         )
     
         copernicusmarine.login()
-
-    copernicusmarine.subset(
+    ds = copernicusmarine.open_dataset(
         dataset_id=kwargs.get('dataset_id'),
         variables=kwargs.get('variables'),
         minimum_longitude=lon[0],
@@ -44,11 +39,7 @@ def ds_cmems_read(
         end_datetime=end_time.strftime("%Y-%m-%dT%H:%M:00"),
         minimum_depth=kwargs.get('minimum_depth'),
         maximum_depth=kwargs.get('maximum_depth'),
-        output_directory=temp_dir,
-        credentials_file=cred_file,
-        force_download=True,
-        output_filename=f"{name}_CMEMS_temp.nc",
+
     )
 
-    ds = xr.open_dataset(f"{temp_dir}/{name}_CMEMS_temp.nc")
     return ds

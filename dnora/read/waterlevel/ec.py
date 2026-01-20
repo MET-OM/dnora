@@ -39,7 +39,7 @@ def download_GTSM_from_cds(start_time, end_time, folder="dnora_wlv_temp") -> str
 
     c = cdsapi.Client()
 
-    filename = f"{folder}/EC_GTSM_ERA5.tar.gz"
+    filename = f"{folder}/EC_GTSM_ERA5.zip"
     # cds_command_test = {
     #     'product_type': 'reanalysis',
     #     'format': 'netcdf',
@@ -75,12 +75,12 @@ def download_GTSM_from_cds(start_time, end_time, folder="dnora_wlv_temp") -> str
         months = months[0]
 
     cds_command = {
-        "data_format": "tgz",
         "variable": ["total_water_level"],
         "experiment": "reanalysis",
         "temporal_aggregation": "hourly",
         "year": years,  # 1979-2018
         "month": months,
+        "version": ["v3"]
     }
 
     c.retrieve("sis-water-level-change-timeseries-cmip6", cds_command, filename)
@@ -120,26 +120,23 @@ class GTSM_ERA5(DataReader):
         out_file = download_GTSM_from_cds(start_time, end_time, folder=temp_folder)
 
         temppath = os.path.dirname(out_file)
-        # first unpack the tar.gz file.
-        nc_file = (
-            subprocess.run(["tar", "-ztf", out_file], stdout=subprocess.PIPE)
-            .stdout.decode("utf-8")
-            .split("\n")[0:-1]
-        )
-        nc_file = sorted([ff.strip("\r") for ff in nc_file])
-        # print(nc_file)
-        subprocess.run(
-            ["tar", "-xzvf", out_file, "--directory", temppath], stdout=subprocess.PIPE
-        )  # Extract tar file
+   
+        import zipfile
+        with zipfile.ZipFile(out_file, "r") as zip_ref:
+            nc_files = zip_ref.namelist()
+            
+            # Extract all files to the specified directory
+            zip_ref.extractall(temppath)
 
+        
         lon_local = np.arange(lon[0], lon[1], 0.1)
         lat_local = np.arange(lat[0], lat[1], 0.1)
         grid_x, grid_y = np.meshgrid(lon_local, lat_local, indexing="xy")
 
-        print(nc_file)
+        print(nc_files)
         grid_tot = []
         time_tot = []
-        for ncfile in nc_file:
+        for ncfile in nc_files:
             # print(os.path.join(temppath,nc_file))
             waterlevel = xr.open_dataset(
                 os.path.join(temppath, ncfile), engine="netcdf4"
@@ -190,7 +187,8 @@ class GTSM_ERA5(DataReader):
         # )
 
         # print(waterlevel_gridded)
-        coord_dict = {"lon": lon_local, "lat": lat_local, "time": time}
+
+        coord_dict = {"lon": lon_local, "lat": lat_local, "time": time_tot}
         data_dict = {"eta": grid_tot}
         meta_dict = {"description": "Waterlevel from GTSM/ERA5"}
 

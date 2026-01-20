@@ -1,1 +1,1 @@
-from . import metno
+from . import metno, cmems
