@@ -11,7 +11,7 @@ import json
 import xarray as xr
 import numpy as np
 import pandas as pd
-
+from pathlib import Path
 from dnora.type_manager.dnora_objects import dnora_objects
 from dnora.type_manager.dnora_types import data_type_from_string
 
@@ -146,7 +146,10 @@ class WW3(ModelRunner):
     def post_processors(self) -> list[PostProcessor]:
         return self._post_processors
 
-    def __call__(self, file_object, model_folder, nproc=4, **kwargs) -> None:
+    def __call__(self, file_object, model_folder, parent_folder: str, nproc=4, **kwargs) -> None:
+        if not file_object.get_filename():
+            msg.plain(f"No inputfile present for {self.program}. Skipping.")
+            return
 
         # Copy model executables if needed
         if model_folder:
@@ -157,15 +160,22 @@ class WW3(ModelRunner):
 
         # Target input file, e.g. ww3_prnc.nml
         to_file = WW3_DEFAULT_INPUTFILE_NAMES.get(file_object.obj_type)
+        
+        if self.program == 'shel' and parent_folder:
+            
+            nest_output = Path('../') / Path(parent_folder) / Path('nest.ww3')
+            nest_input = f"{file_object.get_folder()}/{to_file}"
+            breakpoint()
+            #shutil.copy(, )
 
         # Written input files, e.g. 'ww3_prcn_wind.nml', or ['ww3_prnc_ice.nml.sic', 'ww3_prnc_ice.nml.sit']
-        if self.program in ["shel", "grid", "bounc", "prnc"]:
-            from_files = [file_object.get_filename()]
-            out_files = [f"{file_object.get_folder()}/ww3_{self.program}"]
-            if file_object.obj_type == DnoraFileType.ICE:
-                from_files = [f"{from_files[0]}.sic", f"{from_files[0]}.sit"]
-                out_files = [f"{out_files[0]}_sic", f"{out_files[0]}_sit"]
-            out_files = [f"{of}.out" for of in out_files]
+        #if self.program in ["shel", "grid", "bounc", "prnc"]:
+        from_files = [file_object.get_filename()]
+        out_files = [f"{file_object.get_folder()}/ww3_{self.program}"]
+        if file_object.obj_type == DnoraFileType.ICE:
+            from_files = [f"{from_files[0]}.sic", f"{from_files[0]}.sit"]
+            out_files = [f"{out_files[0]}_sic", f"{out_files[0]}_sit"]
+        out_files = [f"{of}.out" for of in out_files]
 
         for from_file, out_file in zip(from_files, out_files):
             from_path = f"{file_object.get_folder()}/{from_file}"
@@ -189,7 +199,7 @@ class WW3(ModelRunner):
                     p.wait()
                 except FileNotFoundError:
                     msg.advice(
-                        f"ww3_{self.program} not found! 1) Set the environmental variable DNORA_WW3_PATH=/path/to/swashfolder or 2) provide keyword model_folder=/path/to/ww3folder"
+                        f"ww3_{self.program} not found! 1) Set the environmental variable DNORA_WW3_PATH=/path/to/ww3folder or 2) provide keyword model_folder=/path/to/ww3folder"
                     )
 
         return

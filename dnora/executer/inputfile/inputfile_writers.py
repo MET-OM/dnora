@@ -1031,26 +1031,31 @@ class WW3Forcing(InputFileWriter):
         else:
             filename = file_object.get_filepath()
 
-        wind_exported_to = apply_folder_on_server(
-            exported_files[self.file_type().name.lower()], folder_on_server
-        )
+        __, forcing_filename  = recuresively_find_parent_object_and_filename(model,self.file_type().name.lower())
+        forcing_exported_to = [forcing_filename]
+
+        if folder_on_server or model.parent() is None:
+            forcing_exported_to = apply_folder_on_server(
+                forcing_exported_to, folder_on_server)
+            
+
         if self.file_type() == DnoraFileType.ICE:
             if model[self.file_type().name].get("sic", strict=True) is not None:
                 ww3_prnc(
                     f"{filename}.sic",
-                    wind_exported_to,
+                    forcing_exported_to,
                     forcing_type=self.file_type(),
                     subtype="sic",
                 )
             if model[self.file_type().name].get("sit", strict=True) is not None:
                 ww3_prnc(
                     f"{filename}.sit",
-                    wind_exported_to,
+                    forcing_exported_to,
                     forcing_type=self.file_type(),
                     subtype="sit",
                 )
         else:
-            ww3_prnc(filename, wind_exported_to, forcing_type=self.file_type())
+            ww3_prnc(filename, forcing_exported_to, forcing_type=self.file_type())
 
         return filename
 
@@ -1070,6 +1075,10 @@ class WW3Spectra(InputFileWriter):
         folder_on_server: str = "",
         **kwargs,
     ) -> str:
+        if model.parent() is not None:
+            msg.plain(f"Not writing ww3_bounc.nml since parent run '{model.parent().grid().name}' will provide a nest.ww3")
+            return ''
+        
         msg.to_file(file_object.get_folder() + "/spectral_boundary_files.list")
         spectra_exported_to = apply_folder_on_server(
             exported_files["spectra"], folder_on_server
