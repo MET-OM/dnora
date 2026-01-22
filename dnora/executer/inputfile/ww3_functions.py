@@ -12,6 +12,7 @@ def write_block(folder: str, fn: str, fout):
 
 def ww3_grid(
     grid,
+    model,
     filename: str,
     grid_exported_to: str,
     freq1: float,
@@ -167,6 +168,38 @@ def ww3_grid(
             fout.write(f"  INBND_POINT({n+1:.0f})         = {block:.0f} 1 {flag}\n")
         fout.write("/\n\n")
 
+    def write_nest_output(nested_grid, first_nest):
+        fout.write('&OUTBND_COUNT_NML\n')
+        fout.write('    OUTBND_COUNT%N_LINE    = 4\n')
+        fout.write('/\n')
+        fout.write('&OUTBND_LINE_NML\n')
+
+        # North                   
+        fout.write(f'OUTBND_LINE(1)%X0     = {nested_grid.edges("lon")[0]}              ! x index start point\n')
+        fout.write(f'OUTBND_LINE(1)%Y0     = {nested_grid.edges("lat")[1]}              ! y index start point\n')
+        fout.write(f'OUTBND_LINE(1)%DX     = {nested_grid.dlon()}              ! x-along increment\n')
+        fout.write(f'OUTBND_LINE(1)%DY     = 0.              ! y-along increment\n')
+        fout.write(f'OUTBND_LINE(1)%NP     = -{nested_grid.nx()}               ! number of points\n')
+        # West                   
+        fout.write(f'OUTBND_LINE(2)%X0     = {nested_grid.edges("lon")[0]}              ! x index start point\n')
+        fout.write(f'OUTBND_LINE(2)%Y0     = {nested_grid.edges("lat")[0]}              ! y index start point\n')
+        fout.write(f'OUTBND_LINE(2)%DX     = 0.              ! x-along increment\n')
+        fout.write(f'OUTBND_LINE(2)%DY     = {nested_grid.dlat()}              ! y-along increment\n')
+        fout.write(f'OUTBND_LINE(2)%NP     = {nested_grid.ny()-1}               ! number of points\n')
+        # South                   
+        fout.write(f'OUTBND_LINE(3)%X0     = {nested_grid.edges("lon")[0]}              ! x index start point\n')
+        fout.write(f'OUTBND_LINE(3)%Y0     = {nested_grid.edges("lat")[0]}              ! y index start point\n')
+        fout.write(f'OUTBND_LINE(3)%DX     = {nested_grid.dlon()}              ! x-along increment\n')
+        fout.write(f'OUTBND_LINE(3)%DY     = 0.              ! y-along increment\n')
+        fout.write(f'OUTBND_LINE(3)%NP     = {nested_grid.nx()-1}               ! number of points\n')
+        # East                 
+        fout.write(f'OUTBND_LINE(4)%X0     = {nested_grid.edges("lon")[1]}              ! x index start point\n')
+        fout.write(f'OUTBND_LINE(4)%Y0     = {nested_grid.edges("lat")[0]}              ! y index start point\n')
+        fout.write(f'OUTBND_LINE(4)%DX     = 0.              ! x-along increment\n')
+        fout.write(f'OUTBND_LINE(4)%DY     = {nested_grid.dlat()}              ! y-along increment\n')
+        fout.write(f'OUTBND_LINE(4)%NP     = {nested_grid.ny()-1}               ! number of points\n')
+        fout.write('/\n')
+    
     folder = __file__[:-17] + "/metadata/ww3_grid/"
 
     with open(filename, "w") as fout:
@@ -197,6 +230,12 @@ def ww3_grid(
             write_unst()
             write_block("inbnd.txt")
             write_inbnd()
+
+        if model.nest():
+            first_nest = True
+            for __, nest in model.nest(get_dict=True).items():
+                write_nest_output(nest.grid(), first_nest)
+                first_nest = False
         write_block("footer.txt")
 
 
@@ -323,6 +362,7 @@ def ww3_shel(
     homog: dict[str, tuple[float, float]],
     spectral_output: bool,
     output_vars: list[str],
+    output_nest: bool
 ):
     def write_block(fn: str):
         with open(f"{folder}{fn}", "r") as fin:
@@ -372,11 +412,13 @@ def ww3_shel(
             stride_str = f"{3600*stride:.0f}"
             restart_start = (pd.to_datetime(start_time)+pd.Timedelta(stride, 'h')).strftime('%Y%m%d %H%M00')
 
-        start_times = {"FIELD": start_time, "POINT": start_time, "RESTART": restart_start}
-        end_times = {"FIELD": end_time, "POINT": end_time, "RESTART": end_time}
+        start_times = {"FIELD": start_time, "POINT": start_time, "RESTART": restart_start, "BOUNDARY": start_time}
+        end_times = {"FIELD": end_time, "POINT": end_time, "RESTART": end_time, "BOUNDARY": end_time}
 
-        dt = {"FIELD": "3600", "POINT": "3600", "RESTART": stride_str}
+        dt = {"FIELD": "3600", "POINT": "3600", "RESTART": stride_str, "BOUNDARY": 3600}
         output_types = ["FIELD", "RESTART"]
+        if output_nest:
+            output_types.append('BOUNDARY')
         if spectral_output:
             output_types.append("POINT")
         for output_type in output_types:

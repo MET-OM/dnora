@@ -993,9 +993,9 @@ class WW3Grid(InputFileWriter):
         )
         # else:
         #     grid_exported_to = exported_files["grid"]
-
         ww3_grid(
             grid,
+            model,
             filename,
             grid_exported_to,
             freq1,
@@ -1147,9 +1147,9 @@ class WW3(InputFileWriter):
         forcing["sic"] = (
             model.ice() is not None and model.ice().get("sic", strict=True) is not None
         )
-
+        output_nest = model.nest() is not None
         ww3_shel(
-            filename, start_time, end_time, stride, forcing, homog, spectral_output, output_vars
+            filename, start_time, end_time, stride, forcing, homog, spectral_output, output_vars, output_nest
         )
         # Make inputfiles for the post-processing
         ounf_filename = file_object.get_folder() + "/ww3_ounf.nml"

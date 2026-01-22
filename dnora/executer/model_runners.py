@@ -162,11 +162,11 @@ class WW3(ModelRunner):
         to_file = WW3_DEFAULT_INPUTFILE_NAMES.get(file_object.obj_type)
         
         if self.program == 'shel' and parent_folder:
-            
-            nest_output = Path('../') / Path(parent_folder) / Path('nest.ww3')
-            nest_input = f"{file_object.get_folder()}/{to_file}"
             breakpoint()
-            #shutil.copy(, )
+            nest_output = Path('../') / Path(parent_folder) / Path('nest1.ww3')
+            nest_input = Path({file_object.get_folder()}) / Path('nest.ww3')
+            
+            shutil.copy(nest_output, nest_input)
 
         # Written input files, e.g. 'ww3_prcn_wind.nml', or ['ww3_prnc_ice.nml.sic', 'ww3_prnc_ice.nml.sit']
         #if self.program in ["shel", "grid", "bounc", "prnc"]:
