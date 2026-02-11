@@ -12,9 +12,9 @@ import numpy as np
 from dnora.pick import PointPicker, Area, NearestGridPoint
 from geo_skeletons import PointSkeleton
 from dnora import msg
-from dnora.utils.distance import clustered_around_lon180
+from dnora.utils.distance import clustered_around_lon180, wrapped_lon_edges
 from dnora.utils.grid import cluster_points
-from dnora.utils.spec import concatenate_2dspectra_along_inds
+
 from dnora.grid import TriGrid
 from dnora.grid.mask import All
 
@@ -62,68 +62,72 @@ def import_data(
             if clustered_around_lon180(cluster[:,0]):
                 lon0 = float(np.min(cluster[cluster[:,0] > 0][:,0]))
                 lon1 = float(np.max(cluster[cluster[:,0] < 0][:,0]))
-                msg.plain(f"Area cluster {i}: lon: {lon0:.2f} to {lon1:.2f}, lat: {cluster[:,1].min():.2f} to {cluster[:,1].max():.2f}")
+                msg.plain(f"Area cluster {i+1} (wrapped): lon: {lon0:.2f} to {lon1:.2f}, lat: {cluster[:,1].min():.2f} to {cluster[:,1].max():.2f}")
             else:   
-                msg.plain(f"Area cluster {i}: lon: {cluster[:,0].min():.2f} to {cluster[:,0].max():.2f}, lat: {cluster[:,1].min():.2f} to {cluster[:,1].max():.2f}")
+                msg.plain(f"Area cluster {i+1}: lon: {cluster[:,0].min():.2f} to {cluster[:,0].max():.2f}, lat: {cluster[:,1].min():.2f} to {cluster[:,1].max():.2f}")
 
     msg.plain(f"{start_time} - {end_time}")
 
     if dry_run:
         msg.info("Dry run! No data will be imported.")
         return
-    inds_cluster = None
     if max_calls is not None:
-        if not dnora_objects.get(obj_type).is_gridded():
-            msg.header(point_picker, "Choosing points to import...")
-            msg.plain("Point picking with clustering...")
+        if dnora_objects.get(obj_type).is_gridded():
+            raise ValueError("Cannot use 'max_calls' when importing gridded objects!")
 
-            inds_cluster = []
-            obj_list = []
-            for i, cluster in enumerate(clustered_points):
-                msg.plain(f"\nPicking points for cluster {i}...")
-                lon,lat = cluster[:,0], cluster[:,1]
-                points = TriGrid(lon=lon[:], lat=lat[:], name=f"{grid.name}_cluster_{i}")
-                points.set_boundary_points(All())
-                # pts_mask = points.boundary
-                inds = pick_points(
-                    points,
-                    reader,
-                    start_time,
-                    point_picker,
-                    expansion_factor,
-                    points.boundary_mask(),
-                    source,
-                    folder,
-                    filename,
-                    **kwargs,
-                )
-                if len(inds) < 1:
-                    msg.warning("PointPicker didn't find any points. Aborting import of data.")
-                    return
-                inds_cluster.append(inds)
+        msg.header(point_picker, "Choosing points to import...")
+        msg.plain("Point picking with clustering...")
 
-                msg.plain(f"\nImporting data for cluster {i}...")
-                obj = read_data_and_create_object(
-                    obj_type,
-                    reader,
-                    expansion_factor,
-                    points,
-                    start_time,
-                    end_time,
-                    name,
-                    source,
-                    folder,
-                    filename,
-                    inds,
-                    **kwargs,
-                )
-                obj_list.append(obj)
-            if obj_type == DnoraDataType.SPECTRA and name == 'ERA5':
-                msg.plain("Concatenating data from all clusters...")
-                obj = concatenate_2dspectra_along_inds(obj_list)
-                msg.plain("Concatenation done.")
-        else:
-            inds_cluster = np.array([])
+        obj_list = []
+        clustered_points = [clustered_points[-1]]
+        for i, cluster in enumerate(clustered_points):
+            msg.plain(f"\nPicking points for cluster {i+1}...")
+            lon,lat = cluster[:,0], cluster[:,1]
+            
+            points = TriGrid(lon=lon[:], lat=lat[:], name=f"{grid.name}_cluster_{i}")
+            points.set_boundary_points(All())
+            inds = pick_points(
+                points,
+                reader,
+                start_time,
+                point_picker,
+                expansion_factor,
+                points.boundary_mask(),
+                source,
+                folder,
+                filename,
+                **kwargs,
+            )
+            if len(inds) < 1:
+                msg.warning("PointPicker didn't find any points. Aborting import of data.")
+                return
+
+            msg.plain(f"\nImporting data for cluster {i+1}...")
+            obj = read_data_and_create_object(
+                obj_type,
+                reader,
+                expansion_factor,
+                points,
+                start_time,
+                end_time,
+                name,
+                source,
+                folder,
+                filename,
+                inds,
+                **kwargs,
+            )
+            obj_list.append(obj)
+
+        msg.plain("Concatenating data from all clusters...")
+        obj = None
+        for ob in obj_list:
+            if obj is None:
+                obj = ob
+            else:
+                obj = obj.absorb(ob, dim='inds')
+        msg.plain("Concatenation done.")
+
 
     else:
         if not dnora_objects.get(obj_type).is_gridded():
@@ -275,10 +279,12 @@ def pick_points(
 
     if not np.all(np.logical_not(point_mask)):
         interest_points = PointSkeleton.from_skeleton(grid, mask=point_mask)
-        slon, slat = interest_points.edges("lon"), interest_points.edges("lat")
+        slat = interest_points.edges("lat")
+        slon = wrapped_lon_edges(interest_points)
     else:
         interest_points = None
-        slon, slat = grid.edges("lon"), grid.edges("lat")
+        slat = grid.edges("lat")
+        slon = wrapped_lon_edges(grid)
     ## Only take points that are reasonable close to the wanted grid
     ## This speeds up the searcg considerably, especially if we have points over 84 lat
     ## since then the fast cartesian searhc is not possible
@@ -286,6 +292,7 @@ def pick_points(
     if isinstance(point_picker, NearestGridPoint):
         eps = 1e-12
         slon = (slon[0] - 6, slon[1] + 6)
+
         search_grid = Grid(lat=(max(slat[0] - 3, -90 + eps), min(slat[1] + 3, 90 - eps)),
                         lon=(max(slon[0] - 6, -180 + eps), min(slon[1] + 6, 180 - eps))) 
         search_inds = Area()(search_grid, all_points, expansion_factor=1, lon=slon)
