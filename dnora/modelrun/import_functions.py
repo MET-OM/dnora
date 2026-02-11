@@ -273,37 +273,26 @@ def pick_points(
         y=available_points.get("y"),
     )
 
+    if not np.all(np.logical_not(point_mask)):
+        interest_points = PointSkeleton.from_skeleton(grid, mask=point_mask)
+        slon, slat = interest_points.edges("lon"), interest_points.edges("lat")
+    else:
+        interest_points = None
+        slon, slat = grid.edges("lon"), grid.edges("lat")
     ## Only take points that are reasonable close to the wanted grid
     ## This speeds up the searcg considerably, especially if we have points over 84 lat
     ## since then the fast cartesian searhc is not possible
     ## Set a limit for angles close to 90 and -90 lat and -180 and 180 longitude
-    slon, slat = grid.edges("lon"), grid.edges("lat")
-    eps = 1e-12
-    if grid.core.x_str == 'lon' and  clustered_around_lon180(grid.lon()):
-        lon0 = float(np.min(grid.lon()[grid.lon() > 0]))
-        lon1 = float(np.max(grid.lon()[grid.lon() < 0]))
-        search_grid = Grid(lat=(max(slat[0] - 3, -90 + eps), min(slat[1] + 3, 90 - eps)),
-                        lon=(lon0 - 6, lon1 + 6))
-    else:
+    if isinstance(point_picker, NearestGridPoint):
+        eps = 1e-12
+        slon = (slon[0] - 6, slon[1] + 6)
         search_grid = Grid(lat=(max(slat[0] - 3, -90 + eps), min(slat[1] + 3, 90 - eps)),
                         lon=(max(slon[0] - 6, -180 + eps), min(slon[1] + 6, 180 - eps))) 
-    if isinstance(point_picker, NearestGridPoint):
-        search_inds = Area()(search_grid, all_points, expansion_factor=1)
+        search_inds = Area()(search_grid, all_points, expansion_factor=1, lon=slon)
     else:
         search_inds = all_points.inds()
 
-    # if np.all(np.logical_not(point_mask)):
-    #     msg.warning(
-    #         "None of the points set to interest points! Aborting import of data."
-    #     )
-    #     return
-    # else:
-    #     interest_points = PointSkeleton.from_skeleton(grid, mask=point_mask)
 
-    if not np.all(np.logical_not(point_mask)):
-        interest_points = PointSkeleton.from_skeleton(grid, mask=point_mask)
-    else:
-        interest_points = None
 
     inds = point_picker(
         grid=grid,
@@ -313,7 +302,7 @@ def pick_points(
         fast=True,
         **kwargs,
     )
-
     if len(inds) < 1:
         return np.array([])
+
     return search_inds[inds]
