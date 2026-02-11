@@ -124,16 +124,22 @@ class Grid(GriddedSkeleton):
 
         obj.set_topo(topo)
 
-    def set_boundary_points(self, mask_setter) -> None:
+    def set_boundary_points(self, mask_setter, append: bool=False) -> None:
         boundary_mask = mask_setter(self)
+        if append:
+            mask = np.logical_or(mask, self.boundary_mask())
         self.set_boundary_mask(boundary_mask)
 
-    def set_output_points(self, mask_setter) -> None:
+    def set_output_points(self, mask_setter, append:bool = False) -> None:
         mask = mask_setter(self)
+        if append:
+            mask = np.logical_or(mask, self.output_mask())
         self.set_output_mask(mask)
 
-    def set_waveseries_points(self, mask_setter) -> None:
+    def set_waveseries_points(self, mask_setter, append:bool=False) -> None:
         mask = mask_setter(self)
+        if append:
+            mask = np.logical_or(mask, self.waveseries_mask())
         self.set_waveseries_mask(mask)
 
     def time(self) -> tuple:

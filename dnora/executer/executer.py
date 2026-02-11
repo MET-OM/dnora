@@ -231,7 +231,7 @@ class ModelExecuter:
         model_runner = model_runner or self._model_runners.get(file_type)
         if model_runner is None:
             raise Exception("Define a ModelRunner!")
-
+        msg.header(model_runner, f"Running model '{self.model.grid().name}'...")
         # Find location of model executable
         # E.g. For writing GRID and a preferred format of WW3 search for DNORA_GRID_WW3_PATH and DNORA_WW3_PATH
         model_folder = model_folder or read_environment_variable(
@@ -254,7 +254,7 @@ class ModelExecuter:
             edge_object=DnoraDataType.GRID,
         )
 
-        msg.header(model_runner, f"Running model '{self.model.grid().name}'...")
+        
         msg.plain(f"Using input file: {file_object.get_filepath()}")
         if not self.dry_run():
             outfile = model_runner(
@@ -273,7 +273,7 @@ class ModelExecuter:
         post_processors = post_processors or model_runner.post_processors()
 
         if post_processors and post_process:
-            self.post_process(post_processors, file_object, model_folder, parent_folder,**kwargs)
+            self.post_process(post_processors, file_object, model_folder, parent_folder,file_type, **kwargs)
 
     def post_process(
         self,
@@ -281,14 +281,33 @@ class ModelExecuter:
         file_object: FileNames,
         model_folder,
         parent_folder: str,
+        file_type,
         **kwargs,
     ) -> None:
         """Post processes model run output, e.g. convert to netcdf or move files"""
         for post_processor in post_processors:
             msg.header(post_processor, "Post processing...")
+            if post_processor.for_nest is not None:
+                model = self.model.nest(get_dict=True)[post_processor.for_nest]
+            else:
+                model = self.model
+            file_objects = []
+            for fn in model.input_file_exported_to(post_processor.for_file_type or file_type):
+                
+                exported_path = Path(fn)
+                primary_file = exported_path.stem
+                primary_folder = str(exported_path.parent)
+                file_objects.append(FileNames(
+                    model=model,
+                    filename=primary_file,
+                    folder=primary_folder,
+                    obj_type=post_processor.for_file_type or file_type,
+                    format=self._get_default_format(),
+                    edge_object=DnoraDataType.GRID,
+                ))
+
             post_processor(
-                model=self.model,
-                file_object=file_object,
+                file_object=file_objects,
                 model_folder=model_folder,
                 parent_folder=parent_folder,
                 **kwargs,

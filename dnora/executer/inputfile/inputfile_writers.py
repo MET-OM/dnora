@@ -7,7 +7,7 @@ import re
 import os
 from pathlib import Path
 import json
-
+from dnora.grid.mask import LonLat
 # Import objects
 from typing import TYPE_CHECKING, Union, Optional
 
@@ -1037,6 +1037,9 @@ class WW3Forcing(InputFileWriter):
         if folder_on_server or model.parent() is None:
             forcing_exported_to = apply_folder_on_server(
                 forcing_exported_to, folder_on_server)
+        elif model.parent() is not None:
+            parent_folder = Path('../')/Path(model.parent().input_file_exported_to('grid')[0]).parent
+            forcing_exported_to = [ parent_folder / Path(forcing_filename).name]
             
 
         if self.file_type() == DnoraFileType.ICE:
@@ -1076,13 +1079,15 @@ class WW3Spectra(InputFileWriter):
         **kwargs,
     ) -> str:
         if model.parent() is not None:
-            msg.plain(f"Not writing ww3_bounc.nml since parent run '{model.parent().grid().name}' will provide a nest.ww3")
-            return ''
-        
+            msg.info(f"Assuming spectra will be available from the parent run '{model.parent().grid().name}'")
+            parent_folder = Path('../')/Path(model.parent().input_file_exported_to('grid')[0]).parent
+            spectra_exported_to = [ parent_folder / Path(model.parent().start_time().strftime('ww3.%Y%m_spec.nc'))]
+        else:
+            spectra_exported_to = apply_folder_on_server(
+                exported_files["spectra"], folder_on_server
+            )
         msg.to_file(file_object.get_folder() + "/spectral_boundary_files.list")
-        spectra_exported_to = apply_folder_on_server(
-            exported_files["spectra"], folder_on_server
-        )
+
         ww3_specfile_list(
             file_object.get_folder() + "/spectral_boundary_files.list",
             spectra_exported_to,
@@ -1106,6 +1111,22 @@ class WW3Spectra(InputFileWriter):
 
         return filename
 
+def create_forcing_output_bool_dict(model)-> dict[str, bool]:
+    """Determines what forcing data will be available for the model, taking to account that a nested model can have used data loaded for the parent model"""
+    forcing = {}
+    for ftype in [DnoraDataType.WIND, DnoraDataType.WATERLEVEL, DnoraDataType.CURRENT, DnoraDataType.ICE]:
+
+        obj, __ = recuresively_find_parent_object_and_filename(model,ftype)
+        forcing[ftype.name.lower()] = obj is not None
+
+        if ftype == DnoraDataType.ICE:
+            forcing["sit"] = (
+                obj is not None and obj.get("sit", strict=True) is not None
+            )
+            forcing["sic"] = (
+                obj is not None and obj.get("sic", strict=True) is not None
+            )
+    return forcing
 
 class WW3(InputFileWriter):
     def __call__(
@@ -1121,6 +1142,11 @@ class WW3(InputFileWriter):
         """To use homogeneous input, set all the variables in order as: homog = {'wind': [1,4]}"""
         if homog is None:
             homog = {}
+        if model.nest() is not None:
+            for __, nest in model.nest(get_dict=True).items():
+                blon, blat = nest.grid().boundary_points()
+                model.grid().set_output_points(LonLat(lon=blon, lat=blat), append=True)
+
         lons, lats = model.grid().output_points()
 
         spectral_output = len(lons) > 0
@@ -1132,29 +1158,26 @@ class WW3(InputFileWriter):
 
         start_time = model.start_time(crop_with="all").strftime("%Y%m%d %H0000")
         end_time = model.end_time(crop_with="all").strftime("%Y%m%d %H0000")
+        
         if file_object.get_filename() == "":
             filename = file_object.get_folder() + "/ww3_shel.nml"
         else:
             filename = file_object.get_filepath()
 
-        forcing = {}
-        forcing["wind"] = model.wind() is not None
-        forcing["waterlevel"] = model.waterlevel() is not None
-        forcing["current"] = model.current() is not None
-        forcing["sit"] = (
-            model.ice() is not None and model.ice().get("sit", strict=True) is not None
-        )
-        forcing["sic"] = (
-            model.ice() is not None and model.ice().get("sic", strict=True) is not None
-        )
-        output_nest = model.nest() is not None
+        forcing = create_forcing_output_bool_dict(model)
+
+        #output_nest = model.nest() is not None
         ww3_shel(
-            filename, start_time, end_time, stride, forcing, homog, spectral_output, output_vars, output_nest
+            filename, start_time, end_time, stride, forcing, homog, spectral_output, output_vars#, output_nest
         )
         # Make inputfiles for the post-processing
         ounf_filename = file_object.get_folder() + "/ww3_ounf.nml"
-        ounp_filename = file_object.get_folder() + "/ww3_ounp.nml"
         ww3_ounf(ounf_filename, start_time, len(model.time()), 3600, output_vars)
-        ww3_ounp(ounp_filename, start_time, len(model.time()), 3600)
 
-        return [filename, ounf_filename, ounp_filename]
+        if spectral_output > 0:
+            ounp_filename = file_object.get_folder() + "/ww3_ounp.nml"
+            ww3_ounp(ounp_filename, start_time, len(model.time()), 3600)
+
+            return [filename, ounf_filename, ounp_filename]
+        else:
+            return [filename, ounf_filename]

@@ -118,25 +118,46 @@ class SWASH(ModelRunner):
         p.wait()
 
 
-WW3_DEFAULT_INPUTFILE_NAMES = {
-    DnoraFileType.SPECTRA: "ww3_bounc.nml",
-    DnoraFileType.GRID: "ww3_grid.nml",
-    DnoraFileType.WIND: "ww3_prnc.nml",
-    DnoraFileType.INPUT: "ww3_shel.nml",
-    DnoraFileType.CURRENT: "ww3_prnc.nml",
-    DnoraFileType.WATERLEVEL: "ww3_prnc.nml",
-    DnoraFileType.ICE: "ww3_prnc.nml",
-}
+# WW3_DEFAULT_INPUTFILE_NAMES = {
+#     DnoraFileType.SPECTRA: "ww3_bounc.nml",
+#     DnoraFileType.GRID: "ww3_grid.nml",
+#     DnoraFileType.WIND: "ww3_prnc.nml",
+#     DnoraFileType.INPUT: "ww3_shel.nml",
+#     DnoraFileType.CURRENT: "ww3_prnc.nml",
+#     DnoraFileType.WATERLEVEL: "ww3_prnc.nml",
+#     DnoraFileType.ICE: "ww3_prnc.nml",
+# }
 
+# WW3_DEFAULT_INPUTFILE_NAMES = {
+#     DnoraFileType.SPECTRA: "ww3_bounc.nml",
+#     DnoraFileType.GRID: "ww3_grid.nml",
+#     DnoraFileType.WIND: "ww3_prnc.nml",
+#     DnoraFileType.INPUT: "ww3_shel.nml",
+#     DnoraFileType.CURRENT: "ww3_prnc.nml",
+#     DnoraFileType.WATERLEVEL: "ww3_prnc.nml",
+#     DnoraFileType.ICE: "ww3_prnc.nml",
+# }
+def determine_right_file_object(file_object, program):
+    if not isinstance(file_object, list):
+                file_object = [file_object]
+    
+    file_obj = None
+    for fo in file_object:
+        if program in fo.get_filename():
+            file_obj = fo
+
+    return file_obj
 
 class WW3(ModelRunner):
-    def __init__(self, program: str):
+    def __init__(self, program: str, for_nest: str = None, file_type: DnoraFileType = None):
         """E.g. program = 'grid' to run ww3_grid etc."""
         self.program = program
         if program == "shel":
             self._post_processors = [WW3("ounf"), WW3("ounp")]
         else:
             self._post_processors = []
+        self.for_nest = for_nest
+        self.for_file_type = file_type
         return
 
     def preferred_format(self) -> str:
@@ -147,8 +168,13 @@ class WW3(ModelRunner):
         return self._post_processors
 
     def __call__(self, file_object, model_folder, parent_folder: str, nproc=4, **kwargs) -> None:
-        if not file_object.get_filename():
+        file_object = determine_right_file_object(file_object, self.program)
+
+        if file_object is None:
             msg.plain(f"No inputfile present for {self.program}. Skipping.")
+            return
+        elif parent_folder and self.program=='bounc' and not self.for_nest:
+            msg.plain(f"Will have to wait to exectute {self.program} until parent run is done. Skipping for now.")
             return
 
         # Copy model executables if needed
@@ -159,14 +185,13 @@ class WW3(ModelRunner):
             shutil.copy(from_file, to_file)
 
         # Target input file, e.g. ww3_prnc.nml
-        to_file = WW3_DEFAULT_INPUTFILE_NAMES.get(file_object.obj_type)
+        #to_file = WW3_DEFAULT_INPUTFILE_NAMES.get(file_object.obj_type)
+        to_file = f"ww3_{self.program}.nml"
+        # if self.program == 'shel' and parent_folder:
+        #     nest_output =  Path(parent_folder) / Path('nest1.ww3')
+        #     nest_input =  Path(file_object.get_folder()) / Path('nest.ww3')
         
-        if self.program == 'shel' and parent_folder:
-            breakpoint()
-            nest_output = Path('../') / Path(parent_folder) / Path('nest1.ww3')
-            nest_input = Path({file_object.get_folder()}) / Path('nest.ww3')
-            
-            shutil.copy(nest_output, nest_input)
+        #     shutil.copy(nest_output, nest_input)
 
         # Written input files, e.g. 'ww3_prcn_wind.nml', or ['ww3_prnc_ice.nml.sic', 'ww3_prnc_ice.nml.sit']
         #if self.program in ["shel", "grid", "bounc", "prnc"]:
@@ -183,7 +208,6 @@ class WW3(ModelRunner):
                 msg.plain(f"{from_path} not found. Skipping...")
                 continue
             if from_file != to_file:
-
                 msg.copy_file(from_file, to_file)
                 shutil.copy(from_path, f"{file_object.get_folder()}/{to_file}")
 
@@ -201,9 +225,30 @@ class WW3(ModelRunner):
                     msg.advice(
                         f"ww3_{self.program} not found! 1) Set the environmental variable DNORA_WW3_PATH=/path/to/ww3folder or 2) provide keyword model_folder=/path/to/ww3folder"
                     )
-
+        find_end_of_program(out_files[0], self.program)
+        if self.program == 'shel':
+            if file_object.model.nest():
+                msg.info('Parent model run done! Setting up boundary pre-processing for nests:')
+                for key, __ in file_object.model.nest(get_dict=True).items():
+                    msg.plain(f"\t'{key}'")
+                    self._post_processors.append(WW3('bounc', for_nest=key, file_type=DnoraFileType.SPECTRA))
+            else:
+                self._post_processors = [WW3("ounf"), WW3("ounp")]
         return
 
+def find_end_of_program(filename, program):
+    """Searches for 'End of program' in a WW3 output file and warns if it doesn't exist"""
+
+    search_string = "End of program"
+
+    # Open the file and search line by line
+    with open(filename, 'r') as file:
+        for line in file:
+            if search_string in line:
+                msg.plain(f'Execution of {program} successful!')
+                return
+
+    msg.warning(f"Seems like {program} could not finish successfully!")
 
 class HOS_ocean(ModelRunner):
     def __init__(self):
