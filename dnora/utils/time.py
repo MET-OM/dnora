@@ -141,20 +141,28 @@ def create_time_stamps(
     end_times = start_times + pd.DateOffset(hours=stride - 1)
 
     # First time might not coincide with first step in first file
-    start_times.values[0] = pd.Timestamp(start_time)
-
+    
+    #start_times.values[0] = pd.Timestamp(start_time)
+    start_times = start_times.insert(0, pd.Timestamp(start_time)).delete(1)
     if last_file:
         # In operational systems we might want to read a longer segment from the last file
-        end_times.values[-1] = min(
+        new_end_time = min(
             [
                 pd.Timestamp(last_file) + pd.DateOffset(hours=(hours_per_file - 1)),
                 pd.Timestamp(end_time),
             ]
         )
     else:
-        # Last time might not coincide with last step in last file
-        end_times.values[-1] = pd.Timestamp(end_time)
+        new_end_time = pd.Timestamp(end_time)
+        
+        # end_times.values[-1] = min(
+        #     [
+        #         pd.Timestamp(last_file) + pd.DateOffset(hours=(hours_per_file - 1)),
+        #         pd.Timestamp(end_time),
+        #     ]
+        # )
 
+    end_times = end_times[:-1].append(pd.DatetimeIndex([new_end_time]))
     return start_times, end_times, file_times
 
 def get_first_file(
