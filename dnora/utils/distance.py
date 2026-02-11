@@ -73,3 +73,12 @@ def clustered_around_lon180(lon: np.ndarray) -> bool:
         return False
 
     return np.all(neg < -90) and np.all(pos > 90)
+
+def wrapped_lon_edges(grid) -> tuple:
+    """Returns normal edges for normal grids and edges wrapped around +-180 if necessary"""
+    if not clustered_around_lon180(grid.lon()):
+        return grid.edges('lon')
+    else:
+        lon0 = float(np.min(grid.lon()[grid.lon() > 0]))
+        lon1 = float(np.max(grid.lon()[grid.lon() < 0]))
+        return (lon0, lon1)
