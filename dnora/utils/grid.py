@@ -205,23 +205,15 @@ def get_coordinates_from_ds(ds, return_dict: bool = False) -> tuple:
 def all_none(val) -> bool:
     return not [a for a in val if a is not None]
 
-def cluster_points(point_file: Union[str, np.ndarray] = None,
-                   lon: Union[list, np.ndarray] = None,
-                   lat: Union[list, np.ndarray] = None,
-                   N_cluster: int = 5) -> list[np.ndarray]:
+
+def cluster_points(lon: np.ndarray,
+                   lat: np.ndarray,
+                   N_cluster) -> list[np.ndarray]:
     """Clusters boundary points into N clusters using KMeans.
     Returns a list of arrays, each array containing the lon-lat points of a cluster.
     """
-    if isinstance(point_file, np.ndarray):
-        points = point_file
-    elif isinstance(point_file, str):
-        points = pd.read_csv(point_file,sep='\\s+', names=['lon', 'lat'])
-        points = np.column_stack((points['lon'].values, points['lat'].values))
-    elif lon is not None and lat is not None:
-        points = np.column_stack((lon, lat))
-    else:
-        raise ValueError("Either point_file or lon and lat must be provided.")
-
+    points = np.column_stack((lon, lat))
+    
     # Convert lon/lat → XYZ unit sphere
     lon_rad = np.radians(points[:,0])
     lat_rad = np.radians(points[:,1])
