@@ -22,7 +22,7 @@ dependencies = [
     "python-dotenv",
     "progressbar",
     "pyarrow",
-    "sklearn",
+    "scikit-learn",
     "dnplot>=0.4.3",
     "dask[dataframe]"
 ]

@@ -19,4 +19,4 @@ dependencies:
   - python-dotenv
   - cdsapi>=0.7.6
   - progressbar
-  - sklearn
+  - scikit-learn
