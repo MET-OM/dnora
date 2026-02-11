@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.cluster import KMeans
 import pandas as pd
-
+from typing import Union
 def data_covers_grid(skeleton, grid):
     """Checks if a given skeleton covers a given grid"""
     for coord in ["lon", "lat"]:
@@ -155,7 +155,8 @@ def expand_area(
     expansion_factor=1.2 gives (59.9, 61.1)
     expansion_factor=1.2 and dlat = 0.25 gives (59.75, 61.25)
     """
-    delta_lon = ((lon[1] - lon[0] + 180) % 360) - 180
+    #delta_lon = ((lon[1] - lon[0] + 180) % 360) - 180
+    delta_lon = lon[1] - lon[0]
     expand_lon = (delta_lon) * (expansion_factor - 1) * 0.5
     expand_lat = (lat[1] - lat[0]) * (expansion_factor - 1) * 0.5
 
@@ -164,7 +165,6 @@ def expand_area(
 
     new_lon = lon[0] - expand_lon, lon[1] + expand_lon
     new_lat = lat[0] - expand_lat, lat[1] + expand_lat
-
     if not cross_180:
         new_lon = max(new_lon[0], -180.0), min(new_lon[1], 180.0)
     new_lat = max(new_lat[0], -90.0), min(new_lat[1], 90.0)
@@ -205,9 +205,9 @@ def get_coordinates_from_ds(ds, return_dict: bool = False) -> tuple:
 def all_none(val) -> bool:
     return not [a for a in val if a is not None]
 
-def cluster_points(point_file: str | np.ndarray = None,
-                   lon: list | np.ndarray = None,
-                   lat: list | np.ndarray = None,
+def cluster_points(point_file: Union[str, np.ndarray] = None,
+                   lon: Union[list, np.ndarray] = None,
+                   lat: Union[list, np.ndarray] = None,
                    N_cluster: int = 5) -> list[np.ndarray]:
     """Clusters boundary points into N clusters using KMeans.
     Returns a list of arrays, each array containing the lon-lat points of a cluster.
