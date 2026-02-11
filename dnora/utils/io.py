@@ -64,13 +64,13 @@ def get_url(
             else:
                 url_temp = str(url_temp)
 
-        url_temp = re.sub("https:/", "https://", url_temp, count=1)
-        url_temp = re.sub("http:/", "http://", url_temp, count=1)
-        url_temp = re.sub("ftp:/", "ftp://", url_temp, count=1)
-        if time_stamp is not None:
-            for floor_hour in range(1, 24):
-                hfloor = int(np.floor(time_stamp.hour / floor_hour) * floor_hour)
-                url_temp = re.sub(f"\\[{floor_hour}\\]", f"{hfloor:02.0f}", url_temp)
+            url_temp = re.sub("https:/", "https://", url_temp, count=1)
+            url_temp = re.sub("http:/", "http://", url_temp, count=1)
+            url_temp = re.sub("ftp:/", "ftp://", url_temp, count=1)
+            if time_stamp is not None:
+                for floor_hour in range(1, 24):
+                    hfloor = int(np.floor(time_stamp.hour / floor_hour) * floor_hour)
+                    url_temp = re.sub(f"\\[{floor_hour}\\]", f"{hfloor:02.0f}", url_temp)
         else:
             url_temp = fn
         
