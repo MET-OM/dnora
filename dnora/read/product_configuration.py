@@ -32,7 +32,7 @@ def get_constant_url(folder, filename, file_times, **kwargs) -> list[str]:
 
 @dataclass
 class ProductConfiguration:
-    filename: str = "model_output_%Y%m.nc"
+    filename: str = None
     default_filenames: dict[DataSource, str] = field(default_factory=dict)
     default_folders: dict[DataSource, str] = field(default_factory=dict)
     tile: Optional[str] = None

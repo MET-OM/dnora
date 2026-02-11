@@ -55,13 +55,14 @@ def get_url(
         folder = time_stamp.strftime(folder)
     url = []
     for fn in filename:
-        url_temp = Path(folder).joinpath(fn)
-        # If we are on a Windows machine, then / will be replaced by \
-        # If we have an url, then we still want /
-        if "http" in str(url_temp) or "ftp" in str(url_temp):
-            url_temp = url_temp.as_posix()
-        else:
-            url_temp = str(url_temp)
+        if fn: # Otherwise '' will become '.'
+            url_temp = Path(folder).joinpath(fn)
+            # If we are on a Windows machine, then / will be replaced by \
+            # If we have an url, then we still want /
+            if "http" in str(url_temp) or "ftp" in str(url_temp):
+                url_temp = url_temp.as_posix()
+            else:
+                url_temp = str(url_temp)
 
         url_temp = re.sub("https:/", "https://", url_temp, count=1)
         url_temp = re.sub("http:/", "http://", url_temp, count=1)
@@ -70,7 +71,9 @@ def get_url(
             for floor_hour in range(1, 24):
                 hfloor = int(np.floor(time_stamp.hour / floor_hour) * floor_hour)
                 url_temp = re.sub(f"\\[{floor_hour}\\]", f"{hfloor:02.0f}", url_temp)
-
+        else:
+            url_temp = fn
+        
         url.append(url_temp)
     if len(url) == 1 and not get_list:
         return os.path.expanduser(url[0])
