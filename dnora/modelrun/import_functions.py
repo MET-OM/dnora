@@ -12,7 +12,11 @@ import numpy as np
 from dnora.pick import PointPicker, Area, NearestGridPoint
 from geo_skeletons import PointSkeleton
 from dnora import msg
+from dnora.utils.distance import clustered_around_lon180, wrapped_lon_edges
+from dnora.utils.grid import cluster_points
 
+from dnora.grid import TriGrid
+from dnora.grid.mask import All
 
 def import_data(
     grid: Grid,
@@ -28,6 +32,7 @@ def import_data(
     filename: str,
     point_mask=None,
     point_picker=None,
+    max_calls: int = None,
     **kwargs,
 ) -> DnoraObject:
     """Imports data using DataReader and creates and returns a DNORA object"""
@@ -35,51 +40,130 @@ def import_data(
     msg.print_line(marker="+")
     msg.plain(f"Starting import of data: {obj_type.name}")
     msg.print_line(marker="+")
-    msg.plain(
-        f"Area: {grid.core.x_str}: {grid.edges('lon',native=True)}, {grid.core.y_str}: {grid.edges('lat',native=True)}"
+
+    if grid.core.x_str == 'lon' and clustered_around_lon180(grid.lon()):
+        lon0 = float(np.min(grid.lon()[grid.lon() > 0]))
+        lon1 = float(np.max(grid.lon()[grid.lon() < 0]))
+        msg.plain(
+        f"Area: {grid.core.x_str}: {(lon0, lon1)}, "
+        f"{grid.core.y_str}: {grid.edges('lat',native=True)}"
     )
+    else:
+        msg.plain(
+            f"Area: {grid.core.x_str}: {grid.edges('lon',native=True)}, "
+            f"{grid.core.y_str}: {grid.edges('lat',native=True)}"
+        )
+    
+    if max_calls is not None:
+        msg.plain(f"Max calls set to {max_calls}. Clustering will be used if needed.")
+        clustered_points = cluster_points(lon = grid.lon(), lat = grid.lat(), N_cluster = max_calls)
+        msg.plain(f"Number of clusters created: {len(clustered_points)}")
+        for i, cluster in enumerate(clustered_points):
+            if clustered_around_lon180(cluster[:,0]):
+                lon0 = float(np.min(cluster[cluster[:,0] > 0][:,0]))
+                lon1 = float(np.max(cluster[cluster[:,0] < 0][:,0]))
+                msg.plain(f"Area cluster {i+1} (wrapped): lon: {lon0:.2f} to {lon1:.2f}, lat: {cluster[:,1].min():.2f} to {cluster[:,1].max():.2f}")
+            else:   
+                msg.plain(f"Area cluster {i+1}: lon: {cluster[:,0].min():.2f} to {cluster[:,0].max():.2f}, lat: {cluster[:,1].min():.2f} to {cluster[:,1].max():.2f}")
+
     msg.plain(f"{start_time} - {end_time}")
 
     if dry_run:
         msg.info("Dry run! No data will be imported.")
         return
+    if max_calls is not None:
+        if dnora_objects.get(obj_type).is_gridded():
+            raise ValueError("Cannot use 'max_calls' when importing gridded objects!")
 
-    if not dnora_objects.get(obj_type).is_gridded():
         msg.header(point_picker, "Choosing points to import...")
-        inds = pick_points(
-            grid,
+        msg.plain("Point picking with clustering...")
+
+        obj_list = []
+        clustered_points = [clustered_points[-1]]
+        for i, cluster in enumerate(clustered_points):
+            msg.plain(f"\nPicking points for cluster {i+1}...")
+            lon,lat = cluster[:,0], cluster[:,1]
+            
+            points = TriGrid(lon=lon[:], lat=lat[:], name=f"{grid.name}_cluster_{i}")
+            points.set_boundary_points(All())
+            inds = pick_points(
+                points,
+                reader,
+                start_time,
+                point_picker,
+                expansion_factor,
+                points.boundary_mask(),
+                source,
+                folder,
+                filename,
+                **kwargs,
+            )
+            if len(inds) < 1:
+                msg.warning("PointPicker didn't find any points. Aborting import of data.")
+                return
+
+            msg.plain(f"\nImporting data for cluster {i+1}...")
+            obj = read_data_and_create_object(
+                obj_type,
+                reader,
+                expansion_factor,
+                points,
+                start_time,
+                end_time,
+                name,
+                source,
+                folder,
+                filename,
+                inds,
+                **kwargs,
+            )
+            obj_list.append(obj)
+
+        msg.plain("Concatenating data from all clusters...")
+        obj = None
+        for ob in obj_list:
+            if obj is None:
+                obj = ob
+            else:
+                obj = obj.absorb(ob, dim='inds')
+        msg.plain("Concatenation done.")
+
+
+    else:
+        if not dnora_objects.get(obj_type).is_gridded():
+            msg.header(point_picker, "Choosing points to import...")
+            inds = pick_points(
+                grid,
+                reader,
+                start_time,
+                point_picker,
+                expansion_factor,
+                point_mask,
+                source,
+                folder,
+                filename,
+                **kwargs,
+            )
+            if len(inds) < 1:
+                msg.warning("PointPicker didn't find any points. Aborting import of data.")
+                return
+        else:
+            inds = np.array([])
+        msg.header(reader, f"Importing {obj_type.name}...")
+        obj = read_data_and_create_object(
+            obj_type,
             reader,
-            start_time,
-            point_picker,
             expansion_factor,
-            point_mask,
+            grid,
+            start_time,
+            end_time,
+            name,
             source,
             folder,
             filename,
+            inds,
             **kwargs,
         )
-        if len(inds) < 1:
-            msg.warning("PointPicker didn't find any points. Aborting import of data.")
-            return
-    else:
-        inds = np.array([])
-
-    msg.header(reader, f"Importing {obj_type.name}...")
-
-    obj = read_data_and_create_object(
-        obj_type,
-        reader,
-        expansion_factor,
-        grid,
-        start_time,
-        end_time,
-        name,
-        source,
-        folder,
-        filename,
-        inds,
-        **kwargs,
-    )
     return obj
 
 
@@ -193,31 +277,29 @@ def pick_points(
         y=available_points.get("y"),
     )
 
+    if not np.all(np.logical_not(point_mask)):
+        interest_points = PointSkeleton.from_skeleton(grid, mask=point_mask)
+        slat = interest_points.edges("lat")
+        slon = wrapped_lon_edges(interest_points)
+    else:
+        interest_points = None
+        slat = grid.edges("lat")
+        slon = wrapped_lon_edges(grid)
     ## Only take points that are reasonable close to the wanted grid
     ## This speeds up the searcg considerably, especially if we have points over 84 lat
     ## since then the fast cartesian searhc is not possible
     ## Set a limit for angles close to 90 and -90 lat and -180 and 180 longitude
-    slon, slat = grid.edges("lon"), grid.edges("lat")
-    eps = 1e-12
-    search_grid = Grid(lat=(max(slat[0] - 3, -90 + eps), min(slat[1] + 3, 90 - eps)),
-                        lon=(max(slon[0] - 6, -180 + eps), min(slon[1] + 6, 180 - eps)))
     if isinstance(point_picker, NearestGridPoint):
-        search_inds = Area()(search_grid, all_points, expansion_factor=1)
+        eps = 1e-12
+        slon = (slon[0] - 6, slon[1] + 6)
+
+        search_grid = Grid(lat=(max(slat[0] - 3, -90 + eps), min(slat[1] + 3, 90 - eps)),
+                        lon=(max(slon[0] - 6, -180 + eps), min(slon[1] + 6, 180 - eps))) 
+        search_inds = Area()(search_grid, all_points, expansion_factor=1, lon=slon)
     else:
         search_inds = all_points.inds()
 
-    # if np.all(np.logical_not(point_mask)):
-    #     msg.warning(
-    #         "None of the points set to interest points! Aborting import of data."
-    #     )
-    #     return
-    # else:
-    #     interest_points = PointSkeleton.from_skeleton(grid, mask=point_mask)
 
-    if not np.all(np.logical_not(point_mask)):
-        interest_points = PointSkeleton.from_skeleton(grid, mask=point_mask)
-    else:
-        interest_points = None
 
     inds = point_picker(
         grid=grid,
@@ -227,7 +309,7 @@ def pick_points(
         fast=True,
         **kwargs,
     )
-
     if len(inds) < 1:
         return np.array([])
+
     return search_inds[inds]

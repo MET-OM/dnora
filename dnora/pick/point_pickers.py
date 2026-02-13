@@ -3,7 +3,7 @@ import numpy as np
 from abc import ABC, abstractmethod
 from typing import Union
 from geo_skeletons import PointSkeleton
-
+from dnora.utils.distance import clustered_around_lon180
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -93,11 +93,12 @@ class Area(PointPicker):
         grid: Union[Grid, TriGrid],
         all_points: PointSkeleton,
         expansion_factor: float = 1.5,
+        lon: tuple = None, 
         **kwargs,
     ) -> np.ndarray:
 
         msg.process(f"Using expansion_factor = {expansion_factor:.2f}")
-
+        
         # Define area to search in
         if grid.core.is_cartesian():
             number, zone = grid.utm()
@@ -106,16 +107,30 @@ class Area(PointPicker):
                 grid.edges("x"), grid.edges("y"), expansion_factor
             )
             x_all, y_all = all_points.xy()
+            maskx = np.logical_and(x_all >= x[0], x_all <= x[1]) 
+    
         else:
+            # If we want to pass a search grid that goes beyond -180 180
+            lat = grid.edges("lat")
+            lon = lon or grid.edges("lon")
             x, y = utils.grid.expand_area(
-                grid.edges("lon"), grid.edges("lat"), expansion_factor
+                lon, lat, expansion_factor, cross_180=True
             )
             x_all, y_all = all_points.lonlat()
 
-        maskx = np.logical_and(x_all >= x[0], x_all <= x[1])
+            if x[0]>x[1]:
+                maskx = np.logical_or(x_all <= x[0], x_all >= x[1]) 
+            else:
+                maskx = np.logical_and(x_all >= x[0], x_all <= x[1]) 
+                if x[0] < -180:
+                    maskx = np.logical_or(maskx, x_all > x[0] + 360)
+                if x[1] > 180:
+                    maskx = np.logical_or(maskx, x_all < x[1] - 360)
+
+
         masky = np.logical_and(y_all >= y[0], y_all <= y[1])
         mask = np.logical_and(maskx, masky)
-
+        
         inds = np.where(mask)[0]
 
         msg.info(
