@@ -40,10 +40,21 @@ def test_era5(grid, timevec):
 
 
 @pytest.mark.remote
-def test_cmems(grid, timevec):
+def test_cmems_global(grid, timevec):
     cleanup()
     model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=1)
     model.import_waterlevel(dn.read.waterlevel.cmems.Global())
+    assert np.all(model.waterlevel().time() == timevec)
+
+    grid_is_covered(grid, model.waterlevel())
+    cleanup()
+
+
+@pytest.mark.remote
+def test_cmems_europe(grid, timevec):
+    cleanup()
+    model = dn.modelrun.ModelRun(grid, year=2023, month=4, day=1)
+    model.import_waterlevel(dn.read.waterlevel.cmems.EuropeNW())
     assert np.all(model.waterlevel().time() == timevec)
 
     grid_is_covered(grid, model.waterlevel())

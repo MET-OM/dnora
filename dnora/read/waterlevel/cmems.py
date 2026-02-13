@@ -39,3 +39,32 @@ class Global(ProductReader):
 
     def post_processing(self):
         return FillNaNs(0)
+
+@deprecated_class_call("CMEMS", "cmems", "waterlevel")
+class EuropeNW(ProductReader):
+    """The ocean physics reanalysis for the North-West European Shelf is produced using an ocean assimilation model, with tides, at 7 km horizontal resolution.
+    The ocean model is NEMO (Nucleus for European Modelling of the Ocean), using the 3DVar NEMOVAR system to assimilate observations. 
+    These are surface temperature and vertical profiles of temperature and salinity. The model is forced by lateral boundary conditions from the 
+    GloSea5, one of the multi-models used by GLOBAL_REANALYSIS_PHY_001_026 and at the Baltic boundary by the BALTICSEA_REANALYSIS_PHY_003_011. 
+    The atmospheric forcing is given by the ECMWF ERA5 atmospheric reanalysis. The river discharge is from a daily climatology.
+
+    
+    Note: This reader reads the hourly 2D surface fields of sea surface height.
+
+    DOI (product): https://doi.org/10.48670/moi-00059
+    https://data.marine.copernicus.eu/product/NWSHELF_MULTIYEAR_PHY_004_009/description
+    """
+
+    product_configuration = ProductConfiguration(
+        ds_creator_function=partial(
+            ds_cmems_read,
+            dataset_id="cmems_mod_nws_phy-ssh_my_7km-2D_PT1H-i",
+            variables=["zos"],
+        ),
+        default_data_source=DataSource.REMOTE,
+    )
+
+    file_structure = FileStructure()
+
+    def post_processing(self):
+        return FillNaNs(0)
