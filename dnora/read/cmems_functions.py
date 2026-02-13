@@ -37,9 +37,8 @@ def ds_cmems_read(
         maximum_latitude=lat[1],
         start_datetime=start_time.strftime("%Y-%m-%dT%H:%M:00"),
         end_datetime=end_time.strftime("%Y-%m-%dT%H:%M:00"),
-        minimum_depth=kwargs.get('minimum_depth'),
-        maximum_depth=kwargs.get('maximum_depth'),
+        minimum_depth=kwargs.get('minimum_depth',0),
+        maximum_depth=kwargs.get('maximum_depth',0),
 
     )
-
     return ds
