@@ -5,6 +5,7 @@ import numpy as np
 from typing import Tuple
 import pandas as pd
 from dnora.process.spectra import RemoveEmpty
+from dnora.utils.distance import assert_lon_almost_equal, clustered_around_lon180
 
 # Import abstract classes and needed instances of them
 from dnora.read.abstract_readers import SpectralDataReader
@@ -122,16 +123,29 @@ class ERA5(SpectralDataReader):
         self, grid, start_time, source: DataSource, folder: str, **kwargs
     ) -> dict:
         """Reads first time instance of first file to get longitudes and latitudes for the PointPicker"""
+
+        eps = 1e-12
         lon = np.floor(np.array(grid.edges("lon")) / self.dlon) * self.dlon
         lat = np.floor(np.array(grid.edges("lat")) / self.dlat) * self.dlat
 
-        self._given_grid = Grid(
-            lon=(lon[0] - self.dlon, lon[-1] + self.dlon),
-            lat=(lat[0] - self.dlat, lat[-1] + self.dlat),
-        )
-        self._given_grid.set_spacing(dlon=self.dlon, dlat=self.dlat)
+        if checklon := clustered_around_lon180(grid.lon()): #if the longitudes are centered around 180
+            lon = grid.lon()
+            lon = lon % 360 - 180
+            lon = np.floor(np.array([np.min(lon),np.max(lon)]) / self.dlon) * self.dlon
+            self._given_grid = Grid(lon= (lon[0] - self.dlon, lon[1] + self.dlon),
+                                    lat= (min(max(lat[0] - self.dlat, -90 + eps), 90 - eps),
+                                    min(max(lat[1] + self.dlat, -90 + eps), 90 - eps)))
+        else:        
+            self._given_grid = Grid(
+                lon=(min(max(lon[0] - self.dlon, -180 + eps), 180 - eps),
+                    min(max(lon[-1] + self.dlon, -180 + eps), 180 -eps)),
+                lat=(min(max(lat[0] - self.dlat, -90 + eps), 90 - eps),
+                    min(max(lat[-1] + self.dlat, -90 + eps), 90 - eps)) 
+            )
+        self._given_grid.set_spacing(dlon=self.dlon, dlat=self.dlat) 
         lon_all, lat_all = self._given_grid.lonlat()
-
+        if checklon:
+            lon_all = lon_all % 360 - 180
         return {"lat": lat_all, "lon": lon_all}
 
     def __call__(
@@ -156,16 +170,33 @@ class ERA5(SpectralDataReader):
             msg.plain("Removing old files from temporary folder...")
             for f in glob.glob(f"{temp_folder}/EC_ERA5.nc"):
                 os.remove(f)
+            if checklon := clustered_around_lon180(grid.lon()): #if the longitudes are centered around 180
+                dlon = self.dlon
+                lon0 = np.min(grid.lon()[grid.lon() > 0])
+                lon1 = np.max(grid.lon()[grid.lon() < 0])
+                
+                lon0 = np.floor(lon0 / dlon) * dlon - dlon
+                lon1 = np.floor(lon1 / dlon) * dlon + dlon
 
-            nc_file = download_era5_from_cds(
-                start_time,
-                end_time,
-                lon=self._given_grid.edges("lon"),
-                lat=self._given_grid.edges("lat"),
-                dlon=self.dlon,
-                dlat=self.dlat,
-                folder=temp_folder,
-            )
+                nc_file = download_era5_from_cds(
+                    start_time,
+                    end_time,
+                    lon=(lon0, lon1),
+                    lat=self._given_grid.edges("lat"),
+                    dlon=self.dlon,
+                    dlat=self.dlat,
+                    folder=temp_folder,
+                )
+            else:
+                nc_file = download_era5_from_cds(
+                    start_time,
+                    end_time,
+                    lon=self._given_grid.edges("lon"),
+                    lat=self._given_grid.edges("lat"),
+                    dlon=self.dlon,
+                    dlat=self.dlat,
+                    folder=temp_folder,
+                )
         else:
             nc_file = f"{temp_folder}/EC_ERA5.nc"
         bnd_spec = xr.open_dataset(nc_file)
@@ -199,7 +230,10 @@ class ERA5(SpectralDataReader):
 
         # Check that the points decoded from the file is consistent with the created points given to the PointPicker
         glon, glat = self._given_grid.lonlat()
-        np.testing.assert_array_almost_equal(lon, glon)
+        if checklon:
+            glon = glon % 360 - 180
+            lon = (lon + 180) % 360 -180
+        assert_lon_almost_equal(lon, glon)
         np.testing.assert_array_almost_equal(lat, glat)
 
         # Inds given by point picker

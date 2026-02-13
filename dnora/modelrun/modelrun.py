@@ -19,7 +19,7 @@ from dnora.modelrun.import_functions import import_data
 from dnora.type_manager.model_formats import ModelFormat
 from dnora.spectral_grid import SpectralGrid
 
-import dnplot
+
 from dnora import msg
 from dnora.cacher.cache_decorator import cached_reader
 
@@ -159,7 +159,13 @@ class ModelRun:
         self._nest = {}
         self._parent = None
 
-        self.plot = dnplot.Matplotlib(self)
+        try:
+            import dnplot
+            self.plot = dnplot.Matplotlib(self)
+        except ImportError:
+            msg.info(
+                "dnplot is not installed. Please install dnplot to enable plotting functionality.")
+            
         self._dnora_objects: dict[DnoraDataType, DnoraObject] = {
             DnoraDataType.GRID: grid,
         }
@@ -295,6 +301,7 @@ class ModelRun:
         point_mask=None,
         point_picker=None,
         post_process: bool = True,
+        max_calls: Optional[int] = None,
         **kwargs,
     ):
         """Performs import and returns DNORA object"""
@@ -370,6 +377,7 @@ class ModelRun:
             filename=filename_to_use,
             point_picker=point_picker,
             point_mask=point_mask,
+            max_calls=max_calls,
             **kwargs,
         )
 
@@ -478,6 +486,7 @@ class ModelRun:
         source: Union[str, DataSource] = DataSource.UNDEFINED,
         folder: Optional[str] = None,
         filename: Optional[str] = None,
+        max_calls: Optional[int] = None,
         **kwargs,
     ) -> None:
         self._import_data(
@@ -491,6 +500,7 @@ class ModelRun:
             filename,
             point_mask=self.grid().boundary_mask(),
             point_picker=point_picker,
+            max_calls=max_calls,
             **kwargs,
         )
 
