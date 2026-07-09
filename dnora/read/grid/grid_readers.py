@@ -22,6 +22,7 @@ import meshio
 
 from dnora.type_manager.dnora_types import DnoraDataType
 from .emodnet_functions import find_tile, get_covering_tiles, download_tile
+from . import kartverket_functions as kartverket50m
 import dask.dataframe as dd
 
 
@@ -116,6 +117,97 @@ class EMODNET(DataReader):
 
 
 class KartverketNo50m(DataReader):
+    """Reads data from Kartverket bathymetry.
+
+    High resolution bathymetry dataset for the whole Norwegian Coast.
+    Can be found at:
+    https://kartkatalog.geonorge.no/metadata/dybdedata-terrengmodeller-50-meters-grid-landsdekkende/bbd687d0-d34f-4d95-9e60-27e330e0f76e
+
+    For reading several files at once, supply the 'tile' argument with a glob pattern, e.g. 'B*'.
+
+    Contributed by: https://github.com/emiliebyer
+    """
+
+    def default_data_source(self) -> DataSource:
+        return DataSource.LOCAL
+
+    def _folder(self, folder: str):
+        return get_url(folder, "KartverketNo50m")
+
+    def __call__(
+        self,
+        obj_type: DnoraDataType,
+        grid: Union[Grid, TriGrid],
+        source: DataSource,
+        folder: str,
+        expansion_factor: float = 1.2,
+        **kwargs,
+    ) -> tuple:
+        # Area is expanded a bit to not get in trouble in the meshing stage
+        # when we interpoolate or filter
+
+
+        folder = self._folder(folder)
+
+        #self.source = get_url(folder, f"{tile}_grid50_utm{zone_number}.xyz")
+        # grid.utm.set((zone_number, "W"))
+        # Determine tiles
+        print(f"Expansion factor: {expansion_factor}")
+        lon, lat = utils.grid.expand_area(
+            grid.edges("lon"),
+            grid.edges("lat"),
+            expansion_factor=expansion_factor,
+        )
+        x, y = utils.grid.expand_area(
+            grid.edges("x", utm=(33,'W')),
+            grid.edges("y", utm=(33,'W')),
+            expansion_factor=expansion_factor,
+            cartesian=True
+        )
+        tiles = kartverket50m.find_tiles(lon, lat)
+        
+        x_list = []
+        y_list = []
+        z_list = []
+        
+        for tile in tiles:
+            self.source = get_url(folder, f"{tile}_grid50_utm33.xyz")
+        
+
+
+            df = dd.read_csv(self.source, sep=" ", header=None, dtype="float32")
+
+            df.columns = ["x", "y", "z"]
+            topo_x = np.array(df["x"].astype(float))
+            topo_y = np.array(df["y"].astype(float))
+            z = np.array(df["z"].astype(float))
+            
+            mask_x = np.logical_and(x[0] <= topo_x, topo_x <= x[1])
+            mask_y = np.logical_and(y[0] <= topo_y, topo_y <= y[1])
+            mask = np.logical_and(mask_x, mask_y)
+
+            x_list.append(topo_x[mask])
+            y_list.append(topo_y[mask])
+            z_list.append(z[mask])
+        if x_list:
+            x_all = np.concatenate(x_list) 
+            y_all = np.concatenate(y_list) 
+            z_all = np.concatenate(z_list) 
+        else:
+            x_all = np.empty((0,))
+            y_all = np.empty((0,))
+            z_all = np.empty((0,))
+            
+        coord_dict = {"x": x_all, "y": y_all}
+        data_dict = {"topo": z_all, "zone_number": 33, "zone_letter": "W"}
+        meta_dict = {"source": "Kartverket50m"}
+
+        return coord_dict, data_dict, meta_dict
+
+    def __str__(self):
+        return f"Reading Kartverket topography from {self.source}."
+
+class KartverketNo50mOld(DataReader):
     """Reads data from Kartverket bathymetry.
 
     High resolution bathymetry dataset for the whole Norwegian Coast.

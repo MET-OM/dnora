@@ -77,7 +77,8 @@ class Grid(GriddedSkeleton):
         **kwargs,
     ) -> None:
         source = data_source_from_string(source)
-        folder = read_environment_variable(DnoraDataType.GRID, source)
+        if folder is None:
+            folder = read_environment_variable(DnoraDataType.GRID, source)
         topo_reader = topo_reader or self._default_reader
         raw_topo = import_topo(self, topo_reader, source, folder, **kwargs)
         self._raw = raw_topo

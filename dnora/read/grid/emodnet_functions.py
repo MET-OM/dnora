@@ -2,9 +2,9 @@ import numpy as np
 from urllib.request import urlretrieve
 import zipfile
 import os.path
-from pathlib import Path
-import progressbar
 
+import progressbar
+from .tiling_functions import read_limits
 
 pbar = None
 
@@ -23,26 +23,10 @@ def show_progress(block_num, block_size, total_size):
         pbar = None
 
 
-def read_limits() -> None:
-    tiles = []
-
-    file1 = open(Path(__file__).with_name("emodnet_dtm_coords.txt"), "r")
-    lines = file1.readlines()
-    start_inds = range(0, len(lines), 5)
-    lons = np.zeros((len(start_inds), 2))
-    lats = np.zeros((len(start_inds), 2))
-    for ind, n in enumerate(start_inds):
-        tiles.append(lines[n][0:2])
-        lons[ind, 0] = float(lines[n + 1])
-        lons[ind, 1] = float(lines[n + 2])
-        lats[ind, 0] = float(lines[n + 3])
-        lats[ind, 1] = float(lines[n + 4])
-
-    return tiles, lons, lats
 
 
 def find_tile(lon, lat):
-    tiles, lons, lats = read_limits()
+    tiles, lons, lats = read_limits("emodnet_dtm_coords.txt")
     west_of = lon <= lons[:, 1]
     east_of = lon >= lons[:, 0]
     north_of = lat >= lats[:, 0]
