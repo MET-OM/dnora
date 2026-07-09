@@ -10,7 +10,8 @@ from .process import GridProcessor
 from pathlib import Path
 from dnora.read.grid.grid_readers import MshFile as topo_MshFile
 from dnora.read.triang import MshReader, TxtReader
-from .tri_arangers import TriAranger
+from .triangulation import TriangulationProcessor
+from .triangulation.funcs import reindex_triangulation_when_nodes_removed
 from .mesh import Trivial as TrivialMesher
 from dnora.read.abstract_readers import DataReader
 import cmocean.cm
@@ -27,6 +28,7 @@ import geo_parameters as gp
 @add_datavar(name="triangles", coord_group="gridpoint")
 @add_coord(name="corner", grid_coord=False)
 @add_coord(name="ntriang", grid_coord=False)
+@add_mask(name="bad", coord_group="grid", default_value=0)
 @add_mask(name="waveseries", coord_group="grid", default_value=0)
 @add_mask(name="boundary", coord_group="grid", default_value=0)
 @add_mask(name="output", coord_group="grid", default_value=0)
@@ -198,7 +200,7 @@ class TriGrid(PointSkeleton):
         mask = mask_setter(self)
         self.set_waveseries_mask(mask)
 
-    def plot(self, edge_numbers: bool=False) -> None:
+    def plot(self, edge_numbers: bool=False, show_node: int=None) -> None:
         vmin, vmax = np.min(self.topo()), np.max(self.topo())
         if vmax - vmin < 20:
             levels = np.linspace(vmin, vmax, np.floor(vmax - vmin + 1).astype(int))
@@ -215,35 +217,67 @@ class TriGrid(PointSkeleton):
             )
             cbar = plt.colorbar(cont, label=f"Water depth [m]")
         plt.triplot(tri, color='black', linewidth=0.5)
-        from .tri_arangers import get_boundary_edges, get_boundary_nodes
-        bnd_edges = get_boundary_edges(self.triangles())
-
-
 
         blon, blat = self.boundary_points()
-        plt.scatter(blon, blat, 4,'r')
+        plt.scatter(blon, blat, 4,'b')
         
+        blon, blat = self.bad_points()
+        plt.scatter(blon, blat, 4,'r')
+
         if edge_numbers:
+            from .triangulation.funcs import get_boundary_edges, get_boundary_nodes
+            bnd_edges = get_boundary_edges(self.triangles())
             bnd_nodes = get_boundary_nodes(bnd_edges)
             bnd_nodes = bnd_nodes[0::20]
             
-            lon,lat=self.lonlat()
+            lon,lat=self.lonlat(native=True)
+            
             for i, b in enumerate(bnd_nodes):
                 plt.text(lon[b], lat[b], str(b), fontsize=10, color="red")
+        if show_node is not None:
+            lon,lat=self.lonlat(native=True)
+            plt.annotate(
+                '', xy=(lon[show_node+1], lat[show_node+1]), xytext=(lon[show_node], lat[show_node]),
+                arrowprops=dict(arrowstyle='->', lw=2, color='m', mutation_scale=15)
+            )
+            plt.text(lon[show_node], lat[show_node], str(show_node), fontsize=10, color="m")
+            #plt.scatter(self.lon()[0], self.lat()[0], color='m')
         plt.xlabel(self.core.x_str)
         plt.ylabel(self.core.y_str)
 
         plt.show()
 
-    def arange_triangulation(self, tri_aranger: TriAranger) -> None:
-        print(tri_aranger)
-        bnd_nodes, tri, nodes, x, y = tri_aranger(
+    def arange_triangulation(self, tri_aranger: TriangulationProcessor, flag_points: bool=False) -> None:
+        """Use flag_points to not change the triangulation, but mark points as bad points in case they needs to be removed"""
+        msg.process(tri_aranger)
+        if flag_points:
+            nodes = tri_aranger(
+                self.inds(),
+                np.where(self.boundary_mask())[0],
+                self.triangles(),
+                self.x(native=True),
+                self.y(native=True),
+                flag_points,
+            )
+            if nodes is None:
+                msg.plain(f"{tri_aranger} doesn't plan on removing nodes, so none are flagged.")
+                return
+            self._update_bad(nodes)
+            return
+        
+        nodes, bnd_nodes, tri, x, y = tri_aranger(
             self.inds(),
             np.where(self.boundary_mask())[0],
             self.triangles(),
             self.x(native=True),
             self.y(native=True),
+            flag_points,
         )
+
+
+        if len(nodes) < self.ny():
+            msg.process("Nodes removed, updating triangulation indexing...")
+            tri = reindex_triangulation_when_nodes_removed(tri, nodes)
 
         if self.core.is_cartesian():
             coords = {'x':x, 
@@ -262,10 +296,17 @@ class TriGrid(PointSkeleton):
 
     def set_boundary_inds(self, boundary_inds: list[int]) -> None:
         self._update_boundary(boundary_inds)
-        
+
+    def set_bad_inds(self, bad_inds: list[int]) -> None:
+        self._update_bad(bad_inds)
+
     def _update_boundary(self, boundary_inds):
         mask = np.array([ind in boundary_inds for ind in self.inds()])
         self.set_boundary_mask(mask)
+
+    def _update_bad(self, bad_inds):
+        mask = np.array([ind in bad_inds for ind in self.inds()])
+        self.set_bad_mask(mask)
 
     def to_netcdf(self, filename: str = "dnora_grid.nc", folder: str = "") -> None:
         """Exports grid to netcdf file"""
