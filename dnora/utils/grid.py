@@ -144,6 +144,7 @@ def expand_area(
     dlon: float = 0.0,
     dlat: float = 0.0,
     cross_180: bool = False,
+    cartesian: bool = False, 
 ) -> tuple[float, float, float, float]:
     """
     Expands a lon-lat bounding box with an expansion factor.
@@ -165,9 +166,10 @@ def expand_area(
 
     new_lon = lon[0] - expand_lon, lon[1] + expand_lon
     new_lat = lat[0] - expand_lat, lat[1] + expand_lat
-    if not cross_180:
-        new_lon = max(new_lon[0], -180.0), min(new_lon[1], 180.0)
-    new_lat = max(new_lat[0], -90.0), min(new_lat[1], 90.0)
+    if not cartesian:
+        if not cross_180:
+            new_lon = max(new_lon[0], -180.0), min(new_lon[1], 180.0)
+        new_lat = max(new_lat[0], -90.0), min(new_lat[1], 90.0)
     return new_lon, new_lat
 
 
