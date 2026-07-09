@@ -352,7 +352,7 @@ def replace_objects(
     """
     for obj_type, obj_name in dict_of_object_names.items():
         if obj_name is not None:
-            filename = re.sub(f"#{obj_type.name}", obj_name, filename, 1)
+            filename = re.sub(f"#{obj_type.name}", obj_name, filename, count=1)
 
     return filename
 

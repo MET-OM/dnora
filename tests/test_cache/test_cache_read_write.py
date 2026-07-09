@@ -86,7 +86,7 @@ def test_write_spectra():
     # lon tiles -5-0 included
     # However, no data for 70-75 of -5-0
     model.import_spectra(
-        dn.read.generic.ConstantData(debug_cache=True), write_cache=True
+        dn.read.generic.ConstantData(debug_cache=True), write_cache=True, spec=1.0,
     )
 
     # Cross-platform assertion for the constantdata directory
@@ -129,6 +129,7 @@ def test_content_of_cached_spectral_files():
         read_cache=True,
         point_picker=dn.pick.Area(),
         expansion_factor=1,
+        spec=1.0,
     )
 
     ds = model.spectra().ds()
@@ -202,6 +203,7 @@ def test_read_subset_of_cached_spectral_data():
         read_cache=True,
         point_picker=dn.pick.Area(),
         expansion_factor=1,
+        spec=1.0,
     )
 
     ds = model.spectra().ds()

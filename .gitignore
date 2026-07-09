@@ -161,6 +161,7 @@ cython_debug/
 #.idea/
 .vscode/*
 tests/.vscode/*
+test/
 dnora/.vscode/*
 tests/dnora_wind_temp/*
 tests/dnora_current_temp/*
@@ -177,3 +178,4 @@ grd/
 dnplot/
 spc/
 wlv/
+dnora_bnd_temp/

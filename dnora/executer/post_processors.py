@@ -29,6 +29,8 @@ SWAN_VARS = {
 
 
 class PostProcessor(ABC):
+    for_nest = None
+    for_file_type = None
     @abstractmethod
     def __call__(self, model: ModelRun, file_object: FileNames, **kwargs) -> None:
         pass

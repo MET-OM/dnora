@@ -19,7 +19,7 @@ from dnora.modelrun.import_functions import import_data
 from dnora.type_manager.model_formats import ModelFormat
 from dnora.spectral_grid import SpectralGrid
 
-import dnplot
+
 from dnora import msg
 from dnora.cacher.cache_decorator import cached_reader
 
@@ -146,17 +146,26 @@ class ModelRun:
         )
         self._time = pd.date_range(start_time, end_time, freq="h")
         self._data_exported_to: dict[DnoraDataType, list[str]] = {}
+        self._data_export_format: dict[DnoraDataType, list[str]] = {}
         self._input_file_exported_to: dict[DnoraFileType, list[str]] = {}
+        self._input_file_export_format: dict[DnoraFileType, list[str]] = {}
         self._global_dry_run = dry_run
         self._dry_run = False  # Set by methods
         self._source = DataSource.UNDEFINED
         self._reference_time = None
+        self._stride = None
         self.name = name
         self._post_processing = None
         self._nest = {}
         self._parent = None
 
-        self.plot = dnplot.Matplotlib(self)
+        try:
+            import dnplot
+            self.plot = dnplot.Matplotlib(self)
+        except ImportError:
+            msg.info(
+                "dnplot is not installed. Please install dnplot to enable plotting functionality.")
+            
         self._dnora_objects: dict[DnoraDataType, DnoraObject] = {
             DnoraDataType.GRID: grid,
         }
@@ -292,6 +301,7 @@ class ModelRun:
         point_mask=None,
         point_picker=None,
         post_process: bool = True,
+        max_calls: Optional[int] = None,
         **kwargs,
     ):
         """Performs import and returns DNORA object"""
@@ -367,6 +377,7 @@ class ModelRun:
             filename=filename_to_use,
             point_picker=point_picker,
             point_mask=point_mask,
+            max_calls=max_calls,
             **kwargs,
         )
 
@@ -475,6 +486,7 @@ class ModelRun:
         source: Union[str, DataSource] = DataSource.UNDEFINED,
         folder: Optional[str] = None,
         filename: Optional[str] = None,
+        max_calls: Optional[int] = None,
         **kwargs,
     ) -> None:
         self._import_data(
@@ -488,6 +500,7 @@ class ModelRun:
             filename,
             point_mask=self.grid().boundary_mask(),
             point_picker=point_picker,
+            max_calls=max_calls,
             **kwargs,
         )
 
@@ -943,10 +956,14 @@ class ModelRun:
         a best guess
         """
         obj_type = data_type_from_string(obj_type)
-
+        export_format = (
+            self._data_export_format.get(obj_type)
+            or self._data_export_format.get("general")
+            or self._get_default_format()
+        )
         default_name = [
             FileNames(
-                model=self, format=self._get_default_format(), obj_type=obj_type
+                model=self, format=export_format, obj_type=obj_type
             ).get_filepath()
         ]  # Want a list of strings
         return self._data_exported_to.get(obj_type, default_name)
@@ -965,14 +982,19 @@ class ModelRun:
         a best guess
         """
         file_type = file_type_from_string(file_type)
-
+        export_format = (
+            self._input_file_export_format.get(file_type)
+            or self._input_file_export_format.get("general")
+            or self._get_default_format()
+        )
         default_name = [
             FileNames(
                 model=self,
-                format=self._get_default_format(),
+                format=export_format,
                 obj_type=file_type,
             ).get_filepath()
         ]  # Want a list of strings
+
         return self._input_file_exported_to.get(file_type, default_name)
 
     def time(self, crop_with: list[Union[DnoraDataType, str]] = None):
@@ -1066,8 +1088,21 @@ class ModelRun:
         self._source = DataSource.UNDEFINED
 
     def activate_forecast_mode(
-        self, reference_time: str = None, forecast_length: int = 48
+        self, reference_time: str = None, forecast_length: int = 48, stride: int =None
     ) -> None:
+        """Activates the forecast mode:
+        
+        reference_time is the start time of the forecast
+        forecast_length [h] is the length of the forecast
+            - Note, that reference_time = '2020-01-01 00:00', forecast_length = 1
+              runs the model for '2020-01-01 00:00' - '2020-01-01 01:00'
+              i.e. the output file will have 2 hours of data.
+        stride [h] (default None) gives information of how often the forecast is intended to be run
+            - stride = 12 means that we assume that the next forecast will start in 12 hours from the current start time
+              The implementation is up to the models, but typically you can expect that a restart file will be written after 12 hours
+              stride = None (default) means that this consideration is not done (typically restart at en of run)
+        """
+        self._stride = stride
         reference_time = reference_time or pd.to_datetime(
             datetime.datetime.now()
         ).round("h")
@@ -1084,6 +1119,7 @@ class ModelRun:
 
     def deactivate_forecast_mode(self) -> None:
         self._reference_time = None
+        self._stride = None
         msg.info(f"Deactivating forecast mode")
 
     def forecast_mode(self) -> None:

@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import interpolate
 import scipy
-
+import xarray as xr
 
 def directional_distribution(freq, fp, dirs, dirp):
     """Calculates directional cos**2s(0.5*theta) distribution of spectrum

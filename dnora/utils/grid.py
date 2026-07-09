@@ -1,6 +1,7 @@
 import numpy as np
-
-
+from sklearn.cluster import KMeans
+import pandas as pd
+from typing import Union
 def data_covers_grid(skeleton, grid):
     """Checks if a given skeleton covers a given grid"""
     for coord in ["lon", "lat"]:
@@ -142,6 +143,7 @@ def expand_area(
     expansion_factor: float,
     dlon: float = 0.0,
     dlat: float = 0.0,
+    cross_180: bool = False,
 ) -> tuple[float, float, float, float]:
     """
     Expands a lon-lat bounding box with an expansion factor.
@@ -153,8 +155,9 @@ def expand_area(
     expansion_factor=1.2 gives (59.9, 61.1)
     expansion_factor=1.2 and dlat = 0.25 gives (59.75, 61.25)
     """
-
-    expand_lon = (lon[1] - lon[0]) * (expansion_factor - 1) * 0.5
+    #delta_lon = ((lon[1] - lon[0] + 180) % 360) - 180
+    delta_lon = lon[1] - lon[0]
+    expand_lon = (delta_lon) * (expansion_factor - 1) * 0.5
     expand_lat = (lat[1] - lat[0]) * (expansion_factor - 1) * 0.5
 
     expand_lon = np.maximum(expand_lon, dlon)
@@ -162,7 +165,9 @@ def expand_area(
 
     new_lon = lon[0] - expand_lon, lon[1] + expand_lon
     new_lat = lat[0] - expand_lat, lat[1] + expand_lat
-
+    if not cross_180:
+        new_lon = max(new_lon[0], -180.0), min(new_lon[1], 180.0)
+    new_lat = max(new_lat[0], -90.0), min(new_lat[1], 90.0)
     return new_lon, new_lat
 
 
@@ -199,3 +204,33 @@ def get_coordinates_from_ds(ds, return_dict: bool = False) -> tuple:
 
 def all_none(val) -> bool:
     return not [a for a in val if a is not None]
+
+
+def cluster_points(lon: np.ndarray,
+                   lat: np.ndarray,
+                   N_cluster) -> list[np.ndarray]:
+    """Clusters boundary points into N clusters using KMeans.
+    Returns a list of arrays, each array containing the lon-lat points of a cluster.
+    """
+    points = np.column_stack((lon, lat))
+    
+    # Convert lon/lat → XYZ unit sphere
+    lon_rad = np.radians(points[:,0])
+    lat_rad = np.radians(points[:,1])
+
+    x = np.cos(lat_rad) * np.cos(lon_rad)
+    y = np.cos(lat_rad) * np.sin(lon_rad)
+    z = np.sin(lat_rad)
+
+    points_xyz = np.column_stack((x, y, z))
+
+    # ---- KMEANS ON 3D XYZ ----
+    kmeans = KMeans(n_clusters=N_cluster, random_state=0).fit(points_xyz)
+    labels = kmeans.labels_
+
+    clustered_points = []
+    for cluster_id in range(N_cluster):
+        cluster_points = points[labels == cluster_id]
+        clustered_points.append(cluster_points)
+    return clustered_points
+

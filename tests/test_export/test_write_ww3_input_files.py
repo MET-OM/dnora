@@ -70,7 +70,7 @@ def test_wind(grid):
 
     assert (
         nml_dict["FILE_NML"]["FILE"]["FILENAME"]
-        == "'wind_ConstantData_TestGrid_20200101T0000_20200131T2300.nc'"
+        == "'wind_ConstantData_TestGrid_20200130T0000_20200131T2300.nc'"
     )
     assert nml_dict["FILE_NML"]["FILE"]["LONGITUDE"] == "'lon'"
     assert nml_dict["FILE_NML"]["FILE"]["LATITUDE"] == "'lat'"
@@ -81,7 +81,7 @@ def test_wind(grid):
     nml_dict = read_ww3_nml("TestGrid_WW3/ww3_prnc_wind.nml")
     assert (
         Path(nml_dict["FILE_NML"]["FILE"]["FILENAME"]).as_posix()
-        == "'/lustre/folder/myfolder/wind_ConstantData_TestGrid_20200101T0000_20200131T2300.nc'"
+        == "'/lustre/folder/myfolder/wind_ConstantData_TestGrid_20200130T0000_20200131T2300.nc'"
     )
     assert nml_dict["FILE_NML"]["FILE"]["LONGITUDE"] == "'lon'"
     assert nml_dict["FILE_NML"]["FILE"]["LATITUDE"] == "'lat'"

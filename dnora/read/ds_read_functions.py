@@ -278,7 +278,8 @@ def read_ds_list(
         )
 
         if ds is not None:
-            msg.from_file(url)
+            if url:
+                msg.from_file(url)
             if not ds_list:
                 keys = list(ds.sizes.keys())
                 expected_shape = tuple(

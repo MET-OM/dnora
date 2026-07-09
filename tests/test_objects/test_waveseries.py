@@ -11,7 +11,7 @@ def test_import_constant_waveseries_one_point():
         grid, start_time="2020-01-01 00:00", end_time="2020-01-02 00:00"
     )
 
-    model.import_spectra(ConstantData(), point_picker=pick.Trivial())
+    model.import_spectra(ConstantData(), point_picker=pick.Trivial(), spec=1.0)
     model.spectra_to_waveseries()
 
     assert model.waveseries().size() == (25, 1)

@@ -9,3 +9,4 @@ class ModelFormat(Enum):
     WW3 = auto()
     HOS_OCEAN = auto()
     REEF3D = auto()
+    MINCOG = auto()

@@ -10,7 +10,7 @@ dependencies:
   - xarray>=0.20.1
   - netcdf4
   - meshio
-  - geo-skeletons>=0.21.1
+  - geo-skeletons=0.21.1
   - geo-parameters>=0.11.0
   - pytest
   - pip
@@ -19,3 +19,4 @@ dependencies:
   - python-dotenv
   - cdsapi>=0.7.6
   - progressbar
+  - scikit-learn
