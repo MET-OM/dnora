@@ -125,7 +125,7 @@ class KartverketNo50m(DataReader):
 
     For reading several files at once, supply the 'tile' argument with a glob pattern, e.g. 'B*'.
 
-    Contributed by: https://github.com/emiliebyer
+    Original version contributed by: https://github.com/emiliebyer
     """
 
     def default_data_source(self) -> DataSource:
@@ -133,6 +133,14 @@ class KartverketNo50m(DataReader):
 
     def _folder(self, folder: str):
         return get_url(folder, "KartverketNo50m")
+
+    @staticmethod
+    def _get_files(folder, tiles):
+        fn = []
+        for tile in tiles:
+            fn.append(f"{tile}_grid50_utm33.xyz")
+
+        return get_url(folder, fn, get_list=True)
 
     def __call__(
         self,
@@ -166,119 +174,190 @@ class KartverketNo50m(DataReader):
         )
         tiles = kartverket50m.find_tiles(lon, lat)
         
+        msg.plain(f"Using tiles: {tiles}")
+        files = self._get_files(folder, tiles)
+        # Check if tiles exist locally
+        tiles_to_download = []
+        for file in files:
+            if not os.path.isfile(file):
+                tiles_to_download.append(Path(file).name[0:5])
+        if tiles_to_download:
+            msg.plain(f"Downloading tiles: {tiles_to_download}")
+            if not os.path.exists(folder):
+                if not os.path.isdir(folder):
+                    msg.plain(f"Creating folder {folder}")
+                os.makedirs(folder)
+            email = kartverket50m.get_geonorge_email()
+            for tile in tiles_to_download:
+                msg.blank()
+                msg.process(f"Downloading tile {tile}")
+                kartverket50m.download_tile(tile=tile, folder=folder, email=email)
+
+        
         x_list = []
         y_list = []
         z_list = []
-        
-        for tile in tiles:
-            self.source = get_url(folder, f"{tile}_grid50_utm33.xyz")
-        
 
+        msg.blank()
+        for file in files:
+            msg.from_file(file)
 
-            df = dd.read_csv(self.source, sep=" ", header=None, dtype="float32")
+            # Read file in chunks using Dask DataFrame
+            df = dd.read_csv(file, sep=" ", header=None, dtype="float32")
 
+            # Assign meaningful column names
             df.columns = ["x", "y", "z"]
-            topo_x = np.array(df["x"].astype(float))
-            topo_y = np.array(df["y"].astype(float))
-            z = np.array(df["z"].astype(float))
-            
-            mask_x = np.logical_and(x[0] <= topo_x, topo_x <= x[1])
-            mask_y = np.logical_and(y[0] <= topo_y, topo_y <= y[1])
-            mask = np.logical_and(mask_x, mask_y)
 
-            x_list.append(topo_x[mask])
-            y_list.append(topo_y[mask])
-            z_list.append(z[mask])
+            # Apply filtering based on x and y ranges
+            df_filtered = df[
+                (df["x"] >= x[0]) & (df["x"] <= x[1]) & 
+                (df["y"] >= y[0]) & (df["y"] <= y[1])
+            ]
+
+            # Append the filtered DataFrame to the list
+            x_list.append(df_filtered)
+
+        msg.process("Merging tiles...")
+
+        # Merge all filtered DataFrames into one
         if x_list:
-            x_all = np.concatenate(x_list) 
-            y_all = np.concatenate(y_list) 
-            z_all = np.concatenate(z_list) 
+            # Use Dask to concatenate all filtered DataFrames
+            merged_df = dd.concat(x_list)
+
+            # Compute the result (convert Dask DataFrame to Pandas DataFrame)
+            
+            merged_df = merged_df.compute()
+
+            # Split into x, y, z arrays if needed
+            
+            x_all = merged_df["x"].to_numpy()
+            y_all = merged_df["y"].to_numpy()
+            z_all = merged_df["z"].to_numpy()
+
         else:
+            # Empty arrays in case no data exists
             x_all = np.empty((0,))
             y_all = np.empty((0,))
-            z_all = np.empty((0,))
+            z_all = np.empty((0,))       
+        
+        # x_list = []
+        # y_list = []
+        # z_list = []
+        
+        # msg.blank()
+        # for file in files:
+        #     #source = get_url(folder, f"{tile}_grid50_utm33.xyz")
+        
+
+
+        #     msg.from_file(file)
+        #     df = dd.read_csv(file, sep=" ", header=None, dtype="float32")
+
+        #     df.columns = ["x", "y", "z"]
+            
+        #     topo_x = np.array(df["x"].astype(float))
+        #     topo_y = np.array(df["y"].astype(float))
+        #     z = np.array(df["z"].astype(float))
+            
+        #     mask_x = np.logical_and(x[0] <= topo_x, topo_x <= x[1])
+        #     mask_y = np.logical_and(y[0] <= topo_y, topo_y <= y[1])
+        #     mask = np.logical_and(mask_x, mask_y)
+
+        #     x_list.append(topo_x[mask])
+        #     y_list.append(topo_y[mask])
+        #     z_list.append(z[mask])
+        
+        # msg.process('Merging tiles...')
+        # if x_list:
+        #     x_all = np.concatenate(x_list) 
+        #     y_all = np.concatenate(y_list) 
+        #     z_all = np.concatenate(z_list) 
+        # else:
+        #     x_all = np.empty((0,))
+        #     y_all = np.empty((0,))
+        #     z_all = np.empty((0,))
             
         coord_dict = {"x": x_all, "y": y_all}
         data_dict = {"topo": z_all, "zone_number": 33, "zone_letter": "W"}
-        meta_dict = {"source": "Kartverket50m"}
+        meta_dict = {"source": "Kartverket50m", 'url': 'https://kartkatalog.geonorge.no/metadata/dybdedata-terrengmodeller-50-meters-grid-landsdekkende/bbd687d0-d34f-4d95-9e60-27e330e0f76e'}
 
         return coord_dict, data_dict, meta_dict
 
     def __str__(self):
-        return f"Reading Kartverket topography from {self.source}."
+        return f"Reading Kartverket50m topography"
 
-class KartverketNo50mOld(DataReader):
-    """Reads data from Kartverket bathymetry.
+# class KartverketNo50mOld(DataReader):
+#     """Reads data from Kartverket bathymetry.
 
-    High resolution bathymetry dataset for the whole Norwegian Coast.
-    Can be found at:
-    https://kartkatalog.geonorge.no/metadata/dybdedata-terrengmodeller-50-meters-grid-landsdekkende/bbd687d0-d34f-4d95-9e60-27e330e0f76e
+#     High resolution bathymetry dataset for the whole Norwegian Coast.
+#     Can be found at:
+#     https://kartkatalog.geonorge.no/metadata/dybdedata-terrengmodeller-50-meters-grid-landsdekkende/bbd687d0-d34f-4d95-9e60-27e330e0f76e
 
-    For reading several files at once, supply the 'tile' argument with a glob pattern, e.g. 'B*'.
+#     For reading several files at once, supply the 'tile' argument with a glob pattern, e.g. 'B*'.
 
-    Contributed by: https://github.com/emiliebyer
-    """
+#     Contributed by: https://github.com/emiliebyer
+#     """
 
-    def default_data_source(self) -> DataSource:
-        return DataSource.LOCAL
+#     def default_data_source(self) -> DataSource:
+#         return DataSource.LOCAL
 
-    def _folder(self, folder: str):
-        return get_url(folder, "KartverketNo50m")
+#     def _folder(self, folder: str):
+#         return get_url(folder, "KartverketNo50m")
 
-    def __call__(
-        self,
-        obj_type: DnoraDataType,
-        grid: Union[Grid, TriGrid],
-        source: DataSource,
-        folder: str,
-        expansion_factor: float = 1.2,
-        zone_number: int = 33,
-        tile: str = "",
-        **kwargs,
-    ) -> tuple:
-        # Area is expanded a bit to not get in trouble in the meshing stage
-        # when we interpoolate or filter
+#     def __call__(
+#         self,
+#         obj_type: DnoraDataType,
+#         grid: Union[Grid, TriGrid],
+#         source: DataSource,
+#         folder: str,
+#         expansion_factor: float = 1.2,
+#         zone_number: int = 33,
+#         tile: str = "",
+#         **kwargs,
+#     ) -> tuple:
+#         # Area is expanded a bit to not get in trouble in the meshing stage
+#         # when we interpoolate or filter
 
-        if not tile:
-            raise ValueError(
-                "No tile! Specify a tile, e.g. tile = 'B1408' in the import. Wildcards allowed."
-            )
+#         if not tile:
+#             raise ValueError(
+#                 "No tile! Specify a tile, e.g. tile = 'B1408' in the import. Wildcards allowed."
+#             )
 
-        folder = self._folder(folder)
+#         folder = self._folder(folder)
 
-        self.source = get_url(folder, f"{tile}_grid50_utm{zone_number}.xyz")
-        # grid.utm.set((zone_number, "W"))
-        x, y = utils.grid.expand_area(
-            grid.edges("x", utm=(zone_number, "W")),
-            grid.edges("y", utm=(zone_number, "W")),
-            expansion_factor=expansion_factor,
-        )
+#         self.source = get_url(folder, f"{tile}_grid50_utm{zone_number}.xyz")
+#         # grid.utm.set((zone_number, "W"))
+#         x, y = utils.grid.expand_area(
+#             grid.edges("x", utm=(zone_number, "W")),
+#             grid.edges("y", utm=(zone_number, "W")),
+#             expansion_factor=expansion_factor,
+#         )
 
-        print(f"Expansion factor: {expansion_factor}")
+#         print(f"Expansion factor: {expansion_factor}")
 
-        df = dd.read_csv(self.source, sep=" ", header=None)
+#         df = dd.read_csv(self.source, sep=" ", header=None)
 
-        df.columns = ["x", "y", "z"]
-        topo_x = np.array(df["x"].astype(float))
-        topo_y = np.array(df["y"].astype(float))
-        z = np.array(df["z"].astype(float))
+#         df.columns = ["x", "y", "z"]
+#         topo_x = np.array(df["x"].astype(float))
+#         topo_y = np.array(df["y"].astype(float))
+#         z = np.array(df["z"].astype(float))
 
-        mask_x = np.logical_and(x[0] <= topo_x, topo_x <= x[1])
-        mask_y = np.logical_and(y[0] <= topo_y, topo_y <= y[1])
-        mask = np.logical_and(mask_x, mask_y)
+#         mask_x = np.logical_and(x[0] <= topo_x, topo_x <= x[1])
+#         mask_y = np.logical_and(y[0] <= topo_y, topo_y <= y[1])
+#         mask = np.logical_and(mask_x, mask_y)
 
-        topo_x = topo_x[mask]
-        topo_y = topo_y[mask]
-        topo = z[mask]
+#         topo_x = topo_x[mask]
+#         topo_y = topo_y[mask]
+#         topo = z[mask]
 
-        coord_dict = {"x": topo_x, "y": topo_y}
-        data_dict = {"topo": topo, "zone_number": zone_number, "zone_letter": "W"}
-        meta_dict = {"source": "Kartverket50m"}
+#         coord_dict = {"x": topo_x, "y": topo_y}
+#         data_dict = {"topo": topo, "zone_number": zone_number, "zone_letter": "W"}
+#         meta_dict = {"source": "Kartverket50m"}
 
-        return coord_dict, data_dict, meta_dict
+#         return coord_dict, data_dict, meta_dict
 
-    def __str__(self):
-        return f"Reading Kartverket topography from {self.source}."
+#     def __str__(self):
+#         return f"Reading Kartverket topography from {self.source}."
 
 
 class GEBCO(DataReader):
