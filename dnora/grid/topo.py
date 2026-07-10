@@ -40,6 +40,7 @@ def import_topo(
     topo_reader: DataReader = None,
     source: Union[str, DataSource] = None,
     folder: str = None,
+    coverage_warning: bool=True,
     **kwargs,
 ) -> GriddedTopo:
     """Reads the raw bathymetrical data."""
@@ -99,29 +100,31 @@ def import_topo(
         return
 
     if utils.grid.is_gridded(topo, lon, lat) or utils.grid.is_gridded(topo, x, y):
-        topo_grid = GriddedTopo(lon=lon, lat=lat, x=x, y=y, name=topo_reader.name())
+        topo_grid = GriddedTopo(lon=lon, lat=lat, x=x, y=y, name=topo_reader.name(), chunks='auto')
         topo_grid.set_spacing(nx=len(x or lon), ny=len(y or lat))
     else:
-        topo_grid = PointTopo(lon=lon, lat=lat, x=x, y=y, name=topo_reader.name())
+        topo_grid = PointTopo(lon=lon, lat=lat, x=x, y=y, name=topo_reader.name(), chunks='auto')
     if zone_number is not None:
         topo_grid.utm.set((zone_number, zone_letter))
 
-    if (
-        grid.edges("lon", native=True)[0] < topo_grid.edges(grid.core.x_str)[0]
-        or grid.edges("lon", native=True)[1] > topo_grid.edges(grid.core.x_str)[1]
-    ):
-        msg.warning(
-            f"The data gotten from the DataReader doesn't cover the grid in the {grid.core.x_str} direction. Grid: {grid.edges('lon', native=True)}, imported topo: {topo_grid.edges(grid.core.x_str)}"
-        )
+    if coverage_warning:
+        msg.plain("Checking coverage... (if this is too slow, turn off by 'coverage_warning=False')")
+        if (
+            grid.edges("lon", native=True)[0] < topo_grid.edges(grid.core.x_str)[0]
+            or grid.edges("lon", native=True)[1] > topo_grid.edges(grid.core.x_str)[1]
+        ):
+            msg.warning(
+                f"The data gotten from the DataReader doesn't cover the grid in the {grid.core.x_str} direction. Grid: {grid.edges('lon', native=True)}, imported topo: {topo_grid.edges(grid.core.x_str)}"
+            )
 
-    if (
-        grid.edges("lat", native=True)[0] < topo_grid.edges(grid.core.y_str)[0]
-        or grid.edges("lat", native=True)[1] > topo_grid.edges(grid.core.y_str)[1]
-    ):
-        msg.warning(
-            f"The data gotten from the DataReader doesn't cover the grid in the {grid.core.y_str} direction. Grid: {grid.edges('lat', native=True)}, imported topo: {topo_grid.edges(grid.core.y_str)}"
-        )
-
+        if (
+            grid.edges("lat", native=True)[0] < topo_grid.edges(grid.core.y_str)[0]
+            or grid.edges("lat", native=True)[1] > topo_grid.edges(grid.core.y_str)[1]
+        ):
+            msg.warning(
+                f"The data gotten from the DataReader doesn't cover the grid in the {grid.core.y_str} direction. Grid: {grid.edges('lat', native=True)}, imported topo: {topo_grid.edges(grid.core.y_str)}"
+            )
+        msg.plain('Coverage check completed!')
     topo_grid.set_topo(topo)
     topo_grid.meta.set(meta_dict)
 
