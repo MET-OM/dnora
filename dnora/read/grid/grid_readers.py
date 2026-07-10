@@ -22,7 +22,8 @@ import meshio
 
 from dnora.type_manager.dnora_types import DnoraDataType
 from .emodnet_functions import find_tile, get_covering_tiles, download_tile
-from . import kartverket_functions as kartverket50m
+from . import kartverket_functions as kartverket50m_functions
+from . import gebco_functions
 import dask.dataframe as dd
 
 
@@ -172,7 +173,7 @@ class KartverketNo50m(DataReader):
             expansion_factor=expansion_factor,
             cartesian=True
         )
-        tiles = kartverket50m.find_tiles(lon, lat)
+        tiles = kartverket50m_functions.find_tiles(lon, lat)
         
         msg.plain(f"Using tiles: {tiles}")
         files = self._get_files(folder, tiles)
@@ -187,16 +188,14 @@ class KartverketNo50m(DataReader):
                 if not os.path.isdir(folder):
                     msg.plain(f"Creating folder {folder}")
                 os.makedirs(folder)
-            email = kartverket50m.get_geonorge_email()
+            email = kartverket50m_functions.get_geonorge_email()
             for tile in tiles_to_download:
                 msg.blank()
                 msg.process(f"Downloading tile {tile}")
-                kartverket50m.download_tile(tile=tile, folder=folder, email=email)
+                kartverket50m_functions.download_tile(tile=tile, folder=folder, email=email)
 
         
-        x_list = []
-        y_list = []
-        z_list = []
+        df_list = []
 
         msg.blank()
         for file in files:
@@ -215,14 +214,14 @@ class KartverketNo50m(DataReader):
             ]
 
             # Append the filtered DataFrame to the list
-            x_list.append(df_filtered)
+            df_list.append(df_filtered)
 
         msg.process("Merging tiles...")
 
         # Merge all filtered DataFrames into one
-        if x_list:
+        if df_list:
             # Use Dask to concatenate all filtered DataFrames
-            merged_df = dd.concat(x_list)
+            merged_df = dd.concat(df_list)
 
             # Compute the result (convert Dask DataFrame to Pandas DataFrame)
             
@@ -240,42 +239,6 @@ class KartverketNo50m(DataReader):
             y_all = np.empty((0,))
             z_all = np.empty((0,))       
         
-        # x_list = []
-        # y_list = []
-        # z_list = []
-        
-        # msg.blank()
-        # for file in files:
-        #     #source = get_url(folder, f"{tile}_grid50_utm33.xyz")
-        
-
-
-        #     msg.from_file(file)
-        #     df = dd.read_csv(file, sep=" ", header=None, dtype="float32")
-
-        #     df.columns = ["x", "y", "z"]
-            
-        #     topo_x = np.array(df["x"].astype(float))
-        #     topo_y = np.array(df["y"].astype(float))
-        #     z = np.array(df["z"].astype(float))
-            
-        #     mask_x = np.logical_and(x[0] <= topo_x, topo_x <= x[1])
-        #     mask_y = np.logical_and(y[0] <= topo_y, topo_y <= y[1])
-        #     mask = np.logical_and(mask_x, mask_y)
-
-        #     x_list.append(topo_x[mask])
-        #     y_list.append(topo_y[mask])
-        #     z_list.append(z[mask])
-        
-        # msg.process('Merging tiles...')
-        # if x_list:
-        #     x_all = np.concatenate(x_list) 
-        #     y_all = np.concatenate(y_list) 
-        #     z_all = np.concatenate(z_list) 
-        # else:
-        #     x_all = np.empty((0,))
-        #     y_all = np.empty((0,))
-        #     z_all = np.empty((0,))
             
         coord_dict = {"x": x_all, "y": y_all}
         data_dict = {"topo": z_all, "zone_number": 33, "zone_letter": "W"}
@@ -286,84 +249,24 @@ class KartverketNo50m(DataReader):
     def __str__(self):
         return f"Reading Kartverket50m topography"
 
-# class KartverketNo50mOld(DataReader):
-#     """Reads data from Kartverket bathymetry.
-
-#     High resolution bathymetry dataset for the whole Norwegian Coast.
-#     Can be found at:
-#     https://kartkatalog.geonorge.no/metadata/dybdedata-terrengmodeller-50-meters-grid-landsdekkende/bbd687d0-d34f-4d95-9e60-27e330e0f76e
-
-#     For reading several files at once, supply the 'tile' argument with a glob pattern, e.g. 'B*'.
-
-#     Contributed by: https://github.com/emiliebyer
-#     """
-
-#     def default_data_source(self) -> DataSource:
-#         return DataSource.LOCAL
-
-#     def _folder(self, folder: str):
-#         return get_url(folder, "KartverketNo50m")
-
-#     def __call__(
-#         self,
-#         obj_type: DnoraDataType,
-#         grid: Union[Grid, TriGrid],
-#         source: DataSource,
-#         folder: str,
-#         expansion_factor: float = 1.2,
-#         zone_number: int = 33,
-#         tile: str = "",
-#         **kwargs,
-#     ) -> tuple:
-#         # Area is expanded a bit to not get in trouble in the meshing stage
-#         # when we interpoolate or filter
-
-#         if not tile:
-#             raise ValueError(
-#                 "No tile! Specify a tile, e.g. tile = 'B1408' in the import. Wildcards allowed."
-#             )
-
-#         folder = self._folder(folder)
-
-#         self.source = get_url(folder, f"{tile}_grid50_utm{zone_number}.xyz")
-#         # grid.utm.set((zone_number, "W"))
-#         x, y = utils.grid.expand_area(
-#             grid.edges("x", utm=(zone_number, "W")),
-#             grid.edges("y", utm=(zone_number, "W")),
-#             expansion_factor=expansion_factor,
-#         )
-
-#         print(f"Expansion factor: {expansion_factor}")
-
-#         df = dd.read_csv(self.source, sep=" ", header=None)
-
-#         df.columns = ["x", "y", "z"]
-#         topo_x = np.array(df["x"].astype(float))
-#         topo_y = np.array(df["y"].astype(float))
-#         z = np.array(df["z"].astype(float))
-
-#         mask_x = np.logical_and(x[0] <= topo_x, topo_x <= x[1])
-#         mask_y = np.logical_and(y[0] <= topo_y, topo_y <= y[1])
-#         mask = np.logical_and(mask_x, mask_y)
-
-#         topo_x = topo_x[mask]
-#         topo_y = topo_y[mask]
-#         topo = z[mask]
-
-#         coord_dict = {"x": topo_x, "y": topo_y}
-#         data_dict = {"topo": topo, "zone_number": zone_number, "zone_letter": "W"}
-#         meta_dict = {"source": "Kartverket50m"}
-
-#         return coord_dict, data_dict, meta_dict
-
-#     def __str__(self):
-#         return f"Reading Kartverket topography from {self.source}."
-
 
 class GEBCO(DataReader):
+    """Reads the GEBCO bathymetry
+    """
 
     def default_data_source(self) -> DataSource:
         return DataSource.LOCAL
+
+    def _folder(self, folder: str, year: int):
+        return get_url(folder, f"GEBCO/{year}")
+
+    @staticmethod
+    def _get_files(folder, tiles, year: int):
+        fn = []
+        for tile in tiles:
+            fn.append(f"{tile}_gebco_{year}.nc")
+
+        return get_url(folder, fn, get_list=True)
 
     def __call__(
         self,
@@ -372,50 +275,59 @@ class GEBCO(DataReader):
         start_time,
         end_time,
         source: DataSource,
-        folder: str,
         expansion_factor: float = 1.2,
-        filename: list[str] = None,
-        year: int = 2023,
+        folder: str = None,
+        year: int = 2026,
         **kwargs,
     ) -> tuple:
 
-        lon, lat = utils.grid.expand_area(
-            grid.edges("lon"), grid.edges("lat"), expansion_factor
-        )
-        if filename is None:
-            # url = f'https://api.odb.ntu.edu.tw/gebco?mode=zonly&sample=1&jsonsrc={"type":"Polygon","coordinates":[[[{lon[0]},[{lat[1]}]],[{lon[1]},{lat[1]}],[{lon[1]},{lon[0]}],[{lon[0]},{lat[0]}],[{lon[0]},{lat[1]}]]]}'
-            url = 'https://api.odb.ntu.edu.tw/gebco?mode=zonly&sample=1&jsonsrc={"type":"Polygon","coordinates":[[[LON0,LAT1],[LON1,LAT1],[LON1,LAT0],[LON0,LAT0],[LON0,LAT1]]]}'
-            url = re.sub("LON0", f"{lon[0]:.2f}", url)
-            url = re.sub("LON1", f"{lon[1]:.2f}", url)
-            url = re.sub("LAT0", f"{lat[0]:.2f}", url)
-            url = re.sub("LAT1", f"{lat[1]:.2f}", url)
+        folder = self._folder(folder, year)
+        
+        msg.info(f"Using expansion_factor = {expansion_factor:.2f}")
+        lons, lats = gebco_functions.get_covering_tiles(grid, expansion_factor)
+        tiles = gebco_functions.get_tile_names(lons, lats)
+        
+        
+        files = self._get_files(folder, tiles, year)
+        # Check if tiles exist locally
+        tiles_to_download = []
+        for n, file in enumerate(files):
+            if not os.path.isfile(file):
+                tiles_to_download.append((Path(file), lons[n], lats[n], tiles[n]))
+        
+        if tiles_to_download:
+            url = f"https://dap.ceda.ac.uk/thredds/dodsC/bodc/gebco/global/gebco_{year}/ice_surface_elevation/netcdf/GEBCO_{year}.nc"
+            ds = xr.open_dataset(url)
+            msg.blank()
+            msg.process(f"Downloading {len(tiles_to_download)} tiles...")
+            if not os.path.exists(folder):
+                if not os.path.isdir(folder):
+                    msg.plain(f"Creating folder {folder}")
+                os.makedirs(folder)
             msg.from_file(url)
-            response = urlopen(url)
+            for tile in tiles_to_download:
+                msg.to_file(tile[0])
+                ds.sel(lon=slice(*tile[1]), lat=slice(*tile[2])).to_netcdf(tile[0])
 
-            data = json.loads(response.read())
-            # Negative valies and NaN's are land
-            topo = -1 * np.array(data["z"])
-
-            topo_lon = np.array(data["longitude"])
-            topo_lat = np.array(data["latitude"])
-        else:
-            if not isinstance(filename, list):
-                filename = [filename]
-            folder = get_url(folder, "GEBCO")
-            filenames = [folder + "/" + fn for fn in filename]
-            msg.from_multifile(filenames)
-            with xr.open_mfdataset(filenames) as ds:
+        msg.process('Reading local files...')
+        lon, lat = utils.grid.expand_area(
+            grid.edges("lon"),
+            grid.edges("lat"),
+            expansion_factor=expansion_factor,
+        )
+        with dask.config.set(**{"array.slicing.split_large_chunks": True}):
+            with xr.open_mfdataset(files) as ds:
+                msg.from_multifile(files)
                 ds = ds.sel(lon=slice(lon[0], lon[1]), lat=slice(lat[0], lat[1]))
-                elevation = ds.elevation.values.astype(float)
-                topo = -1 * elevation
-                topo_lon = ds.lon.values.astype(float)
-                topo_lat = ds.lat.values.astype(float)
 
-        coord_dict = {"lon": topo_lon, "lat": topo_lat}
-        data_dict = {"topo": topo}
-        meta_dict = {"source": f"GEBCO{year}", "through": "https://api.odb.ntu.edu.tw/"}
+                coord_dict = {key: ds.get(key) for key in ["lon", "lat", "x", "y"]}
+                data_dict = {"topo": -ds.get("elevation").values}
+                meta_dict = ds.attrs
 
-        return coord_dict, data_dict, meta_dict
+                return coord_dict, data_dict, meta_dict
+            
+    def __str__(self):
+        return f"Reading GEBCO bathymetry."
 
 
 class MshFile(DataReader):
