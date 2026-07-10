@@ -3,26 +3,25 @@ from __future__ import annotations
 import xarray as xr
 import numpy as np
 from typing import TYPE_CHECKING
-import json
-from urllib.request import urlopen
-import re
 
 if TYPE_CHECKING:
     from dnora.grid import Grid, TriGrid
+    from dnora.type_manager.dnora_types import DnoraDataType
+    from dnora.type_manager.data_sources import DataSource
 from dnora.read.abstract_readers import DataReader
 from dnora.utils.io import get_url
 from dnora import utils
 from dnora import msg
 from typing import Union
 import os
-from dnora.type_manager.data_sources import DataSource
+
 import dask
 from pathlib import Path
 import meshio
 
-from dnora.type_manager.dnora_types import DnoraDataType
-from .emodnet_functions import find_tile, get_covering_tiles, download_tile
-from . import kartverket_functions as kartverket50m_functions
+
+from . import emodnet_functions 
+from . import kartverket50m_functions
 from . import gebco_functions
 import dask.dataframe as dd
 
@@ -70,13 +69,13 @@ class EMODNET(DataReader):
         )
 
         # Identefy tiles:
-        tile_nw = find_tile(lon[0], lat[1])
-        tile_se = find_tile(lon[1], lat[0])
+        tile_nw = emodnet_functions.find_tile(lon[0], lat[1])
+        tile_se = emodnet_functions.find_tile(lon[1], lat[0])
 
         if not tile_nw or not tile_se:
             msg.warning(f"Area not coverd by EMODNET!!!")
             return
-        self.tiles = get_covering_tiles(tile_se=tile_se, tile_nw=tile_nw)
+        self.tiles = emodnet_functions.get_covering_tiles(tile_se=tile_se, tile_nw=tile_nw)
 
         msg.plain(f"Using tiles: {self.tiles}")
         self.files = self._get_files(folder, self.tiles, year)
@@ -93,7 +92,7 @@ class EMODNET(DataReader):
                 os.makedirs(folder)
             for tile in tiles_to_download:
                 msg.from_file(tile)
-                download_tile(tile=tile, year=year, folder=folder)
+                emodnet_functions.download_tile(tile=tile, year=year, folder=folder)
 
         def _crop(ds):
             """
@@ -296,7 +295,7 @@ class GEBCO(DataReader):
                 tiles_to_download.append((Path(file), lons[n], lats[n], tiles[n]))
         
         if tiles_to_download:
-            url = f"https://dap.ceda.ac.uk/thredds/dodsC/bodc/gebco/global/gebco_{year}/ice_surface_elevation/netcdf/GEBCO_{year}.nc"
+            url = gebco_functions.get_url(year)
             ds = xr.open_dataset(url)
             msg.blank()
             msg.process(f"Downloading {len(tiles_to_download)} tiles...")

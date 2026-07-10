@@ -16,3 +16,13 @@ def get_tile_names(lons, lats):
     return tiles
 
 
+def get_url(year: int):
+    """Returns correct opendap url for given year"""
+    if year < 2019:
+        raise ValueError(f"GEBCO datasets only available for years 2019 onwards!")
+    if year in [2021,2022,2023,2024]:
+        return f"https://dap.ceda.ac.uk/thredds/dodsC/bodc/gebco/global/gebco_{year}/ice_surface_elevation/netcdf/GEBCO_{year}_CF.nc"
+    else:
+        return f"https://dap.ceda.ac.uk/thredds/dodsC/bodc/gebco/global/gebco_{year}/ice_surface_elevation/netcdf/GEBCO_{year}.nc"
+    
+    
