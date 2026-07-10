@@ -19,7 +19,7 @@ import geo_parameters as gp
 from dnora.type_manager.dnora_types import DnoraDataType
 
 from dnora.utils.io import get_url
-
+import time
 
 @add_mask(name="sea", coord_group="grid", default_value=1, opposite_name="land")
 @add_datavar(name=gp.ocean.WaterDepth("topo"), default_value=999.0, coord_group="grid")
@@ -105,10 +105,11 @@ def import_topo(
     else:
         topo_grid = PointTopo(lon=lon, lat=lat, x=x, y=y, name=topo_reader.name(), chunks='auto')
     if zone_number is not None:
-        topo_grid.utm.set((zone_number, zone_letter))
+        topo_grid.utm.set((zone_number, zone_letter), silent=True)
 
     if coverage_warning:
-        msg.plain("Checking coverage... (if this is too slow, turn off by 'coverage_warning=False')")
+        
+        start_time = time.time()
         if (
             grid.edges("lon", native=True)[0] < topo_grid.edges(grid.core.x_str)[0]
             or grid.edges("lon", native=True)[1] > topo_grid.edges(grid.core.x_str)[1]
@@ -124,7 +125,10 @@ def import_topo(
             msg.warning(
                 f"The data gotten from the DataReader doesn't cover the grid in the {grid.core.y_str} direction. Grid: {grid.edges('lat', native=True)}, imported topo: {topo_grid.edges(grid.core.y_str)}"
             )
-        msg.plain('Coverage check completed!')
+        end_time = time.time()
+        elapsed_time = end_time-start_time
+        if elapsed_time > 5:
+            msg.plain(f"Coverage check took {elapsed_time:.0f} seconds. Can be turned off by 'coverage_warning=False'")
     topo_grid.set_topo(topo)
     topo_grid.meta.set(meta_dict)
 
