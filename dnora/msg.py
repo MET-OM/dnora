@@ -50,6 +50,11 @@ def from_multifile(filenames: list[str], max_length: int = 5):
         from_file(filenames[ind])
 
 
+def get_value(value, source, prefix: str = ""):
+    if prefix:
+        prefix = f"{prefix}: "
+    plain(f"{prefix}{value} <<< {source}")
+    
 def plain(msg):
     print(msg)
 
