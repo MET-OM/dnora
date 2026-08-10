@@ -109,6 +109,7 @@ class NorKyst800v3(ProductReader):
         return FillNaNs(0)
 
 
+
 @deprecated_class_call("MET Norway's", "metno", "current")
 class NorFjords160(ProductReader):
     """ """
