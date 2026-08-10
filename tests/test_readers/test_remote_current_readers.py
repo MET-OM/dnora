@@ -39,7 +39,7 @@ def cleanup():
 @pytest.mark.remote
 def test_norkyst800(grid, timevec):
     model = dn.modelrun.ModelRun(grid, year=2022, month=4, day=1)
-    model.import_current(dn.read.current.metno.NorKyst800(), program="pyfimex")
+    model.import_current(dn.read.current.metno.NorKyst800v2(), program="pyfimex")
 
     assert np.all(model.current().time() == timevec)
     assert model.current().u(strict=True) is not None
@@ -49,11 +49,21 @@ def test_norkyst800(grid, timevec):
 @pytest.mark.remote
 def test_norkyst800_2017(grid, timevec2017):
     model = dn.modelrun.ModelRun(grid, year=2017, month=4, day=1)
-    model.import_current(dn.read.current.metno.NorKyst800(), program="pyfimex")
+    model.import_current(dn.read.current.metno.NorKyst800v2(), program="pyfimex")
 
     assert np.all(model.current().time() == timevec2017)
     assert model.current().u(strict=True) is not None
     assert model.current().v(strict=True) is not None
+
+@pytest.mark.remote
+def test_norkyst800v3(grid, timevec):
+    model = dn.modelrun.ModelRun(grid, year=2022, month=4, day=1)
+    model.import_current(dn.read.current.metno.NorKyst800v3(), program="pyfimex")
+
+    assert np.all(model.current().time() == timevec)
+    assert model.current().u(strict=True) is not None
+    assert model.current().v(strict=True) is not None
+
 
 @pytest.mark.internal
 @pytest.mark.remote

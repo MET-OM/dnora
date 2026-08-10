@@ -22,7 +22,7 @@ import geo_parameters as gp
 from dnora.read.depreciation_decorator import deprecated_class_call
 
 
-def get_norkyst800_urls(folder: str, filename: str, file_times: list[str], **kwargs):
+def get_norkyst800v2_urls(folder: str, filename: str, file_times: list[str], **kwargs):
     """This is passed to the read_ds_list. We need it because the folder and filename that makes up th URL changes is time"""
     urls = []
 
@@ -38,8 +38,8 @@ def get_norkyst800_urls(folder: str, filename: str, file_times: list[str], **kwa
 
 
 @deprecated_class_call("MET Norway's", "metno", "current")
-class NorKyst800(ProductReader):
-    """Reads ocean_current data of the NorKyst800 archieve directly from MET Norways servers.
+class NorKyst800v2(ProductReader):
+    """Reads ocean_current data of the NorKyst800v2 archieve directly from MET Norways servers.
 
     NorKyst-800 (Norwegian Coast 800m) is a numerical, high-resolution, ocean modelling
     system covering the Norwegian Coast.
@@ -60,7 +60,7 @@ class NorKyst800(ProductReader):
         ),
         data_vars=["u", "v"],
         default_data_source=DataSource.REMOTE,
-        url_function=get_norkyst800_urls,
+        url_function=get_norkyst800v2_urls,
         ds_aliases={"u": gp.ocean.XCurrent, "v": gp.ocean.YCurrent},
         ds_pre_processor=lambda ds: (ds.isel(depth=0), {}),
     )
@@ -72,6 +72,42 @@ class NorKyst800(ProductReader):
 
     def post_processing(self):
         return FillNaNs(0)
+
+@deprecated_class_call("MET Norway's", "metno", "current")
+class NorKyst800v3(ProductReader):
+    """Reads ocean_current data of the NorKyst800v3 hindcast archieve directly from MET Norways servers.
+
+    NorKyst-800 (Norwegian Coast 800m) is a numerical, high-resolution, ocean modelling
+    system covering the Norwegian Coast.
+
+    Albretsen, J., Sperrevik, A.K., Staalstrøm, A., Sandvik, A.D., Vikebø, F., Asplin, L., 2011.
+    NorKyst-800 Rapport nr. 1: Brukermanual og tekniske beskrivelser. NorKyst-800 Report
+    No. 1: User Manual and technical descriptions.
+    """
+
+    product_configuration = ProductConfiguration(
+        filename="norkyst800-%Y%m%d.nc",
+        default_folders={
+            DataSource.REMOTE: "https://thredds.met.no/thredds/dodsC/romshindcast/norkyst_v3/zdepth/%Y/%m",
+        },
+        ds_creator_function=partial(
+            ds_fimex_read,
+            resolution_in_km=0.8,
+        ),
+        data_vars=["u_eastward", "v_northward"],
+        default_data_source=DataSource.REMOTE,
+        ds_aliases={"u_eastward": gp.ocean.XCurrent, "v_northward": gp.ocean.YCurrent},
+        ds_pre_processor=lambda ds: (ds.isel(depth=0), {}),
+    )
+
+    file_structure = FileStructure(
+        stride=24,
+        hours_per_file=24,
+    )
+
+    def post_processing(self):
+        return FillNaNs(0)
+
 
 
 @deprecated_class_call("MET Norway's", "metno", "current")
